@@ -45,13 +45,18 @@ namespace Exceptionless.Web {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;
             });
-            services.AddMvc(o => {
+            services.AddMvcCore(o => {
                 o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
-                o.Filters.Add<RequireHttpsExceptLocalAttribute>();
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
             }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+              .AddApiExplorer()
+              .AddAuthorization()
+              .AddFormatterMappings()
+              .AddDataAnnotations()
+              .AddJsonFormatters()
+              .AddCors()
               .AddJsonOptions(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
@@ -117,7 +122,7 @@ namespace Exceptionless.Web {
 
         public void Configure(IApplicationBuilder app) {
             var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory);
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory.CreateLogger<Startup>());
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
@@ -130,7 +135,6 @@ namespace Exceptionless.Web {
             if (!options.EventSubmissionDisabled)
                 readyTags.Add("Storage");
             app.UseReadyHealthChecks(readyTags.ToArray());
-
             app.UseWaitForStartupActionsBeforeServingRequests();
             
             app.UseCsp(csp => {
@@ -155,18 +159,8 @@ namespace Exceptionless.Web {
                     .From("https://maxcdn.bootstrapcdn.com");
             });
 
-            var contentTypeProvider = new FileExtensionContentTypeProvider {
-                Mappings = {
-                    [".less"] = "plain/text"
-                }
-            };
-
-            app.UseStaticFiles(new StaticFileOptions {
-                ContentTypeProvider = contentTypeProvider
-            });
-
             app.Use(async (context, next) => {
-                if (context.Request.IsLocal() == false && options.AppMode != AppMode.Development)
+                if (options.AppMode != AppMode.Development && context.Request.IsLocal() == false)
                     context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
                 
                 context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -192,6 +186,15 @@ namespace Exceptionless.Web {
 
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
+            
+            app.UseStaticFiles(new StaticFileOptions {
+                ContentTypeProvider = new FileExtensionContentTypeProvider {
+                    Mappings = {
+                        [".less"] = "plain/text"
+                    }
+                }
+            });
+            
             app.UseFileServer();
             app.UseMvc();
             app.UseSwagger(c => {

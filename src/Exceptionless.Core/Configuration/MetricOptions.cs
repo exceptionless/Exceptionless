@@ -10,6 +10,13 @@ namespace Exceptionless.Core.Configuration {
         public string ConnectionString { get; internal set; }
         public string Provider { get; internal set; }
         public Dictionary<string, string> Data { get; internal set; }
+
+        public static MetricOptions ReadFromConfiguration(IConfiguration config) {
+            var options = new MetricOptions();
+            var configureOptions = new ConfigureMetricOptions(config);
+            configureOptions.Configure(options);
+            return options;
+        }
     }
 
     public class ConfigureMetricOptions : IConfigureOptions<MetricOptions> {

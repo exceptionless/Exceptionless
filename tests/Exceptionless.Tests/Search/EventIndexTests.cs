@@ -6,29 +6,27 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
-using Foundatio.Hosting.Startup;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Repositories {
-    public sealed class EventIndexTests : ElasticTestBase {
+    public sealed class EventIndexTests : IntegrationTestsBase {
         private readonly IEventRepository _repository;
         private readonly PersistentEventQueryValidator _validator;
 
-        public EventIndexTests(ITestOutputHelper output) : base(output) {
+        public EventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             _repository = GetService<IEventRepository>();
             _validator = GetService<PersistentEventQueryValidator>();
         }
-
-        protected override void RegisterServices(IServiceCollection services) {
-            base.RegisterServices(services);
-            services.AddStartupAction("CreateEventsAsync", CreateEventsAsync);
+        
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            await CreateEventsAsync();
         }
 
         [Theory]
@@ -454,9 +452,9 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
 
-        private async Task CreateEventsAsync(IServiceProvider serviceProvider) {
+        private async Task CreateEventsAsync() {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var parserPluginManager = serviceProvider.GetService<EventParserPluginManager>();
+            var parserPluginManager = GetService<EventParserPluginManager>();
             foreach (string file in Directory.GetFiles(path, "event*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
                     continue;
@@ -470,7 +468,8 @@ namespace Exceptionless.Tests.Repositories {
                 await _repository.AddAsync(events, o => o.ImmediateConsistency());
             }
 
-            _configuration.Events.Event.QueryParser.Configuration.RefreshMapping();
+            var configuration = GetService<ExceptionlessElasticConfiguration>();
+            configuration.Events.Event.QueryParser.Configuration.RefreshMapping();
         }
 
         private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {

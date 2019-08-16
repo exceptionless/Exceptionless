@@ -4,25 +4,23 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Foundatio.Hosting.Startup;
 using Foundatio.Repositories.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories {
-    public sealed class StackIndexTests : ElasticTestBase {
+    public sealed class StackIndexTests : IntegrationTestsBase {
         private readonly IStackRepository _repository;
 
-        public StackIndexTests(ITestOutputHelper output) : base(output) {
+        public StackIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _repository = GetService<IStackRepository>();
         }
-
-        protected override void RegisterServices(IServiceCollection services) {
-            base.RegisterServices(services);
-            services.AddStartupAction("CreateDataAsync", CreateDataAsync);
+        
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            await CreateDataAsync();
         }
 
         [Theory]
@@ -179,9 +177,9 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
 
-        private async Task CreateDataAsync(IServiceProvider serviceProvider) {
+        private async Task CreateDataAsync() {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var serializer = serviceProvider.GetService<JsonSerializer>();
+            var serializer = GetService<JsonSerializer>();
             foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
                     continue;
@@ -195,7 +193,8 @@ namespace Exceptionless.Tests.Repositories {
                 }
             }
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            var configuration = GetService<ExceptionlessElasticConfiguration>();
+            await configuration.Client.RefreshAsync(Indices.All);
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {

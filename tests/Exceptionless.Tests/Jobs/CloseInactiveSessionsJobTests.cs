@@ -10,17 +10,14 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Foundatio.Utility;
-using Microsoft.Extensions.DependencyInjection;
-using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Jobs {
-    public class CloseInactiveSessionsJobTests : ElasticTestBase {
+    public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
         private readonly CloseInactiveSessionsJob _job;
         private readonly ICacheClient _cache;
         private readonly IOrganizationRepository _organizationRepository;
@@ -31,7 +28,7 @@ namespace Exceptionless.Tests.Jobs {
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
 
-        public CloseInactiveSessionsJobTests(ITestOutputHelper output) : base(output) {
+        public CloseInactiveSessionsJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _job = GetService<CloseInactiveSessionsJob>();
             _cache = GetService<ICacheClient>();
             _organizationRepository = GetService<IOrganizationRepository>();
@@ -43,9 +40,9 @@ namespace Exceptionless.Tests.Jobs {
             _plans = GetService<BillingPlans>();
         }
 
-        protected override void RegisterServices(IServiceCollection services) {
-            base.RegisterServices(services);
-            services.AddStartupAction("Create sample data", CreateDataAsync);
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            await CreateDataAsync();
         }
 
         [Fact]
@@ -59,7 +56,7 @@ namespace Exceptionless.Tests.Jobs {
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(4, events.Total);
             Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -72,7 +69,7 @@ namespace Exceptionless.Tests.Jobs {
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             events = await _eventRepository.GetAllAsync();
             Assert.Equal(4, events.Total);
 
@@ -94,7 +91,7 @@ namespace Exceptionless.Tests.Jobs {
             Assert.True(contexts.All(c => !c.IsCancelled));
             Assert.True(contexts.All(c => c.IsProcessed));
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(4, events.Total);
             Assert.Equal(2, events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
@@ -108,7 +105,7 @@ namespace Exceptionless.Tests.Jobs {
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             events = await _eventRepository.GetAllAsync();
             Assert.Equal(4, events.Total);
 
@@ -133,7 +130,7 @@ namespace Exceptionless.Tests.Jobs {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             var events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
             Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
@@ -150,7 +147,7 @@ namespace Exceptionless.Tests.Jobs {
 
             _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
             Assert.Equal(JobResult.Success, await _job.RunAsync());
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
             events = await _eventRepository.GetAllAsync();
             Assert.Equal(2, events.Total);
 
@@ -199,7 +196,7 @@ namespace Exceptionless.Tests.Jobs {
                 await _userRepository.AddAsync(user, o => o.Cache());
             }
 
-            await _configuration.Client.RefreshAsync(Indices.All);
+            await RefreshDataAsync();
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {

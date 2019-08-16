@@ -19,6 +19,7 @@ using Foundatio.Jobs;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -52,11 +53,12 @@ namespace Exceptionless.Job {
         
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
             var jobOptions = new JobRunnerOptions(args);
+            
+            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
+            
             string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
-
-            Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
 
             string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
@@ -67,19 +69,14 @@ namespace Exceptionless.Job {
                 .AddCommandLine(args)
                 .Build();
 
-            var services = new ServiceCollection();
-            services.AddSingleton<IConfiguration>(config);
-            services.ConfigureOptions<ConfigureAppOptions>();
-            services.ConfigureOptions<ConfigureMetricOptions>();
-            var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
+            var options = AppOptions.ReadFromConfiguration(config);
  
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            var loggerFactory = new SerilogLoggerFactory(loggerConfig.CreateLogger());
-            _logger = loggerFactory.CreateLogger<Program>();
+            var serilogLogger = loggerConfig.CreateLogger();
+            _logger = new SerilogLoggerFactory(serilogLogger).CreateLogger<Program>();
             
             var configDictionary = config.ToDictionary("Serilog");
             _logger.LogInformation("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
@@ -88,26 +85,41 @@ namespace Exceptionless.Job {
 
             var builder = WebHost.CreateDefaultBuilder(args)
                 .UseEnvironment(environment)
+                .UseConfiguration(config)
+                .UseDefaultServiceProvider((ctx, o) => {
+                    o.ValidateScopes = ctx.HostingEnvironment.IsDevelopment();
+                })
                 .ConfigureKestrel(c => {
                     c.AddServerHeader = false;
                     //c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
                 })
-                .UseConfiguration(config)
-                .ConfigureServices(s => {
-                    s.AddSingleton<ILoggerFactory>(loggerFactory);
-                    s.AddHttpContextAccessor();
+                .UseSerilog(serilogLogger, true)
+                .ConfigureServices((ctx, services) => {
+                    services.AddHttpContextAccessor();
                     
-                    AddJobs(s, jobOptions);
+                    AddJobs(services, jobOptions);
                     
                     if (useApplicationInsights)
-                        s.AddApplicationInsightsTelemetry();
+                        services.AddApplicationInsightsTelemetry();
                     
-                    Bootstrapper.RegisterServices(s);
-                    var serviceProvider = s.BuildServiceProvider();
-                    Insulation.Bootstrapper.RegisterServices(serviceProvider, s, options, true);
+                    Bootstrapper.RegisterServices(services);
+                    var serviceProvider = services.BuildServiceProvider();
+                    Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, true);
+
+                    services.PostConfigure<HostFilteringOptions>(o => {
+                        if (o.AllowedHosts == null || o.AllowedHosts.Count == 0) {
+                            // "AllowedHosts": "localhost;127.0.0.1;[::1]"
+                            var hosts = ctx.Configuration["AllowedHosts"]?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            // Fall back to "*" to disable.
+                            o.AllowedHosts = (hosts?.Length > 0 ? hosts : new[] { "*" });
+                        }
+                    });
+                    
+                    services.AddSingleton<IOptionsChangeTokenSource<HostFilteringOptions>>(new ConfigurationChangeTokenSource<HostFilteringOptions>(ctx.Configuration));
+                    services.AddTransient<IStartupFilter, HostFilteringStartupFilter>();
                 })
                 .Configure(app => {
-                    Bootstrapper.LogConfiguration(app.ApplicationServices, options, loggerFactory);
+                    Bootstrapper.LogConfiguration(app.ApplicationServices, options, _logger);
 
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                         app.UseExceptionless(ExceptionlessClient.Default);
@@ -124,10 +136,13 @@ namespace Exceptionless.Job {
                     app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
                 });
             
+            if (String.IsNullOrEmpty(builder.GetSetting(WebHostDefaults.ContentRootKey)))
+                builder.UseContentRoot(Directory.GetCurrentDirectory());
+            
             if (useApplicationInsights)
                 builder.UseApplicationInsights(options.ApplicationInsightsKey);
 
-            var metricOptions = container.GetRequiredService<IOptions<MetricOptions>>().Value;
+            var metricOptions = MetricOptions.ReadFromConfiguration(config);
             if (!String.IsNullOrEmpty(metricOptions.Provider))
                 ConfigureMetricsReporting(builder, metricOptions);
 
@@ -186,6 +201,15 @@ namespace Exceptionless.Job {
             } else if (!String.Equals(options.Provider, "statsd")) {
                 builder.UseMetrics();
             }
+        }
+    }
+
+    internal class HostFilteringStartupFilter : IStartupFilter {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) {
+            return app => {
+                app.UseHostFiltering();
+                next(app);
+            };
         }
     }
 }
