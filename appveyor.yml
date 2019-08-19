@@ -24,6 +24,8 @@ before_build:
       VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
       echo "Version: $VERSION"
     else
+      API_DOCKER_IMAGE=api
+      JOB_DOCKER_IMAGE=job
       VERSION_SUFFIX=$APPVEYOR_BUILD_NUMBER
       VERSION="$VERSION_PREFIX.$VERSION_SUFFIX"
       echo "Version: $VERSION Tag: $APPVEYOR_REPO_TAG_NAME"
@@ -49,7 +51,7 @@ deploy_script:
   - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
   - |
     # tag and push docker image
-    for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do  
+    for image in {$API_DOCKER_IMAGE,$JOB_DOCKER_IMAGE}; do
       for tag in {$VERSION,latest}; do
         docker tag $image exceptionless/$image:$tag
         docker push exceptionless/$image:$tag
