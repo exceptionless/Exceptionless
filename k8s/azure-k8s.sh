@@ -73,7 +73,7 @@ helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premiu
 kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
-API_TAG=5.0.3445-pre
+API_TAG=5.0.3469-pre
 EMAIL_CONNECTIONSTRING=
 QUEUE_CONNECTIONSTRING=
 REDIS_CONNECTIONSTRING=
