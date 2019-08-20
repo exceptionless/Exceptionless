@@ -8,7 +8,7 @@ services:
     build:
       context: .
       target: api
-    image: exceptionless/api-ci:latest
+    image: exceptionless/api:latest
     restart: on-failure
     environment:
       EX_AppMode: Production
@@ -33,7 +33,7 @@ services:
     build:
       context: .
       target: job
-    image: exceptionless/job-ci:latest
+    image: exceptionless/job:latest
     restart: on-failure
     environment:
       EX_AppMode: Production
@@ -50,7 +50,7 @@ services:
       - appdata:/app/storage
 
   ui:
-    image: exceptionless/ui-ci:latest
+    image: exceptionless/ui:latest
     environment:
       AppMode: Development
       EX_ApiUrl: http://ex-api.localtest.me:5000
