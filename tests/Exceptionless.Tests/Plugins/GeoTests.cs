@@ -171,7 +171,7 @@ namespace Exceptionless.Tests.Plugins {
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
-            Assert.Equal("Irving", location?.Locality);
+            Assert.Equal("Dallas", location?.Locality);
         }
 
         [Fact]
@@ -217,7 +217,7 @@ namespace Exceptionless.Tests.Plugins {
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
-            Assert.Equal("Irving", location?.Locality);
+            Assert.Equal("Dallas", location?.Locality);
         }
 
         [Theory]
