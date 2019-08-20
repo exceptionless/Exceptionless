@@ -23,7 +23,7 @@ namespace Exceptionless.Tests.Plugins {
     public class GeoTests : TestWithServices {
         private const string GREEN_BAY_COORDINATES = "44.5458,-88.1019";
         private const string GREEN_BAY_IP = "24.208.86.80";
-        private const string IRVING_COORDINATES = "32.8489,-96.9667";
+        private const string IRVING_COORDINATES = "32.9379,-96.8384";
         private const string IRVING_IP = "192.91.253.248";
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
