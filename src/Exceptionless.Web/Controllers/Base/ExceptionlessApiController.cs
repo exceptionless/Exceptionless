@@ -56,11 +56,14 @@ namespace Exceptionless.Web.Controllers {
             return timeInfo;
         }
 
-        protected int GetLimit(int limit) {
+        protected int GetLimit(int limit, int maximumLimit = MAXIMUM_LIMIT) {
+            if (maximumLimit < MAXIMUM_LIMIT)
+                throw new ArgumentOutOfRangeException(nameof(maximumLimit));
+                
             if (limit < 1)
                 limit = DEFAULT_LIMIT;
-            else if (limit > MAXIMUM_LIMIT)
-                limit = MAXIMUM_LIMIT;
+            else if (limit > maximumLimit)
+                limit = maximumLimit;
 
             return limit;
         }

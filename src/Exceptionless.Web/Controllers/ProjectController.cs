@@ -70,7 +70,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<ActionResult<ViewProject>> GetAsync(int page = 1, int limit = 10, string mode = null) {
             page = GetPage(page);
-            limit = GetLimit(limit);
+            limit = GetLimit(limit, 1000);
             var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
@@ -95,7 +95,7 @@ namespace Exceptionless.Web.Controllers {
                 return NotFound();
 
             page = GetPage(page);
-            limit = GetLimit(limit);
+            limit = GetLimit(limit, 1000);
             var projects = await _repository.GetByOrganizationIdAsync(organization, o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
