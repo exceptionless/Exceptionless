@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
             if (organizationIds.Count == 0)
                 return Task.FromResult(new FindResults<Project>());
 
-            return FindAsync(q => q.Organizations(organizationIds).SortAscending(p => p.Name.Suffix("keyword")), options);
+            return FindAsync(q => q.Organizations(organizationIds).SortAscending(p => p.OrganizationId).SortAscending(p => p.Name.Suffix("keyword")), options);
         }
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
