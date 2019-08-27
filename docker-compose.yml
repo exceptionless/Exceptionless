@@ -9,7 +9,6 @@ services:
       context: .
       target: api
     image: exceptionless/api:latest
-    restart: on-failure
     environment:
       EX_AppMode: Production
       EX_BaseURL: http://ex-ui.localtest.me:5100 #URL to UI
@@ -34,7 +33,6 @@ services:
       context: .
       target: job
     image: exceptionless/job:latest
-    restart: on-failure
     environment:
       EX_AppMode: Production
       EX_BaseURL: http://ex-ui.localtest.me:5100
@@ -65,7 +63,6 @@ services:
 #      - api
 #      - ui
 #    image: valian/docker-nginx-auto-ssl
-#    restart: on-failure
 #    ports:
 #      - 80:80
 #      - 443:443
@@ -77,7 +74,6 @@ services:
 
   elasticsearch:
     image: exceptionless/elasticsearch:1
-    restart: on-failure
     environment:
       cluster.name: 'exceptionless'
       bootstrap.memory_lock: 'true'
@@ -100,7 +96,6 @@ services:
     depends_on:
       - elasticsearch
     image: exceptionless/kibana:1
-    restart: on-failure
     environment:
       xpack.security.enabled: 'false'
     ports:
@@ -108,7 +103,6 @@ services:
 
   redis:
     image: redis:alpine
-    restart: on-failure
     ports:
       - 6379:6379
 
