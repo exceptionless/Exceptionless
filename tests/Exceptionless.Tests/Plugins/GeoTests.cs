@@ -23,7 +23,7 @@ namespace Exceptionless.Tests.Plugins {
     public class GeoTests : TestWithServices {
         private const string GREEN_BAY_COORDINATES = "44.5458,-88.1019";
         private const string GREEN_BAY_IP = "24.208.86.80";
-        private const string IRVING_COORDINATES = "32.9379,-96.8384";
+        private const string IRVING_COORDINATES = "32.8489,-96.9667";
         private const string IRVING_IP = "192.91.253.248";
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
@@ -156,18 +156,14 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
-
-#if DEBUG
-            Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
-#endif
+            
+            AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
-#if DEBUG
-            Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
-#endif
+            AssertCoordinatesAreEqual(IRVING_COORDINATES, irvingEvent.Geo);
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
@@ -203,23 +199,19 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
-#if DEBUG
-            Assert.Equal(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
-#endif
+            AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
 
-#if DEBUG
-            Assert.Equal(IRVING_COORDINATES, irvingEvent.Geo);
-#endif
+            AssertCoordinatesAreEqual(IRVING_COORDINATES, irvingEvent.Geo);
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
             Assert.Equal("Dallas", location?.Locality);
         }
-
+        
         [Theory]
         [MemberData(nameof(IPData))]
         public async Task CanResolveIpAsync(string ip, bool canResolve) {
@@ -244,6 +236,24 @@ namespace Exceptionless.Tests.Plugins {
 
             sw.Stop();
             Assert.InRange(sw.ElapsedMilliseconds, 0, 65);
+        }
+        
+        /// <summary>
+        /// Takes in 32.8489,-96.9667 and only checks to one decimal place.
+        /// </summary>
+        private void AssertCoordinatesAreEqual(string expected, string actual) {
+            if (String.Equals(actual, expected))
+                return;
+
+            string[] actualParts = actual.Split(',');
+            string[] expectedParts = expected.Split(',');
+            if (actualParts.Length != expectedParts.Length || actualParts.Length != 2) {
+                Assert.Equal(expected, actual);
+                return;
+            }
+            
+            Assert.Equal(Math.Round(Double.Parse(expectedParts[0]), 1), Math.Round(Double.Parse(actualParts[0]), 1));
+            Assert.Equal(Math.Round(Double.Parse(expectedParts[1]), 1), Math.Round(Double.Parse(actualParts[1]), 1));
         }
 
         public static IEnumerable<object[]> IPData => new List<object[]> {
