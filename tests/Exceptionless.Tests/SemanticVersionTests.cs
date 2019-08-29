@@ -7,13 +7,18 @@ using Xunit.Abstractions;
 namespace Exceptionless.Tests {
     public class SemanticVersionTests : TestWithServices {
         private readonly SemanticVersionParser _parser;
+        
         public SemanticVersionTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _parser = new SemanticVersionParser(Log);
         }
         
         [Theory]
         [InlineData(null, null)]
+        [InlineData("a.b.c.d", null)]
+        [InlineData("1.b", null)]
+        [InlineData("test", null)]
         [InlineData("1", "1.0.0")]
+        [InlineData(" 1 ", "1.0.0")]
         [InlineData("1.2", "1.2.0")]
         [InlineData("1.2 7ab3b4da18", "1.2.0")]
         [InlineData("1.2.3", "1.2.3")]

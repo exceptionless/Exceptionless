@@ -16,6 +16,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
@@ -23,7 +24,6 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +41,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly SemanticVersionParser _semanticVersionParser;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly ICacheClient _cache;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
@@ -60,11 +61,12 @@ namespace Exceptionless.Web.Controllers {
             ICacheClient cacheClient,
             BillingManager billingManager,
             FormattingPluginManager formattingPluginManager,
+            SemanticVersionParser semanticVersionParser,
             IMapper mapper,
             StackQueryValidator validator,
             IOptions<AppOptions> options,
             ILoggerFactory loggerFactory
-            ) : base(stackRepository, mapper, validator, loggerFactory) {
+        ) : base(stackRepository, mapper, validator, loggerFactory) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -76,6 +78,7 @@ namespace Exceptionless.Web.Controllers {
             _cache = cacheClient;
             _billingManager = billingManager;
             _formattingPluginManager = formattingPluginManager;
+            _semanticVersionParser = semanticVersionParser;
             _options = options;
 
             AllowedDateFields.AddRange(new[] { StackIndexType.Alias.FirstOccurrence, StackIndexType.Alias.LastOccurrence });
@@ -108,9 +111,8 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(string ids, string version = null) {
-            version = version?.Trim();
-            SemanticVersion semanticVersion = null;
-            if (!String.IsNullOrEmpty(version) && !SemanticVersion.TryParse(version, out semanticVersion))
+            var semanticVersion = await _semanticVersionParser.ParseAsync(version);
+            if (semanticVersion == null)
                 return BadRequest("Invalid semantic version");
 
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
