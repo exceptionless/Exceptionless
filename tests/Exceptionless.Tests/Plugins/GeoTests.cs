@@ -156,7 +156,7 @@ namespace Exceptionless.Tests.Plugins {
                 new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
                 new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
-            
+
             AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
             var location = greenBayEvent.GetLocation();
             Assert.Equal("US", location?.Country);
@@ -167,7 +167,7 @@ namespace Exceptionless.Tests.Plugins {
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
-            Assert.Equal("Dallas", location?.Locality);
+            Assert.Equal("Irving", location?.Locality);
         }
 
         [Fact]
@@ -209,9 +209,9 @@ namespace Exceptionless.Tests.Plugins {
             location = irvingEvent.GetLocation();
             Assert.Equal("US", location?.Country);
             Assert.Equal("TX", location?.Level1);
-            Assert.Equal("Dallas", location?.Locality);
+            Assert.Equal("Irving", location?.Locality);
         }
-        
+
         [Theory]
         [MemberData(nameof(IPData))]
         public async Task CanResolveIpAsync(string ip, bool canResolve) {
@@ -237,7 +237,7 @@ namespace Exceptionless.Tests.Plugins {
             sw.Stop();
             Assert.InRange(sw.ElapsedMilliseconds, 0, 65);
         }
-        
+
         /// <summary>
         /// Takes in 32.8489,-96.9667 and only checks to one decimal place.
         /// </summary>
@@ -251,7 +251,7 @@ namespace Exceptionless.Tests.Plugins {
                 Assert.Equal(expected, actual);
                 return;
             }
-            
+
             Assert.Equal(Math.Round(Double.Parse(expectedParts[0]), 1), Math.Round(Double.Parse(actualParts[0]), 1));
             Assert.Equal(Math.Round(Double.Parse(expectedParts[1]), 1), Math.Round(Double.Parse(actualParts[1]), 1));
         }
