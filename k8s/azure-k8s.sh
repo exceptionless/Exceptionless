@@ -73,7 +73,7 @@ helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premiu
 kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
 
 # install exceptionless app
-API_TAG=5.0.3469-pre
+API_TAG=5.0.3485-pre
 EMAIL_CONNECTIONSTRING=
 QUEUE_CONNECTIONSTRING=
 REDIS_CONNECTIONSTRING=
@@ -173,12 +173,13 @@ kubectl set image deployment,cronjob -l tier=exceptionless-api *=exceptionless/a
 kubectl set image deployment,cronjob -l tier=exceptionless-job *=exceptionless/job-ci:5.0.3445-pre --all --v 8
 
 UI_TAG=2.8.1474
+UI_TAG=2.8.1500-pre
 kubectl set image deployment exceptionless-app exceptionless-app=exceptionless/ui-ci:$UI_TAG
 
-API_TAG=5.0.3445-pre
+API_TAG=5.0.3485-pre
 kubectl set image deployment exceptionless-api exceptionless-api=exceptionless/api-ci:$API_TAG
 kubectl set image deployment exceptionless-collector exceptionless-collector=exceptionless/api-ci:$API_TAG
-JOB_TAG=5.0.3445-pre
+JOB_TAG=5.0.3485-pre
 kubectl set image deployment exceptionless-jobs-close-inactive-sessions exceptionless-jobs-close-inactive-sessions=exceptionless/job-ci:$JOB_TAG
 kubectl set image deployment exceptionless-jobs-daily-summary exceptionless-jobs-daily-summary=exceptionless/job-ci:$JOB_TAG
 kubectl set image deployment exceptionless-jobs-event-notifications exceptionless-jobs-event-notifications=exceptionless/job-ci:$JOB_TAG
