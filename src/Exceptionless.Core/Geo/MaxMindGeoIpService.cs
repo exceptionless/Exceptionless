@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Geo {
 
         public MaxMindGeoIpService(IFileStorage storage, ILoggerFactory loggerFactory) {
             _storage = storage;
-            _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }) { MaxItems = 250 };
+            _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory, MaxItems = 250, CloneValues = true });
             _logger = loggerFactory.CreateLogger<MaxMindGeoIpService>();
         }
 

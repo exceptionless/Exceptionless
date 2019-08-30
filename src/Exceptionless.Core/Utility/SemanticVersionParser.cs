@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Utility {
         private readonly ILogger _logger;
 
         public SemanticVersionParser(ILoggerFactory loggerFactory) {
-            _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory }) { MaxItems = 250 };
+            _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory, MaxItems = 250, CloneValues = true });
             _logger = loggerFactory.CreateLogger<SemanticVersionParser>();
         }
 

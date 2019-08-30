@@ -115,6 +115,15 @@
       },
       "launchBrowser": true,
       "applicationUrl": "https://localhost:5002;http://localhost:5003"
+    },
+    "EventSnapshotJob": {
+      "commandName": "Project",
+      "commandLineArgs": "EventSnapshot",
+      "environmentVariables": {
+        "EX_AppMode": "Development"
+      },
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5002;http://localhost:5003"
     }
   }
 }
