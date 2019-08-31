@@ -189,14 +189,14 @@ namespace Exceptionless.Core.Services {
 
             // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
             if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
-                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? usage.MonthlyTotal - usage.MonthlyBlocked - monthlyEventLimit : count;
+                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? Math.Max(usage.MonthlyTotal - usage.MonthlyBlocked - monthlyEventLimit, 0) : count;
 
             double originalAllowedHourlyEventTotal = usage.HourlyTotal - usage.HourlyBlocked - count;
             if (applyHourlyLimit && (usage.HourlyTotal - usage.HourlyBlocked) > hourlyEventLimit)
-                return originalAllowedHourlyEventTotal < hourlyEventLimit ? usage.HourlyTotal - usage.HourlyBlocked - hourlyEventLimit : count;
+                return originalAllowedHourlyEventTotal < hourlyEventLimit ? Math.Max(usage.HourlyTotal - usage.HourlyBlocked - hourlyEventLimit, 0) : count;
 
             if ((usage.MonthlyTotal - usage.MonthlyBlocked) > monthlyEventLimit)
-                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? usage.MonthlyTotal - usage.MonthlyBlocked - monthlyEventLimit : count;
+                return originalAllowedMonthlyEventTotal < monthlyEventLimit ? Math.Max(usage.MonthlyTotal - usage.MonthlyBlocked - monthlyEventLimit, 0) : count;
 
             return 0;
         }
