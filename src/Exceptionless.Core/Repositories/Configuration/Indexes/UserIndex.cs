@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             _configuration = configuration;
         }
 
-        public override ITypeMapping ConfigureIndexMapping(TypeMappingDescriptor<User> map) {
+        public override TypeMappingDescriptor<User> ConfigureIndexMapping(TypeMappingDescriptor<User> map) {
             return map
                 .Dynamic(false)
                 .Properties(p => p
