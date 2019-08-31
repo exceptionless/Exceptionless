@@ -32,6 +32,8 @@ namespace Exceptionless.Web.Controllers {
     [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
@@ -39,8 +41,9 @@ namespace Exceptionless.Web.Controllers {
         private readonly IOptions<AppOptions> _options;
 
         public ProjectController(
-            IProjectRepository projectRepository,
             IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository,
+            IStackRepository stackRepository,
             IEventRepository eventRepository,
             IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
@@ -49,8 +52,10 @@ namespace Exceptionless.Web.Controllers {
             IQueryValidator validator,
             IOptions<AppOptions> options,
             ILoggerFactory loggerFactory
-            ) : base(projectRepository, mapper, validator, loggerFactory) {
+        ) : base(projectRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
+            _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
@@ -63,15 +68,23 @@ namespace Exceptionless.Web.Controllers {
         /// <summary>
         /// Get all
         /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -created returns the results descending by the created date.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<ViewProject>> GetAsync(int page = 1, int limit = 10, string mode = null) {
+        public async Task<ActionResult<ViewProject>> GetAsync(string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null) {
+            var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
+            if (organizations.Count == 0)
+                return Ok(EmptyModels);
+            
             page = GetPage(page);
             limit = GetLimit(limit, 1000);
-            var projects = await _repository.GetByOrganizationIdsAsync(GetAssociatedOrganizationIds(), o => o.PageNumber(page).PageLimit(limit));
+            
+            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var projects = await _repository.GetByFilterAsync(sf, filter, sort, o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
@@ -83,20 +96,24 @@ namespace Exceptionless.Web.Controllers {
         /// <summary>
         /// Get all
         /// </summary>
-        /// <param name="organization">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -created returns the results descending by the created date.</param>
+        /// <param name="organizationId">The identifier of the organization.</param>
         /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
         /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
-        [HttpGet("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
+        [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organization, int page = 1, int limit = 10, string mode = null) {
-            if (String.IsNullOrEmpty(organization) || !CanAccessOrganization(organization))
+        public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organizationId, string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null) {
+            var organization = await GetOrganizationAsync(organizationId);
+            if (organization == null)
                 return NotFound();
 
             page = GetPage(page);
             limit = GetLimit(limit, 1000);
-            var projects = await _repository.GetByOrganizationIdAsync(organization, o => o.PageNumber(page).PageLimit(limit));
+            var sf = new ExceptionlessSystemFilter(organization);
+            var projects = await _repository.GetByFilterAsync(sf, filter, sort, o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
@@ -677,6 +694,13 @@ namespace Exceptionless.Web.Controllers {
             }
 
             return workItems;
+        }
+        
+        private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+                return Task.FromResult<Organization>(null);
+
+            return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
         }
 
         private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project) {

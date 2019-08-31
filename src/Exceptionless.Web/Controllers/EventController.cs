@@ -1064,7 +1064,7 @@ namespace Exceptionless.Web.Controllers {
 
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-                return null;
+                return Task.FromResult<Organization>(null);
 
             return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
         }
