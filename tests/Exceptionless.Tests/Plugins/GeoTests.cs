@@ -135,7 +135,7 @@ namespace Exceptionless.Tests.Plugins {
             await plugin.EventBatchProcessingAsync(contexts);
 
             foreach (var context in contexts) {
-                Assert.Equal(GREEN_BAY_COORDINATES, context.Event.Geo);
+                AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, context.Event.Geo);
 
                 var location = context.Event.GetLocation();
                 Assert.Equal("US", location?.Country);
