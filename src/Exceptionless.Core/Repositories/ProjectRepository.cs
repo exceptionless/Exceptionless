@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -31,8 +32,17 @@ namespace Exceptionless.Core.Repositories {
 
             if (organizationIds.Count == 0)
                 return Task.FromResult(new FindResults<Project>());
-
+            
             return FindAsync(q => q.Organizations(organizationIds).SortAscending(p => p.Name.Suffix("keyword")), options);
+        }
+        
+        public Task<FindResults<Project>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project> options = null) {
+            IRepositoryQuery<Project> query = new RepositoryQuery<Project>()
+                .SystemFilter(systemFilter)
+                .FilterExpression(userFilter);
+
+            query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending(p => p.Name.Suffix("keyword"));
+            return FindAsync(q => query, options);
         }
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
