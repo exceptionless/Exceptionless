@@ -19,7 +19,7 @@ namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender, IHealthCheck {
         private readonly IOptions<EmailOptions> _emailOptions;
         private readonly ILogger _logger;
-        private DateTime _lastSuccessfullConnection = DateTime.MinValue;
+        private DateTime _lastSuccessfulConnection = DateTime.MinValue;
 
         public MailKitMailSender(IOptions<EmailOptions> emailOptions, ILoggerFactory loggerFactory) {
             _emailOptions = emailOptions;
@@ -68,7 +68,7 @@ namespace Exceptionless.Insulation.Mail {
                 sw.Stop();
             }
 
-            _lastSuccessfullConnection = SystemClock.UtcNow;
+            _lastSuccessfulConnection = SystemClock.UtcNow;
         }
 
         private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption) {
@@ -102,7 +102,7 @@ namespace Exceptionless.Insulation.Mail {
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
-            if (_lastSuccessfullConnection.IsAfter(SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(5))))
+            if (_lastSuccessfulConnection.IsAfter(SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(5))))
                 return HealthCheckResult.Healthy();
             
             var sw = Stopwatch.StartNew();
@@ -126,7 +126,7 @@ namespace Exceptionless.Insulation.Mail {
                     await client.DisconnectAsync(true).AnyContext();
                 }
 
-                _lastSuccessfullConnection = SystemClock.UtcNow;
+                _lastSuccessfulConnection = SystemClock.UtcNow;
             } catch (Exception ex) {
                 return HealthCheckResult.Unhealthy("Email Not Working.", ex);
             } finally {

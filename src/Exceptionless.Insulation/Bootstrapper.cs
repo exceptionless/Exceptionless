@@ -81,8 +81,11 @@ namespace Exceptionless.Insulation {
             var healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
 
             if (appOptions.AppMode != AppMode.Development) {
-                services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-                healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
+                var emailOptions = serviceProvider.GetRequiredService<IOptions<EmailOptions>>().Value;
+                if (!String.IsNullOrEmpty(emailOptions.SmtpHost)) {
+                    services.ReplaceSingleton<IMailSender, MailKitMailSender>();
+                    healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
+                }
             }
         }
 
