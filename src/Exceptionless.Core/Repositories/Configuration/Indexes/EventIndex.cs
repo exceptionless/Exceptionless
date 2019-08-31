@@ -95,7 +95,7 @@ ctx.error.code = codes;";
                 .Priority(1)));
         }
 
-        public override ITypeMapping ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
+        public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
             var mapping = map
                 .Dynamic(false)
                 .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256)))))
