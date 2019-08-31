@@ -56,12 +56,15 @@ namespace Exceptionless.Core.Configuration {
             options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
             options.TestEmailAddress = _configuration.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
 
-            var uri = new SmtpUri(_configuration.GetConnectionString("Email") ?? "smtp://localhost");
-            options.SmtpHost = uri.Host;
-            options.SmtpPort = uri.Port;
-            options.SmtpUser = uri.User;
-            options.SmtpPassword = uri.Password;
-            
+            string emailConnectionString = _configuration.GetConnectionString("Email");
+            if (!String.IsNullOrEmpty(emailConnectionString)) {
+                var uri = new SmtpUri(emailConnectionString);
+                options.SmtpHost = uri.Host;
+                options.SmtpPort = uri.Port;
+                options.SmtpUser = uri.User;
+                options.SmtpPassword = uri.Password;
+            }
+
             options.SmtpFrom = _configuration.GetValue(nameof(options.SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
             options.SmtpEncryption = _configuration.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
 
