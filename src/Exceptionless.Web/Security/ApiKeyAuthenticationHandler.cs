@@ -92,7 +92,7 @@ namespace Exceptionless.Web.Security {
                 return AuthenticateResult.Fail("Token is not valid");
             }
             
-            if (!tokenRecord.IsEnabled) {
+            if (tokenRecord.IsDisabled) {
                 using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
                     Logger.LogWarning("Token {Token} is disabled for {Path}.", token, Request.Path);
 
