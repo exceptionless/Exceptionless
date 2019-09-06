@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(u => u.CreatedBy))
                     .Keyword(f => f.Name(e => e.Refresh))
                     .Keyword(f => f.Name(e => e.Scopes))
-                    .Boolean(f => f.Name(e => e.IsEnabled))
+                    .Boolean(f => f.Name(e => e.IsDisabled))
                     .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
         }
     }

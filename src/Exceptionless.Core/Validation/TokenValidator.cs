@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Validation {
             RuleFor(t => t.DefaultProjectId).IsObjectId().When(t => !String.IsNullOrEmpty(t.DefaultProjectId)).WithMessage("Please specify a valid default project id.");
             RuleFor(t => t.UserId).Must(String.IsNullOrEmpty).When(t => !String.IsNullOrEmpty(t.ProjectId)).WithMessage("Can't set both user id and project id.");
             
-            RuleFor(t => t.IsEnabled).Equal(true).When(t => t.Type != TokenType.Access).WithMessage("Only access tokens can be disabled");
+            RuleFor(t => t.IsDisabled).Equal(true).When(t => t.Type != TokenType.Access).WithMessage("Only access tokens can be disabled");
         }
     }
 }
