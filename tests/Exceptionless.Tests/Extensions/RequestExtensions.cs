@@ -17,6 +17,10 @@ namespace Exceptionless.Tests.Extensions {
             return builder.ExpectedStatus(HttpStatusCode.BadRequest);
         }
 
+        public static AppSendBuilder StatusCodeShouldBeCreated(this AppSendBuilder builder) {
+            return builder.ExpectedStatus(HttpStatusCode.Created);
+        }
+
         public static AppSendBuilder StatusCodeShouldBeUnauthorized(this AppSendBuilder builder) {
             return builder.ExpectedStatus(HttpStatusCode.Unauthorized);
         }
