@@ -108,13 +108,6 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
             Assert.True(response.Headers.Contains(Headers.ConfigurationVersion));
 
-            //var response = await SendTokenRequest(TestConstants.ApiKey, r => r
-            //   .Post()
-            //   .AppendPath("events")
-            //   .Content(CompressString(message))
-            //   .StatusCodeShouldBeAccepted()
-            //);
-
             var stats = await _eventQueue.GetQueueStatsAsync();
             Assert.Equal(1, stats.Enqueued);
             Assert.Equal(0, stats.Completed);
@@ -192,36 +185,6 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(batchCount, stats.Completed);
             Assert.Equal(batchSize * batchCount, await _eventRepository.CountAsync());
         }
-
-        //private ByteArrayContent CompressString(string data) {
-        //    byte[] bytes = Encoding.UTF8.GetBytes(data);
-        //    using (var stream = new MemoryStream()) {
-        //        using (var zipper = new GZipStream(stream, CompressionMode.Compress, true))
-        //            zipper.Write(bytes, 0, bytes.Length);
-
-        //        var content = new ByteArrayContent(stream.ToArray());
-        //        content.Headers.ContentType = new MediaTypeHeaderValue("text/plain") {
-        //            CharSet = "utf-8"
-        //        };
-        //        content.Headers.ContentEncoding.Add("gzip");
-        //        return content;
-        //    }
-        //}
-
-        //private ByteArrayContent JsonCompress(object data) {
-        //    byte[] bytes = Encoding.UTF8.GetBytes(_serializer.SerializeToString(data));
-        //    using (var stream = new MemoryStream()) {
-        //        using (var zipper = new GZipStream(stream, CompressionMode.Compress, true))
-        //            zipper.Write(bytes, 0, bytes.Length);
-
-        //        var content = new ByteArrayContent(stream.ToArray());
-        //        content.Headers.ContentType = new MediaTypeHeaderValue("application/json") {
-        //            CharSet = "utf-8"
-        //        };
-        //        content.Headers.ContentEncoding.Add("gzip");
-        //        return content;
-        //    }
-        //}
 
         private Task CreateOrganizationAndProjectsAsync() {
             var organizationRepository = GetService<IOrganizationRepository>();

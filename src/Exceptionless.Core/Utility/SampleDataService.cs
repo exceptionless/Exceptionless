@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility {
     public class SampleDataService {
@@ -16,6 +17,7 @@ namespace Exceptionless.Core.Utility {
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _billingPlans;
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<SampleDataService> _logger;
 
         public const string TEST_USER_EMAIL = "test@exceptionless.io";
         public const string TEST_USER_PASSWORD = "tester";
@@ -26,13 +28,22 @@ namespace Exceptionless.Core.Utility {
         public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
         public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
-        public SampleDataService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, ITokenRepository tokenRepository, BillingManager billingManager, BillingPlans billingPlans) {
+        public SampleDataService(
+            IOrganizationRepository organizationRepository, 
+            IProjectRepository projectRepository, 
+            IUserRepository userRepository, 
+            ITokenRepository tokenRepository, 
+            BillingManager billingManager, 
+            BillingPlans billingPlans,
+            ILoggerFactory loggerFactory
+        ) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _billingManager = billingManager;
             _billingPlans = billingPlans;
+            _logger = loggerFactory.CreateLogger<SampleDataService>();
         }
 
         public async Task CreateDataAsync() {
@@ -51,7 +62,8 @@ namespace Exceptionless.Core.Utility {
             user.Salt = StringExtensions.GetRandomString(16);
             user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
 
-            user = await _userRepository.AddAsync(user, o => o.Cache()).AnyContext();
+            user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
+            _logger.LogDebug("Created Global Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
             await CreateOrganizationAndProjectAsync(user.Id).AnyContext();
             await CreateInternalOrganizationAndProjectAsync(user.Id).AnyContext();
         }
@@ -65,8 +77,12 @@ namespace Exceptionless.Core.Utility {
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
 
-            var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
-            project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            var project = new Project {
+                Id = TEST_PROJECT_ID,
+                Name = "Disintegrating Pistol",
+                OrganizationId = organization.Id,
+                NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            };
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultNotificationSettings(userId);
             project = await _projectRepository.AddAsync(project, o => o.Cache()).AnyContext();
@@ -90,6 +106,7 @@ namespace Exceptionless.Core.Utility {
 
             user.OrganizationIds.Add(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
+            _logger.LogDebug("Created Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
         }
 
         public async Task CreateInternalOrganizationAndProjectAsync(string userId) {
@@ -101,8 +118,12 @@ namespace Exceptionless.Core.Utility {
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
 
-            var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
-            project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            var project = new Project {
+                Id = INTERNAL_PROJECT_ID,
+                Name = "API",
+                OrganizationId = organization.Id,
+                NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            };
             project.AddDefaultNotificationSettings(userId);
             project = await _projectRepository.AddAsync(project, o => o.Cache()).AnyContext();
 
@@ -117,6 +138,7 @@ namespace Exceptionless.Core.Utility {
 
             user.OrganizationIds.Add(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
+            _logger.LogDebug("Created Internal Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
         }
     }
 }
