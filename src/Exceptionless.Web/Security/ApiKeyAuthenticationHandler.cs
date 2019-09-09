@@ -91,6 +91,13 @@ namespace Exceptionless.Web.Security {
 
                 return AuthenticateResult.Fail("Token is not valid");
             }
+            
+            if (tokenRecord.IsDisabled) {
+                using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
+                    Logger.LogWarning("Token {Token} is disabled for {Path}.", token, Request.Path);
+
+                return AuthenticateResult.Fail("Token is not valid");
+            }
 
             if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow) {
                 using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
