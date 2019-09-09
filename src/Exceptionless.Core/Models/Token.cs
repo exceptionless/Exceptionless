@@ -18,6 +18,7 @@ namespace Exceptionless.Core.Models {
         public HashSet<string> Scopes { get; set; }
         public DateTime? ExpiresUtc { get; set; }
         public string Notes { get; set; }
+        public bool IsDisabled { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
