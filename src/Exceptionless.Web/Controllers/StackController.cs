@@ -24,6 +24,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -111,9 +112,13 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(string ids, string version = null) {
-            var semanticVersion = await _semanticVersionParser.ParseAsync(version);
-            if (semanticVersion == null)
-                return BadRequest("Invalid semantic version");
+            SemanticVersion semanticVersion = null;
+            
+            if (!String.IsNullOrEmpty(version)) {
+                semanticVersion = await _semanticVersionParser.ParseAsync(version);
+                if (semanticVersion == null)
+                    return BadRequest("Invalid semantic version");
+            }
 
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
