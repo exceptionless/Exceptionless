@@ -158,11 +158,6 @@ namespace Exceptionless.Core {
             container.AddSingleton(typeof(IValidator<>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IPipelineAction<EventContext>), typeof(Bootstrapper).Assembly);
             container.AddSingleton(typeof(IPlugin), typeof(Bootstrapper).Assembly);
-            container.AddSingleton<EventParserPluginManager>();
-            container.AddSingleton<EventPluginManager>();
-            container.AddSingleton<EventUpgraderPluginManager>();
-            container.AddSingleton<FormattingPluginManager>();
-            container.AddSingleton<WebHookDataPluginManager>();
             container.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly);
             container.AddSingleton<WorkItemJob>();
             container.AddSingleton<MaintainIndexesJob>();
@@ -181,6 +176,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<EventParserPluginManager>();
             container.AddSingleton<EventPipeline>();
             container.AddSingleton<EventPluginManager>();
+            container.AddSingleton<EventUpgraderPluginManager>();
             container.AddSingleton<FormattingPluginManager>();
             container.AddSingleton<WebHookDataPluginManager>();
             container.AddSingleton<UserAgentParser>();
