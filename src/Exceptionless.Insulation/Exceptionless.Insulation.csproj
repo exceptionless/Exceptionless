@@ -15,8 +15,8 @@
     <PackageReference Include="Foundatio.RabbitMQ" Version="8.1.1527" />
     <PackageReference Include="Foundatio.Redis" Version="8.1.1662" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MailKit" Version="2.3.0" />
-    <PackageReference Include="MimeKit" Version="2.3.0" />
+    <PackageReference Include="MailKit" Version="2.3.1.6" />
+    <PackageReference Include="MimeKit" Version="2.3.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
