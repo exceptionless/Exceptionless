@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2.401 AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2.402 AS build
 WORKDIR /app
 
 ARG VERSION_SUFFIX=0-dev
