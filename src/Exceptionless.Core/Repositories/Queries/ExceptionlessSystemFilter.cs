@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories.Options;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
 using Nest;
@@ -101,9 +102,9 @@ namespace Exceptionless.Core.Repositories.Queries {
                 return Task.CompletedTask;
             }
 
-            var settings = ctx.Options.GetElasticTypeSettings();
-            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(settings);
-            string field = shouldApplyRetentionFilter ? GetDateField(settings) : null;
+            var index = ctx.Options.GetElasticIndex();
+            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index);
+            string field = shouldApplyRetentionFilter ? GetDateField(index) : null;
             
             if (sfq.Stack != null) {
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
@@ -159,29 +160,29 @@ namespace Exceptionless.Core.Repositories.Queries {
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
         
-        private bool ShouldApplyRetentionFilter(ElasticTypeSettings settings) {
-            if (settings == null)
-                throw new ArgumentNullException(nameof(settings));
+        private bool ShouldApplyRetentionFilter(IIndex index) {
+            if (index == null)
+                throw new ArgumentNullException(nameof(index));
             
-            var indexType = settings.IndexType.GetType();
-            if (indexType == typeof(StackIndexType))
+            var indexType = index.GetType();
+            if (indexType == typeof(StackIndex))
                 return true;
 
-            if (indexType == typeof(EventIndexType))
+            if (indexType == typeof(EventIndex))
                 return true;
 
             return false;
         }
 
-        private string GetDateField(ElasticTypeSettings settings) {
-            if (settings == null)
-                throw new ArgumentNullException(nameof(settings));
+        private string GetDateField(IIndex index) {
+            if (index == null)
+                throw new ArgumentNullException(nameof(index));
             
-            var indexType = settings.IndexType.GetType();
-            if (indexType == typeof(StackIndexType))
+            var indexType = index.GetType();
+            if (indexType == typeof(StackIndex))
                 return _stackLastOccurrenceFieldName;
 
-            if (indexType == typeof(EventIndexType))
+            if (indexType == typeof(EventIndex))
                 return _eventDateFieldName;
             
             return null;
