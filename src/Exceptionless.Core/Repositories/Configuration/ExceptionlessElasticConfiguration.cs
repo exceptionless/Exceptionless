@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +6,6 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Serializer;
 using Foundatio.Caching;
 using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
@@ -24,10 +22,20 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
         private readonly IOptions<ElasticsearchOptions> _options;
         private readonly IOptions<AppOptions> _appOptions;
+        private readonly JsonSerializerSettings _serializerSettings;
 
-        public ExceptionlessElasticConfiguration(IOptions<ElasticsearchOptions> options, IOptions<AppOptions> appOptions, IQueue<WorkItemData> workItemQueue, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+        public ExceptionlessElasticConfiguration(
+            IOptions<ElasticsearchOptions> options, 
+            IOptions<AppOptions> appOptions, 
+            IQueue<WorkItemData> workItemQueue, 
+            JsonSerializerSettings serializerSettings,
+            ICacheClient cacheClient, 
+            IMessageBus messageBus, 
+            ILoggerFactory loggerFactory
+        ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _options = options;
             _appOptions = appOptions;
+            _serializerSettings = serializerSettings;
 
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
@@ -64,8 +72,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
-            var settings = new ConnectionSettings(connectionPool, s => new ElasticsearchJsonNetSerializer(s, _logger));
-            
+            var settings = new ConnectionSettings(connectionPool, 
+                (serializer, values) => new Nest.JsonNetSerializer.JsonNetSerializer(serializer, values,
+                () => _serializerSettings));
+
             ConfigureSettings(settings);
             foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
@@ -83,21 +93,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureSettings(ConnectionSettings settings) {
-            settings.DisableDirectStreaming()
-                .EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
-                .DefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
+            if (_appOptions.Value.AppMode == AppMode.Development)
+                settings.DisableDirectStreaming().PrettyJson();
+            
+            settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
                 .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
                 .MaximumRetries(5);
-        }
-    }
-
-    public class ElasticsearchJsonNetSerializer : JsonNetSerializer {
-        public ElasticsearchJsonNetSerializer(IConnectionSettingsValues settings, ILogger logger)
-            : base(settings, (serializerSettings, values) => {
-                var resolver = new ElasticDynamicTypeContractResolver(values, new List<Func<Type, JsonConverter>>());
-                serializerSettings.ContractResolver = resolver;
-                serializerSettings.AddModelConverters(logger);
-            }) {
         }
     }
 }
