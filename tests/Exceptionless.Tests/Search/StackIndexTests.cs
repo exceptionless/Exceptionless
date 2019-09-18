@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Nest;
 using Newtonsoft.Json;
@@ -188,12 +189,10 @@ namespace Exceptionless.Tests.Repositories {
                     using (var streamReader = new StreamReader(stream)) {
                         var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
                         Assert.NotNull(stack);
-                        await _repository.AddAsync(stack);
+                        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
                     }
                 }
             }
-
-            await _configuration.Client.Indices.RefreshAsync(Indices.All);
         }
 
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {

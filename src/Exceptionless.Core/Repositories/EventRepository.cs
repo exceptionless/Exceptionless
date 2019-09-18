@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
             IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
-                .DateRange(utcStart, utcEnd, field ?? ElasticIndex.GetFieldName(e => e.Date))
+                .DateRange(utcStart, utcEnd, field ?? InferField(e => e.Date))
                 .Index(utcStart, utcEnd)
                 .SystemFilter(systemFilter)
                 .FilterExpression(userFilter);

@@ -108,7 +108,7 @@ namespace Exceptionless.Tests {
 
                 bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
                 string indexList = String.Join(',', _configuration.Indexes.Select(i => i.Name));
-                await _configuration.Client.RefreshAsync(indexList);
+                await _configuration.Client.Indices.RefreshAsync(indexList);
                 if (!_indexesHaveBeenConfigured) {
                     await _configuration.DeleteIndexesAsync();
                     await _configuration.ConfigureIndexesAsync();
@@ -129,8 +129,7 @@ namespace Exceptionless.Tests {
                 }
                 
                 foreach (var index in _configuration.Indexes)
-                    foreach (var type in index.IndexTypes)
-                        type.QueryParser.Configuration.RefreshMapping();
+                    index.QueryParser.Configuration.RefreshMapping();
 
                 var cacheClient = GetService<ICacheClient>();
                 await cacheClient.RemoveAllAsync();

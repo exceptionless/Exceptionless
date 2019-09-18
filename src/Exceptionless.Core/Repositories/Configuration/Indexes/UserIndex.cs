@@ -7,6 +7,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class UserIndex : VersionedIndex<User> {
+        private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
         private readonly ExceptionlessElasticConfiguration _configuration;
 
         public UserIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "users", 1) {
@@ -20,7 +21,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .SetupDefaults()
                     .Keyword(f => f.Name(e => e.OrganizationIds))
                     .Text(f => f.Name(u => u.FullName).AddKeywordField())
-                    .Text(f => f.Name(u => u.EmailAddress).Analyzer(OrganizationIndex.KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
+                    .Text(f => f.Name(u => u.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
                     .Keyword(f => f.Name(u => u.VerifyEmailAddressToken))
                     .Keyword(f => f.Name(u => u.PasswordResetToken))
                     .Keyword(f => f.Name(u => u.Roles))
@@ -33,6 +34,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
             return base.ConfigureIndex(idx.Settings(s => s
+                .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
                 .NumberOfShards(_configuration.Options.NumberOfShards)
                 .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
                 .Priority(5)));

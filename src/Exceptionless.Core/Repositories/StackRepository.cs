@@ -75,7 +75,7 @@ if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurren
 }
 ctx._source.total_occurrences += params.count;";
 
-            var request = new UpdateRequest<Stack, Stack>(GetIndexById(stackId), ElasticType.Type, stackId) {
+            var request = new UpdateRequest<Stack, Stack>(ElasticIndex.GetIndex(stackId), stackId) {
                 Script = new InlineScript(script.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ")) {
                     Params = new Dictionary<string, object>(3) {
                         { "minOccurrenceDateUtc", minOccurrenceDateUtc },
@@ -84,8 +84,8 @@ ctx._source.total_occurrences += params.count;";
                     }
                 }
             };
-
-            var result = await _client.UpdateAsync<Stack>(request).AnyContext();
+            
+            var result = await _client.UpdateAsync(request).AnyContext();
             if (!result.IsValid) {
                 _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
                 return result.ServerError?.Status == 404;
@@ -108,14 +108,14 @@ ctx._source.total_occurrences += params.count;";
 
             var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
             if (IsCacheEnabled && hit != null)
-                await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(((StackIndexType)ElasticType).DefaultCacheExpirationSeconds)).AnyContext();
+                await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(((StackIndex)ElasticIndex).DefaultCacheExpirationSeconds)).AnyContext();
 
             return hit?.Document;
         }
 
         public Task<FindResults<Stack>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
             IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
-                .DateRange(utcStart, utcEnd, field ?? ElasticType.GetFieldName(s => s.LastOccurrence))
+                .DateRange(utcStart, utcEnd, field ?? InferField(s => s.LastOccurrence))
                 .SystemFilter(systemFilter)
                 .FilterExpression(userFilter);
 
