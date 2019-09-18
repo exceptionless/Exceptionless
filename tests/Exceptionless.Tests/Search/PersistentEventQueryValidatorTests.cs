@@ -18,7 +18,7 @@ namespace Exceptionless.Tests.Search {
         private readonly PersistentEventQueryValidator _validator;
 
         public PersistentEventQueryValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
-            _parser = GetService<ExceptionlessElasticConfiguration>().Events.Event.QueryParser;
+            _parser = GetService<ExceptionlessElasticConfiguration>().Events.QueryParser;
             _validator = GetService<PersistentEventQueryValidator>();
         }
 
@@ -53,11 +53,11 @@ namespace Exceptionless.Tests.Search {
         [InlineData("stack:404", "stack_id:404", true, false)]
         [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
         public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures) {
-            var context = new ElasticQueryVisitorContext();
+            var context = new ElasticQueryVisitorContext { QueryType = QueryType.Query };
 
             IQueryNode result;
             try {
-                result = await _parser.ParseAsync(query, QueryType.Query, context).AnyContext();
+                result = await _parser.ParseAsync(query, context).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error parsing query: {Query}. Message: {Message}", query, ex.Message);
                 if (isValid)
