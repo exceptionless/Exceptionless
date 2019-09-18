@@ -7,7 +7,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class OrganizationIndex : VersionedIndex<Organization> {
-        internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
+        private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
         private readonly ExceptionlessElasticConfiguration _configuration;
 
         public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 1) {
