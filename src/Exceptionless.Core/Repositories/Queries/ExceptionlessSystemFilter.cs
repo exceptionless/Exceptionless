@@ -89,9 +89,6 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
-            if (ctx.Type != ContextType.Default)
-                return Task.CompletedTask;
-
             var sfq = ctx.Source.GetSystemFilter();
             if (sfq == null)
                 return Task.CompletedTask;

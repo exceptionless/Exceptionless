@@ -469,7 +469,7 @@ namespace Exceptionless.Tests.Repositories {
             }
 
             var configuration = GetService<ExceptionlessElasticConfiguration>();
-            configuration.Events.Event.QueryParser.Configuration.RefreshMapping();
+            configuration.Events.QueryParser.Configuration.RefreshMapping();
         }
 
         private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {

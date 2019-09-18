@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "project_id"
         };
 
-        public StackQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Stacks.Stack.QueryParser, loggerFactory) { }
+        public StackQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Stacks.QueryParser, loggerFactory) { }
 
         protected override QueryProcessResult ApplyQueryRules(QueryValidationInfo info) {
             return new QueryProcessResult {

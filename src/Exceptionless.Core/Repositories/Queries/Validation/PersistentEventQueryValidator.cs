@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "data.@user.identity"
         };
 
-        public PersistentEventQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Events.Event.QueryParser, loggerFactory) {}
+        public PersistentEventQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Events.QueryParser, loggerFactory) {}
 
         protected override QueryProcessResult ApplyQueryRules(QueryValidationInfo info) {
             return new QueryProcessResult {

@@ -2,24 +2,38 @@ using System;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
-using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex<Stack> {
+        private const string ALL_ANALYZER = "all";
+        private const string ALL_WORDS_DELIMITER_TOKEN_FILTER = "all_word_delimiter";
+        private const string EDGE_NGRAM_TOKEN_FILTER = "edge_ngram";
+        
+        private const string ALL_FIELD = "all";
         private readonly ExceptionlessElasticConfiguration _configuration;
 
         public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
             _configuration = configuration;
         }
-
+        
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
+                .Analysis(BuildAnalysis)
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Setting("index.query.default_field", ALL_FIELD)
+                .Priority(5)));
+        }
+        
         public override TypeMappingDescriptor<Stack> ConfigureIndexMapping(TypeMappingDescriptor<Stack> map) {
             return map
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
+                    .Text(f => f.Name(ALL_FIELD).Analyzer("all").SearchAnalyzer("whitespace"))
                     .Keyword(f => f.Name(s => s.OrganizationId))
                         .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
                     .Keyword(f => f.Name(s => s.ProjectId))
@@ -27,18 +41,15 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(s => s.SignatureHash))
                         .FieldAlias(a => a.Name(Alias.SignatureHash).Path(f => f.SignatureHash))
                     .Keyword(f => f.Name(e => e.Type))
-                        .FieldAlias(a => a.Name(Alias.Type).Path(f => f.Type))
                     .Date(f => f.Name(s => s.FirstOccurrence))
                         .FieldAlias(a => a.Name(Alias.FirstOccurrence).Path(f => f.FirstOccurrence))
                     .Date(f => f.Name(s => s.LastOccurrence))
                         .FieldAlias(a => a.Name(Alias.LastOccurrence).Path(f => f.LastOccurrence))
-                    .Text(f => f.Name(s => s.Title).IncludeInAll().Boost(1.1))
-                        .FieldAlias(a => a.Name(Alias.Title).Path(f => f.Title))
-                    .Text(f => f.Name(s => s.Description).IncludeInAll())
-                        .FieldAlias(a => a.Name(Alias.Description).Path(f => f.Description))
-                    .Text(f => f.Name(s => s.Tags).IncludeInAll().Boost(1.2).AddKeywordField())
+                    .Text(f => f.Name(s => s.Title).CopyTo(s => s.Field(ALL_FIELD)).Boost(1.1))
+                    .Text(f => f.Name(s => s.Description).CopyTo(s => s.Field(ALL_FIELD)))
+                    .Text(f => f.Name(s => s.Tags).CopyTo(s => s.Field(ALL_FIELD)).Boost(1.2).AddKeywordField())
                         .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
-                    .Text(f => f.Name(s => s.References).IncludeInAll())
+                    .Text(f => f.Name(s => s.References).CopyTo(s => s.Field(ALL_FIELD)))
                         .FieldAlias(a => a.Name(Alias.References).Path(f => f.References))
                     .Date(f => f.Name(s => s.DateFixed))
                         .FieldAlias(a => a.Name(Alias.DateFixed).Path(f => f.DateFixed))
@@ -58,14 +69,17 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
             string dateFixedFieldName = Configuration.Client.Infer.PropertyName(Infer.Property<Stack>(f => f.DateFixed));
-            config.AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));
+            config
+                .SetDefaultFields(new[] { ALL_FIELD })
+                .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));
         }
-
-        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
-            return base.ConfigureIndex(idx.Settings(s => s
-                .NumberOfShards(_configuration.Options.NumberOfShards)
-                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-                .Priority(5)));
+        
+        private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
+            return ad.Analyzers(a => a
+                    .Custom(ALL_ANALYZER, c => c.Filters(ALL_WORDS_DELIMITER_TOKEN_FILTER, "lowercase", "asciifolding", EDGE_NGRAM_TOKEN_FILTER, "unique").Tokenizer("whitespace")))
+                .TokenFilters(f => f
+                    .EdgeNGram(EDGE_NGRAM_TOKEN_FILTER, p => p.MaxGram(50).MinGram(2).Side(EdgeNGramSide.Front))
+                    .WordDelimiter(ALL_WORDS_DELIMITER_TOKEN_FILTER, p => p.CatenateNumbers().PreserveOriginal().CatenateAll().CatenateWords()));
         }
 
         public class Alias {
