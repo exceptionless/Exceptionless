@@ -1,7 +1,7 @@
 <Project ToolsVersion="15.0">
 
   <PropertyGroup Label="Version">
-    <VersionPrefix>5.0</VersionPrefix>
+    <VersionPrefix>6.0</VersionPrefix>
     <VersionSuffix>0-dev</VersionSuffix>
     <Version>$(VersionPrefix).$(VersionSuffix)</Version>
   </PropertyGroup>
