@@ -24,8 +24,7 @@ namespace Exceptionless.Tests.Search {
 
         [Theory]
         [InlineData("data.@user.identity:blake", "data.@user.identity:blake", true, true)]
-        [InlineData("data.user.identity:blake", "data.user.identity:blake", true, true)]
-        [InlineData("user:blake", "data.user.identity:blake", true, false)]
+        [InlineData("user:blake", "data.@user.identity:blake", true, true)]
         [InlineData("_missing_:data.sessionend", "_missing_:idx.sessionend-d", true, true)]
         [InlineData("data.SessionEnd:<now", "idx.sessionend-d:<now", true, true)]
         [InlineData("data.haserror:true", "idx.haserror-b:true", true, true)]
