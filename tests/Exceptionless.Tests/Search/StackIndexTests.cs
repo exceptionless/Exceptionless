@@ -82,7 +82,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("(>=20 AND <40)", 1)]
         [InlineData("{5 TO 50}", 1)]
         [InlineData("5", 1)]
         [InlineData("50", 1)]
