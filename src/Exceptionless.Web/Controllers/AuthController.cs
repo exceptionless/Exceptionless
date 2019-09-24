@@ -756,7 +756,7 @@ namespace Exceptionless.Web.Controllers {
                 ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
                 CreatedBy = user.Id,
                 Type = TokenType.Access
-            }, o => o.Cache());
+            }, o => o.ImmediateConsistency(true).Cache());
 
             return token.Id;
         }
