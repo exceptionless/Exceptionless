@@ -159,7 +159,8 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("value:>0", 1)]
         [InlineData("value:0", 0)]
         [InlineData("value:<0", 0)]
-        [InlineData("value:(>0 AND <=10)", 1)]
+        [InlineData("value:>0 AND value:<=10", 1)]
+        [InlineData("value:[1..10]", 1)]
         public async Task GetByValueAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);

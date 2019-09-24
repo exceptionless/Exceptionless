@@ -34,6 +34,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "is_first_occurrence",
             "stack",
             EventIndex.Alias.StackId,
+            EventIndex.Alias.User,
             "data.@user.identity"
         };
 
@@ -85,6 +86,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "data.@request.data.@is_bot",
             EventIndex.Alias.Version,
             "data.@version",
+            EventIndex.Alias.User,
             "data.@user.identity",
             EventIndex.Alias.Level,
             "data.@level"
