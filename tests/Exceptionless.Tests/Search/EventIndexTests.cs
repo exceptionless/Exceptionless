@@ -28,6 +28,31 @@ namespace Exceptionless.Tests.Repositories {
             await base.ResetDataAsync();
             await CreateEventsAsync();
         }
+        
+        [Theory]
+        [InlineData("", 1)] // Id
+        [InlineData("", 1)] // Source
+        [InlineData("", 1)] // Message
+        [InlineData("", 1)] // Tags
+        [InlineData("", 1)] // Error.Code
+        [InlineData("", 1)] // Error.Type
+        [InlineData("", 1)] // Error.TargetType
+        [InlineData("", 1)] // Error.TargetMethod
+        [InlineData("", 1)] // SubmissionClient.IpAddress
+        [InlineData("", 1)] // RequestInfo.ClientIpAddress
+        [InlineData("", 1)] // RequestInfo.Path
+        [InlineData("", 1)] // EnvironmentInfo.IpAddress
+        [InlineData("", 1)] // EnvironmentInfo.MachineName
+        [InlineData("", 1)] // UserDescription.Description
+        [InlineData("", 1)] // UserDescription.EmailAddress
+        [InlineData("", 1)] // UserInfo.Identity
+        [InlineData("", 1)] // UserInfo.Name
+        public async Task GetByAllFieldAsync(string filter, int count) {
+            throw new NotImplementedException("TODO");
+            var result = await GetByFilterAsync(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Total);
+        }
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
