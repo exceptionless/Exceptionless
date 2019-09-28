@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
-                    .Text(f => f.Name(ALL_FIELD).Analyzer("all").SearchAnalyzer("whitespace"))
+                    .Text(f => f.Name(ALL_FIELD).Analyzer(ALL_ANALYZER).SearchAnalyzer("whitespace"))
                     .Keyword(f => f.Name(s => s.OrganizationId))
                         .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
                     .Keyword(f => f.Name(s => s.ProjectId))
