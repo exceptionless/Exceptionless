@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
@@ -24,6 +24,18 @@ namespace Exceptionless.Tests.Repositories {
             await CreateDataAsync();
         }
 
+        [Theory]
+        [InlineData("", 1)] // Title
+        [InlineData("", 1)] // Description
+        [InlineData("", 1)] // Tags
+        [InlineData("", 1)] // References
+        public async Task GetByAllFieldAsync(string filter, int count) {
+            throw new NotImplementedException("TODO");
+            var result = await GetByFilterAsync(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Total);
+        }
+        
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447a44e78877ab1", 1)]
