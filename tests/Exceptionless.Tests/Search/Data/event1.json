@@ -39,7 +39,8 @@
       }
     },
     "@user": {
-      "identity": "My-User-Identity"
+      "identity": "My-User-Identity",
+      "name": "test user"
     },
     "@user_description": {
       "email_address": "test@exceptionless.com",
