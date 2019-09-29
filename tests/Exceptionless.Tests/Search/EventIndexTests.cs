@@ -30,25 +30,26 @@ namespace Exceptionless.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData("", 1)] // Id
-        [InlineData("", 1)] // Source
-        [InlineData("", 1)] // Message
-        [InlineData("", 1)] // Tags
-        [InlineData("", 1)] // Error.Code
-        [InlineData("", 1)] // Error.Type
-        [InlineData("", 1)] // Error.TargetType
-        [InlineData("", 1)] // Error.TargetMethod
-        [InlineData("", 1)] // SubmissionClient.IpAddress
-        [InlineData("", 1)] // RequestInfo.ClientIpAddress
-        [InlineData("", 1)] // RequestInfo.Path
-        [InlineData("", 1)] // EnvironmentInfo.IpAddress
-        [InlineData("", 1)] // EnvironmentInfo.MachineName
-        [InlineData("", 1)] // UserDescription.Description
-        [InlineData("", 1)] // UserDescription.EmailAddress
-        [InlineData("", 1)] // UserInfo.Identity
-        [InlineData("", 1)] // UserInfo.Name
+        [InlineData("54dbc16ca0f5c61398427b00", 1)] // Id
+        [InlineData("\"GET /Print\"", 1)] // Source
+        [InlineData("\"Invalid hash. Parameter name: hash\"", 1)] // Message
+        [InlineData("\"Blake Niemyjski\"", 1)] // Tags
+        [InlineData("5000", 1)] // Error.Code
+        [InlineData("NullReferenceException", 1)] // Error.Type
+        [InlineData("System.NullReferenceException", 1)] // Error.Type
+        [InlineData("Exception", 2)] // Error.TargetType
+        [InlineData("System.Web.ThreadContext.AssociateWithCurrentThread", 1)] // Error.TargetMethod
+        [InlineData("172.10.0.61", 1)] // TODO: SubmissionClient.IpAddress
+        [InlineData("172.10.0.30", 1)] // RequestInfo.ClientIpAddress
+        [InlineData("/apple-touch-icon.png", 1)] // RequestInfo.Path
+        [InlineData("192.168.0.88", 1)] // EnvironmentInfo.IpAddress
+        [InlineData("2001:0:4137:9e76:cfd:33a0:5198:3a66", 1)] // EnvironmentInfo.IpAddress
+        [InlineData("SERVER-01", 1)] // EnvironmentInfo.MachineName
+        [InlineData("my custom description", 1)] // UserDescription.Description
+        [InlineData("test@exceptionless.com", 1)] // UserDescription.EmailAddress
+        [InlineData("example@exceptionless.com", 1)] // UserInfo.Identity
+        [InlineData("test user", 1)] // UserInfo.Name
         public async Task GetByAllFieldAsync(string filter, int count) {
-            throw new NotImplementedException("TODO");
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -157,7 +158,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("\"Invalid hash. Parameter name: hash\"", 1)] //see what the actual def is for the standard analyzer
         [InlineData("message:\"Invalid hash. Parameter name: hash\"", 1)]
         public async Task GetByMessageAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
@@ -251,6 +251,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("ip:192.168.0.88", 1)]
         [InlineData("10.0.0.208", 1)]
         [InlineData("ip:10.0.0.208", 1)]
+        [InlineData("ip:172.10.0.61", 1)]
         public async Task GetByIPAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
