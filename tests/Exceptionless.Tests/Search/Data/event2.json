@@ -80,6 +80,11 @@
     },
     "@user": {
       "identity": "example@exceptionless.com"
+    },
+    "@submission_client": {
+      "ip_address": "172.10.0.61",
+      "user_agent": "test-user-agent",
+      "version": "2.0.0"
     }
   }
 }

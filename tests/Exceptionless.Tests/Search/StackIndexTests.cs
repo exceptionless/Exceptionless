@@ -25,12 +25,11 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("", 1)] // Title
-        [InlineData("", 1)] // Description
-        [InlineData("", 1)] // Tags
-        [InlineData("", 1)] // References
+        [InlineData("\"GET /Print\"", 1)] // Title
+        [InlineData("\"my custom description\"", 1)] // Description
+        [InlineData("Niemyjski", 1)] // Tags
+        [InlineData("\"http://exceptionless.io\"", 1)] // References
         public async Task GetByAllFieldAsync(string filter, int count) {
-            throw new NotImplementedException("TODO");
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -104,7 +103,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("\"GET /Print\"", 1)]
         [InlineData("title:\"GET /Print\"", 1)]
         [InlineData("title:\"The provided anti-forgery token was meant\"", 1)]
         [InlineData("title:\"test@exceptionless.com\"", 1)]
@@ -171,7 +169,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("\"http://exceptionless.io\"", 1)]
         [InlineData("links:\"http://exceptionless.io\"", 1)]
         [InlineData("links:\"https://github.com/exceptionless/Exceptionless\"", 1)]
         public async Task GetByLinksAsync(string filter, int count) {
@@ -181,7 +178,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("\"my custom description\"", 1)]
         [InlineData("description:\"my custom description\"", 1)]
         public async Task GetByDescriptionAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
