@@ -8,9 +8,10 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class StackIndex : VersionedIndex<Stack> {
-        private const string ALL_ANALYZER = "all";
-        private const string ALL_WORDS_DELIMITER_TOKEN_FILTER = "all_word_delimiter";
-        private const string EDGE_NGRAM_TOKEN_FILTER = "edge_ngram";
+        private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
+        private const string STANDARDPLUS_ANALYZER = "standardplus";
+        private const string WHITESPACE_LOWERCASE_ANALYZER = "whitespace_lower";
+        private const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         
         private const string ALL_FIELD = "all";
         private readonly ExceptionlessElasticConfiguration _configuration;
@@ -33,7 +34,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
-                    .Text(f => f.Name(ALL_FIELD).Analyzer(ALL_ANALYZER).SearchAnalyzer("whitespace"))
+                    .Text(f => f.Name(ALL_FIELD).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER))
                     .Keyword(f => f.Name(s => s.OrganizationId))
                         .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
                     .Keyword(f => f.Name(s => s.ProjectId))
@@ -76,10 +77,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
         
         private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
             return ad.Analyzers(a => a
-                    .Custom(ALL_ANALYZER, c => c.Filters(ALL_WORDS_DELIMITER_TOKEN_FILTER, "lowercase", "asciifolding", EDGE_NGRAM_TOKEN_FILTER, "unique").Tokenizer("whitespace")))
-                .TokenFilters(f => f
-                    .EdgeNGram(EDGE_NGRAM_TOKEN_FILTER, p => p.MaxGram(50).MinGram(2).Side(EdgeNGramSide.Front))
-                    .WordDelimiter(ALL_WORDS_DELIMITER_TOKEN_FILTER, p => p.CatenateNumbers().PreserveOriginal().CatenateAll().CatenateWords()));
+                    .Pattern(COMMA_WHITESPACE_ANALYZER, p => p.Pattern(@"[,\s]+"))
+                    .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
+                    .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("whitespace")))
+                .Tokenizers(t => t
+                    .Pattern(COMMA_WHITESPACE_TOKENIZER, p => p.Pattern(@"[,\s]+")));
         }
 
         public class Alias {
