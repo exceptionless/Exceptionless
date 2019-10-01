@@ -26,7 +26,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
         private const string TLD_STOPWORDS_TOKEN_FILTER = "tld_stopwords";
 
-        //internal const string ALL_ANALYZER = "all";
         internal const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
         internal const string EMAIL_ANALYZER = "email";
         internal const string VERSION_INDEX_ANALYZER = "version_index";
@@ -35,8 +34,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
         internal const string TYPENAME_ANALYZER = "typename";
         internal const string STANDARDPLUS_ANALYZER = "standardplus";
 
-        internal const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
-        internal const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
+        private const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
+        private const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
         
         internal const string ALL_FIELD = "all";
         
@@ -169,7 +168,6 @@ ctx.error.code = codes;";
 
         private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
             return ad.Analyzers(a => a
-                //.Custom(ALL_ANALYZER, c => c.Filters(ALL_WORDS_DELIMITER_TOKEN_FILTER, EMAIL_TOKEN_FILTER, "lowercase", TLD_STOPWORDS_TOKEN_FILTER, "asciifolding", EDGE_NGRAM_TOKEN_FILTER, "unique").Tokenizer("whitespace"))
                 .Pattern(COMMA_WHITESPACE_ANALYZER, p => p.Pattern(@"[,\s]+"))
                 .Custom(EMAIL_ANALYZER, c => c.Filters(EMAIL_TOKEN_FILTER, "lowercase", TLD_STOPWORDS_TOKEN_FILTER, EDGE_NGRAM_TOKEN_FILTER, "unique").Tokenizer("keyword"))
                 .Custom(VERSION_INDEX_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, VERSION_TOKEN_FILTER, "lowercase", "unique").Tokenizer("whitespace"))
