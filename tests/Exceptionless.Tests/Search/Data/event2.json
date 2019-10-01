@@ -70,7 +70,7 @@
     "@error": {
       "message": "Invalid hash. Parameter name: hash",
       "type": "System.Exception",
-      "code": "500",
+      "code": "502",
       "data": {
         "@target": {
           "ExceptionType": "System.Exception",

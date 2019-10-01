@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -102,8 +102,8 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.False(context.IsCancelled);
             Assert.True(context.IsProcessed);
 
-            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             await RefreshDataAsync();
+            var events = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
             Assert.Equal(3, events.Total);
             Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
 
