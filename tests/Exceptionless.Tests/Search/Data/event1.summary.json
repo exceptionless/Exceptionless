@@ -5,6 +5,7 @@
   "data": {
     "Message": null,
     "Identity": "My-User-Identity",
+    "Name": "test user",
     "Source": "GET /Print",
     "Level": "Error"
   }
