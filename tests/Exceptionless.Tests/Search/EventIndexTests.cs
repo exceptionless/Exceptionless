@@ -34,16 +34,16 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("\"GET /Print\"", 1)] // Source
         [InlineData("\"Invalid hash. Parameter name: hash\"", 1)] // Message
         [InlineData("\"Blake Niemyjski\"", 1)] // Tags
-        [InlineData("5000", 1)] // Error.Code
+        [InlineData("502", 1)] // Error.Code
         [InlineData("NullReferenceException", 1)] // Error.Type
         [InlineData("System.NullReferenceException", 1)] // Error.Type
         [InlineData("Exception", 2)] // Error.TargetType
         [InlineData("System.Web.ThreadContext.AssociateWithCurrentThread", 1)] // Error.TargetMethod
         [InlineData("172.10.0.61", 1)] // TODO: SubmissionClient.IpAddress
         [InlineData("172.10.0.30", 1)] // RequestInfo.ClientIpAddress
-        [InlineData("/apple-touch-icon.png", 1)] // RequestInfo.Path
+        [InlineData("\"/apple-touch-icon.png\"", 1)] // RequestInfo.Path
         [InlineData("192.168.0.88", 1)] // EnvironmentInfo.IpAddress
-        [InlineData("2001:0:4137:9e76:cfd:33a0:5198:3a66", 1)] // EnvironmentInfo.IpAddress
+        [InlineData("\"2001:0:4137:9e76:cfd:33a0:5198:3a66\"", 1)] // EnvironmentInfo.IpAddress
         [InlineData("SERVER-01", 1)] // EnvironmentInfo.MachineName
         [InlineData("my custom description", 1)] // UserDescription.Description
         [InlineData("test@exceptionless.com", 1)] // UserDescription.EmailAddress
