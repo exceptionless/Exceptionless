@@ -367,9 +367,9 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("500", 1)]
+        [InlineData("502", 1)]
         [InlineData("error.code:\"-1\"", 1)]
-        [InlineData("error.code:500", 1)]
+        [InlineData("error.code:502", 1)]
         [InlineData("error.code:5000", 0)]
         public async Task GetByErrorCodeAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
