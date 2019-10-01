@@ -34,7 +34,6 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
     public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
-        private static bool _indexesHaveBeenConfigured;
         private static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         private readonly ExceptionlessElasticConfiguration _configuration;
@@ -107,26 +106,12 @@ namespace Exceptionless.Tests {
                 Log.MinimumLevel = LogLevel.Warning;
 
                 bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
-                string indexList = String.Join(',', _configuration.Indexes.Select(i => i.Name));
-                await _configuration.Client.Indices.RefreshAsync(indexList);
-                if (!_indexesHaveBeenConfigured) {
-                    await _configuration.DeleteIndexesAsync();
-                    await _configuration.ConfigureIndexesAsync();
-                    _indexesHaveBeenConfigured = true;
-                    
-                    if (isTraceLogLevelEnabled)
-                        _logger.LogTrace("Configured Indexes");
-                } else {
-                    var response = await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexList) {
-                        Query = new MatchAllQuery(),
-                        IgnoreUnavailable = true,
-                        WaitForCompletion = true,
-                        Refresh = true
-                    });
-                    
-                    if (isTraceLogLevelEnabled)
-                        _logger.LogTraceRequest(response);
-                }
+                
+                await _configuration.DeleteIndexesAsync();
+                await _configuration.ConfigureIndexesAsync();
+                
+                if (isTraceLogLevelEnabled)
+                    _logger.LogTrace("Configured Indexes");
                 
                 foreach (var index in _configuration.Indexes)
                     index.QueryParser.Configuration.RefreshMapping();
