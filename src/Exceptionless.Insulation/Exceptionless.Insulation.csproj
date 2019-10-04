@@ -7,29 +7,28 @@
     <PackageReference Include="App.Metrics.Reporting.Http" Version="3.1.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.1.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="8.1.54" />
-    <PackageReference Include="Foundatio.AppMetrics" Version="8.1.2126" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="8.1.2143-pre" />
     <PackageReference Include="Foundatio.AWS" Version="8.1.1556" />
     <PackageReference Include="Foundatio.AzureStorage" Version="8.1.1537" />
-    <PackageReference Include="Foundatio.Hosting" Version="8.1.2126" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.1.2143-pre" />
     <PackageReference Include="Foundatio.Minio" Version="8.1.58" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="8.1.1527" />
     <PackageReference Include="Foundatio.Redis" Version="8.1.1662" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MailKit" Version="2.3.1.6" />
     <PackageReference Include="MimeKit" Version="2.3.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="2.2.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.0.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.0" />
-    <PackageReference Include="YamlDotNet" Version="6.1.2" />
+    <PackageReference Include="YamlDotNet" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />

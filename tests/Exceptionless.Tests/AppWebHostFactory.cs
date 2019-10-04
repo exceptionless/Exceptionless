@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace Exceptionless.Tests {
     public class AppWebHostFactory : WebApplicationFactory<Startup> {
@@ -19,7 +20,7 @@ namespace Exceptionless.Tests {
                 .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
                 .Build();
             
-            return Program.CreateWebHostBuilder(config, EnvironmentName.Development);
+            return Program.CreateHostBuilder(config, Environments.Development);
         }
     }
 }
