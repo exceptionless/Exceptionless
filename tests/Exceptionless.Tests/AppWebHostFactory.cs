@@ -14,7 +14,7 @@ namespace Exceptionless.Tests {
             builder.UseSolutionRelativeContentRoot("src/Exceptionless.Web");
         }
 
-        protected override IWebHostBuilder CreateWebHostBuilder() {
+        protected override IHostBuilder CreateHostBuilder() {
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
