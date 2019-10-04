@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
 using Exceptionless.Web.Extensions;
@@ -22,6 +21,7 @@ using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
 using Serilog;
 
 namespace Exceptionless.Web {
@@ -74,24 +74,48 @@ namespace Exceptionless.Web {
                 r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             });
             services.AddSwaggerGen(c => {
-                c.SwaggerDoc("v2", new Info {
+                c.SwaggerDoc("v3", new OpenApiInfo {
                     Title = "Exceptionless API",
                     Version = "v2"
                 });
 
-                c.AddSecurityDefinition("Bearer", new ApiKeyScheme {
+                c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme {
+                    Description = "Basic HTTP Authentication",
+                    Scheme = "basic",
+                    Type = SecuritySchemeType.Http
+                });
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
                     Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                    Name = "Authorization",
-                    In = "header",
-                    Type = "apiKey",
+                    Scheme = "bearer",
+                    Type = SecuritySchemeType.Http
                 });
-                c.AddSecurityDefinition("Basic", new BasicAuthScheme {
-                    Type = "basic",
-                    Description = "Basic HTTP Authentication"
+                c.AddSecurityDefinition("Token", new OpenApiSecurityScheme {
+                    Description = "Authorization token. Example: \"Bearer {apikey}\"",
+                    Name = "access_token",
+                    In = ParameterLocation.Query,
+                    Type = SecuritySchemeType.ApiKey
                 });
-                c.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>> {
-                    { "Basic", new string[] { } },
-                    { "Bearer", new string[] { } }
+                
+                
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                    {
+                        new OpenApiSecurityScheme {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
+                        },
+                        new string[0]
+                    },
+                    {
+                        new OpenApiSecurityScheme {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+                        new string[0]
+                    },
+                    {
+                        new OpenApiSecurityScheme {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
+                        },
+                        new string[0]
+                    }
                 });
                 
                 c.OperationFilter<ExceptionlessOperationFilter>();
