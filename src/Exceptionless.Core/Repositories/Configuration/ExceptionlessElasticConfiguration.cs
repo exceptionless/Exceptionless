@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Nest.JsonNetSerializer;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration {
@@ -73,8 +75,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         protected override IElasticClient CreateElasticClient() {
             var connectionPool = CreateConnectionPool();
             var settings = new ConnectionSettings(connectionPool, 
-                (serializer, values) => new Nest.JsonNetSerializer.JsonNetSerializer(serializer, values,
-                () => _serializerSettings));
+                (serializer, values) => new JsonNetSerializer(serializer, values, JsonSerializerSettingsFactory, ModifyContractResolver, ContractJsonConverters));
 
             ConfigureSettings(settings);
             foreach (var index in Indexes)
@@ -86,6 +87,22 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var client = new ElasticClient(settings);
             return client;
         }
+
+        private JsonSerializerSettings JsonSerializerSettingsFactory() {
+            return new JsonSerializerSettings {
+                DateParseHandling = _serializerSettings.DateParseHandling,
+                DefaultValueHandling = _serializerSettings.DefaultValueHandling,
+                MissingMemberHandling = _serializerSettings.MissingMemberHandling,
+                NullValueHandling = _serializerSettings.NullValueHandling
+            };
+        }
+
+        private void ModifyContractResolver(ConnectionSettingsAwareContractResolver resolver) {
+            //var strategy = ((DefaultContractResolver) _serializerSettings.ContractResolver).NamingStrategy;
+            //resolver.NamingStrategy = new CamelCaseNamingStrategy(strategy.ProcessDictionaryKeys, strategy.OverrideSpecifiedNames, strategy.ProcessExtensionDataNames);
+        }
+
+        private IEnumerable<JsonConverter> ContractJsonConverters => _serializerSettings.Converters;
 
         protected override IConnectionPool CreateConnectionPool() {
             var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));

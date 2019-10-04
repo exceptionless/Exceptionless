@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build
 WORKDIR /app
 
 ARG VERSION_SUFFIX=0-dev
@@ -39,7 +39,7 @@ RUN dotnet publish --version-suffix $VERSION_SUFFIX -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS job
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
@@ -56,7 +56,7 @@ RUN dotnet publish --version-suffix $VERSION_SUFFIX -c Release -o out
 
 # api
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS api
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
