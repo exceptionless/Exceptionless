@@ -1,0 +1,29 @@
+name: Elasticsearch Docker Image CI
+
+on:
+  push:
+    paths:
+    - 'build/docker/elasticsearch/**'
+
+jobs:
+
+  build:
+ 
+    runs-on: ubuntu-latest
+ 
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build custom Elasticsearch docker image
+      working-directory: build/docker/elasticsearch
+      run: |
+        VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
+        docker build . --tag exceptionless/elasticsearch:$VERSION
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        docker push exceptionless/elasticsearch:$VERSION
+        docker build . --tag docker.pkg.github.com/exceptionless/exceptionless/elasticsearch:$VERSION
+        echo $GITHUB_TOKEN | docker login docker.pkg.github.com -u exceptionless --password-stdin
+        docker push docker.pkg.github.com/exceptionless/exceptionless/elasticsearch:$VERSION
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_DOCKER_TOKEN }}
