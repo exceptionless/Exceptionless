@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <Product>Exceptionless</Product>
     <Copyright>Copyright (c) 2019 Exceptionless.  All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>

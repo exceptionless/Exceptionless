@@ -73,6 +73,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<IContractResolver>(s => GetJsonContractResolver());
             container.AddSingleton<JsonSerializerSettings>(s => {
+                // NOTE: These settings may need to be synced in the Elastic Configuration.
                 var settings = new JsonSerializerSettings {
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     DateParseHandling = DateParseHandling.DateTimeOffset,

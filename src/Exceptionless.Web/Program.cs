@@ -11,31 +11,26 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Utility;
-using Foundatio.Hosting;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Serilog;
-using Serilog.AspNetCore;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Web {
     public class Program {
-        private static Microsoft.Extensions.Logging.ILogger _logger;
-        
         public static async Task<int> Main(string[] args) {
             try {
-                await CreateWebHostBuilder(args).Build().RunAsync(_logger);
+                await CreateHostBuilder(args).Build().RunAsync();
                 return 0;
             } catch (Exception ex) {
-                _logger.LogCritical(ex, "Job host terminated unexpectedly");
+                Log.Fatal(ex, "Job host terminated unexpectedly");
                 return 1;
             } finally {
                 Log.CloseAndFlush();
@@ -46,7 +41,7 @@ namespace Exceptionless.Web {
             }
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
+        public static IHostBuilder CreateHostBuilder(string[] args) {
             string environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
@@ -60,10 +55,10 @@ namespace Exceptionless.Web {
                 .AddCommandLine(args)
                 .Build();
 
-            return CreateWebHostBuilder(config, environment);
+            return CreateHostBuilder(config, environment);
         }
         
-        public static IWebHostBuilder CreateWebHostBuilder(IConfiguration config, string environment) {
+        public static IHostBuilder CreateHostBuilder(IConfiguration config, string environment) {
             Console.Title = "Exceptionless Web";
             
             var options = AppOptions.ReadFromConfiguration(config);
@@ -72,35 +67,46 @@ namespace Exceptionless.Web {
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
 
-            var serilogLogger = loggerConfig.CreateLogger();
-            _logger = new SerilogLoggerFactory(serilogLogger).CreateLogger<Program>();
-
+            Log.Logger = loggerConfig.CreateLogger();
             var configDictionary = config.ToDictionary("Serilog");
-            _logger.LogInformation("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
+            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
-
-            var builder = WebHost.CreateDefaultBuilder()
+            var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
-                .UseConfiguration(config)
+                .UseSerilog()
+                .ConfigureWebHostDefaults(webBuilder => {
+                    webBuilder
+                        .UseConfiguration(config)
+                        .Configure(app => {
+                            app.UseSerilogRequestLogging();
+                        })
+                        .ConfigureKestrel(c => {
+                            c.AddServerHeader = false;
+                            // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
+                            
+                            if (options.MaximumEventPostSize > 0)
+                                c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
+                        })
+                        .UseStartup<Startup>();
+                    
+                    if (String.IsNullOrEmpty(webBuilder.GetSetting(WebHostDefaults.ContentRootKey)))
+                        webBuilder.UseContentRoot(Directory.GetCurrentDirectory());
+
+                    var metricOptions = MetricOptions.ReadFromConfiguration(config);
+                    if (!String.IsNullOrEmpty(metricOptions.Provider))
+                        ConfigureMetricsReporting(webBuilder, metricOptions);
+                })
                 .UseDefaultServiceProvider((ctx, o) => {
                     o.ValidateScopes = ctx.HostingEnvironment.IsDevelopment();
                 })
-                .ConfigureKestrel(c => {
-                    c.AddServerHeader = false;
-                    // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
-                    
-                    if (options.MaximumEventPostSize > 0)
-                        c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
-                })
-                .UseSerilog(serilogLogger, true)
                 .ConfigureServices((ctx, services) => {
                     services.AddSingleton(config);
                     services.AddHttpContextAccessor();
                     
                     if (useApplicationInsights) {
                         services.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
-                        services.AddApplicationInsightsTelemetry();
+                        services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);
                     }
                     
                     services.PostConfigure<HostFilteringOptions>(o => {
@@ -114,18 +120,7 @@ namespace Exceptionless.Web {
                     
                     services.AddSingleton<IOptionsChangeTokenSource<HostFilteringOptions>>(new ConfigurationChangeTokenSource<HostFilteringOptions>(ctx.Configuration));
                     services.AddTransient<IStartupFilter, HostFilteringStartupFilter>();
-                })
-                .UseStartup<Startup>();
-            
-            if (String.IsNullOrEmpty(builder.GetSetting(WebHostDefaults.ContentRootKey)))
-                builder.UseContentRoot(Directory.GetCurrentDirectory());
-            
-            if (useApplicationInsights)
-                builder.UseApplicationInsights(options.ApplicationInsightsKey);
-
-            var metricOptions = MetricOptions.ReadFromConfiguration(config);
-            if (!String.IsNullOrEmpty(metricOptions.Provider))
-                ConfigureMetricsReporting(builder, metricOptions);
+                });
 
             return builder;
         }

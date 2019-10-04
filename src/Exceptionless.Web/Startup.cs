@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Cors.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -46,11 +45,10 @@ namespace Exceptionless.Web {
                 options.RequireHeaderSymmetry = false;
             });
             services.AddMvcCore(o => {
-                o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
               .AddApiExplorer()
               .AddAuthorization()
               .AddFormatterMappings()
@@ -171,9 +169,19 @@ namespace Exceptionless.Web {
                 await next();
             });
 
+            app.UseStaticFiles(new StaticFileOptions {
+                ContentTypeProvider = new FileExtensionContentTypeProvider {
+                    Mappings = {
+                        [".less"] = "plain/text"
+                    }
+                }
+            });
+            
+            app.UseRouting();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
+            
             app.UseAuthentication();
             
             app.UseMiddleware<ProjectConfigMiddleware>();
@@ -186,17 +194,10 @@ namespace Exceptionless.Web {
 
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
-            
-            app.UseStaticFiles(new StaticFileOptions {
-                ContentTypeProvider = new FileExtensionContentTypeProvider {
-                    Mappings = {
-                        [".less"] = "plain/text"
-                    }
-                }
+
+            app.UseEndpoints(endpoints => {
+                endpoints.MapControllers();
             });
-            
-            app.UseFileServer();
-            app.UseMvc();
             app.UseSwagger(c => {
                 c.RouteTemplate = "docs/{documentName}/swagger.json";
             });
