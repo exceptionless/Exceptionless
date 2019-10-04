@@ -17,13 +17,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
+using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
@@ -68,7 +68,7 @@ namespace Exceptionless.Tests {
             ServiceProvider = testScope.ServiceProvider;
             
             var settings = GetService<JsonSerializerSettings>();
-            _client = new FluentClient(_httpClient, new JsonContentSerializer(settings));
+            _client = new FluentClient(_httpClient, new NewtonsoftJsonSerializer(settings));
             _configuration = GetService<ExceptionlessElasticConfiguration>();
         }
 
