@@ -34,7 +34,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.3.1" />
-    <PackageReference Include="Stripe.net" Version="29.5.0" />
+    <PackageReference Include="Stripe.net" Version="29.6.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.6.0" />
     <PackageReference Include="UAParser" Version="3.1.43" />
   </ItemGroup>

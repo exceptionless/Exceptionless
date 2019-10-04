@@ -53,9 +53,8 @@ namespace Exceptionless.Web {
               .AddAuthorization()
               .AddFormatterMappings()
               .AddDataAnnotations()
-              .AddJsonFormatters()
               .AddCors()
-              .AddJsonOptions(o => {
+              .AddNewtonsoftJson(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
                 o.SerializerSettings.Formatting = Formatting.Indented;
