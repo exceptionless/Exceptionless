@@ -73,7 +73,7 @@ services:
 #      SITES: 'ex-ui.mydomainn.com=ui;ex-api.mydomainn.com=api'
 
   elasticsearch:
-    image: exceptionless/elasticsearch:1
+    image: exceptionless/elasticsearch:7.4.0
     environment:
       cluster.name: 'exceptionless'
       bootstrap.memory_lock: 'true'
@@ -95,14 +95,14 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: exceptionless/kibana:1
+    image: docker.elastic.co/kibana/kibana:7.4.0
     environment:
       xpack.security.enabled: 'false'
     ports:
       - 5601:5601
 
   redis:
-    image: redis:alpine
+    image: redis:5.0-alpine
     ports:
       - 6379:6379
 
