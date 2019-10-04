@@ -22,15 +22,10 @@ using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace Exceptionless.Web {
     public class Startup {
-        public Startup(ILoggerFactory loggerFactory) {
-            LoggerFactory = loggerFactory;
-        }
-
-        public ILoggerFactory LoggerFactory { get; }
-
         public void ConfigureServices(IServiceCollection services) {
             services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -107,7 +102,7 @@ namespace Exceptionless.Web {
                 c.IgnoreObsoleteActions();
             });
             
-            Bootstrapper.RegisterServices(services, LoggerFactory);
+            Bootstrapper.RegisterServices(services, Log.Logger.ToLoggerFactory());
             services.AddSingleton(s => {
                 var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
                 return new ThrottlingOptions {
@@ -119,7 +114,7 @@ namespace Exceptionless.Web {
 
         public void Configure(IApplicationBuilder app) {
             var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory.CreateLogger<Startup>());
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);

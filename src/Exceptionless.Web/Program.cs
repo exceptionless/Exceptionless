@@ -97,9 +97,6 @@ namespace Exceptionless.Web {
                     if (!String.IsNullOrEmpty(metricOptions.Provider))
                         ConfigureMetricsReporting(webBuilder, metricOptions);
                 })
-                .UseDefaultServiceProvider((ctx, o) => {
-                    o.ValidateScopes = ctx.HostingEnvironment.IsDevelopment();
-                })
                 .ConfigureServices((ctx, services) => {
                     services.AddSingleton(config);
                     services.AddHttpContextAccessor();
