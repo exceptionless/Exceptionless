@@ -6,6 +6,7 @@ RUN elasticsearch-plugin install repository-azure
 RUN elasticsearch-plugin install repository-s3
 
 # USER root
+#
 # RUN echo "bootstrap.memory_lock: true" >> /usr/share/elasticsearch/config/elasticsearch.yml
 # RUN echo "xpack.security.enabled: false" >> /usr/share/elasticsearch/config/elasticsearch.yml
 # RUN echo "xpack.graph.enabled: false" >> /usr/share/elasticsearch/config/elasticsearch.yml
