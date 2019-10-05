@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Core;
@@ -30,7 +31,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/stacks")]
@@ -151,13 +151,13 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("~/api/v1/stack/markfixed")]
         [HttpPost("mark-fixed")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(JObject data) {
+        public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(JsonDocument data) {
             string id = null;
-            if (data.TryGetValue("ErrorStack", out var value))
-                id = value.Value<string>();
+            if (data.RootElement.TryGetProperty("ErrorStack", out var value))
+                id = value.GetString();
 
-            if (data.TryGetValue("Stack", out value))
-                id = value.Value<string>();
+            if (data.RootElement.TryGetProperty("Stack", out value))
+                id = value.GetString();
 
             if (String.IsNullOrEmpty(id))
                 return NotFound();
@@ -199,13 +199,13 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("~/api/v1/stack/addlink")]
         [HttpPost("add-link")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> AddLinkAsync(JObject data) {
+        public async Task<IActionResult> AddLinkAsync(JsonDocument data) {
             string id = null;
-            if (data.TryGetValue("ErrorStack", out var value))
-                id = value.Value<string>();
+            if (data.RootElement.TryGetProperty("ErrorStack", out var value))
+                id = value.GetString();
 
-            if (data.TryGetValue("Stack", out value))
-                id = value.Value<string>();
+            if (data.RootElement.TryGetProperty("Stack", out value))
+                id = value.GetString();
 
             if (String.IsNullOrEmpty(id))
                 return NotFound();
@@ -213,7 +213,7 @@ namespace Exceptionless.Web.Controllers {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            string url = data.GetValue("Link").Value<string>();
+            string url = data.SafeGetStringProperty("Link");
             return await AddLinkAsync(id, new ValueFromBody<string>(url));
         }
 

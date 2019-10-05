@@ -20,7 +20,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
 using OAuth2.Configuration;
@@ -272,8 +271,8 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("github")]
-        public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+        public Task<ActionResult<TokenResult>> GitHubAsync(ExternalAuthInfo authInfo) {
+            return ExternalLoginAsync(authInfo,
                 _authOptions.Value.GitHubId,
                 _authOptions.Value.GitHubSecret,
                 (f, c) => {
@@ -286,8 +285,8 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("google")]
-        public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+        public Task<ActionResult<TokenResult>> GoogleAsync(ExternalAuthInfo authInfo) {
+            return ExternalLoginAsync(authInfo,
                 _authOptions.Value.GoogleId,
                 _authOptions.Value.GoogleSecret,
                 (f, c) => {
@@ -300,8 +299,8 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("facebook")]
-        public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+        public Task<ActionResult<TokenResult>> FacebookAsync(ExternalAuthInfo authInfo) {
+            return ExternalLoginAsync(authInfo,
                 _authOptions.Value.FacebookId,
                 _authOptions.Value.FacebookSecret,
                 (f, c) => {
@@ -314,8 +313,8 @@ namespace Exceptionless.Web.Controllers {
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
         [HttpPost("live")]
-        public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
-            return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
+        public Task<ActionResult<TokenResult>> LiveAsync(ExternalAuthInfo authInfo) {
+            return ExternalLoginAsync(authInfo,
                 _authOptions.Value.MicrosoftId,
                 _authOptions.Value.MicrosoftSecret,
                 (f, c) => {
