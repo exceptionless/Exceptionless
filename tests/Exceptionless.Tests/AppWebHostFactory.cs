@@ -1,4 +1,3 @@
-
 using System;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web;
