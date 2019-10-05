@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
@@ -14,9 +13,9 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Storage;
 using Foundatio.Repositories;
+using Foundatio.Serializer;
 using Foundatio.Utility;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,7 +28,7 @@ namespace Exceptionless.Tests.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IUserRepository _userRepository;
-        private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly ITextSerializer _serializer;
         private readonly EventPostService _eventPostService;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
@@ -44,7 +43,7 @@ namespace Exceptionless.Tests.Jobs {
             _projectRepository = GetService<IProjectRepository>();
             _eventRepository = GetService<IEventRepository>();
             _userRepository = GetService<IUserRepository>();
-            _jsonSerializerSettings = GetService<JsonSerializerSettings>();
+            _serializer = GetService<ITextSerializer>();
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
             _options = GetService<IOptions<AppOptions>>();
@@ -154,7 +153,7 @@ namespace Exceptionless.Tests.Jobs {
                 UserAgent = "exceptionless-test",
             };
 
-            var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings).Compress());
+            var stream = new MemoryStream(_serializer.SerializeToBytes(ev).Compress());
             return await _eventPostService.EnqueueAsync(eventPostInfo, stream).AnyContext();
         }
 
