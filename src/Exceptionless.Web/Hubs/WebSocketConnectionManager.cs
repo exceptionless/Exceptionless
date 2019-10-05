@@ -7,21 +7,20 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
-using Foundatio.Queues;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Hubs {
     public class WebSocketConnectionManager : IDisposable {
         private static readonly ArraySegment<byte> _keepAliveMessage = new ArraySegment<byte>(Encoding.ASCII.GetBytes("{}"), 0, 2);
         private readonly ConcurrentDictionary<string, WebSocket> _connections = new ConcurrentDictionary<string, WebSocket>();
         private readonly Timer _timer;
-        private readonly JsonSerializerSettings _serializerSettings;
+        private readonly ITextSerializer _serializer;
         private readonly ILogger _logger;
 
-        public WebSocketConnectionManager(IOptions<AppOptions> options, JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory) {
-            _serializerSettings = serializerSettings;
+        public WebSocketConnectionManager(IOptions<AppOptions> options, ITextSerializer serializer, ILoggerFactory loggerFactory) {
+            _serializer = serializer;
             _logger = loggerFactory.CreateLogger<WebSocketConnectionManager>();
             if (!options.Value.EnableWebSockets)
                 return;
@@ -103,7 +102,7 @@ namespace Exceptionless.Web.Hubs {
             if (!CanSendWebSocketMessage(socket))
                 return Task.CompletedTask;
 
-            string serializedMessage = JsonConvert.SerializeObject(message, _serializerSettings);
+            string serializedMessage = _serializer.SerializeToString(message);
             Task.Factory.StartNew(async () => { 
                 if (!CanSendWebSocketMessage(socket)) 
                     return; 
