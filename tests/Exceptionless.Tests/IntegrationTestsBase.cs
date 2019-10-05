@@ -62,7 +62,7 @@ namespace Exceptionless.Tests {
             _server = configuredFactory.Server;
             _httpClient.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
 
-            var testScope = _server.Host.Services.CreateScope();
+            var testScope = configuredFactory.Services.CreateScope();
             _disposables.Add(testScope);
             ServiceProvider = testScope.ServiceProvider;
             
