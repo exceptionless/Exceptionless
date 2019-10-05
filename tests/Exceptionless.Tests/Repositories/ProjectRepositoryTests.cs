@@ -11,7 +11,6 @@ using Foundatio.Caching;
 using Xunit;
 using Xunit.Abstractions;
 using Foundatio.Repositories;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Repositories {
     public sealed class ProjectRepositoryTests : IntegrationTestsBase {
