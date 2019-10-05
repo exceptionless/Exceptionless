@@ -83,7 +83,6 @@ namespace Exceptionless.Web {
                         })
                         .ConfigureKestrel(c => {
                             c.AddServerHeader = false;
-                            // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
                             
                             if (options.MaximumEventPostSize > 0)
                                 c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;

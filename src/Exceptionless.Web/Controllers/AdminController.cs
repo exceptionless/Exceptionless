@@ -22,7 +22,6 @@ using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using QueueOptions = Exceptionless.Core.Configuration.QueueOptions;
 
 namespace Exceptionless.Web.Controllers {
@@ -96,7 +95,7 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpGet("settings")]
         public ActionResult SettingsRequest() {
-            return Ok(JsonConvert.SerializeObject(new {
+            return Ok(new {
                 App = _appOptions.Value,
                 Auth = _authOptions.Value,
                 Cache = _cacheOptions.Value,
@@ -109,16 +108,16 @@ namespace Exceptionless.Web.Controllers {
                 Slack = _slackOptions.Value,
                 Storage = _storageOptions.Value,
                 Stripe = _stripeOptions.Value
-            }, Formatting.Indented));
+            });
         }
 
         
         [HttpGet("echo")]
         public ActionResult EchoRequest() {
-            return Ok(JsonConvert.SerializeObject(new {
+            return Ok(new {
                 Request.Headers,
                 IpAddress = Request.GetClientIpAddress()
-            }, Formatting.Indented));
+            });
         }
         
         [HttpGet("assemblies")]
