@@ -95,7 +95,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: kibana/kibana:7.4.0
+    image: docker.elastic.co/kibana/kibana:7.4.0
     environment:
       xpack.security.enabled: 'false'
     ports:
