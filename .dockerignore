@@ -5,6 +5,7 @@ docker-compose*
 README.md
 LICENSE.txt
 .vscode
+.vs
 .circleci
 **/bin/
 **/obj/
