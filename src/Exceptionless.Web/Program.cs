@@ -74,13 +74,9 @@ namespace Exceptionless.Web {
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
-                .UseSerilog()
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder
                         .UseConfiguration(config)
-                        .Configure(app => {
-                            app.UseSerilogRequestLogging();
-                        })
                         .ConfigureKestrel(c => {
                             c.AddServerHeader = false;
                             
@@ -96,6 +92,7 @@ namespace Exceptionless.Web {
                     if (!String.IsNullOrEmpty(metricOptions.Provider))
                         ConfigureMetricsReporting(webBuilder, metricOptions);
                 })
+                .UseSerilog()
                 .ConfigureServices((ctx, services) => {
                     services.AddSingleton(config);
                     services.AddHttpContextAccessor();
@@ -104,18 +101,6 @@ namespace Exceptionless.Web {
                         services.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
                         services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);
                     }
-                    
-                    services.PostConfigure<HostFilteringOptions>(o => {
-                        if (o.AllowedHosts == null || o.AllowedHosts.Count == 0) {
-                            // "AllowedHosts": "localhost;127.0.0.1;[::1]"
-                            var hosts = ctx.Configuration["AllowedHosts"]?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                            // Fall back to "*" to disable.
-                            o.AllowedHosts = (hosts?.Length > 0 ? hosts : new[] { "*" });
-                        }
-                    });
-                    
-                    services.AddSingleton<IOptionsChangeTokenSource<HostFilteringOptions>>(new ConfigurationChangeTokenSource<HostFilteringOptions>(ctx.Configuration));
-                    services.AddTransient<IStartupFilter, HostFilteringStartupFilter>();
                 });
 
             return builder;
@@ -135,15 +120,6 @@ namespace Exceptionless.Web {
                 });
             } else if (!String.Equals(options.Provider, "statsd")) {
                 builder.UseMetrics();
-            }
-        }
-
-        internal class HostFilteringStartupFilter : IStartupFilter {
-            public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) {
-                return app => {
-                    app.UseHostFiltering();
-                    next(app);
-                };
             }
         }
     }

@@ -90,7 +90,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - esdata7:/usr/share/elasticsearch/data
 
   kibana:
     depends_on:
@@ -107,7 +107,7 @@ services:
       - 6379:6379
 
 volumes:
-  esdata:
+  esdata7:
     driver: local
   appdata:
     driver: local
