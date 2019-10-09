@@ -38,16 +38,12 @@ namespace Exceptionless.Web {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;
             });
-            services.AddMvcCore(o => {
+
+            services.AddControllers(o => {
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
-              .AddApiExplorer()
-              .AddAuthorization()
-              .AddFormatterMappings()
-              .AddDataAnnotations()
-              .AddCors()
               .AddJsonOptions(o => Core.Bootstrapper.ConfigureJsonSerializerOptions(o.JsonSerializerOptions)); // TODO: See if we can resolve this from the di.
 
             services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
@@ -181,6 +177,7 @@ namespace Exceptionless.Web {
                 await next();
             });
 
+            app.UseSerilogRequestLogging();
             app.UseStaticFiles(new StaticFileOptions {
                 ContentTypeProvider = new FileExtensionContentTypeProvider {
                     Mappings = {
@@ -188,6 +185,7 @@ namespace Exceptionless.Web {
                     }
                 }
             });
+            app.UseFileServer();
             
             app.UseRouting();
             app.UseCors("AllowAny");
