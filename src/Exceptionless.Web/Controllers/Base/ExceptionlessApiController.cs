@@ -15,7 +15,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Controllers {
-  [ApiController]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ApiController]
     public abstract class ExceptionlessApiController : Controller {
         public const string API_PREFIX = "api/v2";
         protected const int DEFAULT_LIMIT = 10;
