@@ -64,7 +64,7 @@ namespace Exceptionless.Web {
                 r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             });
             services.AddSwaggerGen(c => {
-                c.SwaggerDoc("v3", new OpenApiInfo {
+                c.SwaggerDoc("v2", new OpenApiInfo {
                     Title = "Exceptionless API",
                     Version = "v2"
                 });
@@ -85,7 +85,6 @@ namespace Exceptionless.Web {
                     In = ParameterLocation.Query,
                     Type = SecuritySchemeType.ApiKey
                 });
-                
                 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement {
                     {
@@ -108,8 +107,6 @@ namespace Exceptionless.Web {
                     }
                 });
                 
-                c.OperationFilter<ExceptionlessOperationFilter>();
-
                 if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
                     c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
                 
