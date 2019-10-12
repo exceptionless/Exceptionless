@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Elasticsearch.Net;
 using Nest;
@@ -8,17 +7,25 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Serialization {
     public class ElasticJsonNetSerializer : JsonNetSerializer {
-        private readonly JsonSerializerSettings _serializerSettings;
-
         public ElasticJsonNetSerializer(
             IElasticsearchSerializer builtinSerializer, 
             IConnectionSettingsValues connectionSettings,
             JsonSerializerSettings serializerSettings
         ) : base(
             builtinSerializer, 
-            connectionSettings
+            connectionSettings,
+            () => CreateJsonSerializerSettings(serializerSettings),
+            contractJsonConverters: serializerSettings.Converters.ToList()
         ) {
-            _serializerSettings = serializerSettings;
+        }
+
+        private static JsonSerializerSettings CreateJsonSerializerSettings(JsonSerializerSettings serializerSettings) {
+            return new JsonSerializerSettings {
+                DateParseHandling = serializerSettings.DateParseHandling,
+                DefaultValueHandling = serializerSettings.DefaultValueHandling,
+                MissingMemberHandling = serializerSettings.MissingMemberHandling,
+                NullValueHandling = serializerSettings.NullValueHandling
+            };
         }
 
         protected override ConnectionSettingsAwareContractResolver CreateContractResolver() {
@@ -26,19 +33,6 @@ namespace Exceptionless.Core.Serialization {
             var resolver = new ElasticConnectionSettingsAwareContractResolver(ConnectionSettings);
             ModifyContractResolver(resolver);
             return resolver;
-        }
-
-        protected override JsonSerializerSettings CreateJsonSerializerSettings() {
-            return new JsonSerializerSettings {
-                DateParseHandling = _serializerSettings.DateParseHandling,
-                DefaultValueHandling = _serializerSettings.DefaultValueHandling,
-                MissingMemberHandling = _serializerSettings.MissingMemberHandling,
-                NullValueHandling = _serializerSettings.NullValueHandling
-            };
-        }
-
-        protected override IEnumerable<JsonConverter> CreateJsonConverters() {
-            return _serializerSettings.Converters.ToList();
         }
     }
 }
