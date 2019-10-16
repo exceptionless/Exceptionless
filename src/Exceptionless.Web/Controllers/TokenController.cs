@@ -227,12 +227,13 @@ namespace Exceptionless.App.Controllers.API {
                 return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
 
             foreach (string scope in value.Scopes.ToList()) {
-                if (scope != scope.ToLowerInvariant()) {
+                string lowerCaseScoped = scope.ToLowerInvariant();
+                if (!String.Equals(scope, lowerCaseScoped)) {
                     value.Scopes.Remove(scope);
-                    value.Scopes.Add(scope.ToLowerInvariant());
+                    value.Scopes.Add(lowerCaseScoped);
                 }
 
-                if (!AuthorizationRoles.AllScopes.Contains(scope.ToLowerInvariant()))
+                if (!AuthorizationRoles.AllScopes.Contains(lowerCaseScoped))
                     return PermissionResult.DenyWithMessage("Invalid token scope requested.");
             }
 
@@ -273,10 +274,10 @@ namespace Exceptionless.App.Controllers.API {
             value.CreatedBy = Request.GetUser().Id;
 
             // add implied scopes
-            if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin))
+            if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !value.Scopes.Contains(AuthorizationRoles.User))
                 value.Scopes.Add(AuthorizationRoles.User);
 
-            if (value.Scopes.Contains(AuthorizationRoles.User))
+            if (value.Scopes.Contains(AuthorizationRoles.User) && !value.Scopes.Contains(AuthorizationRoles.Client))
                 value.Scopes.Add(AuthorizationRoles.Client);
 
             return base.AddModelAsync(value);
