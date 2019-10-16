@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Authentication;
@@ -15,8 +14,10 @@ using FluentRest;
 using Xunit.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
+using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging.Xunit;
@@ -66,8 +67,8 @@ namespace Exceptionless.Tests {
             _disposables.Add(testScope);
             ServiceProvider = testScope.ServiceProvider;
             
-            var options = GetService<JsonSerializerOptions>();
-            _client = new FluentClient(_httpClient, new JsonContentSerializer(options));
+            var settings = GetService<JsonSerializerSettings>();
+            _client = new FluentClient(_httpClient, new NewtonsoftJsonSerializer(settings));
             _configuration = GetService<ExceptionlessElasticConfiguration>();
         }
 
