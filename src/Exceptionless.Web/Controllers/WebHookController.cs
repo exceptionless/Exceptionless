@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Web.Controllers;
@@ -18,6 +17,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
     [Route(API_PREFIX + "/webhooks")]
@@ -101,10 +101,10 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost("~/api/v{apiVersion:int=2}/webhooks/subscribe")]
         [HttpPost("~/api/v1/projecthook/subscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<ActionResult<WebHook>> SubscribeAsync(JsonDocument data, int apiVersion = 1) {
+        public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1) {
             var webHook = new NewWebHook {
-                EventTypes = new[] { data.SafeGetStringProperty("event") },
-                Url = data.SafeGetStringProperty("target_url"),
+                EventTypes = new[] { data.GetValue("event").Value<string>() },
+                Url = data.GetValue("target_url").Value<string>(),
                 Version = new Version(apiVersion >= 0 ? apiVersion : 0, 0)
             };
 
@@ -127,8 +127,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost("unsubscribe")]
         [HttpPost("~/api/v1/projecthook/unsubscribe")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> UnsubscribeAsync(JsonDocument data) {
-            string targetUrl = data.SafeGetStringProperty("target_url");
+        public async Task<IActionResult> UnsubscribeAsync(JObject data) {
+            string targetUrl = data.GetValue("target_url").Value<string>();
 
             // don't let this anon method delete non-zapier hooks
             if (!targetUrl.StartsWith("https://hooks.zapier.com"))

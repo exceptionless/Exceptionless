@@ -26,7 +26,6 @@ using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Serializer;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -34,6 +33,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/events")]
@@ -48,8 +48,8 @@ namespace Exceptionless.Web.Controllers {
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
-        private readonly ITextSerializer _serializer;
         private readonly ICacheClient _cache;
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly IOptions<AppOptions> _appOptions;
 
         public EventController(IEventRepository repository,
@@ -60,8 +60,8 @@ namespace Exceptionless.Web.Controllers {
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
-            ITextSerializer serializer,
             ICacheClient cacheClient,
+            JsonSerializerSettings jsonSerializerSettings,
             IMapper mapper,
             PersistentEventQueryValidator validator,
             IOptions<AppOptions> appOptions,
@@ -73,8 +73,8 @@ namespace Exceptionless.Web.Controllers {
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
-            _serializer = serializer;
             _cache = cacheClient;
+            _jsonSerializerSettings = jsonSerializerSettings;
             _appOptions = appOptions;
 
             AllowedDateFields.Add(EventIndex.Alias.Date);
@@ -841,9 +841,7 @@ namespace Exceptionless.Web.Controllers {
                     charSet = contentTypeHeader.Charset.ToString();
                 }
 
-                var stream = new MemoryStream();
-                _serializer.Serialize(ev, stream);
-                
+                var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
                 await _eventPostService.EnqueueAsync(new EventPost(_appOptions.Value.EnableArchive) {
                     ApiVersion = apiVersion,
                     CharSet = charSet,
