@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.EquivalencyExpression;
@@ -84,8 +83,8 @@ namespace Exceptionless.Core {
                 settings.AddModelConverters(s.GetRequiredService<ILogger<Bootstrapper>>());
                 return settings;
             });
-            
-            container.AddSingleton<JsonSerializerOptions>(s => ConfigureJsonSerializerOptions(new JsonSerializerOptions()));
+
+            container.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
             container.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
             container.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
@@ -292,19 +291,6 @@ namespace Exceptionless.Core {
             var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
             resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
             return resolver;
-        }
-
-        public static JsonSerializerOptions ConfigureJsonSerializerOptions(JsonSerializerOptions options) {
-            options.AllowTrailingCommas = true;
-            options.DictionaryKeyPolicy = null;
-            options.IgnoreNullValues = true;
-            options.IgnoreReadOnlyProperties = false;
-            options.PropertyNameCaseInsensitive = true;
-            options.PropertyNamingPolicy = new SnakeCaseJsonNamingPolicy();
-            options.ReadCommentHandling = JsonCommentHandling.Skip;
-            options.WriteIndented = false;
-
-            return options;
         }
 
         private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class {

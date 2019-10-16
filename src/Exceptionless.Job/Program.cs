@@ -88,6 +88,7 @@ namespace Exceptionless.Job {
                         })
                         .ConfigureKestrel(c => {
                             c.AddServerHeader = false;
+                            // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
                         })
                         .Configure(app => {
                             Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetService<ILogger<Program>>());
