@@ -6,9 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Web.Utility {
     /// <summary>
@@ -77,9 +78,9 @@ namespace Exceptionless.Web.Utility {
                 return false;
 
             if (value != null) {
-                if (value is JsonElement je) {
+                if (value is JToken) {
                     try {
-                        value = JsonSerializer.Deserialize(je.ToString(), cacheHit.MemberType); // TODO: We may need to inject  serializer options?
+                        value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
                     } catch (Exception) {
                         return false;
                     }

@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
 using Exceptionless.Web.Extensions;
@@ -44,7 +45,12 @@ namespace Exceptionless.Web {
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
-              .AddJsonOptions(o => Core.Bootstrapper.ConfigureJsonSerializerOptions(o.JsonSerializerOptions)); // TODO: See if we can resolve this from the di.
+              .AddNewtonsoftJson(o => {
+                o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
+                o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
+                o.SerializerSettings.Formatting = Formatting.Indented;
+                o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
+            });
 
             services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
             services.AddAuthorization(options => {
@@ -190,7 +196,6 @@ namespace Exceptionless.Web {
             app.UseForwardedHeaders();
             
             app.UseAuthentication();
-            app.UseAuthorization();
             
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
