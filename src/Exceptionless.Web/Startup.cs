@@ -188,7 +188,6 @@ namespace Exceptionless.Web {
                     }
                 }
             });
-            app.UseFileServer();
             
             app.UseRouting();
             app.UseCors("AllowAny");
@@ -196,6 +195,7 @@ namespace Exceptionless.Web {
             app.UseForwardedHeaders();
             
             app.UseAuthentication();
+            app.UseAuthorization();
             
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();

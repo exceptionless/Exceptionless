@@ -24,8 +24,8 @@
     <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="5.0.0" />
     <PackageReference Include="FluentValidation" Version="8.5.0" />
-    <PackageReference Include="Foundatio.Hosting" Version="8.1.2143-pre" />
-    <PackageReference Include="Foundatio.JsonNet" Version="8.1.2143-pre" />
+    <PackageReference Include="Foundatio.Hosting" Version="8.1.2155-pre" />
+    <PackageReference Include="Foundatio.JsonNet" Version="8.1.2155-pre" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.0.951-pre" />
     <PackageReference Include="Handlebars.Net" Version="1.10.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.0.0" />
