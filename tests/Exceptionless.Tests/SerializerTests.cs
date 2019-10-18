@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
-using Exceptionless.Web.Models;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -95,20 +90,6 @@ namespace Exceptionless.Tests {
             Assert.Single(ev.Data);
             Assert.Equal("Hello", ev.Message);
             Assert.Equal("SomeVal", ev.Data["Blah"]);
-        }
-    
-        [Fact]
-        public void CanSerializeSimpleModel() {
-            var token = new NewToken {
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                ProjectId = SampleDataService.TEST_PROJECT_ID,
-                Scopes = new HashSet<string> { AuthorizationRoles.Client, AuthorizationRoles.User }
-            };
-
-            var settings = Core.Bootstrapper.ConfigureJsonSerializerOptions(new JsonSerializerOptions());
-            string json = System.Text.Json.JsonSerializer.Serialize(token, settings);
-            _logger.LogInformation(json);
-            ViewToken token2 = System.Text.Json.JsonSerializer.Deserialize<ViewToken>(json, settings);
         }
     }
 
