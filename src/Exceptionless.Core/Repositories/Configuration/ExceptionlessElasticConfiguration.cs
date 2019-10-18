@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
-            AddIndex(Events = new EventIndex(this));
+            AddIndex(Events = new EventIndex(this, appOptions));
             AddIndex(Organizations = new OrganizationIndex(this));
             AddIndex(Projects = new ProjectIndex(this));
             AddIndex(Tokens = new TokenIndex(this));

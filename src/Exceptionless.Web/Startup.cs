@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using Serilog.Events;
 
 namespace Exceptionless.Web {
     public class Startup {
@@ -180,7 +181,18 @@ namespace Exceptionless.Web {
                 await next();
             });
 
-            app.UseSerilogRequestLogging();
+            app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
+                if (ex != null || context.Response.StatusCode > 499)
+                    return LogEventLevel.Error;
+                
+                if (context.Response.StatusCode > 399)
+                    return LogEventLevel.Information;
+                
+                if (duration < 1000 || context.Request.Path.StartsWithSegments("/api/v2/push"))
+                    return LogEventLevel.Debug;
+
+                return LogEventLevel.Information;
+            });
             app.UseStaticFiles(new StaticFileOptions {
                 ContentTypeProvider = new FileExtensionContentTypeProvider {
                     Mappings = {

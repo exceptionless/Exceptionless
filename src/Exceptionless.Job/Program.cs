@@ -84,7 +84,12 @@ namespace Exceptionless.Job {
                     webBuilder
                         .UseConfiguration(config)
                         .Configure(app => {
-                            app.UseSerilogRequestLogging();
+                            app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
+                                if (ex != null || context.Response.StatusCode > 499)
+                                    return LogEventLevel.Error;
+                
+                                return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
+                            });    
                         })
                         .ConfigureKestrel(c => {
                             c.AddServerHeader = false;
