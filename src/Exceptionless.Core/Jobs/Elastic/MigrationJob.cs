@@ -7,7 +7,7 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Core.Jobs {
+namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Runs any pending document migrations.", IsContinuous = false)]
     public class MigrationJob : JobBase {
         private readonly MigrationManager _migrationManager;
