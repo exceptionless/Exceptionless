@@ -866,6 +866,7 @@ namespace Exceptionless.Web.Controllers {
 
         [Obsolete]
         [HttpPost("~/api/v1/error")]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {
             return PostAsync(null, 1, userAgent);
@@ -874,6 +875,7 @@ namespace Exceptionless.Web.Controllers {
         [Obsolete]
         [HttpPost("~/api/v1/events")]
         [HttpPost("~/api/v1/projects/{projectId:objectid}/events")]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task <IActionResult> PostV1Async(string projectId = null, [UserAgent]string userAgent = null) {
@@ -929,6 +931,7 @@ namespace Exceptionless.Web.Controllers {
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
         [HttpPost]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<IActionResult> PostV2Async([UserAgent]string userAgent = null) {
@@ -985,6 +988,7 @@ namespace Exceptionless.Web.Controllers {
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
         [HttpPost("~/api/v2/projects/{projectId:objectid}/events")]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task <IActionResult> PostByProjectV2Async(string projectId = null, [UserAgent]string userAgent = null) {
