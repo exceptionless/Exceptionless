@@ -171,6 +171,8 @@ namespace Exceptionless.Job {
                 services.AddJob<MailMessageJob>(true);
             if (options.MaintainIndexes)
                 services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
+            if (options.Migration)
+                services.AddJob<MigrationJob>(true);
             if (options.OrganizationSnapshot)
                 services.AddJob<OrganizationSnapshotJob>(true);
             if (options.RetentionLimits)
