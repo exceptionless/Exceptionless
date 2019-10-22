@@ -47,6 +47,10 @@ namespace Exceptionless.Job {
             if (MaintainIndexes && args.Length != 0)
                 JobName = "MaintainIndexes";
 
+            Migration = args.Length == 0 || args.Contains("Migration", StringComparer.OrdinalIgnoreCase);
+            if (Migration && args.Length != 0)
+                JobName = "Migration";
+            
             OrganizationSnapshot = args.Length == 0 || args.Contains("OrganizationSnapshot", StringComparer.OrdinalIgnoreCase);
             if (OrganizationSnapshot && args.Length != 0)
                 JobName = "OrganizationSnapshot";
@@ -84,6 +88,7 @@ namespace Exceptionless.Job {
         public bool EventUserDescriptions { get; }
         public bool MailMessage { get; }
         public bool MaintainIndexes { get; }
+        public bool Migration { get; }
         public bool OrganizationSnapshot { get; }
         public bool RetentionLimits { get; }
         public bool StackEventCount { get; }

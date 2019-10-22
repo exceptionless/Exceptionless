@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +12,7 @@ using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Microsoft.Extensions.Logging;
@@ -41,6 +42,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this, appOptions));
+            AddIndex(Migrations = new MigrationIndex(this, options.Value.ScopePrefix + "migrations", appOptions.Value.AppMode == AppMode.Development ? 0 : 1));
             AddIndex(Organizations = new OrganizationIndex(this));
             AddIndex(Projects = new ProjectIndex(this));
             AddIndex(Tokens = new TokenIndex(this));
@@ -65,6 +67,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         public ElasticsearchOptions Options => _options.Value;
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
+        public MigrationIndex Migrations { get; }
         public OrganizationIndex Organizations { get; }
         public ProjectIndex Projects { get; }
         public TokenIndex Tokens { get; }
