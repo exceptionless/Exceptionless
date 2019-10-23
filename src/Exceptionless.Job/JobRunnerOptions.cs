@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace Exceptionless.Job {
@@ -18,7 +18,11 @@ namespace Exceptionless.Job {
             DailySummary = args.Length == 0 || args.Contains("DailySummary", StringComparer.OrdinalIgnoreCase);
             if (DailySummary && args.Length != 0)
                 JobName = "DailySummary";
-
+            
+            DataMigration = args.Contains("DataMigration", StringComparer.OrdinalIgnoreCase);
+            if (DataMigration && args.Length != 0)
+                JobName = "DataMigration";
+            
             DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoIPDatabase", StringComparer.OrdinalIgnoreCase);
             if (DownloadGeoipDatabase && args.Length != 0)
                 JobName = "DownloadGeoIPDatabase";
@@ -81,6 +85,7 @@ namespace Exceptionless.Job {
         public bool CleanupSnapshot { get; }
         public bool CloseInactiveSessions { get; }
         public bool DailySummary { get; }
+        public bool DataMigration { get; }
         public bool DownloadGeoipDatabase { get; }
         public bool EventNotifications { get; }
         public bool EventPosts { get; }
