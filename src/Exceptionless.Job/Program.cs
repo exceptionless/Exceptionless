@@ -157,6 +157,8 @@ namespace Exceptionless.Job {
                 services.AddJob<CloseInactiveSessionsJob>(true);
             if (options.DailySummary)
                 services.AddJob<DailySummaryJob>(true);
+            if (options.DataMigration)
+                services.AddJob<DataMigrationJob>(true);
             if (options.DownloadGeoipDatabase)
                 services.AddJob<DownloadGeoIPDatabaseJob>(true);
             if (options.EventNotifications)
