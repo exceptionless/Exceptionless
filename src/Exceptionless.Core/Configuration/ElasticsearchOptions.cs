@@ -20,6 +20,8 @@ namespace Exceptionless.Core.Configuration {
 
         public string Password { get; internal set; }
         public string UserName { get; internal set; }
+        
+        public ElasticsearchOptions ElasticsearchToMigrate { get; internal set; }
     }
 
     public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
@@ -39,6 +41,17 @@ namespace Exceptionless.Core.Configuration {
             options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && _appOptions.Value.AppMode == AppMode.Production);
 
             string connectionString = _configuration.GetConnectionString("Elasticsearch");
+            ParseConnectionString(connectionString, options);
+            
+            string connectionStringToMigrate = _configuration.GetConnectionString("ElasticsearchToMigrate");
+            if (String.IsNullOrEmpty(connectionStringToMigrate))
+                return;
+            
+            options.ElasticsearchToMigrate = new ElasticsearchOptions();
+            ParseConnectionString(connectionStringToMigrate, options.ElasticsearchToMigrate);
+        }
+
+        private void ParseConnectionString(string connectionString, ElasticsearchOptions options) {
             var pairs = connectionString.ParseConnectionString();
 
             options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
