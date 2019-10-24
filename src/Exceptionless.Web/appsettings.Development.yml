@@ -17,9 +17,3 @@ RunJobsInProcess: true
 Serilog:
   MinimumLevel:
     Default: Debug
-    Override:
-      Microsoft: Warning
-      System: Warning
-      Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
-      Foundatio.Utility.ScheduledTimer: Warning
-      Foundatio.Metrics: Warning
