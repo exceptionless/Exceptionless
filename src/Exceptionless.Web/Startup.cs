@@ -200,7 +200,8 @@ namespace Exceptionless.Web {
                     }
                 }
             });
-            
+
+            app.UseFileServer();
             app.UseRouting();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
