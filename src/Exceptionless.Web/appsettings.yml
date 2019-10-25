@@ -1,12 +1,14 @@
-﻿---
+---
 Serilog:
   Using:
   - Serilog.Sinks.Console
   MinimumLevel:
     Default: Information
     Override:
-      Microsoft: Information
-      System: Information
+      Microsoft: Warning
+      Microsoft.Hosting.Lifetime: Information
+      Microsoft.AspNetCore.Hosting.Diagnostics: Warning
+      System: Warning
       Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Utility.ScheduledTimer: Warning
       Foundatio.Metrics: Warning
