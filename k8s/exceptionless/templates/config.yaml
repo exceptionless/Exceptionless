@@ -18,6 +18,6 @@ data:
     EX_ConnectionStrings__Metrics: {{ default "provider=statsd;server=10.10.244.5" .Values.metrics.connectionString }}
     EX_ConnectionStrings__Queue: {{ default "provider=redis;" .Values.queue.connectionString }}
     EX_ConnectionStrings__Email: {{ default "smtp://localhost" .Values.email.connectionString }}
-{{- if .Values.extraConfig }}
-{{ toYaml .Values.extraConfig | indent 4 }}
+{{- if .Values.config }}
+{{ toYaml .Values.config | indent 4 }}
 {{- end }}

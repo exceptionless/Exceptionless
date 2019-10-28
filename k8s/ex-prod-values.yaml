@@ -37,5 +37,5 @@ jobs:
   workitem:
     replicaCount: 6
 
-extraConfig:
+config:
   EX_EnableSnapshotJobs: "true"
