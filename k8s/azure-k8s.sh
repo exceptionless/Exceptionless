@@ -1,19 +1,20 @@
 # TODO: Set AZURE_ACCOUNT_KEY and REDIS_PASSWORD environment variables
 
-RESOURCE_GROUP=exceptionless-v4
-CLUSTER=ex-prod-k8s
-VNET=ex-prod-net
+RESOURCE_GROUP=exceptionless-v6
+CLUSTER=ex-k8s-v6
+VNET=ex-net-v6
 
 # it's important to have a decent sized network (reserve a /16 for each cluster).
-az network vnet create -g $RESOURCE_GROUP -n $VNET --subnet-name $CLUSTER --address-prefixes 10.10.0.0/16 --subnet-prefixes 10.10.0.0/18 --location eastus
+az network vnet create -g $RESOURCE_GROUP -n $VNET --subnet-name $CLUSTER --address-prefixes 10.60.0.0/16 --subnet-prefixes 10.60.0.0/18 --location eastus
 SUBNET_ID="$(az network vnet subnet list --resource-group $RESOURCE_GROUP --vnet-name $VNET --query '[0].id' --output tsv)"
 
 az aks create \
     --resource-group $RESOURCE_GROUP \
     --name $CLUSTER \
-    --kubernetes-version 1.11.5 \
+    --kubernetes-version 1.14.7 \
     --node-count 3 \
-    --node-vm-size Standard_D16s_v3 \
+    --node-vm-size Standard_D8s_v3 \
+    --max-pods 50 \
     --network-plugin azure \
     --vnet-subnet-id $SUBNET_ID \
     --enable-addons monitoring \
@@ -21,8 +22,8 @@ az aks create \
     --ssh-key-value ~/.ssh/exceptionless.pub \
     --location eastus \
     --docker-bridge-address 172.17.0.1/16 \
-    --dns-service-ip 10.10.192.10 \
-    --service-cidr 10.10.192.0/18
+    --dns-service-ip 10.60.0.10 \
+    --service-cidr 10.60.0.0/18
 
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing
 
@@ -89,59 +90,14 @@ helm install ./exceptionless --name exceptionless --namespace ex-prod --values e
     --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" \
     --set "statsd.token=$STATSD_TOKEN" \
     --set "statsd.user=$STATSD_USER" \
-    --set "extraConfig.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
-    --set "extraConfig.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
-    --set "extraConfig.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
-    --set "extraConfig.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
-    --set "extraConfig.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
-    --set "extraConfig.EX_StripeApiKey=$EX_StripeApiKey" \
-    --set "extraConfig.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
-    --set "extraConfig.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
-
-helm upgrade exceptionless ./exceptionless --namespace ex-prod --values ex-prod-values.yaml \
-    --set "api.image.tag=$API_TAG" \
-    --set "jobs.image.tag=$API_TAG" \
-    --set "email.connectionString=$EMAIL_CONNECTIONSTRING" \
-    --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" \
-    --set "redis.connectionString=$REDIS_CONNECTIONSTRING" \
-    --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" \
-    --set "statsd.token=$STATSD_TOKEN" \
-    --set "statsd.user=$STATSD_USER" \
-    --set "extraConfig.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
-    --set "extraConfig.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
-    --set "extraConfig.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
-    --set "extraConfig.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
-    --set "extraConfig.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
-    --set "extraConfig.EX_StripeApiKey=$EX_StripeApiKey" \
-    --set "extraConfig.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
-    --set "extraConfig.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
-
-# render locally
-rm -f ex-prod.yaml && helm template ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml  \
-    --set "api.image.tag=$API_TAG" \
-    --set "jobs.image.tag=$API_TAG" \
-    --set "email.connectionString=$EMAIL_CONNECTIONSTRING" \
-    --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" \
-    --set "redis.connectionString=$REDIS_CONNECTIONSTRING" \
-    --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" \
-    --set "statsd.token=$STATSD_TOKEN" \
-    --set "statsd.user=$STATSD_USER" \
-    --set "extraConfig.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
-    --set "extraConfig.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
-    --set "extraConfig.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
-    --set "extraConfig.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
-    --set "extraConfig.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
-    --set "extraConfig.EX_StripeApiKey=$EX_StripeApiKey" \
-    --set "extraConfig.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
-    --set "extraConfig.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" > ex-prod.yaml
-
-rm -f ex-prod.diff && kubectl diff -f ex-prod.yaml > ex-prod.diff
-
-helm install stable/kibana --name kibana --namespace ex-prod \
-    --set="image.repository=docker.elastic.co/kibana/kibana" \
-    --set="image.tag=5.6.14" \
-    --set="env.ELASTICSEARCH_URL=http://10.0.0.4:9200" \
-    --set="resources.limits.cpu=200m"
+    --set "config.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" \
+    --set "config.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" \
+    --set "config.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" \
+    --set "config.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" \
+    --set "config.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
+    --set "config.EX_StripeApiKey=$EX_StripeApiKey" \
+    --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
+    --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 # upgrade exceptionless app to a new docker image tag
 helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
