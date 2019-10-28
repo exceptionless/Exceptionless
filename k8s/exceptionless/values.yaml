@@ -43,7 +43,7 @@ statsd:
   token:
   user:
 
-extraConfig: {}
+config: {}
 #  key: value
 
 service:
