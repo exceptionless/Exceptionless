@@ -64,9 +64,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
             foreach (var indexes in indexMap.Page(3)) {
                 foreach (var kvp in indexes) {
-                    string dateField = kvp.Value.IndexType == "events" || kvp.Value.IndexType == "stacks" ? "updated" : "created";
-
-                    var response = await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType) && q.DateRange(d => d.Field(dateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(dateField, SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
+                    string dateField = GetDateField(kvp);
+                    var response = String.IsNullOrEmpty(dateField)
+                        ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
+                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType) && q.DateRange(d => d.Field(dateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(dateField, SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
                     _logger.LogInformation("{SourceIndex}/{SourceType} -> {TargetIndex}: {TaskId}", kvp.Value.Index, kvp.Value.IndexType, kvp.Key, response.Task);
                     _logger.LogInformation(response.GetRequest());
@@ -124,6 +125,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
             }
 
             return JobResult.Success;
+        }
+
+        private static string GetDateField(KeyValuePair<string, (string Index, string IndexType, string IndexAlias)> kvp) {
+            if (kvp.Value.IndexType == "stacks")
+                return null;
+            
+            return "updated_utc";
         }
 
         private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd) {
