@@ -1,4 +1,4 @@
-version: '3.4'
+version: '3.7'
 
 services:
   api:
@@ -82,6 +82,7 @@ services:
       xpack.security.enabled: 'false'
       xpack.graph.enabled: 'false'
       xpack.watcher.enabled: 'false'
+#      reindex.remote.whitelist: docker.for.mac.localhost:9210
     ports:
       - 9200:9200
       - 9300:9300
