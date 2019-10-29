@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using Foundatio.Repositories.Models;
 
@@ -85,6 +87,31 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return hashCode;
+        }
+        
+        /// <summary>
+        /// Helper method for paging objects in a given source
+        /// </summary>
+        /// <typeparam name="T">type of object in source collection</typeparam>
+        /// <param name="source">source collection to be paged</param>
+        /// <param name="pageSize">page size</param>
+        /// <returns>a collection of sub-collections by page size</returns>
+        public static IEnumerable<ReadOnlyCollection<T>> Page<T>(this IEnumerable<T> source, int pageSize) {
+            Contract.Requires(source != null);
+            Contract.Requires(pageSize > 0);
+            Contract.Ensures(Contract.Result<IEnumerable<IEnumerable<T>>>() != null);
+
+            using (var enumerator = source.GetEnumerator()) {
+                while (enumerator.MoveNext()) {
+                    var currentPage = new List<T>(pageSize) { enumerator.Current };
+
+                    while (currentPage.Count < pageSize && enumerator.MoveNext()) {
+                        currentPage.Add(enumerator.Current);
+                    }
+                    
+                    yield return new ReadOnlyCollection<T>(currentPage);
+                }
+            }
         }
     }
 }
