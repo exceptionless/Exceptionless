@@ -22,31 +22,67 @@ az aks create \
     --ssh-key-value ~/.ssh/exceptionless.pub \
     --location eastus \
     --docker-bridge-address 172.17.0.1/16 \
-    --dns-service-ip 10.60.0.10 \
-    --service-cidr 10.60.0.0/18
+    --dns-service-ip 10.60.192.10 \
+    --service-cidr 10.60.192.0/18
 
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing
 
-# create dashboard service account
-kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
+# install dashboard, using 2.0 beta that supports CRDs (elastic operator) 
+# https://github.com/kubernetes/dashboard/releases
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta5/aio/deploy/recommended.yaml
 
-# start dashboard
-az aks browse --resource-group $RESOURCE_GROUP --name $CLUSTER
+# create admin user to login to the dashboard
+kubectl apply -f admin-service-account.yaml
 
-# or
+# get admin user token
+kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
+
+# open dashboard
 kubectl proxy
-# http://localhost:8001/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy/#!/cluster?namespace=default
+# URL: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login
 
-# install helm
-brew install kubernetes-helm
-kubectl apply -f helm-rbac.yaml
-helm init --service-account tiller
+# setup elasticsearch operator
+# https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
+# https://github.com/elastic/cloud-on-k8s/releases
+kubectl apply -f https://download.elastic.co/downloads/eck/1.0.0-beta1/all-in-one.yaml
+
+# view ES operator logs
+kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
+
+# create elasticsearch and kibana instances
+kubectl apply -f elasticsearch.yaml
+# check on deployment, wait for green
+kubectl get elasticsearch
+
+k get es,kb,apm,sts,pod
+
+# get elastic password into env variable
+ELASTIC_PASSWORD=$(kubectl get secret "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+# port forward elasticsearch in background task
+kubectl port-forward service/ex-prod-es-http 9200 &
+# connect to ES
+curl -u elastic:$ELASTIC_PASSWORD http://localhost:9200/
+
+# view nodes with version
+curl -u elastic:$ELASTIC_PASSWORD http://localhost:9200/_cat/nodes\?v\&h\=id,ip,port,v,m
+
+# port forward kibana
+kubectl port-forward service/ex-prod-kb-http 5601
+
+# port forward elasticsearch
+kubectl port-forward service/ex-prod-es-http 9200
+
+# install helm, 3.0 rc 3 is current, but should be final with better way to install soon
+# https://github.com/helm/helm/releases
+curl https://get.helm.sh/helm-v3.0.0-rc.3-darwin-amd64.tar.gz --output helm.tar.gz
+tar -zxvf helm.tar.gz --strip=1 darwin-amd64/helm
+./helm repo add stable https://kubernetes-charts.storage.googleapis.com
 
 # install nginx ingress
-helm install stable/nginx-ingress --namespace kube-system --values nginx-values.yaml --name nginx-ingress
+./helm install nginx-ingress stable/nginx-ingress --namespace kube-system --values nginx-values.yaml
 
 # upgrade nginx ingress to latest
-helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
+./helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
 
 # wait for external ip to be assigned
 kubectl get service -l app=nginx-ingress --namespace kube-system
@@ -55,35 +91,56 @@ PUBLICIPID=$(az network public-ip list --query "[?ipAddress!=null]|[?contains(ip
 az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
-kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
-kubectl label namespace kube-system certmanager.k8s.io/disable-validation=true
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-helm install jetstack/cert-manager --version v0.8.1 --namespace kube-system --name cert-manager --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
-
+kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
+kubectl create namespace cert-manager
+./helm repo add jetstack https://charts.jetstack.io
+./helm repo update
 kubectl apply -f cluster-issuer.yaml
+./helm install cert-manager jetstack/cert-manager --namespace kube-system --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
 
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml
+kubectl describe certificate -n tls-secret
 
 # install redis server
-helm install stable/redis --version 5.2.0 --values redis-values.yaml --name redis --namespace ex-prod
-export REDIS_PASSWORD=$(kubectl get secret --namespace test redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+./helm install redis stable/redis --values redis-values.yaml --namespace ex-prod
 
-helm install stable/redis-ha --set "persistentVolume.storageClass=managed-premium" --set "fullnameOverride=exceptionless-redis" --name exceptionless-redis
-kubectl exec -it redis-redis-ha-server-0 bash -n ex-prod
+# get redis and elastic passwords
+export REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+export ELASTIC_PASSWORD=$(kubectl get secret "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+
+# exec into a pod with redis and elastic password
+kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' \
+    --env REDIS_PASSWORD=$REDIS_PASSWORD \
+    --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD \
+    --image docker.io/bitnami/redis:5.0.6-debian-9-r1 -- bash
+
+# commands to check services
+# redis-cli -h redis-master -a $REDIS_PASSWORD
+# curl -u elastic:$ELASTIC_PASSWORD http://ex-prod-es-http:9200/
 
 # install exceptionless app
-API_TAG=5.0.3485-pre
+API_TAG=5.0.3499-pre
+ELASTIC_CONNECTIONSTRING=
 EMAIL_CONNECTIONSTRING=
 QUEUE_CONNECTIONSTRING=
 REDIS_CONNECTIONSTRING=
 STORAGE_CONNECTIONSTRING=
 STATSD_TOKEN=
 STATSD_USER=
-helm install ./exceptionless --name exceptionless --namespace ex-prod --values ex-prod-values.yaml \
+EX_ApplicationInsightsKey=
+EX_ConnectionStrings__OAuth=
+EX_ExceptionlessApiKey=
+EX_GoogleGeocodingApiKey=
+EX_GoogleTagManagerId=
+EX_StripeApiKey=
+EX_StripePublishableApiKey=
+EX_StripeWebHookSigningSecret=
+
+./helm install exceptionless ./exceptionless --namespace ex-prod --values ex-prod-values.yaml \
     --set "api.image.tag=$API_TAG" \
     --set "jobs.image.tag=$API_TAG" \
+    --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" \
     --set "email.connectionString=$EMAIL_CONNECTIONSTRING" \
     --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" \
     --set "redis.connectionString=$REDIS_CONNECTIONSTRING" \
@@ -100,7 +157,7 @@ helm install ./exceptionless --name exceptionless --namespace ex-prod --values e
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 # upgrade exceptionless app to a new docker image tag
-helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
+./helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
 
 # create service principal for talking to k8s
 ACCOUNT=`az account show -o json`
@@ -110,15 +167,6 @@ SERVICE_PRINCIPAL=`az ad sp create-for-rbac --role="Azure Kubernetes Service Clu
 AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
 AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
 echo "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
-
-# read about cluster autoscaler
-https://docs.microsoft.com/en-us/azure/aks/autoscaler
-
-# get all pods for the exceptionless app
-kubectl get pods -l app=exceptionless
-
-# delete all pods for the exceptionless app
-kubectl delete pods -l app=exceptionless
 
 # run a shell
 kubectl run -it --rm aks-ssh --image=ubuntu
@@ -183,5 +231,6 @@ brew install kubetail
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 
 # install exceptionless slack
+./helm install banzaicloud-stable/slackin --name exceptionless-slack --namespace ex-prod --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
 
-helm install banzaicloud-stable/slackin --name exceptionless-slack --namespace ex-prod --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
+# https://support.binarylane.com.au/support/solutions/articles/1000055889-how-to-benchmark-disk-i-o
