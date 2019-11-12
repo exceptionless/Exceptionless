@@ -1,0 +1,122 @@
+cronjob:
+  # Every hour
+  schedule: "0 * * * *"
+  concurrencyPolicy: "Forbid"
+
+rbac:
+  enabled: true
+
+serviceAccount:
+  create: true
+
+image:
+  repository: slideroom/curator
+  tag: 286
+  pullPolicy: IfNotPresent
+
+command: ["/usr/bin/init"]
+envFromSecrets:
+  ELASTIC_PASSWORD:
+    from:
+      secret: ats-alt-es-elastic-user
+      key: elastic
+
+configMaps:
+  action_file_yml: |-
+    ---
+    actions:
+      1:
+        action: snapshot
+        description: Snapshot data indexes
+        options:
+          repository: data
+          name: data-%Y-%m-%d-%H-%M
+          ignore_unavailable: False
+          include_global_state: True
+          partial: False
+          wait_for_completion: True
+          skip_repo_fs_check: True
+          continue_if_exception: True
+        filters:
+        - filtertype: pattern
+          kind: regex
+          value: '^(?!\.)((?!logstash)[^\s])+$'
+      2:
+        action: snapshot
+        description: Snapshot log indexes
+        options:
+          repository: logs
+          name: logs-%Y-%m-%d-%H-%M
+          ignore_unavailable: False
+          include_global_state: True
+          partial: False
+          wait_for_completion: True
+          skip_repo_fs_check: True
+          continue_if_exception: True
+        filters:
+        - filtertype: pattern
+          kind: regex
+          value: '^((?=\.).*|.*logstash.*)$'
+      3:
+        action: delete_indices
+        description: Clean up old indices
+        options:
+          continue_if_exception: True
+          ignore_empty_list: True
+        filters:
+        - filtertype: age
+          source: name
+          direction: older
+          timestring: '%Y.%m.%d'
+          unit: days
+          unit_count: 30
+      4:
+        action: delete_snapshots
+        description: Clean up old data snapshots
+        options:
+          repository: data
+          continue_if_exception: True
+          ignore_empty_list: True
+        filters:
+        - filtertype: pattern
+          kind: prefix
+          value: data-
+          exclude:
+        - filtertype: age
+          source: creation_date
+          direction: older
+          unit: days
+          unit_count: 14
+      5:
+        action: delete_snapshots
+        description: Clean up old log snapshots
+        options:
+          repository: logs
+          continue_if_exception: True
+          ignore_empty_list: True
+        filters:
+        - filtertype: pattern
+          kind: prefix
+          value: logs-
+          exclude:
+        - filtertype: age
+          source: creation_date
+          direction: older
+          unit: days
+          unit_count: 14
+  config_yml: |-
+    ---
+    client:
+      hosts:
+        - "ats-alt-es-http"
+      port: "9200"
+      http_auth: ${ELASTIC_AUTH}
+      use_ssl: False
+    logging:
+      loglevel: DEBUG
+      logfile:
+      logformat: default
+      blacklist: ['elasticsearch', 'urllib3']
+
+securityContext:
+  runAsUser: 16  # run as cron user instead of root

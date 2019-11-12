@@ -1,11 +1,11 @@
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: tls-secret
 spec:
   secretName: tls-secret
   dnsNames:
-  - ex-prod-k8s.eastus.cloudapp.azure.com
+  - ex-k8s-v6.eastus.cloudapp.azure.com
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
