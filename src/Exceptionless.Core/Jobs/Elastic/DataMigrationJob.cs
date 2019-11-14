@@ -42,10 +42,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
             var indexMap = new Dictionary<string, (string Index, string IndexType, string IndexAlias, string DateField)> {
                 { $"{scope}organizations-v1", ( $"{scope}organizations-v1", "organization", $"{scope}organizations", "updated_utc" ) },
                 { $"{scope}projects-v1", ( $"{scope}organizations-v1", "project", $"{scope}projects", "updated_utc" ) },
-                { $"{scope}stacks-v1", ( $"{scope}stacks-v1", "stacks", $"{scope}stacks", "last_occurrence" ) },
                 { $"{scope}tokens-v1", ( $"{scope}organizations-v1", "token", $"{scope}tokens", "updated_utc" ) },
                 { $"{scope}users-v1", ( $"{scope}organizations-v1", "user", $"{scope}users", "updated_utc" ) },
-                { $"{scope}webhooks-v1", ( $"{scope}organizations-v1", "webhook", $"{scope}webhooks", "created_utc") }
+                { $"{scope}webhooks-v1", ( $"{scope}organizations-v1", "webhook", $"{scope}webhooks", "created_utc") },
+                { $"{scope}stacks-v1", ( $"{scope}stacks-v1", "stacks", $"{scope}stacks", "last_occurrence" ) }
             };
             
             // create the new indexes, don't migrate yet
