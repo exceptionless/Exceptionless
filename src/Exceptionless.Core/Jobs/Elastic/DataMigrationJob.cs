@@ -33,19 +33,19 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
             var retentionPeriod = _configuration.Events.MaxIndexAge.GetValueOrDefault(TimeSpan.FromDays(180));
             string scope = elasticOptions.ScopePrefix;
-            var cutOffDate = DateTime.MinValue;
+            var cutOffDate = elasticOptions.ReindexCutOffDate;
             bool shouldUpdateAliases = true;
             
             var client = _configuration.Client;
             await _configuration.ConfigureIndexesAsync().AnyContext();
             
-            var indexMap = new Dictionary<string, (string Index, string IndexType, string IndexAlias)> {
-                { $"{scope}organizations-v1", ( $"{scope}organizations-v1", "organization", $"{scope}organizations" ) },
-                { $"{scope}projects-v1", ( $"{scope}organizations-v1", "project", $"{scope}projects" ) },
-                { $"{scope}stacks-v1", ( $"{scope}stacks-v1", "stacks", $"{scope}stacks" ) },
-                { $"{scope}tokens-v1", ( $"{scope}organizations-v1", "token", $"{scope}tokens" ) },
-                { $"{scope}users-v1", ( $"{scope}organizations-v1", "user", $"{scope}users" ) },
-                { $"{scope}webhooks-v1", ( $"{scope}organizations-v1", "webhook", $"{scope}webhooks" ) }
+            var indexMap = new Dictionary<string, (string Index, string IndexType, string IndexAlias, string DateField)> {
+                { $"{scope}organizations-v1", ( $"{scope}organizations-v1", "organization", $"{scope}organizations", "updated_utc" ) },
+                { $"{scope}projects-v1", ( $"{scope}organizations-v1", "project", $"{scope}projects", "updated_utc" ) },
+                { $"{scope}stacks-v1", ( $"{scope}stacks-v1", "stacks", $"{scope}stacks", "last_occurrence" ) },
+                { $"{scope}tokens-v1", ( $"{scope}organizations-v1", "token", $"{scope}tokens", "updated_utc" ) },
+                { $"{scope}users-v1", ( $"{scope}organizations-v1", "user", $"{scope}users", "updated_utc" ) },
+                { $"{scope}webhooks-v1", ( $"{scope}organizations-v1", "webhook", $"{scope}webhooks", "created_utc") }
             };
             
             // create the new indexes, don't migrate yet
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 for (int day = 0; day <= retentionPeriod.Days; day++) {
                     var date = day == 0 ? SystemClock.UtcNow : SystemClock.UtcNow.SubtractDays(day);
                     string indexToCreate = $"{scope}events-v1-{date:yyyy.MM.dd}";
-                    indexMap.Add(indexToCreate, ( $"{scope}events-v1-{date:yyyy.MM.dd}", "events", $"{scope}events" ));
+                    indexMap.Add(indexToCreate, ( $"{scope}events-v1-{date:yyyy.MM.dd}", "events", $"{scope}events", "updated_utc" ));
                     
                     await index.EnsureIndexAsync(date).AnyContext();
                 }
@@ -64,10 +64,9 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
             foreach (var indexes in indexMap.Page(3)) {
                 foreach (var kvp in indexes) {
-                    string dateField = GetDateField(kvp);
-                    var response = String.IsNullOrEmpty(dateField)
+                    var response = String.IsNullOrEmpty(kvp.Value.DateField)
                         ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
-                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType) && q.DateRange(d => d.Field(dateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(dateField, SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
+                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType) && q.DateRange(d => d.Field(kvp.Value.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(kvp.Value.DateField, SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
                     _logger.LogInformation("{SourceIndex}/{SourceType} -> {TargetIndex}: {TaskId}", kvp.Value.Index, kvp.Value.IndexType, kvp.Key, response.Task);
                     _logger.LogInformation(response.GetRequest());
@@ -125,13 +124,6 @@ namespace Exceptionless.Core.Jobs.Elastic {
             }
 
             return JobResult.Success;
-        }
-
-        private static string GetDateField(KeyValuePair<string, (string Index, string IndexType, string IndexAlias)> kvp) {
-            if (kvp.Value.IndexType == "stacks")
-                return null;
-            
-            return "updated_utc";
         }
 
         private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd) {
