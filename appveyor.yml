@@ -68,7 +68,7 @@ deploy_script:
     if [[ "$APPVEYOR_REPO_BRANCH" == "feature/elastic7" ]]; then
       # deploy to k8s cluster
       az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
-      az aks get-credentials --resource-group exceptionless-v6 --name ex-v6-k8s
+      az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
       helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless --namespace ex-dev ./k8s/exceptionless
     fi
 

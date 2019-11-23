@@ -122,7 +122,7 @@ kubectl run --namespace ex-$ENV ex-$ENV-client --rm --tty -i --restart='Never' \
 
 # install exceptionless app
 APP_TAG="2.8.1502-pre"
-API_TAG="6.0.3528-pre"
+API_TAG="6.0.3530-pre"
 ELASTIC_CONNECTIONSTRING=
 EMAIL_CONNECTIONSTRING=
 QUEUE_CONNECTIONSTRING=
