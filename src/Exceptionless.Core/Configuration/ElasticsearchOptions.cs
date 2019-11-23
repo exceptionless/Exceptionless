@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Configuration {
 
         public string Password { get; internal set; }
         public string UserName { get; internal set; }
-        
+        public DateTime ReindexCutOffDate { get; internal set; }
         public ElasticsearchOptions ElasticsearchToMigrate { get; internal set; }
     }
 
@@ -39,15 +39,18 @@ namespace Exceptionless.Core.Configuration {
 
             options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
             options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && _appOptions.Value.AppMode == AppMode.Production);
-
+            options.ReindexCutOffDate = _configuration.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
+            
             string connectionString = _configuration.GetConnectionString("Elasticsearch");
             ParseConnectionString(connectionString, options);
             
             string connectionStringToMigrate = _configuration.GetConnectionString("ElasticsearchToMigrate");
             if (String.IsNullOrEmpty(connectionStringToMigrate))
                 return;
-            
-            options.ElasticsearchToMigrate = new ElasticsearchOptions();
+
+            options.ElasticsearchToMigrate = new ElasticsearchOptions {
+                ReindexCutOffDate = options.ReindexCutOffDate
+            };
             ParseConnectionString(connectionStringToMigrate, options.ElasticsearchToMigrate);
         }
 
