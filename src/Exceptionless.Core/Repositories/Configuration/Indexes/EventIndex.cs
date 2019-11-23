@@ -112,7 +112,12 @@ ctx.error.code = codes;";
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
             var mapping = map
                 .Dynamic(false)
-                .DynamicTemplates(dt => dt.DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256)))))
+                .DynamicTemplates(dt => dt
+                    .DynamicTemplate("idx_bool", t => t.Match("*-b").Mapping(m => m.Boolean(s => s)))
+                    .DynamicTemplate("idx_date", t => t.Match("*-d").Mapping(m => m.Date(s => s)))
+                    .DynamicTemplate("idx_number", t => t.Match("*-n").Mapping(m => m.Number(s => s.Type(NumberType.Double))))
+                    .DynamicTemplate("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256))))
+                    .DynamicTemplate("idx_string", t => t.Match("*-s").Mapping(m => m.Keyword(s => s.IgnoreAbove(1024)))))
                 .Properties(p => p
                     .SetupDefaults()
                     .Keyword(f => f.Name(e => e.Id).CopyTo(s => s.Field(ALL_FIELD)))
