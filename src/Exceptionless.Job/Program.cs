@@ -62,6 +62,7 @@ namespace Exceptionless.Job {
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables("EX_")
+                .AddEnvironmentVariables("ASPNETCORE_")
                 .AddCommandLine(args)
                 .Build();
 
@@ -80,6 +81,7 @@ namespace Exceptionless.Job {
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
                 .UseSerilog()
+                .ConfigureAppConfiguration((ctx, c) => { ctx.Configuration = config; })
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder
                         .UseConfiguration(config)

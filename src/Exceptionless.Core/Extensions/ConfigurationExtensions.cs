@@ -26,11 +26,11 @@ namespace Exceptionless.Core.Extensions {
                     continue;
                 
                 if (value.Value != null)
-                    dict.Add(value.Key, value.Value);
+                    dict[value.Key] = value.Value;
                 
                 var subDict = ToDictionary(value);
                 if (subDict.Count > 0)
-                    dict.Add(value.Key, subDict);
+                    dict[value.Key] = subDict;
             }
 
             return dict;
