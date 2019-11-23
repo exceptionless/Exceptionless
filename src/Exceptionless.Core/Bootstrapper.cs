@@ -275,7 +275,6 @@ namespace Exceptionless.Core {
         public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger("AppBuilder");
 
-            services.AddJobLifetimeService();
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
             services.AddJob<DownloadGeoIPDatabaseJob>(true);
