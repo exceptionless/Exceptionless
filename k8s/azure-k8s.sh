@@ -231,6 +231,7 @@ brew install kubetail
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 
 # install exceptionless slack
-./helm install banzaicloud-stable/slackin --name exceptionless-slack --namespace ex-prod --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
+helm repo add banzaicloud-stable https://kubernetes-charts.banzaicloud.com
+helm install exceptionless-slack banzaicloud-stable/slackin --namespace ex-prod --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
 
 # https://support.binarylane.com.au/support/solutions/articles/1000055889-how-to-benchmark-disk-i-o

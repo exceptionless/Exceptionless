@@ -1,0 +1,16 @@
+elasticsearch:
+  connectionString: server=http://10.0.0.4:9200;field-limit=2000
+api:
+  defaultDomain: dev-api.exceptionless.io
+  domains:
+    - dev-api.exceptionless.io
+app:
+  image:
+    tag: "2.8.1502-pre"
+  defaultDomain: dev-app.exceptionless.io
+  domains:
+    - dev-app.exceptionless.io
+collector:
+  defaultDomain: dev-collector.exceptionless.io
+  domains:
+    - dev-collector.exceptionless.io
