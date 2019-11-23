@@ -59,7 +59,7 @@ deploy_script:
   - |
     echo "Branch: $APPVEYOR_REPO_BRANCH"
     echo "PR: $APPVEYOR_PULL_REQUEST_NUMBER"
-    if [[ "$APPVEYOR_REPO_BRANCH" == "master" ]]; then
+    if [[ "$APPVEYOR_REPO_BRANCH" == "master" && APPVEYOR_PULL_REQUEST_NUMBER == "" ]]; then
       # deploy to k8s cluster
       az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
       az aks get-credentials --resource-group exceptionless-v4 --name ex-prod-k8s
