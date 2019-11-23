@@ -61,13 +61,13 @@ deploy_script:
     echo "PR: $APPVEYOR_PULL_REQUEST_NUMBER"
     if [[ "$APPVEYOR_REPO_BRANCH" == "master" && APPVEYOR_PULL_REQUEST_NUMBER == "" ]]; then
       # deploy to k8s cluster
-      az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+      az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
       az aks get-credentials --resource-group exceptionless-v4 --name ex-prod-k8s
       # helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless-test ./k8s/exceptionless
     fi
     if [[ "$APPVEYOR_REPO_BRANCH" == "feature/elastic7" ]]; then
       # deploy to k8s cluster
-      az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT
+      az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
       az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
       helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless --namespace ex-dev ./k8s/exceptionless
     fi
