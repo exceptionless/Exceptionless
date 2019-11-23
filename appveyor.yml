@@ -1,7 +1,6 @@
 version: '{build}'
 image: ubuntu
 clone_depth: 2
-skip_branch_with_pr: true
 
 services:
   - docker

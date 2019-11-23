@@ -3,6 +3,7 @@
 RESOURCE_GROUP=exceptionless-v6
 CLUSTER=ex-k8s-v6
 VNET=ex-net-v6
+ENV=dev
 
 # it's important to have a decent sized network (reserve a /16 for each cluster).
 az network vnet create -g $RESOURCE_GROUP -n $VNET --subnet-name $CLUSTER --address-prefixes 10.60.0.0/16 --subnet-prefixes 10.60.0.0/18 --location eastus
@@ -29,7 +30,7 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwr
 
 # install dashboard, using 2.0 beta that supports CRDs (elastic operator) 
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta5/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta6/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -57,9 +58,9 @@ kubectl get elasticsearch
 k get es,kb,apm,sts,pod
 
 # get elastic password into env variable
-ELASTIC_PASSWORD=$(kubectl get secret "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 # port forward elasticsearch in background task
-kubectl port-forward service/ex-prod-es-http 9200 &
+kubectl port-forward service/ex-$ENV-es-http 9200 &
 # connect to ES
 curl -u elastic:$ELASTIC_PASSWORD http://localhost:9200/
 
@@ -67,22 +68,22 @@ curl -u elastic:$ELASTIC_PASSWORD http://localhost:9200/
 curl -u elastic:$ELASTIC_PASSWORD http://localhost:9200/_cat/nodes\?v\&h\=id,ip,port,v,m
 
 # port forward kibana
-kubectl port-forward service/ex-prod-kb-http 5601
+kubectl port-forward service/ex-$ENV-kb-http 5601
 
 # port forward elasticsearch
-kubectl port-forward service/ex-prod-es-http 9200
+kubectl port-forward service/ex-$ENV-es-http 9200
 
 # install helm, 3.0 rc 3 is current, but should be final with better way to install soon
 # https://github.com/helm/helm/releases
 curl https://get.helm.sh/helm-v3.0.0-rc.3-darwin-amd64.tar.gz --output helm.tar.gz
 tar -zxvf helm.tar.gz --strip=1 darwin-amd64/helm
-./helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo add stable https://kubernetes-charts.storage.googleapis.com
 
 # install nginx ingress
-./helm install nginx-ingress stable/nginx-ingress --namespace kube-system --values nginx-values.yaml
+helm install nginx-ingress stable/nginx-ingress --namespace kube-system --values nginx-values.yaml
 
 # upgrade nginx ingress to latest
-./helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
+helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
 
 # wait for external ip to be assigned
 kubectl get service -l app=nginx-ingress --namespace kube-system
@@ -93,34 +94,35 @@ az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 # install cert-manager
 kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
 kubectl create namespace cert-manager
-./helm repo add jetstack https://charts.jetstack.io
-./helm repo update
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
 kubectl apply -f cluster-issuer.yaml
-./helm install cert-manager jetstack/cert-manager --namespace kube-system --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
+helm install cert-manager jetstack/cert-manager --namespace kube-system --set ingressShim.defaultIssuerName=letsencrypt-$ENV --set ingressShim.defaultIssuerKind=ClusterIssuer
 
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml
 kubectl describe certificate -n tls-secret
 
 # install redis server
-./helm install redis stable/redis --values redis-values.yaml --namespace ex-prod
+helm install redis stable/redis --values redis-values.yaml --namespace ex-$ENV
 
 # get redis and elastic passwords
-export REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod redis -o jsonpath="{.data.redis-password}" | base64 --decode)
-export ELASTIC_PASSWORD=$(kubectl get secret "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+export REDIS_PASSWORD=$(kubectl get secret --namespace ex-$ENV redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+export ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # exec into a pod with redis and elastic password
-kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' \
+kubectl run --namespace ex-$ENV ex-$ENV-client --rm --tty -i --restart='Never' \
     --env REDIS_PASSWORD=$REDIS_PASSWORD \
     --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD \
     --image docker.io/bitnami/redis:5.0.6-debian-9-r1 -- bash
 
 # commands to check services
 # redis-cli -h redis-master -a $REDIS_PASSWORD
-# curl -u elastic:$ELASTIC_PASSWORD http://ex-prod-es-http:9200/
+# curl -u elastic:$ELASTIC_PASSWORD http://ex-$ENV-es-http:9200/
 
 # install exceptionless app
-API_TAG=5.0.3499-pre
+APP_TAG="2.8.1502-pre"
+API_TAG="5.0.3499-pre"
 ELASTIC_CONNECTIONSTRING=
 EMAIL_CONNECTIONSTRING=
 QUEUE_CONNECTIONSTRING=
@@ -137,7 +139,8 @@ EX_StripeApiKey=
 EX_StripePublishableApiKey=
 EX_StripeWebHookSigningSecret=
 
-./helm install exceptionless ./exceptionless --namespace ex-prod --values ex-prod-values.yaml \
+helm install exceptionless ./exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml \
+    --set "app.image.tag=$APP_TAG" \
     --set "api.image.tag=$API_TAG" \
     --set "jobs.image.tag=$API_TAG" \
     --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" \
@@ -157,7 +160,7 @@ EX_StripeWebHookSigningSecret=
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 # upgrade exceptionless app to a new docker image tag
-./helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
+helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
 
 # create service principal for talking to k8s
 ACCOUNT=`az account show -o json`
@@ -173,50 +176,50 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 # ssh to k8s node https://docs.microsoft.com/en-us/azure/aks/ssh
 
 # stop the entire app
-kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-collector --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-event-posts --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-mail-message --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-work-item --replicas=0 --namespace ex-prod
-kubectl scale deployment/exceptionless-statsd --replicas=0 --namespace ex-prod
+kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-collector --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-event-posts --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-mail-message --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-work-item --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-statsd --replicas=0 --namespace ex-$ENV
 
-kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
 
 # resume the app
-kubectl scale deployment/exceptionless-api --replicas=5 --namespace ex-prod
-kubectl scale deployment/exceptionless-app --replicas=2 --namespace ex-prod
-kubectl scale deployment/exceptionless-collector --replicas=12 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=1 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=1 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=2 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-event-posts --replicas=6 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=2 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-mail-message --replicas=2 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=1 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=1 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=4 --namespace ex-prod
-kubectl scale deployment/exceptionless-jobs-work-item --replicas=5 --namespace ex-prod
-kubectl scale deployment/exceptionless-statsd --replicas=1 --namespace ex-prod
+kubectl scale deployment/exceptionless-api --replicas=5 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-app --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-collector --replicas=12 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-event-posts --replicas=6 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-mail-message --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=4 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-jobs-work-item --replicas=5 --namespace ex-$ENV
+kubectl scale deployment/exceptionless-statsd --replicas=1 --namespace ex-$ENV
 
-kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
-kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
 
 # view pod log tail
 kubectl logs -f exceptionless-jobs-event-posts-6c7b78d745-xd5ln
@@ -232,6 +235,6 @@ az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 
 # install exceptionless slack
 helm repo add banzaicloud-stable https://kubernetes-charts.banzaicloud.com
-helm install exceptionless-slack banzaicloud-stable/slackin --namespace ex-prod --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
+helm install exceptionless-slack banzaicloud-stable/slackin --namespace ex-$ENV --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
 
-# https://support.binarylane.com.au/support/solutions/articles/1000055889-how-to-benchmark-disk-i-o
+# https://support.binarylane.com.au/support/solutions/articles/1000055889-how-to-benchmark-disk-i-o`

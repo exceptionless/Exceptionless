@@ -1,5 +1,5 @@
 elasticsearch:
-  connectionString: server=http://10.0.0.4:9200;field-limit=2000
+  connectionString: server=http://ex-dev-es-http:9200;field-limit=2000
 api:
   defaultDomain: dev-api.exceptionless.io
   domains:
