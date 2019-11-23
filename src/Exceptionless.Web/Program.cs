@@ -75,7 +75,6 @@ namespace Exceptionless.Web {
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
-                .ConfigureAppConfiguration((ctx, c) => { ctx.Configuration = config; })
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder
                         .UseConfiguration(config)

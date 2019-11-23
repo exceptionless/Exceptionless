@@ -81,7 +81,6 @@ namespace Exceptionless.Job {
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
                 .UseSerilog()
-                .ConfigureAppConfiguration((ctx, c) => { ctx.Configuration = config; })
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder
                         .UseConfiguration(config)
