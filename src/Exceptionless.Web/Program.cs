@@ -52,6 +52,7 @@ namespace Exceptionless.Web {
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables("EX_")
+                .AddEnvironmentVariables("ASPNETCORE_")
                 .AddCommandLine(args)
                 .Build();
 
@@ -74,6 +75,7 @@ namespace Exceptionless.Web {
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
+                .ConfigureAppConfiguration((ctx, c) => { ctx.Configuration = config; })
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder
                         .UseConfiguration(config)
