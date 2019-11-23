@@ -1,3 +1,4 @@
+appMode: Staging
 elasticsearch:
   connectionString: server=http://ex-dev-es-http:9200;field-limit=2000
 api:
