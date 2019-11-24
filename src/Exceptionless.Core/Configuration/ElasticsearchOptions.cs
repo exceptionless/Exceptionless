@@ -72,6 +72,10 @@ namespace Exceptionless.Core.Configuration {
 
             options.UserName = pairs.GetString("username");
             options.Password = pairs.GetString("password");
+            
+            string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
+            if (!String.IsNullOrEmpty(scope))
+                options.Scope = scope;
         }
     }
 }
