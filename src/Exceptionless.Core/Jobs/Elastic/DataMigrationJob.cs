@@ -32,6 +32,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 return JobResult.CancelledWithMessage($"Please configure the connection string EX_{nameof(elasticOptions.ElasticsearchToMigrate)}.");
 
             var retentionPeriod = _configuration.Events.MaxIndexAge.GetValueOrDefault(TimeSpan.FromDays(180));
+            string sourceScope = elasticOptions.ElasticsearchToMigrate.Scope;
             string scope = elasticOptions.ScopePrefix;
             var cutOffDate = elasticOptions.ReindexCutOffDate;
             bool shouldUpdateAliases = true;
@@ -39,13 +40,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
             var client = _configuration.Client;
             await _configuration.ConfigureIndexesAsync().AnyContext();
             
-            var indexMap = new Dictionary<string, (string Index, string IndexType, string IndexAlias, string DateField)> {
-                { $"{scope}organizations-v1", ( $"{scope}organizations-v1", "organization", $"{scope}organizations", "updated_utc" ) },
-                { $"{scope}projects-v1", ( $"{scope}organizations-v1", "project", $"{scope}projects", "updated_utc" ) },
-                { $"{scope}tokens-v1", ( $"{scope}organizations-v1", "token", $"{scope}tokens", "updated_utc" ) },
-                { $"{scope}users-v1", ( $"{scope}organizations-v1", "user", $"{scope}users", "updated_utc" ) },
-                { $"{scope}webhooks-v1", ( $"{scope}organizations-v1", "webhook", $"{scope}webhooks", "created_utc") },
-                { $"{scope}stacks-v1", ( $"{scope}stacks-v1", "stacks", $"{scope}stacks", "last_occurrence" ) }
+            var indexMap = new Dictionary<string, (string Index, string IndexType, string IndexAlias, string DateField)> { 
+                { $"{scope}organizations-v1", ( $"{sourceScope}organizations-v1", "organization", $"{scope}organizations", "updated_utc" ) },
+                { $"{scope}projects-v1", ( $"{sourceScope}organizations-v1", "project", $"{scope}projects", "updated_utc" ) },
+                { $"{scope}tokens-v1", ( $"{sourceScope}organizations-v1", "token", $"{scope}tokens", "updated_utc" ) },
+                { $"{scope}users-v1", ( $"{sourceScope}organizations-v1", "user", $"{scope}users", "updated_utc" ) },
+                { $"{scope}webhooks-v1", ( $"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks", "created_utc") },
+                { $"{scope}stacks-v1", ( $"{sourceScope}stacks-v1", "stacks", $"{scope}stacks", "last_occurrence" ) }
             };
             
             // create the new indexes, don't migrate yet
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 for (int day = 0; day <= retentionPeriod.Days; day++) {
                     var date = day == 0 ? SystemClock.UtcNow : SystemClock.UtcNow.SubtractDays(day);
                     string indexToCreate = $"{scope}events-v1-{date:yyyy.MM.dd}";
-                    indexMap.Add(indexToCreate, ( $"{scope}events-v1-{date:yyyy.MM.dd}", "events", $"{scope}events", "updated_utc" ));
+                    indexMap.Add(indexToCreate, ( $"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", $"{scope}events", "updated_utc" ));
                     
                     await index.EnsureIndexAsync(date).AnyContext();
                 }
@@ -96,7 +97,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             _logger.LogInformation("Checking task status {TaskId} for {TargetIndex} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, taskStatus.Task.Status.Created, taskStatus.Task.Status.Updated, taskStatus.Task.Status.Deleted, taskStatus.Task.Status.VersionConflicts, taskStatus.Task.Status.Total);
                             continue;
                         }
-
+                        
                         reindexTasks.Remove(task);
                         completedTasks.Add((task.TaskId, task.SourceIndex, task.SourceType, task.TargetIndex, taskStatus.Task.Status));
                         var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex)).AnyContext();
