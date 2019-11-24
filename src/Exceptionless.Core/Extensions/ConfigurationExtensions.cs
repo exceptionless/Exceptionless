@@ -22,6 +22,10 @@ namespace Exceptionless.Core.Extensions {
 
             var dict = new Dictionary<string, object>();
             foreach (var value in section.GetChildren()) {
+                // kubernetes service variables
+                if (value.Key.StartsWith("DEV_", StringComparison.Ordinal))
+                    continue;
+                
                 if (String.IsNullOrEmpty(value.Key) || sectionsToSkip.Contains(value.Key, StringComparer.OrdinalIgnoreCase))
                     continue;
                 

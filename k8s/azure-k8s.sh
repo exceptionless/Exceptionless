@@ -104,10 +104,10 @@ kubectl apply -f certificates.yaml
 kubectl describe certificate -n tls-secret
 
 # install redis server
-helm install redis stable/redis --values redis-values.yaml --namespace ex-$ENV
+helm install ex-$ENV-redis stable/redis --values redis-values.yaml --namespace ex-$ENV
 
 # get redis and elastic passwords
-export REDIS_PASSWORD=$(kubectl get secret --namespace ex-$ENV redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+export REDIS_PASSWORD=$(kubectl get secret --namespace ex-$ENV ex-$ENV-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
 export ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # exec into a pod with redis and elastic password
@@ -116,13 +116,18 @@ kubectl run --namespace ex-$ENV ex-$ENV-client --rm --tty -i --restart='Never' \
     --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD \
     --image docker.io/bitnami/redis:5.0.6-debian-9-r1 -- bash
 
+# run migration job
+kubectl run --namespace ex-$ENV ex-$ENV-client --rm --tty -i --restart='Never' \
+    --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD \
+    --image exceptionless/api-ci:$API_TAG -- bash
+
 # commands to check services
 # redis-cli -h redis-master -a $REDIS_PASSWORD
 # curl -u elastic:$ELASTIC_PASSWORD http://ex-$ENV-es-http:9200/
 
 # install exceptionless app
 APP_TAG="2.8.1502-pre"
-API_TAG="6.0.3530-pre"
+API_TAG="6.0.3534-pre"
 ELASTIC_CONNECTIONSTRING=
 EMAIL_CONNECTIONSTRING=
 QUEUE_CONNECTIONSTRING=
@@ -139,7 +144,7 @@ EX_StripeApiKey=
 EX_StripePublishableApiKey=
 EX_StripeWebHookSigningSecret=
 
-helm install exceptionless ./exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml \
+helm install ex-$ENV ./exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml \
     --set "app.image.tag=$APP_TAG" \
     --set "api.image.tag=$API_TAG" \
     --set "jobs.image.tag=$API_TAG" \
@@ -160,7 +165,7 @@ helm install exceptionless ./exceptionless --namespace ex-$ENV --values ex-$ENV-
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 # upgrade exceptionless app to a new docker image tag
-helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values exceptionless ./exceptionless
+helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-$ENV ./exceptionless
 
 # create service principal for talking to k8s
 ACCOUNT=`az account show -o json`

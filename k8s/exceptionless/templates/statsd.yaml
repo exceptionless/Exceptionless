@@ -1,4 +1,4 @@
-{{- if (empty .Values.statsd.token) -}}
+{{- if .Values.statsd.token -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
