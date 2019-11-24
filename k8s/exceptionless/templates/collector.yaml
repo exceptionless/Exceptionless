@@ -99,7 +99,7 @@ metadata:
   name: {{ template "exceptionless.fullname" . }}-collector-ingress
   annotations:
     kubernetes.io/ingress.class: nginx
-    certmanager.k8s.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,If-Modified-Since,Cache-Control,Content-Type,Authorization,ETag,Link,v,X-Requested-With,X-Exceptionless-Client,X-Result-Count,X-RateLimit-Limit,X-RateLimit-Remaining,X-Exceptionless-ConfigVersion"
     nginx.ingress.kubernetes.io/enable-cors: "true"

@@ -69,7 +69,7 @@ deploy_script:
       # deploy to k8s cluster
       az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
       az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-      helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values exceptionless --namespace ex-dev ./k8s/exceptionless
+      helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values ex-dev --namespace ex-dev ./k8s/exceptionless
     fi
 
 artifacts:
