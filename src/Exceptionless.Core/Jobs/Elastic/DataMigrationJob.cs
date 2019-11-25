@@ -82,6 +82,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     var taskStatus = await client.Tasks.GetTaskAsync(task.TaskId, t => t.WaitForCompletion(false)).AnyContext();
                     _logger.LogTraceRequest(taskStatus);
 
+                    var status = taskStatus.Task.Status;
+                    var duration = TimeSpan.FromMilliseconds(taskStatus.Task.RunningTimeInNanoseconds * 0.000001);
+                    double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
+                    
                     if (!taskStatus.IsValid) {
                         if (taskStatus.ServerError?.Status == 404) {
                             _logger.LogInformation("Task ({TaskId}) for {TargetIndex}: Task isn't running and hasn't stored its result", task.TaskId, task.TargetIndex);
@@ -105,10 +109,6 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     }
 
                     task.Errors.Clear();
-                    var status = taskStatus.Task.Status;
-                    var duration = TimeSpan.FromMilliseconds(taskStatus.Task.RunningTimeInNanoseconds * 0.000001);
-                    double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
-                    
                     if (!taskStatus.Completed) {
                         _logger.LogInformation("Reindexing ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}, ", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                         continue;
