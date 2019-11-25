@@ -35,7 +35,7 @@ namespace Exceptionless.Web {
             } finally {
                 Log.CloseAndFlush();
                 await ExceptionlessClient.Default.ProcessQueueAsync();
-                
+
                 if (Debugger.IsAttached)
                     Console.ReadKey();
             }
@@ -58,12 +58,12 @@ namespace Exceptionless.Web {
 
             return CreateHostBuilder(config, environment);
         }
-        
+
         public static IHostBuilder CreateHostBuilder(IConfiguration config, string environment) {
             Console.Title = "Exceptionless Web";
-            
+
             var options = AppOptions.ReadFromConfiguration(config);
-            
+
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
@@ -81,12 +81,12 @@ namespace Exceptionless.Web {
                         .ConfigureKestrel(c => {
                             c.AddServerHeader = false;
                             // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
-                            
+
                             if (options.MaximumEventPostSize > 0)
                                 c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                         })
                         .UseStartup<Startup>();
-                    
+
                     if (String.IsNullOrEmpty(webBuilder.GetSetting(WebHostDefaults.ContentRootKey)))
                         webBuilder.UseContentRoot(Directory.GetCurrentDirectory());
 
@@ -98,7 +98,7 @@ namespace Exceptionless.Web {
                 .ConfigureServices((ctx, services) => {
                     services.AddSingleton(config);
                     services.AddHttpContextAccessor();
-                    
+
                     if (useApplicationInsights) {
                         services.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
                         services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);

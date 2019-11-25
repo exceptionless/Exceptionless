@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(ElasticsearchOptions options) {
-            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
+            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), _configuration.GetScopeFromAppMode());
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
             options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
