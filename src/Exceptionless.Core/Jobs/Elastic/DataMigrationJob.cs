@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 if (workingTasks.Count == 0 && indexQueue.Count == 0)
                     break;
 
-                if (workingTasks.Count < 3 && indexQueue.TryDequeue(out var entry)) {
+                if (workingTasks.Count < 5 && indexQueue.TryDequeue(out var entry)) {
                     if (entry.CreateIndex != null)
                         await entry.CreateIndex().AnyContext();
                     
