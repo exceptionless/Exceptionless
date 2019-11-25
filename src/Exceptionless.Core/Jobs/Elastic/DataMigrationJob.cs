@@ -108,6 +108,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             if (taskStatus.Completed && isConnectionError) {
                                 _logger.LogWarning("Reindexing Failed and will be retried ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                                 indexQueue.Enqueue((task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.DateField, null));
+                                await Task.Delay(TimeSpan.FromSeconds(15));
                             } else {
                                 _logger.LogCritical("Reindexing Failed ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                             }
