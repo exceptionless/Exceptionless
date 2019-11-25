@@ -35,95 +35,99 @@ namespace Exceptionless.Core.Jobs.Elastic {
             string sourceScope = elasticOptions.ElasticsearchToMigrate.Scope;
             string scope = elasticOptions.ScopePrefix;
             var cutOffDate = elasticOptions.ReindexCutOffDate;
-            bool shouldUpdateAliases = true;
             
             var client = _configuration.Client;
             await _configuration.ConfigureIndexesAsync().AnyContext();
-            
-            var indexMap = new Dictionary<string, (string Index, string IndexType, string IndexAlias, string DateField)> { 
-                { $"{scope}organizations-v1", ( $"{sourceScope}organizations-v1", "organization", $"{scope}organizations", "updated_utc" ) },
-                { $"{scope}projects-v1", ( $"{sourceScope}organizations-v1", "project", $"{scope}projects", "updated_utc" ) },
-                { $"{scope}tokens-v1", ( $"{sourceScope}organizations-v1", "token", $"{scope}tokens", "updated_utc" ) },
-                { $"{scope}users-v1", ( $"{sourceScope}organizations-v1", "user", $"{scope}users", "updated_utc" ) },
-                { $"{scope}webhooks-v1", ( $"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks", "created_utc") },
-                { $"{scope}stacks-v1", ( $"{sourceScope}stacks-v1", "stacks", $"{scope}stacks", "last_occurrence" ) }
-            };
+
+            var indexQueue = new Queue<(string SourceIndex, string SourceIndexType, string TargetIndex, string TargetIndexAlias, string DateField, Func<Task> CreateIndex)>();
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "organization", $"{scope}organizations-v1", $"{scope}organizations", "updated_utc", null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "project", $"{scope}projects-v1", $"{scope}projects", "updated_utc", null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "token", $"{scope}tokens-v1", $"{scope}tokens", "updated_utc", null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "user", $"{scope}users-v1", $"{scope}users", "updated_utc", null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks-v1", $"{scope}webhooks", "created_utc", null));
+            indexQueue.Enqueue(($"{sourceScope}stacks-v1", "stacks", $"{scope}stacks-v1", $"{scope}stacks", "last_occurrence", null));
             
             // create the new indexes, don't migrate yet
             foreach (var index in _configuration.Indexes.OfType<DailyIndex>()) {
                 for (int day = 0; day <= retentionPeriod.Days; day++) {
                     var date = day == 0 ? SystemClock.UtcNow : SystemClock.UtcNow.SubtractDays(day);
                     string indexToCreate = $"{scope}events-v1-{date:yyyy.MM.dd}";
-                    indexMap.Add(indexToCreate, ( $"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", $"{scope}events", "updated_utc" ));
-                    
-                    await index.EnsureIndexAsync(date).AnyContext();
+                    indexQueue.Enqueue(($"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", indexToCreate, $"{scope}events", "updated_utc", () => index.EnsureIndexAsync(date)));
                 }
             }
             
-            var reindexTasks = new List<(TaskId TaskId, string SourceIndex, string SourceType, string TargetIndex)>();
-            var completedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceType, string TargetIndex, Nest.TaskStatus Status)>();
+            var workingTasks = new List<(TaskId TaskId, string SourceIndex, string SourceType, string TargetIndex, string TargetIndexAlias)>();
+            var completedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceType, string TargetIndex, string TargetIndexAlias, TaskInfo Task)>();
+            while (true) {
+                if (workingTasks.Count == 0 && indexQueue.Count == 0)
+                    break;
 
-            foreach (var indexes in indexMap.Page(3)) {
-                foreach (var kvp in indexes) {
-                    var response = String.IsNullOrEmpty(kvp.Value.DateField)
-                        ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
-                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(kvp.Value.Index).Query<object>(q => q.Term("_type", kvp.Value.IndexType) && q.DateRange(d => d.Field(kvp.Value.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(kvp.Value.DateField, SortOrder.Ascending))).Destination(d => d.Index(kvp.Key)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
+                if (workingTasks.Count < 3 && indexQueue.TryDequeue(out var entry)) {
+                    if (entry.CreateIndex != null)
+                        await entry.CreateIndex().AnyContext();
+                    
+                    var response = String.IsNullOrEmpty(entry.DateField)
+                        ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Query<object>(q => q.Term("_type", entry.SourceIndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
+                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Query<object>(q => q.Term("_type", entry.SourceIndexType) && q.DateRange(d => d.Field(entry.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(entry.DateField, SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
-                    _logger.LogInformation("{SourceIndex}/{SourceType} -> {TargetIndex}: {TaskId}", kvp.Value.Index, kvp.Value.IndexType, kvp.Key, response.Task);
+                    _logger.LogInformation("Reindex {SourceIndex}/{SourceType} -> {TargetIndex}: {TaskId}", entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, response.Task);
                     _logger.LogInformation(response.GetRequest());
 
-                    reindexTasks.Add((response.Task, kvp.Value.Index, kvp.Value.IndexType, kvp.Key));
+                    workingTasks.Add((response.Task, entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, entry.TargetIndexAlias));
+                    continue;
                 }
 
-                while (reindexTasks.Count > 0) {
-                    foreach (var task in reindexTasks.ToArray()) {
-                        var taskStatus = await client.Tasks.GetTaskAsync(task.TaskId, t => t.WaitForCompletion(false)).AnyContext();
-                        _logger.LogTraceRequest(taskStatus);
+                foreach (var task in workingTasks.ToArray()) {
+                    var taskStatus = await client.Tasks.GetTaskAsync(task.TaskId, t => t.WaitForCompletion(false)).AnyContext();
+                    _logger.LogTraceRequest(taskStatus);
 
-                        if (!taskStatus.IsValid) {
-                            if (taskStatus.ServerError?.Status == 404) {
-                                _logger.LogInformation("Checking task status {TaskId} for {TargetIndex}: Task isn't running and hasn't stored its result", task.TaskId, task.TargetIndex);
-                                continue;
-                            }
-
-                            _logger.LogWarning(taskStatus.OriginalException, "Error getting task status {TaskId} for {TargetIndex}: {Message}", task.TaskId, task.TargetIndex, taskStatus.GetErrorMessage());
-                            if (taskStatus.ServerError?.Status == 429)
-                                await Task.Delay(TimeSpan.FromSeconds(1));
-
+                    if (!taskStatus.IsValid) {
+                        if (taskStatus.ServerError?.Status == 404) {
+                            _logger.LogInformation("Task ({TaskId}) for {TargetIndex}: Task isn't running and hasn't stored its result", task.TaskId, task.TargetIndex);
                             continue;
                         }
 
-                        if (!taskStatus.Completed) {
-                            _logger.LogInformation("Checking task status {TaskId} for {TargetIndex} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, taskStatus.Task.Status.Created, taskStatus.Task.Status.Updated, taskStatus.Task.Status.Deleted, taskStatus.Task.Status.VersionConflicts, taskStatus.Task.Status.Total);
-                            continue;
-                        }
-                        
-                        reindexTasks.Remove(task);
-                        completedTasks.Add((task.TaskId, task.SourceIndex, task.SourceType, task.TargetIndex, taskStatus.Task.Status));
-                        var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex)).AnyContext();
-                        var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
-                        _logger.LogInformation("Reindex completed: {SourceIndex}/{SourceType}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.SourceIndex, task.SourceType, sourceCount.Count, task.TargetIndex, targetCount.Count, taskStatus.Task.Status.Created, taskStatus.Task.Status.Updated, taskStatus.Task.Status.Deleted, taskStatus.Task.Status.VersionConflicts, taskStatus.Task.Status.Total);
+                        _logger.LogWarning(taskStatus.OriginalException, "Error getting task status {TaskId} for {TargetIndex}: {Message}", task.TaskId, task.TargetIndex, taskStatus.GetErrorMessage());
+                        if (taskStatus.ServerError?.Status == 429)
+                            await Task.Delay(TimeSpan.FromSeconds(1));
+
+                        continue;
                     }
 
-                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    var status = taskStatus.Task.Status;
+                    var duration = TimeSpan.FromMilliseconds(taskStatus.Task.RunningTimeInNanoseconds * 0.000001);
+                    double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
+                    
+                    if (!taskStatus.Completed) {
+                        _logger.LogInformation("Reindexing ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}, ", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                        continue;
+                    }
+                    
+                    workingTasks.Remove(task);
+                    completedTasks.Add((task.TaskId, task.SourceIndex, task.SourceType, task.TargetIndex, task.TargetIndexAlias, taskStatus.Task));
+                    var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex)).AnyContext();
+                    var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
+                    
+                    _logger.LogInformation("Reindex ({TaskId}) completed in {Duration:g} ({Progress:P}): {SourceIndex}/{SourceType}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, task.SourceType, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                 }
+
+                await Task.Delay(TimeSpan.FromSeconds(5));
             }
 
             _logger.LogInformation("All reindex tasks completed.");
             foreach (var task in completedTasks) {
+                var status = task.Task.Status;
+                var duration = TimeSpan.FromMilliseconds(task.Task.RunningTimeInNanoseconds * 0.000001);
+                double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
+                
                 var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex)).AnyContext();
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
-                _logger.LogInformation("Reindex completed: {SourceIndex}/{SourceType}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.SourceIndex, task.SourceType, sourceCount.Count, task.TargetIndex, targetCount.Count, task.Status.Created, task.Status.Updated, task.Status.Deleted, task.Status.VersionConflicts, task.Status.Total);
+                _logger.LogInformation("Reindex completed [Duration: {Duration:g} - {Progress:P}]: {SourceIndex}/{SourceType}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", duration, progress, task.SourceIndex, task.SourceType, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
             }
 
-            if (shouldUpdateAliases) {
-                foreach (var kvp in indexMap) {
-                    var aliasResponse = await client.Indices.BulkAliasAsync(a => a.Add(d => d.Alias(kvp.Value.IndexAlias).Index(kvp.Key)).Remove(d => d.Alias(kvp.Value.IndexAlias).Index(kvp.Value.Index))).AnyContext();
-                    _logger.LogInformation("Updated alias {IndexAlias} to point to {NewIndex}", kvp.Value.IndexAlias, kvp.Key);
-                    _logger.LogInformation(aliasResponse.GetRequest());
-                }
-            }
-
+            _logger.LogInformation("Updating aliases");
+            await _configuration.MaintainIndexesAsync();
+            _logger.LogInformation("Updated aliases");
             return JobResult.Success;
         }
 
