@@ -5,6 +5,24 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Extensions {
     public static class ConfigurationExtensions {
+        public static string GetScopeFromAppMode(this IConfiguration config) {
+            var mode = config.GetValue(nameof(AppOptions.AppMode), AppMode.Production);
+            return mode.ToScope();
+        }
+        
+        public static string ToScope(this AppMode mode) {
+            switch (mode) {
+                case AppMode.Development:
+                    return "dev";
+                case AppMode.Staging:
+                    return "stage";
+                case AppMode.Production:
+                    return "prod";
+            }
+
+            return String.Empty;
+        }
+        
         public static List<string> GetValueList(this IConfiguration config, string key, char[] separators = null) {
             string value = config.GetValue<string>(key);
             if (String.IsNullOrEmpty(value))
