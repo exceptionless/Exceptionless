@@ -28,7 +28,7 @@ az aks create \
 
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing
 
-# install dashboard, using 2.0 beta that supports CRDs (elastic operator) 
+# install dashboard, using 2.0 beta that supports CRDs (elastic operator)
 # https://github.com/kubernetes/dashboard/releases
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta6/aio/deploy/recommended.yaml
 
@@ -37,6 +37,9 @@ kubectl apply -f admin-service-account.yaml
 
 # get admin user token
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
+
+# set the namespace
+kubectl config set-context --current --namespace=ex-$ENV
 
 # open dashboard
 kubectl proxy
