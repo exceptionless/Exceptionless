@@ -80,7 +80,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     continue;
                 }
 
-                _logger.LogInformation("--- Reindex Status [Duration: {Duration:g}] Working:{Working} Completed:{Completed} Remaining:{Remaining} Failed:{Failed} Retried:{Retried}", SystemClock.UtcNow.Subtract(started), workingTasks.Count, completedTasks.Count, indexQueue.Count, failedTasks.Count, retriedCount);
+                _logger.LogInformation("--- Reindex Status [Duration: {Duration:H:mm}] Working:{Working} Completed:{Completed} Remaining:{Remaining} Failed:{Failed} Retried:{Retried}", SystemClock.UtcNow.Subtract(started), workingTasks.Count, completedTasks.Count, indexQueue.Count, failedTasks.Count, retriedCount);
                 foreach (var task in workingTasks.ToArray()) {
                     var taskStatus = await client.Tasks.GetTaskAsync(task.TaskId, t => t.WaitForCompletion(false)).AnyContext();
                     _logger.LogTraceRequest(taskStatus);
@@ -114,12 +114,12 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             string type = taskStatus.ServerError?.Error?.Type;
                             bool isConnectionError = type != null && (type.Contains("connect", StringComparison.OrdinalIgnoreCase) || type.Contains("timeout", StringComparison.OrdinalIgnoreCase));
                             if (taskStatus.Completed && isConnectionError) {
-                                _logger.LogWarning("Reindexing Failed and will be retried ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                                _logger.LogWarning("Reindexing Failed and will be retried ({TaskId}) {TargetIndex} [Duration: {Duration:H:mm} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                                 indexQueue.Enqueue((task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.DateField, null));
                                 retriedCount++;
                                 await Task.Delay(TimeSpan.FromSeconds(15)).AnyContext();
                             } else {
-                                _logger.LogCritical("Reindexing Failed ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                                _logger.LogCritical("Reindexing Failed ({TaskId}) {TargetIndex} [Duration: {Duration:H:mm} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                             }
                         }
                         
@@ -128,7 +128,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
                     task.Errors.Clear();
                     if (!taskStatus.Completed) {
-                        _logger.LogInformation("Reindexing ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}, ", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                        _logger.LogInformation("Reindexing ({TaskId}) {TargetIndex} [Duration: {Duration:H:mm} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}, ", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                         continue;
                     }
                     
@@ -137,13 +137,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex)).AnyContext();
                     var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
                     
-                    _logger.LogInformation("Reindex completed ({TaskId}) [{Duration:g} - {Progress:P}]: {SourceIndex}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                    _logger.LogInformation("Reindex completed ({TaskId}) [{Duration:H:mm} - {Progress:P}]: {SourceIndex}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
 
-            _logger.LogInformation("--- Reindex Completed [Duration: {Duration:g}] Working:{Working} Completed:{Completed} Remaining:{Remaining} Failed:{Failed} Retried:{Retried}", SystemClock.UtcNow.Subtract(started), workingTasks.Count, completedTasks.Count, indexQueue.Count, failedTasks.Count, retriedCount);
+            _logger.LogInformation("--- Reindex Completed [Duration: {Duration:H:mm}] Working:{Working} Completed:{Completed} Remaining:{Remaining} Failed:{Failed} Retried:{Retried}", SystemClock.UtcNow.Subtract(started), workingTasks.Count, completedTasks.Count, indexQueue.Count, failedTasks.Count, retriedCount);
             foreach (var task in completedTasks) {
                 var status = task.Task.Status;
                 var duration = TimeSpan.FromMilliseconds(task.Task.RunningTimeInNanoseconds * 0.000001);
@@ -151,7 +151,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 
                 var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex)).AnyContext();
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
-                _logger.LogInformation("Reindex completed ({TaskId}) [Duration: {Duration:g} - {Progress:P}]: {SourceIndex}/{SourceType}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, task.SourceIndexType, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                _logger.LogInformation("Reindex completed ({TaskId}) [Duration: {Duration:H:mm} - {Progress:P}]: {SourceIndex}/{SourceType}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, task.SourceIndexType, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
             }
             
             foreach (var task in failedTasks) {
@@ -161,7 +161,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 
                 var sourceCount = await client.CountAsync<object>(d => d.Index(task.SourceIndex));
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
-                _logger.LogCritical("Reindex failed ({TaskId}) [Duration: {Duration:g} - {Progress:P}]: {SourceIndex}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                _logger.LogCritical("Reindex failed ({TaskId}) [Duration: {Duration:H:mm} - {Progress:P}]: {SourceIndex}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
             }
 
             _logger.LogInformation("Updating aliases");
