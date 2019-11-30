@@ -90,7 +90,7 @@ namespace Exceptionless.Insulation {
         }
 
         private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
-            services.AddStartupActionToWaitForHealthChecks();
+            services.AddStartupActionToWaitForHealthChecks("Critical");
 
             return services.AddHealthChecks()
                 .AddCheckForStartupActions("Critical")
