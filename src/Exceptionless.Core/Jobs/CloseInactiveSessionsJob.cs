@@ -125,10 +125,10 @@ namespace Exceptionless.Core.Jobs {
             if (!_lastRun.HasValue)
                 return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromSeconds(40))
-                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 40 seconds."));
+            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(5))
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 5 minutes."));
 
-            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 40 seconds."));
+            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 5 minutes."));
         }
     }
 }
