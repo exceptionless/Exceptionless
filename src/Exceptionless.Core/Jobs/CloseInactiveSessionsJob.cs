@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cache;
         private readonly ILockProvider _lockProvider;
-        private DateTime? _lastRun;
+        private DateTime? _lastActivity;
 
         public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _eventRepository = eventRepository;
@@ -34,8 +34,11 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            _lastRun = SystemClock.UtcNow;
+            _lastActivity = SystemClock.UtcNow;
             var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SnapshotPaging().PageLimit(100)).AnyContext();
+            int sessionsClosed = 0;
+            int totalSessions = 0;
+
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
                 var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
@@ -67,11 +70,16 @@ namespace Exceptionless.Core.Jobs {
                     Debug.Assert(sessionStart.Value != null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
                 }
 
+                totalSessions += results.Documents.Count;
+                sessionsClosed += sessionsToUpdate.Count;
+
                 if (sessionsToUpdate.Count > 0)
                     await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
 
                 if (cacheKeysToRemove.Count > 0)
                     await _cache.RemoveAllAsync(cacheKeysToRemove).AnyContext();
+
+                _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate, results.Documents.Count);
 
                 // Sleep so we are not hammering the backend.
                 await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
@@ -81,9 +89,10 @@ namespace Exceptionless.Core.Jobs {
 
                 if (results.Documents.Count > 0) {
                     await context.RenewLockAsync().AnyContext();
-                    _lastRun = SystemClock.UtcNow;
+                    _lastActivity = SystemClock.UtcNow;
                 }
             }
+            _logger.LogInformation("Done processing active session. Closed {SessionClosedCount} of {SessionCount} sessions", sessionsClosed, totalSessions);
 
             return JobResult.Success;
         }
@@ -122,13 +131,13 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
-            if (!_lastRun.HasValue)
+            if (!_lastActivity.HasValue)
                 return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-            if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(5))
-                return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 5 minutes."));
+            if (SystemClock.UtcNow.Subtract(_lastActivity.Value) > TimeSpan.FromMinutes(5))
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job has no activity in the last 5 minutes."));
 
-            return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 5 minutes."));
+            return Task.FromResult(HealthCheckResult.Healthy("Job has no activity in the last 5 minutes."));
         }
     }
 }
