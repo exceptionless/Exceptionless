@@ -4,8 +4,8 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.4.2
-  image: exceptionless/elasticsearch:7.4.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.5.0
+  image: exceptionless/elasticsearch:7.5.0 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   http:
     tls:
       selfSignedCertificate:
@@ -59,7 +59,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.4.2
+  version: 7.5.0
   count: 1
   elasticsearchRef:
     name: ex-dev
@@ -69,3 +69,14 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
+---
+apiVersion: apm.k8s.elastic.co/v1beta1
+kind: ApmServer
+metadata:
+  name: ex-dev
+  namespace: ex-dev
+spec:
+  version: 7.5.0
+  count: 1
+  elasticsearchRef:
+    name: ex-dev
