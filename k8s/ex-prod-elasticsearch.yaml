@@ -4,8 +4,8 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.4.2
-  image: exceptionless/elasticsearch:7.4.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.5.0
+  image: exceptionless/elasticsearch:7.5.0 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   http:
     tls:
       selfSignedCertificate:
@@ -59,7 +59,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.4.2
+  version: 7.5.0
   count: 1
   elasticsearchRef:
     name: ex-prod
@@ -76,7 +76,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.4.2
+  version: 7.5.0
   count: 1
   elasticsearchRef:
     name: ex-prod

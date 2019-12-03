@@ -54,7 +54,7 @@ kubectl apply -f https://download.elastic.co/downloads/eck/1.0.0-beta1/all-in-on
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
 
 # create elasticsearch and kibana instances
-kubectl apply -f elasticsearch.yaml
+kubectl apply -f ex-dev-elasticsearch.yaml
 # check on deployment, wait for green
 kubectl get elasticsearch
 
@@ -76,10 +76,8 @@ kubectl port-forward service/ex-$ENV-kb-http 5601
 # port forward elasticsearch
 kubectl port-forward service/ex-$ENV-es-http 9200
 
-# install helm, 3.0 rc 3 is current, but should be final with better way to install soon
-# https://github.com/helm/helm/releases
-curl https://get.helm.sh/helm-v3.0.0-rc.3-darwin-amd64.tar.gz --output helm.tar.gz
-tar -zxvf helm.tar.gz --strip=1 darwin-amd64/helm
+# install helm
+brew install helm
 helm repo add stable https://kubernetes-charts.storage.googleapis.com
 
 # install nginx ingress
@@ -111,7 +109,7 @@ helm install ex-$ENV-redis stable/redis --values redis-values.yaml --namespace e
 
 # get redis and elastic passwords
 export REDIS_PASSWORD=$(kubectl get secret --namespace ex-$ENV ex-$ENV-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
-export ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+export ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-$ENV ex-$ENV-es-elastic-user -o go-template='{{.data.elastic | base64decode }}')
 
 # exec into a pod with redis and elastic password
 kubectl run --namespace ex-$ENV ex-$ENV-client --rm --tty -i --restart='Never' \
@@ -243,6 +241,6 @@ az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 
 # install exceptionless slack
 helm repo add banzaicloud-stable https://kubernetes-charts.banzaicloud.com
-helm install exceptionless-slack banzaicloud-stable/slackin --namespace ex-$ENV --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
+helm install ex-$ENV-slack banzaicloud-stable/slackin --namespace ex-$ENV --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
 
 # https://support.binarylane.com.au/support/solutions/articles/1000055889-how-to-benchmark-disk-i-o`

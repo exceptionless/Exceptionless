@@ -22,6 +22,6 @@ ingress:
   hosts:
     - slack.exceptionless.com
   tls:
-    - secretName: slack-exceptionless-tls
+    - secretName: ex-prod-slack-tls
       hosts:
         - slack.exceptionless.com
