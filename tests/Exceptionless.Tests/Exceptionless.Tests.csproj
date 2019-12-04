@@ -7,10 +7,10 @@
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
     <PackageReference Include="FluentRest" Version="7.0.0.98" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.0.0.98" />
-    <PackageReference Include="Foundatio.Logging.Xunit" Version="8.1.2155-pre" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
+    <PackageReference Include="Foundatio.Logging.Xunit" Version="9.0.2203-pre" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
   </ItemGroup>
