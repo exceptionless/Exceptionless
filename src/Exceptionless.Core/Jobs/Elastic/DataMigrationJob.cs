@@ -86,8 +86,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     _logger.LogTraceRequest(taskStatus);
 
                     var status = taskStatus?.Task?.Status;
-                    if (status == null)
-                    {
+                    if (status == null) {
                         _logger.LogWarning(taskStatus?.OriginalException, "Error getting task status {TaskId} for {TargetIndex}: {Message}", task.TaskId, task.TargetIndex, taskStatus.GetErrorMessage());
                         if (taskStatus?.ServerError?.Status == 429)
                             await Task.Delay(TimeSpan.FromSeconds(1));
