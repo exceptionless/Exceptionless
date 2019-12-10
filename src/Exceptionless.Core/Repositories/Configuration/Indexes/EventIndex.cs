@@ -16,30 +16,6 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : DailyIndex<PersistentEvent> {
-        private const string ALL_WORDS_DELIMITER_TOKEN_FILTER = "all_word_delimiter";
-        private const string EDGE_NGRAM_TOKEN_FILTER = "edge_ngram";
-        private const string EMAIL_TOKEN_FILTER = "email";
-        private const string TYPENAME_TOKEN_FILTER = "typename";
-        private const string VERSION_TOKEN_FILTER = "version";
-        private const string VERSION_PAD1_TOKEN_FILTER = "version_pad1";
-        private const string VERSION_PAD2_TOKEN_FILTER = "version_pad2";
-        private const string VERSION_PAD3_TOKEN_FILTER = "version_pad3";
-        private const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
-        private const string TLD_STOPWORDS_TOKEN_FILTER = "tld_stopwords";
-
-        internal const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
-        internal const string EMAIL_ANALYZER = "email";
-        internal const string VERSION_INDEX_ANALYZER = "version_index";
-        internal const string VERSION_SEARCH_ANALYZER = "version_search";
-        internal const string WHITESPACE_LOWERCASE_ANALYZER = "whitespace_lower";
-        internal const string TYPENAME_ANALYZER = "typename";
-        internal const string STANDARDPLUS_ANALYZER = "standardplus";
-
-        private const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
-        private const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        
-        internal const string ALL_FIELD = "all";
-        
         private readonly ExceptionlessElasticConfiguration _configuration;
 
         public EventIndex(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
@@ -53,61 +29,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddAlias($"{Name}-last7days", TimeSpan.FromDays(7));
             AddAlias($"{Name}-last30days", TimeSpan.FromDays(30));
             AddAlias($"{Name}-last90days", TimeSpan.FromDays(90));
-        }
-
-        public override async Task ConfigureAsync() {
-            const string FLATTEN_ERRORS_SCRIPT = @"
-if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error')))
-  return;
-
-def types = [];
-def messages = [];
-def codes = [];
-def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];
-def curr = err;
-while (curr != null) {
-  if (curr.containsKey('type'))
-    types.add(curr.type);
-  if (curr.containsKey('message'))
-    messages.add(curr.message);
-  if (curr.containsKey('code'))
-    codes.add(curr.code);
-  curr = curr.inner;
-}
-
-if (ctx.error == null)
-  ctx.error = new HashMap();
-
-ctx.error.type = types;
-ctx.error.message = messages;
-ctx.error.code = codes;";
-            
-            const string pipeline = "events-pipeline";
-            var response = await Configuration.Client.Ingest.PutPipelineAsync(pipeline, d => d.Processors(p => p
-                .Script(s => new ScriptProcessor {
-                    Source = FLATTEN_ERRORS_SCRIPT.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ")
-                })));
-
-            var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
-            logger.LogTraceRequest(response);
-
-            if (!response.IsValid) {
-                logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", pipeline, response.GetErrorMessage());
-                throw new ApplicationException($"Error creating the pipeline {pipeline}: {response.GetErrorMessage()}", response.OriginalException);
-            }
-
-            await base.ConfigureAsync();
-        }
-
-        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
-            return base.ConfigureIndex(idx.Settings(s => s
-                .Analysis(BuildAnalysis)
-                .NumberOfShards(_configuration.Options.NumberOfShards)
-                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-                .Setting("index.query.default_field", ALL_FIELD)
-                .Setting("index.mapping.total_fields.limit", _configuration.Options.FieldsLimit)
-                .Setting("index.mapping.ignore_malformed", true)
-                .Priority(1)));
         }
 
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
@@ -130,11 +51,11 @@ ctx.error.code = codes;";
                         .FieldAlias(a => a.Name(Alias.StackId).Path(f => f.StackId))
                     .Keyword(f => f.Name(e => e.ReferenceId))
                         .FieldAlias(a => a.Name(Alias.ReferenceId).Path(f => f.ReferenceId))
-                    .Keyword(f => f.Name(e => e.Type))
-                    .Keyword(f => f.Name(e => e.Source).IgnoreAbove(1024).CopyTo(s => s.Field(ALL_FIELD)))
+                    .Text(f => f.Name(e => e.Type).Analyzer(LOWER_KEYWORD_ANALYZER).AddKeywordField())
+                    .Text(f => f.Name(e => e.Source).Analyzer(LOWER_KEYWORD_ANALYZER).AddKeywordField().CopyTo(s => s.Field(ALL_FIELD)))
                     .Date(f => f.Name(e => e.Date))
                     .Text(f => f.Name(e => e.Message).CopyTo(s => s.Field(ALL_FIELD)))
-                    .Text(f => f.Name(e => e.Tags).CopyTo(s => s.Field(ALL_FIELD)).Boost(1.2).AddKeywordField())
+                    .Text(f => f.Name(e => e.Tags).Analyzer(LOWER_KEYWORD_ANALYZER).CopyTo(s => s.Field(ALL_FIELD)).Boost(1.2).AddKeywordField())
                         .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
                     .GeoPoint(f => f.Name(e => e.Geo))
                     .Scalar(f => f.Value)
@@ -146,7 +67,18 @@ ctx.error.code = codes;";
                     .Boolean(f => f.Name(e => e.IsHidden))
                         .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
                     .Object<object>(f => f.Name(e => e.Idx).Dynamic())
-                    .AddDataDictionaryMappings()
+                    .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
+                        .AddVersionMapping()
+                        .AddLevelMapping()
+                        .AddSubmissionMethodMapping()
+                        .AddSubmissionClientMapping()
+                        .AddLocationMapping()
+                        .AddRequestInfoMapping()
+                        .AddErrorMapping()
+                        .AddSimpleErrorMapping()
+                        .AddEnvironmentInfoMapping()
+                        .AddUserDescriptionMapping()
+                        .AddUserInfoMapping()))
                     .AddCopyToMappings()
                     .AddDataDictionaryAliases()
             );
@@ -155,6 +87,35 @@ ctx.error.code = codes;";
                 return mapping.SizeField(s => s.Enabled());
 
             return mapping;
+        }
+
+        public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+            return base.ConfigureIndex(idx.Settings(s => s
+                .Analysis(BuildAnalysis)
+                .NumberOfShards(_configuration.Options.NumberOfShards)
+                .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
+                .Setting("index.query.default_field", ALL_FIELD)
+                .Setting("index.mapping.total_fields.limit", _configuration.Options.FieldsLimit)
+                .Setting("index.mapping.ignore_malformed", true)
+                .Priority(1)));
+        }
+
+        public override async Task ConfigureAsync() {
+            const string pipeline = "events-pipeline";
+            var response = await Configuration.Client.Ingest.PutPipelineAsync(pipeline, d => d.Processors(p => p
+                .Script(s => new ScriptProcessor {
+                    Source = FLATTEN_ERRORS_SCRIPT.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ")
+                })));
+
+            var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
+            logger.LogTraceRequest(response);
+
+            if (!response.IsValid) {
+                logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", pipeline, response.GetErrorMessage());
+                throw new ApplicationException($"Error creating the pipeline {pipeline}: {response.GetErrorMessage()}", response.OriginalException);
+            }
+
+            await base.ConfigureAsync();
         }
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
@@ -183,7 +144,10 @@ ctx.error.code = codes;";
                 .Custom(VERSION_SEARCH_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, "lowercase").Tokenizer("whitespace"))
                 .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("whitespace"))
                 .Custom(TYPENAME_ANALYZER, c => c.Filters(TYPENAME_TOKEN_FILTER, "lowercase", "unique").Tokenizer(TYPENAME_HIERARCHY_TOKENIZER))
-                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters(TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER)))
+                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters(TYPENAME_TOKEN_FILTER, "lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
+                .Custom(LOWER_KEYWORD_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))
+                .Custom(HOST_ANALYZER, c => c.Filters("lowercase").Tokenizer(HOST_TOKENIZER))
+                .Custom(URL_PATH_ANALYZER, c => c.Filters("lowercase").Tokenizer(URL_PATH_TOKENIZER)))
             .TokenFilters(f => f
                 .EdgeNGram(EDGE_NGRAM_TOKEN_FILTER, p => p.MaxGram(50).MinGram(2).Side(EdgeNGramSide.Front))
                 .PatternCapture(EMAIL_TOKEN_FILTER, p => p.PreserveOriginal().Patterns("(\\w+)","(\\p{L}+)","(\\d+)","@(.+)","@(.+)\\.","(.+)@"))
@@ -197,8 +161,65 @@ ctx.error.code = codes;";
                 .WordDelimiter(ALL_WORDS_DELIMITER_TOKEN_FILTER, p => p.CatenateNumbers().PreserveOriginal().CatenateAll().CatenateWords()))
             .Tokenizers(t => t
                 .Pattern(COMMA_WHITESPACE_TOKENIZER, p => p.Pattern(@"[,\s]+"))
+                .CharGroup(URL_PATH_TOKENIZER, p => p.TokenizeOnCharacters("/"))
+                .CharGroup(HOST_TOKENIZER, p => p.TokenizeOnCharacters("."))
                 .PathHierarchy(TYPENAME_HIERARCHY_TOKENIZER, p => p.Delimiter('.')));
         }
+
+        private const string ALL_WORDS_DELIMITER_TOKEN_FILTER = "all_word_delimiter";
+        private const string EDGE_NGRAM_TOKEN_FILTER = "edge_ngram";
+        private const string EMAIL_TOKEN_FILTER = "email";
+        private const string TYPENAME_TOKEN_FILTER = "typename";
+        private const string VERSION_TOKEN_FILTER = "version";
+        private const string VERSION_PAD1_TOKEN_FILTER = "version_pad1";
+        private const string VERSION_PAD2_TOKEN_FILTER = "version_pad2";
+        private const string VERSION_PAD3_TOKEN_FILTER = "version_pad3";
+        private const string VERSION_PAD4_TOKEN_FILTER = "version_pad4";
+        private const string TLD_STOPWORDS_TOKEN_FILTER = "tld_stopwords";
+
+        internal const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
+        internal const string EMAIL_ANALYZER = "email";
+        internal const string VERSION_INDEX_ANALYZER = "version_index";
+        internal const string VERSION_SEARCH_ANALYZER = "version_search";
+        internal const string WHITESPACE_LOWERCASE_ANALYZER = "whitespace_lower";
+        internal const string TYPENAME_ANALYZER = "typename";
+        internal const string STANDARDPLUS_ANALYZER = "standardplus";
+        internal const string LOWER_KEYWORD_ANALYZER = "lowerkeyword";
+        internal const string URL_PATH_ANALYZER = "urlpath";
+        internal const string HOST_ANALYZER = "hostname";
+
+        private const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
+        private const string URL_PATH_TOKENIZER = "urlpath";
+        private const string HOST_TOKENIZER = "hostname";
+        private const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
+        
+        internal const string ALL_FIELD = "all";
+        
+        private const string FLATTEN_ERRORS_SCRIPT = @"
+if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error')))
+  return;
+
+def types = [];
+def messages = [];
+def codes = [];
+def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];
+def curr = err;
+while (curr != null) {
+  if (curr.containsKey('type'))
+    types.add(curr.type);
+  if (curr.containsKey('message'))
+    messages.add(curr.message);
+  if (curr.containsKey('code'))
+    codes.add(curr.code);
+  curr = curr.inner;
+}
+
+if (ctx.error == null)
+  ctx.error = new HashMap();
+
+ctx.error.type = types;
+ctx.error.message = messages;
+ctx.error.code = codes;";
 
         public sealed class Alias {
             public const string OrganizationId = "organization";
@@ -269,7 +290,7 @@ ctx.error.code = codes;";
             return descriptor
                 .Text(f => f.Name(EventIndex.ALL_FIELD).Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER))
                 .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
-                .Text(f => f.Name(EventIndex.Alias.OperatingSystem).AddKeywordField())
+                .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
                 .Object<object>(f => f.Name("error").Properties(p1 => p1
                     .Keyword(f3 => f3.Name("code").IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1))
                     .Text(f3 => f3.Name("message").AddKeywordField())
@@ -299,53 +320,41 @@ ctx.error.code = codes;";
                 .FieldAlias(a => a.Name(EventIndex.Alias.MachineName).Path(f => ((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]).MachineName));
         }
 
-        public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
-            return descriptor.Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
-                .AddVersionMapping()
-                .AddLevelMapping()
-                .AddSubmissionMethodMapping()
-                .AddSubmissionClientMapping()
-                .AddLocationMapping()
-                .AddRequestInfoMapping()
-                .AddErrorMapping()
-                .AddSimpleErrorMapping()
-                .AddEnvironmentInfoMapping()
-                .AddUserDescriptionMapping()
-                .AddUserInfoMapping()));
-        }
-
-        private static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Version).Analyzer(EventIndex.VERSION_INDEX_ANALYZER).SearchAnalyzer(EventIndex.VERSION_SEARCH_ANALYZER).AddKeywordField());
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
-            return descriptor.Keyword(f2 => f2.Name(Event.KnownDataKeys.Level).IgnoreAbove(1024));
+        public static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+            return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Level).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField());
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Keyword(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).IgnoreAbove(1024));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddSubmissionClientMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddSubmissionClientMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<SubmissionClient>(f2 => f2.Name(Event.KnownDataKeys.SubmissionClient).Properties(p3 => p3
-                .Ip(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.IpAddress)).Index(false))
-                .Keyword(f3 => f3.Name(r => r.UserAgent).IgnoreAbove(1024))
+                .Text(f3 => f3.Name(r => r.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.IpAddress)))
+                .Text(f3 => f3.Name(r => r.UserAgent).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
                 .Keyword(f3 => f3.Name(r => r.Version).IgnoreAbove(1024))));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Properties(p3 => p3
-                .Keyword(f3 => f3.Name(r => r.Country).IgnoreAbove(1024))
+                .Text(f3 => f3.Name(r => r.Country).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
                 .Keyword(f3 => f3.Name(r => r.Level1).IgnoreAbove(1024))
                 .Keyword(f3 => f3.Name(r => r.Level2).IgnoreAbove(1024))
                 .Keyword(f3 => f3.Name(r => r.Locality).IgnoreAbove(1024))));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
-                .Ip(f3 => f3.Name(r => r.ClientIpAddress).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.IpAddress)).Index(false))
-                .Keyword(f3 => f3.Name(r => r.UserAgent).IgnoreAbove(1024))
-                .Keyword(f3 => f3.Name(r => r.Path).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).IgnoreAbove(1024))
+                .Text(f3 => f3.Name(r => r.ClientIpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Fields(EventIndex.Alias.IpAddress)))
+                .Text(f3 => f3.Name(r => r.UserAgent).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
+                .Text(f3 => f3.Name(r => r.Path).Analyzer(EventIndex.URL_PATH_ANALYZER).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).AddKeywordField())
+                .Text(f3 => f3.Name(r => r.Host).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).AddKeywordField())
+                .Scalar(r => r.Port)
+                .Keyword(f3 => f3.Name(r => r.HttpMethod))
                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).IgnoreAbove(1024))
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).IgnoreAbove(1024))
@@ -357,7 +366,7 @@ ctx.error.code = codes;";
                     .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot))))));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
@@ -365,14 +374,14 @@ ctx.error.code = codes;";
                         .Keyword(f6 => f6.Name("Method").IgnoreAbove(1024).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.ErrorTargetMethod)))))))));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Properties(p3 => p3
                 .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                     .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
                         .Keyword(f6 => f6.Name("ExceptionType").IgnoreAbove(1024).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.ErrorTargetType)))))))));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
                 .Ip(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.IpAddress)))
                 .Keyword(f3 => f3.Name(r => r.MachineName).IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1))
@@ -381,13 +390,13 @@ ctx.error.code = codes;";
                 .Keyword(f3 => f3.Name(r => r.Architecture).IgnoreAbove(1024))));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
                 .Keyword(f3 => f3.Name(r => r.Description).IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)))
                 .Text(f3 => f3.Name(r => r.EmailAddress).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1).AddKeywordField())));
         }
 
-        private static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+        public static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
                 .Text(f3 => f3.Name(r => r.Identity).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1).AddKeywordField())
                 .Keyword(f3 => f3.Name(r => r.Name).IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)))));
