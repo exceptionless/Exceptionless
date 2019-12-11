@@ -115,8 +115,8 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("tag:test", 1)]
-        [InlineData("tag:Blake", 1)]
-        [InlineData("tag:Niemyjski", 1)]
+        [InlineData("tag:Blake", 0)]
+        [InlineData("tag:Niemyjski", 0)]
         [InlineData("tag:\"Blake Niemyjski\"", 1)]
         public async Task GetByTagAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
