@@ -75,8 +75,8 @@ namespace Exceptionless.Core.Jobs.Elastic {
                         await entry.CreateIndex().AnyContext();
                     
                     var response = String.IsNullOrEmpty(entry.DateField)
-                        ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Query<object>(q => q.Term("_type", entry.SourceIndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
-                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Query<object>(q => q.Term("_type", entry.SourceIndexType) && q.DateRange(d => d.Field(entry.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(entry.DateField, SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
+                        ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Size(500).Query<object>(q => q.Term("_type", entry.SourceIndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
+                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Size(500).Query<object>(q => q.Term("_type", entry.SourceIndexType) && q.DateRange(d => d.Field(entry.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(entry.DateField, SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
                     _logger.LogInformation("Reindex {SourceIndex}/{SourceType} -> {TargetIndex}: {TaskId}", entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, response.Task);
                     _logger.LogInformation(response.GetRequest());
