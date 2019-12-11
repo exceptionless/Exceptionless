@@ -6,6 +6,7 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -55,6 +56,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     indexQueue.Enqueue(($"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", indexToCreate, "updated_utc", () => index.EnsureIndexAsync(date)));
                 }
             }
+            
+            // Reset the alias cache
+            var aliasCache = new ScopedCacheClient(_configuration.Cache, "alias");
+            await aliasCache.RemoveAllAsync().AnyContext();
             
             var started = SystemClock.UtcNow;
             int retriedCount = 0;
