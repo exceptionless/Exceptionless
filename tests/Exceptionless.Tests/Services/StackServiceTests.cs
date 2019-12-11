@@ -38,7 +38,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(DateTime.MinValue, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
             Assert.Equal(DateTime.MinValue, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMaxDateCacheKey(stack.Id)));
             Assert.Equal(0, await _cache.GetAsync<long>(_stackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));
-            var occurrenceSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
+            var occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
             Assert.True(occurrenceSet.IsNull || !occurrenceSet.HasValue || occurrenceSet.Value.Count == 0);
 
             var firstUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
@@ -55,7 +55,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(firstUtcNow, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
             Assert.Equal(firstUtcNow, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMaxDateCacheKey(stack.Id)));
             Assert.Equal(1, await _cache.GetAsync<long>(_stackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));
-            occurrenceSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
+            occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
             Assert.Single(occurrenceSet.Value);
 
             var secondUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
@@ -66,7 +66,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(firstUtcNow, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
             Assert.Equal(secondUtcNow, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMaxDateCacheKey(stack.Id)));
             Assert.Equal(3, await _cache.GetAsync<long>(_stackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));
-            occurrenceSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
+            occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
             Assert.Single(occurrenceSet.Value);
         }
 
@@ -103,7 +103,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(maxOccurrenceDate, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMaxDateCacheKey(stack2.Id)));
             Assert.Equal(200, await _cache.GetAsync<long>(_stackService.GetStackOccurrenceCountCacheKey(stack2.Id), 0));
 
-            var occurrenceSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
+            var occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
             Assert.Equal(2, occurrenceSet.Value.Count);
 
             async Task IncrementUsageBatch() {
