@@ -39,12 +39,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("System.NullReferenceException", 1)] // Error.Type
         [InlineData("Exception", 2)] // Error.TargetType
         [InlineData("System.Web.ThreadContext.AssociateWithCurrentThread", 1)] // Error.TargetMethod
-        [InlineData("172.10.0.61", 1)] // TODO: SubmissionClient.IpAddress
-        [InlineData("172.10.0.30", 1)] // RequestInfo.ClientIpAddress
         [InlineData("\"/apple-touch-icon.png\"", 1)] // RequestInfo.Path
-        [InlineData("192.168.0.88", 1)] // EnvironmentInfo.IpAddress
-        [InlineData("\"2001:0:4137:9e76:cfd:33a0:5198:3a66\"", 1)] // EnvironmentInfo.IpAddress
-        [InlineData("SERVER-01", 1)] // EnvironmentInfo.MachineName
         [InlineData("my custom description", 1)] // UserDescription.Description
         [InlineData("test@exceptionless.com", 1)] // UserDescription.EmailAddress
         [InlineData("example@exceptionless.com", 1)] // UserInfo.Identity
@@ -168,8 +163,8 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("_missing_:tag", 2)]
         [InlineData("tag:test", 1)]
-        [InlineData("tag:Blake", 1)]
-        [InlineData("tag:Niemyjski", 1)]
+        [InlineData("tag:Blake", 0)]
+        [InlineData("tag:Niemyjski", 0)]
         [InlineData("tag:\"Blake Niemyjski\"", 1)]
         public async Task GetByTagAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
@@ -233,7 +228,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("SERVER-01", 1)]
         [InlineData("machine:SERVER-01", 1)]
         [InlineData("machine:\"SERVER-01\"", 1)]
         public async Task GetByMachineAsync(string filter, int count) {
@@ -243,13 +237,9 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("\"2001:0:4137:9e76:cfd:33a0:5198:3a66\"", 1)]
         [InlineData("ip:\"2001:0:4137:9e76:cfd:33a0:5198:3a66\"", 1)]
-        [InlineData("192.168.0.243", 1)]
         [InlineData("ip:192.168.0.243", 1)]
-        [InlineData("192.168.0.88", 1)]
         [InlineData("ip:192.168.0.88", 1)]
-        [InlineData("10.0.0.208", 1)]
         [InlineData("ip:10.0.0.208", 1)]
         [InlineData("ip:172.10.0.61", 1)]
         public async Task GetByIPAsync(string filter, int count) {
