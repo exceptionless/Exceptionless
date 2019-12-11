@@ -161,7 +161,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .WordDelimiter(ALL_WORDS_DELIMITER_TOKEN_FILTER, p => p.CatenateNumbers().PreserveOriginal().CatenateAll().CatenateWords()))
             .Tokenizers(t => t
                 .Pattern(COMMA_WHITESPACE_TOKENIZER, p => p.Pattern(@"[,\s]+"))
-                .CharGroup(URL_PATH_TOKENIZER, p => p.TokenizeOnCharacters("/"))
+                .CharGroup(URL_PATH_TOKENIZER, p => p.TokenizeOnCharacters("/", "-", "."))
                 .CharGroup(HOST_TOKENIZER, p => p.TokenizeOnCharacters("."))
                 .PathHierarchy(TYPENAME_HIERARCHY_TOKENIZER, p => p.Delimiter('.')));
         }
@@ -352,15 +352,15 @@ ctx.error.code = codes;";
                 .Text(f3 => f3.Name(r => r.ClientIpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Fields(EventIndex.Alias.IpAddress)))
                 .Text(f3 => f3.Name(r => r.UserAgent).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
                 .Text(f3 => f3.Name(r => r.Path).Analyzer(EventIndex.URL_PATH_ANALYZER).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).AddKeywordField())
-                .Text(f3 => f3.Name(r => r.Host).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).AddKeywordField())
+                .Text(f3 => f3.Name(r => r.Host).Analyzer(EventIndex.HOST_ANALYZER).AddKeywordField())
                 .Scalar(r => r.Port)
                 .Keyword(f3 => f3.Name(r => r.HttpMethod))
                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Properties(p4 => p4
-                    .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).IgnoreAbove(1024))
+                    .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).IgnoreAbove(1024))
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).IgnoreAbove(1024))
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).IgnoreAbove(1024))
-                    .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).IgnoreAbove(1024).CopyTo(fd => fd.Field(EventIndex.Alias.OperatingSystem)).Index(false))
+                    .Text(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField().CopyTo(fd => fd.Field(EventIndex.Alias.OperatingSystem)).Index(false))
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).IgnoreAbove(1024))
                     .Keyword(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).IgnoreAbove(1024))
                     .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot))))));
@@ -383,23 +383,23 @@ ctx.error.code = codes;";
 
         public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
-                .Ip(f3 => f3.Name(r => r.IpAddress).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.IpAddress)))
-                .Keyword(f3 => f3.Name(r => r.MachineName).IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1))
-                .Keyword(f3 => f3.Name(r => r.OSName).IgnoreAbove(1024).CopyTo(fd => fd.Field(EventIndex.Alias.OperatingSystem)))
+                .Text(f3 => f3.Name(r => r.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Fields(EventIndex.ALL_FIELD, EventIndex.Alias.IpAddress)))
+                .Text(f3 => f3.Name(r => r.MachineName).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField().CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1))
+                .Text(f3 => f3.Name(r => r.OSName).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField().CopyTo(fd => fd.Field(EventIndex.Alias.OperatingSystem)))
                 .Keyword(f3 => f3.Name(r => r.CommandLine).IgnoreAbove(1024))
                 .Keyword(f3 => f3.Name(r => r.Architecture).IgnoreAbove(1024))));
         }
 
         public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
-                .Keyword(f3 => f3.Name(r => r.Description).IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)))
+                .Text(f3 => f3.Name(r => r.Description).CopyTo(s => s.Field(EventIndex.ALL_FIELD)))
                 .Text(f3 => f3.Name(r => r.EmailAddress).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1).AddKeywordField())));
         }
 
         public static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
             return descriptor.Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
                 .Text(f3 => f3.Name(r => r.Identity).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).CopyTo(s => s.Field(EventIndex.ALL_FIELD)).Boost(1.1).AddKeywordField())
-                .Keyword(f3 => f3.Name(r => r.Name).IgnoreAbove(1024).CopyTo(s => s.Field(EventIndex.ALL_FIELD)))));
+                .Text(f3 => f3.Name(r => r.Name).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField().CopyTo(s => s.Field(EventIndex.ALL_FIELD)))));
         }
     }
 }
