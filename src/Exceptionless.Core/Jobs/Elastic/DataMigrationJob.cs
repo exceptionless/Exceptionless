@@ -85,7 +85,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     continue;
                 }
 
-                _logger.LogInformation("Data migration - C:{Completed}/{Total} W:{Working} D:{Duration:HH:mm} Failed:{Failed}", completedTasks.Count, totalTasks, workingTasks.Count, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
+                double highestProgress = 0;
                 foreach (var task in workingTasks.ToArray()) {
                     var taskStatus = await client.Tasks.GetTaskAsync(task.TaskId, t => t.WaitForCompletion(false)).AnyContext();
                     _logger.LogTraceRequest(taskStatus);
@@ -101,6 +101,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     
                     var duration = TimeSpan.FromMilliseconds(taskStatus.Task.RunningTimeInNanoseconds * 0.000001);
                     double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
+                    highestProgress = Math.Max(highestProgress, progress);
                     
                     if (!taskStatus.IsValid) {
                         if (taskStatus.ServerError?.Status == 404) {
@@ -141,6 +142,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     
                     _logger.LogInformation("Reindex completed ({TaskId}) [{Duration:g} - {Progress:P}]: {SourceIndex}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                 }
+                _logger.LogInformation("Data migration - C:{Completed}/{Total} W:{Working} P:{Progress:P} D:{Duration:HH:mm} Failed:{Failed}", completedTasks.Count, totalTasks, workingTasks.Count, highestProgress, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
 
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
