@@ -63,6 +63,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
             
             var started = SystemClock.UtcNow;
             int retriedCount = 0;
+            int totalTasks = indexQueue.Count;
             var workingTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, List<Exception> Errors)>();
             var completedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, TaskInfo Task)>();
             var failedTasks = new List<(TaskId TaskId, string SourceIndex, string TargetIndex, List<Exception> Errors, TaskInfo Task)>();
@@ -78,14 +79,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
                         ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Size(250).Query<object>(q => q.Term("_type", entry.SourceIndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
                         : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Size(250).Query<object>(q => q.Term("_type", entry.SourceIndexType) && q.DateRange(d => d.Field(entry.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(entry.DateField, SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
-                    _logger.LogInformation("Reindex {SourceIndex}/{SourceType} -> {TargetIndex}: {TaskId}", entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, response.Task);
-                    _logger.LogInformation(response.GetRequest());
+                    _logger.LogInformation("Starting reindex {SourceIndex}/{SourceType} -> {TargetIndex} ({TaskId})", entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, response.Task);
 
                     workingTasks.Add((response.Task, entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, entry.DateField, new List<Exception>()));
                     continue;
                 }
 
-                _logger.LogInformation("--- Reindex Status [Duration: {Duration:g}] Working:{Working} Completed:{Completed} Remaining:{Remaining} Retried:{Retried} Failed:{Failed} ({FailedIds})", SystemClock.UtcNow.Subtract(started), workingTasks.Count, completedTasks.Count, indexQueue.Count, retriedCount, failedTasks.Count, String.Join(',', failedTasks.Select(t => t.TaskId)));
+                _logger.LogInformation("Data migration - C:{Completed}/{Total} W:{Working} D:{Duration:HH:mm} Failed:{Failed}", completedTasks.Count, totalTasks, workingTasks.Count, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
                 foreach (var task in workingTasks.ToArray()) {
                     var taskStatus = await client.Tasks.GetTaskAsync(task.TaskId, t => t.WaitForCompletion(false)).AnyContext();
                     _logger.LogTraceRequest(taskStatus);
@@ -131,10 +131,8 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     }
 
                     task.Errors.Clear();
-                    if (!taskStatus.Completed) {
-                        _logger.LogInformation("Reindexing ({TaskId}) {TargetIndex} [Duration: {Duration:g} - {Progress:P}] - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}, ", task.TaskId, task.TargetIndex, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                    if (!taskStatus.Completed)
                         continue;
-                    }
                     
                     workingTasks.Remove(task);
                     completedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, taskStatus.Task));
@@ -147,7 +145,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
 
-            _logger.LogInformation("--- Reindex Completed [Duration: {Duration:g}] Working:{Working} Completed:{Completed} Remaining:{Remaining} Failed:{Failed} Retried:{Retried}", SystemClock.UtcNow.Subtract(started), workingTasks.Count, completedTasks.Count, indexQueue.Count, failedTasks.Count, retriedCount);
+            _logger.LogInformation("----- Data migration completed - C:{Completed}/{Total} D:{Duration:HH:mm} Failed:{Failed}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
             foreach (var task in completedTasks) {
                 var status = task.Task.Status;
                 var duration = TimeSpan.FromMilliseconds(task.Task.RunningTimeInNanoseconds * 0.000001);
