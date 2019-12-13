@@ -117,7 +117,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             workingTasks.Remove(task);
                             failedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.Errors, taskStatus.Task, task.Attempts));
 
-                            if (taskStatus.Completed && ShouldRetryReindex(task, taskStatus)) {
+                            if (taskStatus.Completed && task.Attempts < 3) {
                                 _logger.LogWarning("FAILED RETRY - {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
                                 indexQueue.Enqueue((task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.DateField, task.Attempts, null));
                                 retriesCount++;
@@ -170,23 +170,6 @@ namespace Exceptionless.Core.Jobs.Elastic {
             await _configuration.MaintainIndexesAsync();
             _logger.LogInformation("Updated aliases");
             return JobResult.Success;
-        }
-
-        private bool ShouldRetryReindex((TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, List<Exception> Errors, int Attempts) task, GetTaskResponse taskStatus) {
-            var error = taskStatus.ServerError?.Error;
-            if (error == null)
-                return false;
-
-            if (error.Reason != null && error.Reason.Contains("node_disconnected_exception", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            string type = error.Type;
-            if (type == null)
-                return false;
-
-            return type.Equals("socket_exception", StringComparison.OrdinalIgnoreCase)
-                || type.Contains("connect", StringComparison.OrdinalIgnoreCase)
-                || type.Contains("timeout", StringComparison.OrdinalIgnoreCase);
         }
 
         private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd) {
