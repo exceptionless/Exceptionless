@@ -8,7 +8,7 @@
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.2.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="9.0.64-pre" />
     <PackageReference Include="Foundatio.AppMetrics" Version="9.0.2213-pre" />
-    <PackageReference Include="Foundatio.AWS" Version="9.0.1604-pre" />
+    <PackageReference Include="Foundatio.AWS" Version="9.0.1609-pre" />
     <PackageReference Include="Foundatio.AzureStorage" Version="9.0.1545-pre" />
     <PackageReference Include="Foundatio.Hosting" Version="9.0.2213-pre" />
     <PackageReference Include="Foundatio.Minio" Version="9.0.69-pre" />
