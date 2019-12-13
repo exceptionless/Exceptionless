@@ -118,7 +118,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             failedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.Errors, taskStatus.Task));
                             
                             string type = taskStatus.ServerError?.Error?.Type;
-                            bool isConnectionError = type != null && (type.Contains("connect", StringComparison.OrdinalIgnoreCase) || type.Contains("timeout", StringComparison.OrdinalIgnoreCase));
+                            bool isConnectionError = type != null && (type.Equals("socket_exception", StringComparison.OrdinalIgnoreCase) || type.Contains("connect", StringComparison.OrdinalIgnoreCase) || type.Contains("timeout", StringComparison.OrdinalIgnoreCase));
                             if (taskStatus.Completed && isConnectionError) {
                                 _logger.LogWarning("Reindex failed and will be retried for {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
                                 indexQueue.Enqueue((task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.DateField, null));
@@ -143,13 +143,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     _logger.LogInformation("Reindex completed {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
                 }
                 if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
-                    _logger.LogInformation("P:{Completed}/{Total} N:{Progress:P0} D:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed}", completedTasks.Count, totalTasks, highestProgress, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count);
+                    _logger.LogInformation("P:{Completed}/{Total} N:{Progress:P0} D:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retried}", completedTasks.Count, totalTasks, highestProgress, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriedCount);
                     lastProgress = SystemClock.UtcNow;
                 }
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
 
-            _logger.LogInformation("----- Data migration completed - P:{Completed}/{Total} D:{Duration:d\\.hh\\:mm} F:{Failed}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
+            _logger.LogInformation("----- Data migration completed - P:{Completed}/{Total} D:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retried}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriedCount);
             foreach (var task in completedTasks) {
                 var status = task.Task.Status;
                 var duration = TimeSpan.FromMilliseconds(task.Task.RunningTimeInNanoseconds * 0.000001);
