@@ -62,6 +62,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
             await aliasCache.RemoveAllAsync().AnyContext();
             
             var started = SystemClock.UtcNow;
+            var lastProgress = SystemClock.UtcNow;
             int retriedCount = 0;
             int totalTasks = indexQueue.Count;
             var workingTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, List<Exception> Errors)>();
@@ -142,8 +143,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     
                     _logger.LogInformation("Reindex completed ({TaskId}) [{Duration:g} - {Progress:P}]: {SourceIndex}: {SourceCount} {TargetIndex}: {TargetCount} - Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", task.TaskId, duration, progress, task.SourceIndex, sourceCount.Count, task.TargetIndex, targetCount.Count, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                 }
-                _logger.LogInformation("Data migration - C:{Completed}/{Total} W:{Working} P:{Progress:P} D:{Duration:HH:mm} Failed:{Failed}", completedTasks.Count, totalTasks, workingTasks.Count, highestProgress, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
-
+                if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
+                    _logger.LogInformation("Data migration - C:{Completed}/{Total} W:{Working} P:{Progress:P} D:{Duration:HH:mm} Failed:{Failed}", completedTasks.Count, totalTasks, workingTasks.Count, highestProgress, SystemClock.UtcNow.Subtract(started), failedTasks.Count);
+                    lastProgress = SystemClock.UtcNow;
+                }
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
 
