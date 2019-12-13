@@ -36,38 +36,38 @@ namespace Exceptionless.Core.Jobs.Elastic {
             string sourceScope = elasticOptions.ElasticsearchToMigrate.Scope;
             string scope = elasticOptions.ScopePrefix;
             var cutOffDate = elasticOptions.ReindexCutOffDate;
-            
+
             var client = _configuration.Client;
             await _configuration.ConfigureIndexesAsync().AnyContext();
 
-            var indexQueue = new Queue<(string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, Func<Task> CreateIndex)>();
-            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "organization", $"{scope}organizations-v1", "updated_utc", null));
-            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "project", $"{scope}projects-v1", "updated_utc", null));
-            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "token", $"{scope}tokens-v1", "updated_utc", null));
-            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "user", $"{scope}users-v1", "updated_utc", null));
-            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks-v1", "created_utc", null));
-            indexQueue.Enqueue(($"{sourceScope}stacks-v1", "stacks", $"{scope}stacks-v1", "last_occurrence", null));
-            
+            var indexQueue = new Queue<(string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, int Attempts, Func<Task> CreateIndex)>();
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "organization", $"{scope}organizations-v1", "updated_utc", 0, null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "project", $"{scope}projects-v1", "updated_utc", 0, null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "token", $"{scope}tokens-v1", "updated_utc", 0, null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "user", $"{scope}users-v1", "updated_utc", 0, null));
+            indexQueue.Enqueue(($"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks-v1", "created_utc", 0, null));
+            indexQueue.Enqueue(($"{sourceScope}stacks-v1", "stacks", $"{scope}stacks-v1", "last_occurrence", 0, null));
+
             // create the new indexes, don't migrate yet
             foreach (var index in _configuration.Indexes.OfType<DailyIndex>()) {
                 for (int day = 0; day <= retentionPeriod.Days; day++) {
                     var date = day == 0 ? SystemClock.UtcNow : SystemClock.UtcNow.SubtractDays(day);
                     string indexToCreate = $"{scope}events-v1-{date:yyyy.MM.dd}";
-                    indexQueue.Enqueue(($"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", indexToCreate, "updated_utc", () => index.EnsureIndexAsync(date)));
+                    indexQueue.Enqueue(($"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", indexToCreate, "updated_utc", 0, () => index.EnsureIndexAsync(date)));
                 }
             }
-            
+
             // Reset the alias cache
             var aliasCache = new ScopedCacheClient(_configuration.Cache, "alias");
             await aliasCache.RemoveAllAsync().AnyContext();
-            
+
             var started = SystemClock.UtcNow;
             var lastProgress = SystemClock.UtcNow;
-            int retriedCount = 0;
+            int retriesCount = 0;
             int totalTasks = indexQueue.Count;
-            var workingTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, List<Exception> Errors)>();
-            var completedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, TaskInfo Task)>();
-            var failedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, List<Exception> Errors, TaskInfo Task)>();
+            var workingTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, List<Exception> Errors, int Attempts)>();
+            var completedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, TaskInfo Task, int Attempts)>();
+            var failedTasks = new List<(TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, List<Exception> Errors, TaskInfo Task, int Attempts)>();
             while (true) {
                 if (workingTasks.Count == 0 && indexQueue.Count == 0)
                     break;
@@ -75,14 +75,15 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 if (workingTasks.Count < 5 && indexQueue.TryDequeue(out var entry)) {
                     if (entry.CreateIndex != null)
                         await entry.CreateIndex().AnyContext();
-                    
+
                     var response = String.IsNullOrEmpty(entry.DateField)
                         ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Size(250).Query<object>(q => q.Term("_type", entry.SourceIndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
                         : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(entry.SourceIndex).Size(250).Query<object>(q => q.Term("_type", entry.SourceIndexType) && q.DateRange(d => d.Field(entry.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(entry.DateField, SortOrder.Ascending))).Destination(d => d.Index(entry.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
-                    _logger.LogInformation("Reindex started {SourceIndex}/{SourceType} -> {TargetIndex} ({TaskId})...", entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, response.Task);
+                    _logger.LogInformation("STARTED - {SourceIndex}/{SourceType} -> {TargetIndex} A:{Attempts} ({TaskId})...", entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, entry.Attempts, response.Task);
 
-                    workingTasks.Add((response.Task, entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, entry.DateField, new List<Exception>()));
+                    entry.Attempts += 1;
+                    workingTasks.Add((response.Task, entry.SourceIndex, entry.SourceIndexType, entry.TargetIndex, entry.DateField, new List<Exception>(), entry.Attempts));
                     continue;
                 }
 
@@ -99,11 +100,11 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
                         continue;
                     }
-                    
+
                     var duration = TimeSpan.FromMilliseconds(taskStatus.Task.RunningTimeInNanoseconds * 0.000001);
                     double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
                     highestProgress = Math.Max(highestProgress, progress);
-                    
+
                     if (!taskStatus.IsValid) {
                         if (taskStatus.ServerError?.Status == 404) {
                             _logger.LogInformation("Task for {TargetIndex} ({TaskId}) is not found", task.TargetIndex, task.TaskId);
@@ -112,58 +113,57 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
                         _logger.LogWarning(taskStatus.OriginalException, "Error getting task status for {TargetIndex} ({TaskId}): {Message}", task.TargetIndex, task.TaskId, taskStatus.GetErrorMessage());
                         task.Errors.Add(taskStatus.OriginalException);
-                        if (task.Errors.Count > 5 || taskStatus.Completed)
-                        {
+                        if (task.Errors.Count > 5 || taskStatus.Completed) {
                             workingTasks.Remove(task);
-                            failedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.Errors, taskStatus.Task));
-                            
-                            if (taskStatus.Completed && ShouldRetryReindex(taskStatus.ServerError?.Error)) {
-                                _logger.LogWarning("Reindex failed and will be retried for {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
-                                indexQueue.Enqueue((task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.DateField, null));
-                                retriedCount++;
+                            failedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.Errors, taskStatus.Task, task.Attempts));
+
+                            if (taskStatus.Completed && ShouldRetryReindex(task, taskStatus)) {
+                                _logger.LogWarning("FAILED RETRY - {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
+                                indexQueue.Enqueue((task.SourceIndex, task.SourceIndexType, task.TargetIndex, task.DateField, task.Attempts, null));
+                                retriesCount++;
                                 await Task.Delay(TimeSpan.FromSeconds(15)).AnyContext();
                             } else {
-                                _logger.LogCritical("Reindex failed for {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
+                                _logger.LogCritical("FAILED - {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
                             }
                         }
-                        
+
                         continue;
                     }
 
                     task.Errors.Clear();
                     if (!taskStatus.Completed)
                         continue;
-                    
+
                     workingTasks.Remove(task);
-                    completedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, taskStatus.Task));
+                    completedTasks.Add((task.TaskId, task.SourceIndex, task.SourceIndexType, task.TargetIndex, taskStatus.Task, task.Attempts));
                     var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
-                    
-                    _logger.LogInformation("Reindex completed {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
+
+                    _logger.LogInformation("COMPLETED -{SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
                 }
                 if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
-                    _logger.LogInformation("P:{Completed}/{Total} N:{Progress:P0} D:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retried}", completedTasks.Count, totalTasks, highestProgress, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriedCount);
+                    _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
                     lastProgress = SystemClock.UtcNow;
                 }
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
 
-            _logger.LogInformation("----- Data migration completed - P:{Completed}/{Total} D:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retried}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriedCount);
+            _logger.LogInformation("----- DONE - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
             foreach (var task in completedTasks) {
                 var status = task.Task.Status;
                 var duration = TimeSpan.FromMilliseconds(task.Task.RunningTimeInNanoseconds * 0.000001);
                 double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
-                
+
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
-                _logger.LogInformation("SUCCESS: {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
+                _logger.LogInformation("SUCCESS - {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
             }
-            
+
             foreach (var task in failedTasks) {
                 var status = task.Task.Status;
                 var duration = TimeSpan.FromMilliseconds(task.Task.RunningTimeInNanoseconds * 0.000001);
                 double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
-                
+
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
-                _logger.LogCritical("FAILED: {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
+                _logger.LogCritical("FAILED - {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
             }
 
             _logger.LogInformation("Updating aliases");
@@ -172,7 +172,8 @@ namespace Exceptionless.Core.Jobs.Elastic {
             return JobResult.Success;
         }
 
-        private bool ShouldRetryReindex(Error error) {
+        private bool ShouldRetryReindex((TaskId TaskId, string SourceIndex, string SourceIndexType, string TargetIndex, string DateField, List<Exception> Errors, int Attempts) task, GetTaskResponse taskStatus) {
+            var error = taskStatus.ServerError?.Error;
             if (error == null)
                 return false;
 
@@ -182,17 +183,17 @@ namespace Exceptionless.Core.Jobs.Elastic {
             string type = error.Type;
             if (type == null)
                 return false;
-            
-            return type.Equals("socket_exception", StringComparison.OrdinalIgnoreCase) ||
-                   type.Contains("connect", StringComparison.OrdinalIgnoreCase) || 
-                   type.Contains("timeout", StringComparison.OrdinalIgnoreCase);
+
+            return type.Equals("socket_exception", StringComparison.OrdinalIgnoreCase)
+                || type.Contains("connect", StringComparison.OrdinalIgnoreCase)
+                || type.Contains("timeout", StringComparison.OrdinalIgnoreCase);
         }
 
         private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd) {
             var elasticOptions = _configuration.Options.ElasticsearchToMigrate;
             if (!String.IsNullOrEmpty(elasticOptions.UserName) && !String.IsNullOrEmpty(elasticOptions.Password))
                 rsd.Username(elasticOptions.UserName).Password(elasticOptions.Password);
-                
+
             return rsd.Host(new Uri(elasticOptions.ServerUrl));
         }
     }
