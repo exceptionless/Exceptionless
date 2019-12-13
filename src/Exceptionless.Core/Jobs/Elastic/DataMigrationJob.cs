@@ -143,7 +143,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     _logger.LogInformation("Reindex completed {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.TaskId);
                 }
                 if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
-                    _logger.LogInformation("P:{Completed}/{Total} N:{Progress:P0} D:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count);
+                    _logger.LogInformation("P:{Completed}/{Total} N:{Progress:P0} D:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed}", completedTasks.Count, totalTasks, highestProgress, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count);
                     lastProgress = SystemClock.UtcNow;
                 }
                 await Task.Delay(TimeSpan.FromSeconds(5));
