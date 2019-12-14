@@ -7,7 +7,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: ex-dev-jobs-data-migration
-      image: exceptionless/job-ci:6.0.3569-pre
+      image: exceptionless/job-ci:6.0.3583-pre
       resources:
         requests:
           memory: 75Mi
