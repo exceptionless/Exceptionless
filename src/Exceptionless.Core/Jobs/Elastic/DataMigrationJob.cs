@@ -73,24 +73,46 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     break;
 
                 if (workingTasks.Count < 5 && workItemQueue.TryDequeue(out var dequeuedWorkItem)) {
-                    if (dequeuedWorkItem.CreateIndex != null)
-                        await dequeuedWorkItem.CreateIndex().AnyContext();
+                    if (dequeuedWorkItem.CreateIndex != null) {
+                        try {
+                            await dequeuedWorkItem.CreateIndex().AnyContext();
+                        } catch (Exception ex) {
+                            _logger.LogError(ex, "Failed to create index for {TargetIndex}", dequeuedWorkItem.TargetIndex);
+                            continue;
+                        }
+                    }
 
                     int batchSize = 1000;
                     if (dequeuedWorkItem.Attempts >= 2)
                         batchSize = 250;
                     else if (dequeuedWorkItem.Attempts == 1)
                         batchSize = 500;
-                    
-                    var response = String.IsNullOrEmpty(dequeuedWorkItem.DateField)
-                        ? await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(dequeuedWorkItem.SourceIndex).Size(batchSize).Query<object>(q => q.Term("_type", dequeuedWorkItem.SourceIndexType)).Sort<object>(f => f.Field("id", SortOrder.Ascending))).Destination(d => d.Index(dequeuedWorkItem.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext()
-                        : await client.ReindexOnServerAsync(r => r.Source(s => s.Remote(ConfigureRemoteElasticSource).Index(dequeuedWorkItem.SourceIndex).Size(batchSize).Query<object>(q => q.Term("_type", dequeuedWorkItem.SourceIndexType) && q.DateRange(d => d.Field(dequeuedWorkItem.DateField).GreaterThanOrEquals(cutOffDate))).Sort<object>(f => f.Field(dequeuedWorkItem.DateField, SortOrder.Ascending))).Destination(d => d.Index(dequeuedWorkItem.TargetIndex)).Conflicts(Conflicts.Proceed).WaitForCompletion(false)).AnyContext();
 
-                    _logger.LogInformation("STARTED - {SourceIndex}/{SourceType} -> {TargetIndex} A:{Attempts} ({TaskId})...", dequeuedWorkItem.SourceIndex, dequeuedWorkItem.SourceIndexType, dequeuedWorkItem.TargetIndex, dequeuedWorkItem.Attempts, response.Task);
+                    var response = await client.ReindexOnServerAsync(r => r
+                        .Source(s => s
+                            .Remote(ConfigureRemoteElasticSource)
+                            .Index(dequeuedWorkItem.SourceIndex)
+                            .Size(batchSize)
+                            .Query<object>(q => {
+                                var container = q.Term("_type", dequeuedWorkItem.SourceIndexType);
+                                if (!String.IsNullOrEmpty(dequeuedWorkItem.DateField))
+                                    container &= q.DateRange(d => d.Field(dequeuedWorkItem.DateField).GreaterThanOrEquals(cutOffDate));
+                                
+                                return container;
+                            })
+                            .Sort<object>(f => f.Field(dequeuedWorkItem.DateField ?? "id", SortOrder.Ascending)))
+                        .Destination(d => d
+                            .Index(dequeuedWorkItem.TargetIndex))
+                            .Conflicts(Conflicts.Proceed)
+                            .WaitForCompletion(false)
+                        ).AnyContext();
 
                     dequeuedWorkItem.Attempts += 1;
                     dequeuedWorkItem.TaskId = response.Task;
                     workingTasks.Add(dequeuedWorkItem);
+
+                    _logger.LogInformation("STARTED - {SourceIndex}/{SourceType} -> {TargetIndex} A:{Attempts} ({TaskId})...", dequeuedWorkItem.SourceIndex, dequeuedWorkItem.SourceIndexType, dequeuedWorkItem.TargetIndex, dequeuedWorkItem.Attempts, dequeuedWorkItem.TaskId);
+                    
                     continue;
                 }
 
