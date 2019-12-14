@@ -89,6 +89,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     _logger.LogInformation("STARTED - {SourceIndex}/{SourceType} -> {TargetIndex} A:{Attempts} ({TaskId})...", dequeuedWorkItem.SourceIndex, dequeuedWorkItem.SourceIndexType, dequeuedWorkItem.TargetIndex, dequeuedWorkItem.Attempts, response.Task);
 
                     dequeuedWorkItem.Attempts += 1;
+                    dequeuedWorkItem.TaskId = response.Task;
                     workingTasks.Add(dequeuedWorkItem);
                     continue;
                 }
