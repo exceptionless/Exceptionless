@@ -142,7 +142,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     completedTasks.Add(workItem);
                     var targetCount = await client.CountAsync<object>(d => d.Index(workItem.TargetIndex)).AnyContext();
 
-                    _logger.LogInformation("COMPLETED -{SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.SourceIndex, workItem.SourceIndexType, workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
+                    _logger.LogInformation("COMPLETED - {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.SourceIndex, workItem.SourceIndexType, workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                 }
                 if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
                     _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
