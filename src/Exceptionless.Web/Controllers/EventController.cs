@@ -562,6 +562,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpPost("by-ref/{referenceId:identifier}/user-description")]
         [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
+        [Consumes("application/json")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
@@ -599,6 +600,7 @@ namespace Exceptionless.Web.Controllers {
 
         [Obsolete]
         [HttpPatch("~/api/v1/error/{id:objectid}")]
+        [Consumes("application/json")]
         [ConfigurationResponseFilter]
         public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
             if (changes == null)

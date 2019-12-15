@@ -150,6 +150,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">An error occurred while creating the project.</response>
         /// <response code="409">The project already exists.</response>
         [HttpPost]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         public Task<ActionResult<ViewProject>> PostAsync(NewProject project) {
@@ -165,6 +166,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPatch("{id:objectid}")]
         [HttpPut("{id:objectid}")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public Task<ActionResult<ViewProject>> PatchAsync(string id, Delta<UpdateProject> changes) {
             return PatchImplAsync(id, changes);
@@ -235,6 +237,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid configuration value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/config")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> SetConfigAsync(string id, string key, ValueFromBody<string> value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value))
@@ -358,6 +361,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPut("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         [HttpPost("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings settings) {
             var project = await GetModelAsync(id, false);
@@ -386,6 +390,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Please upgrade your plan to enable integrations.</response>
         [HttpPut("{id:objectid}/{integration:minlength(1)}/notifications")]
         [HttpPost("{id:objectid}/{integration:minlength(1)}/notifications")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, NotificationSettings settings) {
             if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
@@ -444,6 +449,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpPut("{id:objectid}/promotedtabs")]
         [HttpPost("{id:objectid}/promotedtabs")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> PromoteTabAsync(string id, string name) {
             if (String.IsNullOrWhiteSpace(name))
@@ -524,6 +530,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid key or value.</response>
         /// <response code="404">The project could not be found.</response>
         [HttpPost("{id:objectid}/data")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
@@ -571,6 +578,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{id:objectid}/slack")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> AddSlackAsync(string id, string code) {
             if (String.IsNullOrWhiteSpace(code))

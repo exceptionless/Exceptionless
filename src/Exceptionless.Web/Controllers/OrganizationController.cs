@@ -149,6 +149,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">An error occurred while creating the organization.</response>
         /// <response code="409">The organization already exists.</response>
         [HttpPost]
+        [Consumes("application/json")]
         public Task<ActionResult<ViewOrganization>> PostAsync(NewOrganization organization) {
             return PostImplAsync(organization);
         }
@@ -162,6 +163,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The organization could not be found.</response>
         [HttpPatch]
         [HttpPut]
+        [Consumes("application/json")]
         [Route("{id:objectid}")]
         public Task<ActionResult<ViewOrganization>> PatchAsync(string id, Delta<NewOrganization> changes) {
             return PatchImplAsync(id, changes);
@@ -341,6 +343,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="couponId">The coupon id.</param>
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
+        [Consumes("application/json")]
         [Route("{id:objectid}/change-plan")]
         public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
@@ -550,6 +553,7 @@ namespace Exceptionless.Web.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/suspend")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> SuspendAsync(string id, SuspensionCode code, string notes = null) {
@@ -594,6 +598,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="value">Any string value.</param>
         /// <response code="404">The organization was not found.</response>
         [HttpPost]
+        [Consumes("application/json")]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value) {
             if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))

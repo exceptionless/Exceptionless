@@ -126,6 +126,7 @@ namespace Exceptionless.Web.Controllers {
             return Ok(details);
         }
 
+        [Consumes("application/json")]
         [HttpPost("change-plan")]
         public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
@@ -151,6 +152,7 @@ namespace Exceptionless.Web.Controllers {
             return Ok(new { Success = true });
         }
 
+        [Consumes("application/json")]
         [HttpPost("set-bonus")]
         public async Task<IActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))

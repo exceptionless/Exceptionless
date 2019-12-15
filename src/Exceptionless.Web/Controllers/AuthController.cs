@@ -71,6 +71,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">The login model is invalid.</response>
         /// <response code="401">Login failed.</response>
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("login")]
         public async Task<ActionResult<TokenResult>> LoginAsync(LoginModel model) {
             string email = model?.Email?.Trim().ToLowerInvariant();
@@ -181,6 +182,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">The sign up model is invalid.</response>
         /// <response code="401">Sign up failed.</response>
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("signup")]
         public async Task<ActionResult<TokenResult>> SignupAsync(SignupModel model) {
             bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
@@ -271,6 +273,7 @@ namespace Exceptionless.Web.Controllers {
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("github")]
         public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
@@ -285,6 +288,7 @@ namespace Exceptionless.Web.Controllers {
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("google")]
         public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
@@ -299,6 +303,7 @@ namespace Exceptionless.Web.Controllers {
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("facebook")]
         public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
@@ -313,6 +318,7 @@ namespace Exceptionless.Web.Controllers {
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("live")]
         public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
@@ -333,6 +339,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid provider name.</response>
         /// <response code="500">An error while saving the user account.</response>
         [ApiExplorerSettings(IgnoreApi = true)]
+        [Consumes("application/json")]
         [HttpPost("unlink/{providerName:minlength(1)}")]
         public async Task<ActionResult<TokenResult>> RemoveExternalLoginAsync(string providerName, ValueFromBody<string> providerUserId) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(providerName).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Provider User Id", providerUserId?.Value).SetHttpContext(HttpContext))) {
@@ -366,6 +373,7 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         /// <param name="model">The change password model.</param>
         /// <response code="400">Invalid change password model.</response>
+        [Consumes("application/json")]
         [HttpPost("change-password")]
         public async Task<ActionResult<TokenResult>> ChangePasswordAsync(ChangePasswordModel model) {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext))) {
@@ -475,6 +483,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="model">The reset password model.</param>
         /// <response code="400">Invalid reset password model.</response>
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPasswordAsync(ResetPasswordModel model) {
             if (String.IsNullOrEmpty(model?.PasswordResetToken)) {
@@ -532,6 +541,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="token">The password reset token.</param>
         /// <response code="400">Invalid password reset token.</response>
         [AllowAnonymous]
+        [Consumes("application/json")]
         [HttpPost("cancel-reset-password/{token:minlength(1)}")]
         public async Task<IActionResult> CancelResetPasswordAsync(string token) {
             if (String.IsNullOrEmpty(token)) {
