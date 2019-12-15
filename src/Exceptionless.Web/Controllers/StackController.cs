@@ -109,6 +109,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="version">A version number that the stack was fixed in.</param>
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost("{ids:objectids}/mark-fixed")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(string ids, string version = null) {
@@ -150,6 +151,7 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         [HttpPost("~/api/v1/stack/markfixed")]
         [HttpPost("mark-fixed")]
+        [Consumes("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(JObject data) {
             string id = null;
@@ -176,6 +178,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid reference link.</response>
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/add-link")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string> url) {
             if (String.IsNullOrWhiteSpace(url?.Value))
@@ -198,6 +201,7 @@ namespace Exceptionless.Web.Controllers {
         /// </summary>
         [HttpPost("~/api/v1/stack/addlink")]
         [HttpPost("add-link")]
+        [Consumes("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> AddLinkAsync(JObject data) {
             string id = null;
@@ -226,6 +230,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="400">Invalid reference link.</response>
         /// <response code="404">The stack could not be found.</response>
         [HttpPost("{id:objectid}/remove-link")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> RemoveLinkAsync(string id, ValueFromBody<string> url) {

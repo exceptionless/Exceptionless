@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Controllers {
-    [Consumes("application/json")]
     [Produces("application/json")]
     [ApiController]
     public abstract class ExceptionlessApiController : Controller {

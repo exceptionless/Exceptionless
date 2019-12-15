@@ -26,6 +26,7 @@ namespace Exceptionless.Web.Controllers {
 
         [AllowAnonymous]
         [HttpPost]
+        [Consumes("application/json")]
         public async Task<IActionResult> PostAsync() {
             string json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
             using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", json))) {

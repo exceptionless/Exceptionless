@@ -108,6 +108,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="400">An error occurred while creating the token.</response>
         /// <response code="409">The token already exists.</response>
         [HttpPost]
+        [Consumes("application/json")]
         public Task<ActionResult<ViewToken>> PostAsync(NewToken token) {
             return PostImplAsync(token);
         }
@@ -125,6 +126,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The project could not be found.</response>
         /// <response code="409">The token already exists.</response>
         [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
+        [Consumes("application/json")]
         public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken token) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
@@ -150,6 +152,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="400">An error occurred while creating the token.</response>
         /// <response code="409">The token already exists.</response>
         [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
+        [Consumes("application/json")]
         public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken token) {
             if (token == null)
                 token = new NewToken();
@@ -170,6 +173,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The token could not be found.</response>
         [HttpPatch("{id:tokens}")]
         [HttpPut("{id:tokens}")]
+        [Consumes("application/json")]
         public Task<ActionResult<ViewToken>> PatchAsync(string id, Delta<UpdateToken> changes) {
             return PatchImplAsync(id, changes);
         }

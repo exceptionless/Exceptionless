@@ -72,6 +72,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="400">An error occurred while creating the web hook.</response>
         /// <response code="409">The web hook already exists.</response>
         [HttpPost]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public Task<ActionResult<WebHook>> PostAsync(NewWebHook webhook) {
             return PostImplAsync(webhook);
@@ -100,6 +101,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost("subscribe")]
         [HttpPost("~/api/v{apiVersion:int=2}/webhooks/subscribe")]
         [HttpPost("~/api/v1/projecthook/subscribe")]
+        [Consumes("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1) {
             var webHook = new NewWebHook {
@@ -126,6 +128,7 @@ namespace Exceptionless.App.Controllers.API {
         [AllowAnonymous]
         [HttpPost("unsubscribe")]
         [HttpPost("~/api/v1/projecthook/unsubscribe")]
+        [Consumes("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> UnsubscribeAsync(JObject data) {
             string targetUrl = data.GetValue("target_url").Value<string>();
