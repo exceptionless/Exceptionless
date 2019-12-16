@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Jobs {
                 if (cacheKeysToRemove.Count > 0)
                     await _cache.RemoveAllAsync(cacheKeysToRemove).AnyContext();
 
-                _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate, results.Documents.Count);
+                _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate.Count, results.Documents.Count);
 
                 // Sleep so we are not hammering the backend.
                 await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
