@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
                         foreach (var property in data.Children<JProperty>()) {
                             // strip out large data entries
                             if (property.Value.ToString().Length > 50000) {
-                                property.Value = "<Data Too Large>";
+                                property.Value = "(Data Too Large)";
                             }
                         }
                     }
