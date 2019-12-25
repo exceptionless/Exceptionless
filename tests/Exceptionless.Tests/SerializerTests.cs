@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -98,12 +98,12 @@ namespace Exceptionless.Tests {
             var hook = new WebHook {
                 Id = "test",
                 EventTypes = new[] { "NewError" },
-                Version = new Version(1, 0)
+                Version = WebHook.KnownVersions.Version2
             };
 
             var serializer = GetService<ITextSerializer>();
             string json = serializer.SerializeToString(hook);
-            Assert.Equal("{\"id\":\"test\",\"event_types\":[\"NewError\"],\"is_enabled\":true,\"version\":\"1.0\",\"created_utc\":\"0001-01-01T00:00:00\"}", json);
+            Assert.Equal("{\"id\":\"test\",\"event_types\":[\"NewError\"],\"is_enabled\":true,\"version\":\"v2\",\"created_utc\":\"0001-01-01T00:00:00\"}", json);
 
             var model = serializer.Deserialize<WebHook>(json);
             Assert.Equal(hook.Id, model.Id);

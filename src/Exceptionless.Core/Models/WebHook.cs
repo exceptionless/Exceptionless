@@ -14,8 +14,13 @@ namespace Exceptionless.Core.Models {
         /// <summary>
         /// The schema version that should be used.
         /// </summary>
-        public Version Version { get; set; }
+        public string Version { get; set; }
 
         public DateTime CreatedUtc { get; set; }
+        
+        public static class KnownVersions {
+            public const string Version1 = "v1";
+            public const string Version2 = "v2";
+        }
     }
 }
