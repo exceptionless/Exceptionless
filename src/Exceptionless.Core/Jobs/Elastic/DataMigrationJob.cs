@@ -19,6 +19,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Migrate data to new format.", IsContinuous = false)]
     public class DataMigrationJob : JobBase {
         private readonly ExceptionlessElasticConfiguration _configuration;
+        private const string MIGRATE_VERSION_SCRIPT = "if (ctx._source.version instanceof String == false) { ctx._source.version = ctx._source.version.major + '.' + ctx._source.version.minor; }";
 
         public DataMigrationJob(
             ExceptionlessElasticConfiguration configuration,
@@ -45,7 +46,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
             workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}organizations-v1", "project", $"{scope}projects-v1", "updated_utc"));
             workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}organizations-v1", "token", $"{scope}tokens-v1", "updated_utc"));
             workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}organizations-v1", "user", $"{scope}users-v1", "updated_utc"));
-            workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks-v1", "created_utc"));
+            workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}organizations-v1", "webhook", $"{scope}webhooks-v1", "created_utc", script: MIGRATE_VERSION_SCRIPT));
             workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}stacks-v1", "stacks", $"{scope}stacks-v1", "last_occurrence"));
 
             // create the new indexes, don't migrate yet
@@ -83,10 +84,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     }
 
                     int batchSize = 1000;
-                    if (dequeuedWorkItem.Attempts >= 2)
-                        batchSize = 250;
-                    else if (dequeuedWorkItem.Attempts == 1)
+                    if (dequeuedWorkItem.Attempts == 1)
                         batchSize = 500;
+                    else if (dequeuedWorkItem.Attempts >= 2)
+                        batchSize = 250;
 
                     var response = await client.ReindexOnServerAsync(r => r
                         .Source(s => s
@@ -105,7 +106,12 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             .Index(dequeuedWorkItem.TargetIndex))
                             .Conflicts(Conflicts.Proceed)
                             .WaitForCompletion(false)
-                        ).AnyContext();
+                        .Script(s => {
+                            if (!String.IsNullOrEmpty(dequeuedWorkItem.Script))
+                                return s.Source(dequeuedWorkItem.Script);
+
+                            return null;
+                        })).AnyContext();
 
                     dequeuedWorkItem.Attempts += 1;
                     dequeuedWorkItem.TaskId = response.Task;
@@ -208,12 +214,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
     }
 
     public class ReindexWorkItem {
-        public ReindexWorkItem(string sourceIndex, string sourceIndexType, string targetIndex, string dateField, Func<Task> createIndex = null) {
+        public ReindexWorkItem(string sourceIndex, string sourceIndexType, string targetIndex, string dateField, Func<Task> createIndex = null, string script = null) {
             SourceIndex = sourceIndex;
             SourceIndexType = sourceIndexType;
             TargetIndex = targetIndex;
             DateField = dateField;
             CreateIndex = createIndex;
+            Script = script;
         }
 
         public string SourceIndex { get; set; }
@@ -221,6 +228,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
         public string TargetIndex { get; set; }
         public string DateField { get; set; }
         public Func<Task> CreateIndex { get; set; }
+        public string Script { get; set; }
         public TaskId TaskId { get; set; }
         public TaskInfo LastTaskInfo { get; set; }
         public int ConsecutiveStatusErrors { get; set; }
