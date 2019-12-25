@@ -4,7 +4,7 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public class WebHookDataContext : ExtensibleObject {
-        public WebHookDataContext(Version version, PersistentEvent ev, Organization organization = null, Project project = null, Stack stack = null, bool isNew = false, bool isRegression = false) {
+        public WebHookDataContext(string version, PersistentEvent ev, Organization organization = null, Project project = null, Stack stack = null, bool isNew = false, bool isRegression = false) {
             Version = version ?? throw new ArgumentException("Version cannot be null.", nameof(version));
             Organization = organization;
             Project = project;
@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             IsRegression = isRegression;
         }
 
-        public WebHookDataContext(Version version, Stack stack, Organization organization = null, Project project = null, bool isNew = false, bool isRegression = false) {
+        public WebHookDataContext(string version, Stack stack, Organization organization = null, Project project = null, bool isNew = false, bool isRegression = false) {
             Version = version ?? throw new ArgumentException("Version cannot be null.", nameof(version));
             Organization = organization;
             Project = project;
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         public Organization Organization { get; set; }
         public Project Project { get; set; }
 
-        public Version Version { get; set; }
+        public string Version { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
     }

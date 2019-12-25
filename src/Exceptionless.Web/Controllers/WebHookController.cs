@@ -226,8 +226,8 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override Task<WebHook> AddModelAsync(WebHook value) {
-            int version = IsValidWebHookVersion(value.Version) ? value.Version.Major : 2;
-            value.Version = new Version(version, 0, 0, 0);
+            if (!IsValidWebHookVersion(value.Version))
+                value.Version = WebHook.KnownVersions.Version2;
 
             return base.AddModelAsync(value);
         }
@@ -258,8 +258,8 @@ namespace Exceptionless.App.Controllers.API {
             return project != null;
         }
 
-        private bool IsValidWebHookVersion(Version version) {
-            return version != null && version.Major >= 1 && version.Major <= 2;
+        private bool IsValidWebHookVersion(string version) {
+            return String.Equals(version, WebHook.KnownVersions.Version1) || String.Equals(version, WebHook.KnownVersions.Version2);
         }
     }
 }

@@ -23,7 +23,7 @@ namespace Exceptionless.Tests.Plugins {
 
         [Theory]
         [MemberData(nameof(WebHookData))]
-        public async Task CreateFromEventAsync(Version version, bool expectData) {
+        public async Task CreateFromEventAsync(string version, bool expectData) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
             object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
@@ -38,7 +38,7 @@ namespace Exceptionless.Tests.Plugins {
 
         [Theory]
         [MemberData(nameof(WebHookData))]
-        public async Task CanCreateFromStackAsync(Version version, bool expectData) {
+        public async Task CanCreateFromStackAsync(string version, bool expectData) {
             var settings = GetService<JsonSerializerSettings>();
             settings.Formatting = Formatting.Indented;
             object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
@@ -52,13 +52,13 @@ namespace Exceptionless.Tests.Plugins {
         }
 
         public static IEnumerable<object[]> WebHookData => new List<object[]> {
-            new object[] { new Version(0, 0), false },
-            new object[] { new Version(1, 0), true },
-            new object[] { new Version(2, 0), true },
-            new object[] { new Version(3, 0), false }
+            new object[] { "v0", false },
+            new object[] { WebHook.KnownVersions.Version1, true },
+            new object[] { WebHook.KnownVersions.Version2, true },
+            new object[] { "v3", false }
         }.ToArray();
 
-        private WebHookDataContext GetWebHookDataContext(Version version) {
+        private WebHookDataContext GetWebHookDataContext(string version) {
             string json = File.ReadAllText(Path.GetFullPath(Path.Combine("..", "..", "..", "ErrorData", "1477.expected.json")));
 
             var settings = GetService<JsonSerializerSettings>();

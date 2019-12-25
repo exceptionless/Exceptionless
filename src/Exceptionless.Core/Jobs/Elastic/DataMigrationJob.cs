@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
     [Job(Description = "Migrate data to new format.", IsContinuous = false)]
     public class DataMigrationJob : JobBase {
         private readonly ExceptionlessElasticConfiguration _configuration;
-        private const string MIGRATE_VERSION_SCRIPT = "if (ctx._source.version instanceof String == false) { ctx._source.version = ctx._source.version.major + '.' + ctx._source.version.minor; }";
+        private const string MIGRATE_VERSION_SCRIPT = "if (ctx._source.version instanceof String == false) { ctx._source.version = 'v' + ctx._source.version.major; }";
 
         public DataMigrationJob(
             ExceptionlessElasticConfiguration configuration,
