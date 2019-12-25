@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
+using Foundatio.Serializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -90,6 +91,24 @@ namespace Exceptionless.Tests {
             Assert.Single(ev.Data);
             Assert.Equal("Hello", ev.Message);
             Assert.Equal("SomeVal", ev.Data["Blah"]);
+        }
+        
+        [Fact]
+        public void CanDeserializeWebHook() {
+            var hook = new WebHook {
+                Id = "test",
+                EventTypes = new[] { "NewError" },
+                Version = new Version(1, 0)
+            };
+
+            var serializer = GetService<ITextSerializer>();
+            string json = serializer.SerializeToString(hook);
+            Assert.Equal("{\"id\":\"test\",\"event_types\":[\"NewError\"],\"is_enabled\":true,\"version\":\"1.0\",\"created_utc\":\"0001-01-01T00:00:00\"}", json);
+
+            var model = serializer.Deserialize<WebHook>(json);
+            Assert.Equal(hook.Id, model.Id);
+            Assert.Equal(hook.EventTypes, model.EventTypes);
+            Assert.Equal(hook.Version, model.Version);
         }
     }
 
