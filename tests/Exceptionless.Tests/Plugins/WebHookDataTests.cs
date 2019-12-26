@@ -28,7 +28,7 @@ namespace Exceptionless.Tests.Plugins {
             settings.Formatting = Formatting.Indented;
             object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"v{version}.event.expected.json"));
+                string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
                 string expectedContent = File.ReadAllText(filePath);
                 Assert.Equal(expectedContent, JsonConvert.SerializeObject(data, settings));
             } else {
@@ -43,7 +43,7 @@ namespace Exceptionless.Tests.Plugins {
             settings.Formatting = Formatting.Indented;
             object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
             if (expectData) {
-                string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"v{version}.stack.expected.json"));
+                string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
                 string expectedContent = File.ReadAllText(filePath);
                 Assert.Equal(expectedContent, JsonConvert.SerializeObject(data, settings));
             } else {
