@@ -42,10 +42,12 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("\"/apple-touch-icon.png\"", 1)] // RequestInfo.Path
         [InlineData("my custom description", 1)] // UserDescription.Description
         [InlineData("test@exceptionless.com", 1)] // UserDescription.EmailAddress
+        [InlineData("TEST@exceptionless.com", 1)] // UserDescription.EmailAddress wrong case
+        [InlineData("exceptionless.com", 1)] // UserDescription.EmailAddress partial
         [InlineData("example@exceptionless.com", 1)] // UserInfo.Identity
         [InlineData("test user", 1)] // UserInfo.Name
-        public async Task GetByAllFieldAsync(string filter, int count) {
-            var result = await GetByFilterAsync(filter);
+        public async Task GetByAllFieldAsync(string search, int count) {
+            var result = await GetByFilterAsync(search);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -491,7 +493,7 @@ namespace Exceptionless.Tests.Repositories {
             configuration.Events.QueryParser.Configuration.RefreshMapping();
         }
 
-        private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+        private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null) {
             var result = await _validator.ValidateQueryAsync(filter);
             Assert.True(result.IsValid);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
