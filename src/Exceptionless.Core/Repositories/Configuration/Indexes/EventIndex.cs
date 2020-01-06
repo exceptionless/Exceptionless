@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddAlias($"{Name}-last30days", TimeSpan.FromDays(30));
             AddAlias($"{Name}-last90days", TimeSpan.FromDays(90));
         }
-
+        
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
             var mapping = map
                 .Dynamic(false)
@@ -120,7 +120,21 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
             config
-                .SetDefaultFields(new[] { ALL_FIELD })
+                .SetDefaultFields(new[] {
+                    "id",
+                    "source",
+                    "message",
+                    "tags",
+                    "path",
+                    "error.code",
+                    "error.type",
+                    "error.targettype",
+                    "error.targetmethod",
+                    $"data.{Event.KnownDataKeys.UserDescription}.{nameof(UserDescription.Description).ToLowerUnderscoredWords()}",
+                    $"data.{Event.KnownDataKeys.UserDescription}.{nameof(UserDescription.EmailAddress).ToLowerUnderscoredWords()}",
+                    $"data.{Event.KnownDataKeys.UserInfo}.{nameof(UserInfo.Identity).ToLowerUnderscoredWords()}",
+                    $"data.{Event.KnownDataKeys.UserInfo}.{nameof(UserInfo.Name).ToLowerUnderscoredWords()}"
+                })
                 .AddQueryVisitor(new EventFieldsQueryVisitor())
                 .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.BrowserVersion}" },
