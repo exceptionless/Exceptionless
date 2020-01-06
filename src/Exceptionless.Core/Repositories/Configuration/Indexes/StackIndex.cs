@@ -13,7 +13,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string WHITESPACE_LOWERCASE_ANALYZER = "whitespace_lower";
         private const string COMMA_WHITESPACE_TOKENIZER = "comma_whitespace";
         
-        private const string ALL_FIELD = "all";
         private readonly ExceptionlessElasticConfiguration _configuration;
 
         public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
@@ -25,7 +24,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Analysis(BuildAnalysis)
                 .NumberOfShards(_configuration.Options.NumberOfShards)
                 .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-                .Setting("index.query.default_field", ALL_FIELD)
                 .Priority(5)));
         }
         
@@ -34,7 +32,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic(false)
                 .Properties(p => p
                     .SetupDefaults()
-                    .Text(f => f.Name(ALL_FIELD).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER))
                     .Keyword(f => f.Name(s => s.OrganizationId).IgnoreAbove(1024))
                         .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
                     .Keyword(f => f.Name(s => s.ProjectId).IgnoreAbove(1024))
@@ -46,11 +43,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .FieldAlias(a => a.Name(Alias.FirstOccurrence).Path(f => f.FirstOccurrence))
                     .Date(f => f.Name(s => s.LastOccurrence))
                         .FieldAlias(a => a.Name(Alias.LastOccurrence).Path(f => f.LastOccurrence))
-                    .Text(f => f.Name(s => s.Title).CopyTo(s => s.Field(ALL_FIELD)).Boost(1.1))
-                    .Text(f => f.Name(s => s.Description).CopyTo(s => s.Field(ALL_FIELD)))
-                    .Keyword(f => f.Name(s => s.Tags).IgnoreAbove(1024).CopyTo(s => s.Field(ALL_FIELD)).Boost(1.2))
+                    .Text(f => f.Name(s => s.Title).Boost(1.1))
+                    .Text(f => f.Name(s => s.Description))
+                    .Keyword(f => f.Name(s => s.Tags).IgnoreAbove(1024).Boost(1.2))
                         .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
-                    .Keyword(f => f.Name(s => s.References).IgnoreAbove(1024).CopyTo(s => s.Field(ALL_FIELD)))
+                    .Keyword(f => f.Name(s => s.References).IgnoreAbove(1024))
                         .FieldAlias(a => a.Name(Alias.References).Path(f => f.References))
                     .Date(f => f.Name(s => s.DateFixed))
                         .FieldAlias(a => a.Name(Alias.DateFixed).Path(f => f.DateFixed))
@@ -71,7 +68,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
             string dateFixedFieldName = Configuration.Client.Infer.PropertyName(Infer.Property<Stack>(f => f.DateFixed));
             config
-                .SetDefaultFields(new[] { ALL_FIELD })
+                .SetDefaultFields(new[] { "id", Alias.Title, Alias.Description, Alias.Tags, Alias.References })
                 .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));
         }
         
