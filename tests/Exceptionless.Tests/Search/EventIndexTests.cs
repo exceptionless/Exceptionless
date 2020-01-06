@@ -37,14 +37,14 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("502", 1)] // Error.Code
         [InlineData("NullReferenceException", 1)] // Error.Type
         [InlineData("System.NullReferenceException", 1)] // Error.Type
-        [InlineData("Exception", 2)] // Error.TargetType
+        [InlineData("Exception", 3)] // Error.TargetType
         [InlineData("System.Web.ThreadContext.AssociateWithCurrentThread", 1)] // Error.TargetMethod
         [InlineData("\"/apple-touch-icon.png\"", 1)] // RequestInfo.Path
         [InlineData("my custom description", 1)] // UserDescription.Description
         [InlineData("test@exceptionless.com", 1)] // UserDescription.EmailAddress
         [InlineData("TEST@exceptionless.com", 1)] // UserDescription.EmailAddress wrong case
-        [InlineData("exceptionless.com", 1)] // UserDescription.EmailAddress partial
-        [InlineData("example@exceptionless.com", 1)] // UserInfo.Identity
+        [InlineData("exceptionless.com", 2)] // UserDescription.EmailAddress partial
+        [InlineData("example@exceptionless.com", 2)] // UserInfo.Identity
         [InlineData("test user", 1)] // UserInfo.Name
         public async Task GetByAllFieldAsync(string search, int count) {
             var result = await GetByFilterAsync(search);
@@ -396,7 +396,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("Exception", 2)]
+        [InlineData("Exception", 3)]
         [InlineData("error.targettype:Exception", 1)]
         [InlineData("error.targettype:\"System.Exception\"", 1)]
         public async Task GetByErrorTargetTypeAsync(string filter, int count) {
@@ -418,12 +418,12 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("My-User-Identity", 1)]
+        [InlineData("My-User-Identity", 2)]
         [InlineData("user:My-User-Identity", 1)]
-        [InlineData("example@exceptionless.com", 1)]
+        [InlineData("example@exceptionless.com", 2)]
         [InlineData("user:example@exceptionless.com", 1)]
         [InlineData("user:exceptionless.com", 1)]
-        [InlineData("example", 1)]
+        [InlineData("example", 2)]
         public async Task GetByUserAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -431,7 +431,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("Blake", 2)] // Matches due to user name and partial tag
+        [InlineData("Blake", 1)]
         [InlineData("user.name:Blake", 1)]
         public async Task GetByUserNameAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);

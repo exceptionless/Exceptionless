@@ -11,6 +11,7 @@ ConnectionStrings:
 BaseURL: 'http://localhost:5000'
 
 Scope: test
+AppMode: Development
 
 # Controls whether daily summary emails are sent
 EnableDailySummary: false
