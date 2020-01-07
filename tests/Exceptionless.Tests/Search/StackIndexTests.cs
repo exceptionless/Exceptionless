@@ -27,7 +27,7 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("\"GET /Print\"", 1)] // Title
         [InlineData("\"my custom description\"", 1)] // Description
-        [InlineData("Niemyjski", 1)] // Tags
+        [InlineData("\"Blake Niemyjski\"", 1)] // Tags
         [InlineData("\"http://exceptionless.io\"", 1)] // References
         public async Task GetByAllFieldAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
