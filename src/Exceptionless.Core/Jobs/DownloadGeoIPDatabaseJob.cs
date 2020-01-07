@@ -37,9 +37,9 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             _lastRun = SystemClock.UtcNow;
 
-            string licenseKey = _options.Value.MaxMindGeoIpLicenseKey;
+            string licenseKey = _options.Value.MaxMindGeoIpKey;
             if (String.IsNullOrEmpty(licenseKey)) {
-                _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpLicenseKey));
+                _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpKey));
                 return JobResult.Success;
             }
             

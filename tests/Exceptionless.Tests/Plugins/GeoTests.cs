@@ -37,8 +37,8 @@ namespace Exceptionless.Tests.Plugins {
         }
         
         private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
-            if (String.IsNullOrEmpty(_options.Value.MaxMindGeoIpLicenseKey)) {
-                _logger.LogInformation("Configure {SettingKey} to run geo tests.", nameof(AppOptions.MaxMindGeoIpLicenseKey));
+            if (String.IsNullOrEmpty(_options.Value.MaxMindGeoIpKey)) {
+                _logger.LogInformation("Configure {SettingKey} to run geo tests.", nameof(AppOptions.MaxMindGeoIpKey));
                 return new NullGeoIpService();
             }
 
