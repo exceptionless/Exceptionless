@@ -35,7 +35,7 @@ before_build:
 
 install:
   - |
-    curl https://get.helm.sh/helm-v3.0.0-linux-amd64.tar.gz -o helm.tar.gz
+    curl https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz -o helm.tar.gz
     tar -zxvf helm.tar.gz
     sudo mv linux-amd64/helm /usr/local/bin/helm
 
