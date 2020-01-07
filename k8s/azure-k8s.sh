@@ -144,6 +144,7 @@ EX_GoogleTagManagerId=
 EX_StripeApiKey=
 EX_StripePublishableApiKey=
 EX_StripeWebHookSigningSecret=
+EX_MaxMindGeoIpKey=
 
 helm install ex-$ENV ./exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml \
     --set "app.image.tag=$APP_TAG" \
@@ -163,6 +164,7 @@ helm install ex-$ENV ./exceptionless --namespace ex-$ENV --values ex-$ENV-values
     --set "config.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" \
     --set "config.EX_StripeApiKey=$EX_StripeApiKey" \
     --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
+    --set "config.EX_MaxMindGeoIpKey=$EX_MaxMindGeoIpKey" \
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 # upgrade exceptionless app to a new docker image tag

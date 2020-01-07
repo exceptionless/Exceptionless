@@ -117,7 +117,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     dequeuedWorkItem.TaskId = response.Task;
                     workingTasks.Add(dequeuedWorkItem);
 
-                    _logger.LogInformation("STARTED - {SourceIndex}/{SourceType} -> {TargetIndex} A:{Attempts} ({TaskId})...", dequeuedWorkItem.SourceIndex, dequeuedWorkItem.SourceIndexType, dequeuedWorkItem.TargetIndex, dequeuedWorkItem.Attempts, dequeuedWorkItem.TaskId);
+                    _logger.LogInformation("STARTED - {TargetIndex} A:{Attempts} ({TaskId})...", dequeuedWorkItem.TargetIndex, dequeuedWorkItem.Attempts, dequeuedWorkItem.TaskId);
                     
                     continue;
                 }
@@ -148,13 +148,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
                             workItem.LastTaskInfo = taskStatus.Task;
 
                             if (taskStatus.Completed && workItem.Attempts < 3) {
-                                _logger.LogWarning("FAILED RETRY - {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.SourceIndex, workItem.SourceIndexType, workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
+                                _logger.LogWarning("FAILED RETRY - {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                                 workItem.ConsecutiveStatusErrors = 0;
                                 workItemQueue.Enqueue(workItem);
                                 retriesCount++;
                                 await Task.Delay(TimeSpan.FromSeconds(15)).AnyContext();
                             } else {
-                                _logger.LogCritical("FAILED - {SourceIndex}/{SourceType} -> {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.SourceIndex, workItem.SourceIndexType, workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
+                                _logger.LogCritical("FAILED - {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                                 failedTasks.Add(workItem);
                             }
                         }
@@ -170,7 +170,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     completedTasks.Add(workItem);
                     var targetCount = await client.CountAsync<object>(d => d.Index(workItem.TargetIndex)).AnyContext();
 
-                    _logger.LogInformation("COMPLETED - {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.SourceIndex, workItem.SourceIndexType, workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
+                    _logger.LogInformation("COMPLETED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                 }
                 if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
                     _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
@@ -186,7 +186,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
-                _logger.LogInformation("SUCCESS - {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
+                _logger.LogInformation("SUCCESS - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
             }
 
             foreach (var task in failedTasks) {
@@ -195,7 +195,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
-                _logger.LogCritical("FAILED - {SourceIndex}/{SourceType} -> {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.SourceIndex, task.SourceIndexType, task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
+                _logger.LogCritical("FAILED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
             }
 
             _logger.LogInformation("Updating aliases");
