@@ -22,8 +22,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="9.0.0" />
-    <PackageReference Include="AutoMapper.Collection" Version="5.0.0" />
-    <PackageReference Include="FluentValidation" Version="8.6.0" />
+    <PackageReference Include="AutoMapper.Collection" Version="6.0.0" />
+    <PackageReference Include="FluentValidation" Version="8.6.1" />
     <PackageReference Include="Foundatio.Hosting" Version="9.0.2213-pre" />
     <PackageReference Include="Foundatio.JsonNet" Version="9.0.2213-pre" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.5.995-pre" />
@@ -32,7 +32,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.4.2" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.5.1" />
     <PackageReference Include="Stripe.net" Version="29.6.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
     <PackageReference Include="UAParser" Version="3.1.43" />
