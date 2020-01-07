@@ -15,6 +15,7 @@
     <PackageReference Include="Foundatio.RabbitMQ" Version="9.0.1537-pre" />
     <PackageReference Include="Foundatio.Redis" Version="9.0.1697-pre" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="3.1.0" />
     <PackageReference Include="MailKit" Version="2.4.1" />
     <PackageReference Include="MimeKit" Version="2.4.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.1.0" />

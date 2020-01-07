@@ -62,6 +62,8 @@ namespace Exceptionless.Core {
         public string InformationalVersion { get; internal set; }
 
         public string GoogleGeocodingApiKey { get; internal set; }
+        
+        public string MaxMindGeoIpLicenseKey { get; internal set; }
 
         public int BulkBatchSize { get; internal set; }
         
@@ -101,6 +103,7 @@ namespace Exceptionless.Core {
             options.ApplicationInsightsKey = _configuration.GetValue<string>(nameof(options.ApplicationInsightsKey));
 
             options.GoogleGeocodingApiKey = _configuration.GetValue<string>(nameof(options.GoogleGeocodingApiKey));
+            options.MaxMindGeoIpLicenseKey = _configuration.GetValue<string>(nameof(options.MaxMindGeoIpLicenseKey));
 
             options.BulkBatchSize = _configuration.GetValue(nameof(options.BulkBatchSize), 1000);
             

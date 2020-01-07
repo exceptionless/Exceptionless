@@ -153,8 +153,8 @@ namespace Exceptionless.Core {
             container.AddSingleton<IWebHookRepository, WebHookRepository>();
             container.AddSingleton<ITokenRepository, TokenRepository>();
 
-            container.AddSingleton<IGeoIpService, MaxMindGeoIpService>();
             container.AddSingleton<IGeocodeService, NullGeocodeService>();
+            container.AddSingleton<IGeoIpService, NullGeoIpService>();
 
             container.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
             container.AddSingleton<IQueryValidator, QueryValidator>();
