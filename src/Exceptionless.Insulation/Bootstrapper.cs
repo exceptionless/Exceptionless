@@ -63,6 +63,9 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
                 services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
 
+            if (!String.IsNullOrEmpty(appOptions.MaxMindGeoIpLicenseKey))
+                services.ReplaceSingleton<IGeoIpService, MaxMindGeoIpService>();
+            
             var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value;
             RegisterCache(services, cacheOptions);
 
