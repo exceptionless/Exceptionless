@@ -4,8 +4,8 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.5.0
-  image: exceptionless/elasticsearch:7.5.0 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.5.1
+  image: exceptionless/elasticsearch:7.5.1 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   http:
     tls:
       selfSignedCertificate:
@@ -17,8 +17,8 @@ spec:
       node.master: true
       node.data: true
       node.ingest: true
-      #reindex.remote.whitelist: "localhost:9200"
-      #action.destructive_requires_name: true
+      reindex.remote.whitelist: "10.0.0.4:9200"
+      action.destructive_requires_name: true
       # if not setting max_map_count in an init container, then use this setting
       #node.store.allow_mmap: false
     podTemplate:
@@ -59,7 +59,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.5.0
+  version: 7.5.1
   count: 1
   elasticsearchRef:
     name: ex-prod
@@ -76,7 +76,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.5.0
+  version: 7.5.1
   count: 1
   elasticsearchRef:
     name: ex-prod
