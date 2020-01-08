@@ -151,7 +151,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                                 _logger.LogWarning("FAILED RETRY - {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                                 workItem.ConsecutiveStatusErrors = 0;
                                 workItemQueue.Enqueue(workItem);
-                                totalTasks = workItemQueue.Count;
+                                totalTasks++;
                                 retriesCount++;
                                 await Task.Delay(TimeSpan.FromSeconds(15)).AnyContext();
                             } else {
