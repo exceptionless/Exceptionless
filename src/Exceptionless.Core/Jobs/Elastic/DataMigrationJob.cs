@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 if (workingTasks.Count == 0 && workItemQueue.Count == 0)
                     break;
 
-                if (workingTasks.Count < 5 && workItemQueue.TryDequeue(out var dequeuedWorkItem)) {
+                if (workingTasks.Count < 10 && workItemQueue.TryDequeue(out var dequeuedWorkItem)) {
                     if (dequeuedWorkItem.CreateIndex != null) {
                         try {
                             await dequeuedWorkItem.CreateIndex().AnyContext();
@@ -177,10 +177,10 @@ namespace Exceptionless.Core.Jobs.Elastic {
                     _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
                     lastProgress = SystemClock.UtcNow;
                 }
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(2));
             }
 
-            _logger.LogInformation("----- DONE - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
+            _logger.LogInformation("----- REINDEX COMPLETE", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
             foreach (var task in completedTasks) {
                 var status = task.LastTaskInfo.Status;
                 var duration = TimeSpan.FromMilliseconds(task.LastTaskInfo.RunningTimeInNanoseconds * 0.000001);
@@ -198,6 +198,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
                 _logger.LogCritical("FAILED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
             }
+            _logger.LogInformation("----- SUMMARY - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
 
             _logger.LogInformation("Updating aliases");
             await _configuration.MaintainIndexesAsync();
