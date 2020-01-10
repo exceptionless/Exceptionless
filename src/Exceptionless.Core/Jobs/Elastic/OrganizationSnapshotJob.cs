@@ -14,8 +14,13 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
         public OrganizationSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
             _configuration = configuration;
-            Repository = configuration.Options.ScopePrefix + "ex_organizations";
-            IncludedIndexes.Add("organizations*");
+            Repository = configuration.Options.ScopePrefix + "ex-data";
+            foreach (var index in configuration.Indexes) {
+                if (index == configuration.Events || index == configuration.Stacks)
+                    continue;
+                
+                IncludedIndexes.Add(index.Name + "*");
+            }
         }
 
         public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {
