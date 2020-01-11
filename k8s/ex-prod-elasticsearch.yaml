@@ -6,6 +6,8 @@ metadata:
 spec:
   version: 7.5.1
   image: exceptionless/elasticsearch:7.5.1 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  secureSettings:
+    - secretName: ex-prod-snapshots
   http:
     tls:
       selfSignedCertificate:
