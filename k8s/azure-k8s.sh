@@ -59,6 +59,7 @@ kubectl apply -f ex-dev-elasticsearch.yaml
 kubectl get elasticsearch
 
 k get es,kb,apm,sts,pod
+k get pods -l common.k8s.elastic.co/type=elasticsearch
 
 # get elastic password into env variable
 ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
@@ -184,53 +185,51 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 # ssh to k8s node https://docs.microsoft.com/en-us/azure/aks/ssh
 
 # stop the entire app
-kubectl scale deployment/exceptionless-api --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-app --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-collector --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-event-posts --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-mail-message --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-work-item --replicas=0 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-statsd --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-api --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-collector --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-close-inactive-sessions --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-daily-summary --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-event-notifications --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-event-posts --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-event-user-descriptions --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-mail-message --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-retention-limits --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-stack-event-count --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-web-hooks --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-work-item --replicas=0 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-statsd --replicas=0 --namespace ex-$ENV
 
-kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-cleanup-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-event-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-organization-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-stack-snapshot -p '{"spec":{"suspend": true}}' --namespace ex-$ENV
 
 # resume the app
-kubectl scale deployment/exceptionless-api --replicas=5 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-app --replicas=2 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-collector --replicas=12 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-close-inactive-sessions --replicas=1 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-daily-summary --replicas=1 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-event-notifications --replicas=2 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-event-posts --replicas=6 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-event-user-descriptions --replicas=2 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-mail-message --replicas=2 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-retention-limits --replicas=1 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-stack-event-count --replicas=1 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-web-hooks --replicas=4 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-jobs-work-item --replicas=5 --namespace ex-$ENV
-kubectl scale deployment/exceptionless-statsd --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-api --replicas=5 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-collector --replicas=12 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-close-inactive-sessions --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-daily-summary --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-event-notifications --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-event-posts --replicas=6 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-event-user-descriptions --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-mail-message --replicas=2 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-retention-limits --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-stack-event-count --replicas=1 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-web-hooks --replicas=4 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-jobs-work-item --replicas=5 --namespace ex-$ENV
+kubectl scale deployment/ex-$ENV-statsd --replicas=1 --namespace ex-$ENV
 
-kubectl patch cronjob/exceptionless-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-event-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-organization-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
-kubectl patch cronjob/exceptionless-jobs-stack-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-event-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-organization-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
+kubectl patch cronjob/ex-$ENV-jobs-stack-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-$ENV
 
 # view pod log tail
-kubectl logs -f exceptionless-jobs-event-posts-6c7b78d745-xd5ln
+kubectl logs -f ex-$ENV-jobs-event-posts-6c7b78d745-xd5ln
 
 # install helper tools for using kubernetes CLI
 brew install kubectx
