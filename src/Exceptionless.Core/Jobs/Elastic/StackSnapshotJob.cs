@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
         public StackSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
             _configuration = configuration;
-            Repository = configuration.Options.ScopePrefix + "ex-stacks";
+            Repository = configuration.Options.ScopePrefix + "stacks";
             IncludedIndexes.Add(configuration.Stacks.Name + "*");
         }
 
