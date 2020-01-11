@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
         public CleanupSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory)
             : base(configuration.Client, lockProvider, loggerFactory) {
             _configuration = configuration;
-            AddRepository(configuration.Options.ScopePrefix + "data", TimeSpan.FromDays(7));
+            AddRepository(configuration.Options.ScopePrefix + "organizations", TimeSpan.FromDays(7));
             AddRepository(configuration.Options.ScopePrefix + "stacks", TimeSpan.FromDays(7));
             AddRepository(configuration.Options.ScopePrefix + "events", TimeSpan.FromDays(7));
         }

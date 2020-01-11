@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
         public OrganizationSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
             _configuration = configuration;
-            Repository = configuration.Options.ScopePrefix + "data";
+            Repository = configuration.Options.ScopePrefix + "organizations";
             foreach (var index in configuration.Indexes) {
                 if (index == configuration.Events || index == configuration.Stacks)
                     continue;
