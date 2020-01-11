@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
 
         public EventSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration.Client, lockProvider, loggerFactory) {
             _configuration = configuration;
-            Repository = configuration.Options.ScopePrefix + "ex-events";
+            Repository = configuration.Options.ScopePrefix + "events";
             IncludedIndexes.Add(configuration.Events.Name + "*");
         }
 
