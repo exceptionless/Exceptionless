@@ -39,3 +39,4 @@ jobs:
 
 config:
   EX_EnableSnapshotJobs: "true"
+  EX_Scope: "prod"

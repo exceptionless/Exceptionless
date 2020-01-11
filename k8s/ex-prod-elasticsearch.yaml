@@ -27,14 +27,14 @@ spec:
         - name: elasticsearch
           env:
           - name: ES_JAVA_OPTS
-            value: -Xms6g -Xmx6g
+            value: -Xms9g -Xmx9g
           resources:
             requests:
-              memory: 12Gi
-              cpu: 0.5
+              memory: 18Gi
+              cpu: 4
             limits:
-              memory: 12Gi
-              cpu: 2
+              memory: 18Gi
+              cpu: 4
         # related to "node.store.allow_mmap: false" setting above
         initContainers:
         - name: sysctl
@@ -69,14 +69,4 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
----
-apiVersion: apm.k8s.elastic.co/v1beta1
-kind: ApmServer
-metadata:
-  name: ex-prod
-  namespace: ex-prod
-spec:
-  version: 7.5.1
-  count: 1
-  elasticsearchRef:
-    name: ex-prod
+
