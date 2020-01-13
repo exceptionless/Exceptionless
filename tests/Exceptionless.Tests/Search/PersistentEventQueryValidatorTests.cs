@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queries.Validation;
@@ -18,13 +18,13 @@ namespace Exceptionless.Tests.Search {
         private readonly PersistentEventQueryValidator _validator;
 
         public PersistentEventQueryValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
-            _parser = GetService<ExceptionlessElasticConfiguration>().Events.Event.QueryParser;
+            _parser = GetService<ExceptionlessElasticConfiguration>().Events.QueryParser;
             _validator = GetService<PersistentEventQueryValidator>();
         }
 
         [Theory]
         [InlineData("data.@user.identity:blake", "data.@user.identity:blake", true, true)]
-        [InlineData("data.user.identity:blake", "data.user.identity:blake", true, true)]
+        [InlineData("user:blake", "data.@user.identity:blake", true, true)]
         [InlineData("_missing_:data.sessionend", "_missing_:idx.sessionend-d", true, true)]
         [InlineData("data.SessionEnd:<now", "idx.sessionend-d:<now", true, true)]
         [InlineData("data.haserror:true", "idx.haserror-b:true", true, true)]
@@ -43,21 +43,21 @@ namespace Exceptionless.Tests.Search {
         [InlineData("data.age:(->=10 AND < 20)", "idx.age-n:(->=10 AND <20)", true, true)]
         [InlineData("data.age:[10 TO *]", "idx.age-n:[10 TO *]", true, true)]
         [InlineData("data.age:[* TO 10]", "idx.age-n:[* TO 10]", true, true)]
-        [InlineData("hidden:true AND data.age:(>30 AND <=40)", "is_hidden:true AND idx.age-n:(>30 AND <=40)", true, true)]
-        [InlineData("hidden:true", "is_hidden:true", true, false)]
-        [InlineData("fixed:true", "is_fixed:true", true, false)]
+        [InlineData("hidden:true AND data.age:(>30 AND <=40)", "hidden:true AND idx.age-n:(>30 AND <=40)", true, true)]
+        [InlineData("hidden:true", "hidden:true", true, false)]
+        [InlineData("fixed:true", "fixed:true", true, false)]
         [InlineData("type:404", "type:404", true, false)]
-        [InlineData("reference:404", "reference_id:404", true, false)]
-        [InlineData("organization:404", "organization_id:404", true, false)]
-        [InlineData("project:404", "project_id:404", true, false)]
-        [InlineData("stack:404", "stack_id:404", true, false)]
+        [InlineData("reference:404", "reference:404", true, false)]
+        [InlineData("organization:404", "organization:404", true, false)]
+        [InlineData("project:404", "project:404", true, false)]
+        [InlineData("stack:404", "stack:404", true, false)]
         [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
         public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures) {
-            var context = new ElasticQueryVisitorContext();
+            var context = new ElasticQueryVisitorContext { QueryType = QueryType.Query };
 
             IQueryNode result;
             try {
-                result = await _parser.ParseAsync(query, QueryType.Query, context).AnyContext();
+                result = await _parser.ParseAsync(query, context).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error parsing query: {Query}. Message: {Message}", query, ex.Message);
                 if (isValid)
@@ -113,6 +113,7 @@ namespace Exceptionless.Tests.Search {
         [InlineData("cardinality:os.major", true, true)]
         [InlineData("cardinality:bot", true, true)]
         [InlineData("cardinality:version", true, true)]
+        [InlineData("cardinality:level", true, true)]
         [InlineData("date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1", true, false)] // dashboards
         [InlineData("date:(date cardinality:user sum:value avg:value sum:count~1) min:date max:date cardinality:user sum:count~1", true, false)] // stack dashboard
         [InlineData("avg:value cardinality:user date:(date cardinality:user)", true, false)] // session dashboard

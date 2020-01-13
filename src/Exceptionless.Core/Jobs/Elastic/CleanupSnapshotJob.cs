@@ -14,9 +14,9 @@ namespace Exceptionless.Core.Jobs.Elastic {
         public CleanupSnapshotJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory)
             : base(configuration.Client, lockProvider, loggerFactory) {
             _configuration = configuration;
-            AddRepository(configuration.Options.ScopePrefix + "ex_organizations", TimeSpan.FromDays(7));
-            AddRepository(configuration.Options.ScopePrefix + "ex_stacks", TimeSpan.FromDays(7));
-            AddRepository(configuration.Options.ScopePrefix + "ex_events", TimeSpan.FromDays(7));
+            AddRepository(configuration.Options.ScopePrefix + "organizations", TimeSpan.FromDays(7));
+            AddRepository(configuration.Options.ScopePrefix + "stacks", TimeSpan.FromDays(7));
+            AddRepository(configuration.Options.ScopePrefix + "events", TimeSpan.FromDays(7));
         }
 
         public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {

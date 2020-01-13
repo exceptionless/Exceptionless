@@ -20,6 +20,8 @@ namespace Exceptionless.Core.Configuration {
 
         public string Password { get; internal set; }
         public string UserName { get; internal set; }
+        public DateTime ReindexCutOffDate { get; internal set; }
+        public ElasticsearchOptions ElasticsearchToMigrate { get; internal set; }
     }
 
     public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
@@ -32,13 +34,27 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(ElasticsearchOptions options) {
-            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
+            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), _configuration.GetScopeFromAppMode());
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
             options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
             options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && _appOptions.Value.AppMode == AppMode.Production);
-
+            options.ReindexCutOffDate = _configuration.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
+            
             string connectionString = _configuration.GetConnectionString("Elasticsearch");
+            ParseConnectionString(connectionString, options);
+            
+            string connectionStringToMigrate = _configuration.GetConnectionString("ElasticsearchToMigrate");
+            if (String.IsNullOrEmpty(connectionStringToMigrate))
+                return;
+
+            options.ElasticsearchToMigrate = new ElasticsearchOptions {
+                ReindexCutOffDate = options.ReindexCutOffDate
+            };
+            ParseConnectionString(connectionStringToMigrate, options.ElasticsearchToMigrate);
+        }
+
+        private void ParseConnectionString(string connectionString, ElasticsearchOptions options) {
             var pairs = connectionString.ParseConnectionString();
 
             options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
@@ -56,6 +72,10 @@ namespace Exceptionless.Core.Configuration {
 
             options.UserName = pairs.GetString("username");
             options.Password = pairs.GetString("password");
+            
+            string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
+            if (!String.IsNullOrEmpty(scope))
+                options.Scope = scope;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
@@ -32,7 +33,7 @@ namespace Exceptionless.Core.Queries.Validation {
 
             IQueryNode parsedResult;
             try {
-                parsedResult = await _parser.ParseAsync(query, QueryType.Query).AnyContext();
+                parsedResult = await _parser.ParseAsync(query, new ElasticQueryVisitorContext { QueryType = QueryType.Query }).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error parsing query: {Query}", query);
                 return new QueryProcessResult { Message = ex.Message };
@@ -56,7 +57,7 @@ namespace Exceptionless.Core.Queries.Validation {
 
             IQueryNode parsedResult;
             try {
-                parsedResult = await _parser.ParseAsync(aggs, QueryType.Aggregation).AnyContext();
+                parsedResult = await _parser.ParseAsync(aggs, new ElasticQueryVisitorContext { QueryType = QueryType.Aggregation }).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error parsing aggregation: {Aggregation}", aggs);
                 return new QueryProcessResult { Message = ex.Message };

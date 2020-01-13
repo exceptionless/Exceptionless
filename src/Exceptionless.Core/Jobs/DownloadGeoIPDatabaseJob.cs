@@ -13,15 +13,19 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Downloads Geo IP database.", IsContinuous = false, Interval = "1d")]
     public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
+        public const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
+        private readonly IOptions<AppOptions> _options;
         private readonly IFileStorage _storage;
         private readonly ILockProvider _lockProvider;
         private DateTime? _lastRun;
 
-        public DownloadGeoIPDatabaseJob(ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DownloadGeoIPDatabaseJob(IOptions<AppOptions> options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+            _options = options;
             _storage = storage;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
@@ -32,9 +36,15 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             _lastRun = SystemClock.UtcNow;
+
+            string licenseKey = _options.Value.MaxMindGeoIpKey;
+            if (String.IsNullOrEmpty(licenseKey)) {
+                _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpKey));
+                return JobResult.Success;
+            }
             
             try {
-                var fi = await _storage.GetFileInfoAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH).AnyContext();
+                var fi = await _storage.GetFileInfoAsync(GEO_IP_DATABASE_PATH).AnyContext();
                 if (fi != null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay())) {
                     _logger.LogInformation("The GeoIP database is already up-to-date.");
                     return JobResult.Success;
@@ -42,13 +52,14 @@ namespace Exceptionless.Core.Jobs {
 
                 _logger.LogInformation("Downloading GeoIP database.");
                 var client = new HttpClient();
-                var file = await client.GetAsync("http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz", context.CancellationToken).AnyContext();
+                string url = $"https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={licenseKey}&suffix=tar.gz";
+                var file = await client.GetAsync(url, context.CancellationToken).AnyContext();
                 if (!file.IsSuccessStatusCode)
                     return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
                 _logger.LogInformation("Extracting GeoIP database");
                 using (var decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
-                    await _storage.SaveFileAsync(MaxMindGeoIpService.GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
+                    await _storage.SaveFileAsync(GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "An error occurred while downloading the GeoIP database.");
                 return JobResult.FromException(ex);

@@ -1,0 +1,84 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1beta1
+kind: Elasticsearch
+metadata:
+  name: ex-dev
+  namespace: ex-dev
+spec:
+  version: 7.5.1
+  image: exceptionless/elasticsearch:7.5.1 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  secureSettings:
+    - secretName: ex-dev-snapshots
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  nodeSets:
+  - name: main
+    count: 3
+    config:
+      node.master: true
+      node.data: true
+      node.ingest: true
+      reindex.remote.whitelist: "10.0.0.4:9200"
+      #action.destructive_requires_name: true
+      # if not setting max_map_count in an init container, then use this setting
+      #node.store.allow_mmap: false
+    podTemplate:
+      spec:
+        containers:
+        - name: elasticsearch
+          env:
+          - name: ES_JAVA_OPTS
+            value: -Xms6g -Xmx6g
+          resources:
+            requests:
+              memory: 12Gi
+              cpu: 0.5
+            limits:
+              memory: 12Gi
+              cpu: 2
+        # related to "node.store.allow_mmap: false" setting above
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 500Gi
+        storageClassName: managed-premium
+
+---
+apiVersion: kibana.k8s.elastic.co/v1beta1
+kind: Kibana
+metadata:
+  name: ex-dev
+  namespace: ex-dev
+spec:
+  version: 7.5.1
+  count: 1
+  elasticsearchRef:
+    name: ex-dev
+  config:
+    xpack.monitoring.enabled: true
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+---
+apiVersion: apm.k8s.elastic.co/v1beta1
+kind: ApmServer
+metadata:
+  name: ex-dev
+  namespace: ex-dev
+spec:
+  version: 7.5.1
+  count: 1
+  elasticsearchRef:
+    name: ex-dev

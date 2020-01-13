@@ -2,6 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Geo;
+using Exceptionless.Core.Jobs;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Storage;
@@ -10,10 +12,8 @@ using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Core.Geo {
+namespace Exceptionless.Insulation.Geo {
     public class MaxMindGeoIpService : IGeoIpService, IDisposable {
-        internal const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
-
         private readonly InMemoryCacheClient _localCache;
         private readonly IFileStorage _storage;
         private readonly ILogger _logger;
@@ -83,14 +83,14 @@ namespace Exceptionless.Core.Geo {
 
             _databaseLastChecked = SystemClock.UtcNow;
 
-            if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH).AnyContext()) {
+            if (!await _storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH).AnyContext()) {
                 if (_logger.IsEnabled(LogLevel.Warning)) _logger.LogWarning("No GeoIP database was found.");
                 return null;
             }
 
             if (_logger.IsEnabled(LogLevel.Information)) _logger.LogInformation("Loading GeoIP database.");
             try {
-                using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
+                using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
                 if (_logger.IsEnabled(LogLevel.Error)) _logger.LogError(ex, "Unable to open GeoIP database.");

@@ -1,4 +1,4 @@
-﻿---
+---
 Serilog:
   Using:
   - Serilog.Sinks.Console
@@ -6,6 +6,8 @@ Serilog:
     Default: Information
     Override:
       Microsoft: Warning
+      Microsoft.Hosting.Lifetime: Information
+      Microsoft.AspNetCore.Hosting.Diagnostics: Warning
       System: Warning
       Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Utility.ScheduledTimer: Warning

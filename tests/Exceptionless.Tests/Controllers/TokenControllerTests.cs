@@ -7,7 +7,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
-using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 

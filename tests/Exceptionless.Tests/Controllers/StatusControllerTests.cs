@@ -37,7 +37,7 @@ namespace Exceptionless.Tests.Controllers {
                 notification = await SendRequestAsAsync<ReleaseNotification>(r => r
                     .Post()
                     .AsGlobalAdminUser()
-                    .AppendPath($"notifications/release")
+                    .AppendPath("notifications/release")
                     .QueryStringIf(() => critical, "critical", critical)
                     .Content(new ValueFromBody<string>(message))
                     .StatusCodeShouldBeOk());
@@ -45,7 +45,7 @@ namespace Exceptionless.Tests.Controllers {
                 notification = await SendRequestAsAsync<ReleaseNotification>(r => r
                     .Post()
                     .AsGlobalAdminUser()
-                    .AppendPath($"notifications/release")
+                    .AppendPath("notifications/release")
                     .QueryStringIf(() => critical, "critical", critical)
                     .StatusCodeShouldBeOk());
             }

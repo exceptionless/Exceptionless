@@ -1,14 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Nest;
+using Nest.JsonNetSerializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Core.Serialization {
-    public class ElasticLowerCaseUnderscorePropertyNamesContractResolver : ElasticContractResolver {
-        public ElasticLowerCaseUnderscorePropertyNamesContractResolver(IConnectionSettingsValues connectionSettings, IList<Func<Type, JsonConverter>> contractConverters) : base(connectionSettings, contractConverters) {}
+    public class ElasticConnectionSettingsAwareContractResolver : ConnectionSettingsAwareContractResolver {
+        public ElasticConnectionSettingsAwareContractResolver(IConnectionSettingsValues connectionSettings) : base(connectionSettings) { }
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             var property = base.CreateProperty(member, memberSerialization);
