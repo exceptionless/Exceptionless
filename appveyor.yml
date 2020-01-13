@@ -59,17 +59,21 @@ deploy_script:
   - |
     echo "Branch: $APPVEYOR_REPO_BRANCH"
     echo "PR: $APPVEYOR_PULL_REQUEST_NUMBER"
-    if [[ "$APPVEYOR_REPO_BRANCH" == "master" && APPVEYOR_PULL_REQUEST_NUMBER == "" ]]; then
-      # deploy to k8s cluster
+    if [[ "$APPVEYOR_REPO_BRANCH" == "master" && "$APPVEYOR_PULL_REQUEST_NUMBER" == "" ]]; then
+      # deploy to prod k8s cluster
       az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
       az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
       helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values ex-prod --namespace ex-prod ./k8s/exceptionless
+    else
+      echo "Skipping prod deployment"
     fi
-    if [[ "$APPVEYOR_REPO_BRANCH" == "master" && APPVEYOR_PULL_REQUEST_NUMBER == ""  ]]; then
+    if [[ "$APPVEYOR_REPO_BRANCH" == "master" && "$APPVEYOR_PULL_REQUEST_NUMBER" == "" ]]; then
       # deploy to dev k8s cluster
       az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
       az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
       helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values ex-dev --namespace ex-dev ./k8s/exceptionless
+    else
+      echo "Skipping dev deployment"
     fi
 
 artifacts:
