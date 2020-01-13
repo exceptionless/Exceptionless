@@ -15,7 +15,7 @@ using User = Exceptionless.Core.Models.User;
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : RepositoryBase<User>, IUserRepository {
         public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, IOptions<AppOptions> options)
-            : base(configuration.Organizations.User, validator, options) {
+            : base(configuration.Users, validator, options) {
             AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
             DocumentsAdded.AddHandler(OnDocumentsAdded);
         }

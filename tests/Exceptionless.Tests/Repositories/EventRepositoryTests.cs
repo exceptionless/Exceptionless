@@ -255,6 +255,8 @@ namespace Exceptionless.Tests.Repositories {
                 var ev = await _repository.AddAsync(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: date));
                 _ids.Add(Tuple.Create(ev.Id, date));
             }
+
+            await RefreshDataAsync();
         }
 
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {

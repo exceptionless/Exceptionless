@@ -1,9 +1,9 @@
 # https://www.docker.elastic.co/
-FROM docker.elastic.co/elasticsearch/elasticsearch:5.6.16
+FROM docker.elastic.co/elasticsearch/elasticsearch:7.5.1
 
-RUN elasticsearch-plugin install mapper-size
-RUN elasticsearch-plugin install repository-azure
-RUN elasticsearch-plugin install repository-s3
+RUN elasticsearch-plugin install -b mapper-size
+RUN elasticsearch-plugin install -b repository-azure
+RUN elasticsearch-plugin install -b repository-s3
 
 # USER root
 #

@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Configuration {
         }
 
         public void Configure(MessageBusOptions options) {
-            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), String.Empty);
+            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), _configuration.GetScopeFromAppMode());
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
             options.Topic = _configuration.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages");

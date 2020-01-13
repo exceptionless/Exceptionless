@@ -1,5 +1,5 @@
 api:
-  replicaCount: 2
+  replicaCount: 1
   defaultDomain:
   domains: []
   image:
@@ -8,12 +8,12 @@ api:
     pullPolicy: IfNotPresent
 
 collector:
-  replicaCount: 3
+  replicaCount: 1
   defaultDomain:
   domains: []
 
 app:
-  replicaCount: 2
+  replicaCount: 1
   defaultDomain:
   domains: []
   image:
@@ -43,7 +43,7 @@ statsd:
   token:
   user:
 
-extraConfig: {}
+config: {}
 #  key: value
 
 service:

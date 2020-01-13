@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
@@ -114,8 +114,13 @@ namespace Exceptionless {
             if (ev == null || !ev.IsSessionStart())
                 return null;
 
-            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object end) && end is DateTime)
-                return (DateTime)end;
+            if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object sessionEnd)) {
+                if (sessionEnd is DateTimeOffset dto)
+                    return dto.UtcDateTime;
+                
+                if (sessionEnd is DateTime dt)
+                    return dt;
+            }
 
             return null;
         }

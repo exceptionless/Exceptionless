@@ -112,6 +112,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The user could not be found.</response>
         [HttpPatch("{id:objectid}")]
         [HttpPut("{id:objectid}")]
+        [Consumes("application/json")]
         public Task<ActionResult<ViewUser>> PatchAsync(string id, Delta<UpdateUser> changes) {
             return PatchImplAsync(id, changes);
         }

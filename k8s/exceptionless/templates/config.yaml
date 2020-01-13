@@ -4,6 +4,9 @@ metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
     EX_AppMode: {{ default "Production" .Values.appMode }}
+    {{- if .Values.scope }}
+    EX_Scope: {{ .Values.scope }}
+    {{- end }}
     EX_ApiUrl: https://{{.Values.api.defaultDomain}}
     EX_BaseUrl: https://{{.Values.app.defaultDomain}}
     EX_ExceptionlessServerUrl: https://{{.Values.collector.defaultDomain}}
@@ -11,13 +14,21 @@ data:
     EX_EnableSsl: "true"
     EX_Html5Mode: "true"
     EX_ConnectionStrings__Elasticsearch: {{ default "server=http://elasticsearch:9200" .Values.elasticsearch.connectionString }}
-    EX_ConnectionStrings__Redis: {{ default "server=redis-master,abortConnect=false" .Values.redis.connectionString }}
+    {{- if (empty .Values.redis.connectionString) }}
+    EX_ConnectionStrings__Redis: server={{ template "exceptionless.fullname" . }}-redis-master,abortConnect=false
+    {{- else }}
+    EX_ConnectionStrings__Redis: {{ .Values.redis.connectionString }}
+    {{- end }}
     EX_ConnectionStrings__Storage: {{ default "provider=folder;path=/app/storage" .Values.storage.connectionString }}
     EX_ConnectionStrings__Cache: {{ default "provider=redis;" .Values.cache.connectionString }}
     EX_ConnectionStrings__MessageBus: {{ default "provider=redis;" .Values.messagebus.connectionString }}
-    EX_ConnectionStrings__Metrics: {{ default "provider=statsd;server=10.10.244.5" .Values.metrics.connectionString }}
+    {{- if .Values.statsd.token }}
+    EX_ConnectionStrings__Metrics: provider=statsd;server={{ template "exceptionless.fullname" . }}-statsd
+    {{- else if .Values.metrics.connectionString }}
+    EX_ConnectionStrings__Metrics: {{ .Values.metrics.connectionString }}
+    {{- end }}
     EX_ConnectionStrings__Queue: {{ default "provider=redis;" .Values.queue.connectionString }}
     EX_ConnectionStrings__Email: {{ default "smtp://localhost" .Values.email.connectionString }}
-{{- if .Values.extraConfig }}
-{{ toYaml .Values.extraConfig | indent 4 }}
+{{- if .Values.config }}
+{{ toYaml .Values.config | indent 4 }}
 {{- end }}

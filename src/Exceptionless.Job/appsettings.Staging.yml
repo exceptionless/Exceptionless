@@ -9,7 +9,7 @@ ConnectionStrings:
 # Storage: provider=folder;path=.\storage=
   OAuth: FacebookId=395178683904310;GitHubId=7ef1dd5bfbc4ccf7f5ef;GoogleId=809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com;MicrosoftId=000000004C137E8B;SlackId=34500115540.177239122322;
 
-  # Base url for the ui used to build links in emails and other places.
+# Base url for the ui used to build links in emails and other places.
 BaseURL: https://dev.exceptionless.io
 
 # Exceptionless Client Settings

@@ -77,8 +77,8 @@ namespace Exceptionless.Web.Controllers {
             _jsonSerializerSettings = jsonSerializerSettings;
             _appOptions = appOptions;
 
-            AllowedDateFields.Add(EventIndexType.Alias.Date);
-            DefaultDateField = EventIndexType.Alias.Date;
+            AllowedDateFields.Add(EventIndex.Alias.Date);
+            DefaultDateField = EventIndex.Alias.Date;
         }
 
         /// <summary>
@@ -562,6 +562,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpPost("by-ref/{referenceId:identifier}/user-description")]
         [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description")]
+        [Consumes("application/json")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
@@ -599,6 +600,7 @@ namespace Exceptionless.Web.Controllers {
 
         [Obsolete]
         [HttpPatch("~/api/v1/error/{id:objectid}")]
+        [Consumes("application/json")]
         [ConfigurationResponseFilter]
         public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
@@ -866,6 +868,7 @@ namespace Exceptionless.Web.Controllers {
 
         [Obsolete]
         [HttpPost("~/api/v1/error")]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {
             return PostAsync(null, 1, userAgent);
@@ -874,6 +877,7 @@ namespace Exceptionless.Web.Controllers {
         [Obsolete]
         [HttpPost("~/api/v1/events")]
         [HttpPost("~/api/v1/projects/{projectId:objectid}/events")]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task <IActionResult> PostV1Async(string projectId = null, [UserAgent]string userAgent = null) {
@@ -929,6 +933,7 @@ namespace Exceptionless.Web.Controllers {
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
         [HttpPost]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<IActionResult> PostV2Async([UserAgent]string userAgent = null) {
@@ -985,6 +990,7 @@ namespace Exceptionless.Web.Controllers {
         ///  <response code="400">No project id specified and no default project was found.</response>
         ///  <response code="404">No project was found.</response>
         [HttpPost("~/api/v2/projects/{projectId:objectid}/events")]
+        [Consumes("application/json", "text/plain")]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task <IActionResult> PostByProjectV2Async(string projectId = null, [UserAgent]string userAgent = null) {

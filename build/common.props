@@ -1,13 +1,13 @@
-<Project ToolsVersion="15.0">
+<Project>
 
   <PropertyGroup Label="Version">
-    <VersionPrefix>5.0</VersionPrefix>
+    <VersionPrefix>6.0</VersionPrefix>
     <VersionSuffix>0-dev</VersionSuffix>
     <Version>$(VersionPrefix).$(VersionSuffix)</Version>
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <Product>Exceptionless</Product>
     <Copyright>Copyright (c) 2019 Exceptionless.  All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19351-01" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
     <PackageReference Include="AsyncFixer" Version="1.1.6" PrivateAssets="All" />
   </ItemGroup>
 

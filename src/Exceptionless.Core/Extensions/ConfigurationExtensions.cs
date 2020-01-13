@@ -5,6 +5,24 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Extensions {
     public static class ConfigurationExtensions {
+        public static string GetScopeFromAppMode(this IConfiguration config) {
+            var mode = config.GetValue(nameof(AppOptions.AppMode), AppMode.Production);
+            return mode.ToScope();
+        }
+        
+        public static string ToScope(this AppMode mode) {
+            switch (mode) {
+                case AppMode.Development:
+                    return "dev";
+                case AppMode.Staging:
+                    return "stage";
+                case AppMode.Production:
+                    return "prod";
+            }
+
+            return String.Empty;
+        }
+        
         public static List<string> GetValueList(this IConfiguration config, string key, char[] separators = null) {
             string value = config.GetValue<string>(key);
             if (String.IsNullOrEmpty(value))
@@ -22,15 +40,19 @@ namespace Exceptionless.Core.Extensions {
 
             var dict = new Dictionary<string, object>();
             foreach (var value in section.GetChildren()) {
+                // kubernetes service variables
+                if (value.Key.StartsWith("DEV_", StringComparison.Ordinal))
+                    continue;
+                
                 if (String.IsNullOrEmpty(value.Key) || sectionsToSkip.Contains(value.Key, StringComparer.OrdinalIgnoreCase))
                     continue;
                 
                 if (value.Value != null)
-                    dict.Add(value.Key, value.Value);
+                    dict[value.Key] = value.Value;
                 
                 var subDict = ToDictionary(value);
                 if (subDict.Count > 0)
-                    dict.Add(value.Key, subDict);
+                    dict[value.Key] = subDict;
             }
 
             return dict;

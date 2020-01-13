@@ -11,11 +11,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Cors.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Swashbuckle.AspNetCore.Swagger;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
 using Exceptionless.Web.Extensions;
@@ -23,15 +21,12 @@ using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
 
 namespace Exceptionless.Web {
     public class Startup {
-        public Startup(ILoggerFactory loggerFactory) {
-            LoggerFactory = loggerFactory;
-        }
-
-        public ILoggerFactory LoggerFactory { get; }
-
         public void ConfigureServices(IServiceCollection services) {
             services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -45,19 +40,13 @@ namespace Exceptionless.Web {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;
             });
-            services.AddMvcCore(o => {
-                o.Filters.Add(new CorsAuthorizationFilterFactory("AllowAny"));
+
+            services.AddControllers(o => {
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
-              .AddApiExplorer()
-              .AddAuthorization()
-              .AddFormatterMappings()
-              .AddDataAnnotations()
-              .AddJsonFormatters()
-              .AddCors()
-              .AddJsonOptions(o => {
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
+              .AddNewtonsoftJson(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
                 o.SerializerSettings.Formatting = Formatting.Indented;
@@ -82,35 +71,56 @@ namespace Exceptionless.Web {
                 r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             });
             services.AddSwaggerGen(c => {
-                c.SwaggerDoc("v2", new Info {
+                c.SwaggerDoc("v2", new OpenApiInfo {
                     Title = "Exceptionless API",
                     Version = "v2"
                 });
 
-                c.AddSecurityDefinition("Bearer", new ApiKeyScheme {
+                c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme {
+                    Description = "Basic HTTP Authentication",
+                    Scheme = "basic",
+                    Type = SecuritySchemeType.Http
+                });
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
                     Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                    Name = "Authorization",
-                    In = "header",
-                    Type = "apiKey",
+                    Scheme = "bearer",
+                    Type = SecuritySchemeType.Http
                 });
-                c.AddSecurityDefinition("Basic", new BasicAuthScheme {
-                    Type = "basic",
-                    Description = "Basic HTTP Authentication"
-                });
-                c.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>> {
-                    { "Basic", new string[] { } },
-                    { "Bearer", new string[] { } }
+                c.AddSecurityDefinition("Token", new OpenApiSecurityScheme {
+                    Description = "Authorization token. Example: \"Bearer {apikey}\"",
+                    Name = "access_token",
+                    In = ParameterLocation.Query,
+                    Type = SecuritySchemeType.ApiKey
                 });
                 
-                c.OperationFilter<ExceptionlessOperationFilter>();
-
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                    {
+                        new OpenApiSecurityScheme {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
+                        },
+                        new string[0]
+                    },
+                    {
+                        new OpenApiSecurityScheme {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+                        new string[0]
+                    },
+                    {
+                        new OpenApiSecurityScheme {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
+                        },
+                        new string[0]
+                    }
+                });
+                
                 if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
                     c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
                 
                 c.IgnoreObsoleteActions();
             });
             
-            Bootstrapper.RegisterServices(services, LoggerFactory);
+            Bootstrapper.RegisterServices(services, Log.Logger.ToLoggerFactory());
             services.AddSingleton(s => {
                 var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
                 return new ThrottlingOptions {
@@ -122,7 +132,7 @@ namespace Exceptionless.Web {
 
         public void Configure(IApplicationBuilder app) {
             var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
-            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, LoggerFactory.CreateLogger<Startup>());
+            Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
@@ -171,10 +181,34 @@ namespace Exceptionless.Web {
                 await next();
             });
 
+            app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
+                if (ex != null || context.Response.StatusCode > 499)
+                    return LogEventLevel.Error;
+                
+                if (context.Response.StatusCode > 399)
+                    return LogEventLevel.Information;
+                
+                if (duration < 1000 || context.Request.Path.StartsWithSegments("/api/v2/push"))
+                    return LogEventLevel.Debug;
+
+                return LogEventLevel.Information;
+            });
+            app.UseStaticFiles(new StaticFileOptions {
+                ContentTypeProvider = new FileExtensionContentTypeProvider {
+                    Mappings = {
+                        [".less"] = "plain/text"
+                    }
+                }
+            });
+
+            app.UseFileServer();
+            app.UseRouting();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
+            
             app.UseAuthentication();
+            app.UseAuthorization();
             
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
@@ -186,17 +220,10 @@ namespace Exceptionless.Web {
 
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
-            
-            app.UseStaticFiles(new StaticFileOptions {
-                ContentTypeProvider = new FileExtensionContentTypeProvider {
-                    Mappings = {
-                        [".less"] = "plain/text"
-                    }
-                }
+
+            app.UseEndpoints(endpoints => {
+                endpoints.MapControllers();
             });
-            
-            app.UseFileServer();
-            app.UseMvc();
             app.UseSwagger(c => {
                 c.RouteTemplate = "docs/{documentName}/swagger.json";
             });

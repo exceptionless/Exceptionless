@@ -39,8 +39,10 @@ using Foundatio.Metrics;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Jobs;
+using Foundatio.Repositories.Migrations;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,6 +75,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<IContractResolver>(s => GetJsonContractResolver());
             container.AddSingleton<JsonSerializerSettings>(s => {
+                // NOTE: These settings may need to be synced in the Elastic Configuration.
                 var settings = new JsonSerializerSettings {
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     DateParseHandling = DateParseHandling.DateTimeOffset,
@@ -141,14 +144,17 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
+            container.AddSingleton<IMigrationRepository, MigrationRepository>();
+            container.AddSingleton<MigrationManager>();
+            container.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
             container.AddSingleton<IOrganizationRepository, OrganizationRepository>();
             container.AddSingleton<IProjectRepository, ProjectRepository>();
             container.AddSingleton<IUserRepository, UserRepository>();
             container.AddSingleton<IWebHookRepository, WebHookRepository>();
             container.AddSingleton<ITokenRepository, TokenRepository>();
 
-            container.AddSingleton<IGeoIpService, MaxMindGeoIpService>();
             container.AddSingleton<IGeocodeService, NullGeocodeService>();
+            container.AddSingleton<IGeoIpService, NullGeoIpService>();
 
             container.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
             container.AddSingleton<IQueryValidator, QueryValidator>();
@@ -269,7 +275,6 @@ namespace Exceptionless.Core {
         public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
             var logger = loggerFactory.CreateLogger("AppBuilder");
 
-            services.AddJobLifetimeService();
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
             services.AddJob<DownloadGeoIPDatabaseJob>(true);

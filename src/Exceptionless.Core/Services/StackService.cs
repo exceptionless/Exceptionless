@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Services {
                 return;
 
             await Task.WhenAll(
-                _cache.SetAddAsync(GetStackOccurrenceSetCacheKey(), (organizationId, projectId, stackId)),
+                _cache.ListAddAsync(GetStackOccurrenceSetCacheKey(), (organizationId, projectId, stackId)),
                 _cache.IncrementAsync(GetStackOccurrenceCountCacheKey(stackId), count, _expireTimeout),
                 _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(stackId), minOccurrenceDateUtc, _expireTimeout),
                 _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(stackId), maxOccurrenceDateUtc, _expireTimeout)
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Services {
 
         public async Task SaveStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default) {
             string occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
-            var stackUsageSet = await _cache.GetSetAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey).AnyContext();
+            var stackUsageSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey).AnyContext();
             if (!stackUsageSet.HasValue) 
                 return;
 
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Services {
                 if (cancellationToken.IsCancellationRequested)
                     break;
 
-                var removeFromSetTask = _cache.SetRemoveAsync(occurrenceSetCacheKey, (organizationId, projectId, stackId));
+                var removeFromSetTask = _cache.ListRemoveAsync(occurrenceSetCacheKey, (organizationId, projectId, stackId));
                 string countCacheKey = GetStackOccurrenceCountCacheKey(stackId);
                 var countTask = _cache.GetAsync<long>(countCacheKey, 0);
                 string minDateCacheKey = GetStackOccurrenceMinDateCacheKey(stackId);

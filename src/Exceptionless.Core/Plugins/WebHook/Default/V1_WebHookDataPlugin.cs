@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         public VersionOne(IOptions<AppOptions> options) : base(options) {}
 
         public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
-            if (ctx.Version.Major != 1)
+            if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version1))
                 return Task.FromResult<object>(null);
 
             var error = ctx.Event.GetError();
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
         }
 
         public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
-            if (ctx.Version.Major != 1)
+            if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version1))
                 return Task.FromResult<object>(null);
 
               return Task.FromResult<object>(new VersionOneWebHookStack(_options.Value.BaseURL) {

@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
                     var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
                     var subscriptionService = new SubscriptionService(client);
-                    var subscriptions = (await subscriptionService.ListAsync(new SubscriptionListOptions { CustomerId = organization.StripeCustomerId }).AnyContext()).Where(s => !s.CanceledAt.HasValue);
+                    var subscriptions = (await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId }).AnyContext()).Where(s => !s.CanceledAt.HasValue);
                     foreach (var subscription in subscriptions)
                         await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions()).AnyContext();
                 }

@@ -98,6 +98,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpPost("notifications/release")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false) {
             var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message?.Value };
@@ -118,6 +119,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         [HttpPost("notifications/system")]
+        [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message) {
             if (String.IsNullOrWhiteSpace(message?.Value))

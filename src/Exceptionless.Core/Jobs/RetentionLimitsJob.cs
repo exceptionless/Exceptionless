@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -60,14 +60,14 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task EnforceEventCountLimitsAsync(Organization organization) {
-            _logger.LogInformation("Enforcing event count limits for organization {OrganizationName} with Id: {organization}", organization.Name, organization.Id);
-
             try {
                 int retentionDays = organization.RetentionDays;
                 if (_appOptions.Value.MaximumRetentionDays > 0 && retentionDays > _appOptions.Value.MaximumRetentionDays)
                     retentionDays = _appOptions.Value.MaximumRetentionDays;
 
                 var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
+                _logger.LogInformation("Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).", cutoff, organization.Name, organization.Id);
+                
                 await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error enforcing limits: org={OrganizationName} id={organization} message={Message}", organization.Name, organization.Id, ex.Message);

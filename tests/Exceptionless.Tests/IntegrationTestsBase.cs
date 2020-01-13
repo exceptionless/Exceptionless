@@ -17,13 +17,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
+using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Logging.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
@@ -34,7 +34,6 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
     public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
-        private static bool _indexesHaveBeenConfigured;
         private static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         private readonly ExceptionlessElasticConfiguration _configuration;
@@ -64,12 +63,12 @@ namespace Exceptionless.Tests {
             _server = configuredFactory.Server;
             _httpClient.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
 
-            var testScope = _server.Host.Services.CreateScope();
+            var testScope = configuredFactory.Services.CreateScope();
             _disposables.Add(testScope);
             ServiceProvider = testScope.ServiceProvider;
             
             var settings = GetService<JsonSerializerSettings>();
-            _client = new FluentClient(_httpClient, new JsonContentSerializer(settings));
+            _client = new FluentClient(_httpClient, new NewtonsoftJsonSerializer(settings));
             _configuration = GetService<ExceptionlessElasticConfiguration>();
         }
 
@@ -107,30 +106,15 @@ namespace Exceptionless.Tests {
                 Log.MinimumLevel = LogLevel.Warning;
 
                 bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
-                string indexList = String.Join(',', _configuration.Indexes.Select(i => i.Name));
-                await _configuration.Client.RefreshAsync(indexList);
-                if (!_indexesHaveBeenConfigured) {
-                    await _configuration.DeleteIndexesAsync();
-                    await _configuration.ConfigureIndexesAsync();
-                    _indexesHaveBeenConfigured = true;
-                    
-                    if (isTraceLogLevelEnabled)
-                        _logger.LogTrace("Configured Indexes");
-                } else {
-                    var response = await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexList) {
-                        Query = new MatchAllQuery(),
-                        IgnoreUnavailable = true,
-                        WaitForCompletion = true,
-                        Refresh = true
-                    });
-                    
-                    if (isTraceLogLevelEnabled)
-                        _logger.LogTraceRequest(response);
-                }
+                
+                await _configuration.DeleteIndexesAsync();
+                await _configuration.ConfigureIndexesAsync();
+                
+                if (isTraceLogLevelEnabled)
+                    _logger.LogTrace("Configured Indexes");
                 
                 foreach (var index in _configuration.Indexes)
-                    foreach (var type in index.IndexTypes)
-                        type.QueryParser.Configuration.RefreshMapping();
+                    index.QueryParser.Configuration.RefreshMapping();
 
                 var cacheClient = GetService<ICacheClient>();
                 await cacheClient.RemoveAllAsync();
@@ -146,9 +130,9 @@ namespace Exceptionless.Tests {
             }
         }
         
-        
         protected Task RefreshDataAsync(Indices indices = null) {
-            return _configuration.Client.RefreshAsync(indices ?? Indices.All);
+            var configuration = GetService<ExceptionlessElasticConfiguration>();
+            return configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
         }
         
         protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {

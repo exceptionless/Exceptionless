@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
@@ -11,7 +12,7 @@ using Foundatio.Caching;
 using Xunit;
 using Xunit.Abstractions;
 using Foundatio.Repositories;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Tests.Repositories {
     public sealed class ProjectRepositoryTests : IntegrationTestsBase {
@@ -129,8 +130,9 @@ namespace Exceptionless.Tests.Repositories {
             var actualToken = actual.GetSlackToken();
             Assert.Equal(token.AccessToken, actualToken?.AccessToken);
 
-            var actualCache = await _cache.GetAsync<Project>("Project:" + project.Id);
-            Assert.Equal(project.Name, actualCache.Value?.Name);
+            var actualCache = await _cache.GetAsync<ICollection<FindHit<Project>>>("Project:" + project.Id);
+            Assert.True(actualCache.HasValue);
+            Assert.Equal(project.Name, actualCache.Value.Single().Document.Name);
             var actualCacheToken = actual.GetSlackToken();
             Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
         }

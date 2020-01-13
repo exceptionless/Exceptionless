@@ -8,7 +8,7 @@ api:
     - api.exceptionless.com
 app:
   image:
-    tag: "2.8.1474"
+    tag: "2.8.1502-pre"
   defaultDomain: be.exceptionless.io
   domains:
     - be.exceptionless.io
@@ -37,5 +37,6 @@ jobs:
   workitem:
     replicaCount: 6
 
-extraConfig:
+config:
   EX_EnableSnapshotJobs: "true"
+  EX_Scope: "prod"

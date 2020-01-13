@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
@@ -10,8 +9,6 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models;
-using Exceptionless.Web.Utility;
-using Exceptionless.Web.Utility.Handlers;
 using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -25,10 +22,6 @@ namespace Exceptionless.Web {
         public static void RegisterServices(IServiceCollection services, ILoggerFactory loggerFactory) {
             services.AddSingleton<WebSocketConnectionManager>();
             services.AddSingleton<MessageBusBroker>();
-            services.AddSingleton<MessageBusBrokerMiddleware>();
-
-            services.AddSingleton<OverageMiddleware>();
-            services.AddSingleton<ThrottlingMiddleware>();
 
             services.AddTransient<Profile, ApiMappings>();
 
