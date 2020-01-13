@@ -1,3 +1,7 @@
 apiVersion: v1
 name: exceptionless
 version: 0.2.0
+appVersion: 6.0
+home: https://github.com/exceptionless/Exceptionless
+description: "The definition of the word exceptionless is: to be without exception. Our product provides real-time error, feature, and log reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless."
+icon: https://be.exceptionless.io/img/exceptionless-32.png
