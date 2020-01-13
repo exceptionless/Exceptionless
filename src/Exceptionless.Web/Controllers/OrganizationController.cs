@@ -285,7 +285,7 @@ namespace Exceptionless.Web.Controllers {
 
             var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
             var invoiceService = new InvoiceService(client);
-            var invoiceOptions = new InvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
+            var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
             var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
         }
@@ -378,7 +378,7 @@ namespace Exceptionless.Web.Controllers {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
                 if (!String.Equals(organization.PlanId, _plans.FreePlan.Id) && String.Equals(plan.Id, _plans.FreePlan.Id)) {
                     if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                        var subs = await subscriptionService.ListAsync(new SubscriptionListOptions { CustomerId = organization.StripeCustomerId });
+                        var subs = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                         foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
                             await subscriptionService.CancelAsync(sub.Id, new SubscriptionCancelOptions());
                     }
@@ -393,13 +393,13 @@ namespace Exceptionless.Web.Controllers {
 
                     var createCustomer = new CustomerCreateOptions {
                         Source = stripeToken,
-                        PlanId = planId,
+                        Plan = planId,
                         Description = organization.Name,
                         Email = CurrentUser.EmailAddress
                     };
 
                     if (!String.IsNullOrWhiteSpace(couponId))
-                        createCustomer.CouponId = couponId;
+                        createCustomer.Coupon = couponId;
 
                     var customer = await customerService.CreateAsync(createCustomer);
 
@@ -409,8 +409,8 @@ namespace Exceptionless.Web.Controllers {
                     if (customer.Sources.Data.Count > 0)
                         organization.CardLast4 = (customer.Sources.Data.First() as Card)?.Last4;
                 } else {
-                    var update = new SubscriptionUpdateOptions { Items = new List<SubscriptionItemUpdateOption>() };
-                    var create = new SubscriptionCreateOptions { CustomerId = organization.StripeCustomerId, Items = new List<SubscriptionItemOption>() };
+                    var update = new SubscriptionUpdateOptions { Items =  new List<SubscriptionItemOptions>() };
+                    var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
                     bool cardUpdated = false;
 
                     var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name, Email = CurrentUser.EmailAddress };
@@ -421,13 +421,13 @@ namespace Exceptionless.Web.Controllers {
 
                     await customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions);
 
-                    var subscriptionList = await subscriptionService.ListAsync(new SubscriptionListOptions { CustomerId = organization.StripeCustomerId });
+                    var subscriptionList = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                     var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                     if (subscription != null) {
-                        update.Items.Add(new SubscriptionItemUpdateOption { Id = subscription.Items.Data[0].Id, PlanId = planId });
+                        update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Plan = planId });
                         await subscriptionService.UpdateAsync(subscription.Id, update);
                     } else {
-                        create.Items.Add(new SubscriptionItemOption { PlanId = planId });
+                        create.Items.Add(new SubscriptionItemOptions { Plan = planId });
                         await subscriptionService.CreateAsync(create);
                     }
 
