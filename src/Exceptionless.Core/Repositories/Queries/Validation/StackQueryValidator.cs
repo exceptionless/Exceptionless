@@ -9,39 +9,61 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Queries.Validation {
     public sealed class StackQueryValidator : QueryValidator {
         private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
+            StackIndex.Alias.LastOccurrence,
             "last_occurrence",
-            "fixed",
+            StackIndex.Alias.IsFixed,
+            StackIndex.Alias.IsHidden,
             "is_hidden",
+            StackIndex.Alias.IsRegressed,
             "is_regressed",
-            "type",
+            StackIndex.Alias.Type,
+            StackIndex.Alias.OccurrencesAreCritical,
             "occurrences_are_critical",
+            StackIndex.Alias.OrganizationId,
             "organization_id",
+            StackIndex.Alias.ProjectId,
             "project_id"
         };
 
         private static readonly HashSet<string> _freeAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
+            StackIndex.Alias.LastOccurrence,
             "last_occurrence",
-            "fixed",
+            StackIndex.Alias.IsFixed,
+            StackIndex.Alias.IsHidden,
             "is_hidden",
+            StackIndex.Alias.OccurrencesAreCritical,
             "occurrences_are_critical",
+            StackIndex.Alias.IsRegressed,
             "is_regressed",
-            "type"
+            StackIndex.Alias.Type
         };
 
         private static readonly HashSet<string> _allowedAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
+            StackIndex.Alias.LastOccurrence,
             "last_occurrence",
-            "fixed",
+            StackIndex.Alias.IsFixed,
+            StackIndex.Alias.DateFixed,
             "date_fixed",
+            StackIndex.Alias.FixedInVersion,
             "fixed_in_version",
+            StackIndex.Alias.IsHidden,
             "is_hidden",
+            StackIndex.Alias.OccurrencesAreCritical,
             "occurrences_are_critical",
+            StackIndex.Alias.TotalOccurrences,
             "total_occurrences",
+            StackIndex.Alias.IsRegressed,
             "is_regressed",
-            "type",
+            StackIndex.Alias.Type,
+            StackIndex.Alias.OrganizationId,
             "organization_id",
+            StackIndex.Alias.ProjectId,
             "project_id"
         };
 
