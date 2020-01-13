@@ -12,7 +12,7 @@ SUBNET_ID="$(az network vnet subnet list --resource-group $RESOURCE_GROUP --vnet
 az aks create \
     --resource-group $RESOURCE_GROUP \
     --name $CLUSTER \
-    --kubernetes-version 1.14.7 \
+    --kubernetes-version 1.14.8 \
     --node-count 3 \
     --node-vm-size Standard_D8s_v3 \
     --max-pods 50 \
@@ -28,9 +28,9 @@ az aks create \
 
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing
 
-# install dashboard, using 2.0 beta that supports CRDs (elastic operator)
+# install dashboard, using 2.0 rc1 that supports CRDs (elastic operator)
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta6/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc1/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -84,22 +84,23 @@ helm repo add stable https://kubernetes-charts.storage.googleapis.com
 # install nginx ingress
 helm install nginx-ingress stable/nginx-ingress --namespace kube-system --values nginx-values.yaml
 
-# upgrade nginx ingress to latest
-helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
-
 # wait for external ip to be assigned
 kubectl get service -l app=nginx-ingress --namespace kube-system
 IP="$(kubectl get service -l app=nginx-ingress --namespace kube-system -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')"
 PUBLICIPID=$(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
 az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
+# upgrade nginx ingress to latest
+# https://github.com/kubernetes/ingress-nginx/releases
+helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
+
 # install cert-manager
-kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
+kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml
 kubectl create namespace cert-manager
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 kubectl apply -f cluster-issuer.yaml
-helm install cert-manager jetstack/cert-manager --namespace kube-system --set ingressShim.defaultIssuerName=letsencrypt-$ENV --set ingressShim.defaultIssuerKind=ClusterIssuer
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
 
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml

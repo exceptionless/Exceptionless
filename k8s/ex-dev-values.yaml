@@ -15,3 +15,7 @@ collector:
   defaultDomain: dev-collector.exceptionless.io
   domains:
     - dev-collector.exceptionless.io
+
+config:
+  EX_EnableSnapshotJobs: "false"
+  EX_Scope: "dev"

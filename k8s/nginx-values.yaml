@@ -2,8 +2,6 @@ controller:
   replicaCount: 6
   service:
     externalTrafficPolicy: Local
-  stats:
-    enabled: true
   metrics:
     enabled: true
   config:
