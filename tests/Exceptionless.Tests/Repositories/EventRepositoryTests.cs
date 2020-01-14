@@ -179,23 +179,41 @@ namespace Exceptionless.Tests.Repositories {
         [Fact]
         public async Task CanMarkAsFixedAsync() {
             const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
-            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), o => o.Notifications(false));
+            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), o => o.Notifications(false).ImmediateConsistency());
 
-            await RefreshDataAsync();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
 
             var sw = Stopwatch.StartNew();
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, false, sendNotifications: false);
             _logger.LogInformation("Time to mark not fixed events as not fixed: {Duration:g}", sw.Elapsed);
-            await RefreshDataAsync();
             sw.Restart();
 
             await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, true, sendNotifications: false);
             _logger.LogInformation("Time to mark not fixed events as fixed: {Duration:g}", sw.Elapsed);
-            await RefreshDataAsync();
             sw.Stop();
-
+            
+            await RefreshDataAsync();
             var results = await GetByFilterAsync($"stack:{TestConstants.StackId2} fixed:true");
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, results.Total);
+        }
+        
+        [Fact]
+        public async Task CanMarkAsHiddenAsync() {
+            const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
+            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), o => o.Notifications(false).ImmediateConsistency());
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
+
+            var sw = Stopwatch.StartNew();
+            await _repository.UpdateHiddenByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, false, sendNotifications: false);
+            _logger.LogInformation("Time to mark not fixed events as not fixed: {Duration:g}", sw.Elapsed);
+            sw.Restart();
+
+            await _repository.UpdateHiddenByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, true, sendNotifications: false);
+            _logger.LogInformation("Time to mark not fixed events as fixed: {Duration:g}", sw.Elapsed);
+            sw.Stop();
+            
+            await RefreshDataAsync();
+            var results = await GetByFilterAsync($"stack:{TestConstants.StackId2} hidden:true");
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, results.Total);
         }
 
