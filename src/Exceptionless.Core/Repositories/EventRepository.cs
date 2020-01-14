@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -18,7 +17,7 @@ namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
         public EventRepository(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> options, IValidator<PersistentEvent> validator)
             : base(configuration.Events, validator, options) {
-            DisableCache(); // NOTE: If cache is ever enabled, then fast paths for patching with scripts will be super slow!
+            DisableCache();
             BatchNotifications = true;
             DefaultPipeline = "events-pipeline";
 
@@ -51,22 +50,17 @@ namespace Exceptionless.Core.Repositories {
         public Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
-            
-            return PatchAllAsync(
-                q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), 
-                GetIsFixedScriptPatch(isFixed)
-            );
-            
+
+            // TODO: Update this to use the update by query syntax that's coming in 2.3.
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), new PartialPatch(new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            return PatchAllAsync(
-                q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden),
-                GetIsHiddenScriptPatch(isHidden)
-            );
+            // TODO: Update this to use the update by query syntax that's coming in 2.3.
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden), new PartialPatch(new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
@@ -78,10 +72,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return PatchAllAsync(
-                q => q.Organization(organizationId),
-                GetIsDeletedScriptPatch(true)
-            );
+            return PatchAllAsync(q => q.Organization(organizationId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
@@ -91,17 +82,11 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
 
-            return PatchAllAsync(
-                q => q.Organization(organizationId).Project(projectId), 
-                GetIsDeletedScriptPatch(true)
-            );
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            return PatchAllAsync(
-                q => q.Organization(organizationId).Project(projectId).Stack(stackId),
-                GetIsDeletedScriptPatch(true), o => o.Consistency(Consistency.Wait)
-            );
+            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }), o => o.Consistency(Consistency.Wait));
         }
 
         public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
@@ -110,7 +95,7 @@ namespace Exceptionless.Core.Repositories {
                     .ElasticFilter(Query<PersistentEvent>.Term(EventIndex.Alias.IpAddress, clientIp))
                     .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
                     .Index(utcStart, utcEnd)
-                , GetIsHiddenScriptPatch(true));
+                , new PartialPatch(new { is_hidden = true, updated_utc = SystemClock.UtcNow }));
         }
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
@@ -246,78 +231,6 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false) {
             return CountAsync(q => q.Stack(stackId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
-        }
-        
-        private ScriptPatch GetIsFixedScriptPatch(bool isFixed) {
-            const string script = @"
-Instant parseDate(def dt) {
-  if (dt != null) {
-    try {
-      return Instant.parse(dt);
-    } catch(DateTimeParseException e) {}
-  }
-  return Instant.MIN;
-}
-
-ctx._source.is_fixed = params.is_fixed;
-if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
-  ctx._source.updated_utc = params.updatedUtc;
-}";
-            
-            return new ScriptPatch(script.TrimScript()) { 
-                Params = new Dictionary<string, object> {
-                    { "is_fixed", isFixed },
-                    { "updatedUtc", SystemClock.UtcNow }
-                } 
-            };
-        }
-
-        private ScriptPatch GetIsHiddenScriptPatch(bool isHidden) {
-            const string script = @"
-Instant parseDate(def dt) {
-  if (dt != null) {
-    try {
-      return Instant.parse(dt);
-    } catch(DateTimeParseException e) {}
-  }
-  return Instant.MIN;
-}
-
-ctx._source.is_hidden = params.is_hidden;
-if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
-  ctx._source.updated_utc = params.updatedUtc;
-}";
-            
-            return new ScriptPatch(script.TrimScript()) { 
-                Params = new Dictionary<string, object> {
-                    { "is_hidden", isHidden },
-                    { "updatedUtc", SystemClock.UtcNow }
-                } 
-            };
-        }
-
-        private ScriptPatch GetIsDeletedScriptPatch(bool isDeleted) {
-            const string script = @"
-Instant parseDate(def dt) {
-  if (dt != null) {
-    try {
-      return Instant.parse(dt);
-    } catch(DateTimeParseException e) {}
-  }
-  return Instant.MIN;
-}
-
-ctx._source.is_deleted = params.is_deleted;
-if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
-  ctx._source.updated_utc = params.updatedUtc;
-}";
-            
-            return new ScriptPatch(script.TrimScript()) { 
-                Params = new Dictionary<string, object> {
-                    { "is_deleted", isDeleted },
-                    { "updatedUtc", SystemClock.UtcNow }
-                } 
-            };
         }
     }
 }
