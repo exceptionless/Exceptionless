@@ -46,10 +46,10 @@ namespace Exceptionless.Core.Geo {
             if (parts.Length != 2)
                 return false;
 
-            if (!Double.TryParse(parts[0]?.Trim(), out double latitude))
+            if (!Double.TryParse(parts[0].Trim(), out double latitude) || Double.IsNaN(latitude) || Double.IsInfinity(latitude))
                 return false;
 
-            if (!Double.TryParse(parts[1]?.Trim(), out double longitude))
+            if (!Double.TryParse(parts[1].Trim(), out double longitude) || Double.IsNaN(longitude) || Double.IsInfinity(longitude))
                 return false;
 
             result = new GeoResult { Latitude = latitude, Longitude = longitude };

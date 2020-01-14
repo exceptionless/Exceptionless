@@ -31,7 +31,6 @@ namespace Exceptionless.Core.Repositories {
             AddPropertyRequiredForRemove(e => e.Date);
         }
 
-        // TODO: We need to index and search by the created time.
         public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null) {
             var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
             if (createdBeforeUtc.Ticks > 0)
@@ -64,7 +63,6 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException(nameof(stackId));
 
-            // TODO: Update this to use the update by query syntax that's coming in 2.3.
             return PatchAllAsync(
                 q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden),
                 GetIsHiddenScriptPatch(isHidden)

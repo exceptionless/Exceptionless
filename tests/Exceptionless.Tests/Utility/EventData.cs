@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
@@ -23,17 +23,24 @@ namespace Exceptionless.Tests.Utility {
 
         public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = -1, string semver = null) {
             return GenerateEvent(
-                    organizationId != null ? new[] { organizationId } : null,
-                    projectId != null ? new[] { projectId } : null,
-                    stackId != null ? new[] { stackId } : null,
-                    startDate, endDate, occurrenceDate, maxErrorNestingLevel, generateTags, generateData, isFixed, isHidden,
-                    referenceId != null ? new[] { referenceId } : null,
-                    type,
-                    sessionId,
-                    userIdentity,
-                    value,
-                    semver
-                );
+                organizationId != null ? new[] { organizationId } : null,
+                projectId != null ? new[] { projectId } : null,
+                stackId != null ? new[] { stackId } : null,
+                startDate, 
+                endDate, 
+                occurrenceDate, 
+                maxErrorNestingLevel, 
+                generateTags, 
+                generateData, 
+                isFixed, 
+                isHidden,
+                referenceId != null ? new[] { referenceId } : null,
+                type,
+                sessionId,
+                userIdentity,
+                value,
+                semver
+            );
         }
 
         public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null, decimal? value = -1) {
