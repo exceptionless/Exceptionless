@@ -11,6 +11,7 @@ using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
+using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -57,7 +58,6 @@ namespace Exceptionless.Core.Repositories {
         public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            // TODO: We should also update the UpdatedUtc
             const string script = @"
 Instant parseDate(def dt) {
   if (dt != null) {
@@ -74,14 +74,18 @@ if (ctx._source.total_occurrences == 0 || parseDate(ctx._source.first_occurrence
 if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurrenceDateUtc))) {
   ctx._source.last_occurrence = params.maxOccurrenceDateUtc;
 }
+if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
+  ctx._source.updated_utc = params.updatedUtc;
+}
 ctx._source.total_occurrences += params.count;";
 
             var request = new UpdateRequest<Stack, Stack>(ElasticIndex.GetIndex(stackId), stackId) {
-                Script = new InlineScript(script.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ")) {
+                Script = new InlineScript(script.TrimScript()) {
                     Params = new Dictionary<string, object>(3) {
                         { "minOccurrenceDateUtc", minOccurrenceDateUtc },
                         { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
-                        { "count", count }
+                        { "count", count },
+                        { "updatedUtc", SystemClock.UtcNow }
                     }
                 }
             };
