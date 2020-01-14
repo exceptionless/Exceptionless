@@ -52,7 +52,7 @@ namespace Exceptionless {
                         ev.Idx[field + "-d"] = dtoValue;
                     else if (Decimal.TryParse(input, out decimal decValue))
                         ev.Idx[field + "-n"] = decValue;
-                    else if (Double.TryParse(input, out double dblValue))
+                    else if (Double.TryParse(input, out double dblValue) && !Double.IsNaN(dblValue) && !Double.IsInfinity(dblValue))
                         ev.Idx[field + "-n"] = dblValue;
                     else
                         ev.Idx[field + "-s"] = input;
