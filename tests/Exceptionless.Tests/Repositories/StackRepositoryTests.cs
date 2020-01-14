@@ -90,6 +90,10 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(0, stack.TotalOccurrences);
             Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
             Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
+            Assert.NotEqual(DateTime.MinValue, stack.CreatedUtc);
+            Assert.NotEqual(DateTime.MinValue, stack.UpdatedUtc);
+            Assert.Equal(stack.CreatedUtc, stack.UpdatedUtc);
+            var updatedUtc = stack.UpdatedUtc;
 
             var utcNow = SystemClock.UtcNow;
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
@@ -98,8 +102,9 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(1, stack.TotalOccurrences);
             Assert.Equal(utcNow, stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
+            Assert.Equal(updatedUtc, stack.CreatedUtc);
+            Assert.True(updatedUtc.IsBefore(stack.UpdatedUtc), $"Previous {updatedUtc}, Current: {stack.UpdatedUtc}");
 
-            await RefreshDataAsync();
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
 
             stack = await _repository.GetByIdAsync(stack.Id);
@@ -107,7 +112,6 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
 
-            await RefreshDataAsync();
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.AddDays(1), utcNow.AddDays(1), 1);
 
             stack = await _repository.GetByIdAsync(stack.Id);

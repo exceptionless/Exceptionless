@@ -54,6 +54,16 @@ namespace Exceptionless.Core.Extensions {
             return ip.StartsWith("192.168.");
         }
 
+        public static string TrimScript(this string script) {
+            if (String.IsNullOrEmpty(script))
+                return script;
+
+            return script
+                .Replace("\r", String.Empty)
+                .Replace("\n", String.Empty)
+                .Replace("  ", " ");
+        }
+
         public static string GetNewToken() {
             return GetRandomString(40);
         }
