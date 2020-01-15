@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core;
@@ -111,7 +111,6 @@ namespace Exceptionless.Web.Controllers {
             });
         }
 
-        
         [HttpGet("echo")]
         public ActionResult EchoRequest() {
             return Ok(new {
@@ -162,9 +161,8 @@ namespace Exceptionless.Web.Controllers {
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            organization.BonusEventsPerMonth = bonusEvents;
-            organization.BonusExpiration = expires;
-            await _organizationRepository.SaveAsync(organization);
+            _billingManager.ApplyBonus(organization, bonusEvents, expires);
+            await _organizationRepository.SaveAsync(organization, o => o.Cache());
 
             return Ok(new { Success = true });
         }
