@@ -102,5 +102,11 @@ namespace Exceptionless.Core.Billing {
 
             organization.SetMonthlyUsage(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), organization.GetCurrentMonthlyTooBig());
         }
+        
+        public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null) {
+            organization.BonusEventsPerMonth = bonusEvents;
+            organization.BonusExpiration = expires;
+            organization.SetMonthlyUsage(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), organization.GetCurrentMonthlyTooBig());
+        }
     }
 }
