@@ -48,7 +48,7 @@ kubectl proxy
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl apply -f https://download.elastic.co/downloads/eck/1.0.0-beta1/all-in-one.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.0.0/all-in-one.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
@@ -57,9 +57,7 @@ kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
 kubectl apply -f ex-dev-elasticsearch.yaml
 # check on deployment, wait for green
 kubectl get elasticsearch
-
-k get es,kb,apm,sts,pod
-k get pods -l common.k8s.elastic.co/type=elasticsearch
+kubectl get es && k get pods -l common.k8s.elastic.co/type=elasticsearch
 
 # get elastic password into env variable
 ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
