@@ -1,0 +1,31 @@
+version: '3.5'
+
+services:
+  elasticsearch:
+    image: exceptionless/elasticsearch:7.5.1
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - 9200:9200
+      - 9300:9300
+  
+  kibana:
+    depends_on:
+      - elasticsearch
+    image: docker.elastic.co/kibana/kibana:7.5.1
+    ports:
+      - 5601:5601
+
+  redis:
+    image: redis:5.0-alpine
+    ports:
+      - 6379:6379
+  
+  ready:
+    image: dadarek/wait-for-dependencies
+    command: elasticsearch:9200 kibana:5601
+    depends_on:
+      - elasticsearch
+
