@@ -11,7 +11,7 @@
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/Exceptionless.sln",
+        "${workspaceFolder}",
         "/p:GenerateFullPaths=true"
       ],
       "group": {
@@ -32,7 +32,7 @@
       },
       "args": [
         "test",
-        "${workspaceFolder}/tests/Exceptionless.Tests/Exceptionless.Tests.csproj",
+        "${workspaceFolder}",
         "/p:GenerateFullPaths=true"
       ],
       "problemMatcher": "$msCompile"
