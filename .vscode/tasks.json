@@ -1,46 +1,49 @@
 {
   "version": "2.0.0",
-  "options": {
-    "env": {
-      "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "true"
-    }
-  },
   "tasks": [
     {
       "label": "Build",
       "command": "dotnet",
+      "type": "shell",
       "args": [
         "build",
-        "${workspaceFolder}",
-        "/p:GenerateFullPaths=true"
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
       ],
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "presentation": {
-        "panel": "dedicated"
+        "reveal": "silent"
       },
       "problemMatcher": "$msCompile"
     },
     {
       "label": "Run Tests",
       "command": "dotnet",
+      "type": "shell",
+      "args": [
+        "test",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
       "group": {
         "kind": "test",
         "isDefault": true
       },
-      "args": [
-        "test",
-        "${workspaceFolder}",
-        "/p:GenerateFullPaths=true"
-      ],
+      "presentation": {
+        "reveal": "always"
+      },
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "Start Elasticsearch",
+      "label": "Start Services",
       "command": "docker-compose",
+      "type": "shell",
       "args": [
+        "-f",
+        "docker-compose.services.yml",
         "up",
         "elasticsearch"
       ],
@@ -56,44 +59,6 @@
       ],
       "isBackground": true,
       "problemMatcher": []
-    },
-    {
-      "label": "Build API Docker Image",
-      "command": "docker",
-      "args": [
-        "build",
-        "--target",
-        "api",
-        "-t",
-        "exceptionless/api-ci",
-        "."
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build Job Docker Image",
-      "command": "docker",
-      "args": [
-        "build",
-        "--target",
-        "job",
-        "-t",
-        "exceptionless/job-ci",
-        "."
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Run in Docker",
-      "command": "docker-compose",
-      "args": [
-        "up"
-      ],
-      "problemMatcher": [],
-      "dependsOn": [
-        "Build API Docker Image",
-        "Build Job Docker Image"
-      ]
     }
   ]
 }

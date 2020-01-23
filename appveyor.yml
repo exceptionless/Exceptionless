@@ -41,7 +41,7 @@ install:
 
 build_script:
   - docker build --target testrunner -t exceptionless:test --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
-  - docker run -d -m 2g -p 9200:9200 -p 9300:9300 -e discovery.type=single-node -e xpack.security.enabled=false -e ES_JAVA_OPTS='-Xms512m -Xmx512m' exceptionless/elasticsearch:7.5.1
+  - docker run -d -m 2g -p 9200:9200 -p 9300:9300 -e discovery.type=single-node -e xpack.security.enabled=false -e ES_JAVA_OPTS='-Xms512m -Xmx512m' exceptionless/elasticsearch:7.5.2
   - docker run -e APPVEYOR_API_URL --net=host -v $(pwd)/artifacts:/app/artifacts exceptionless:test
   - docker build --target api -t $API_DOCKER_IMAGE --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
   - docker build --target job -t $JOB_DOCKER_IMAGE --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
