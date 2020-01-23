@@ -24,13 +24,10 @@ jobs:
         tag-prefix: v
     - name: Build
       run: dotnet build --configuration Release
-    # - name: Start Services
-    #   run: docker-compose -f docker-compose.services.yml up -d && docker-compose -f docker-compose.services.yml up ready
-    # - name: Run Tests
-    #   run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
-    - name: Install Helm
-      if: github.event_name != 'pull_request'
-      uses: azure/setup-helm@v1
+    - name: Start Services
+      run: docker-compose -f docker-compose.services.yml up -d && docker-compose -f docker-compose.services.yml up ready
+    - name: Run Tests
+      run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
     - name: Build Docker Images
       if: github.event_name != 'pull_request'
       run: |
@@ -39,7 +36,7 @@ jobs:
     - name: Log in to GitHub Packages
       run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
     - name: Log in to Docker Hub
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: github.event_name != 'pull_request'
       run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
     - name: Push CI Packages
       if: github.event_name != 'pull_request'
@@ -67,6 +64,9 @@ jobs:
             docker push exceptionless/$image:$tag
           done
         done
+    - name: Install Helm
+      if: github.event_name != 'pull_request'
+      uses: azure/setup-helm@v1
     - name: Deploy Changes to Development Environment
       if: github.ref == 'master' && github.event_name != 'pull_request'
       run: |
