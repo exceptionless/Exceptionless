@@ -33,8 +33,9 @@ jobs:
     - name: Build Docker Images
       if: github.event_name != 'pull_request'
       run: |
-        docker build --target api -t api-ci --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
-        docker build --target job -t job-ci --build-arg VERSION_SUFFIX=$VERSION_SUFFIX .
+        echo ${{ steps.version.outputs.version }}
+        docker build --target api -t api-ci --build-arg VERSION_SUFFIX=${{ steps.version.outputs.version }} .
+        docker build --target job -t job-ci --build-arg VERSION_SUFFIX=${{ steps.version.outputs.version }} .
     - uses: azure/docker-login@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
