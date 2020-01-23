@@ -70,9 +70,9 @@ jobs:
     - name: Deploy Changes to Development Environment
       if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') && github.event_name != 'pull_request'
       run: |
-        az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
+        az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
         az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values ex-dev --namespace ex-dev ./k8s/exceptionless
+        helm upgrade --set "api.image.tag=${{ steps.version.outputs.version }}" --set "jobs.image.tag=${{ steps.version.outputs.version }}" --reuse-values ex-dev --namespace ex-dev ./k8s/exceptionless
     - name: Upload Artifacts
       uses: actions/upload-artifact@v1.0.0
       with:
