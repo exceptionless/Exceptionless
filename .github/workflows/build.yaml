@@ -37,15 +37,10 @@ jobs:
         docker build --target api -t ex-api .
         docker build --target job -t ex-job .
     - name: Log in to GitHub Packages
-      run: docker login docker.pkg.github.com -u ${GITHUB_ACTOR} --password-stdin <<< "${DOCKER_PASSWORD}"
-      env:
-        DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
     - name: Log in to Docker Hub
       if: startsWith(github.ref, 'refs/tags/v')
-      run: docker login -u ${DOCKER_USERNAME} --password-stdin <<< "${DOCKER_PASSWORD}"
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
     - name: Push CI Packages
       if: github.event_name != 'pull_request'
       run: |
