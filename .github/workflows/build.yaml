@@ -51,6 +51,12 @@ jobs:
             docker push docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
           done
         done
+        for image in {"api","job"}; do
+          for tag in {${{ steps.version.outputs.version }},latest}; do
+            docker tag ex-$image exceptionless/$image-ci:$tag
+            docker push exceptionless/$image-ci:$tag
+          done
+        done
     - name: Publish Release Packages
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
@@ -62,8 +68,11 @@ jobs:
           done
         done
     - name: Deploy Changes to Development Environment
-      if: github.event_name != 'pull_request'
-      run: echo "Run Helm Upgrade to dev env"
+      if: github.ref == 'master' && github.event_name != 'pull_request'
+      run: |
+        az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
+        az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
+        helm upgrade --set "api.image.tag=$VERSION" --set "jobs.image.tag=$VERSION" --reuse-values ex-dev --namespace ex-dev ./k8s/exceptionless
     - name: Upload Artifacts
       uses: actions/upload-artifact@v1.0.0
       with:
