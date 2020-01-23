@@ -68,7 +68,7 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
     - name: Deploy Changes to Development Environment
-      if: github.ref == 'master' && github.event_name != 'pull_request'
+      if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
       run: |
         az login --service-principal --username $AZ_USERNAME --password $AZ_PASSWORD --tenant $AZ_TENANT --output none
         az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
