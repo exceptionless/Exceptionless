@@ -1,3 +1,6 @@
+# helm repo add banzaicloud-stable https://kubernetes-charts.banzaicloud.com
+# helm install ex-$ENV-slack banzaicloud-stable/slackin --namespace ex-$ENV --values ex-slack-values.yaml --set "slackApiToken=$SLACK_API_TOKEN" --set "googleCaptchaSecret=$CAPTCHA_SECRET" --set "googleCaptchaSiteKey=$CAPTCHA_KEY"
+
 slackinTheme: "light"
 slackinPort: 3000
 slackSubdomain: "exceptionless"

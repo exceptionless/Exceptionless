@@ -1,11 +1,11 @@
-apiVersion: elasticsearch.k8s.elastic.co/v1beta1
+apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.5.1
-  image: exceptionless/elasticsearch:7.5.1 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.5.2
+  image: exceptionless/elasticsearch:7.5.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-dev-snapshots
   http:
@@ -19,10 +19,7 @@ spec:
       node.master: true
       node.data: true
       node.ingest: true
-      reindex.remote.whitelist: "10.0.0.4:9200"
       #action.destructive_requires_name: true
-      # if not setting max_map_count in an init container, then use this setting
-      #node.store.allow_mmap: false
     podTemplate:
       spec:
         containers:
@@ -51,17 +48,17 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 500Gi
+            storage: 750Gi
         storageClassName: managed-premium
 
 ---
-apiVersion: kibana.k8s.elastic.co/v1beta1
+apiVersion: kibana.k8s.elastic.co/v1
 kind: Kibana
 metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.5.1
+  version: 7.5.2
   count: 1
   elasticsearchRef:
     name: ex-dev
@@ -72,13 +69,13 @@ spec:
       selfSignedCertificate:
         disabled: true
 ---
-apiVersion: apm.k8s.elastic.co/v1beta1
+apiVersion: apm.k8s.elastic.co/v1
 kind: ApmServer
 metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.5.1
+  version: 7.5.2
   count: 1
   elasticsearchRef:
     name: ex-dev
