@@ -24,10 +24,10 @@ jobs:
         tag-prefix: v
     - name: Build
       run: dotnet build --configuration Release
-    - name: Start Services
-      run: docker-compose -f docker-compose.services.yml up -d && docker-compose -f docker-compose.services.yml up ready
-    - name: Run Tests
-      run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
+    # - name: Start Services
+    #   run: docker-compose -f docker-compose.services.yml up -d && docker-compose -f docker-compose.services.yml up ready
+    # - name: Run Tests
+    #   run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
     - name: Install Helm
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
@@ -44,10 +44,10 @@ jobs:
       if: github.event_name != 'pull_request'
       run: |
         # tag and push docker image
-        for image in {"ex-api","ex-job"}; do
+        for image in {"api","job"}; do
           for tag in {${{ steps.version.outputs.version }},latest}; do
-            docker tag $image exceptionless/$image:$tag
-            docker push exceptionless/$image:$tag
+            docker tag ex-$image exceptionless/$image-ci:$tag
+            docker push exceptionless/$image-ci:$tag
           done
         done
     - name: Publish Release Packages
