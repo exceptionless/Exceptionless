@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
-    <PackageReference Include="FluentRest" Version="7.1.0.124" />
+    <PackageReference Include="FluentRest" Version="7.1.0.132" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.1.0.124" />
     <PackageReference Include="Foundatio.Logging.Xunit" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="3.1.1" />
