@@ -12,6 +12,6 @@ namespace Exceptionless.Core.Repositories {
         Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects);
         Task<CountResult> GetCountByOrganizationIdAsync(string organizationId);
         Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project> options = null);
-        Task<FindResults<Project>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project> options = null);
+        Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project> options = null);
     }
 }

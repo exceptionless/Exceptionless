@@ -17,10 +17,10 @@ using Foundatio.Utility;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
-    public static class ExceptionlessSystemFilterQueryExtensions {
-        internal const string SystemFilterKey = "@ExceptionlessSystemFilter";
+    public static class AppFilterQueryExtensions {
+        internal const string SystemFilterKey = "@AppFilter";
 
-        public static T SystemFilter<T>(this T query, ExceptionlessSystemFilter filter) where T : IRepositoryQuery {
+        public static T AppFilter<T>(this T query, AppFilter filter) where T : IRepositoryQuery {
             if (filter != null)
                 return query.BuildOption(SystemFilterKey, filter);
 
@@ -30,25 +30,25 @@ namespace Exceptionless.Core.Repositories {
 }
 
 namespace Exceptionless.Core.Repositories.Options {
-    public static class ReadExceptionlessSystemFilterQueryExtensions {
-        public static ExceptionlessSystemFilter GetSystemFilter(this IRepositoryQuery query) {
-            return query.SafeGetOption<ExceptionlessSystemFilter>(ExceptionlessSystemFilterQueryExtensions.SystemFilterKey);
+    public static class ReadAppFilterQueryExtensions {
+        public static AppFilter GetAppFilter(this IRepositoryQuery query) {
+            return query.SafeGetOption<AppFilter>(AppFilterQueryExtensions.SystemFilterKey);
         }
     }
 }
 
 namespace Exceptionless.Core.Repositories.Queries {
-    public class ExceptionlessSystemFilter {
-        public ExceptionlessSystemFilter(Organization organization) : this(new List<Organization> { organization }) {
+    public class AppFilter {
+        public AppFilter(Organization organization) : this(new List<Organization> { organization }) {
             if (organization == null)
                 throw new ArgumentNullException(nameof(organization));
         }
 
-        public ExceptionlessSystemFilter(IReadOnlyCollection<Organization> organizations) {
+        public AppFilter(IReadOnlyCollection<Organization> organizations) {
             Organizations = organizations ?? throw new ArgumentNullException(nameof(organizations));
         }
 
-        public ExceptionlessSystemFilter(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization }) {
+        public AppFilter(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization }) {
             if (organization == null)
                 throw new ArgumentNullException(nameof(organization));
 
@@ -56,11 +56,11 @@ namespace Exceptionless.Core.Repositories.Queries {
                 throw new ArgumentNullException(nameof(project));
         }
 
-        public ExceptionlessSystemFilter(IReadOnlyCollection<Project> projects, IReadOnlyCollection<Organization> organizations) : this(organizations) {
+        public AppFilter(IReadOnlyCollection<Project> projects, IReadOnlyCollection<Organization> organizations) : this(organizations) {
             Projects = projects ?? throw new ArgumentNullException(nameof(projects));
         }
 
-        public ExceptionlessSystemFilter(Stack stack, Organization organization) : this(new List<Organization> { organization }) {
+        public AppFilter(Stack stack, Organization organization) : this(new List<Organization> { organization }) {
             Stack = stack ?? throw new ArgumentNullException(nameof(stack));
         }
 
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         public bool IsUserOrganizationsFilter { get; set; }
     }
 
-    public class ExceptionlessSystemFilterQueryBuilder : IElasticQueryBuilder {
+    public class AppFilterQueryBuilder : IElasticQueryBuilder {
         private readonly IOptions<AppOptions> _options;
         private readonly string _organizationIdFieldName;
         private readonly string _projectIdFieldName;
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         private readonly string _stackLastOccurrenceFieldName;
         private readonly string _eventDateFieldName;
 
-        public ExceptionlessSystemFilterQueryBuilder(IOptions<AppOptions> options) {
+        public AppFilterQueryBuilder(IOptions<AppOptions> options) {
             _options = options;
             _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
             _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
-            var sfq = ctx.Source.GetSystemFilter();
+            var sfq = ctx.Source.GetAppFilter();
             if (sfq == null)
                 return Task.CompletedTask;
 

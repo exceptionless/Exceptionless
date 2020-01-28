@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
-            builder.Register(new ExceptionlessSystemFilterQueryBuilder(_appOptions));
+            builder.Register(new AppFilterQueryBuilder(_appOptions));
             builder.Register(new OrganizationQueryBuilder());
             builder.Register(new ProjectQueryBuilder());
             builder.Register(new StackQueryBuilder());
