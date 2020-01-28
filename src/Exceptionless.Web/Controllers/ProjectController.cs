@@ -83,7 +83,7 @@ namespace Exceptionless.Web.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit, 1000);
             
-            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
             var projects = await _repository.GetByFilterAsync(sf, filter, sort, o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
 
@@ -112,7 +112,7 @@ namespace Exceptionless.Web.Controllers {
 
             page = GetPage(page);
             limit = GetLimit(limit, 1000);
-            var sf = new ExceptionlessSystemFilter(organization);
+            var sf = new AppFilter(organization);
             var projects = await _repository.GetByFilterAsync(sf, filter, sort, o => o.PageNumber(page).PageLimit(limit));
             var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
 
@@ -722,8 +722,8 @@ namespace Exceptionless.Web.Controllers {
             int maximumRetentionDays = _options.Value.MaximumRetentionDays;
             var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
-            var sf = new ExceptionlessSystemFilter(projects, organizations);
-            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
+            var sf = new AppFilter(projects, organizations);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
             var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);

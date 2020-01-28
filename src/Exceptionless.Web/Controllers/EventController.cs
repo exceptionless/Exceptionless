@@ -97,7 +97,7 @@ namespace Exceptionless.Web.Controllers {
                 return Ok(CountResult.Empty);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
 
@@ -121,7 +121,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organization);
+            var sf = new AppFilter(organization);
             return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
 
@@ -149,7 +149,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(project, organization);
+            var sf = new AppFilter(project, organization);
             return await GetCountImplAsync(sf, ti, filter, aggregations);
         }
 
@@ -184,7 +184,7 @@ namespace Exceptionless.Web.Controllers {
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organization);
+            var sf = new AppFilter(organization);
             var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, filter, ti.Range.UtcStart, ti.Range.UtcEnd);
             return OkWithLinks(model, new [] { GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent") });
         }
@@ -209,11 +209,11 @@ namespace Exceptionless.Web.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
         }
 
-        private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, string after = null, bool usesPremiumFeatures = false) {
+        private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, string after = null, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
             int skip = GetSkip(page, limit);
@@ -277,7 +277,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organization);
+            var sf = new AppFilter(organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
         }
 
@@ -311,7 +311,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(project, organization);
+            var sf = new AppFilter(project, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
         }
 
@@ -345,7 +345,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack, _appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(stack, organization);
+            var sf = new AppFilter(stack, organization);
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
         }
 
@@ -367,7 +367,7 @@ namespace Exceptionless.Web.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, after);
         }
 
@@ -399,7 +399,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(project, organization);
+            var sf = new AppFilter(project, organization);
             return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null,  mode, page, limit, after);
         }
 
@@ -424,7 +424,7 @@ namespace Exceptionless.Web.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, after, true);
         }
 
@@ -459,7 +459,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(project, organization);
+            var sf = new AppFilter(project, organization);
             return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, after, true);
         }
 
@@ -483,7 +483,7 @@ namespace Exceptionless.Web.Controllers {
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organizations) { IsUserOrganizationsFilter = true };
+            var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, after, true);
         }
 
@@ -513,7 +513,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(organization);
+            var sf = new AppFilter(organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, after, true);
         }
 
@@ -547,7 +547,7 @@ namespace Exceptionless.Web.Controllers {
                 return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.Value.MaximumRetentionDays));
-            var sf = new ExceptionlessSystemFilter(project, organization);
+            var sf = new AppFilter(project, organization);
             return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, after, true);
         }
 

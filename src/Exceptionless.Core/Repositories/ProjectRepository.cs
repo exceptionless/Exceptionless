@@ -36,9 +36,9 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.Organizations(organizationIds).SortAscending(p => p.Name.Suffix("keyword")), options);
         }
         
-        public Task<FindResults<Project>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project> options = null) {
+        public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project> options = null) {
             IRepositoryQuery<Project> query = new RepositoryQuery<Project>()
-                .SystemFilter(systemFilter)
+                .AppFilter(systemFilter)
                 .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending(p => p.Name.Suffix("keyword"));

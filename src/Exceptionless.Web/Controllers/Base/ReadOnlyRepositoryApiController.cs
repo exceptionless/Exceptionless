@@ -39,7 +39,7 @@ namespace Exceptionless.Web.Controllers {
             return await OkModelAsync(model);
         }
 
-        protected async Task<ActionResult<CountResult>> GetCountImplAsync(ExceptionlessSystemFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
+        protected async Task<ActionResult<CountResult>> GetCountImplAsync(AppFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
             var pr = await _validator.ValidateQueryAsync(filter);
             if (!pr.IsValid)
                 return BadRequest(pr.Message);
@@ -50,7 +50,7 @@ namespace Exceptionless.Web.Controllers {
 
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
             var query = new RepositoryQuery<TModel>()
-                .SystemFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
                 .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
 
