@@ -118,10 +118,10 @@ ctx._source.total_occurrences += params.count;";
             return hit?.Document;
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
+        public Task<FindResults<Stack>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
             IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
                 .DateRange(utcStart, utcEnd, field ?? InferField(s => s.LastOccurrence))
-                .SystemFilter(systemFilter)
+                .AppFilter(systemFilter)
                 .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(s => s.LastOccurrence);

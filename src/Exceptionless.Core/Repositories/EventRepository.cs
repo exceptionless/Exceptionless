@@ -98,11 +98,11 @@ namespace Exceptionless.Core.Repositories {
                 , new PartialPatch(new { is_hidden = true, updated_utc = SystemClock.UtcNow }));
         }
 
-        public Task<FindResults<PersistentEvent>> GetByFilterAsync(ExceptionlessSystemFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
+        public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
             IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
                 .DateRange(utcStart, utcEnd, field ?? InferField(e => e.Date))
                 .Index(utcStart, utcEnd)
-                .SystemFilter(systemFilter)
+                .AppFilter(systemFilter)
                 .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(e => e.Date);
@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
         }
 
-        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
+        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
             var previous = GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd);
             var next = GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd);
             await Task.WhenAll(previous, next).AnyContext();
@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Repositories {
             };
         }
 
-        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -149,7 +149,7 @@ namespace Exceptionless.Core.Repositories {
                 .Index(utcStart, utcEventDate)
                 .SortDescending(e => e.Date)
                 .Include(e => e.Id, e => e.Date)
-                .SystemFilter(systemFilter)
+                .AppFilter(systemFilter)
                 .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
                 .FilterExpression(userFilter), o => o.PageLimit(10)).AnyContext();
 
@@ -170,7 +170,7 @@ namespace Exceptionless.Core.Repositories {
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
-        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, ExceptionlessSystemFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -193,7 +193,7 @@ namespace Exceptionless.Core.Repositories {
                 .Index(utcEventDate, utcEnd)
                 .SortAscending(e => e.Date)
                 .Include(e => e.Id, e => e.Date)
-                .SystemFilter(systemFilter)
+                .AppFilter(systemFilter)
                 .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
                 .FilterExpression(userFilter), o => o.PageLimit(10)).AnyContext();
 

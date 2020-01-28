@@ -134,8 +134,8 @@ namespace Exceptionless.Core.Jobs {
             }
 
             _logger.LogInformation("Sending daily summary: users={UserCount} project={project}", users.Count, project.Id);
-            var sf = new ExceptionlessSystemFilter(project, organization);
-            var systemFilter = new RepositoryQuery<PersistentEvent>().SystemFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
+            var sf = new AppFilter(project, organization);
+            var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
             string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:false";
             var result = await _eventRepository.CountBySearchAsync(systemFilter, filter, "terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1").AnyContext();
 

@@ -139,7 +139,7 @@ namespace Exceptionless.Web.Controllers {
             return organizations.ToList().AsReadOnly();
         }
 
-        protected bool ShouldApplySystemFilter(ExceptionlessSystemFilter sf, string filter) {
+        protected bool ShouldApplySystemFilter(AppFilter sf, string filter) {
             // Apply filter to non admin user.
             if (!Request.IsGlobalAdmin())
                 return true;
