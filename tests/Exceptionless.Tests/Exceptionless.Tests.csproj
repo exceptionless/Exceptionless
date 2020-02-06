@@ -4,7 +4,7 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Exceptionless.RandomData" Version="1.1.47" />
+    <PackageReference Include="Exceptionless.RandomData" Version="1.2.0" />
     <PackageReference Include="FluentRest" Version="7.1.0.132" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.1.0.132" />
     <PackageReference Include="Foundatio.Logging.Xunit" Version="9.0.0" />
