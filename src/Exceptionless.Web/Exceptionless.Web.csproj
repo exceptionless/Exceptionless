@@ -13,7 +13,7 @@
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2027" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="3.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.12.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.1" />
     <PackageReference Include="OAuth2" Version="0.9.13-pre" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
