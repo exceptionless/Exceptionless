@@ -27,6 +27,7 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
+using Newtonsoft.Json;
 using Xunit;
 using IAsyncLifetime = Xunit.IAsyncLifetime;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
