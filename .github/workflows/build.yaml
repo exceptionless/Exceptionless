@@ -67,6 +67,8 @@ jobs:
     - name: Install Helm
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
+      with:
+        version: 3.1.0
     - name: Deploy Changes to Development Environment
       if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') && github.event_name != 'pull_request'
       run: |
