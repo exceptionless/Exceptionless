@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
     - name: Start Services
-      run: docker-compose -f docker-compose.services.yml up -d && docker-compose -f docker-compose.services.yml up ready
+      run: docker-compose -f docker-compose.services.yml up -d elasticsearch && docker-compose -f docker-compose.services.yml up ready
     - name: Run Tests
       run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
     - name: Build Docker Images
