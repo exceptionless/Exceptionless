@@ -94,7 +94,8 @@ namespace Exceptionless.Web.Hubs {
 
             try {
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by manager", CancellationToken.None);
-            } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { } catch (Exception ex) {
+            } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) {
+            } catch (Exception ex) {
                 _logger.LogError(ex, "Error closing web socket: {Message}", ex.Message);
             }
         }

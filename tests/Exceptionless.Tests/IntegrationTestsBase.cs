@@ -14,7 +14,6 @@ using FluentRest;
 using Xunit.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
 using FluentRest.NewtonsoftJson;
