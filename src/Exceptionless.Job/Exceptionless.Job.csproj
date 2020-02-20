@@ -10,7 +10,7 @@
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2027" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.12.1" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="3.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.2" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
   </ItemGroup>
 
