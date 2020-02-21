@@ -12,7 +12,6 @@ using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
@@ -22,7 +21,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IMessagePublisher _publisher;
 
-        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _stackRepository = stackRepository ?? throw new ArgumentNullException(nameof(stackRepository));
             _formattingPluginManager = formattingPluginManager ?? throw new ArgumentNullException(nameof(formattingPluginManager));
             _publisher = publisher;

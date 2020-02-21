@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Exceptionless.Core.Configuration {
@@ -10,20 +9,16 @@ namespace Exceptionless.Core.Configuration {
         public string StripeApiKey { get; internal set; }
 
         public string StripeWebHookSigningSecret { get; set; }
-    }
 
-    public class ConfigureStripeOptions : IConfigureOptions<StripeOptions> {
-        private readonly IConfiguration _configuration;
+        public static StripeOptions ReadFromConfiguration(IConfiguration config) {
+            var options = new StripeOptions();
 
-        public ConfigureStripeOptions(IConfiguration configuration) {
-            _configuration = configuration;
-        }
-
-        public void Configure(StripeOptions options) {
-            options.StripeApiKey = _configuration.GetValue<string>(nameof(options.StripeApiKey));
-            options.StripeWebHookSigningSecret = _configuration.GetValue<string>(nameof(options.StripeWebHookSigningSecret));
+            options.StripeApiKey = config.GetValue<string>(nameof(options.StripeApiKey));
+            options.StripeWebHookSigningSecret = config.GetValue<string>(nameof(options.StripeWebHookSigningSecret));
             if (options.EnableBilling)
                 StripeConfiguration.ApiKey = options.StripeApiKey;
+
+            return options;
         }
     }
 }

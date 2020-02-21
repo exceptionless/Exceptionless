@@ -6,12 +6,11 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(Int32.MaxValue)]
     public class FallbackEventParserPlugin : PluginBase, IEventParserPlugin {
-        public FallbackEventParserPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public FallbackEventParserPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             var events = input.SplitLines().Select(entry => new PersistentEvent {

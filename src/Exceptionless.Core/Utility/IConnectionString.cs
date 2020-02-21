@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Utility {
+﻿namespace Exceptionless.Core.Utility {
     public interface IConnectionString {
         string ConnectionString { get; }
     }

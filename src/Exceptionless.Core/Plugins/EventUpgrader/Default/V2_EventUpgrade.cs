@@ -4,13 +4,12 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(2000)]
     public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
-        public V2EventUpgrade(IOptions<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {}
+        public V2EventUpgrade(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {}
 
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(2, 0))

@@ -19,14 +19,20 @@ using Exceptionless.Web.Extensions;
 using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
+using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Web {
     public class Startup {
+        public Startup(IConfiguration configuration) {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
         public void ConfigureServices(IServiceCollection services) {
             services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -119,19 +125,19 @@ namespace Exceptionless.Web {
                 
                 c.IgnoreObsoleteActions();
             });
-            
-            Bootstrapper.RegisterServices(services, Log.Logger.ToLoggerFactory());
+
+            var appOptions = AppOptions.ReadFromConfiguration(Configuration);
+            Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
             services.AddSingleton(s => {
-                var settings = s.GetRequiredService<IOptions<AppOptions>>().Value;
                 return new ThrottlingOptions {
-                    MaxRequestsForUserIdentifierFunc = userIdentifier => settings.ApiThrottleLimit,
+                    MaxRequestsForUserIdentifierFunc = userIdentifier => appOptions.ApiThrottleLimit,
                     Period = TimeSpan.FromMinutes(15)
                 };
             });
         }
 
         public void Configure(IApplicationBuilder app) {
-            var options = app.ApplicationServices.GetRequiredService<IOptions<AppOptions>>().Value;
+            var options = app.ApplicationServices.GetRequiredService<AppOptions>();
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
@@ -201,6 +207,7 @@ namespace Exceptionless.Web {
                 }
             });
 
+            app.UseDefaultFiles();
             app.UseFileServer();
             app.UseRouting();
             app.UseCors("AllowAny");

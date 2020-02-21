@@ -11,18 +11,17 @@ using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : DailyIndex<PersistentEvent> {
         private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
+        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
             _configuration = configuration;
 
-            if (appOptions.Value.MaximumRetentionDays > 0)
-                MaxIndexAge = TimeSpan.FromDays(appOptions.Value.MaximumRetentionDays);
+            if (appOptions.MaximumRetentionDays > 0)
+                MaxIndexAge = TimeSpan.FromDays(appOptions.MaximumRetentionDays);
 
             AddAlias($"{Name}-today", TimeSpan.FromDays(1));
             AddAlias($"{Name}-last3days", TimeSpan.FromDays(7));

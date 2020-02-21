@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Queues.Models {
+﻿namespace Exceptionless.Core.Queues.Models {
     public class EventPostInfo {
         public string OrganizationId { get; set; }
         public string ProjectId { get; set; }

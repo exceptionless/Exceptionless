@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.Extensions.Logging {
     public static class ExceptionlessStateExtensions {

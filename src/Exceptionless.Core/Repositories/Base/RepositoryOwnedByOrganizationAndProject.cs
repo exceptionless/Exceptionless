@@ -1,15 +1,13 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public RepositoryOwnedByOrganizationAndProject(IIndex index, IValidator<T> validator, IOptions<AppOptions> options) : base(index, validator, options) {
+        public RepositoryOwnedByOrganizationAndProject(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options) {
             AddPropertyRequiredForRemove(o => o.ProjectId);
         }
 

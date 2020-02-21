@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Queues.Models {
+﻿namespace Exceptionless.Core.Queues.Models {
     public class MailMessage {
         public string To { get; set; }
         public string From { get; set; }

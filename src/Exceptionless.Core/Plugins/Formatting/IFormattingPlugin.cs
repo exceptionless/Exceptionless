@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public interface IFormattingPlugin : IPlugin {

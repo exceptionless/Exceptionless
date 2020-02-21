@@ -16,33 +16,29 @@ using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
-        private readonly IOptions<ElasticsearchOptions> _options;
-        private readonly IOptions<AppOptions> _appOptions;
+        private readonly AppOptions _appOptions;
         private readonly JsonSerializerSettings _serializerSettings;
 
         public ExceptionlessElasticConfiguration(
-            IOptions<ElasticsearchOptions> options, 
-            IOptions<AppOptions> appOptions, 
+            AppOptions appOptions, 
             IQueue<WorkItemData> workItemQueue, 
             JsonSerializerSettings serializerSettings,
             ICacheClient cacheClient, 
             IMessageBus messageBus, 
             ILoggerFactory loggerFactory
         ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            _options = options;
             _appOptions = appOptions;
             _serializerSettings = serializerSettings;
 
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", options.Value.NumberOfShards, options.Value.NumberOfReplicas);
+            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
             AddIndex(Events = new EventIndex(this, appOptions));
-            AddIndex(Migrations = new MigrationIndex(this, options.Value.ScopePrefix + "migrations", appOptions.Value.AppMode == AppMode.Development ? 0 : 1));
+            AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.AppMode == AppMode.Development ? 0 : 1));
             AddIndex(Organizations = new OrganizationIndex(this));
             AddIndex(Projects = new ProjectIndex(this));
             AddIndex(Tokens = new TokenIndex(this));
@@ -51,7 +47,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
-            if (_options.Value.DisableIndexConfiguration)
+            if (_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
                 return Task.CompletedTask;
 
             return ConfigureIndexesAsync();
@@ -64,7 +60,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             builder.Register(new StackQueryBuilder());
         }
 
-        public ElasticsearchOptions Options => _options.Value;
+        public ElasticsearchOptions Options => _appOptions.ElasticsearchOptions;
         public StackIndex Stacks { get; }
         public EventIndex Events { get; }
         public MigrationIndex Migrations { get; }
@@ -82,8 +78,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             foreach (var index in Indexes)
                 index.ConfigureSettings(settings);
                 
-            if (!String.IsNullOrEmpty(_options.Value.UserName) && !String.IsNullOrEmpty(_options.Value.Password))
-                settings.BasicAuthentication(_options.Value.UserName, _options.Value.Password);
+            if (!String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.UserName) && !String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.Password))
+                settings.BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password);
                 
             var client = new ElasticClient(settings);
             return client;
@@ -95,7 +91,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureSettings(ConnectionSettings settings) {
-            if (_appOptions.Value.AppMode == AppMode.Development)
+            if (_appOptions.AppMode == AppMode.Development)
                 settings.DisableDirectStreaming().PrettyJson();
             
             settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))

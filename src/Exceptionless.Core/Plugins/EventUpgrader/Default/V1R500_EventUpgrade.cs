@@ -1,7 +1,6 @@
 ﻿using System;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
@@ -10,7 +9,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
     /// </summary>
     [Priority(500)]
     public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin {
-        public V1R500EventUpgrade(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public V1R500EventUpgrade(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public void Upgrade(EventUpgraderContext ctx) {
             if (ctx.Version > new Version(1, 0, 0, 500))

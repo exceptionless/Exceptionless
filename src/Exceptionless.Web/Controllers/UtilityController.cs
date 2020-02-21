@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Queries.Validation;
 using Microsoft.AspNetCore.Authorization;

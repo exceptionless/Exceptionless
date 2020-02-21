@@ -6,12 +6,11 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(20)]
     public sealed class ErrorPlugin : EventProcessorPluginBase {
-        public ErrorPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
+        public ErrorPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
 
         public override Task EventProcessingAsync(EventContext context) {
             if (!context.Event.IsError())

@@ -2,14 +2,27 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Exceptionless.Core.Extensions {
     public static class ConfigurationExtensions {
-        public static string GetScopeFromAppMode(this IConfiguration config) {
-            var mode = config.GetValue(nameof(AppOptions.AppMode), AppMode.Production);
-            return mode.ToScope();
+        public static IServiceCollection AddAppOptions(this IServiceCollection services, AppOptions appOptions) {
+            services.AddSingleton(appOptions);
+            services.AddSingleton(appOptions.CacheOptions);
+            services.AddSingleton(appOptions.MessageBusOptions);
+            services.AddSingleton(appOptions.MetricOptions);
+            services.AddSingleton(appOptions.QueueOptions);
+            services.AddSingleton(appOptions.StorageOptions);
+            services.AddSingleton(appOptions.EmailOptions);
+            services.AddSingleton(appOptions.ElasticsearchOptions);
+            services.AddSingleton(appOptions.IntercomOptions);
+            services.AddSingleton(appOptions.SlackOptions);
+            services.AddSingleton(appOptions.StripeOptions);
+            services.AddSingleton(appOptions.AuthOptions);
+
+            return services;
         }
-        
+
         public static string ToScope(this AppMode mode) {
             switch (mode) {
                 case AppMode.Development:

@@ -7,14 +7,13 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]
     public sealed class GeoPlugin : EventProcessorPluginBase {
         private readonly IGeoIpService _geoIpService;
 
-        public GeoPlugin(IGeoIpService geoIpService, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public GeoPlugin(IGeoIpService geoIpService, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _geoIpService = geoIpService;
         }
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public interface IWebHookDataPlugin : IPlugin {

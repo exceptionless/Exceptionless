@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Configuration {
     public class QueueOptions {
@@ -13,28 +12,24 @@ namespace Exceptionless.Core.Configuration {
 
         public string Scope { get; internal set; }
         public string ScopePrefix { get; internal set; }
-    }
 
-    public class ConfigureQueueOptions : IConfigureOptions<QueueOptions> {
-        private readonly IConfiguration _configuration;
+        public static QueueOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+            var options = new QueueOptions();
 
-        public ConfigureQueueOptions(IConfiguration configuration) {
-            _configuration = configuration;
-        }
-
-        public void Configure(QueueOptions options) {
-            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), _configuration.GetScopeFromAppMode());
+            options.Scope = appOptions.AppScope;
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
-            string cs = _configuration.GetConnectionString("Queue");
+            string cs = config.GetConnectionString("Queue");
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider));
-            
-            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? _configuration.GetConnectionString(options.Provider) : null;
+
+            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
             if (!String.IsNullOrEmpty(providerConnectionString))
                 options.Data.AddRange(providerConnectionString.ParseConnectionString());
-            
+
             options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+
+            return options;
         }
     }
 }

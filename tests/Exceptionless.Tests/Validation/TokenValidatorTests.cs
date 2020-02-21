@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Validation;
+﻿using Exceptionless.Core.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.Utility;

@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
@@ -16,25 +15,24 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail {
     public sealed class MailerTests : TestWithServices {
         private readonly IMailer _mailer;
-        private readonly IOptions<EmailOptions> _options;
+        private readonly AppOptions _options;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
 
         public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _mailer = GetService<IMailer>();
-            _options = GetService<IOptions<EmailOptions>>();
+            _options = GetService<AppOptions>();
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
 
             if (_mailer is NullMailer)
-                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<IOptions<AppOptions>>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
+                _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), _options, GetService<IMetricsClient>(), Log.CreateLogger<Mailer>());
         }
 
 
@@ -195,7 +193,7 @@ namespace Exceptionless.Tests.Mail {
 
             await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
-                EmailAddress = _options.Value.TestEmailAddress,
+                EmailAddress = _options.EmailOptions.TestEmailAddress,
                 Token = "1"
             });
 

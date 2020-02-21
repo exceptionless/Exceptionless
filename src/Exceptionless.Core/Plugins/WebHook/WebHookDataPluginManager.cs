@@ -3,11 +3,10 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
-        public WebHookDataPluginManager(IServiceProvider serviceProvider, IOptions<AppOptions> options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) {}
+        public WebHookDataPluginManager(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) {}
 
         /// <summary>
         /// Runs all of the event plugins create method.

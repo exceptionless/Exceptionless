@@ -11,7 +11,6 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
@@ -20,13 +19,13 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cache = cacheClient;
             _workItemQueue = workItemQueue;
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            if (_options.Value.AppMode == AppMode.Development)
+            if (_options.AppMode == AppMode.Development)
                 return;
 
             var firstContext = contexts.First();
@@ -50,7 +49,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     requestCount = clientIpContexts.Count;
                 }
 
-                if (requestCount < _options.Value.BotThrottleLimit)
+                if (requestCount < _options.BotThrottleLimit)
                     continue;
 
                 _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {project}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
