@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -10,7 +9,6 @@ using Exceptionless.Core.Queues.Models;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 // ReSharper disable InconsistentNaming
 
 namespace Exceptionless.Core.Services {
@@ -19,16 +17,14 @@ namespace Exceptionless.Core.Services {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly ISerializer _serializer;
-        private readonly IOptions<AppOptions> _appOptions;
-        private readonly IOptions<SlackOptions> _slackOptions;
+        private readonly AppOptions _appOptions;
         private readonly ILogger _logger;
 
-        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, IOptions<AppOptions> appOptions, IOptions<SlackOptions> slackOptions, ILoggerFactory loggerFactory = null) {
+        public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, ILoggerFactory loggerFactory = null) {
             _webHookNotificationQueue = webHookNotificationQueue;
             _pluginManager = pluginManager;
             _serializer = serializer;
             _appOptions = appOptions;
-            _slackOptions = slackOptions;
             _logger = loggerFactory.CreateLogger<SlackService>();
         }
 
@@ -37,10 +33,10 @@ namespace Exceptionless.Core.Services {
                 throw new ArgumentNullException(nameof(code));
 
             var data = new Dictionary<string, string> {
-                { "client_id", _slackOptions.Value.SlackId },
-                { "client_secret", _slackOptions.Value.SlackSecret },
+                { "client_id", _appOptions.SlackOptions.SlackId },
+                { "client_secret", _appOptions.SlackOptions.SlackSecret },
                 { "code", code },
-                { "redirect_uri", new Uri(_appOptions.Value.BaseURL).GetLeftPart(UriPartial.Authority) }
+                { "redirect_uri", new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority) }
             };
 
             string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";

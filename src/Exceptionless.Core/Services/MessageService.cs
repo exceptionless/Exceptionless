@@ -10,17 +10,16 @@ using Foundatio.Hosting.Startup;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Services {
     public class MessageService : IDisposable, IStartupAction {
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IConnectionMapping _connectionMapping;
-        private readonly IOptions<AppOptions> _options;
+        private readonly AppOptions _options;
         private readonly ILogger _logger;
 
-        public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, IOptions<AppOptions> options, ILoggerFactory loggerFactory) {
+        public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, AppOptions options, ILoggerFactory loggerFactory) {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
             _connectionMapping = connectionMapping;
@@ -29,7 +28,7 @@ namespace Exceptionless.Core.Services {
         }
 
         public Task RunAsync(CancellationToken shutdownToken = default) {
-            if (!_options.Value.EnableRepositoryNotifications)
+            if (!_options.EnableRepositoryNotifications)
                 return Task.CompletedTask;
 
             if (_stackRepository is StackRepository sr)

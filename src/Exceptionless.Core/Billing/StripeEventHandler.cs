@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;

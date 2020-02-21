@@ -7,7 +7,6 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
@@ -31,7 +30,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Stripe;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using InvoiceLineItem = Exceptionless.Web.Models.InvoiceLineItem;
@@ -51,8 +49,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly BillingPlans _plans;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
-        private readonly IOptions<AppOptions> _options;
-        private readonly IOptions<StripeOptions> _stripeOptions;
+        private readonly AppOptions _options;
 
         public OrganizationController(
             IOrganizationRepository organizationRepository,
@@ -66,8 +63,7 @@ namespace Exceptionless.Web.Controllers {
             IMessagePublisher messagePublisher,
             IMapper mapper,
             IQueryValidator validator,
-            IOptions<AppOptions> options,
-            IOptions<StripeOptions> stripeOptions,
+            AppOptions options,
             ILoggerFactory loggerFactory,
             BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory) {
             _cacheClient = cacheClient;
@@ -79,7 +75,6 @@ namespace Exceptionless.Web.Controllers {
             _mailer = mailer;
             _messagePublisher = messagePublisher;
             _options = options;
-            _stripeOptions = stripeOptions;
             _plans = plans;
         }
 
@@ -194,7 +189,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Route("invoice/{id:minlength(10)}")]
         public async Task<ActionResult<Invoice>> GetInvoiceAsync(string id) {
-            if (!_stripeOptions.Value.EnableBilling)
+            if (!_options.StripeOptions.EnableBilling)
                 return NotFound();
 
             if (!id.StartsWith("in_"))
@@ -202,7 +197,7 @@ namespace Exceptionless.Web.Controllers {
 
             Stripe.Invoice stripeInvoice = null;
             try {
-                var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+                var client = new StripeClient(_options.StripeOptions.StripeApiKey);
                 var invoiceService = new InvoiceService(client);
                 stripeInvoice = await invoiceService.GetAsync(id);
             } catch (Exception ex) {
@@ -267,7 +262,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet]
         [Route("{id:objectid}/invoices")]
         public async Task<ActionResult<IReadOnlyCollection<InvoiceGridModel>>> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12) {
-            if (!_stripeOptions.Value.EnableBilling)
+            if (!_options.StripeOptions.EnableBilling)
                 return NotFound();
 
             var organization = await GetModelAsync(id);
@@ -283,7 +278,7 @@ namespace Exceptionless.Web.Controllers {
             if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
                 after = "in_" + after;
 
-            var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+            var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
             var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
             var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
@@ -349,7 +344,7 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return NotFound();
 
-            if (!_stripeOptions.Value.EnableBilling)
+            if (!_options.StripeOptions.EnableBilling)
                 return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
             var organization = await GetModelAsync(id, false);
@@ -370,7 +365,7 @@ namespace Exceptionless.Web.Controllers {
                     return Ok(result);
             }
 
-            var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+            var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var customerService = new CustomerService(client);
             var subscriptionService = new SubscriptionService(client);
 
@@ -671,7 +666,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected override async Task<Organization> AddModelAsync(Organization value) {
-            _billingManager.ApplyBillingPlan(value, _stripeOptions.Value.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, CurrentUser);
+            _billingManager.ApplyBillingPlan(value, _options.StripeOptions.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, CurrentUser);
 
             var organization = await base.AddModelAsync(value);
 
@@ -729,7 +724,7 @@ namespace Exceptionless.Web.Controllers {
                 var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
                 viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
                 viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
-                viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.Value.ApiThrottleLimit);
+                viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
             }
         }
 
@@ -741,7 +736,7 @@ namespace Exceptionless.Web.Controllers {
             if (viewOrganizations.Count <= 0)
                 return viewOrganizations;
 
-            int maximumRetentionDays = _options.Value.MaximumRetentionDays;
+            int maximumRetentionDays = _options.MaximumRetentionDays;
             var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
             var sf = new AppFilter(organizations);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);

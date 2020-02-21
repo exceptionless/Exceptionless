@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Models {
+﻿namespace Exceptionless.Core.Models {
     public interface IOwnedByStack {
         /// <summary>
         /// The stack that the document belongs to.

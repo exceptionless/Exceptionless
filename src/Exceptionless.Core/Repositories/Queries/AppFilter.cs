@@ -14,7 +14,6 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
 using Nest;
 using Foundatio.Utility;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
     public static class AppFilterQueryExtensions {
@@ -72,14 +71,14 @@ namespace Exceptionless.Core.Repositories.Queries {
     }
 
     public class AppFilterQueryBuilder : IElasticQueryBuilder {
-        private readonly IOptions<AppOptions> _options;
+        private readonly AppOptions _options;
         private readonly string _organizationIdFieldName;
         private readonly string _projectIdFieldName;
         private readonly string _stackIdFieldName;
         private readonly string _stackLastOccurrenceFieldName;
         private readonly string _eventDateFieldName;
 
-        public AppFilterQueryBuilder(IOptions<AppOptions> options) {
+        public AppFilterQueryBuilder(AppOptions options) {
             _options = options;
             _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
             _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
@@ -107,7 +106,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
                 if (organization != null) {
                     if (shouldApplyRetentionFilter)
-                        ctx.Filter &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, _options.Value.MaximumRetentionDays, sfq.Stack.FirstOccurrence));
+                        ctx.Filter &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays, sfq.Stack.FirstOccurrence));
                     else {
                         ctx.Filter &= Query<T>.Term(_stackIdFieldName, sfq.Stack.Id);
                     }
@@ -124,7 +123,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (allowedProjects.Count > 0) {
                     foreach (var project in allowedProjects) {
                         if (shouldApplyRetentionFilter)
-                            container |= (Query<T>.Term(_projectIdFieldName, project.Key.Id) && GetRetentionFilter<T>(field, project.Value, _options.Value.MaximumRetentionDays, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
+                            container |= (Query<T>.Term(_projectIdFieldName, project.Key.Id) && GetRetentionFilter<T>(field, project.Value, _options.MaximumRetentionDays, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
                         else    
                             container |= Query<T>.Term(_projectIdFieldName, project.Key.Id);
                     }
@@ -139,7 +138,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             foreach (var organization in allowedOrganizations) {
                 if (shouldApplyRetentionFilter)
-                    container |= (Query<T>.Term(_organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization, _options.Value.MaximumRetentionDays));
+                    container |= (Query<T>.Term(_organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays));
                 else 
                     container |= Query<T>.Term(_organizationIdFieldName, organization.Id);
             }

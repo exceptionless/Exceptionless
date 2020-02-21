@@ -15,7 +15,6 @@ using Foundatio.Repositories;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Jobs {
@@ -32,9 +31,9 @@ namespace Exceptionless.Core.Jobs {
         private readonly IWebHookRepository _webHookRepository;
         private readonly ICacheClient _cacheClient;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private readonly IOptions<AppOptions> _appOptions;
+        private readonly AppOptions _appOptions;
 
-        public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _projectRepository = projectRepository;
             _slackService = slackService;
             _webHookRepository = webHookRepository;
@@ -45,7 +44,7 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context) {
             var body = context.QueueEntry.Value;
-            bool shouldLog = body.ProjectId != _appOptions.Value.InternalProjectId;
+            bool shouldLog = body.ProjectId != _appOptions.InternalProjectId;
             using (_logger.BeginScope(new ExceptionlessState().Organization(body.OrganizationId).Project(body.ProjectId))) {
                 if (shouldLog) _logger.LogTrace("Process web hook call: id={Id} project={1} url={Url}", context.QueueEntry.Id, body.ProjectId, body.Url);
 

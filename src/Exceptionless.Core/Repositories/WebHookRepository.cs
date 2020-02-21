@@ -8,12 +8,11 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, IOptions<AppOptions> options)
+        public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, AppOptions options)
             : base(configuration.WebHooks, validator, options) {}
 
         public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {

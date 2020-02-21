@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class Error : InnerError {

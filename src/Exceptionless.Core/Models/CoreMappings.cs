@@ -1,5 +1,4 @@
-﻿using System;
-using AutoMapper;
+﻿using AutoMapper;
 
 namespace Exceptionless.Core.Models {
     public class CoreMappings: Profile {}

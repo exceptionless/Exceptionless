@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Exceptionless.Core.Models.Billing;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Billing {
     public class BillingPlans {
-        public BillingPlans(IOptions<AppOptions> options) {
+        public BillingPlans(AppOptions options) {
             FreePlan = new BillingPlan {
                 Id = "EX_FREE",
                 Name = "Free",
@@ -146,7 +144,7 @@ namespace Exceptionless.Core.Billing {
                 Price = 0,
                 MaxProjects = -1,
                 MaxUsers = -1,
-                RetentionDays = options.Value.MaximumRetentionDays,
+                RetentionDays = options.MaximumRetentionDays,
                 MaxEventsPerMonth = -1,
                 HasPremiumFeatures = true
             };

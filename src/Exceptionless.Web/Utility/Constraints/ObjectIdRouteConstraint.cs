@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.AspNetCore.Routing.Constraints;
+﻿using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace Exceptionless.Web.Utility {
     public class ObjectIdRouteConstraint : RegexRouteConstraint {

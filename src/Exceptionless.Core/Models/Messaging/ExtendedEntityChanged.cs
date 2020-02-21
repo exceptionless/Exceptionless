@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Messaging.Models {

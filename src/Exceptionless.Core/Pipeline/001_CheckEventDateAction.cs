@@ -1,15 +1,13 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(1)]
     public class CheckEventDateAction : EventPipelineActionBase {
-        public CheckEventDateAction(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CheckEventDateAction(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             ContinueOnError = true;
         }
 

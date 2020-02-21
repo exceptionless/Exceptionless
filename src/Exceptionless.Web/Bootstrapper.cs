@@ -14,24 +14,20 @@ using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceCollection services, ILoggerFactory loggerFactory) {
+        public static void RegisterServices(IServiceCollection services, AppOptions appOptions, ILoggerFactory loggerFactory) {
             services.AddSingleton<WebSocketConnectionManager>();
             services.AddSingleton<MessageBusBroker>();
 
             services.AddTransient<Profile, ApiMappings>();
 
             Core.Bootstrapper.RegisterServices(services);
-            
-            var serviceProvider = services.BuildServiceProvider();
-            var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
-            Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, options.RunJobsInProcess);
+            Insulation.Bootstrapper.RegisterServices(services, appOptions, appOptions.RunJobsInProcess);
 
-            if (options.RunJobsInProcess)
+            if (appOptions.RunJobsInProcess)
                 Core.Bootstrapper.AddHostedJobs(services, loggerFactory);
 
             var logger = loggerFactory.CreateLogger<Startup>();

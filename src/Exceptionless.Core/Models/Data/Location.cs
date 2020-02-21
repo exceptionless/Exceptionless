@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Exceptionless.Core.Models.Data {
     [DebuggerDisplay("{Locality}, {Level2}, {Level1}, {Country}")]

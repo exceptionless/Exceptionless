@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Web.Utility;
+﻿using Exceptionless.Web.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Miscellaneous {

@@ -11,7 +11,6 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using McSherry.SemanticVersioning;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
@@ -20,7 +19,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly SemanticVersionParser _semanticVersionParser;
 
-        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, SemanticVersionParser semanticVersionParser, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _stackRepository = stackRepository;
             _workItemQueue = workItemQueue;
             _semanticVersionParser = semanticVersionParser;

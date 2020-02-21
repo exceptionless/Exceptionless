@@ -1,4 +1,3 @@
-using System;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using FluentValidation;

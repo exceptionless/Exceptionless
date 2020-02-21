@@ -34,14 +34,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Serilog.Sinks.Exceptionless;
 using StackExchange.Redis;
 using QueueOptions = Exceptionless.Core.Configuration.QueueOptions;
 
 namespace Exceptionless.Insulation {
     public class Bootstrapper {
-        public static void RegisterServices(IServiceProvider serviceProvider, IServiceCollection services, AppOptions appOptions, bool runMaintenanceTasks) {
+        public static void RegisterServices(IServiceCollection services, AppOptions appOptions, bool runMaintenanceTasks) {
             if (!String.IsNullOrEmpty(appOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(appOptions.ExceptionlessServerUrl)) {
                 var client = ExceptionlessClient.Default;
                 client.Configuration.ServerUrl = appOptions.ExceptionlessServerUrl;
@@ -66,33 +65,23 @@ namespace Exceptionless.Insulation {
             if (!String.IsNullOrEmpty(appOptions.MaxMindGeoIpKey))
                 services.ReplaceSingleton<IGeoIpService, MaxMindGeoIpService>();
             
-            var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value;
-            RegisterCache(services, cacheOptions);
+            RegisterCache(services, appOptions.CacheOptions);
+            RegisterMessageBus(services, appOptions.MessageBusOptions);
+            RegisterMetric(services, appOptions.MetricOptions);
+            RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
+            RegisterStorage(services, appOptions.StorageOptions);
 
-            var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>().Value;
-            RegisterMessageBus(services, messageBusOptions);
-
-            var metricOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>().Value;
-            RegisterMetric(services, metricOptions);
-
-            var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>().Value;
-            RegisterQueue(services, queueOptions, runMaintenanceTasks);
-
-            var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-            RegisterStorage(services, storageOptions);
-
-            var healthCheckBuilder = RegisterHealthChecks(services, cacheOptions, messageBusOptions, metricOptions, storageOptions, queueOptions);
+            var healthCheckBuilder = RegisterHealthChecks(services, appOptions);
 
             if (appOptions.AppMode != AppMode.Development) {
-                var emailOptions = serviceProvider.GetRequiredService<IOptions<EmailOptions>>().Value;
-                if (!String.IsNullOrEmpty(emailOptions.SmtpHost)) {
+                if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost)) {
                     services.ReplaceSingleton<IMailSender, MailKitMailSender>();
                     healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
                 }
             }
         }
 
-        private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, CacheOptions cacheOptions, MessageBusOptions messageBusOptions, MetricOptions metricOptions, StorageOptions storageOptions, QueueOptions queueOptions) {
+        private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, AppOptions appOptions) {
             services.AddStartupActionToWaitForHealthChecks("Critical");
 
             return services.AddHealthChecks()

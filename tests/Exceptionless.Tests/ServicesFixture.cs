@@ -12,15 +12,19 @@ using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 using System.Collections.Generic;
 using Xunit;
+using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Tests {
     public class ServicesFixture : IDisposable {
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         private readonly Lazy<IServiceProvider> _serviceProvider;
+        private readonly Lazy<IConfiguration> _configuration;
         private readonly List<Action<IServiceCollection>> _serviceConfigurations = new List<Action<IServiceCollection>>();
 
         public ServicesFixture() {
             _serviceProvider = new Lazy<IServiceProvider>(GetServiceProvider);
+            _configuration = new Lazy<IConfiguration>(GetConfiguration);
         }
 
         private IServiceProvider GetServiceProvider() {
@@ -34,6 +38,7 @@ namespace Exceptionless.Tests {
         }
 
         public IServiceProvider Services => _serviceProvider.Value;
+        public IConfiguration Configuration => _configuration.Value;
 
         public void AddServicesConfiguration(Action<IServiceCollection> configuration) {
             _serviceConfigurations.Add(configuration);
@@ -62,10 +67,13 @@ namespace Exceptionless.Tests {
             Log.MinimumLevel = LogLevel.Information;
             Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
 
+            var appOptions = AppOptions.ReadFromConfiguration(fixture.Configuration);
+
             _fixture.AddServicesConfiguration(s => {
                 s.AddSingleton<ILoggerFactory>(Log);
                 s.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
-                Web.Bootstrapper.RegisterServices(s, Log);
+                s.AddAppOptions(appOptions);
+                Web.Bootstrapper.RegisterServices(s, appOptions, Log);
                 s.AddSingleton<IMailer, NullMailer>();
                 s.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
             });

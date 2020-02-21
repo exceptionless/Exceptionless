@@ -25,7 +25,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/projects")]
@@ -38,7 +37,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly SlackService _slackService;
-        private readonly IOptions<AppOptions> _options;
+        private readonly AppOptions _options;
 
         public ProjectController(
             IOrganizationRepository organizationRepository,
@@ -50,7 +49,7 @@ namespace Exceptionless.Web.Controllers {
             SlackService slackService,
             IMapper mapper,
             IQueryValidator validator,
-            IOptions<AppOptions> options,
+            AppOptions options,
             ILoggerFactory loggerFactory
         ) : base(projectRepository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
@@ -719,7 +718,7 @@ namespace Exceptionless.Web.Controllers {
             if (viewProjects.Count <= 0)
                 return viewProjects;
 
-            int maximumRetentionDays = _options.Value.MaximumRetentionDays;
+            int maximumRetentionDays = _options.MaximumRetentionDays;
             var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
             var sf = new AppFilter(projects, organizations);

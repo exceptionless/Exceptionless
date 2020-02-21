@@ -4,12 +4,11 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(10)]
     public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
-        public SimpleErrorFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+        public SimpleErrorFormattingPlugin(AppOptions options) : base(options) { }
 
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);

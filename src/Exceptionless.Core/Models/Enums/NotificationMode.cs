@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Models {
+﻿namespace Exceptionless.Core.Models {
     public enum NotificationMode {
         None = 0,
         New = 1,

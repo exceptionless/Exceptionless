@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(99)]
     public sealed class DefaultFormattingPlugin : FormattingPluginBase {
-        public DefaultFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+        public DefaultFormattingPlugin(AppOptions options) : base(options) { }
 
         public override string GetStackTitle(PersistentEvent ev) {
             if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.AppStats {
+﻿namespace Exceptionless.Core.AppStats {
     public static class MetricNames {
         public const string EventsSubmitted = "events.submitted";
         public const string EventsProcessed = "events.processed";

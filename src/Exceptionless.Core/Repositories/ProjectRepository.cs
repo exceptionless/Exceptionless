@@ -10,12 +10,11 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
-using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, IOptions<AppOptions> options)
+        public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, AppOptions options)
             : base(configuration.Projects, validator, options) {
         }
 

@@ -43,9 +43,8 @@ namespace Exceptionless.Web {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
-            string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
-                .SetBasePath(currentDirectory)
+                .SetBasePath(Directory.GetCurrentDirectory())
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables("EX_")
@@ -72,6 +71,7 @@ namespace Exceptionless.Web {
             bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
+                .UseSerilog()
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder
                         .UseConfiguration(config)
@@ -84,16 +84,13 @@ namespace Exceptionless.Web {
                         })
                         .UseStartup<Startup>();
 
-                    if (String.IsNullOrEmpty(webBuilder.GetSetting(WebHostDefaults.ContentRootKey)))
-                        webBuilder.UseContentRoot(Directory.GetCurrentDirectory());
-
                     var metricOptions = MetricOptions.ReadFromConfiguration(config);
                     if (!String.IsNullOrEmpty(metricOptions.Provider))
                         ConfigureMetricsReporting(webBuilder, metricOptions);
                 })
-                .UseSerilog()
                 .ConfigureServices((ctx, services) => {
                     services.AddSingleton(config);
+                    services.AddAppOptions(options);
                     services.AddHttpContextAccessor();
 
                     if (useApplicationInsights) {

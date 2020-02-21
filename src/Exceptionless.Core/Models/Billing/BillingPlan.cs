@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Exceptionless.Core.Models.Billing {
     [DebuggerDisplay("Id: {Id} Name: {Name} Price: {Price}")]

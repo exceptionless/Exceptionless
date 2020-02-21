@@ -7,17 +7,16 @@ using Foundatio.Caching;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Utility {
     public sealed class RecordSessionHeartbeatMiddleware {
         private readonly ICacheClient _cache;
-        private readonly IOptions<AppOptions> _appOptions;
+        private readonly AppOptions _appOptions;
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
         private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
 
-        public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, IOptions<AppOptions> appOptions, ILogger<ProjectConfigMiddleware> logger) {
+        public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, AppOptions appOptions, ILogger<ProjectConfigMiddleware> logger) {
             _next = next;
             _cache = cache;
             _appOptions = appOptions;
@@ -43,7 +42,7 @@ namespace Exceptionless.Web.Utility {
                 return;
             }
 
-            if (_appOptions.Value.EventSubmissionDisabled || !context.Request.Query.TryGetValue("id", out var id) || String.IsNullOrEmpty(id)) {
+            if (_appOptions.EventSubmissionDisabled || !context.Request.Query.TryGetValue("id", out var id) || String.IsNullOrEmpty(id)) {
                 context.Response.StatusCode = StatusCodes.Status200OK;
                 return;
             }
@@ -57,7 +56,7 @@ namespace Exceptionless.Web.Utility {
                     close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
                 );
             } catch (Exception ex) {
-                if (projectId != _appOptions.Value.InternalProjectId) {
+                if (projectId != _appOptions.InternalProjectId) {
                     using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Property("Id", id).Property("Close", close).SetHttpContext(context)))
                         _logger.LogError(ex, "Error enqueuing session heartbeat.");
                 }

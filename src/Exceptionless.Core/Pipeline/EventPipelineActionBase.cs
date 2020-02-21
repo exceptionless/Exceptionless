@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     public abstract class EventPipelineActionBase : PipelineActionBase<EventContext> {
-        public EventPipelineActionBase(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
+        public EventPipelineActionBase(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {}
 
         protected virtual bool IsCritical => false;
         protected virtual string[] ErrorTags => new string[0];

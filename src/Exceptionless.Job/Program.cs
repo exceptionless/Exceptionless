@@ -17,14 +17,12 @@ using Foundatio.Hosting.Startup;
 using Foundatio.Jobs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
@@ -56,9 +54,8 @@ namespace Exceptionless.Job {
             if (String.IsNullOrWhiteSpace(environment))
                 environment = "Production";
 
-            string currentDirectory = Directory.GetCurrentDirectory();
             var config = new ConfigurationBuilder()
-                .SetBasePath(currentDirectory)
+                .SetBasePath(Directory.GetCurrentDirectory())
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables("EX_")
@@ -92,10 +89,6 @@ namespace Exceptionless.Job {
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
                             });    
                         })
-                        .ConfigureKestrel(c => {
-                            c.AddServerHeader = false;
-                            // c.AllowSynchronousIO = false; // TODO: Investigate issue with JSON Serialization.
-                        })
                         .Configure(app => {
                             Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetService<ILogger<Program>>());
 
@@ -113,37 +106,20 @@ namespace Exceptionless.Job {
                             app.UseWaitForStartupActionsBeforeServingRequests();
                             app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
                         });
-                    
-                    if (String.IsNullOrEmpty(webBuilder.GetSetting(WebHostDefaults.ContentRootKey)))
-                        webBuilder.UseContentRoot(Directory.GetCurrentDirectory());
 
                     var metricOptions = MetricOptions.ReadFromConfiguration(config);
                     if (!String.IsNullOrEmpty(metricOptions.Provider))
                         ConfigureMetricsReporting(webBuilder, metricOptions);
                 })
                 .ConfigureServices((ctx, services) => {
-                    services.AddHttpContextAccessor();
-                    
                     AddJobs(services, jobOptions);
+                    services.AddAppOptions(options);
                     
                     if (useApplicationInsights)
                         services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);
                     
                     Bootstrapper.RegisterServices(services);
-                    var serviceProvider = services.BuildServiceProvider();
-                    Insulation.Bootstrapper.RegisterServices(serviceProvider, services, options, true);
-
-                    services.PostConfigure<HostFilteringOptions>(o => {
-                        if (o.AllowedHosts == null || o.AllowedHosts.Count == 0) {
-                            // "AllowedHosts": "localhost;127.0.0.1;[::1]"
-                            var hosts = ctx.Configuration["AllowedHosts"]?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                            // Fall back to "*" to disable.
-                            o.AllowedHosts = (hosts?.Length > 0 ? hosts : new[] { "*" });
-                        }
-                    });
-                    
-                    services.AddSingleton<IOptionsChangeTokenSource<HostFilteringOptions>>(new ConfigurationChangeTokenSource<HostFilteringOptions>(ctx.Configuration));
-                    services.AddTransient<IStartupFilter, HostFilteringStartupFilter>();
+                    Insulation.Bootstrapper.RegisterServices(services, options, true);
                 });
 
             return builder;

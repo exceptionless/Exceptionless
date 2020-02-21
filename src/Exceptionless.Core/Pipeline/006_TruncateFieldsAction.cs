@@ -3,12 +3,11 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(6)]
     public class TruncateFieldsAction : EventPipelineActionBase {
-        public TruncateFieldsAction(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public TruncateFieldsAction(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         protected override bool IsCritical => true;
 

@@ -8,7 +8,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(40)]
@@ -27,7 +26,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
         private readonly UserAgentParser _parser;
 
-        public RequestInfoPlugin(UserAgentParser parser, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public RequestInfoPlugin(UserAgentParser parser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _parser = parser;
         }
 

@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Authentication;
+﻿using Exceptionless.Core.Authentication;
 
 namespace Exceptionless.Tests.Authentication {
     internal class TestDomainLoginProvider : IDomainLoginProvider {

@@ -10,12 +10,11 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
-using Microsoft.Extensions.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
-        public EventRepository(ExceptionlessElasticConfiguration configuration, IOptions<AppOptions> options, IValidator<PersistentEvent> validator)
+        public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, IValidator<PersistentEvent> validator)
             : base(configuration.Events, validator, options) {
             DisableCache();
             BatchNotifications = true;
@@ -129,7 +128,7 @@ namespace Exceptionless.Core.Repositories {
             if (ev == null)
                 return null;
 
-            var retentionDate = _options.Value.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(_options.Value.MaximumRetentionDays) : DateTime.MinValue;
+            var retentionDate = _options.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(_options.MaximumRetentionDays) : DateTime.MinValue;
             if (!utcStart.HasValue || utcStart.Value.IsBefore(retentionDate))
                 utcStart = retentionDate;
 

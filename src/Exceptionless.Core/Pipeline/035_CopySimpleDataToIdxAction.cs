@@ -4,14 +4,13 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class CopySimpleDataToIdxAction : EventPipelineActionBase {
         private readonly IMetricsClient _metricsClient;
 
-        public CopySimpleDataToIdxAction(IMetricsClient metricsClient, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public CopySimpleDataToIdxAction(IMetricsClient metricsClient, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _metricsClient = metricsClient;
         }
 

@@ -19,7 +19,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
@@ -31,7 +30,7 @@ namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/auth")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class AuthController : ExceptionlessApiController {
-        private readonly IOptions<AuthOptions> _authOptions;
+        private readonly AuthOptions _authOptions;
         private readonly IDomainLoginProvider _domainLoginProvider;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
@@ -42,7 +41,7 @@ namespace Exceptionless.Web.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOptions<AuthOptions> authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
+        public AuthController(AuthOptions authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider) {
             _authOptions = authOptions;
             _domainLoginProvider = domainLoginProvider;
             _organizationRepository = organizationRepository;
@@ -122,7 +121,7 @@ namespace Exceptionless.Web.Controllers {
                     return Unauthorized();
                 }
 
-                if (!_authOptions.Value.EnableActiveDirectoryAuth) {
+                if (!_authOptions.EnableActiveDirectoryAuth) {
                     if (String.IsNullOrEmpty(user.Salt)) {
                         _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined.", user.EmailAddress);
                         return Unauthorized();
@@ -228,7 +227,7 @@ namespace Exceptionless.Web.Controllers {
                     }
                 }
 
-                if (_authOptions.Value.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password)) {
+                if (_authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password)) {
                     _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed.", email);
                     return BadRequest();
                 }
@@ -237,14 +236,14 @@ namespace Exceptionless.Web.Controllers {
                     IsActive = true,
                     FullName = model.Name.Trim(),
                     EmailAddress = email,
-                    IsEmailAddressVerified = _authOptions.Value.EnableActiveDirectoryAuth
+                    IsEmailAddressVerified = _authOptions.EnableActiveDirectoryAuth
                 };
                 user.CreateVerifyEmailAddressToken();
                 user.Roles.Add(AuthorizationRoles.Client);
                 user.Roles.Add(AuthorizationRoles.User);
                 await AddGlobalAdminRoleIfFirstUserAsync(user);
 
-                if (!_authOptions.Value.EnableActiveDirectoryAuth) {
+                if (!_authOptions.EnableActiveDirectoryAuth) {
                     user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
                     user.Password = model.Password.ToSaltedHash(user.Salt);
                 }
@@ -277,8 +276,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("github")]
         public Task<ActionResult<TokenResult>> GitHubAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.GitHubId,
-                _authOptions.Value.GitHubSecret,
+                _authOptions.GitHubId,
+                _authOptions.GitHubSecret,
                 (f, c) => {
                     c.Scope = "user:email";
                     return new GitHubClient(f, c);
@@ -292,8 +291,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("google")]
         public Task<ActionResult<TokenResult>> GoogleAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.GoogleId,
-                _authOptions.Value.GoogleSecret,
+                _authOptions.GoogleId,
+                _authOptions.GoogleSecret,
                 (f, c) => {
                     c.Scope = "profile email";
                     return new GoogleClient(f, c);
@@ -307,8 +306,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("facebook")]
         public Task<ActionResult<TokenResult>> FacebookAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.FacebookId,
-                _authOptions.Value.FacebookSecret,
+                _authOptions.FacebookId,
+                _authOptions.FacebookSecret,
                 (f, c) => {
                     c.Scope = "email";
                     return new FacebookClient(f, c);
@@ -322,8 +321,8 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("live")]
         public Task<ActionResult<TokenResult>> LiveAsync(JObject value) {
             return ExternalLoginAsync(value.ToObject<ExternalAuthInfo>(),
-                _authOptions.Value.MicrosoftId,
-                _authOptions.Value.MicrosoftSecret,
+                _authOptions.MicrosoftId,
+                _authOptions.MicrosoftSecret,
                 (f, c) => {
                     c.Scope = "wl.emails";
                     return new WindowsLiveClient(f, c);
@@ -663,7 +662,7 @@ namespace Exceptionless.Web.Controllers {
             // Check to see if a user already exists with this email address.
             var user = !String.IsNullOrEmpty(userInfo.Email) ? await _userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
             if (user == null) {
-                if (!_authOptions.Value.EnableAccountCreation)
+                if (!_authOptions.EnableAccountCreation)
                     throw new ApplicationException("Account Creation is currently disabled.");
 
                 user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
@@ -684,7 +683,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         private async Task<bool> IsAccountCreationEnabledAsync(string token) {
-            if (_authOptions.Value.EnableAccountCreation)
+            if (_authOptions.EnableAccountCreation)
                 return true;
 
             if (String.IsNullOrEmpty(token))

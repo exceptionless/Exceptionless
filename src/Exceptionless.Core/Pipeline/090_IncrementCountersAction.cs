@@ -7,7 +7,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
@@ -15,7 +14,7 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IMetricsClient _metricsClient;
         private readonly BillingPlans _plans;
 
-        public IncrementCountersAction(IMetricsClient metricsClient, BillingPlans plans, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public IncrementCountersAction(IMetricsClient metricsClient, BillingPlans plans, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _metricsClient = metricsClient;
             _plans = plans;
             ContinueOnError = true;

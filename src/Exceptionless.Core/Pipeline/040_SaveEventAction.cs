@@ -6,14 +6,13 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class SaveEventAction : EventPipelineActionBase {
         private readonly IEventRepository _eventRepository;
 
-        public SaveEventAction(IEventRepository eventRepository, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public SaveEventAction(IEventRepository eventRepository, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _eventRepository = eventRepository;
         }
 

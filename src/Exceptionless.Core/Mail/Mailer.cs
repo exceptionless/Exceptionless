@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
@@ -15,23 +14,20 @@ using Foundatio.Queues;
 using Foundatio.Utility;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
         private readonly ConcurrentDictionary<string, Func<object, string>> _cachedTemplates = new ConcurrentDictionary<string, Func<object, string>>();
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
-        private readonly IOptions<AppOptions> _appOptions;
-        private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly AppOptions _appOptions;
         private readonly IMetricsClient _metrics;
         private readonly ILogger _logger;
 
-        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IOptions<AppOptions> appOptions, IOptions<EmailOptions> emailOptions, IMetricsClient metrics, ILogger<Mailer> logger) {
+        public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, IMetricsClient metrics, ILogger<Mailer> logger) {
             _queue = queue;
             _pluginManager = pluginManager;
             _appOptions = appOptions;
-            _emailOptions = emailOptions;
             _metrics = metrics;
             _logger = logger;
         }
@@ -49,7 +45,7 @@ namespace Exceptionless.Core.Mail {
 
             var messageData = new Dictionary<string, object> {
                 { "Subject", result.Subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "ProjectName", project.Name },
                 { "ProjectId", project.Id },
                 { "StackId", ev.StackId },
@@ -118,7 +114,7 @@ namespace Exceptionless.Core.Mail {
             string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
                 { "OrganizationName", organization.Name }
             };
@@ -135,7 +131,7 @@ namespace Exceptionless.Core.Mail {
             string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "InviteToken", invite.Token }
             };
 
@@ -154,7 +150,7 @@ namespace Exceptionless.Core.Mail {
 
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
                 { "OrganizationName", organization.Name },
                 { "IsOverMonthlyLimit", isOverMonthlyLimit },
@@ -174,7 +170,7 @@ namespace Exceptionless.Core.Mail {
             string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interruption!";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
                 { "OrganizationName", organization.Name }
             };
@@ -191,7 +187,7 @@ namespace Exceptionless.Core.Mail {
             string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", project.OrganizationId },
                 { "ProjectId", project.Id },
                 { "ProjectName", project.Name },
@@ -232,7 +228,7 @@ namespace Exceptionless.Core.Mail {
             const string subject = "Exceptionless Account Confirmation";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "UserFullName", user.FullName },
                 { "UserVerifyEmailAddressToken", user.VerifyEmailAddressToken }
             };
@@ -252,7 +248,7 @@ namespace Exceptionless.Core.Mail {
             const string subject = "Exceptionless Password Reset";
             var data = new Dictionary<string, object> {
                 { "Subject", subject },
-                { "BaseUrl", _appOptions.Value.BaseURL },
+                { "BaseUrl", _appOptions.BaseURL },
                 { "UserFullName", user.FullName },
                 { "UserPasswordResetToken", user.PasswordResetToken }
             };
@@ -290,15 +286,15 @@ namespace Exceptionless.Core.Mail {
         }
 
         private void CleanAddresses(MailMessage message) {
-            if (_appOptions.Value.AppMode == AppMode.Production)
+            if (_appOptions.AppMode == AppMode.Production)
                 return;
 
             string address = message.To.ToLowerInvariant();
-            if (_emailOptions.Value.AllowedOutboundAddresses.Any(address.Contains))
+            if (_appOptions.EmailOptions.AllowedOutboundAddresses.Any(address.Contains))
                 return;
 
             message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();
-            message.To = _emailOptions.Value.TestEmailAddress;
+            message.To = _appOptions.EmailOptions.TestEmailAddress;
         }
     }
 }

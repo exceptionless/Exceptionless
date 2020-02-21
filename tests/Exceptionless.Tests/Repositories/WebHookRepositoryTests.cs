@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;

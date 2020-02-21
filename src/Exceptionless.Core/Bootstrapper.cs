@@ -47,7 +47,6 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -56,19 +55,6 @@ using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainInd
 namespace Exceptionless.Core {
     public class Bootstrapper {
         public static void RegisterServices(IServiceCollection container) {
-            container.ConfigureOptions<ConfigureAppOptions>();
-            container.ConfigureOptions<ConfigureAuthOptions>();
-            container.ConfigureOptions<ConfigureCacheOptions>();
-            container.ConfigureOptions<ConfigureElasticsearchOptions>();
-            container.ConfigureOptions<ConfigureEmailOptions>();
-            container.ConfigureOptions<ConfigureIntercomOptions>();
-            container.ConfigureOptions<ConfigureMessageBusOptions>();
-            container.ConfigureOptions<ConfigureMetricOptions>();
-            container.ConfigureOptions<ConfigureQueueOptions>();
-            container.ConfigureOptions<ConfigureSlackOptions>();
-            container.ConfigureOptions<ConfigureStorageOptions>();
-            container.ConfigureOptions<ConfigureStripeOptions>();
-
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
@@ -213,54 +199,46 @@ namespace Exceptionless.Core {
             if (!logger.IsEnabled(LogLevel.Warning))
                 return;
 
-            var cacheOptions = serviceProvider.GetRequiredService<IOptions<CacheOptions>>();
-            if (String.IsNullOrEmpty(cacheOptions.Value.Provider))
+            if (String.IsNullOrEmpty(appOptions.CacheOptions.Provider))
                 logger.LogWarning("Distributed cache is NOT enabled on {MachineName}.", Environment.MachineName);
             
-            var messageBusOptions = serviceProvider.GetRequiredService<IOptions<MessageBusOptions>>();
-            if (String.IsNullOrEmpty(messageBusOptions.Value.Provider))
+            if (String.IsNullOrEmpty(appOptions.MessageBusOptions.Provider))
                 logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}.", Environment.MachineName);
             
-            var metricsOptions = serviceProvider.GetRequiredService<IOptions<MetricOptions>>();
-            if (String.IsNullOrEmpty(metricsOptions.Value.Provider))
+            if (String.IsNullOrEmpty(appOptions.MetricOptions.Provider))
                 logger.LogWarning("Metrics reporting is NOT enabled on {MachineName}.", Environment.MachineName);
 
-            var queueOptions = serviceProvider.GetRequiredService<IOptions<QueueOptions>>();
-            if (String.IsNullOrEmpty(queueOptions.Value.Provider))
+            if (String.IsNullOrEmpty(appOptions.QueueOptions.Provider))
                 logger.LogWarning("Distributed queue is NOT enabled on {MachineName}.", Environment.MachineName);
             
-            var storageOptions = serviceProvider.GetRequiredService<IOptions<StorageOptions>>();
-            if (String.IsNullOrEmpty(storageOptions.Value.Provider))
+            if (String.IsNullOrEmpty(appOptions.StorageOptions.Provider))
                 logger.LogWarning("Distributed storage is NOT enabled on {MachineName}.", Environment.MachineName);
 
             if (!appOptions.EnableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
-            var emailOptions = serviceProvider.GetRequiredService<IOptions<EmailOptions>>();
             if (appOptions.AppMode == AppMode.Development)
                 logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
-            else if (String.IsNullOrEmpty(emailOptions.Value.SmtpHost))
+            else if (String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
                 logger.LogWarning("Emails will NOT be sent until the SmtpHost is configured on {MachineName}", Environment.MachineName);
 
-            var fileStorage = serviceProvider.GetRequiredService<IFileStorage>();
+            var fileStorage = serviceProvider.GetService<IFileStorage>();
             if (fileStorage is InMemoryFileStorage)
                 logger.LogWarning("Using in memory file storage on {MachineName}", Environment.MachineName);
 
-            var elasticsearchOptions = serviceProvider.GetRequiredService<IOptions<ElasticsearchOptions>>();
-            if (elasticsearchOptions.Value.DisableIndexConfiguration)
+            if (appOptions.ElasticsearchOptions.DisableIndexConfiguration)
                 logger.LogWarning("Index Configuration is NOT enabled on {MachineName}", Environment.MachineName);
 
             if (appOptions.EventSubmissionDisabled)
                 logger.LogWarning("Event Submission is NOT enabled on {MachineName}", Environment.MachineName);
 
-            var authOptions = serviceProvider.GetRequiredService<IOptions<AuthOptions>>();
-            if (!authOptions.Value.EnableAccountCreation)
+            if (!appOptions.AuthOptions.EnableAccountCreation)
                 logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
         }
 
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
-            var options = container.GetRequiredService<IOptions<AppOptions>>().Value;
-            var elasticsearchOptions = container.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
+            var options = container.GetRequiredService<AppOptions>();
+            var elasticsearchOptions = container.GetRequiredService<ElasticsearchOptions>();
             if (options.AppMode != AppMode.Development || elasticsearchOptions.DisableIndexConfiguration)
                 return;
 

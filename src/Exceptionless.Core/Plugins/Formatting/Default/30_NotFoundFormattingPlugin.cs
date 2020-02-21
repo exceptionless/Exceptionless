@@ -4,12 +4,11 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(30)]
     public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
-        public NotFoundFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+        public NotFoundFormattingPlugin(AppOptions options) : base(options) { }
 
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsNotFound();

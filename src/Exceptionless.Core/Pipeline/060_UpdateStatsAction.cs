@@ -6,14 +6,13 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
     public class UpdateStatsAction : EventPipelineActionBase {
         private readonly StackService _stackService;
 
-        public UpdateStatsAction(StackService stackService, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public UpdateStatsAction(StackService stackService, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _stackService = stackService;
         }
 

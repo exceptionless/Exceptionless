@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
-        public FormattingPluginBase(IOptions<AppOptions> options) : base(options) {}
+        public FormattingPluginBase(AppOptions options) : base(options) {}
 
         public virtual SummaryData GetStackSummaryData(Stack stack) {
             return null;
@@ -44,7 +43,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!String.IsNullOrEmpty(version))
                 attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
 
-            string baseUrl = _options.Value.BaseURL;
+            string baseUrl = _options.BaseURL;
             var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
             if (ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound)
                 actions.Add($"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
@@ -55,7 +54,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         protected string GetSlackEventUrl(string eventId, string message = null) {
-            var parts = new List<string> { $"{_options.Value.BaseURL}/event/{eventId}" };
+            var parts = new List<string> { $"{_options.BaseURL}/event/{eventId}" };
             if (!String.IsNullOrEmpty(message))
                 parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
 

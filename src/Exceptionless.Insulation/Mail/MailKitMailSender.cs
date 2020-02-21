@@ -11,17 +11,16 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MimeKit;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail {
     public class MailKitMailSender : IMailSender, IHealthCheck {
-        private readonly IOptions<EmailOptions> _emailOptions;
+        private readonly EmailOptions _emailOptions;
         private readonly ILogger _logger;
         private DateTime _lastSuccessfulConnection = DateTime.MinValue;
 
-        public MailKitMailSender(IOptions<EmailOptions> emailOptions, ILoggerFactory loggerFactory) {
+        public MailKitMailSender(EmailOptions emailOptions, ILoggerFactory loggerFactory) {
             _emailOptions = emailOptions;
             _logger = loggerFactory.CreateLogger<MailKitMailSender>();
         }
@@ -37,9 +36,9 @@ namespace Exceptionless.Insulation.Mail {
             message.Headers.Add("Auto-Submitted", "auto-generated");
 
             using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger))) {
-                string host = _emailOptions.Value.SmtpHost;
-                int port = _emailOptions.Value.SmtpPort;
-                var encryption = GetSecureSocketOption(_emailOptions.Value.SmtpEncryption);
+                string host = _emailOptions.SmtpHost;
+                int port = _emailOptions.SmtpPort;
+                var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
                 if (isTraceLogEnabled) _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
 
                 var sw = Stopwatch.StartNew();
@@ -49,11 +48,11 @@ namespace Exceptionless.Insulation.Mail {
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                string user = _emailOptions.Value.SmtpUser;
+                string user = _emailOptions.SmtpUser;
                 if (!String.IsNullOrEmpty(user)) {
                     if (isTraceLogEnabled) _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
                     sw.Restart();
-                    await client.AuthenticateAsync(user, _emailOptions.Value.SmtpPassword).AnyContext();
+                    await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
                     if (isTraceLogEnabled) _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", user, sw.Elapsed);
                 }
 
@@ -92,7 +91,7 @@ namespace Exceptionless.Insulation.Mail {
             if (!String.IsNullOrEmpty(notification.From))
                 message.From.AddRange(InternetAddressList.Parse(notification.From));
             else
-                message.From.AddRange(InternetAddressList.Parse(_emailOptions.Value.SmtpFrom));
+                message.From.AddRange(InternetAddressList.Parse(_emailOptions.SmtpFrom));
 
             if (!String.IsNullOrEmpty(notification.Body))
                 builder.HtmlBody = notification.Body;
@@ -109,18 +108,18 @@ namespace Exceptionless.Insulation.Mail {
             
             try {
                 using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger))) {
-                    string host = _emailOptions.Value.SmtpHost;
-                    int port = _emailOptions.Value.SmtpPort;
-                    var encryption = GetSecureSocketOption(_emailOptions.Value.SmtpEncryption);
+                    string host = _emailOptions.SmtpHost;
+                    int port = _emailOptions.SmtpPort;
+                    var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
                 
                     await client.ConnectAsync(host, port, encryption).AnyContext();
                 
                     // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                     client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                    string user = _emailOptions.Value.SmtpUser;
+                    string user = _emailOptions.SmtpUser;
                     if (!String.IsNullOrEmpty(user)) {
-                        await client.AuthenticateAsync(user, _emailOptions.Value.SmtpPassword).AnyContext();
+                        await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
                     }
                 
                     await client.DisconnectAsync(true).AnyContext();

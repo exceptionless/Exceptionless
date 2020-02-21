@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Exceptionless.Core.Models.Data {
     [DebuggerDisplay("Ip Address: {IpAddress}, User Agent: {UserAgent}, Version: {Version}")]

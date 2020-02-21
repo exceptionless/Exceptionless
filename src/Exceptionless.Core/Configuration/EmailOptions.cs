@@ -4,7 +4,6 @@ using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -34,29 +33,15 @@ namespace Exceptionless.Core.Configuration {
         public string SmtpUser { get; internal set; }
 
         public string SmtpPassword { get; internal set; }
-    }
 
-    public enum SmtpEncryption {
-        None,
-        StartTLS,
-        SSL
-    }
+        public static EmailOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+            var options = new EmailOptions();
 
-    public class ConfigureEmailOptions : IConfigureOptions<EmailOptions> {
-        private readonly IConfiguration _configuration;
-        private readonly IOptions<AppOptions> _appOptions;
+            options.EnableDailySummary = config.GetValue(nameof(options.EnableDailySummary), appOptions.AppMode == AppMode.Production);
+            options.AllowedOutboundAddresses = config.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
+            options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
 
-        public ConfigureEmailOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
-            _configuration = configuration;
-            _appOptions = appOptions;
-        }
-
-        public void Configure(EmailOptions options) {
-            options.EnableDailySummary = _configuration.GetValue(nameof(options.EnableDailySummary), _appOptions.Value.AppMode == AppMode.Production);
-            options.AllowedOutboundAddresses = _configuration.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
-            options.TestEmailAddress = _configuration.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
-
-            string emailConnectionString = _configuration.GetConnectionString("Email");
+            string emailConnectionString = config.GetConnectionString("Email");
             if (!String.IsNullOrEmpty(emailConnectionString)) {
                 var uri = new SmtpUri(emailConnectionString);
                 options.SmtpHost = uri.Host;
@@ -65,14 +50,16 @@ namespace Exceptionless.Core.Configuration {
                 options.SmtpPassword = uri.Password;
             }
 
-            options.SmtpFrom = _configuration.GetValue(nameof(options.SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
-            options.SmtpEncryption = _configuration.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
+            options.SmtpFrom = config.GetValue(nameof(options.SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
+            options.SmtpEncryption = config.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
 
             if (String.IsNullOrWhiteSpace(options.SmtpUser) != String.IsNullOrWhiteSpace(options.SmtpPassword))
                 throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
+
+            return options;
         }
 
-        private SmtpEncryption GetDefaultSmtpEncryption(int port) {
+        private static SmtpEncryption GetDefaultSmtpEncryption(int port) {
             switch (port) {
                 case 465:
                     return SmtpEncryption.SSL;
@@ -83,5 +70,11 @@ namespace Exceptionless.Core.Configuration {
                     return SmtpEncryption.None;
             }
         }
+    }
+
+    public enum SmtpEncryption {
+        None,
+        StartTLS,
+        SSL
     }
 }

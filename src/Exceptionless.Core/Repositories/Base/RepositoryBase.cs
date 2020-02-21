@@ -12,15 +12,14 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Foundatio.Repositories.Queries;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
-        protected readonly IOptions<AppOptions> _options;
+        protected readonly AppOptions _options;
 
-        public RepositoryBase(IIndex index, IValidator<T> validator, IOptions<AppOptions> options) : base(index, validator) {
+        public RepositoryBase(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator) {
             _options = options;
-            NotificationsEnabled = options.Value.EnableRepositoryNotifications;
+            NotificationsEnabled = options.EnableRepositoryNotifications;
         }
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Authentication {
+﻿namespace Exceptionless.Core.Authentication {
     public interface IDomainLoginProvider {
         bool Login(string username, string password);
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Models.Billing {
+﻿namespace Exceptionless.Core.Models.Billing {
     public class ChangePlanResult {
         public bool Success { get; set; }
         public string Message { get; set; }
