@@ -1,4 +1,3 @@
-using System;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
@@ -66,7 +65,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
-            string dateFixedFieldName = Configuration.Client.Infer.PropertyName(Infer.Property<Stack>(f => f.DateFixed));
+            string dateFixedFieldName = InferPropertyName(f => f.DateFixed);
             config
                 .SetDefaultFields(new[] { "id", Alias.Title, Alias.Description, Alias.Tags, Alias.References })
                 .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));

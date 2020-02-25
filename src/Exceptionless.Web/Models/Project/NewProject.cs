@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 
 namespace Exceptionless.Web.Models {
     public class NewProject : UpdateProject, IOwnedByOrganization {   

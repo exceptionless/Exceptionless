@@ -4,12 +4,11 @@ using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(60)]
     public sealed class LogFormattingPlugin : FormattingPluginBase {
-        public LogFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+        public LogFormattingPlugin(AppOptions options) : base(options) { }
 
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsLog();

@@ -20,7 +20,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 #pragma warning disable 1998
@@ -39,9 +38,9 @@ namespace Exceptionless.Core.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private readonly IOptions<AppOptions> _appOptions;
+        private readonly AppOptions _appOptions;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metrics, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _eventPostService = eventPostService;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
@@ -52,8 +51,8 @@ namespace Exceptionless.Core.Jobs {
             _jsonSerializerSettings = jsonSerializerSettings;
             
             _appOptions = appOptions;
-            _maximumEventPostFileSize = _appOptions.Value.MaximumEventPostSize + 1024;
-            _maximumUncompressedEventPostSize = _appOptions.Value.MaximumEventPostSize * 10;
+            _maximumEventPostFileSize = _appOptions.MaximumEventPostSize + 1024;
+            _maximumUncompressedEventPostSize = _appOptions.MaximumEventPostSize * 10;
 
             AutoComplete = false;
         }
@@ -75,14 +74,14 @@ namespace Exceptionless.Core.Jobs {
             _metrics.Gauge(MetricNames.PostsMessageSize, payload.LongLength);
             if (payload.LongLength > _maximumEventPostFileSize) {
                 await Task.WhenAll(_metrics.TimeAsync(() => entry.CompleteAsync(), MetricNames.PostsCompleteTime), projectTask, organizationTask).AnyContext();
-                return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({_appOptions.Value.MaximumEventPostSize} bytes) reached.");
+                return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({_appOptions.MaximumEventPostSize} bytes) reached.");
             }
 
             using (_logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId))) {
                 _metrics.Gauge(MetricNames.PostsCompressedSize, payload.Length);
 
                 bool isDebugLogLevelEnabled = _logger.IsEnabled(LogLevel.Debug);
-                bool isInternalProject = ep.ProjectId == _appOptions.Value.InternalProjectId;
+                bool isInternalProject = ep.ProjectId == _appOptions.InternalProjectId;
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Information)) {
                     using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
                         _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={project} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
@@ -95,7 +94,7 @@ namespace Exceptionless.Core.Jobs {
                     return JobResult.Success;
                 }
 
-                long maxEventPostSize = _appOptions.Value.MaximumEventPostSize;
+                long maxEventPostSize = _appOptions.MaximumEventPostSize;
                 byte[] uncompressedData = payload;
                 if (!String.IsNullOrEmpty(ep.ContentEncoding)) {
                     if (!isInternalProject && isDebugLogLevelEnabled) {
@@ -264,7 +263,7 @@ namespace Exceptionless.Core.Jobs {
                     var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
 
                     // Put this single event back into the queue so we can retry it separately.
-                    await _eventPostService.EnqueueAsync(new EventPost(_appOptions.Value.EnableArchive) {
+                    await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive) {
                         ApiVersion = ep.ApiVersion,
                         CharSet = ep.CharSet,
                         ContentEncoding = null,

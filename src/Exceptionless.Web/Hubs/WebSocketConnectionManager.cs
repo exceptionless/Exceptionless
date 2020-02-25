@@ -7,9 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
-using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Hubs {
@@ -20,10 +18,10 @@ namespace Exceptionless.Web.Hubs {
         private readonly JsonSerializerSettings _serializerSettings;
         private readonly ILogger _logger;
 
-        public WebSocketConnectionManager(IOptions<AppOptions> options, JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory) {
+        public WebSocketConnectionManager(AppOptions options, JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory) {
             _serializerSettings = serializerSettings;
             _logger = loggerFactory.CreateLogger<WebSocketConnectionManager>();
-            if (!options.Value.EnableWebSockets)
+            if (!options.EnableWebSockets)
                 return;
 
             _timer = new Timer(KeepAlive, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
@@ -94,7 +92,8 @@ namespace Exceptionless.Web.Hubs {
 
             try {
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by manager", CancellationToken.None);
-            } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { } catch (Exception ex) {
+            } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) {
+            } catch (Exception ex) {
                 _logger.LogError(ex, "Error closing web socket: {Message}", ex.Message);
             }
         }

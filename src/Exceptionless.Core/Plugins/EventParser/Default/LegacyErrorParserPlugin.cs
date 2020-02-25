@@ -5,7 +5,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
@@ -14,7 +13,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
         private readonly EventUpgraderPluginManager _manager;
         private readonly JsonSerializerSettings _settings;
 
-        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, IOptions<AppOptions> options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {
+        public LegacyErrorParserPlugin(EventUpgraderPluginManager manager, JsonSerializerSettings settings, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) {
             _manager = manager;
             _settings = settings;
         }

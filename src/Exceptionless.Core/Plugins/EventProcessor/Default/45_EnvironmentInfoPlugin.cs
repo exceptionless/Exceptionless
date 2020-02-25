@@ -5,12 +5,11 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(45)]
     public sealed class EnvironmentInfoPlugin : EventProcessorPluginBase {
-        public EnvironmentInfoPlugin(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public EnvironmentInfoPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task EventProcessingAsync(EventContext context) {
             var environment = context.Event.GetEnvironmentInfo();

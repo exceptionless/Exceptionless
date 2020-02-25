@@ -2,7 +2,6 @@
 using Exceptionless.Core.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Configuration {
     public class ElasticsearchOptions {
@@ -22,39 +21,33 @@ namespace Exceptionless.Core.Configuration {
         public string UserName { get; internal set; }
         public DateTime ReindexCutOffDate { get; internal set; }
         public ElasticsearchOptions ElasticsearchToMigrate { get; internal set; }
-    }
 
-    public class ConfigureElasticsearchOptions : IConfigureOptions<ElasticsearchOptions> {
-        private readonly IConfiguration _configuration;
-        private readonly IOptions<AppOptions> _appOptions;
+        public static ElasticsearchOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+            var options = new ElasticsearchOptions();
 
-        public ConfigureElasticsearchOptions(IConfiguration configuration, IOptions<AppOptions> appOptions) {
-            _configuration = configuration;
-            _appOptions = appOptions;
-        }
-
-        public void Configure(ElasticsearchOptions options) {
-            options.Scope = _configuration.GetValue<string>(nameof(options.Scope), _configuration.GetScopeFromAppMode());
+            options.Scope = appOptions.AppScope;
             options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
-            options.DisableIndexConfiguration = _configuration.GetValue(nameof(options.DisableIndexConfiguration), false);
-            options.EnableSnapshotJobs = _configuration.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && _appOptions.Value.AppMode == AppMode.Production);
-            options.ReindexCutOffDate = _configuration.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
-            
-            string connectionString = _configuration.GetConnectionString("Elasticsearch");
-            ParseConnectionString(connectionString, options);
-            
-            string connectionStringToMigrate = _configuration.GetConnectionString("ElasticsearchToMigrate");
-            if (String.IsNullOrEmpty(connectionStringToMigrate))
-                return;
+            options.DisableIndexConfiguration = config.GetValue(nameof(options.DisableIndexConfiguration), false);
+            options.EnableSnapshotJobs = config.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && appOptions.AppMode == AppMode.Production);
+            options.ReindexCutOffDate = config.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
 
-            options.ElasticsearchToMigrate = new ElasticsearchOptions {
-                ReindexCutOffDate = options.ReindexCutOffDate
-            };
-            ParseConnectionString(connectionStringToMigrate, options.ElasticsearchToMigrate);
+            string connectionString = config.GetConnectionString("Elasticsearch");
+            ParseConnectionString(connectionString, options, appOptions.AppMode);
+
+            string connectionStringToMigrate = config.GetConnectionString("ElasticsearchToMigrate");
+            if (!String.IsNullOrEmpty(connectionStringToMigrate)) {
+                options.ElasticsearchToMigrate = new ElasticsearchOptions {
+                    ReindexCutOffDate = options.ReindexCutOffDate
+                };
+
+                ParseConnectionString(connectionStringToMigrate, options.ElasticsearchToMigrate, appOptions.AppMode);
+            }
+
+            return options;
         }
 
-        private void ParseConnectionString(string connectionString, ElasticsearchOptions options) {
+        private static void ParseConnectionString(string connectionString, ElasticsearchOptions options, AppMode appMode) {
             var pairs = connectionString.ParseConnectionString();
 
             options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
@@ -62,17 +55,17 @@ namespace Exceptionless.Core.Configuration {
             int shards = pairs.GetValueOrDefault<int>("shards", 1);
             options.NumberOfShards = shards > 0 ? shards : 1;
 
-            int replicas = pairs.GetValueOrDefault<int>("replicas", _appOptions.Value.AppMode == AppMode.Production ? 1 : 0);
+            int replicas = pairs.GetValueOrDefault<int>("replicas", appMode == AppMode.Production ? 1 : 0);
             options.NumberOfReplicas = replicas > 0 ? replicas : 0;
 
             int fieldsLimit = pairs.GetValueOrDefault("field-limit", 1500);
             options.FieldsLimit = fieldsLimit > 0 ? fieldsLimit : 1500;
 
-            options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", _appOptions.Value.AppMode != AppMode.Development);
+            options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", appMode != AppMode.Development);
 
             options.UserName = pairs.GetString("username");
             options.Password = pairs.GetString("password");
-            
+
             string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
             if (!String.IsNullOrEmpty(scope))
                 options.Scope = scope;

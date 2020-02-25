@@ -1,5 +1,3 @@
-using System;
-
 namespace Exceptionless.Web.Models {
     public class LoginModel {
         public string Email { get; set; }

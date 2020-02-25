@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Web.Utility.Results {
+﻿namespace Exceptionless.Web.Utility.Results {
     public class MessageContent {
         public MessageContent(string message) : this(null, message) {}
 

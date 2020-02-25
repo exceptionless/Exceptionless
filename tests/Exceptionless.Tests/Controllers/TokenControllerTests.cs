@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Tests.Extensions;

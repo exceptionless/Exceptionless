@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Geo;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -13,18 +12,17 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Downloads Geo IP database.", IsContinuous = false, Interval = "1d")]
     public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
         public const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
-        private readonly IOptions<AppOptions> _options;
+        private readonly AppOptions _options;
         private readonly IFileStorage _storage;
         private readonly ILockProvider _lockProvider;
         private DateTime? _lastRun;
 
-        public DownloadGeoIPDatabaseJob(IOptions<AppOptions> options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _options = options;
             _storage = storage;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
@@ -37,7 +35,7 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             _lastRun = SystemClock.UtcNow;
 
-            string licenseKey = _options.Value.MaxMindGeoIpKey;
+            string licenseKey = _options.MaxMindGeoIpKey;
             if (String.IsNullOrEmpty(licenseKey)) {
                 _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpKey));
                 return JobResult.Success;

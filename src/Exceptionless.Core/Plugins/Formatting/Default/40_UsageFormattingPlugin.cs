@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(40)]
     public sealed class UsageFormattingPlugin : FormattingPluginBase {
-        public UsageFormattingPlugin(IOptions<AppOptions> options) : base(options) { }
+        public UsageFormattingPlugin(AppOptions options) : base(options) { }
 
         private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsFeatureUsage();

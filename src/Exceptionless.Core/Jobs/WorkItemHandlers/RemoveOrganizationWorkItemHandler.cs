@@ -12,7 +12,6 @@ using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
@@ -24,10 +23,10 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
-        private readonly IOptions<StripeOptions> _stripeOptions;
+        private readonly StripeOptions _stripeOptions;
         private readonly ILockProvider _lockProvider;
 
-        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IOptions<StripeOptions> stripeOptions, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, StripeOptions stripeOptions, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
@@ -60,7 +59,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                     Log.LogInformation("Canceling stripe subscription for the organization {OrganizationName} with Id: {organization}.", organization.Name, organization.Id);
 
-                    var client = new StripeClient(_stripeOptions.Value.StripeApiKey);
+                    var client = new StripeClient(_stripeOptions.StripeApiKey);
                     var subscriptionService = new SubscriptionService(client);
                     var subscriptions = (await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId }).AnyContext()).Where(s => !s.CanceledAt.HasValue);
                     foreach (var subscription in subscriptions)

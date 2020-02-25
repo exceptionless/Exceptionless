@@ -1,5 +1,3 @@
-using System;
-
 namespace Exceptionless.Web.Models {
     public class ExternalAuthInfo {
         public string ClientId { get; set; }

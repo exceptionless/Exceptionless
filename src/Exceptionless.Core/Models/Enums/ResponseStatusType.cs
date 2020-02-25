@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Models {
+﻿namespace Exceptionless.Core.Models {
     public enum ResponseStatusType {
         Successful = 0,
         Queued = 1,

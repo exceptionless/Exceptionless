@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Utility;
+﻿using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Insulation {
     public class ExceptionlessClientCoreLastReferenceIdManager : ICoreLastReferenceIdManager {

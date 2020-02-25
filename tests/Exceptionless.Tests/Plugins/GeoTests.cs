@@ -16,7 +16,6 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Storage;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,16 +27,16 @@ namespace Exceptionless.Tests.Plugins {
         private const string IRVING_IP = "192.91.253.248";
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
-        private readonly IOptions<AppOptions> _options;
+        private readonly AppOptions _options;
 
         public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
-            _options = GetService<IOptions<AppOptions>>();
+            _options = GetService<AppOptions>();
         }
         
         private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
-            if (String.IsNullOrEmpty(_options.Value.MaxMindGeoIpKey)) {
+            if (String.IsNullOrEmpty(_options.MaxMindGeoIpKey)) {
                 _logger.LogInformation("Configure {SettingKey} to run geo tests.", nameof(AppOptions.MaxMindGeoIpKey));
                 return new NullGeoIpService();
             }

@@ -11,7 +11,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(60)]
@@ -19,7 +18,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         private readonly ICacheClient _cacheClient;
         private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cacheClient = new ScopedCacheClient(cacheClient, "Geo");
             _workItemQueue = workItemQueue;
         }

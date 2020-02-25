@@ -14,7 +14,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.101
+        dotnet-version: 3.1.102
     - name: Build Reason
       run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
     - name: Build Version
@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
     - name: Start Services
-      run: docker-compose -f docker-compose.services.yml up -d && docker-compose -f docker-compose.services.yml up ready
+      run: docker-compose -f docker-compose.services.yml up -d elasticsearch && docker-compose -f docker-compose.services.yml up ready
     - name: Run Tests
       run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
     - name: Build Docker Images
@@ -67,6 +67,8 @@ jobs:
     - name: Install Helm
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
+      with:
+        version: v3.1.0
     - name: Deploy Changes to Development Environment
       if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') && github.event_name != 'pull_request'
       run: |

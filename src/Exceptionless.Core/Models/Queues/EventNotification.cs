@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Queues.Models {
+﻿namespace Exceptionless.Core.Queues.Models {
     public class EventNotificationWorkItem {
         public string EventId { get; set; }
         public bool IsNew { get; set; }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Exceptionless.Core.Extensions {
-    public static class ContainerExtensions {
+    public static class ServiceCollectionExtensions {
         public static IServiceCollection AddScoped(this IServiceCollection services, Type type, params Assembly[] assemblies) {
             return Add(services, type, ServiceLifetime.Scoped, assemblies);
         }

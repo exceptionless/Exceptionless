@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
@@ -11,7 +9,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
     public class JsonEventParserPlugin : PluginBase, IEventParserPlugin {
         private readonly JsonSerializerSettings _settings;
 
-        public JsonEventParserPlugin(IOptions<AppOptions> options, JsonSerializerSettings settings) : base(options) {
+        public JsonEventParserPlugin(AppOptions options, JsonSerializerSettings settings) : base(options) {
             _settings = settings;
         }
 

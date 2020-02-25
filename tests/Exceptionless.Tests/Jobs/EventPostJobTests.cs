@@ -15,7 +15,6 @@ using Foundatio.Storage;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Foundatio.Utility;
-using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,7 +31,7 @@ namespace Exceptionless.Tests.Jobs {
         private readonly EventPostService _eventPostService;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
-        private readonly IOptions<AppOptions> _options;
+        private readonly AppOptions _options;
 
         public EventPostJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _job = GetService<EventPostsJob>();
@@ -46,7 +45,7 @@ namespace Exceptionless.Tests.Jobs {
             _serializer = GetService<ITextSerializer>();
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
-            _options = GetService<IOptions<AppOptions>>();
+            _options = GetService<AppOptions>();
         }
         
         protected override async Task ResetDataAsync() {
@@ -143,7 +142,7 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
-            var eventPostInfo = new EventPost(_options.Value.EnableArchive) {
+            var eventPostInfo = new EventPost(_options.EnableArchive) {
                 OrganizationId = ev.OrganizationId,
                 ProjectId = ev.ProjectId,
                 ApiVersion = 2,

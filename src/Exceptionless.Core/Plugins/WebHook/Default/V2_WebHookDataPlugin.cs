@@ -3,18 +3,17 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(20)]
     public sealed class VersionTwo : WebHookDataPluginBase {
-        public VersionTwo(IOptions<AppOptions> options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+        public VersionTwo(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
         public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
             if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version2))
                 return Task.FromResult<object>(null);
 
-            return Task.FromResult<object>(new WebHookEvent(_options.Value.BaseURL) {
+            return Task.FromResult<object>(new WebHookEvent(_options.BaseURL) {
                 Id = ctx.Event.Id,
                 OccurrenceDate = ctx.Event.Date,
                 Tags = ctx.Event.Tags,
@@ -42,7 +41,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version2))
                 return Task.FromResult<object>(null);
 
-            return Task.FromResult<object>(new WebHookStack(_options.Value.BaseURL) {
+            return Task.FromResult<object>(new WebHookStack(_options.BaseURL) {
                 Id = ctx.Stack.Id,
                 Title = ctx.Stack.Title,
                 Description = ctx.Stack.Description,

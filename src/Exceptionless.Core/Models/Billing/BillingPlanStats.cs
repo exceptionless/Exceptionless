@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Exceptionless.Core.Models.Billing {
+﻿namespace Exceptionless.Core.Models.Billing {
     public class BillingPlanStats {
         public int SmallTotal { get; set; }
         public int SmallYearlyTotal { get; set; }

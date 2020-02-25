@@ -12,18 +12,17 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes old events that are outside of a plans retention period.", InitialDelay = "15m", Interval = "1h")]
     public class RetentionLimitsJob : JobWithLockBase, IHealthCheck {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly IOptions<AppOptions> _appOptions;
+        private readonly AppOptions _appOptions;
         private readonly ILockProvider _lockProvider;
         private DateTime? _lastRun;
 
-        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, IOptions<AppOptions> appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
             _appOptions = appOptions;
@@ -62,8 +61,8 @@ namespace Exceptionless.Core.Jobs {
         private async Task EnforceEventCountLimitsAsync(Organization organization) {
             try {
                 int retentionDays = organization.RetentionDays;
-                if (_appOptions.Value.MaximumRetentionDays > 0 && retentionDays > _appOptions.Value.MaximumRetentionDays)
-                    retentionDays = _appOptions.Value.MaximumRetentionDays;
+                if (_appOptions.MaximumRetentionDays > 0 && retentionDays > _appOptions.MaximumRetentionDays)
+                    retentionDays = _appOptions.MaximumRetentionDays;
 
                 var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 _logger.LogInformation("Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).", cutoff, organization.Name, organization.Id);
