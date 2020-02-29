@@ -23,7 +23,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="6.0.0" />
-    <PackageReference Include="FluentValidation" Version="8.6.1" />
+    <PackageReference Include="FluentValidation" Version="8.6.2" />
     <PackageReference Include="Foundatio.Hosting" Version="9.0.0" />
     <PackageReference Include="Foundatio.JsonNet" Version="9.0.0" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.5.6" />
