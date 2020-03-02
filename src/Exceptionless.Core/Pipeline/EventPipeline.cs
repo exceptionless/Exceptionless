@@ -54,6 +54,10 @@ namespace Exceptionless.Core.Pipeline {
                 if (cancelled > 0)
                     _metricsClient.Counter(MetricNames.EventsProcessCancelled, cancelled);
 
+                int discarded = contexts.Count(c => c.IsDiscarded);
+                if (discarded > 0)
+                    _metricsClient.Counter(MetricNames.EventsDiscarded, discarded);
+
                 // TODO: Log the errors out to the events project id.
                 int errors = contexts.Count(c => c.HasError);
                 if (errors > 0)
