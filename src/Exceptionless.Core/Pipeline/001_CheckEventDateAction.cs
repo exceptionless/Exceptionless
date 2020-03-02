@@ -21,7 +21,9 @@ namespace Exceptionless.Core.Pipeline {
             if (eventAgeInDays > 3 || ctx.Organization.RetentionDays > 0 && eventAgeInDays > ctx.Organization.RetentionDays) {
                 if (_logger.IsEnabled(LogLevel.Warning))
                     _logger.LogWarning("Discarding event that occurred more than three days ago or outside of your retention limit.");
+                
                 ctx.IsCancelled = true;
+                ctx.IsDiscarded = true;
             }
 
             return Task.CompletedTask;
