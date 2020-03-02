@@ -216,7 +216,7 @@ namespace Exceptionless.Core.Mail {
                 StackId = s.Id,
                 Title = s.Title.Truncate(50),
                 TypeName = s.GetTypeName().Truncate(50),
-                s.IsRegressed,
+                s.Status,
             });
         }
 

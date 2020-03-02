@@ -129,7 +129,7 @@ ctx._source.total_occurrences += params.count;";
 
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
-            stack.IsRegressed = true;
+            stack.Status = StackStatus.Regressed;
             await this.SaveAsync(stack, o => o.Cache()).AnyContext();
         }
 

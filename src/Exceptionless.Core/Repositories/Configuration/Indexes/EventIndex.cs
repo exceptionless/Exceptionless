@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : DailyIndex<PersistentEvent> {
         private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
+        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 2, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
             _configuration = configuration;
 
             if (appOptions.MaximumRetentionDays > 0)
@@ -61,10 +61,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Scalar(f => f.Count)
                     .Boolean(f => f.Name(e => e.IsFirstOccurrence))
                         .FieldAlias(a => a.Name(Alias.IsFirstOccurrence).Path(f => f.IsFirstOccurrence))
-                    .Boolean(f => f.Name(e => e.IsFixed))
-                        .FieldAlias(a => a.Name(Alias.IsFixed).Path(f => f.IsFixed))
-                    .Boolean(f => f.Name(e => e.IsHidden))
-                        .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
                     .Object<object>(f => f.Name(e => e.Idx).Dynamic())
                     .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
                         .AddVersionMapping()

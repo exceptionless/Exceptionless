@@ -124,7 +124,7 @@ namespace Exceptionless.Web.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            var stacksToUpdate = stacks.Where(s => s.IsRegressed || !s.DateFixed.HasValue).ToList();
+            var stacksToUpdate = stacks.Where(s => s.Status == StackStatus.Regressed || !s.DateFixed.HasValue).ToList();
             if (stacksToUpdate.Count > 0) {
                 foreach (var stack in stacksToUpdate)
                     stack.MarkFixed(semanticVersion);
@@ -167,6 +167,36 @@ namespace Exceptionless.Web.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             return await MarkFixedAsync(id);
+        }
+
+        /// <summary>
+        /// Mark the selected stacks as snoozed
+        /// </summary>
+        /// <param name="ids">A comma delimited list of stack identifiers.</param>
+        /// <param name="snoozeUntilUtc">A time that the stack should be snoozed until.</param>
+        /// <response code="404">One or more stacks could not be found.</response>
+        [HttpPost("{ids:objectids}/mark-snoozed")]
+        [Consumes("application/json")]
+        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc) {
+            if (snoozeUntilUtc < DateTime.UtcNow.AddMinutes(5))
+                return BadRequest("Must snooze for at least 5 minutes.");
+
+            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
+            if (!stacks.Any())
+                return NotFound();
+
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks) {
+                    stack.Status = StackStatus.Snoozed;
+                    stack.SnoozeUntilUtc = snoozeUntilUtc;
+                }
+
+                await _stackRepository.SaveAsync(stacks);
+            }
+
+            return Ok();
         }
 
         /// <summary>
@@ -297,155 +327,33 @@ namespace Exceptionless.Web.Controllers {
         }
 
         /// <summary>
-        /// Enable notifications
+        /// Change stack status
         /// </summary>
         /// <param name="ids">A comma delimited list of stack identifiers.</param>
+        /// <param name="status">The status that the stack should be changed to.</param>
         /// <response code="404">One or more stacks could not be found.</response>
-        [HttpPost("{ids:objectids}/notifications")]
+        [HttpPost("{ids:objectids}/change-status")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<IActionResult> EnableNotificationsAsync(string ids) {
+        public async Task<IActionResult> ChangeStatusAsync(string ids, StackStatus status) {
+            if (status == StackStatus.Regressed || status == StackStatus.Snoozed)
+                return BadRequest("Can't set stack status to regressed or snoozed.");
+
             var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => s.DisableNotifications).ToList();
+            stacks = stacks.Where(s => s.Status != status).ToList();
             if (stacks.Count > 0) {
-                foreach (var stack in stacks)
-                    stack.DisableNotifications = false;
+                foreach (var stack in stacks) {
+                    stack.Status = status;
+                    if (status == StackStatus.Fixed)
+                        stack.DateFixed = DateTime.UtcNow;
+                }
 
                 await _stackRepository.SaveAsync(stacks);
             }
 
             return Ok();
-        }
-
-        /// <summary>
-        /// Disable notifications
-        /// </summary>
-        /// <param name="ids">A comma delimited list of stack identifiers.</param>
-        /// <response code="204">Notifications are disabled for the stacks.</response>
-        /// <response code="404">One or more stacks could not be found.</response>
-        [HttpDelete("{ids:objectids}/notifications")]
-        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> DisableNotificationsAsync(string ids) {
-            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-            if (!stacks.Any())
-                return NotFound();
-
-            stacks = stacks.Where(s => !s.DisableNotifications).ToList();
-            if (stacks.Count > 0) {
-                foreach (var stack in stacks)
-                    stack.DisableNotifications = true;
-
-                await _stackRepository.SaveAsync(stacks);
-            }
-
-            return StatusCode(StatusCodes.Status204NoContent);
-        }
-
-        /// <summary>
-        /// Mark not fixed
-        /// </summary>
-        /// <param name="ids">A comma delimited list of stack identifiers.</param>
-        /// <response code="204">The stacks were marked as not fixed.</response>
-        /// <response code="404">One or more stacks could not be found.</response>
-        [HttpDelete("{ids:objectids}/mark-fixed")]
-        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public async Task<ActionResult<WorkInProgressResult>> MarkNotFixedAsync(string ids) {
-            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-            if (!stacks.Any())
-                return NotFound();
-
-            var stacksToUpdate = stacks.Where(s => s.DateFixed.HasValue).ToList();
-            if (stacksToUpdate.Count > 0) {
-                foreach (var stack in stacksToUpdate)
-                    stack.MarkNotFixed();
-
-                await _stackRepository.SaveAsync(stacksToUpdate);
-            }
-
-            var workIds = new List<string>();
-            foreach (var stack in stacks)
-                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
-                    OrganizationId = stack.OrganizationId,
-                    ProjectId = stack.ProjectId,
-                    StackId = stack.Id,
-                    UpdateIsFixed = true,
-                    IsFixed = false
-                }));
-
-            return WorkInProgress(workIds);
-        }
-
-        /// <summary>
-        /// Mark hidden
-        /// </summary>
-        /// <param name="ids">A comma delimited list of stack identifiers.</param>
-        /// <response code="404">One or more stacks could not be found.</response>
-        [HttpPost("{ids:objectids}/mark-hidden")]
-        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public async Task<ActionResult<WorkInProgressResult>> MarkHiddenAsync(string ids) {
-            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-            if (!stacks.Any())
-                return NotFound();
-
-            var stacksToUpdate = stacks.Where(s => !s.IsHidden).ToList();
-            if (stacksToUpdate.Count > 0) {
-                foreach (var stack in stacksToUpdate)
-                    stack.IsHidden = true;
-
-                await _stackRepository.SaveAsync(stacksToUpdate);
-            }
-
-            var workIds = new List<string>();
-            foreach (var stack in stacks)
-                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
-                    OrganizationId = stack.OrganizationId,
-                    ProjectId = stack.ProjectId,
-                    StackId = stack.Id,
-                    UpdateIsHidden = true,
-                    IsHidden = true
-                }));
-
-            return WorkInProgress(workIds);
-        }
-
-        /// <summary>
-        /// Mark not hidden
-        /// </summary>
-        /// <param name="ids">A comma delimited list of stack identifiers.</param>
-        /// <response code="204">The stacks were marked as not hidden.</response>
-        /// <response code="404">One or more stacks could not be found.</response>
-        [HttpDelete("{ids:objectids}/mark-hidden")]
-        [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public async Task<ActionResult<WorkInProgressResult>> MarkNotHiddenAsync(string ids) {
-            var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-            if (!stacks.Any())
-                return NotFound();
-
-            var stacksToUpdate = stacks.Where(s => s.IsHidden).ToList();
-            if (stacksToUpdate.Count > 0) {
-                foreach (var stack in stacksToUpdate)
-                    stack.IsHidden = false;
-
-                await _stackRepository.SaveAsync(stacksToUpdate);
-            }
-
-            var workIds = new List<string>();
-            foreach (var stack in stacks)
-                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
-                    OrganizationId = stack.OrganizationId,
-                    ProjectId = stack.ProjectId,
-                    StackId = stack.Id,
-                    UpdateIsHidden = true,
-                    IsHidden = false
-                }));
-
-            return WorkInProgress(workIds);
         }
 
         /// <summary>
@@ -473,7 +381,7 @@ namespace Exceptionless.Web.Controllers {
                 return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
             foreach (var hook in promotedProjectHooks) {
-                var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
+                var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.Status == StackStatus.Regressed);
                 await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     OrganizationId = stack.OrganizationId,
                     ProjectId = stack.ProjectId,
