@@ -65,8 +65,7 @@ namespace Exceptionless.Core.Pipeline {
                             Type = ctx.Event.Type,
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
-                            LastOccurrence = ctx.Event.Date.UtcDateTime,
-                            IsHidden = ctx.Event.IsHidden
+                            LastOccurrence = ctx.Event.Date.UtcDateTime
                         };
 
                         ctx.Stack = stack;
@@ -104,10 +103,6 @@ namespace Exceptionless.Core.Pipeline {
                 }
 
                 ctx.Event.IsFirstOccurrence = ctx.IsNew;
-
-                // sync the fixed and hidden flags to the error occurrence
-                ctx.Event.IsFixed = ctx.Stack.DateFixed.HasValue && !ctx.Stack.IsRegressed;
-                ctx.Event.IsHidden = ctx.Stack.IsHidden;
             }
 
             var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();

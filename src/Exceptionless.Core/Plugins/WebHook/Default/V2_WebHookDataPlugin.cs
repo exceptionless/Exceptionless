@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 FirstOccurrence = ctx.Stack.FirstOccurrence,
                 LastOccurrence = ctx.Stack.LastOccurrence,
                 DateFixed = ctx.Stack.DateFixed,
-                IsRegression = ctx.Stack.IsRegressed,
+                IsRegression = ctx.Stack.Status == StackStatus.Regressed,
                 IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags != null && ctx.Stack.Tags.Contains("Critical"),
                 FixedInVersion = ctx.Stack.FixedInVersion
             });

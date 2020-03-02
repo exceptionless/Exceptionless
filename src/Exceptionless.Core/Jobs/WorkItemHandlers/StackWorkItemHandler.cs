@@ -35,12 +35,6 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                     await _stackRepository.RemoveAsync(wi.StackId).AnyContext();
                     return;
                 }
-
-                if (wi.UpdateIsFixed)
-                    await _eventRepository.UpdateFixedByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsFixed).AnyContext();
-
-                if (wi.UpdateIsHidden)
-                    await _eventRepository.UpdateHiddenByStackAsync(wi.OrganizationId, wi.ProjectId, wi.StackId, wi.IsHidden).AnyContext();
             }
         }
     }

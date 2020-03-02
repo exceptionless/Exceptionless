@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         
         private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
+        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 2) {
             _configuration = configuration;
         }
         
@@ -35,6 +35,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
                     .Keyword(f => f.Name(s => s.ProjectId).IgnoreAbove(1024))
                         .FieldAlias(a => a.Name(Alias.ProjectId).Path(f => f.ProjectId))
+                    .Keyword(f => f.Name(s => s.Status))
+                    .Date(f => f.Name(s => s.SnoozeUntilUtc))
                     .Keyword(f => f.Name(s => s.SignatureHash).IgnoreAbove(1024))
                         .FieldAlias(a => a.Name(Alias.SignatureHash).Path(f => f.SignatureHash))
                     .Keyword(f => f.Name(e => e.Type).IgnoreAbove(1024))
@@ -53,10 +55,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(Alias.IsFixed))
                     .Keyword(f => f.Name(s => s.FixedInVersion).IgnoreAbove(1024))
                         .FieldAlias(a => a.Name(Alias.FixedInVersion).Path(f => f.FixedInVersion))
-                    .Boolean(f => f.Name(s => s.IsHidden))
-                        .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
-                    .Boolean(f => f.Name(s => s.IsRegressed))
-                        .FieldAlias(a => a.Name(Alias.IsRegressed).Path(f => f.IsRegressed))
                     .Boolean(f => f.Name(s => s.OccurrencesAreCritical))
                         .FieldAlias(a => a.Name(Alias.OccurrencesAreCritical).Path(f => f.OccurrencesAreCritical))
                     .Scalar(f => f.TotalOccurrences)

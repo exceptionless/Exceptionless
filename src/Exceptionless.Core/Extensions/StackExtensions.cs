@@ -6,13 +6,13 @@ using McSherry.SemanticVersioning;
 namespace Exceptionless.Core.Extensions {
     public static class StackExtensions {
         public static void MarkFixed(this Stack stack, SemanticVersion version = null) {
-            stack.IsRegressed = false;
+            stack.Status = StackStatus.Fixed;
             stack.DateFixed = SystemClock.UtcNow;
             stack.FixedInVersion = version?.ToString();
         }
 
         public static void MarkNotFixed(this Stack stack) {
-            stack.IsRegressed = false;
+            stack.Status = StackStatus.Open;
             stack.DateFixed = null;
             stack.FixedInVersion = null;
         }
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Extensions {
             if (stack == null)
                 return false;
 
-            return stack.DateFixed.HasValue && !stack.IsRegressed;
+            return stack.DateFixed.HasValue && stack.Status != StackStatus.Regressed;
         }
 
         public static bool Is404(this Stack stack) {

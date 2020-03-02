@@ -46,32 +46,24 @@ namespace Exceptionless.Core.Repositories {
             return true;
         }
 
-        public Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
-            if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException(nameof(stackId));
-
-            // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), new PartialPatch(new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow }));
-        }
-
-        public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
-            if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException(nameof(stackId));
-
-            // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden), new PartialPatch(new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow }));
+        public Task<long> RemoveAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
+            return RemoveAllAsync(q => q
+                .Organization(organizationId)
+                .ElasticFilter(Query<PersistentEvent>.Term(EventIndex.Alias.IpAddress, clientIp))
+                .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
+                .Index(utcStart, utcEnd));
         }
 
         public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
             var filter = Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcCutoffDate));
-            return RemoveAllAsync(q => q.Organization(organizationId).ElasticFilter(filter).SoftDeleteMode(SoftDeleteQueryMode.All));
+            return RemoveAllAsync(q => q.Organization(organizationId).ElasticFilter(filter));
         }
 
         public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return PatchAllAsync(q => q.Organization(organizationId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
+            return RemoveAllAsync(q => q.Organization(organizationId));
         }
 
         public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
@@ -81,20 +73,11 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
 
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
+            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
         }
 
         public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }), o => o.Consistency(Consistency.Wait));
-        }
-
-        public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
-            return PatchAllAsync(q => q
-                    .Organization(organizationId)
-                    .ElasticFilter(Query<PersistentEvent>.Term(EventIndex.Alias.IpAddress, clientIp))
-                    .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
-                    .Index(utcStart, utcEnd)
-                , new PartialPatch(new { is_hidden = true, updated_utc = SystemClock.UtcNow }));
+            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), o => o.Consistency(Consistency.Wait));
         }
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
@@ -225,11 +208,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
-            return CountAsync(q => q.Project(projectId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
+            return CountAsync(q => q.Project(projectId));
         }
 
         public Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false) {
-            return CountAsync(q => q.Stack(stackId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
+            return CountAsync(q => q.Stack(stackId));
         }
     }
 }

@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Jobs {
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotificationWorkItem> context) {
             var wi = context.QueueEntry.Value;
             var ev = await _eventRepository.GetByIdAsync(wi.EventId).AnyContext();
-            if (ev == null || ev.IsDeleted)
+            if (ev == null)
                 return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
             bool shouldLog = ev.ProjectId != _appOptions.InternalProjectId;
