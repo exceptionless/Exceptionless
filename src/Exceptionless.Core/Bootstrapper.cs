@@ -80,6 +80,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
+            container.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
             container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
@@ -92,7 +93,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IQueueBehavior<MailMessage>>(s => new MetricsQueueBehavior<MailMessage>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<WorkItemData>>(s => new MetricsQueueBehavior<WorkItemData>(s.GetRequiredService<IMetricsClient>()));
 
-            container.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly);
+            container.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly, typeof(ReindexWorkItemHandler).Assembly);
             container.AddSingleton<WorkItemHandlers>(s => {
                 var handlers = new WorkItemHandlers();
                 handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
