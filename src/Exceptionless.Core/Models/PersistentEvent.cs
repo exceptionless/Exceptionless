@@ -4,7 +4,7 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveDates, ISupportSoftDeletes {
+    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveDates {
         public PersistentEvent() {
             Idx = new DataDictionary();
         }
@@ -35,16 +35,6 @@ namespace Exceptionless.Core.Models {
         public bool IsFirstOccurrence { get; set; }
 
         /// <summary>
-        /// Whether the event has been marked as fixed or not.
-        /// </summary>
-        public bool IsFixed { get; set; }
-
-        /// <summary>
-        /// Whether the event has been marked as hidden or not.
-        /// </summary>
-        public bool IsHidden { get; set; }
-
-        /// <summary>
         /// The date that the event was created in the system.
         /// </summary>
         public DateTime CreatedUtc { get; set; }
@@ -54,7 +44,5 @@ namespace Exceptionless.Core.Models {
         /// Used to store primitive data type custom data values for searching the event.
         /// </summary>
         public DataDictionary Idx { get; set; }
-
-        public bool IsDeleted { get; set; }
     }
 }

@@ -23,6 +23,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         public Stack Stack { get; set; }
         public Project Project { get; set; }
         public Organization Organization { get; set; }
+        public bool IsDiscarded { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
         public bool IncludePrivateInformation { get; set; }

@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
         public override Task HandleItemAsync(WorkItemContext context) {
             var workItem = context.GetData<ThrottleBotsWorkItem>();
-            return _eventRepository.HideAllByClientIpAndDateAsync(workItem.OrganizationId, workItem.ClientIpAddress, workItem.UtcStartDate, workItem.UtcEndDate);
+            return _eventRepository.RemoveAllByClientIpAndDateAsync(workItem.OrganizationId, workItem.ClientIpAddress, workItem.UtcStartDate, workItem.UtcEndDate);
         }
     }
 }

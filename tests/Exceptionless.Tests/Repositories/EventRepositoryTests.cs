@@ -218,7 +218,7 @@ namespace Exceptionless.Tests.Repositories {
                 Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
             });
 
-            await _repository.HideAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2));
+            await _repository.RemoveAllByClientIpAndDateAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2));
 
             await RefreshDataAsync();
             events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
