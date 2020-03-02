@@ -5,6 +5,7 @@
         public const string EventsProcessingTime = "events.processingtime";
         public const string EventsPaidProcessed = "events.paid.processed";
         public const string EventsProcessErrors = "events.processing.errors";
+        public const string EventsDiscarded = "events.discarded";
         public const string EventsProcessCancelled = "events.processing.cancelled";
         public const string EventsRetryCount = "events.retry.count";
         public const string EventsRetryErrors = "events.retry.errors";

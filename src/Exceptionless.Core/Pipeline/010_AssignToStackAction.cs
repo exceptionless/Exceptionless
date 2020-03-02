@@ -84,6 +84,11 @@ namespace Exceptionless.Core.Pipeline {
                         stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(false, ctx.Stack));
                     else
                         stacks[ctx.Stack.SignatureHash] = Tuple.Create(false, ctx.Stack);
+
+                    if (ctx.Stack.Status == StackStatus.Discarded) {
+                        ctx.IsDiscarded = true;
+                        ctx.IsCancelled = true;
+                    }
                 }
 
                 if (!ctx.IsNew && ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
