@@ -190,24 +190,6 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData(false, 3)]
-        [InlineData(true, 1)]
-        public async Task GetByFixedAsync(bool @fixed, int count) {
-            var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLowerInvariant());
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData(false, 3)]
-        [InlineData(true, 1)]
-        public async Task GetByHiddenAsync(bool hidden, int count) {
-            var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLowerInvariant());
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
         [InlineData("1", 2)]
         [InlineData("1.2", 1)]
         [InlineData("1.2.3", 1)]

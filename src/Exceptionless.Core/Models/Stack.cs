@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using Foundatio.Repositories.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Type: {Type}, Title: {Title}, TotalOccurrences: {TotalOccurrences}")]
@@ -120,6 +122,7 @@ namespace Exceptionless.Core.Models {
         }
     }
 
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum StackStatus {
         [EnumMember(Value = "open")] Open,
         [EnumMember(Value = "fixed")] Fixed,
