@@ -4,8 +4,8 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.5.2
-  image: exceptionless/elasticsearch:7.5.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.6.0
+  image: exceptionless/elasticsearch:7.6.0 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-dev-snapshots
   http:
@@ -14,12 +14,12 @@ spec:
         disabled: true
   nodeSets:
   - name: main
-    count: 3
+    count: 1
     config:
       node.master: true
       node.data: true
       node.ingest: true
-      #action.destructive_requires_name: true
+      action.destructive_requires_name: false
     podTemplate:
       spec:
         containers:
@@ -48,8 +48,8 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 750Gi
-        storageClassName: managed-premium
+            storage: 100Gi
+        storageClassName: default
 
 ---
 apiVersion: kibana.k8s.elastic.co/v1
@@ -58,7 +58,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.5.2
+  version: 7.6.0
   count: 1
   elasticsearchRef:
     name: ex-dev
@@ -68,6 +68,7 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
+
 ---
 apiVersion: apm.k8s.elastic.co/v1
 kind: ApmServer
@@ -75,7 +76,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.5.2
+  version: 7.6.0
   count: 1
   elasticsearchRef:
     name: ex-dev

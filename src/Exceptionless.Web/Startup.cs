@@ -51,8 +51,7 @@ namespace Exceptionless.Web {
                 o.Filters.Add<ApiExceptionFilter>();
                 o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
                 o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
-              .AddNewtonsoftJson(o => {
+            }).AddNewtonsoftJson(o => {
                 o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
                 o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
                 o.SerializerSettings.Formatting = Formatting.Indented;
@@ -183,6 +182,7 @@ namespace Exceptionless.Web {
                 context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 context.Response.Headers.Add("X-Frame-Options", "DENY");
                 context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+                context.Response.Headers.Remove("X-Powered-By");
 
                 await next();
             });

@@ -183,13 +183,4 @@ namespace Exceptionless.Job {
             }
         }
     }
-
-    internal class HostFilteringStartupFilter : IStartupFilter {
-        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) {
-            return app => {
-                app.UseHostFiltering();
-                next(app);
-            };
-        }
-    }
 }

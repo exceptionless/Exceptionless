@@ -16,7 +16,7 @@ redis-cli -a $REDIS_PASSWORD
 # open kubernetes dashboard
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
 kubectl proxy
-open "http://dashboard-ex.localtest.me:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
+open "http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
 
 # open kubecost
 kubectl port-forward --namespace kubecost deployment/kubecost-cost-analyzer 9090
@@ -38,7 +38,12 @@ kubectl run --namespace ex-dev ex-dev-client --rm --tty -i --restart='Never' \
 
 # upgrade nginx ingress to latest
 # https://github.com/kubernetes/ingress-nginx/releases
-helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml --dry-run nginx-ingress stable/nginx-ingress
+helm repo update
+helm upgrade --reset-values --namespace kube-system -f nginx-values.yaml nginx-ingress stable/nginx-ingress --dry-run
+
+# upgrade cert-manager
+# https://github.com/jetstack/cert-manager/releases
+helm upgrade --reset-values --namespace cert-manager cert-manager jetstack/cert-manager --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --dry-run
 
 # upgrade exceptionless app to a new docker image tag
 APP_TAG="2.8.1502-pre"
