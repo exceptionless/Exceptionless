@@ -68,6 +68,9 @@ namespace Exceptionless.Core.Pipeline {
                             LastOccurrence = ctx.Event.Date.UtcDateTime
                         };
 
+                        if (ctx.Event.Type == Event.KnownTypes.Session)
+                            stack.Status = StackStatus.Ignored;
+
                         ctx.Stack = stack;
                         stacks.Add(signatureHash, Tuple.Create(true, ctx.Stack));
                     }
