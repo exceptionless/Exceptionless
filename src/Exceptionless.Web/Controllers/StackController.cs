@@ -124,25 +124,14 @@ namespace Exceptionless.Web.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            var stacksToUpdate = stacks.Where(s => s.Status == StackStatus.Regressed || !s.DateFixed.HasValue).ToList();
-            if (stacksToUpdate.Count > 0) {
-                foreach (var stack in stacksToUpdate)
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
                     stack.MarkFixed(semanticVersion);
 
-                await _stackRepository.SaveAsync(stacksToUpdate);
+                await _stackRepository.SaveAsync(stacks);
             }
 
-            var workIds = new List<string>();
-            foreach (var stack in stacks)
-                workIds.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
-                    OrganizationId = stack.OrganizationId,
-                    ProjectId = stack.ProjectId,
-                    StackId = stack.Id,
-                    UpdateIsFixed = true,
-                    IsFixed = true
-                }));
-
-            return WorkInProgress(workIds);
+            return Ok();
         }
 
         /// <summary>

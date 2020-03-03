@@ -189,7 +189,6 @@ namespace Exceptionless.Tests.Repositories {
             events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => {
-                Assert.False(e.IsHidden);
                 var ri = e.GetRequestInfo();
                 Assert.NotNull(ri);
                 Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
@@ -199,8 +198,7 @@ namespace Exceptionless.Tests.Repositories {
 
             await RefreshDataAsync();
             events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
-            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
-            events.ForEach(e => Assert.True(e.IsHidden));
+            Assert.Empty(events);
         }
 
         private readonly List<Tuple<string, DateTime>> _ids = new List<Tuple<string, DateTime>>();
