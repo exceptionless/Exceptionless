@@ -1,0 +1,10 @@
+﻿{
+  "id": "1ecd0826e447a44e78877ab4",
+  "title": "GET /Print",
+  "first_occurrence": "0001-01-01T00:00:00",
+  "last_occurrence": "0001-01-01T00:00:00",
+  "total": 1,
+  "users": 0.0,
+  "total_users": 0.0,
+  "template_key": "stack-log-summary"
+}
