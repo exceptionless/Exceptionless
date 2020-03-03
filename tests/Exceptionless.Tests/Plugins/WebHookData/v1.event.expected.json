@@ -15,6 +15,7 @@
   "OrganizationId": "1ecd0826e447ad1e78877555",
   "OrganizationName": "Acme",
   "ErrorStackId": "1ecd0826e447a44e78877ab1",
+  "ErrorStackStatus": "open",
   "ErrorStackUrl": "http://localhost:5000/stack/1ecd0826e447a44e78877ab1",
   "ErrorStackTitle": "A potentially dangerous Request.Path value was detected from the client (&).",
   "ErrorStackDescription": null,
