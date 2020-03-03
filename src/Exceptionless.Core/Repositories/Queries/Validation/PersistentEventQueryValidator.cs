@@ -9,10 +9,6 @@ namespace Exceptionless.Core.Queries.Validation {
     public sealed class PersistentEventQueryValidator : QueryValidator {
         private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
-            EventIndex.Alias.IsFixed,
-            "is_fixed",
-            EventIndex.Alias.IsHidden,
-            "is_hidden",
             "type",
             EventIndex.Alias.ReferenceId,
             "reference_id",
@@ -45,10 +41,6 @@ namespace Exceptionless.Core.Queries.Validation {
             "value",
             "count",
             "geo",
-            EventIndex.Alias.IsFixed,
-            "is_fixed",
-            EventIndex.Alias.IsHidden,
-            "is_hidden",
             EventIndex.Alias.IsFirstOccurrence,
             "is_first_occurrence",
             EventIndex.Alias.OrganizationId,

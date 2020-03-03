@@ -4,11 +4,7 @@
   "project_id": "1ecd0826e447ad1e78877ab2",
   "stack_id": "2ecd0826e447a44e78877ab2",
   "is_first_occurrence": true,
-  "is_fixed": false,
-  "is_hidden": true,
   "created_utc": "2014-12-09T17:28:44.966",
-  "updated_utc": "0001-01-01T00:00:00",
-  "is_deleted": false,
   "type": "error",
   "date": "2014-12-09T17:28:44.966+00:00",
   "tags": [

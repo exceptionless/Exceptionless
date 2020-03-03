@@ -289,20 +289,13 @@ namespace Exceptionless.Tests.Pipeline {
 
             await RefreshDataAsync();
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
-            Assert.Equal(2, results.Total);
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+            Assert.Equal(1, results.Total);
+            var sessionStart = results.Documents.FirstOrDefault(e => e.IsSessionStart());
+            Assert.NotNull(sessionStart);
 
-            var sessionHeartbeat = results.Documents.Single(e => e.IsSessionHeartbeat());
-            Assert.NotNull(sessionHeartbeat);
-            Assert.True(sessionHeartbeat.IsHidden);
-
-            var stack = await _stackRepository.GetByIdAsync(sessionHeartbeat.StackId);
+            var stack = await _stackRepository.GetByIdAsync(sessionStart.StackId);
             Assert.NotNull(stack);
-            Assert.True(stack.IsHidden);
-
-            stack = await _stackRepository.GetByIdAsync(results.Documents.First(e => !e.IsSessionHeartbeat()).StackId);
-            Assert.NotNull(stack);
-            Assert.False(stack.IsHidden);
+            Assert.True(stack.Status == StackStatus.Ignored);
         }
 
         [Fact]
@@ -499,20 +492,13 @@ namespace Exceptionless.Tests.Pipeline {
 
             await RefreshDataAsync();
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
-            Assert.Equal(2, results.Total);
-            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
+            Assert.Equal(1, results.Total);
+            var sessionStart = results.Documents.FirstOrDefault(e => e.IsSessionStart());
+            Assert.NotNull(sessionStart);
 
-            var sessionHeartbeat = results.Documents.Single(e => e.IsSessionHeartbeat());
-            Assert.NotNull(sessionHeartbeat);
-            Assert.True(sessionHeartbeat.IsHidden);
-
-            var stack = await _stackRepository.GetByIdAsync(sessionHeartbeat.StackId);
+            var stack = await _stackRepository.GetByIdAsync(sessionStart.StackId);
             Assert.NotNull(stack);
-            Assert.True(stack.IsHidden);
-
-            stack = await _stackRepository.GetByIdAsync(results.Documents.First(e => !e.IsSessionHeartbeat()).StackId);
-            Assert.NotNull(stack);
-            Assert.False(stack.IsHidden);
+            Assert.True(stack.Status == StackStatus.Ignored);
         }
 
         [Fact]
@@ -698,7 +684,6 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
-            Assert.False(context.Event.IsFixed);
 
             ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
@@ -717,7 +702,6 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
-            Assert.True(contexts.All(c => c.Event.IsFixed));
 
             contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
@@ -729,7 +713,6 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
-            Assert.True(contexts.All(c => !c.Event.IsFixed));
 
             contexts = new List<EventContext> {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
@@ -740,7 +723,6 @@ namespace Exceptionless.Tests.Pipeline {
             await _pipeline.RunAsync(contexts);
             Assert.True(contexts.All(c => !c.HasError));
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
-            Assert.True(contexts.All(c => !c.Event.IsFixed));
         }
 
         [Fact]
@@ -754,7 +736,6 @@ namespace Exceptionless.Tests.Pipeline {
             await RefreshDataAsync();
 
             Assert.False(context.HasError, context.ErrorMessage);
-            Assert.False(context.Event.IsFixed);
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
@@ -774,7 +755,6 @@ namespace Exceptionless.Tests.Pipeline {
             await RefreshDataAsync();
             await _pipeline.RunAsync(contexts);
             Assert.True(contexts.All(c => !c.HasError));
-            Assert.Equal(3, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(0, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
 
@@ -788,7 +768,6 @@ namespace Exceptionless.Tests.Pipeline {
             await RefreshDataAsync();
             await _pipeline.RunAsync(contexts);
             Assert.True(contexts.All(c => !c.HasError));
-            Assert.Equal(0, contexts.Count(c => c.Event.IsFixed));
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(3, contexts.Count(c => !c.IsRegression));
 

@@ -51,7 +51,7 @@ namespace Exceptionless.Tests.Repositories {
             results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
-            Assert.False(results.Documents.Single().IsRegressed);
+            Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
             Assert.Null(results.Documents.Single().DateFixed);
 
             stack.MarkFixed();
@@ -60,7 +60,7 @@ namespace Exceptionless.Tests.Repositories {
             results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
-            Assert.False(results.Documents.Single().IsRegressed);
+            Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(results.Documents.Single().DateFixed);
 
             results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
@@ -72,14 +72,14 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanMarkAsRegressedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.ImmediateConsistency());
             Assert.NotNull(stack);
-            Assert.False(stack.IsRegressed);
+            Assert.False(stack.Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(stack.DateFixed);
 
             await _repository.MarkAsRegressedAsync(stack.Id);
 
             stack = await _repository.GetByIdAsync(stack.Id);
             Assert.NotNull(stack);
-            Assert.True(stack.IsRegressed);
+            Assert.True(stack.Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(stack.DateFixed);
         }
 
