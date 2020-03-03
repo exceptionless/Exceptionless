@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Extensions {
             if (stack == null)
                 return false;
 
-            return stack.DateFixed.HasValue && stack.Status != StackStatus.Regressed;
+            return stack.Status == StackStatus.Fixed;
         }
 
         public static bool Is404(this Stack stack) {
