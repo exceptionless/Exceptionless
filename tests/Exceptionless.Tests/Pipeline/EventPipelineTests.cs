@@ -232,7 +232,7 @@ namespace Exceptionless.Tests.Pipeline {
 
             var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
-            Assert.DoesNotContain(contexts, c => c.IsCancelled);
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
             Assert.Contains(contexts, c => c.IsProcessed);
 
             events = new List<PersistentEvent> {
@@ -243,8 +243,8 @@ namespace Exceptionless.Tests.Pipeline {
             await RefreshDataAsync();
             contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
-            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
-            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(2, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
@@ -284,8 +284,8 @@ namespace Exceptionless.Tests.Pipeline {
 
             var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
-            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
-            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+            Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
@@ -432,7 +432,7 @@ namespace Exceptionless.Tests.Pipeline {
 
             var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
-            Assert.DoesNotContain(contexts, c => c.IsCancelled);
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
             Assert.Contains(contexts, c => c.IsProcessed);
 
             events = new List<PersistentEvent> {
@@ -448,7 +448,7 @@ namespace Exceptionless.Tests.Pipeline {
 
             await RefreshDataAsync();
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
-            Assert.Equal(4, results.Total);
+            Assert.Equal(3, results.Total);
             Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
@@ -487,8 +487,8 @@ namespace Exceptionless.Tests.Pipeline {
 
             var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
-            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
-            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+            Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
             var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
