@@ -71,8 +71,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                 if (sessionEndEvent != null)
                     sessionEndEvent.Event.Date = lastSessionEvent.Event.Date;
 
-                // mark the heart beat events as hidden. This will cause new stacks to be marked as hidden, otherwise this value will be reset by the stack.
-                session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => ctx.Event.IsHidden = true);
+                // discard the heartbeat events.
+                session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => {
+                    ctx.IsDiscarded = true;
+                    ctx.IsCancelled = true;
+                });
 
                 // try to update an existing session
                 string sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
@@ -126,8 +129,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     if (sessionStartEvent != null)
                         sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
 
-                    // mark the heart beat events as hidden. This will cause new stacks to be marked as hidden, otherwise this value will be reset by the stack.
-                    session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => ctx.Event.IsHidden = true);
+                    // discard the heartbeat events.
+                    session.Where(ev => ev.Event.IsSessionHeartbeat()).ForEach(ctx => {
+                        ctx.IsDiscarded = true;
+                        ctx.IsCancelled = true;
+                    });
 
                     string sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key).AnyContext();
 

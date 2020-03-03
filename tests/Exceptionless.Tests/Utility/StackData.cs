@@ -23,7 +23,7 @@ namespace Exceptionless.Tests.Utility {
             return GenerateStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
         }
 
-        public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null, string title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, bool isRegressed = false, bool isHidden = false, string signatureHash = null) {
+        public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null, string title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string signatureHash = null) {
             var stack = new Stack {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
@@ -34,8 +34,7 @@ namespace Exceptionless.Tests.Utility {
                 FirstOccurrence = utcFirstOccurrence ?? DateTime.MinValue,
                 LastOccurrence = utcLastOccurrence ?? DateTime.MinValue,
                 TotalOccurrences = totalOccurrences,
-                IsRegressed = isRegressed,
-                IsHidden = isHidden,
+                Status = status,
                 SignatureHash = signatureHash ?? RandomData.GetAlphaNumericString(10, 10),
                 SignatureInfo = new SettingsDictionary()
             };

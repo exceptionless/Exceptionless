@@ -177,34 +177,11 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Fact]
-        public async Task CanMarkAsFixedAsync() {
-            const int NUMBER_OF_EVENTS_TO_CREATE = 10000;
-            await _repository.AddAsync(EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2).ToList(), o => o.Notifications(false));
-
-            await RefreshDataAsync();
-            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, await _repository.CountAsync());
-
-            var sw = Stopwatch.StartNew();
-            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, false, sendNotifications: false);
-            _logger.LogInformation("Time to mark not fixed events as not fixed: {Duration:g}", sw.Elapsed);
-            await RefreshDataAsync();
-            sw.Restart();
-
-            await _repository.UpdateFixedByStackAsync(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, true, sendNotifications: false);
-            _logger.LogInformation("Time to mark not fixed events as fixed: {Duration:g}", sw.Elapsed);
-            await RefreshDataAsync();
-            sw.Stop();
-
-            var results = await GetByFilterAsync($"stack:{TestConstants.StackId2} fixed:true");
-            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, results.Total);
-        }
-
-        [Fact]
         public async Task RemoveAllByClientIpAndDateAsync() {
             const string _clientIpAddress = "123.123.12.255";
 
             const int NUMBER_OF_EVENTS_TO_CREATE = 50;
-            var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, isFixed: true, startDate: SystemClock.UtcNow.SubtractDays(2), endDate: SystemClock.UtcNow).ToList();
+            var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, startDate: SystemClock.UtcNow.SubtractDays(2), endDate: SystemClock.UtcNow).ToList();
             events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
             await _repository.AddAsync(events);
 
