@@ -1,5 +1,3 @@
-elasticsearch:
-  connectionString: server=http://10.0.0.4:9200;field-limit=2000
 api:
   replicaCount: 5
   defaultDomain: api.exceptionless.io
@@ -39,4 +37,3 @@ jobs:
 
 config:
   EX_EnableSnapshotJobs: "true"
-  EX_Scope: "prod"
