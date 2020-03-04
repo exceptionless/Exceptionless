@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Pipeline {
                     break;
             }
 
-            contexts.ForEach(c => c.IsProcessed = c.IsCancelled == false && !c.HasError);
+            contexts.ForEach(c => c.IsProcessed = c.IsCancelled == false && c.HasError == false);
             PipelineCompleted(contexts);
 
             return contexts;
