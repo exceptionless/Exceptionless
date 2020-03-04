@@ -18,4 +18,4 @@ collector:
 
 config:
   EX_EnableSnapshotJobs: "false"
-  EX_Scope: "dev"
+  EX_AppScope: "dev"
