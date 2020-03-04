@@ -337,6 +337,9 @@ namespace Exceptionless.Web.Controllers {
                     stack.Status = status;
                     if (status == StackStatus.Fixed)
                         stack.DateFixed = DateTime.UtcNow;
+
+                    if (status != StackStatus.Snoozed)
+                        stack.SnoozeUntilUtc = null;
                 }
 
                 await _stackRepository.SaveAsync(stacks);
