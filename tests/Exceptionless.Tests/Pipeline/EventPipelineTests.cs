@@ -225,31 +225,38 @@ namespace Exceptionless.Tests.Pipeline {
         [Fact]
         public async Task CloseExistingAutoSessionAsync() {
             var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+            string identity = "blake@exceptionless.io";
             var events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate, "blake@exceptionless.io"),
-                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
+                GenerateEvent(firstEventDate, identity),
+                GenerateEvent(firstEventDate.AddSeconds(10), identity, Event.KnownTypes.SessionHeartbeat)
             };
 
             var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
             Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
             Assert.Contains(contexts, c => c.IsProcessed);
+            
+            await RefreshDataAsync();
+            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
+            Assert.Equal(2, results.Total);
+            Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
 
             events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
-                GenerateEvent(firstEventDate.AddSeconds(20), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
+                GenerateEvent(firstEventDate.AddSeconds(10), identity, Event.KnownTypes.Session),
+                GenerateEvent(firstEventDate.AddSeconds(20), identity, Event.KnownTypes.SessionEnd)
             };
 
             await RefreshDataAsync();
             contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.DoesNotContain(contexts, c => c.HasError);
-            Assert.Equal(0, contexts.Count(c => c.IsCancelled));
-            Assert.Equal(2, contexts.Count(c => c.IsProcessed));
+            Assert.Equal(1, contexts.Count(c => c.IsCancelled));
+            Assert.Equal(1, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            var results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
-            Assert.Equal(4, results.Total);
-            Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
+            results = await _eventRepository.GetByFilterAsync(null, null, EventIndex.Alias.Date, null, DateTime.MinValue, DateTime.MaxValue, null);
+            Assert.Equal(3, results.Total);
+            var sessionIds = results.Documents.Select(e => e.GetSessionId()).Distinct();
+            Assert.Single(sessionIds);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
             var sessionStart = results.Documents.Single(e => e.IsSessionStart());
