@@ -160,7 +160,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                             await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
                         }
 
-                        if (!lastSessionEvent.IsCancelled && !lastSessionEvent.Event.IsSessionEnd())
+                        if (!lastSessionEvent.Event.IsSessionEnd())
                             await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId).AnyContext();
                     } else {
                         // we already have a session start, cancel this one
