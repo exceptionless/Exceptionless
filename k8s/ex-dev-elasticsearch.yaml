@@ -79,15 +79,3 @@ spec:
           limits:
             memory: 1Gi
             cpu: 500m
-
----
-apiVersion: apm.k8s.elastic.co/v1
-kind: ApmServer
-metadata:
-  name: ex-dev
-  namespace: ex-dev
-spec:
-  version: 7.7.1
-  count: 1
-  elasticsearchRef:
-    name: ex-dev

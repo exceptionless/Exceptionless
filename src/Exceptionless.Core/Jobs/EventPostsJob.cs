@@ -148,21 +148,19 @@ namespace Exceptionless.Core.Jobs {
 
                 bool isSingleEvent = events.Count == 1;
                 if (!isSingleEvent) {
-                    await _metrics.TimeAsync(async () => {
-                        // Don't process all the events if it will put the account over its limits.
-                        int eventsToProcess = await _usageService.GetRemainingEventLimitAsync(organization).AnyContext();
+                    // Don't process all the events if it will put the account over its limits.
+                    int eventsToProcess = await _usageService.GetRemainingEventLimitAsync(organization).AnyContext();
 
-                        // Add 1 because we already counted 1 against their limit when we received the event post.
-                        if (eventsToProcess < Int32.MaxValue)
-                            eventsToProcess += 1;
+                    // Add 1 because we already counted 1 against their limit when we received the event post.
+                    if (eventsToProcess < Int32.MaxValue)
+                        eventsToProcess += 1;
 
-                        // Discard any events over there limit.
+                    // Discard any events over the plan limit.
+                    if (eventsToProcess < events.Count) {
+                        int discarded = events.Count - eventsToProcess;
                         events = events.Take(eventsToProcess).ToList();
-
-                        // Increment the count if greater than 1, since we already incremented it by 1 in the OverageHandler.
-                        if (events.Count > 1)
-                            await _usageService.IncrementUsageAsync(organization, project, false, events.Count - 1, applyHourlyLimit: false).AnyContext();
-                    }, MetricNames.PostsUpdateEventLimitTime).AnyContext();
+                        _metrics.Counter(MetricNames.EventsDiscarded, discarded);
+                    }
                 }
 
                 int errorCount = 0;
@@ -173,6 +171,13 @@ namespace Exceptionless.Core.Jobs {
                         using (_logger.BeginScope(new ExceptionlessState().Value(contexts.Count)))
                             _logger.LogDebug("Ran {@value} events through the pipeline: id={QueueEntryId} success={SuccessCount} error={ErrorCount}", contexts.Count, entry.Id, contexts.Count(r => r.IsProcessed), contexts.Count(r => r.HasError));
                     }
+                    
+                    // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
+                    int processedEvents = contexts.Count(c => c.IsProcessed);
+                    await _usageService.IncrementUsageAsync(organization, project, false, processedEvents - 1, applyHourlyLimit: false).AnyContext();
+                    
+                    int discardedEvents = contexts.Count(c => c.IsDiscarded);
+                    _metrics.Counter(MetricNames.EventsDiscarded, discardedEvents);
 
                     foreach (var ctx in contexts) {
                         if (ctx.IsCancelled)

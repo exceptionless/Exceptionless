@@ -15,9 +15,7 @@
         public const string PostsEventCount = "posts.eventcount";
         public const string PostsSize = "posts.size";
         public const string PostsParseErrors = "posts.parse.errors";
-        public const string PostsFileInfoTime = "posts.fileinfotime";
         public const string PostsMarkFileActiveTime = "posts.markfileactivetime";
-        public const string PostsUpdateEventLimitTime = "posts.updateeventlimitime";
         public const string PostsParsingTime = "posts.parsingtime";
         public const string PostsRetryTime = "posts.retrytime";
         public const string PostsAbandonTime = "posts.abandontime";
@@ -32,6 +30,5 @@
         public const string PostsDecompressionErrors = "posts.decompression.errors";
 
         public const string UsageGeocodingApi = "usage.geocoding";
-        public const string ThrottleLimitExceeded = "throttle.limitexceeded";
     }
 }
