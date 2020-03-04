@@ -88,7 +88,7 @@ namespace Exceptionless.Core {
             options.ExceptionlessServerUrl = config.GetValue<string>(nameof(options.ExceptionlessServerUrl));
 
             options.AppMode = config.GetValue(nameof(options.AppMode), AppMode.Production);
-            options.AppScope = options.AppMode.ToScope();
+            options.AppScope = config.GetValue(nameof(options.AppScope), options.AppMode.ToScope());
             options.RunJobsInProcess = config.GetValue(nameof(options.RunJobsInProcess), options.AppMode == AppMode.Development);
             options.JobsIterationLimit = config.GetValue(nameof(options.JobsIterationLimit), -1);
             options.BotThrottleLimit = config.GetValue(nameof(options.BotThrottleLimit), 25).NormalizeValue();
