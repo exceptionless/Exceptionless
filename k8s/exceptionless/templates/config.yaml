@@ -5,7 +5,7 @@ metadata:
 data:
     EX_AppMode: {{ default "Production" .Values.appMode }}
     {{- if .Values.scope }}
-    EX_Scope: {{ .Values.scope }}
+    EX_AppScope: {{ .Values.appScope }}
     {{- end }}
     EX_ApiUrl: https://{{.Values.api.defaultDomain}}
     EX_BaseUrl: https://{{.Values.app.defaultDomain}}
