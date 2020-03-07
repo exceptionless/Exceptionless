@@ -1,6 +1,8 @@
 appMode: Staging
 appScope: dev
 api:
+  image:
+    repository: exceptionless/api-ci
   defaultDomain: dev-api.exceptionless.io
   domains:
     - dev-api.exceptionless.io
@@ -14,6 +16,9 @@ collector:
   defaultDomain: dev-collector.exceptionless.io
   domains:
     - dev-collector.exceptionless.io
+jobs:
+  image:
+    repository: exceptionless/job-ci
 
 config:
   EX_EnableSnapshotJobs: "false"
