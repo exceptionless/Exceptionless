@@ -3,7 +3,7 @@ api:
   defaultDomain:
   domains: []
   image:
-    repository: exceptionless/api-ci
+    repository: exceptionless/api
     tag: latest
     pullPolicy: IfNotPresent
 
@@ -17,13 +17,13 @@ app:
   defaultDomain:
   domains: []
   image:
-    repository: exceptionless/ui-ci
+    repository: exceptionless/ui
     tag: latest
     pullPolicy: IfNotPresent
 
 jobs:
   image:
-    repository: exceptionless/job-ci
+    repository: exceptionless/job
     tag: latest
     pullPolicy: IfNotPresent
   eventNotifications:
@@ -52,7 +52,7 @@ service:
 elasticsearch:
   connectionString: 
   image:
-    repository: slideroom/elasticsearch
+    repository: exceptionless/elasticsearch
     tag: 98
     pullPolicy: IfNotPresent
 
