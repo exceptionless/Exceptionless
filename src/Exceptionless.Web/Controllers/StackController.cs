@@ -335,8 +335,12 @@ namespace Exceptionless.Web.Controllers {
             if (stacks.Count > 0) {
                 foreach (var stack in stacks) {
                     stack.Status = status;
-                    if (status == StackStatus.Fixed)
+                    if (status == StackStatus.Fixed) {
                         stack.DateFixed = DateTime.UtcNow;
+                    } else {
+                        stack.DateFixed = null;
+                        stack.FixedInVersion = null;
+                    }
 
                     if (status != StackStatus.Snoozed)
                         stack.SnoozeUntilUtc = null;

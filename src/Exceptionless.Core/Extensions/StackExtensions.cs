@@ -9,12 +9,14 @@ namespace Exceptionless.Core.Extensions {
             stack.Status = StackStatus.Fixed;
             stack.DateFixed = SystemClock.UtcNow;
             stack.FixedInVersion = version?.ToString();
+            stack.SnoozeUntilUtc = null;
         }
 
         public static void MarkNotFixed(this Stack stack) {
             stack.Status = StackStatus.Open;
             stack.DateFixed = null;
             stack.FixedInVersion = null;
+            stack.SnoozeUntilUtc = null;
         }
 
         public static Stack ApplyOffset(this Stack stack, TimeSpan offset) {
