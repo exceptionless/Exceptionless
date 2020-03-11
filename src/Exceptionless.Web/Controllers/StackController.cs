@@ -111,7 +111,7 @@ namespace Exceptionless.Web.Controllers {
         [Consumes("application/json")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(string ids, string version = null) {
+        public async Task<ActionResult> MarkFixedAsync(string ids, string version = null) {
             SemanticVersion semanticVersion = null;
             
             if (!String.IsNullOrEmpty(version)) {
@@ -141,7 +141,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("mark-fixed")]
         [Consumes("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<ActionResult<WorkInProgressResult>> MarkFixedAsync(JObject data) {
+        public async Task<ActionResult> MarkFixedAsync(JObject data) {
             string id = null;
             if (data.TryGetValue("ErrorStack", out var value))
                 id = value.Value<string>();
@@ -180,6 +180,8 @@ namespace Exceptionless.Web.Controllers {
                 foreach (var stack in stacks) {
                     stack.Status = StackStatus.Snoozed;
                     stack.SnoozeUntilUtc = snoozeUntilUtc;
+                    stack.FixedInVersion = null;
+                    stack.DateFixed = null;
                 }
 
                 await _stackRepository.SaveAsync(stacks);
