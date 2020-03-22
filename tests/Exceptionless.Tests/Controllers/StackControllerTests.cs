@@ -14,6 +14,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Xunit;
 using Xunit.Abstractions;
+using System.Collections.Generic;
 
 namespace Exceptionless.Tests.Controllers {
     public class StackControllerTests : IntegrationTestsBase {
@@ -36,6 +37,25 @@ namespace Exceptionless.Tests.Controllers {
             
             var service = GetService<SampleDataService>();
             await service.CreateDataAsync();
+        }
+
+        [Fact]
+        public async Task CanSearchByNonPremiumFields() {
+            var ev = await SubmitErrorEventAsync();
+            Assert.NotNull(ev.StackId);
+
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+            Assert.NotNull(stack);
+            Assert.False(stack.IsFixed());
+
+            var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("stacks")
+                .QueryString("f", "status:fixed")
+                .StatusCodeShouldBeOk());
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Count);
         }
 
         [Theory]
