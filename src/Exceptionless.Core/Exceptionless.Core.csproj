@@ -38,6 +38,7 @@
     <PackageReference Include="Stripe.net" Version="35.9.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.6.0" />
     <PackageReference Include="Stripe.net" Version="34.26.0" />
+    <PackageReference Include="Stripe.net" Version="35.8.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
     <PackageReference Include="UAParser" Version="3.1.44" />
   </ItemGroup>
