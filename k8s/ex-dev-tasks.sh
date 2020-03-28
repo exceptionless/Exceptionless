@@ -1,12 +1,12 @@
 # show elasticsearch password
-kubectl get secret "ex-dev-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}'
+kubectl get secret --namespace ex-dev "ex-dev-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}'
 
 # connect to kibana
-kubectl port-forward service/ex-dev-kb-http 5601
+kubectl port-forward --namespace ex-dev service/ex-dev-kb-http 5601
 open "http://kibana-ex-dev.localtest.me:5601"
 
 # port forward elasticsearch
-kubectl port-forward service/ex-dev-es-http 9200
+kubectl port-forward --namespace ex-dev service/ex-dev-es-http 9200
 
 # connect to redis
 REDIS_PASSWORD=$(kubectl get secret --namespace ex-dev ex-dev-redis -o jsonpath="{.data.redis-password}" | base64 --decode)

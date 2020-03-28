@@ -40,9 +40,9 @@ az aks create \
 
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing
 
-# install dashboard, using 2.0 rc5 that supports CRDs (elastic operator)
+# install dashboard, using 2.0 rc6 that supports CRDs (elastic operator)
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc5/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc6/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -81,7 +81,7 @@ az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
 # https://github.com/jetstack/cert-manager/releases
-kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.13.1/deploy/manifests/00-crds.yaml
+kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.14.1/deploy/manifests/00-crds.yaml
 kubectl create namespace cert-manager
 kubectl apply -f cluster-issuer.yaml
 helm install cert-manager jetstack/cert-manager --namespace cert-manager --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
