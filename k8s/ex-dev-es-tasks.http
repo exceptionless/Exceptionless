@@ -62,3 +62,27 @@ Content-Type: application/json
         "number_of_replicas" : 0
     }
 }
+
+###
+
+PUT {{apiUrl}}dev-stacks-v1/_mapping
+{
+  "properties": {
+    "status": {
+      "type": "keyword"
+    },
+    "snooze_until_utc": {
+      "type": "date"
+    }
+  }
+}
+
+###
+
+POST {{apiUrl}}dev-stacks-v1/_update_by_query
+{
+  "script": {
+    "source": "if (ctx._source.is_regressed == true) ctx._source.status = 'regressed'; else if (ctx._source.is_hidden == true) ctx._source.status = 'ignored'; else if (ctx._source.disable_notifications == true) ctx._source.status = 'ignored'; else ctx._source.status = 'open';",
+    "lang": "painless"
+  }
+}
