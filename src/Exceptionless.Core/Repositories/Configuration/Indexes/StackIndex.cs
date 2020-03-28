@@ -14,7 +14,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         
         private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 2) {
+        public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
             _configuration = configuration;
         }
         

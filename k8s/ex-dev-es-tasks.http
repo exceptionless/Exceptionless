@@ -1,0 +1,64 @@
+@apiUrl = http://elastic:{{elasticPassword}}@kibana-ex-dev.localtest.me:9200/
+
+GET {{apiUrl}}_cat/indices/dev-*?v
+
+###
+
+GET {{apiUrl}}_snapshot/prod-organizations/_all
+
+###
+
+GET {{apiUrl}}_snapshot/prod-stacks/_all
+
+###
+
+GET {{apiUrl}}_snapshot/prod-events/_all
+
+###
+
+POST {{apiUrl}}dev-*/_close
+
+###
+
+POST {{apiUrl}}_snapshot/prod-stacks/prod-stacks-2020-03-28-18-40/_restore
+Content-Type: application/json
+
+{
+  "include_global_state": true,
+  "rename_pattern": "prod-(.+)",
+  "rename_replacement": "dev-$1"
+}
+
+###
+
+POST {{apiUrl}}_snapshot/prod-organizations/prod-organizations-2020-03-28-18-30/_restore
+Content-Type: application/json
+
+{
+  "include_global_state": true,
+  "rename_pattern": "prod-(.+)",
+  "rename_replacement": "dev-$1"
+}
+
+###
+
+POST {{apiUrl}}_snapshot/prod-events/prod-events-2020-03-28-12-00/_restore
+Content-Type: application/json
+
+{
+  "indices": "prod-events-v2-2020.03.2*",
+  "include_global_state": true,
+  "rename_pattern": "prod-(.+)",
+  "rename_replacement": "dev-$1"
+}
+
+###
+
+PUT {{apiUrl}}dev-*/_settings
+Content-Type: application/json
+
+{
+    "index" : {
+        "number_of_replicas" : 0
+    }
+}

@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : DailyIndex<PersistentEvent> {
         private readonly ExceptionlessElasticConfiguration _configuration;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 2, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
+        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
             _configuration = configuration;
 
             if (appOptions.MaximumRetentionDays > 0)
