@@ -1,16 +1,16 @@
 # show elasticsearch password
-kubectl get secret "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}'
+kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}'
 
 # connect to kibana
-kubectl port-forward service/ex-prod-kb-http 5601
+kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5601
 open "http://kibana-ex-prod.localtest.me:5601"
 
 # port forward elasticsearch
-kubectl port-forward service/ex-prod-es-http 9200
+kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200
 
 # connect to redis
 REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
-kubectl port-forward service/ex-prod-redis-master 6379
+kubectl port-forward --namespace ex-prod service/ex-prod-redis-master 6379
 redis-cli -a $REDIS_PASSWORD
 
 # open kubernetes dashboard
@@ -32,7 +32,7 @@ kubectl run -it --rm aks-ssh --image=ubuntu
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
 
 # get elasticsearch and its pods
-kubectl get es && k get pods -l common.k8s.elastic.co/type=elasticsearch
+kubectl get es && k get pods --namespace ex-prod -l common.k8s.elastic.co/type=elasticsearch
 
 # manually run a job
 kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' \
