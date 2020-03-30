@@ -23,18 +23,7 @@ namespace Exceptionless.Core.Repositories {
         public StackRepository(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, IValidator<Stack> validator, AppOptions options)
             : base(configuration.Stacks, validator, options) {
             _eventRepository = eventRepository;
-            DocumentsChanging.AddHandler(OnDocumentChangingAsync);
             AddPropertyRequiredForRemove(s => s.SignatureHash);
-        }
-
-        private async Task OnDocumentChangingAsync(object sender, DocumentsChangeEventArgs<Stack> args) {
-            if (args.ChangeType != ChangeType.Removed)
-                return;
-
-            foreach (var document in args.Documents) {
-                if (await _eventRepository.GetCountByStackIdAsync(document.Value.Id).AnyContext() > 0)
-                    throw new ApplicationException($"Stack \"{document.Value.Id}\" can't be deleted because it has events associated to it.");
-            }
         }
 
         protected override async Task AddToCacheAsync(ICollection<Stack> documents, ICommandOptions options) {

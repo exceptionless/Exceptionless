@@ -13,7 +13,6 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
@@ -39,7 +38,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly IQueue<WorkItemData> _workItemQueue;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly SemanticVersionParser _semanticVersionParser;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
@@ -54,7 +53,7 @@ namespace Exceptionless.Web.Controllers {
             IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IEventRepository eventRepository,
-            IQueue<WorkItemData> workItemQueue,
+            IQueue<EventDeletion> eventDeletionQueue,
             IWebHookRepository webHookRepository,
             WebHookDataPluginManager webHookDataPluginManager,
             IQueue<WebHookNotification> webHookNotificationQueue,
@@ -71,7 +70,7 @@ namespace Exceptionless.Web.Controllers {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
-            _workItemQueue = workItemQueue;
+            _eventDeletionQueue = eventDeletionQueue;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
@@ -408,18 +407,10 @@ namespace Exceptionless.Web.Controllers {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
 
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> stacks) {
-            var workItems = new List<string>();
-            foreach (var stack in stacks) {
-                workItems.Add(await _workItemQueue.EnqueueAsync(new StackWorkItem {
-                    OrganizationId = stack.OrganizationId,
-                    ProjectId = stack.ProjectId,
-                    StackId = stack.Id,
-                    Delete = true
-                }));
-            }
-
-            return workItems;
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> values) {
+            var ids = values.Select(e => e.Id).Distinct().ToArray();
+            await _eventDeletionQueue.EnqueueAsync(new EventDeletion { StackIds = ids });
+            return await base.DeleteModelsAsync(values);
         }
 
         /// <summary>

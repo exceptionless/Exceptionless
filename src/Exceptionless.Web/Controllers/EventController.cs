@@ -44,6 +44,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly EventPostService _eventPostService;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
@@ -56,6 +57,7 @@ namespace Exceptionless.Web.Controllers {
             IProjectRepository projectRepository,
             IStackRepository stackRepository,
             EventPostService eventPostService,
+            IQueue<EventDeletion> eventDeletionQueue,
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
@@ -69,6 +71,7 @@ namespace Exceptionless.Web.Controllers {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventPostService = eventPostService;
+            _eventDeletionQueue = eventDeletionQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
@@ -1065,6 +1068,12 @@ namespace Exceptionless.Web.Controllers {
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
+        }
+
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> values) {
+            var ids = values.Select(e => e.Id).Distinct().ToArray();
+            await _eventDeletionQueue.EnqueueAsync(new EventDeletion { EventIds = ids });
+            return ids;
         }
 
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {

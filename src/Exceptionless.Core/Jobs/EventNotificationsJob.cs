@@ -21,7 +21,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Queues event notification emails.", InitialDelay = "5s")]
-    public class EventNotificationsJob : QueueJobBase<EventNotificationWorkItem> {
+    public class EventNotificationsJob : QueueJobBase<EventNotification> {
         private readonly SlackService _slackService;
         private readonly IMailer _mailer;
         private readonly IProjectRepository _projectRepository;
@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly ICacheClient _cache;
         private readonly UserAgentParser _parser;
 
-        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public EventNotificationsJob(IQueue<EventNotification> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
             _slackService = slackService;
             _mailer = mailer;
             _projectRepository = projectRepository;
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Jobs {
             _parser = parser;
         }
 
-        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotificationWorkItem> context) {
+        protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context) {
             var wi = context.QueueEntry.Value;
             var ev = await _eventRepository.GetByIdAsync(wi.EventId).AnyContext();
             if (ev == null)
@@ -135,7 +135,7 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private async Task<bool> SendEmailNotificationAsync(string userId, Project project, PersistentEvent ev, EventNotificationWorkItem wi, bool shouldLog) {
+        private async Task<bool> SendEmailNotificationAsync(string userId, Project project, PersistentEvent ev, EventNotification wi, bool shouldLog) {
             var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             if (String.IsNullOrEmpty(user?.EmailAddress)) {
                 if (shouldLog) _logger.LogError("Could not load user {user} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");

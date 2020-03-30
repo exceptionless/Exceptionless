@@ -1,5 +1,5 @@
 ﻿namespace Exceptionless.Core.Queues.Models {
-    public class EventNotificationWorkItem {
+    public class EventNotification {
         public string EventId { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
