@@ -76,10 +76,6 @@ namespace Exceptionless.Core.Repositories {
             return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
         }
 
-        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), o => o.Consistency(Consistency.Wait));
-        }
-
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
             IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
                 .DateRange(utcStart, utcEnd, field ?? InferField(e => e.Date))
@@ -209,10 +205,6 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
             return CountAsync(q => q.Project(projectId));
-        }
-
-        public Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false) {
-            return CountAsync(q => q.Stack(stackId));
         }
     }
 }

@@ -88,7 +88,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
-            container.AddSingleton<IQueueBehavior<EventNotificationWorkItem>>(s => new MetricsQueueBehavior<EventNotificationWorkItem>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<EventNotification>>(s => new MetricsQueueBehavior<EventNotification>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<WebHookNotification>>(s => new MetricsQueueBehavior<WebHookNotification>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<MailMessage>>(s => new MetricsQueueBehavior<MailMessage>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<WorkItemData>>(s => new MetricsQueueBehavior<WorkItemData>(s.GetRequiredService<IMetricsClient>()));
@@ -101,7 +101,6 @@ namespace Exceptionless.Core {
                 handlers.Register<RemoveProjectWorkItem>(s.GetRequiredService<RemoveProjectWorkItemHandler>);
                 handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
                 handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
-                handlers.Register<StackWorkItem>(s.GetRequiredService<StackWorkItemHandler>);
                 handlers.Register<ThrottleBotsWorkItem>(s.GetRequiredService<ThrottleBotsWorkItemHandler>);
                 handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
                 handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
@@ -112,7 +111,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton(s => CreateQueue<EventPost>(s));
             container.AddSingleton(s => CreateQueue<EventUserDescription>(s));
-            container.AddSingleton(s => CreateQueue<EventNotificationWorkItem>(s));
+            container.AddSingleton(s => CreateQueue<EventNotification>(s));
             container.AddSingleton(s => CreateQueue<WebHookNotification>(s));
             container.AddSingleton(s => CreateQueue<MailMessage>(s));
             container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));

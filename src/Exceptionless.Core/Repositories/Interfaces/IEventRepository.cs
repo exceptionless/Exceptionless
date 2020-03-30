@@ -16,11 +16,9 @@ namespace Exceptionless.Core.Repositories {
         Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
 
         Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate);
-        Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId);
         Task<long> RemoveAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd);
 
         Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false);
-        Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false);
     }
 
     public static class EventRepositoryExtensions {
