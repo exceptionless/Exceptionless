@@ -21,7 +21,8 @@ namespace Exceptionless.Web.Controllers {
         private readonly IMessagePublisher _messagePublisher;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<MailMessage> _mailQueue;
-        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
+        private readonly IQueue<EventNotification> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly AppOptions _appOptions;
@@ -31,7 +32,8 @@ namespace Exceptionless.Web.Controllers {
             IMessagePublisher messagePublisher,
             IQueue<EventPost> eventQueue,
             IQueue<MailMessage> mailQueue,
-            IQueue<EventNotificationWorkItem> notificationQueue,
+            IQueue<EventDeletion> eventDeletionQueue,
+            IQueue<EventNotification> notificationQueue,
             IQueue<WebHookNotification> webHooksQueue,
             IQueue<EventUserDescription> userDescriptionQueue,
             AppOptions appOptions) {
@@ -39,6 +41,7 @@ namespace Exceptionless.Web.Controllers {
             _messagePublisher = messagePublisher;
             _eventQueue = eventQueue;
             _mailQueue = mailQueue;
+            _eventDeletionQueue = eventDeletionQueue;
             _notificationQueue = notificationQueue;
             _webHooksQueue = webHooksQueue;
             _userDescriptionQueue = userDescriptionQueue;
@@ -62,6 +65,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
         public async Task<IActionResult> QueueStatsAsync() {
             var eventQueueStats = await _eventQueue.GetQueueStatsAsync();
+            var eventDeletionQueueStats = await _eventDeletionQueue.GetQueueStatsAsync();
             var mailQueueStats = await _mailQueue.GetQueueStatsAsync();
             var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync();
             var notificationQueueStats = await _notificationQueue.GetQueueStatsAsync();
@@ -72,6 +76,11 @@ namespace Exceptionless.Web.Controllers {
                     Active = eventQueueStats.Enqueued,
                     eventQueueStats.Deadletter,
                     eventQueueStats.Working
+                },
+                EventDeletions = new {
+                    Active = _eventDeletionQueue.Enqueued,
+                    eventDeletionQueueStats.Deadletter,
+                    eventDeletionQueueStats.Working
                 },
                 MailMessages = new {
                     Active = mailQueueStats.Enqueued,
