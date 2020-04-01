@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
         public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, IValidator<PersistentEvent> validator)
             : base(configuration.Events, validator, options) {
-            DisableCache();
+            DisableCache(); // NOTE: If cache is ever enabled, then fast paths for patching/deleting with scripts will be super slow!
             BatchNotifications = true;
             DefaultPipeline = "events-pipeline";
 
@@ -46,34 +46,31 @@ namespace Exceptionless.Core.Repositories {
             return true;
         }
 
-        public Task<long> RemoveAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
-            return RemoveAllAsync(q => q
-                .Organization(organizationId)
-                .ElasticFilter(Query<PersistentEvent>.Term(EventIndex.Alias.IpAddress, clientIp))
-                .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
-                .Index(utcStart, utcEnd));
-        }
+        public Task<long> RemoveAllAsync(string[] organizationIds, string[] projectIds, string[] stackIds, string[] eventIds, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
+            var query = new RepositoryQuery<PersistentEvent>();
+            if (utcStart.HasValue && utcEnd.HasValue)
+                query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
+            else if (utcEnd.HasValue)
+                query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcEnd)));
+            else if (utcStart.HasValue)
+                query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).GreaterThan(utcStart)));
+            
+            if (organizationIds?.Length > 0)
+                query = query.Organizations(organizationIds);
+                    
+            if (projectIds?.Length > 0)
+                query = query.Projects(projectIds);
+            
+            if (stackIds?.Length > 0)
+                query = query.Stacks(stackIds);
+                  
+            if (eventIds?.Length > 0)
+                query = query.Id(eventIds);
 
-        public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
-            var filter = Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcCutoffDate));
-            return RemoveAllAsync(q => q.Organization(organizationId).ElasticFilter(filter));
-        }
+            if (!String.IsNullOrEmpty(clientIpAddress))
+                query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
 
-        public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException(nameof(organizationId));
-
-            return RemoveAllAsync(q => q.Organization(organizationId));
-        }
-
-        public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException(nameof(organizationId));
-
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException(nameof(projectId));
-
-            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
+            return RemoveAllAsync(q => query, options);
         }
 
         public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {

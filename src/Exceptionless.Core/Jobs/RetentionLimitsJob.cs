@@ -4,10 +4,12 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -17,14 +19,14 @@ namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes old events that are outside of a plans retention period.", InitialDelay = "15m", Interval = "1h")]
     public class RetentionLimitsJob : JobWithLockBase, IHealthCheck {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IEventRepository _eventRepository;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly AppOptions _appOptions;
         private readonly ILockProvider _lockProvider;
         private DateTime? _lastRun;
 
-        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ICacheClient cacheClient, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IQueue<EventDeletion> eventDeletionQueue, ICacheClient cacheClient, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
-            _eventRepository = eventRepository;
+            _eventDeletionQueue = eventDeletionQueue;
             _appOptions = appOptions;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
@@ -67,7 +69,10 @@ namespace Exceptionless.Core.Jobs {
                 var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
                 _logger.LogInformation("Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).", cutoff, organization.Name, organization.Id);
                 
-                await _eventRepository.RemoveAllByDateAsync(organization.Id, cutoff).AnyContext();
+                await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
+                    OrganizationIds = new []{ organization.Id },
+                    UtcEndDate = cutoff
+                });
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error enforcing limits: org={OrganizationName} id={organization} message={Message}", organization.Name, organization.Id, ex.Message);
             }

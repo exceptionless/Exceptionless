@@ -14,6 +14,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
@@ -44,6 +45,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IEventRepository _eventRepository;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
@@ -57,6 +59,7 @@ namespace Exceptionless.Web.Controllers {
             IEventRepository eventRepository,
             IUserRepository userRepository,
             IProjectRepository projectRepository,
+            IQueue<EventDeletion> eventDeletionQueue,
             IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
             IMailer mailer,
@@ -70,6 +73,7 @@ namespace Exceptionless.Web.Controllers {
             _eventRepository = eventRepository;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
+            _eventDeletionQueue = eventDeletionQueue;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _mailer = mailer;
@@ -701,15 +705,19 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
-            var workItems = new List<string>();
+            var workItems = new List<string>(organizations.Count + 1) {
+                await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
+                    OrganizationIds = organizations.Select(o => o.Id).ToArray()
+                })
+            };
+
             foreach (var organization in organizations) {
                 using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogInformation("User {user} deleting organization {organization}.", CurrentUser.Id, organization.Id);
-
+                
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
                     OrganizationId = organization.Id,
                     CurrentUserId = CurrentUser.Id,
-                    IsGlobalAdmin = User.IsInRole(AuthorizationRoles.GlobalAdmin)
                 }));
             }
 
