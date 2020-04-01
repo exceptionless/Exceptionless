@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
-using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
@@ -16,12 +15,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
     public sealed class ThrottleBotsPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cache;
-        private readonly IQueue<WorkItemData> _workItemQueue;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<EventDeletion> eventDeletionQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _cache = cacheClient;
-            _workItemQueue = workItemQueue;
+            _eventDeletionQueue = eventDeletionQueue;
         }
 
         public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
@@ -55,8 +54,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {project}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
 
                 // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
-                await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {
-                    OrganizationId = firstContext.Event.OrganizationId,
+                await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
+                    OrganizationIds = new []{ firstContext.Event.OrganizationId },
                     ClientIpAddress = clientIpAddressGroup.Key,
                     UtcStartDate = SystemClock.UtcNow.Floor(_throttlingPeriod),
                     UtcEndDate = SystemClock.UtcNow.Ceiling(_throttlingPeriod)

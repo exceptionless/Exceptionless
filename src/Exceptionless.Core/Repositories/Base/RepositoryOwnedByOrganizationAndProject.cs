@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Repositories;
@@ -12,10 +13,19 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T> options = null) {
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+            
             return FindAsync(q => q.Project(projectId), options);
         }
 
         public virtual Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+            
             return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
         }
     }

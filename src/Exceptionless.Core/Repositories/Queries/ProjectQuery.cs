@@ -16,6 +16,10 @@ namespace Exceptionless.Core.Repositories {
         public static T Project<T>(this T query, string projectId) where T : IRepositoryQuery {
             return query.AddCollectionOptionValue(ProjectsKey, projectId);
         }
+        
+        public static T Projects<T>(this T query, IEnumerable<string> projectIds) where T : IRepositoryQuery {
+            return query.AddCollectionOptionValue(ProjectsKey, projectIds.Distinct());
+        }
     }
 }
 

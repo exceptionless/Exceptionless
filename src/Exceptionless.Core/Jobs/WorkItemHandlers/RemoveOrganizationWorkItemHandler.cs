@@ -18,7 +18,6 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class RemoveOrganizationWorkItemHandler : WorkItemHandlerBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
@@ -26,10 +25,9 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         private readonly StripeOptions _stripeOptions;
         private readonly ILockProvider _lockProvider;
 
-        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, StripeOptions stripeOptions, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RemoveOrganizationWorkItemHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, StripeOptions stripeOptions, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _eventRepository = eventRepository;
             _stackRepository = stackRepository;
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
@@ -88,12 +86,11 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
 
                 await context.ReportProgressAsync(50, "Removing projects").AnyContext();
                 var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
-                if (wi.IsGlobalAdmin && projects.Total > 0) {
+                if (projects.Total > 0) {
                     int completed = 1;
                     foreach (var project in projects.Documents) {
                         using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(project.Id))) {
                             Log.LogInformation("Resetting all project data for project {ProjectName} with Id: {project}.", project.Name, project.Id);
-                            await _eventRepository.RemoveAllByProjectIdAsync(organization.Id, project.Id).AnyContext();
                             await _stackRepository.RemoveAllByProjectIdAsync(organization.Id, project.Id).AnyContext();
                             await context.ReportProgressAsync(CalculateProgress(projects.Total, completed++, 51, 89), "Removing projects...").AnyContext();
                         }

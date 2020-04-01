@@ -13,15 +13,13 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class RemoveProjectWorkItemHandler : WorkItemHandlerBase {
         private readonly IProjectRepository _projectRepository;
-        private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
         private readonly ILockProvider _lockProvider;
 
-        public RemoveProjectWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public RemoveProjectWorkItemHandler(IProjectRepository projectRepository, IStackRepository stackRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _projectRepository = projectRepository;
-            _eventRepository = eventRepository;
             _stackRepository = stackRepository;
             _tokenRepository = tokenRepository;
             _webHookRepository = webHookRepository;
@@ -54,7 +52,6 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 }
 
                 await context.ReportProgressAsync(60, "Resetting project data").AnyContext();
-                await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
                 await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
 
                 if (!wi.Reset) {
