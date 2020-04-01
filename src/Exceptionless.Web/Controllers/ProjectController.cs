@@ -12,6 +12,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Models;
@@ -34,6 +35,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly SlackService _slackService;
@@ -44,6 +46,7 @@ namespace Exceptionless.Web.Controllers {
             IProjectRepository projectRepository,
             IStackRepository stackRepository,
             IEventRepository eventRepository,
+            IQueue<EventDeletion> eventDeletionQueue,
             IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
             SlackService slackService,
@@ -56,6 +59,7 @@ namespace Exceptionless.Web.Controllers {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
+            _eventDeletionQueue = eventDeletionQueue;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _slackService = slackService;
@@ -291,13 +295,18 @@ namespace Exceptionless.Web.Controllers {
             if (project == null)
                 return NotFound();
 
+            string deleteEventsWorkId = await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
+                OrganizationIds = new []{ project.OrganizationId },
+                ProjectIds = new []{ project.Id }
+            });
+            
             string workItemId = await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 Reset = true
             });
 
-            return WorkInProgress(new [] { workItemId });
+            return WorkInProgress(new [] { deleteEventsWorkId, workItemId });
         }
 
         [HttpGet("{id:objectid}/notifications")]
@@ -691,7 +700,12 @@ namespace Exceptionless.Web.Controllers {
         }
 
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
-            var workItems = new List<string>();
+            var workItems = new List<string>(projects.Count + 1) {
+                await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
+                    ProjectIds = projects.Select(p => p.Id).ToArray()
+                })
+            };
+
             foreach (var project in projects) {
                 workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
                     OrganizationId = project.OrganizationId,
