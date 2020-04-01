@@ -108,6 +108,7 @@ namespace Exceptionless.Core {
                 return handlers;
             });
 
+            container.AddSingleton(s => CreateQueue<EventDeletion>(s));
             container.AddSingleton(s => CreateQueue<EventPost>(s));
             container.AddSingleton(s => CreateQueue<EventUserDescription>(s));
             container.AddSingleton(s => CreateQueue<EventNotification>(s));
