@@ -9,7 +9,7 @@ Function Expand-GZip ([string]$source, [string]$output_path = ($source -Replace 
         Write-Error -Message "$source does not exist"
         Return
     }
-	
+
 	If (Test-Path -Path $output_path) {
 		Remove-Item -Path $output_path
     }
@@ -17,7 +17,7 @@ Function Expand-GZip ([string]$source, [string]$output_path = ($source -Replace 
     $input = New-Object System.IO.FileStream $source, ([IO.FileMode]::Open), ([IO.FileAccess]::Read), ([IO.FileShare]::Read);
     $output = New-Object System.IO.FileStream $output_path, ([IO.FileMode]::CreateNew), ([IO.FileAccess]::Write), ([IO.FileShare]::None)
     $gzipStream = New-Object System.IO.Compression.GzipStream $input, ([IO.Compression.CompressionMode]::Decompress)
-    
+
 	Try {
         $buffer = New-Object byte[](1024);
         While ($true) {
