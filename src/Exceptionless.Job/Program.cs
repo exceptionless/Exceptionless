@@ -137,6 +137,8 @@ namespace Exceptionless.Job {
                 services.AddJob<DataMigrationJob>(true);
             if (options.DownloadGeoipDatabase)
                 services.AddJob<DownloadGeoIPDatabaseJob>(true);
+            if (options.EventDeletion)
+                services.AddJob<EventDeletionJob>(true);
             if (options.EventNotifications)
                 services.AddJob<EventNotificationsJob>(true);
             if (options.EventPosts)
@@ -155,6 +157,8 @@ namespace Exceptionless.Job {
                 services.AddJob<OrganizationSnapshotJob>(true);
             if (options.RetentionLimits)
                 services.AddJob<RetentionLimitsJob>(true);
+            if (options.StackStatus)
+                services.AddJob<StackStatusJob>(true);
             if (options.StackEventCount)
                 services.AddJob<StackEventCountJob>(true);
             if (options.StackSnapshot)

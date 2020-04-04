@@ -42,6 +42,10 @@ namespace Exceptionless.Core.Repositories {
         private string GetStackSignatureCacheKey(string projectId, string signatureHash) {
             return String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
         }
+        
+        public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
+            return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
+        }
 
         public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date

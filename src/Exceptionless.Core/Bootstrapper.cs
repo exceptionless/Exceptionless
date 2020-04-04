@@ -256,12 +256,14 @@ namespace Exceptionless.Core {
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
             services.AddJob<DownloadGeoIPDatabaseJob>(true);
+            services.AddJob<EventDeletionJob>(true);
             services.AddJob<EventNotificationsJob>(true);
             services.AddJob<EventPostsJob>(true);
             services.AddJob<EventUserDescriptionsJob>(true);
             services.AddJob<MailMessageJob>(true);
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
             services.AddJob<RetentionLimitsJob>(true);
+            services.AddJob<StackStatusJob>(true);
             services.AddJob<StackEventCountJob>(true);
             services.AddJob<WebHooksJob>(true);
             services.AddJob<WorkItemJob>(true);
