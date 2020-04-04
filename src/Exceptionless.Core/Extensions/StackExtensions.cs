@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Extensions {
             stack.SnoozeUntilUtc = null;
         }
 
-        public static void MarkNotFixed(this Stack stack) {
+        public static void MarkOpen(this Stack stack) {
             stack.Status = StackStatus.Open;
             stack.DateFixed = null;
             stack.FixedInVersion = null;
