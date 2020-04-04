@@ -27,6 +27,10 @@ namespace Exceptionless.Job {
             if (DownloadGeoipDatabase && args.Length != 0)
                 JobName = "DownloadGeoIPDatabase";
 
+            EventDeletion = args.Length == 0 || args.Contains("EventDeletion", StringComparer.OrdinalIgnoreCase);
+            if (EventPosts && args.Length != 0)
+                JobName = "EventDeletion";
+            
             EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
             if (EventNotifications && args.Length != 0)
                 JobName = "EventNotifications";
@@ -63,6 +67,10 @@ namespace Exceptionless.Job {
             if (RetentionLimits && args.Length != 0)
                 JobName = "RetentionLimits";
 
+            StackStatus = args.Length == 0 || args.Contains("StackStatus", StringComparer.OrdinalIgnoreCase);
+            if (StackStatus && args.Length != 0)
+                JobName = "StackStatus";
+            
             StackEventCount = args.Length == 0 || args.Contains("StackEventCount", StringComparer.OrdinalIgnoreCase);
             if (StackEventCount && args.Length != 0)
                 JobName = "StackEventCount";
@@ -87,6 +95,7 @@ namespace Exceptionless.Job {
         public bool DailySummary { get; }
         public bool DataMigration { get; }
         public bool DownloadGeoipDatabase { get; }
+        public bool EventDeletion { get; }
         public bool EventNotifications { get; }
         public bool EventPosts { get; }
         public bool EventSnapshot { get; }
@@ -96,6 +105,7 @@ namespace Exceptionless.Job {
         public bool Migration { get; }
         public bool OrganizationSnapshot { get; }
         public bool RetentionLimits { get; }
+        public bool StackStatus { get; }
         public bool StackEventCount { get; }
         public bool StackSnapshot { get; }
         public bool WebHooks { get; }

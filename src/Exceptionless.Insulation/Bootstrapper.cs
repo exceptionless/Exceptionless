@@ -105,6 +105,7 @@ namespace Exceptionless.Insulation {
                 .AddAutoNamedCheck<DownloadGeoIPDatabaseJob>("AllJobs")
                 .AddAutoNamedCheck<MaintainIndexesJob>("AllJobs")
                 .AddAutoNamedCheck<RetentionLimitsJob>("AllJobs")
+                .AddAutoNamedCheck<StackStatusJob>("AllJobs")
                 .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
         }
 
