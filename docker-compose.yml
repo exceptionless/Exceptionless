@@ -67,7 +67,7 @@ services:
 #      SITES: 'ex-ui.mydomainn.com=ui;ex-api.mydomainn.com=api'
 
   elasticsearch:
-    image: exceptionless/elasticsearch:7.6.2
+    image: exceptionless/elasticsearch:7.7.0
     environment:
       discovery.type: single-node
       xpack.security.enabled: 'false'
@@ -81,7 +81,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.6.2
+    image: docker.elastic.co/kibana/kibana:7.7.0
     ports:
       - 5601:5601
 
