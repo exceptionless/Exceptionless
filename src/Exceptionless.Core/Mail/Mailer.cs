@@ -53,7 +53,6 @@ namespace Exceptionless.Core.Mail {
                 { "IsCritical", isCritical },
                 { "IsNew", isNew },
                 { "IsRegression", isRegression },
-                { "IsFixable", ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound },
                 { "TotalOccurrences", totalOccurrences },
                 { "Fields", result.Data }
             };
