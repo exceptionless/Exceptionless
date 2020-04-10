@@ -45,9 +45,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             string baseUrl = _options.BaseURL;
             var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
-            if (ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound)
-                actions.Add($"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
-            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/stop-notifications|Stop sending notifications for this event>");
+            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
+            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/ignored|Stop sending notifications for this event>");
+            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/discarded|Discard future event occurrences>");
             actions.Add($"• <{baseUrl}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
 
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });

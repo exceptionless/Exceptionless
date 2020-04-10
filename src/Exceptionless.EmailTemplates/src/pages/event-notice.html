@@ -61,10 +61,9 @@
       <columns small="12">
         <h5>Other Actions</h5>
         <ul>
-          \{{#if IsFixable}}
           <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/mark-fixed">Mark event as fixed</a></li>
-          \{{/if}}
-          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/stop-notifications">Stop sending notifications for this event</a></li>
+          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/ignored">Stop sending notifications for this event</a></li>
+          <li><a href="\{{BaseUrl}}/stack/\{{StackId}}/discarded">Discard future event occurrences</a></li>
           <li><a href="\{{BaseUrl}}/account/manage?projectId=\{{ProjectId}}&tab=notifications">Change your notification settings for this project</a></li>
         </ul>
       </columns>
