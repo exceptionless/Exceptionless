@@ -156,13 +156,9 @@ namespace Exceptionless.Insulation {
                 var sentinelRedisConfig = redisConfig.Clone();
                 sentinelRedisConfig.CommandMap = CommandMap.Sentinel;
 
-                // don't use password on the sentinel server
-                if (!String.IsNullOrEmpty(sentinelRedisConfig.Password))
-                    sentinelRedisConfig.Password = null;
-
                 var sentinelConnection = ConnectionMultiplexer.Connect(sentinelRedisConfig);
                 if (!sentinelConnection.IsConnected)
-                    throw new ApplicationException();
+                    throw new ApplicationException($"Unable to connect to redis sentinel server {redisConfig.EndPoints.First()}");
 
                 return sentinelConnection.GetSentinelMasterConnection(redisConfig);
             }
