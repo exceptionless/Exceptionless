@@ -22,3 +22,10 @@ services:
     image: redis:5.0-alpine
     ports:
       - 6379:6379
+
+  ready:
+    image: dadarek/wait-for-dependencies	
+    command: elasticsearch:9200	
+    depends_on:	
+      - elasticsearch
+  
