@@ -111,7 +111,7 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {
             if (String.Equals(options.Provider, "redis")) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.Data.GetString("server")));
+                container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
                 if (!String.IsNullOrEmpty(options.Scope))
                     container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
@@ -124,7 +124,7 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options) {
             if (String.Equals(options.Provider, "redis")) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.Data.GetString("server")));
+                container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
@@ -140,6 +140,29 @@ namespace Exceptionless.Insulation {
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
             }
+        }
+
+        private static ConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
+            string mode = options.GetString("mode");
+            string server = options.GetString("server");
+            bool isSentinel = !String.IsNullOrEmpty(mode) && mode == "sentinel" ? true : false;
+
+            if (isSentinel) {
+                var redisConfig = ConfigurationOptions.Parse(server);
+                if (String.IsNullOrEmpty(redisConfig.ServiceName))
+                    redisConfig.ServiceName = "exceptionless";
+
+                redisConfig.TieBreaker = "";
+                var sentinelRedisConfig = redisConfig.Clone();
+                sentinelRedisConfig.CommandMap = CommandMap.Sentinel;
+                var sentinelConnection = ConnectionMultiplexer.Connect(sentinelRedisConfig);
+                if (!sentinelConnection.IsConnected)
+                    throw new ApplicationException();
+
+                return sentinelConnection.GetSentinelMasterConnection(redisConfig);
+            }
+
+            return ConnectionMultiplexer.Connect(options.GetString("server"));
         }
 
         private static void RegisterMetric(IServiceCollection container, MetricOptions options) {
