@@ -139,6 +139,8 @@ namespace Exceptionless.Web {
             var options = app.ApplicationServices.GetRequiredService<AppOptions>();
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
+            app.UseMiddleware<AllowSynchronousIOMiddleware>();
+            
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
