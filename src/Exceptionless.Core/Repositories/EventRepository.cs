@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Repositories {
                 query = query.Projects(projectIds);
             
             if (stackIds?.Length > 0)
-                query = query.Stacks(stackIds);
+                query = query.Stack(stackIds);
                   
             if (eventIds?.Length > 0)
                 query = query.Id(eventIds);

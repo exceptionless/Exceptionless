@@ -120,6 +120,19 @@ ctx._source.total_occurrences += params.count;";
             return FindAsync(q => query, options);
         }
 
+        public async Task<string[]> GetIdsByFilterAsync(ISystemFilter systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
+            IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
+                .DateRange(utcStart, utcEnd, InferField(s => s.FirstOccurrence))
+                .SystemFilter(systemFilter)
+                .FilterExpression(userFilter);
+
+            var results = await FindAsync(q => query.OnlyIds(), options).AnyContext();
+            if (results.Total > 10000)
+                throw new ApplicationException("Please limit your search query");
+            
+            return results.Documents.Select(s => s.Id).ToArray();
+        }
+
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetByIdAsync(stackId).AnyContext();
             stack.Status = StackStatus.Regressed;

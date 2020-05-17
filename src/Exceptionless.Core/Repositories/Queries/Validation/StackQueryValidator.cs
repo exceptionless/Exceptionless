@@ -47,13 +47,12 @@ namespace Exceptionless.Core.Queries.Validation {
             "occurrences_are_critical",
             StackIndex.Alias.TotalOccurrences,
             "total_occurrences",
-            StackIndex.Alias.Type,
             StackIndex.Alias.OrganizationId,
             "organization_id",
             StackIndex.Alias.ProjectId,
             "project_id"
         };
-
+        
         public StackQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Stacks.QueryParser, loggerFactory) { }
 
         protected override QueryProcessResult ApplyQueryRules(QueryValidationInfo info) {

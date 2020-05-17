@@ -9,7 +9,7 @@
     "Type": "log",
     "Source": "Row not found or changed."
   },
-  "fixed_in_version": null,
+  "fixed_in_version": "1.2.3",
   "date_fixed": "2015-02-13T20:54:04.3457274Z",
   "title": "Row not found or changed.",
   "total_occurrences": 25,
@@ -18,5 +18,5 @@
   "description": null,
   "occurrences_are_critical": false,
   "references": [],
-  "tags": []
+  "tags": ["old_tag"]
 }

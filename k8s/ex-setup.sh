@@ -11,7 +11,6 @@ helm repo add jetstack https://charts.jetstack.io
 helm repo update
 
 ### setup
-
 RESOURCE_GROUP=exceptionless-v6
 CLUSTER=ex-k8s-v6
 VNET=ex-net-v6
@@ -20,6 +19,10 @@ ENV=dev
 # it's important to have a decent sized network (reserve a /16 for each cluster).
 az network vnet create -g $RESOURCE_GROUP -n $VNET --subnet-name $CLUSTER --address-prefixes 10.60.0.0/16 --subnet-prefixes 10.60.0.0/18 --location eastus
 SUBNET_ID="$(az network vnet subnet list --resource-group $RESOURCE_GROUP --vnet-name $VNET --query '[0].id' --output tsv)"
+
+# create new service principal and update the cluster to use it (seems these expire after a year)
+az ad sp create-for-rbac --skip-assignment --name $CLUSTER
+az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 
 az aks create \
     --resource-group $RESOURCE_GROUP \
@@ -70,11 +73,11 @@ ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='
 kubectl port-forward service/ex-$ENV-es-http 9200
 
 # install nginx ingress
-helm install nginx-ingress stable/nginx-ingress --namespace kube-system --values nginx-values.yaml
+helm install nginx-ingress stable/nginx-ingress --namespace nginx-ingress --values nginx-values.yaml
 
 # wait for external ip to be assigned
-kubectl get service -l app=nginx-ingress --namespace kube-system
-IP="$(kubectl get service -l app=nginx-ingress --namespace kube-system -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')"
+kubectl get service -l app=nginx-ingress --namespace nginx-ingress
+IP="$(kubectl get service -l app=nginx-ingress --namespace nginx-ingress -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')"
 PUBLICIPID=$(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
 az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
@@ -103,7 +106,8 @@ kubectl describe certificate -n tls-secret
 kubectl apply -f namespace-default-limits.yaml
 
 # install redis server
-helm install ex-$ENV-redis stable/redis --values redis-values.yaml --namespace ex-$ENV
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
 # install exceptionless app
 APP_TAG="2.8.1502-pre"
@@ -138,7 +142,29 @@ AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
 AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
 echo "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
 
+# create new service principal and update the cluster to use it (seems these expire after a year)
+# https://docs.microsoft.com/en-us/azure/aks/update-credentials
+SERVICE_PRINCIPAL=`az ad sp create-for-rbac --skip-assignment --name $CLUSTER -o json`
+AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
+AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
+az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $AZ_USERNAME --client-secret $AZ_PASSWORD
+
 # delete the entire thing
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 
 # https://support.binarylane.com.au/support/solutions/articles/1000055889-how-to-benchmark-disk-i-o
+
+# https://github.com/FairwindsOps/goldilocks
+# https://www.fairwinds.com/news/introducing-goldilocks-a-tool-for-recommending-resource-requests
+# kubectl -n goldilocks port-forward svc/goldilocks-dashboard 8080:80
+
+# kubectl port-forward --namespace kubecost deployment/kubecost-cost-analyzer 9090
+
+# think about using this instead of kubecost
+# https://github.com/helm/charts/tree/master/stable/prometheus-operator
+
+### TODO
+# monitor resource usages over next week
+# set resource request and limits
+# scale ES up to 4 nodes
+# change VM reserved instances to 5 instead of 4

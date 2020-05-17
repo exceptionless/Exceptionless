@@ -2,11 +2,14 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +22,26 @@ namespace Exceptionless.Tests.Repositories {
         public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IStackRepository>();
+        }
+
+        [Fact]
+        public async Task CanGetByStatus() {
+            Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
+            var organizationRepository = GetService<IOrganizationRepository>();
+            var organization = await organizationRepository.GetByIdAsync("50b401fa9064371a7ceae394");
+            var appFilter = new AppFilter(organization);
+            var stackIds = await _repository.GetIdsByFilterAsync(appFilter, "status:open OR status:regressed", DateTime.UtcNow.AddDays(-5), DateTime.UtcNow, o => o.PageLimit(10000));
+            
+            var eventRepository = GetService<IEventRepository>();
+            int page = 1;
+            int limit = 20;
+            int skip = (page - 1) * limit;
+
+            var systemFilter = new RepositoryQuery<PersistentEvent>().Stack(stackIds);
+            var stackTerms = (await eventRepository.CountBySearchAsync(systemFilter, "", $"terms:(stack_id~100000000 -cardinality:user sum:count~1 min:date max:date)")).Aggregations.Terms<string>("terms_stack_id");
+            
+            string[] stackIdsPage = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
+            var stacks = await _repository.GetByIdsAsync(stackIds);
         }
 
         [Fact]
