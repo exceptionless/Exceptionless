@@ -30,6 +30,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             JsonSerializerSettings serializerSettings,
             ICacheClient cacheClient, 
             IMessageBus messageBus, 
+            IServiceProvider serviceProvider,
             ILoggerFactory loggerFactory
         ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _appOptions = appOptions;
@@ -37,7 +38,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
-            AddIndex(Events = new EventIndex(this, appOptions));
+            AddIndex(Events = new EventIndex(this, serviceProvider, appOptions));
             AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.ElasticsearchOptions.NumberOfReplicas));
             AddIndex(Organizations = new OrganizationIndex(this));
             AddIndex(Projects = new ProjectIndex(this));

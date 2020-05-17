@@ -35,7 +35,6 @@ spec:
               cpu: 4
             limits:
               memory: 18Gi
-              cpu: 4
         # related to "node.store.allow_mmap: false" setting above
         initContainers:
         - name: sysctl

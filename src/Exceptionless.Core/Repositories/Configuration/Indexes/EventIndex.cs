@@ -10,15 +10,18 @@ using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : DailyIndex<PersistentEvent> {
         private readonly ExceptionlessElasticConfiguration _configuration;
+        private readonly IServiceProvider _serviceProvider;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
+        public EventIndex(ExceptionlessElasticConfiguration configuration, IServiceProvider serviceProvider, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
             _configuration = configuration;
+            _serviceProvider = serviceProvider;
 
             if (appOptions.MaximumRetentionDays > 0)
                 MaxIndexAge = TimeSpan.FromDays(appOptions.MaximumRetentionDays);
@@ -113,6 +116,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
+            var stackRepository = _serviceProvider.GetRequiredService<IStackRepository>();
             config
                 .SetDefaultFields(new[] {
                     "id",
@@ -139,7 +143,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     { Alias.UserDescription, $"data.{Event.KnownDataKeys.UserDescription}.{nameof(UserDescription.Description).ToLowerUnderscoredWords()}" },
                     { Alias.OperatingSystemVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.OSVersion}" },
                     { Alias.OperatingSystemMajorVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.OSMajorVersion}" }
-                });
+                })
+                .UseEventJoinFilterVisitor(new EventJoinFilterVisitor(stackRepository, _configuration.LoggerFactory));
         }
 
         public ElasticsearchOptions Options => (Configuration as ExceptionlessElasticConfiguration)?.Options;
