@@ -130,7 +130,7 @@ ctx._source.total_occurrences += params.count;";
             if (results.Total > 10000)
                 throw new ApplicationException("Please limit your search query");
             
-            return results.Documents.Select(s => s.Id).ToArray();
+            return results.Hits.Select(s => s.Id).ToArray();
         }
 
         public async Task MarkAsRegressedAsync(string stackId) {
