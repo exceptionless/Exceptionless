@@ -58,22 +58,28 @@ FROM exceptionless/elasticsearch:7.7.0 AS all
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY --from=exceptionless/ui:latest /app ./wwwroot
+COPY --from=exceptionless/ui:latest /usr/local/bin/bootstrap /usr/local/bin/bootstrap
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
-# install dotnet
+# install dotnet and supervisor
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
     yum -y install aspnetcore-runtime-3.1 && \
     yum -y install epel-release && \
     yum -y install supervisor
 
-ENV discovery.type=single-node
-ENV xpack.security.enabled=false
+ENV discovery.type=single-node \
+    xpack.security.enabled=false \
+    ASPNETCORE_URLS=http://+:5000 \
+    EX_ApiUrl=http://localhost:5000 \
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
+    EX_RunJobsInProcess=true
 
-EXPOSE 5000 9200 9300
+EXPOSE 5000 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # docker build --target all -t ex-all .
-# docker run -it -p 5000:5000 -p 9200:9200 ex-all
-# docker run -it -p 5000:5000 -p 9200:9200 --entrypoint /bin/bash ex-all
+# docker run -it -p 5000:80 -p 9200:9200 ex-all
+# docker run -it -p 5000:80 -p 9200:9200 --entrypoint /bin/bash ex-all

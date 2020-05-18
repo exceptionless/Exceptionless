@@ -48,7 +48,7 @@ jobs:
             docker push docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
           done
         done
-        for image in {"api","job"}; do
+        for image in {"api","job","exceptionless"}; do
           for tag in {${{ steps.version.outputs.version }},latest}; do
             docker tag ex-$image exceptionless/$image-ci:$tag
             docker push exceptionless/$image-ci:$tag
@@ -58,7 +58,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # tag and push docker image
-        for image in {"api","job"}; do
+        for image in {"api","job","exceptionless"}; do
           for tag in {${{ steps.version.outputs.version }},latest}; do
             docker tag ex-$image exceptionless/$image:$tag
             docker push exceptionless/$image:$tag
