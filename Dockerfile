@@ -52,9 +52,9 @@ WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 
-# all in one
+# everything
 
-FROM exceptionless/elasticsearch:7.7.0 AS all
+FROM exceptionless/elasticsearch:7.7.0 AS exceptionless
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY --from=exceptionless/ui:latest /app ./wwwroot
@@ -79,7 +79,3 @@ ENV discovery.type=single-node \
 EXPOSE 5000 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
-# docker build --target all -t ex-all .
-# docker run -it -p 5000:80 -p 9200:9200 ex-all
-# docker run -it -p 5000:80 -p 9200:9200 --entrypoint /bin/bash ex-all
