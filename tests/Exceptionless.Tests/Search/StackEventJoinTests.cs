@@ -7,6 +7,8 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,6 +19,7 @@ namespace Exceptionless.Tests.Repositories {
         private readonly IEventRepository _eventRepository;
 
         public StackEventJoinTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+            TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             _stackRepository = GetService<IStackRepository>();
             _eventRepository = GetService<IEventRepository>();
         }
@@ -29,7 +32,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("status:fixed", 2)]
         [InlineData("status:regressed", 1)]
         [InlineData("@stack(status:open)", 1)]
-        public async Task GetByDescriptionAsync(string filter, int count) {
+        public async Task GetByStatusAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -47,9 +50,14 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
         [InlineData("type:error", 2)]
         public async Task GetByJoinFilterAsync(string filter, int count) {
+            Log.MinimumLevel = LogLevel.Trace;
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
+        }
+        
+        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+            return _eventRepository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
         }
 
         private async Task CreateDataAsync() {
@@ -62,8 +70,7 @@ namespace Exceptionless.Tests.Repositories {
 
                 using (var stream = new FileStream(file, FileMode.Open)) {
                     using (var streamReader = new StreamReader(stream)) {
-                        if (file.StartsWith("event")) {
-
+                        if (file.Contains("event")) {
                             var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
                             Assert.NotNull(events);
                             Assert.True(events.Count > 0);
@@ -84,8 +91,5 @@ namespace Exceptionless.Tests.Repositories {
             configuration.Events.QueryParser.Configuration.RefreshMapping();
         }
 
-        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            return _eventRepository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
-        }
     }
 }

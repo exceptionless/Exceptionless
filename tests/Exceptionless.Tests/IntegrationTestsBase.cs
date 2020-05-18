@@ -100,8 +100,6 @@ namespace Exceptionless.Tests {
         }
 
         protected virtual async Task ResetDataAsync() {
-            return;
-
             await _semaphoreSlim.WaitAsync();
             try {
                 var oldLoggingLevel = Log.MinimumLevel;
