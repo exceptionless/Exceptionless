@@ -51,3 +51,29 @@ FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
+
+# all in one
+
+FROM exceptionless/elasticsearch:7.7.0 AS all
+WORKDIR /app
+COPY --from=api-publish /app/src/Exceptionless.Web/out ./
+COPY --from=exceptionless/ui:latest /app ./wwwroot
+COPY ./build/docker-entrypoint.sh ./
+COPY ./build/supervisord.conf /etc/
+
+# install dotnet
+RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
+    yum -y install aspnetcore-runtime-3.1 && \
+    yum -y install epel-release && \
+    yum -y install supervisor
+
+ENV discovery.type=single-node
+ENV xpack.security.enabled=false
+
+EXPOSE 5000 9200 9300
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# docker build --target all -t ex-all .
+# docker run -it -p 5000:5000 -p 9200:9200 ex-all
+# docker run -it -p 5000:5000 -p 9200:9200 --entrypoint /bin/bash ex-all
