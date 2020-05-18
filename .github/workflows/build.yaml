@@ -31,8 +31,9 @@ jobs:
     - name: Build Docker Images
       if: github.event_name != 'pull_request'
       run: |
-        docker build --target api -t ex-api .
-        docker build --target job -t ex-job .
+        for image in {"api","job","exceptionless"}; do
+          docker build --target $image -t ex-$image .
+        done
     - name: Log in to GitHub Packages
       run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
     - name: Log in to Docker Hub
@@ -42,7 +43,7 @@ jobs:
       if: github.event_name != 'pull_request'
       run: |
         # tag and push docker image
-        for image in {"api","job"}; do
+        for image in {"api","job","exceptionless"}; do
           for tag in {${{ steps.version.outputs.version }},latest}; do
             docker tag ex-$image docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
             docker push docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
