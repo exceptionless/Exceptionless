@@ -80,7 +80,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 var systemFilter = builderContext?.Source.GetAppFilter();
                 var ranges = builderContext?.Source.GetDateRanges();
                 var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MinValue;
-                var utcEnd = ranges?.Where(r => r.UseDateRange).OrderByDescending(r => r.EndDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MaxValue;
+                var utcEnd = ranges?.Where(r => r.UseEndDate).OrderByDescending(r => r.EndDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MaxValue;
                 var stackIds = await _stackRepository.GetIdsByFilterAsync(systemFilter, term, utcStart, utcEnd, o => o.PageLimit(10000)).AnyContext();
                 if (isTraceLogLevelEnabled) 
                     _logger.LogTrace("Setting term query with {IdCount} ids on parent GroupNode: {GroupNode}", stackIds?.Length ?? 0, node.Parent);
