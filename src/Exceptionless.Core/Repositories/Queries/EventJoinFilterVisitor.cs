@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Options;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
@@ -76,7 +77,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                     _logger.LogTrace("Visiting GroupNode Field {FieldName} with resolved term: {Term}", node.Field, term);
                 
                 var builderContext = context as IQueryBuilderContext;
-                var systemFilter = builderContext?.Source.GetSystemFilter();
+                var systemFilter = builderContext?.Source.GetAppFilter();
                 var ranges = builderContext?.Source.GetDateRanges();
                 var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MinValue;
                 var utcEnd = ranges?.Where(r => r.UseDateRange).OrderByDescending(r => r.EndDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MaxValue;
