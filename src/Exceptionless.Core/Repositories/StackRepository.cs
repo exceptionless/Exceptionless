@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Repositories {
         private string GetStackSignatureCacheKey(string projectId, string signatureHash) {
             return String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
         }
-        
+
         public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
             return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
         }
@@ -120,10 +120,10 @@ ctx._source.total_occurrences += params.count;";
             return FindAsync(q => query, options);
         }
 
-        public async Task<string[]> GetIdsByFilterAsync(ISystemFilter systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
+        public async Task<string[]> GetIdsByFilterAsync(AppFilter systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
             IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
                 .DateRange(utcStart, utcEnd, InferField(s => s.FirstOccurrence))
-                .SystemFilter(systemFilter)
+                .AppFilter(systemFilter)
                 .FilterExpression(userFilter);
 
             var results = await FindAsync(q => query.OnlyIds(), options).AnyContext();
