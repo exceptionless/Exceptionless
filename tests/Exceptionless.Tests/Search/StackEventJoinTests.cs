@@ -39,6 +39,7 @@ namespace Exceptionless.Tests.Repositories {
         }
         
         [Theory]
+        [InlineData("is_fixed:true", 1)]
         [InlineData("status:fixed", 1)] // Returns 1 because there is two fixed stacks but only one fixed event.
         [InlineData("@stack:(status:fixed)", 1)] // Returns 1 because there is two fixed stacks but only one fixed event.
         [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved

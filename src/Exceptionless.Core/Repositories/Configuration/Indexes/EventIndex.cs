@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Configuration;
@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddAlias($"{Name}-last30days", TimeSpan.FromDays(30));
             AddAlias($"{Name}-last90days", TimeSpan.FromDays(90));
         }
-        
+
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
             var mapping = map
                 .Dynamic(false)
@@ -134,6 +134,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     $"data.{Event.KnownDataKeys.UserInfo}.{nameof(UserInfo.Name).ToLowerUnderscoredWords()}"
                 })
                 .AddQueryVisitor(new EventFieldsQueryVisitor())
+                .AddQueryVisitorBefore<EventFieldsQueryVisitor>(new StackFieldResolverQueryVisitor())
                 .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.BrowserVersion}" },
                     { Alias.BrowserMajorVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.BrowserMajorVersion}" },
@@ -205,7 +206,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string URL_PATH_TOKENIZER = "urlpath";
         private const string HOST_TOKENIZER = "hostname";
         private const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        
+
         private const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error')))
   return;
@@ -299,7 +300,7 @@ ctx.error.code = codes;";
     internal static class EventIndexExtensions {
         public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
             return descriptor
-                 .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
+                .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
                 .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
                 .Object<object>(f => f.Name("error").Properties(p1 => p1
                     .Keyword(f3 => f3.Name("code").IgnoreAbove(1024).Boost(1.1))
@@ -308,7 +309,7 @@ ctx.error.code = codes;";
                     .Text(f6 => f6.Name("targettype").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
                     .Text(f6 => f6.Name("targetmethod").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())));
         }
-        
+
         public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryAliases(this PropertiesDescriptor<PersistentEvent> descriptor) {
             return descriptor
                 .FieldAlias(a => a.Name(EventIndex.Alias.Version).Path(f => (string)f.Data[Event.KnownDataKeys.Version]))
