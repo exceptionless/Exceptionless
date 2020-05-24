@@ -13,6 +13,18 @@
     <PackageReference Include="Foundatio.Hosting" Version="9.1.1" />
     <PackageReference Include="Foundatio.Minio" Version="9.0.0" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="9.0.0" />
+    <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="3.2.0" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="3.2.0" />
+    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="3.2.0" />
+    <PackageReference Include="App.Metrics.Reporting.Http" Version="3.2.0" />
+    <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="3.2.0" />
+    <PackageReference Include="Foundatio.Aliyun" Version="9.0.1-alpha.0.13" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="10.0.0-alpha3.5" />
+    <PackageReference Include="Foundatio.AWS" Version="10.0.0-alpha3.1" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="9.0.1-alpha.0.13" />
+    <PackageReference Include="Foundatio.Hosting" Version="10.0.0-alpha3.5" />
+    <PackageReference Include="Foundatio.Minio" Version="9.0.1-alpha.0.7" />
+    <PackageReference Include="Foundatio.RabbitMQ" Version="9.0.1-alpha.0.14" />
     <PackageReference Include="StackExchange.Redis" Version="2.1.39" />
     <PackageReference Include="Foundatio.Redis" Version="9.0.1-alpha.0.20" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />

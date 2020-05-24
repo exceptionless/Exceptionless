@@ -75,8 +75,8 @@ namespace Exceptionless.Tests.Jobs {
         [Fact]
         public async Task CanRunJobWithMassiveEventAsync() {
             var ev = GenerateEvent();
-            for (int i = 1; i < 150; i++)
-                ev.Data[$"{i}MB"] = new string('0', 1024 * 1000);
+            for (int i = 1; i < 100; i++)
+                ev.Data[$"{i}MB"] = new string('0', 1024 * 1000); 
 
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
