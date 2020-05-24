@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.7" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.5" />
+    <PackageReference Include="Foundatio.Hosting" Version="10.0.0-alpha3.5" />
     <PackageReference Include="Exceptionless.AspNetCore.Signed" Version="4.3.2027" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.14.0" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="3.2.0" />
