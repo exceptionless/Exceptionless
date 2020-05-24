@@ -1,6 +1,6 @@
 {
   "recommendations": [
-    "ms-vscode.csharp",
+    "ms-dotnettools.csharp",
     "streetsidesoftware.code-spell-checker",
     "tintoy.msbuild-project-tools",
     "humao.rest-client",
