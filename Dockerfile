@@ -57,8 +57,8 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 FROM exceptionless/elasticsearch:7.7.0 AS exceptionless
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=exceptionless/ui:latest /app ./wwwroot
-COPY --from=exceptionless/ui:latest /usr/local/bin/bootstrap /usr/local/bin/bootstrap
+COPY --from=exceptionless/ui-ci:latest /app ./wwwroot
+COPY --from=exceptionless/ui-ci:latest /usr/local/bin/bootstrap /usr/local/bin/bootstrap
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
@@ -71,10 +71,10 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
     ASPNETCORE_URLS=http://+:5000 \
-    EX_ApiUrl=http://localhost:5000 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
-    EX_RunJobsInProcess=true
+    EX_RunJobsInProcess=true \
+    EX_Html5Mode=true
 
 EXPOSE 5000 9200
 
