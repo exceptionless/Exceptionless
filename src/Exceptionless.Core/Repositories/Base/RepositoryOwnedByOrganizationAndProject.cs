@@ -12,11 +12,11 @@ namespace Exceptionless.Core.Repositories {
             AddPropertyRequiredForRemove(o => o.ProjectId);
         }
 
-        public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T> options = null) {
+        public virtual Task<QueryResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T> options = null) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
             
-            return FindAsync(q => q.Project(projectId), options);
+            return QueryAsync(q => q.Project(projectId), options);
         }
 
         public virtual Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
             
-            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
+            return RemoveByQueryAsync(q => q.Organization(organizationId).Project(projectId));
         }
     }
 }

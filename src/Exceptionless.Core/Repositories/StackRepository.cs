@@ -43,8 +43,8 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
         }
 
-        public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
-            return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
+        public Task<QueryResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
+            return QueryAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
         }
 
         public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
@@ -105,28 +105,23 @@ ctx._source.total_occurrences += params.count;";
 
             var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
             if (IsCacheEnabled && hit != null)
-                await Cache.SetAsync(key, hit.Document, TimeSpan.FromSeconds(((StackIndex)ElasticIndex).DefaultCacheExpirationSeconds)).AnyContext();
+                await Cache.SetAsync(key, hit.Document, RepositorySettings.DefaultCacheExpiration).AnyContext();
 
             return hit?.Document;
         }
 
-        public Task<FindResults<Stack>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
+        public Task<QueryResults<Stack>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
             IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
                 .DateRange(utcStart, utcEnd, field ?? InferField(s => s.LastOccurrence))
                 .AppFilter(systemFilter)
                 .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(s => s.LastOccurrence);
-            return FindAsync(q => query, options);
+            return QueryAsync(q => query, options);
         }
 
-        public async Task<string[]> GetIdsByFilterAsync(AppFilter systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
-            IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
-                .DateRange(utcStart, utcEnd, InferField(s => s.FirstOccurrence))
-                .AppFilter(systemFilter)
-                .FilterExpression(userFilter);
-
-            var results = await FindAsync(q => query.OnlyIds(), options).AnyContext();
+        public async Task<string[]> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
+            var results = await QueryAsync(q => query.Configure().OnlyIds(), options).AnyContext();
             if (results.Total > 10000)
                 throw new ApplicationException("Please limit your search query");
             
@@ -134,7 +129,7 @@ ctx._source.total_occurrences += params.count;";
         }
 
         public async Task MarkAsRegressedAsync(string stackId) {
-            var stack = await GetByIdAsync(stackId).AnyContext();
+            var stack = await GetAsync(stackId).AnyContext();
             stack.Status = StackStatus.Regressed;
             await this.SaveAsync(stack, o => o.Cache()).AnyContext();
         }

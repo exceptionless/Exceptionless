@@ -37,7 +37,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447a44e78877ab1", 1)]
         [InlineData("2ecd0826e447a44e78877ab2", 1)]
-        public async Task GetByIdAsync(string id, int count) {
+        public async Task GetAsync(string id, int count) {
             var result = await GetByFilterAsync("id:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -183,8 +183,8 @@ namespace Exceptionless.Tests.Repositories {
             }
         }
 
-        private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
+        private Task<QueryResults<Stack>> GetByFilterAsync(string filter) {
+            return _repository.QueryAsync(q => q.FilterExpression(filter));
         }
     }
 }

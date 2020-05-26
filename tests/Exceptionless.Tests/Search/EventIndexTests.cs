@@ -56,7 +56,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("000000000000000000000000", 0)]
         [InlineData("54dbc16ca0f5c61398427b00", 1)]
         [InlineData("54dbc16ca0f5c61398427b01", 1)]
-        public async Task GetByIdAsync(string id, int count) {
+        public async Task GetAsync(string id, int count) {
             var result = await GetByFilterAsync("id:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -476,11 +476,11 @@ namespace Exceptionless.Tests.Repositories {
             configuration.Events.QueryParser.Configuration.RefreshMapping();
         }
 
-        private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null) {
+        private async Task<QueryResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null) {
             var result = await _validator.ValidateQueryAsync(filter);
             Assert.True(result.IsValid);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            return await _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
+            return await _repository.QueryAsync(q => q.FilterExpression(filter));
         }
     }
 }

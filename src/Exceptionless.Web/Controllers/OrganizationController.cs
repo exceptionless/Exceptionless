@@ -128,7 +128,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
-        public async Task<ActionResult<ViewOrganization>> GetByIdAsync(string id, string mode = null) {
+        public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string mode = null) {
             var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
@@ -652,7 +652,7 @@ namespace Exceptionless.Web.Controllers {
                 return false;
 
             string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
-            var results = await _repository.GetByIdsAsync(GetAssociatedOrganizationIds().ToArray(), o => o.Cache());
+            var results = await _repository.GetAsync(GetAssociatedOrganizationIds().ToArray(), o => o.Cache());
             return !results.Any(o => String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -748,7 +748,7 @@ namespace Exceptionless.Web.Controllers {
             var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
             var sf = new AppFilter(organizations);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)");
+            var result = await _eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)"));
             foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Aggregations.Terms<string>("terms_organization_id")?.Buckets.FirstOrDefault(t => t.Key == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

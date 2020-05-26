@@ -32,11 +32,11 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
             Log.LogInformation("Setting Is Configured for project: {project}", workItem.ProjectId);
 
-            var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
+            var project = await _projectRepository.GetAsync(workItem.ProjectId).AnyContext();
             if (project == null || project.IsConfigured.GetValueOrDefault())
                 return;
-
-            project.IsConfigured = workItem.IsConfigured || await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
+            
+            project.IsConfigured = workItem.IsConfigured || await _eventRepository.CountByQueryAsync(q => q.Project(project.Id).SoftDeleteMode(SoftDeleteQueryMode.All)).AnyContext() > 0;
             await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
         }
     }

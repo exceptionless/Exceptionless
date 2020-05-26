@@ -33,7 +33,7 @@ namespace Exceptionless.Tests.Repositories {
             await RefreshDataAsync();
             Assert.NotNull(organization.Id);
 
-            organization = await _repository.GetByIdAsync(organization.Id);
+            organization = await _repository.GetAsync(organization.Id);
             Assert.NotNull(organization);
 
             organization.Name = "New organization";
@@ -90,7 +90,7 @@ namespace Exceptionless.Tests.Repositories {
 
             await _cache.RemoveAllAsync();
             Assert.Equal(0, _cache.Count);
-            await _repository.GetByIdAsync(organization.Id, o => o.Cache());
+            await _repository.GetAsync(organization.Id, o => o.Cache());
             Assert.NotNull(organization.Id);
             Assert.Equal(1, _cache.Count);
 

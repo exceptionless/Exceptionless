@@ -28,9 +28,9 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanGetByStatus() {
             Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
             var organizationRepository = GetService<IOrganizationRepository>();
-            var organization = await organizationRepository.GetByIdAsync("50b401fa9064371a7ceae394");
+            var organization = await organizationRepository.GetAsync("50b401fa9064371a7ceae394");
             var appFilter = new AppFilter(organization);
-            var stackIds = await _repository.GetIdsByFilterAsync(appFilter, "status:open OR status:regressed", DateTime.UtcNow.AddDays(-5), DateTime.UtcNow, o => o.PageLimit(10000));
+            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(10000));
             
             var eventRepository = GetService<IEventRepository>();
             int page = 1;
@@ -38,10 +38,10 @@ namespace Exceptionless.Tests.Repositories {
             int skip = (page - 1) * limit;
 
             var systemFilter = new RepositoryQuery<PersistentEvent>().Stack(stackIds);
-            var stackTerms = (await eventRepository.CountBySearchAsync(systemFilter, "", $"terms:(stack_id~100000000 -cardinality:user sum:count~1 min:date max:date)")).Aggregations.Terms<string>("terms_stack_id");
+            var stackTerms = (await eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).AggregationsExpression("terms:(stack_id~100000000 -cardinality:user sum:count~1 min:date max:date)"))).Aggregations.Terms<string>("terms_stack_id");
             
             string[] stackIdsPage = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
-            var stacks = await _repository.GetByIdsAsync(stackIds);
+            var stacks = await _repository.GetAsync(stackIds);
         }
 
         [Fact]
@@ -67,11 +67,11 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanGetByFixedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
-            var results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
+            var results = await _repository.QueryAsync(q => q.FilterExpression("fixed:true"));
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
+            results = await _repository.QueryAsync(q => q.FilterExpression("fixed:false"));
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
@@ -80,13 +80,13 @@ namespace Exceptionless.Tests.Repositories {
             stack.MarkFixed();
             await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
 
-            results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
+            results = await _repository.QueryAsync(q => q.FilterExpression("fixed:true"));
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(results.Documents.Single().DateFixed);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
+            results = await _repository.QueryAsync(q => q.FilterExpression("fixed:false"));
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
         }
@@ -100,7 +100,7 @@ namespace Exceptionless.Tests.Repositories {
 
             await _repository.MarkAsRegressedAsync(stack.Id);
 
-            stack = await _repository.GetByIdAsync(stack.Id);
+            stack = await _repository.GetAsync(stack.Id);
             Assert.NotNull(stack);
             Assert.True(stack.Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(stack.DateFixed);
@@ -121,7 +121,7 @@ namespace Exceptionless.Tests.Repositories {
             var utcNow = SystemClock.UtcNow;
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
 
-            stack = await _repository.GetByIdAsync(stack.Id);
+            stack = await _repository.GetAsync(stack.Id);
             Assert.Equal(1, stack.TotalOccurrences);
             Assert.Equal(utcNow, stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
@@ -130,14 +130,14 @@ namespace Exceptionless.Tests.Repositories {
 
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
 
-            stack = await _repository.GetByIdAsync(stack.Id);
+            stack = await _repository.GetAsync(stack.Id);
             Assert.Equal(2, stack.TotalOccurrences);
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
 
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.AddDays(1), utcNow.AddDays(1), 1);
 
-            stack = await _repository.GetByIdAsync(stack.Id);
+            stack = await _repository.GetAsync(stack.Id);
             Assert.Equal(3, stack.TotalOccurrences);
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
