@@ -156,24 +156,34 @@ namespace Exceptionless.Web {
             
             app.UseCsp(csp => {
                 csp.ByDefaultAllow.FromSelf()
-                    .From("https://js.stripe.com");
+                    .From("https://js.stripe.com")
+                    .From("http://js.stripe.com");
                 csp.AllowFonts.FromSelf()
                     .From("https://fonts.gstatic.com")
-                    .From("https://maxcdn.bootstrapcdn.com");
+                    .From("http://fonts.gstatic.com")
+                    .From("https://maxcdn.bootstrapcdn.com")
+                    .From("http://maxcdn.bootstrapcdn.com");
                 csp.AllowImages.FromSelf()
                     .From("data:")
                     .From("https://q.stripe.com")
-                    .From("https://www.gravatar.com");
+                    .From("http://q.stripe.com")
+                    .From("https://www.gravatar.com")
+                    .From("http://www.gravatar.com");
                 csp.AllowScripts.FromSelf()
                     .AllowUnsafeInline()
                     .AllowUnsafeEval()
                     .From("https://cdnjs.cloudflare.com")
+                    .From("http://cdnjs.cloudflare.com")
                     .From("https://js.stripe.com")
-                    .From("https://maxcdn.bootstrapcdn.com");
+                    .From("http://js.stripe.com")
+                    .From("https://maxcdn.bootstrapcdn.com")
+                    .From("http://maxcdn.bootstrapcdn.com");
                 csp.AllowStyles.FromSelf()
                     .AllowUnsafeInline()
                     .From("https://fonts.googleapis.com")
-                    .From("https://maxcdn.bootstrapcdn.com");
+                    .From("http://fonts.googleapis.com")
+                    .From("https://maxcdn.bootstrapcdn.com")
+                    .From("http://maxcdn.bootstrapcdn.com");
             });
 
             app.Use(async (context, next) => {
@@ -230,9 +240,6 @@ namespace Exceptionless.Web {
             // Reject event posts in organizations over their max event limits.
             app.UseMiddleware<OverageMiddleware>();
 
-            app.UseEndpoints(endpoints => {
-                endpoints.MapControllers();
-            });
             app.UseSwagger(c => {
                 c.RouteTemplate = "docs/{documentName}/swagger.json";
             });
@@ -246,6 +253,11 @@ namespace Exceptionless.Web {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
             }
+            
+            app.UseEndpoints(endpoints => {
+                endpoints.MapControllers();
+                endpoints.MapFallbackToFile("{**slug:nonfile}", "index.html");
+            });
         }
     }
 }

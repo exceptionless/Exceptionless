@@ -14,7 +14,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.102
+        dotnet-version: 3.1.300
     - name: Build Reason
       run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
     - name: Build Version
@@ -27,7 +27,7 @@ jobs:
     - name: Start Services
       run: docker-compose -f docker-compose.services.yml up -d elasticsearch && docker-compose -f docker-compose.services.yml up ready
     - name: Run Tests
-      run: dotnet test --configuration Release --results-directory artifacts --no-build --logger:trx
+      run: dotnet test --configuration Release --no-build
     - name: Build Docker Images
       if: github.event_name != 'pull_request'
       run: |
@@ -69,7 +69,7 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
       with:
-        version: v3.1.0
+        version: v3.2.1
     - name: Deploy Changes to Development Environment
       if: github.ref == 'refs/heads/feature/discard' && github.event_name != 'pull_request'
       run: |
@@ -82,8 +82,3 @@ jobs:
         az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
         az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
         helm upgrade --set "api.image.tag=${{ steps.version.outputs.version }}" --set "jobs.image.tag=${{ steps.version.outputs.version }}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        name: artifacts
-        path: artifacts

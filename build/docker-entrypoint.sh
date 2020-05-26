@@ -7,6 +7,7 @@ else
     mkdir -p Temp/
 
     sed -i -E "s/app\//app\/wwwroot\//" /usr/local/bin/bootstrap
+    sed -i -E "s/echo \"Running NGINX\"//" /usr/local/bin/bootstrap
     sed -i -E "s/nginx//" /usr/local/bin/bootstrap
     /usr/local/bin/bootstrap
 
