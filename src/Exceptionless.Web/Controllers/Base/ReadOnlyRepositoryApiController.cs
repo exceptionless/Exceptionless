@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Web.Controllers {
-    public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : ISearchableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
+    public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : IQueryableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
         protected readonly TRepository _repository;
         protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
         protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
@@ -56,7 +56,7 @@ namespace Exceptionless.Web.Controllers {
 
             CountResult result;
             try {
-                result = await _repository.CountBySearchAsync(query, filter, aggregations);
+                result = await _repository.CountByQueryAsync(q => q.SystemFilter(query).FilterExpression(filter).AggregationsExpression(aggregations));
             } catch (Exception ex) {
                 using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
@@ -75,7 +75,7 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
+            var model = await _repository.GetAsync(id, o => o.Cache(useCache));
             if (model == null)
                 return null;
 
@@ -92,7 +92,7 @@ namespace Exceptionless.Web.Controllers {
             if (ids == null || ids.Length == 0)
                 return EmptyModels;
 
-            var models = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
+            var models = await _repository.GetAsync(ids, o => o.Cache(useCache));
             if (_supportsSoftDeletes)
                 models = models.Where(m => !((ISupportSoftDeletes)m).IsDeleted).ToList();
 

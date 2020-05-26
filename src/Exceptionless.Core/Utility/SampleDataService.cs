@@ -68,10 +68,10 @@ namespace Exceptionless.Core.Utility {
         }
 
         public async Task CreateOrganizationAndProjectAsync(string userId) {
-            if (await _tokenRepository.GetByIdAsync(TEST_API_KEY).AnyContext() != null)
+            if (await _tokenRepository.GetAsync(TEST_API_KEY).AnyContext() != null)
                 return;
 
-            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
+            var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
@@ -109,10 +109,10 @@ namespace Exceptionless.Core.Utility {
         }
 
         public async Task CreateInternalOrganizationAndProjectAsync(string userId) {
-            if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() != null)
+            if (await _tokenRepository.GetAsync(INTERNAL_API_KEY).AnyContext() != null)
                 return;
 
-            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
+            var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();

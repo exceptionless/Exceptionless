@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Repositories {
             AddPropertyRequiredForRemove(o => o.OrganizationId);
         }
 
-        public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T> options = null) {
+        public virtual Task<QueryResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T> options = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
@@ -24,14 +24,14 @@ namespace Exceptionless.Core.Repositories {
             if (commandOptions.ShouldUseCache())
                 throw new Exception("Caching of paged queries is not allowed");
 
-            return FindAsync(new RepositoryQuery<T>().Organization(organizationId), commandOptions);
+            return QueryAsync(q => q.Organization(organizationId), o => commandOptions);
         }
 
         public virtual Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return RemoveAllAsync(q => q.Organization(organizationId));
+            return RemoveByQueryAsync(q => q.Organization(organizationId));
         }
 
         protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents, ICommandOptions options = null) {

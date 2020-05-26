@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories {
             return query.AddCollectionOptionValue(OrganizationsKey, organizationId);
         }
 
-        public static T Organizations<T>(this T query, IEnumerable<string> organizationIds) where T : IRepositoryQuery {
+        public static T Organization<T>(this T query, IEnumerable<string> organizationIds) where T : IRepositoryQuery {
             return query.AddCollectionOptionValue(OrganizationsKey, organizationIds.Distinct());
         }
     }

@@ -43,7 +43,7 @@ namespace Exceptionless.Web.Utility {
                 return;
             }
 
-            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+            var project = await _projectRepository.GetAsync(projectId, o => o.Cache());
             if (project == null) {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;

@@ -124,10 +124,10 @@ namespace Exceptionless.Core.Jobs {
         private async Task<bool> IsEnabledAsync(WebHookNotification body) {
             switch (body.Type) {
                 case WebHookType.General:
-                    var webHook = await _webHookRepository.GetByIdAsync(body.WebHookId, o => o.Cache()).AnyContext();
+                    var webHook = await _webHookRepository.GetAsync(body.WebHookId, o => o.Cache()).AnyContext();
                     return webHook?.IsEnabled ?? false;
                 case WebHookType.Slack:
-                    var project = await _projectRepository.GetByIdAsync(body.ProjectId, o => o.Cache()).AnyContext();
+                    var project = await _projectRepository.GetAsync(body.ProjectId, o => o.Cache()).AnyContext();
                     var token = project?.GetSlackToken();
                     return token != null;
             }
@@ -141,7 +141,7 @@ namespace Exceptionless.Core.Jobs {
                     await _webHookRepository.MarkDisabledAsync(body.WebHookId).AnyContext();
                     break;
                 case WebHookType.Slack:
-                    var project = await _projectRepository.GetByIdAsync(body.ProjectId).AnyContext();
+                    var project = await _projectRepository.GetAsync(body.ProjectId).AnyContext();
                     var token = project?.GetSlackToken();
                     if (token == null)
                         return;

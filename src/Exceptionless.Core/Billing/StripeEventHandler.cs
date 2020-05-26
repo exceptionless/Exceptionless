@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Billing {
                 return;
             }
 
-            var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
+            var user = await _userRepository.GetAsync(org.BillingChangedByUserId).AnyContext();
             if (user == null) {
                 _logger.LogError("Unable to find billing user: {user}", org.BillingChangedByUserId);
                 return;
@@ -141,7 +141,7 @@ namespace Exceptionless.Core.Billing {
                 return;
             }
 
-            var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
+            var user = await _userRepository.GetAsync(org.BillingChangedByUserId).AnyContext();
             if (user == null) {
                 _logger.LogError("Unable to find billing user: {0}", org.BillingChangedByUserId);
                 return;

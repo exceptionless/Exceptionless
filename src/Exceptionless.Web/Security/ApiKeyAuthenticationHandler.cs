@@ -84,7 +84,7 @@ namespace Exceptionless.Web.Security {
                 return AuthenticateResult.NoResult();
 
             Request.HttpContext.Items["ApiKey"] = token;
-            var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
+            var tokenRecord = await _tokenRepository.GetAsync(token, o => o.Cache());
             if (tokenRecord == null) {
                 using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
                     Logger.LogWarning("Token {Token} for {Path} not found.", token, Request.Path);
@@ -107,7 +107,7 @@ namespace Exceptionless.Web.Security {
             }
 
             if (!String.IsNullOrEmpty(tokenRecord.UserId)) {
-                var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
+                var user = await _userRepository.GetAsync(tokenRecord.UserId, o => o.Cache());
                 if (user == null) {
                     using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
                         Logger.LogWarning("Could not find user for token {Token} with user {user} for {Path}.", token, tokenRecord.UserId, Request.Path);

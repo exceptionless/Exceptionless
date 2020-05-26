@@ -59,10 +59,10 @@ namespace Exceptionless.Web.Utility {
             }
 
             string organizationId = context.Request.GetDefaultOrganizationId();
-            var organizationTask = _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            var organizationTask = _organizationRepository.GetAsync(organizationId, o => o.Cache());
 
             string projectId = context.Request.GetDefaultProjectId();
-            var projectTask = _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+            var projectTask = _projectRepository.GetAsync(projectId, o => o.Cache());
 
             bool tooBig = false;
             if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers != null) {

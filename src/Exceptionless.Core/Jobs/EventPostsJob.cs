@@ -62,8 +62,8 @@ namespace Exceptionless.Core.Jobs {
             var ep = entry.Value;
             string payloadPath = Path.ChangeExtension(entry.Value.FilePath, ".payload");
             var payloadTask = _metrics.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath), MetricNames.PostsMarkFileActiveTime);
-            var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
-            var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
+            var projectTask = _projectRepository.GetAsync(ep.ProjectId, o => o.Cache());
+            var organizationTask = _organizationRepository.GetAsync(ep.OrganizationId, o => o.Cache());
 
             byte[] payload = await payloadTask.AnyContext();
             if (payload == null) {
