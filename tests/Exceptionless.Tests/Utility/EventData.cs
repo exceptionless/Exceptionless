@@ -1,9 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Plugins.EventParser;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Repositories;
 using Foundatio.Utility;
+using Xunit;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
@@ -151,6 +158,24 @@ namespace Exceptionless.Tests.Utility {
                     }
                 }
             };
+        }
+        
+        public static async Task CreateSearchDataAsync(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager) {
+            string path = Path.Combine("..", "..", "..", "Search", "Data");
+            foreach (string file in Directory.GetFiles(path, "event*.json", SearchOption.AllDirectories)) {
+                if (file.EndsWith("summary.json"))
+                    continue;
+
+                var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
+                Assert.NotNull(events);
+                Assert.True(events.Count > 0);
+                foreach (var ev in events)
+                    ev.CopyDataToIndex(Array.Empty<string>());
+
+                await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+            }
+
+            configuration.Events.QueryParser.Configuration.RefreshMapping();
         }
     }
 }

@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -14,11 +15,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories {
-    public sealed class StackEventJoinTests : IntegrationTestsBase {
+    public sealed class EventJoinTests : IntegrationTestsBase {
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
 
-        public StackEventJoinTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+        public EventJoinTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             _stackRepository = GetService<IStackRepository>();
             _eventRepository = GetService<IEventRepository>();
@@ -26,7 +27,9 @@ namespace Exceptionless.Tests.Repositories {
         
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
-            await CreateDataAsync();
+            
+            await StackData.CreateSearchDataAsync(_stackRepository, GetService<JsonSerializer>());
+            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
         }
         [Theory]
         [InlineData("status:fixed", 2)]
@@ -60,37 +63,5 @@ namespace Exceptionless.Tests.Repositories {
         private Task<QueryResults<PersistentEvent>> GetByFilterAsync(string filter) {
             return _eventRepository.QueryAsync(q => q.FilterExpression(filter));
         }
-
-        private async Task CreateDataAsync() {
-            string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var serializer = GetService<JsonSerializer>();
-            var parserPluginManager = GetService<EventParserPluginManager>();
-            foreach (string file in Directory.GetFiles(path, "*.json", SearchOption.AllDirectories)) {
-                if (file.EndsWith("summary.json"))
-                    continue;
-
-                using (var stream = new FileStream(file, FileMode.Open)) {
-                    using (var streamReader = new StreamReader(stream)) {
-                        if (file.Contains("event")) {
-                            var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
-                            Assert.NotNull(events);
-                            Assert.True(events.Count > 0);
-                            foreach (var ev in events)
-                                ev.CopyDataToIndex(Array.Empty<string>());
-
-                            await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
-                        } else {
-                            var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
-                            Assert.NotNull(stack);
-                            await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
-                        } 
-                    }
-                }
-            }
-            
-            var configuration = GetService<ExceptionlessElasticConfiguration>();
-            configuration.Events.QueryParser.Configuration.RefreshMapping();
-        }
-
     }
 }

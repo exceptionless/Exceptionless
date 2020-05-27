@@ -1,8 +1,8 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Newtonsoft.Json;
@@ -19,7 +19,7 @@ namespace Exceptionless.Tests.Repositories {
         
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
-            await CreateDataAsync();
+            await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>());
         }
 
         [Theory]
@@ -164,23 +164,6 @@ namespace Exceptionless.Tests.Repositories {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
-        }
-
-        private async Task CreateDataAsync() {
-            string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var serializer = GetService<JsonSerializer>();
-            foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
-                if (file.EndsWith("summary.json"))
-                    continue;
-
-                using (var stream = new FileStream(file, FileMode.Open)) {
-                    using (var streamReader = new StreamReader(stream)) {
-                        var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
-                        Assert.NotNull(stack);
-                        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
-                    }
-                }
-            }
         }
 
         private Task<QueryResults<Stack>> GetByFilterAsync(string filter) {
