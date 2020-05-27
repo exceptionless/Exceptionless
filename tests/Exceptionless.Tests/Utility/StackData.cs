@@ -1,8 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Newtonsoft.Json;
+using Xunit;
 
 namespace Exceptionless.Tests.Utility {
     internal static class StackData {
@@ -52,5 +58,22 @@ namespace Exceptionless.Tests.Utility {
 
             return stack;
         }
+        
+        public static  async Task CreateSearchDataAsync(IStackRepository stackRepository, JsonSerializer serializer) {
+            string path = Path.Combine("..", "..", "..", "Search", "Data");
+            foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
+                if (file.EndsWith("summary.json"))
+                    continue;
+
+                using (var stream = new FileStream(file, FileMode.Open)) {
+                    using (var streamReader = new StreamReader(stream)) {
+                        var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
+                        Assert.NotNull(stack);
+                        await stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
+                    }
+                }
+            }
+        }
+
     }
 }

@@ -1,11 +1,11 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -26,7 +26,7 @@ namespace Exceptionless.Tests.Repositories {
         
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
-            await CreateEventsAsync();
+            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _repository, GetService<EventParserPluginManager>());
         }
         
         [Theory]
@@ -454,26 +454,6 @@ namespace Exceptionless.Tests.Repositories {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
-        }
-
-        private async Task CreateEventsAsync() {
-            string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var parserPluginManager = GetService<EventParserPluginManager>();
-            foreach (string file in Directory.GetFiles(path, "event*.json", SearchOption.AllDirectories)) {
-                if (file.EndsWith("summary.json"))
-                    continue;
-
-                var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
-                Assert.NotNull(events);
-                Assert.True(events.Count > 0);
-                foreach (var ev in events)
-                    ev.CopyDataToIndex(Array.Empty<string>());
-
-                await _repository.AddAsync(events, o => o.ImmediateConsistency());
-            }
-
-            var configuration = GetService<ExceptionlessElasticConfiguration>();
-            configuration.Events.QueryParser.Configuration.RefreshMapping();
         }
 
         private async Task<QueryResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null) {
