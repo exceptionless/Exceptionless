@@ -12,14 +12,19 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Utility.Results;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
@@ -186,6 +191,45 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(batchSize * batchCount, await _eventRepository.CountAsync());
         }
 
+        [Fact]
+        public async Task CanGetMostFrequentStackMode() {
+            await CreateStacksAndEventsAsync();
+            
+            var results = await SendRequestAsAsync<OkWithResourceLinks<EventSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events?filter=TODO&sort=TODO&mode=stack")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotEmpty(results.Content);
+        }
+        
+        [Fact]
+        public async Task CanGetNewStackMode() {
+            await CreateStacksAndEventsAsync();
+            
+            var results = await SendRequestAsAsync<OkWithResourceLinks<EventSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events?filter=TODO&sort=TODO&mode=stack")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotEmpty(results.Content);
+        }
+
+        [Fact]
+        public async Task GetUsersStackMode() {
+            await CreateStacksAndEventsAsync();
+            
+            var results = await SendRequestAsAsync<OkWithResourceLinks<EventSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events?filter=TODO&sort=TODO&mode=stack")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotEmpty(results.Content);
+        }
+        
         private Task CreateOrganizationAndProjectsAsync() {
             var organizationRepository = GetService<IOrganizationRepository>();
             var projectRepository = GetService<IProjectRepository>();
@@ -196,6 +240,11 @@ namespace Exceptionless.Tests.Controllers {
                 projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
                 tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
             );
+        }
+
+        private async Task CreateStacksAndEventsAsync() {
+            await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>());
+            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
         }
     }
 }
