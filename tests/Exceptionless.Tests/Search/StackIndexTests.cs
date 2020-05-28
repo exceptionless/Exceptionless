@@ -16,7 +16,7 @@ namespace Exceptionless.Tests.Repositories {
         public StackIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _repository = GetService<IStackRepository>();
         }
-        
+
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
             await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>());
@@ -32,7 +32,7 @@ namespace Exceptionless.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447a44e78877ab1", 1)]
@@ -45,7 +45,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877555", 4)]
+        [InlineData("537650f3b77efe23a47914f3", 4)]
         public async Task GetByOrganizationIdAsync(string id, int count) {
             var result = await GetByFilterAsync("organization:" + id);
             Assert.NotNull(result);
@@ -54,7 +54,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877ab2", 4)]
+        [InlineData("537650f3b77efe23a47914f4", 4)]
         public async Task GetByProjectIdAsync(string id, int count) {
             var result = await GetByFilterAsync("project:" + id);
             Assert.NotNull(result);

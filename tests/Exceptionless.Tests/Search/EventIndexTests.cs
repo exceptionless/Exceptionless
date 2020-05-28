@@ -23,12 +23,12 @@ namespace Exceptionless.Tests.Repositories {
             _repository = GetService<IEventRepository>();
             _validator = GetService<PersistentEventQueryValidator>();
         }
-        
+
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _repository, GetService<EventParserPluginManager>());
         }
-        
+
         [Theory]
         [InlineData("54dbc16ca0f5c61398427b00", 1)] // Id
         [InlineData("\"GET /Print\"", 1)] // Source
@@ -64,7 +64,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877555", 4)]
+        [InlineData("537650f3b77efe23a47914f3", 4)]
         public async Task GetByOrganizationIdAsync(string id, int count) {
             var result = await GetByFilterAsync("organization:" + id);
             Assert.NotNull(result);
@@ -73,7 +73,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877ab2", 4)]
+        [InlineData("537650f3b77efe23a47914f4", 4)]
         public async Task GetByProjectIdAsync(string id, int count) {
             var result = await GetByFilterAsync("project:" + id);
             Assert.NotNull(result);

@@ -102,13 +102,25 @@ namespace Exceptionless.Core.Repositories.Queries
                     case "is_hidden":
                     case StackIndex.Alias.IsHidden:
                         bool isHidden = Boolean.TryParse(termNode.Term, out bool hidden) && hidden;
-                        stackNode = new GroupNode {
-                            Field = EventJoinFilterVisitor.StackFieldName,
-                            HasParens = true,
-                            Operator = isHidden ? GroupOperator.And : GroupOperator.Or,
-                            Left = new TermNode {Field = "status", Term = "open", IsNegated = !isHidden},
-                            Right = new TermNode {Field = "status", Term = "regressed", IsNegated = !isHidden}
-                        };
+                        if (isHidden) {
+                            stackNode = new GroupNode {
+                                Field = EventJoinFilterVisitor.StackFieldName,
+                                HasParens = true,
+                                IsNegated = true,
+                                Operator = GroupOperator.And,
+                                Left = new TermNode {Field = "status", Term = "open" },
+                                Right = new TermNode {Field = "status", Term = "regressed" }
+                            };
+                        } else {
+                            stackNode = new GroupNode {
+                                Field = EventJoinFilterVisitor.StackFieldName,
+                                HasParens = true,
+                                Operator = GroupOperator.Or,
+                                Left = new TermNode {Field = "status", Term = "open" },
+                                Right = new TermNode {Field = "status", Term = "regressed" }
+                            };
+                        }
+
                         break;
                 }
             }

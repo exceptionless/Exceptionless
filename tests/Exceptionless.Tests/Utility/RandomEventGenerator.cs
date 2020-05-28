@@ -20,8 +20,8 @@ namespace Exceptionless.Helpers {
 
         public PersistentEvent GeneratePersistent(bool setUserIdentity = true) {
             var ev = new PersistentEvent {
-                OrganizationId = "1ecd0826e447ad1e78877555",
-                ProjectId = "1ecd0826e447ad1e78877ab2",
+                OrganizationId = "537650f3b77efe23a47914f3",
+                ProjectId = "537650f3b77efe23a47914f4",
                 StackId = "1ecd0826e447a44e78877ab1",
                 Date = SystemClock.UtcNow
             };

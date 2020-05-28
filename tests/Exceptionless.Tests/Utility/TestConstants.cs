@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Tests.Utility {
     public static class TestConstants {
-        public const string ProjectId = "1ecd0826e447ad1e78877ab2";
+        public const string ProjectId = SampleDataService.TEST_PROJECT_ID;
         public const string ProjectIdWithNoRoles = "1ecd0826e447ad1e78877a66";
         public const string SuspendedProjectId = "1ecd0826e446dd1e78877ab3";
         public const string InvalidProjectId = "0ecd0826e447ad1e78877ab0";
 
-        public const string OrganizationId = "1ecd0826e447ad1e78877555";
+        public const string OrganizationId = SampleDataService.TEST_ORG_ID;
         public const string OrganizationId2 = "1ecd0826e447ad1e78877666";
         public const string OrganizationId3 = "1ecd0826e447ad1e78877777";
         public const string OrganizationId4 = "1ecd0826e447ad1e78877888";
@@ -20,9 +21,9 @@ namespace Exceptionless.Tests.Utility {
 
         public const string UserId = "1ecd0826e447ad1e78822555";
         public const string UserId2 = "1ecd0826e447ad1e78822666";
-        public const string UserEmail = "user1@exceptionless.io";
+        public const string UserEmail = SampleDataService.TEST_USER_EMAIL;
         public const string UserEmail2 = "user2@exceptionless.io";
-        public const string UserPassword = "2B5A3E6DFD3440CDA57E598F8B5D73B4";
+        public const string UserPassword = SampleDataService.TEST_USER_PASSWORD;
         public static readonly string UserPasswordHash = UserPassword.ToSHA256();
         public const string UserIdWithNoRoles = "1ecd0826e447ad1e78822556";
         public const string UserEmailWithNoRoles = "user.noroles@exceptionless.io";
@@ -36,10 +37,8 @@ namespace Exceptionless.Tests.Utility {
         public const string InvalidStackId = "0ecd0826e447ad1e78877ab0";
         public const string TokenId = "88cd0826e447a44e78877ab1";
 
-        public const string ApiKey = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
-        public const string ApiKey2 = "2ccd0826e447ad1e78877ab2";
-        public const string ApiKey3 = "3ccd0826e447ad1e78877ab3";
-        public const string ApiKey4 = "4ccd0826e447ad1e78877ab4";
+        public const string ApiKey = SampleDataService.TEST_API_KEY;
+        public const string UserApiKey = SampleDataService.TEST_USER_API_KEY;
         public const string SuspendedApiKey = "5ccd0826e447ad1e78877ab4";
         public const string InvalidApiKey = "1dddddd6e447ad1e78877ab1";
 

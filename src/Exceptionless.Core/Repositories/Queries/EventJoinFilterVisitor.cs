@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 var ranges = builderContext?.Source.GetDateRanges();
                 var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MinValue;
                 var utcEnd = ranges?.Where(r => r.UseEndDate).OrderByDescending(r => r.EndDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MaxValue;
-                var stackIds = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).SortExpression(term).DateRange(utcStart, utcEnd), o => o.PageLimit(9999)).AnyContext();
+                var stackIds = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(term).DateRange(utcStart, utcEnd), o => o.PageLimit(9999)).AnyContext();
                 if (isTraceLogLevelEnabled) 
                     _logger.LogTrace("Setting term query with {IdCount} ids on parent GroupNode: {GroupNode}", stackIds?.Length ?? 0, node.Parent);
 

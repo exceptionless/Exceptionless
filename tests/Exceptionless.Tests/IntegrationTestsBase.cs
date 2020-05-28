@@ -48,6 +48,7 @@ namespace Exceptionless.Tests {
             Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
             Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
             Log.SetLogLevel<InMemoryMetricsClient>(LogLevel.Information);
+            Log.SetLogLevel("StartupActions", LogLevel.Warning);
             Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
             var configuredFactory = factory.Factories.FirstOrDefault();
