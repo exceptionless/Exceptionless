@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -8,7 +9,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Exceptionless.Core.Billing;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
@@ -17,12 +17,12 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
-using Exceptionless.Web.Utility.Results;
 using Foundatio.Jobs;
 using Foundatio.Queues;
-using Foundatio.Repositories;
+using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Xunit;
@@ -36,6 +36,9 @@ namespace Exceptionless.Tests.Controllers {
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
 
         public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+            TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
+            Log.MinimumLevel = LogLevel.Warning;
+
             _eventRepository = GetService<IEventRepository>();
             _eventQueue = GetService<IQueue<EventPost>>();
             _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -44,7 +47,9 @@ namespace Exceptionless.Tests.Controllers {
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
             await _eventQueue.DeleteQueueAsync();
-            await CreateOrganizationAndProjectsAsync();
+            
+            var service = GetService<SampleDataService>();
+            await service.CreateDataAsync();
         }
 
         [Fact]
@@ -195,51 +200,85 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CanGetMostFrequentStackMode() {
             await CreateStacksAndEventsAsync();
             
-            var results = await SendRequestAsAsync<OkWithResourceLinks<EventSummaryModel>>(r => r
+            // return await GetAllByTermsAsync("cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
-                .AppendPath("events?filter=TODO&sort=TODO&mode=stack")
+                .AppendPath("events")
+                .QueryString("filter", "status:open")
+                .QueryString("sort", "-date")
+                .QueryString("mode", "stack")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.NotEmpty(results.Content);
+            Assert.NotEmpty(results);
         }
         
         [Fact]
         public async Task CanGetNewStackMode() {
             await CreateStacksAndEventsAsync();
             
-            var results = await SendRequestAsAsync<OkWithResourceLinks<EventSummaryModel>>(r => r
+            // sort:-first
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
-                .AppendPath("events?filter=TODO&sort=TODO&mode=stack")
+                .AppendPath("events")
+                .QueryString("filter", "status:open")
+                .QueryString("sort", "-date")
+                .QueryString("mode", "stack")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.NotEmpty(results.Content);
+            Assert.NotEmpty(results);
+        }
+        
+        [Fact]
+        public async Task GetRecentStackMode() {
+            await CreateStacksAndEventsAsync();
+            Log.MinimumLevel = LogLevel.Trace;
+
+            // sort:-last
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", "status:open")
+                .QueryString("sort", "-date")
+                .QueryString("mode", "stack")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.NotEmpty(results);
         }
 
         [Fact]
         public async Task GetUsersStackMode() {
             await CreateStacksAndEventsAsync();
             
-            var results = await SendRequestAsAsync<OkWithResourceLinks<EventSummaryModel>>(r => r
+            //    return await GetAllByTermsAsync("-cardinality:user sum:count~1 min:date max:date", sf, ti, filter, mode, page, limit);
+
+            /* 
+                var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
+                var stackTerms = (await _eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {aggregations})"))).Aggregations.Terms<string>("terms_stack_id");
+                if (stackTerms == null || stackTerms.Buckets.Count == 0)
+                    return Ok(EmptyModels);
+
+                string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
+                var stacks = (await _stackRepository.GetAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
+
+                if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)) {
+                    var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
+                    return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
+                }
+*/
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
-                .AppendPath("events?filter=TODO&sort=TODO&mode=stack")
+                .AppendPath("events")
+                .QueryString("filter", "status:open")
+                .QueryString("sort", "-date")
+                .QueryString("mode", "stack")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.NotEmpty(results.Content);
-        }
-        
-        private Task CreateOrganizationAndProjectsAsync() {
-            var organizationRepository = GetService<IOrganizationRepository>();
-            var projectRepository = GetService<IProjectRepository>();
-            var tokenRepository = GetService<ITokenRepository>();
-
-            return Task.WhenAll(
-                organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
-                projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
-                tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
-            );
+            Assert.NotEmpty(results);
         }
 
         private async Task CreateStacksAndEventsAsync() {
