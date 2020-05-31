@@ -8,7 +8,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 1. Always update to the most recent master release; the bug may already be resolved.
 
-2. Search for similar [issues](https://github.com/exceptionless/Exceptionless/issues?q=is%3Aopen+is%3Aissue+label%3Abug); it may already be an identified problem. Also, feel free to ask us questions [on Slack](https://slack.exceptionless.com).
+2. Search for similar [issues](https://github.com/exceptionless/Exceptionless/issues?q=is%3Aopen+is%3Aissue+label%3Abug); it may already be an identified problem. Also, feel free to ask us questions [on Discord](https://discord.gg/6HxgFCx).
 
 3. Open an [issue on GitHub](https://github.com/exceptionless/exceptionless/issues) with a reproduction of the bug including workflows, screenshots, or links to examples. If possible, submit a Pull Request with a failing test. If you'd rather take matters into your own hands, fix the bug yourself (jump down to the "Contributing (Step-by-step)" section).
 
