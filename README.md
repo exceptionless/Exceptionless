@@ -1,5 +1,7 @@
 # Exceptionless
-[![Build](https://github.com/exceptionless/Exceptionless/workflows/Build/badge.svg)](https://github.com/exceptionless/Exceptionless/actions) [![Slack Status](https://slack.exceptionless.com/badge.svg)](https://slack.exceptionless.com) [![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true)
+[![Build](https://github.com/exceptionless/Exceptionless/workflows/Build/badge.svg)](https://github.com/exceptionless/Exceptionless/actions)
+[![Discord](https://img.shields.io/discord/715744504891703319)](https://discord.gg/6HxgFCx)
+[![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true)
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time error reporting for your JavaScript, Node, .NET Core, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
