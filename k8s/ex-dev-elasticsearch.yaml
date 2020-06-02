@@ -68,6 +68,17 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
+  podTemplate:
+    spec:
+      containers:
+      - name: kibana
+        resources:
+          requests:
+            memory: 300Mi
+            cpu: 50m
+          limits:
+            memory: 1Gi
+            cpu: 500m
 
 ---
 apiVersion: apm.k8s.elastic.co/v1

@@ -36,6 +36,13 @@ spec:
               value: {{ .Values.statsd.token }}
             - name: LIBRATO_USER
               value: {{ .Values.statsd.user }}
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 400Mi
+              cpu: 300m
 ---
 apiVersion: v1
 kind: Service
