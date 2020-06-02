@@ -4,8 +4,8 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.5.2
-  image: exceptionless/elasticsearch:7.5.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.7.0
+  image: exceptionless/elasticsearch:7.7.0 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-prod-snapshots
   http:
@@ -14,7 +14,7 @@ spec:
         disabled: true
   nodeSets:
   - name: main
-    count: 3
+    count: 4
     config:
       node.master: true
       node.data: true
@@ -50,7 +50,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 750Gi
+            storage: 500Gi
         storageClassName: managed-premium
 
 ---
@@ -60,7 +60,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.5.2
+  version: 7.7.0
   count: 1
   elasticsearchRef:
     name: ex-prod
@@ -70,4 +70,15 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
+  podTemplate:
+    spec:
+      containers:
+      - name: kibana
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 100m
+          limits:
+            memory: 1Gi
+            cpu: 800m
 

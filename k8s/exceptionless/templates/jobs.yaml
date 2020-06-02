@@ -311,11 +311,11 @@ spec:
             periodSeconds: 1
           resources:
             requests:
-              memory: 150Mi
+              memory: 250Mi
               cpu: 100m
             limits:
-              memory: 600Mi
-              cpu: 700m
+              memory: 1200Mi
+              cpu: 1000m
           args: [EventPosts]
           envFrom:
             - configMapRef:
@@ -473,11 +473,11 @@ spec:
             periodSeconds: 1
           resources:
             requests:
-              memory: 75Mi
+              memory: 175Mi
               cpu: 50m
             limits:
-              memory: 250Mi
-              cpu: 600m
+              memory: 400Mi
+              cpu: 300m
           args: [MailMessage]
           envFrom:
             - configMapRef:
@@ -788,11 +788,11 @@ spec:
             periodSeconds: 1
           resources:
             requests:
-              memory: 75Mi
+              memory: 175Mi
               cpu: 50m
             limits:
-              memory: 250Mi
-              cpu: 1000m
+              memory: 400Mi
+              cpu: 400m
           args: [WebHooks]
           envFrom:
             - configMapRef:
@@ -845,11 +845,11 @@ spec:
             periodSeconds: 1
           resources:
             requests:
-              memory: 125Mi
-              cpu: 100m
+              memory: 650Mi
+              cpu: 250m
             limits:
-              memory: 1Gi
-              cpu: 1500m
+              memory: 1200Mi
+              cpu: 800m
           args: [WorkItem]
           envFrom:
             - configMapRef:

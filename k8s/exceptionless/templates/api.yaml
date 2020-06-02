@@ -44,11 +44,11 @@ spec:
             periodSeconds: 1
           resources:
             requests:
-              memory: 3Gi
-              cpu: 500m
+              memory: 500Mi
+              cpu: 100m
             limits:
-              memory: 4Gi
-              cpu: 3000m
+              memory: 1200Mi
+              cpu: 500m
           ports:
             - name: http
               containerPort: 80
