@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
@@ -23,14 +24,22 @@ namespace Exceptionless.Tests.Repositories {
             _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IStackRepository>();
         }
-
+        
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            var service = GetService<SampleDataService>();
+            await service.CreateDataAsync();
+        }
+        
         [Fact]
         public async Task CanGetByStatus() {
             Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
             var organizationRepository = GetService<IOrganizationRepository>();
-            var organization = await organizationRepository.GetAsync("50b401fa9064371a7ceae394");
+            var organization = await organizationRepository.GetAsync(TestConstants.OrganizationId);
+            Assert.NotNull(organization);
+            
             var appFilter = new AppFilter(organization);
-            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(10000));
+            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(9999));
             
             var eventRepository = GetService<IEventRepository>();
             int page = 1;
@@ -38,7 +47,8 @@ namespace Exceptionless.Tests.Repositories {
             int skip = (page - 1) * limit;
 
             var systemFilter = new RepositoryQuery<PersistentEvent>().Stack(stackIds);
-            var stackTerms = (await eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).AggregationsExpression("terms:(stack_id~100000000 -cardinality:user sum:count~1 min:date max:date)"))).Aggregations.Terms<string>("terms_stack_id");
+            var eventAggregation = await eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).AggregationsExpression("terms:(stack_id~100000000 -cardinality:user sum:count~1 min:date max:date)"));
+            var stackTerms = eventAggregation.Aggregations.Terms<string>("terms_stack_id");
             
             string[] stackIdsPage = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
             var stacks = await _repository.GetAsync(stackIds);

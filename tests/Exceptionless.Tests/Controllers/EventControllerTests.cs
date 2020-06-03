@@ -246,7 +246,7 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.NotEmpty(results);
+            Assert.Single(results);
         }
 
         [Fact]

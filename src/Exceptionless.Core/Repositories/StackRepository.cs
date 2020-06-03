@@ -131,7 +131,7 @@ ctx._source.total_occurrences += params.count;";
         public async Task MarkAsRegressedAsync(string stackId) {
             var stack = await GetAsync(stackId).AnyContext();
             stack.Status = StackStatus.Regressed;
-            await this.SaveAsync(stack, o => o.Cache()).AnyContext();
+            await SaveAsync(stack, o => o.Cache()).AnyContext();
         }
 
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ICommandOptions options = null) {
