@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -59,7 +61,7 @@ namespace Exceptionless.Tests.Utility {
             return stack;
         }
         
-        public static  async Task CreateSearchDataAsync(IStackRepository stackRepository, JsonSerializer serializer) {
+        public static  async Task CreateSearchDataAsync(IStackRepository stackRepository, JsonSerializer serializer, bool updateDates = false) {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
             foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
@@ -69,6 +71,12 @@ namespace Exceptionless.Tests.Utility {
                     using (var streamReader = new StreamReader(stream)) {
                         var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
                         Assert.NotNull(stack);
+                        
+                        if (updateDates) {
+                            stack.CreatedUtc = stack.FirstOccurrence = SystemClock.UtcNow.SubtractDays(1);
+                            stack.LastOccurrence = SystemClock.UtcNow;
+                        }
+                        
                         await stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
                     }
                 }

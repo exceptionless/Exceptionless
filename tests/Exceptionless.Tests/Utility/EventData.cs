@@ -160,7 +160,7 @@ namespace Exceptionless.Tests.Utility {
             };
         }
         
-        public static async Task CreateSearchDataAsync(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager) {
+        public static async Task CreateSearchDataAsync(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager, bool updateDates = false) {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
             foreach (string file in Directory.GetFiles(path, "event*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
@@ -169,8 +169,14 @@ namespace Exceptionless.Tests.Utility {
                 var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);
-                foreach (var ev in events)
+                foreach (var ev in events) {
+                    if (updateDates) {
+                        ev.Date = SystemClock.OffsetNow;
+                        ev.CreatedUtc = SystemClock.UtcNow;
+                    }
+                    
                     ev.CopyDataToIndex(Array.Empty<string>());
+                }
 
                 await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
             }
