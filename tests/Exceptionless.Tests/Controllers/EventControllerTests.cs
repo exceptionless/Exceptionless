@@ -22,7 +22,6 @@ using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Xunit;
@@ -36,7 +35,6 @@ namespace Exceptionless.Tests.Controllers {
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
 
         public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-            TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             Log.MinimumLevel = LogLevel.Warning;
 
             _eventRepository = GetService<IEventRepository>();
@@ -282,8 +280,8 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         private async Task CreateStacksAndEventsAsync() {
-            await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>());
-            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
+            await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
+            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
         }
     }
 }
