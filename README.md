@@ -18,16 +18,16 @@ Exceptionless can be run locally as simply as `docker run --rm -it -p 5000:80 ex
 ## Contributing
 _In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan._
 
-1. Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
-2. Please follow the steps below to start configuring your Exceptionless development environment.
-  1. Make sure you have [Visual Studio Code](https://code.visualstudio.com) installed. You can also use Visual Studio or JetBrains Rider, but these steps assume you are using Visual Studio Code.
-  2. Make sure you have [Docker](https://www.docker.com/get-docker) installed.
-  3. Open Visual Studio Code and then open the Exceptionless root folder.
-  4. Go to the `Tasks` menu and select `Run Task...` and then select `Start Elasticsearch`.
-  5. Go to the `Debug` menu and select `Start Debugging`.
-  6. Open the `exceptionless.http` file in the Exceptionless root folder and begin making API requests.
-  7. If you want to use the Exceptionless UI then Go to the `Tasks` menu and select `Run Task...` and then select `Start Exceptionless UI` and then open a browser to `http://ex-ui.localtest.me:5100`.
-  8. When running locally in `Development` mode, a global administrator user `test@test.com` is automatically created with password `tester`.
+- Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
+- Please follow the steps below to start configuring your Exceptionless development environment.
+  - Make sure you have [Visual Studio Code](https://code.visualstudio.com) installed. You can also use Visual Studio or JetBrains Rider, but these steps assume you are using Visual Studio Code.
+  - Make sure you have [Docker](https://www.docker.com/get-docker) installed.
+  - Open Visual Studio Code and then open the Exceptionless root folder.
+  - Go to the `Tasks` menu and select `Run Task...` and then select `Start Elasticsearch`.
+  - Go to the `Debug` menu and select `Start Debugging`.
+  - Open the `exceptionless.http` file in VS Code to begin making requests to the API. Make sure that you have the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension installed.
+  - If you want to use the Exceptionless UI then go to the `Tasks` menu and select `Run Task...` and then select `Start Exceptionless UI` and open a browser to `http://ex-ui.localtest.me:5100`.
+  - When running locally in `Development` mode, a global administrator user `test@test.com` is automatically created with password `tester`.
 
 ## Thanks
 Thanks to the community for your support!
