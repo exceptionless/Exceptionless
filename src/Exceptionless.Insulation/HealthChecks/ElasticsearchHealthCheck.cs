@@ -23,9 +23,9 @@ namespace Exceptionless.Insulation.HealthChecks {
             try {
                 var response = await _config.Client.PingAsync(ct: cancellationToken).AnyContext();
                 if (!response.IsValid)
-                    return HealthCheckResult.Unhealthy("Elasticsearch Ping Failed", response.OriginalException);
+                    return HealthCheckResult.Unhealthy($"Elasticsearch Ping Failed: {_config.Options.ServerUrl} - {response.OriginalException?.Message}", response.OriginalException);
             } catch (Exception ex) {
-                return HealthCheckResult.Unhealthy("Elasticsearch Not Working.", ex);
+                return HealthCheckResult.Unhealthy($"Elasticsearch Not Working: {_config.Options.ServerUrl} - {ex.Message}", ex);
             } finally {
                 sw.Stop();
                 _logger.LogTrace("Checking Elasticsearch took {Duration:g}", sw.Elapsed);
