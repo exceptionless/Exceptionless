@@ -95,7 +95,7 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
-    ES_JAVA_OPTS="-Xms2g -Xmx2g" \
+    ES_JAVA_OPTS="-Xms1g -Xmx1g" \
     ASPNETCORE_URLS=http://+:80 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
