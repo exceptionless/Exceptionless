@@ -23,6 +23,15 @@ services:
     ports:
       - 6379:6379
   
+  ui:
+    image: exceptionless/ui:latest
+    environment:
+      AppMode: Development
+      EX_ApiUrl: http://localhost:5000
+      EX_Html5Mode: 'true'
+    ports:
+      - 5100:80
+  
   ready:
     image: dadarek/wait-for-dependencies
     command: elasticsearch:9200
