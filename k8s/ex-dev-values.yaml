@@ -7,7 +7,7 @@ api:
     - dev-api.exceptionless.io
 app:
   image:
-    tag: "2.8.1502-pre"
+    tag: "2.9.0"
   defaultDomain: dev-app.exceptionless.io
   domains:
     - dev-app.exceptionless.io
