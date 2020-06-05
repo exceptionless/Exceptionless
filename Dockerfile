@@ -68,17 +68,17 @@ COPY ./build/supervisord.conf /etc/
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
-    ASPNETCORE_URLS=http://+:80;https://+:443 \
+    ASPNETCORE_URLS=http://+:80 \
     EX_Html5Mode=true
 
-EXPOSE 80 443
+EXPOSE 80
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD [ "dotnet", "Exceptionless.Web.dll" ]
 
-# everything
+# completely self-contained
 
-FROM exceptionless/elasticsearch:7.7.0 AS exceptionless
+FROM exceptionless/elasticsearch:7.7.1 AS exceptionless
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
@@ -95,13 +95,13 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
-    ASPNETCORE_URLS=http://+;https://+ \
+    ES_JAVA_OPTS="-Xms2g -Xmx2g" \
+    ASPNETCORE_URLS=http://+:80 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
-    EX_Html5Mode=true \
-    EX_SslDirectory=/app/storage
+    EX_Html5Mode=true
 
-EXPOSE 80 443 9200
+EXPOSE 80 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

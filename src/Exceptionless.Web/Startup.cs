@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.IO;
 using System.Security.Claims;
 using Exceptionless.Core;
@@ -24,6 +25,7 @@ using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 
 namespace Exceptionless.Web {
     public class Startup {
@@ -198,7 +200,11 @@ namespace Exceptionless.Web {
 
                 await next();
             });
-
+            
+            var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
+            if (serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://")))
+                app.UseHttpsRedirection();
+            
             app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
                 if (ex != null || context.Response.StatusCode > 499)
                     return LogEventLevel.Error;
