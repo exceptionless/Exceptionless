@@ -1,14 +1,32 @@
-@apiUrl = http://exceptionless.localtest.me:5000/api/v2
+@apiUrl = http://localhost:5000/api/v2
+@email = test@test.com
+@password = tester
 
-### login
+### create an account
+# @name account
+
+POST {{apiUrl}}/auth/signup
+Content-Type: application/json
+
+{
+    "name": "Test Tester",
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+@token = {{account.response.body.$.token}}
+@email = {{account.request.body.$.email}}
+@password = {{account.request.body.$.password}}
+
+### login to test account
 # @name login
 
 POST {{apiUrl}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "test@exceptionless.io",
-    "password": "tester"
+    "email": "{{email}}",
+    "password": "{{password}}"
 }
 
 @token = {{login.response.body.$.token}}
