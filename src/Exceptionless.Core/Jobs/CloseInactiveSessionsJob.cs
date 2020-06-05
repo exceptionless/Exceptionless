@@ -38,10 +38,8 @@ namespace Exceptionless.Core.Jobs {
             var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SnapshotPaging().PageLimit(100)).AnyContext();
             int sessionsClosed = 0;
             int totalSessions = 0;
-            if (results.Documents.Count == 0) {
-                _logger.LogInformation("No open sessions to check.");
+            if (results.Documents.Count == 0)
                 return JobResult.Success;
-            }
 
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);

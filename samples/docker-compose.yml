@@ -5,15 +5,11 @@ services:
     depends_on:
       - elasticsearch
       - redis
-    build:
-      context: .
-      target: app
     image: exceptionless/app:latest
     environment:
       EX_AppMode: Production
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
-      #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
       EX_ConnectionStrings__MessageBus: provider=redis
       #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
       EX_ConnectionStrings__Queue: provider=redis
@@ -34,12 +30,9 @@ services:
     depends_on:
       - app
     image: exceptionless/job:latest
-    build:
-      context: .
-      target: job
     environment:
       EX_AppMode: Production
-      EX_BaseURL: http://localhost:5000
+      EX_BaseURL: http://localhost:5100
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
