@@ -94,9 +94,8 @@ namespace Exceptionless.Web {
                     }
                 });
 
-            var metricOptions = MetricOptions.ReadFromConfiguration(config);
-            if (!String.IsNullOrEmpty(metricOptions.Provider))
-                ConfigureMetricsReporting(builder, metricOptions);
+            if (!String.IsNullOrEmpty(options.MetricOptions.Provider))
+                ConfigureMetricsReporting(builder, options.MetricOptions);
 
             return builder;
         }
