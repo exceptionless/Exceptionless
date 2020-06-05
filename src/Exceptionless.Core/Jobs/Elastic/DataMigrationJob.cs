@@ -100,8 +100,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                                     container &= q.DateRange(d => d.Field(dequeuedWorkItem.DateField).GreaterThanOrEquals(cutOffDate));
                                 
                                 return container;
-                            })
-                            .Sort<object>(f => f.Field(dequeuedWorkItem.DateField ?? "id", SortOrder.Ascending)))
+                            }))
                         .Destination(d => d
                             .Index(dequeuedWorkItem.TargetIndex))
                             .Conflicts(Conflicts.Proceed)

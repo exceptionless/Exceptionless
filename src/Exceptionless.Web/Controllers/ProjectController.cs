@@ -74,7 +74,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         [HttpGet]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<ViewProject>> GetAsync(string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null) {
+        public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count == 0)
                 return Ok(EmptyModels);

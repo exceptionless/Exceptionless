@@ -1,8 +1,7 @@
-@token = _token_
 @apiUrl = http://exceptionless.localtest.me:5000/api/v2
-@projectId = 537650f3b77efe23a47914f4
 
 ### login
+# @name login
 
 POST {{apiUrl}}/auth/login
 Content-Type: application/json
@@ -12,7 +11,7 @@ Content-Type: application/json
     "password": "tester"
 }
 
-# copy token result to @token above
+@token = {{login.response.body.$.token}}
 
 ### get current user info
 
@@ -25,9 +24,12 @@ GET {{apiUrl}}/organizations
 Authorization: Bearer {{token}}
 
 ### get projects
+# @name projects
 
 GET {{apiUrl}}/projects
 Authorization: Bearer {{token}}
+
+@projectId = {{projects.response.body.$[0].id}}
 
 ### post a sample JSON event
 

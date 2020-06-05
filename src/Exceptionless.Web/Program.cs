@@ -82,10 +82,6 @@ namespace Exceptionless.Web {
                                 c.Limits.MaxRequestBodySize = options.MaximumEventPostSize;
                         })
                         .UseStartup<Startup>();
-
-                    var metricOptions = MetricOptions.ReadFromConfiguration(config);
-                    if (!String.IsNullOrEmpty(metricOptions.Provider))
-                        ConfigureMetricsReporting(webBuilder, metricOptions);
                 })
                 .ConfigureServices((ctx, services) => {
                     services.AddSingleton(config);
@@ -98,10 +94,14 @@ namespace Exceptionless.Web {
                     }
                 });
 
+            var metricOptions = MetricOptions.ReadFromConfiguration(config);
+            if (!String.IsNullOrEmpty(metricOptions.Provider))
+                ConfigureMetricsReporting(builder, metricOptions);
+
             return builder;
         }
 
-        private static void ConfigureMetricsReporting(IWebHostBuilder builder, MetricOptions options) {
+        private static void ConfigureMetricsReporting(IHostBuilder builder, MetricOptions options) {
             if (String.Equals(options.Provider, "prometheus")) {
                 var metrics = AppMetrics.CreateDefaultBuilder()
                     .OutputMetrics.AsPrometheusPlainText()

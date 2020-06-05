@@ -17,8 +17,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-    <PackageReference Include="AsyncFixer" Version="1.1.6" PrivateAssets="All" />
-    <PackageReference Include="MinVer" Version="2.2.0" PrivateAssets="All" />
+    <PackageReference Include="AsyncFixer" Version="1.3.0" PrivateAssets="All" />
+    <PackageReference Include="MinVer" Version="2.3.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

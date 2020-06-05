@@ -42,20 +42,8 @@
       "command": "docker-compose",
       "type": "shell",
       "args": [
-        "-f",
-        "docker-compose.services.yml",
         "up",
         "elasticsearch"
-      ],
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "Start Exceptionless UI",
-      "command": "docker-compose",
-      "args": [
-        "up",
-        "ui"
       ],
       "isBackground": true,
       "problemMatcher": []
