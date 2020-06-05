@@ -23,6 +23,7 @@ jobs:
         dotnet tool install --global minver-cli --version 2.3.0
         version=$(minver --tag-prefix v)
         echo "::set-env name=MINVERVERSIONOVERRIDE::$version"
+        echo "::set-env name=VERSION::$version"
     - name: Build
       run: dotnet build --configuration Release
     - name: Start Services
@@ -45,13 +46,13 @@ jobs:
       run: |
         # tag and push docker image
         for image in {"api","job","app","exceptionless"}; do
-          for tag in {${{ steps.version.outputs.version }},latest}; do
+          for tag in {${VERSION},latest}; do
             docker tag ex-$image docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
             docker push docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
           done
         done
         for image in {"api","job","app","exceptionless"}; do
-          for tag in {${{ steps.version.outputs.version }},latest}; do
+          for tag in {${VERSION},latest}; do
             docker tag ex-$image exceptionless/$image-ci:$tag
             docker push exceptionless/$image-ci:$tag
           done
@@ -61,7 +62,7 @@ jobs:
       run: |
         # tag and push docker image
         for image in {"api","job","app","exceptionless"}; do
-          for tag in {${{ steps.version.outputs.version }},latest}; do
+          for tag in {${VERSION},latest}; do
             docker tag ex-$image exceptionless/$image:$tag
             docker push exceptionless/$image:$tag
           done
@@ -76,10 +77,10 @@ jobs:
       run: |
         az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
         az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        helm upgrade --set "api.image.tag=${{ steps.version.outputs.version }}" --set "jobs.image.tag=${{ steps.version.outputs.version }}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
+        helm upgrade --set "api.image.tag=${VERSION}" --set "jobs.image.tag=$${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
     - name: Deploy Changes to Production Environment
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
         az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        helm upgrade --set "api.image.tag=${{ steps.version.outputs.version }}" --set "jobs.image.tag=${{ steps.version.outputs.version }}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
+        helm upgrade --set "api.image.tag=${VERSION}" --set "jobs.image.tag=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
