@@ -38,12 +38,23 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "Start Services",
+      "label": "Start Elasticsearch",
       "command": "docker-compose",
       "type": "shell",
       "args": [
         "up",
         "elasticsearch"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Start Exceptionless UI",
+      "command": "docker-compose",
+      "type": "shell",
+      "args": [
+        "up",
+        "ui"
       ],
       "isBackground": true,
       "problemMatcher": []
