@@ -4,7 +4,7 @@ using Exceptionless.Tests.Mail;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Exceptionless.Insulation.Configuration;
-using Foundatio.Logging.Xunit;
+using Foundatio.Xunit;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
