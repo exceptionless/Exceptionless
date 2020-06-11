@@ -25,7 +25,7 @@ namespace Exceptionless.Insulation.HealthChecks {
                 if (!response.IsValid)
                     return HealthCheckResult.Unhealthy("Elasticsearch Ping Failed", response.OriginalException);
             } catch (Exception ex) {
-                return HealthCheckResult.Unhealthy("Elasticsearch Not Working", ex);
+                return HealthCheckResult.Unhealthy("Elasticsearch Not Working.", ex);
             } finally {
                 sw.Stop();
                 _logger.LogTrace("Checking Elasticsearch took {Duration:g}", sw.Elapsed);

@@ -245,7 +245,7 @@ namespace Exceptionless.Web.Controllers {
                         }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
                     case "stack":
                         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-                        var stackTerms = (await _repository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1})"))).Aggregations.Terms<string>("terms_stack_id");
+                        var stackTerms = (await _repository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} cardinality:user sum:count~1 min:date max:date)"))).Aggregations.Terms<string>("terms_stack_id");
                         if (stackTerms == null || stackTerms.Buckets.Count == 0)
                             return Ok(EmptyModels);
 
@@ -1124,17 +1124,8 @@ namespace Exceptionless.Web.Controllers {
 
             return stack;
         }
-        
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, AppFilter eventSystemFilter, TimeInfo ti) {
-            if (stacks.Count == 0)
-                return new List<StackSummaryModel>();
 
-            var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(eventSystemFilter).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-            var stackTerms = await _repository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}"))).AggregationsExpression($"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)"));
-            return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
-        }
-
-        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti) {
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti) {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>(0);
 
