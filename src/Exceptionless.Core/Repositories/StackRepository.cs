@@ -105,7 +105,7 @@ ctx._source.total_occurrences += params.count;";
 
             var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
             if (IsCacheEnabled && hit != null)
-                await Cache.SetAsync(key, hit.Document, RepositorySettings.DefaultCacheExpiration).AnyContext();
+                await Cache.SetAsync(key, hit.Document, DefaultCacheExpiration).AnyContext();
 
             return hit?.Document;
         }
