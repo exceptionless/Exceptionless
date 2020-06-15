@@ -10,7 +10,7 @@ kubectl port-forward --namespace ex-dev service/ex-dev-es-http 9200
 
 # connect to redis
 REDIS_PASSWORD=$(kubectl get secret --namespace ex-dev ex-dev-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
-kubectl port-forward service/ex-dev-redis-master 6379
+kubectl port-forward service/ex-dev-redis 6379
 redis-cli -a $REDIS_PASSWORD
 
 # open kubernetes dashboard
