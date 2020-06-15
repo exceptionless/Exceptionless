@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
@@ -24,6 +23,11 @@ namespace Exceptionless.Tests.Repositories {
             TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             _stackRepository = GetService<IStackRepository>();
             _eventRepository = GetService<IEventRepository>();
+            
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventJoinFilterVisitor>(LogLevel.Trace);
+            Log.SetLogLevel<StackFieldResolverQueryVisitor>(LogLevel.Trace);
         }
         
         protected override async Task ResetDataAsync() {
@@ -35,12 +39,14 @@ namespace Exceptionless.Tests.Repositories {
             await StackData.CreateSearchDataAsync(_stackRepository, GetService<JsonSerializer>());
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
             
+            await RefreshDataAsync();
+            
             Log.MinimumLevel = oldLoggingLevel;
         }
         [Theory]
         [InlineData("status:fixed", 2)]
-        [InlineData("status:regressed", 1)]
-        [InlineData("@stack(status:open)", 1)]
+        [InlineData("status:regressed", 3)]
+        [InlineData("@stack:(status:open)", 1)]
         public async Task GetByStatusAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -48,23 +54,18 @@ namespace Exceptionless.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData("is_fixed:true", 1)]
-        [InlineData("status:fixed", 1)] // Returns 1 because there is two fixed stacks but only one fixed event.
-        [InlineData("@stack:(status:fixed)", 1)] // Returns 1 because there is two fixed stacks but only one fixed event.
+        [InlineData("is_fixed:true", 2)]
+        [InlineData("status:fixed", 2)]
+        [InlineData("@stack:(status:fixed)", 2)]
         [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
-        [InlineData("type:log status:fixed", 1)]
-        [InlineData("type:log version_fixed:1.2.3", 0)] // Stack 3ecd0826e447a44e78877ab3 has no events.
-        [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 1)]
-        [InlineData("type:log status:fixed @stack:(version_fixed:1.2.3)", 0)] // Stack 3ecd0826e447a44e78877ab3 has no events.
+        [InlineData("type:log status:fixed", 2)]
+        [InlineData("type:log version_fixed:1.2.3", 1)]
+        [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 2)]
+        [InlineData("type:log status:fixed @stack:(version_fixed:1.2.3)", 1)]
         [InlineData("54dbc16ca0f5c61398427b00", 1)] // Event Id
         [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
         [InlineData("type:error", 2)]
         public async Task GetByJoinFilterAsync(string filter, int count) {
-            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
-            Log.SetLogLevel<EventJoinFilterVisitor>(LogLevel.Trace);
-            Log.SetLogLevel<StackFieldResolverQueryVisitor>(LogLevel.Trace);
-            
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
