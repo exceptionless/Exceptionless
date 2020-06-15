@@ -243,9 +243,32 @@ namespace Exceptionless.Web.Controllers {
                                 Data = summaryData.Data
                             };
                         }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
-                    case "stack":
-                        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-                        var stackTerms = (await _repository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} cardinality:user sum:count~1 min:date max:date)"))).Aggregations.Terms<string>("terms_stack_id");
+                    case "stack_recent":
+                    case "stack_frequent":
+                    case "stack_new":
+                    case "stack_users":
+                        if (!String.IsNullOrEmpty(sort))
+                            return BadRequest("Sort is not supported in stack mode.");
+                        
+                        var systemFilter = new RepositoryQuery<PersistentEvent>()
+                            .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                            .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
+                            .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
+
+                        string stackAggregations = mode switch {
+                            "stack_recent" => "cardinality:user sum:count~1 min:date -max:date",
+                            "stack_frequent" => "cardinality:user -sum:count~1 min:date max:date",
+                            "stack_new" => "cardinality:user sum:count~1 -min:date max:date",
+                            "stack_users" => "-cardinality:user sum:count~1 min:date max:date",
+                            _ => null
+                        };
+
+                        var stackTerms = (await _repository.CountByQueryAsync(q => q
+                            .SystemFilter(systemFilter)
+                            .FilterExpression(filter)
+                            .AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {stackAggregations})")))
+                            .Aggregations.Terms<string>("terms_stack_id");
+                        
                         if (stackTerms == null || stackTerms.Buckets.Count == 0)
                             return Ok(EmptyModels);
 

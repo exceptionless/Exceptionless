@@ -9,7 +9,6 @@ namespace Exceptionless.Core.Repositories.Queries
 {
     public class StackFieldResolverQueryVisitor : ChainableQueryVisitor {
         private readonly IDictionary<string, string> _fieldMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-            { StackIndex.Alias.FirstOccurrence, "first_occurrence" },
             { "first_occurrence", "first_occurrence"},
             { StackIndex.Alias.LastOccurrence, "last_occurrence" },
             { "last_occurrence", "last_occurrence" },

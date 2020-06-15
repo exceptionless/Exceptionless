@@ -12,6 +12,7 @@ using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -38,20 +39,11 @@ namespace Exceptionless.Tests.Repositories {
             var organization = await organizationRepository.GetAsync(TestConstants.OrganizationId);
             Assert.NotNull(organization);
             
+            await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
+
             var appFilter = new AppFilter(organization);
             var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(9999));
-            
-            var eventRepository = GetService<IEventRepository>();
-            int page = 1;
-            int limit = 20;
-            int skip = (page - 1) * limit;
-
-            var systemFilter = new RepositoryQuery<PersistentEvent>().Stack(stackIds);
-            var eventAggregation = await eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).AggregationsExpression("terms:(stack_id~100000000 -cardinality:user sum:count~1 min:date max:date)"));
-            var stackTerms = eventAggregation.Aggregations.Terms<string>("terms_stack_id");
-            
-            string[] stackIdsPage = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
-            var stacks = await _repository.GetAsync(stackIds);
+            Assert.Equal(2, stackIds.Length);
         }
 
         [Fact]
