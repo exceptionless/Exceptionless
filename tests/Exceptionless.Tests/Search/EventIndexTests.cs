@@ -138,7 +138,7 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("\"2014-12-09T17:28:44.966\"", 1)]
         [InlineData("\"2014-12-09T17:28:44.966+00:00\"", 1)]
-        [InlineData("\"2015-02-11T20:54:04.3457274+00:00\"", 2)]
+        [InlineData("\"2015-02-11T20:54:04.3457274+00:00\"", 1)]
         public async Task GetByDateAsync(string date, int count) {
             var result = await GetByFilterAsync("date:" + date);
             Assert.NotNull(result);
