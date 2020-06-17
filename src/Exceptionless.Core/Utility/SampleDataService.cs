@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -74,7 +75,7 @@ namespace Exceptionless.Core.Utility {
             var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
-            organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
+            organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache()).AnyContext();
 
             var project = new Project {
                 Id = TEST_PROJECT_ID,
@@ -84,27 +85,29 @@ namespace Exceptionless.Core.Utility {
             };
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultNotificationSettings(userId);
-            project = await _projectRepository.AddAsync(project, o => o.Cache()).AnyContext();
+            project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache()).AnyContext();
 
-            await _tokenRepository.AddAsync(new Token {
-                Id = TEST_API_KEY,
-                OrganizationId = organization.Id,
-                ProjectId = project.Id,
-                CreatedUtc = SystemClock.UtcNow,
-                UpdatedUtc = SystemClock.UtcNow,
-                Type = TokenType.Access
-            }).AnyContext();
-
-            await _tokenRepository.AddAsync(new Token {
-                Id = TEST_USER_API_KEY,
-                UserId = user.Id,
-                CreatedUtc = SystemClock.UtcNow,
-                UpdatedUtc = SystemClock.UtcNow,
-                Type = TokenType.Access
-            }).AnyContext();
+            await _tokenRepository.AddAsync(new List<Token>() 
+            {
+                new Token {
+                    Id = TEST_API_KEY,
+                    OrganizationId = organization.Id,
+                    ProjectId = project.Id,
+                    CreatedUtc = SystemClock.UtcNow,
+                    UpdatedUtc = SystemClock.UtcNow,
+                    Type = TokenType.Access
+                },
+                    new Token {
+                    Id = TEST_USER_API_KEY,
+                    UserId = user.Id,
+                    CreatedUtc = SystemClock.UtcNow,
+                    UpdatedUtc = SystemClock.UtcNow,
+                    Type = TokenType.Access
+                }
+            }, o => o.ImmediateConsistency().Cache()).AnyContext();
 
             user.OrganizationIds.Add(organization.Id);
-            await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
+            await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
         }
 
@@ -115,7 +118,7 @@ namespace Exceptionless.Core.Utility {
             var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
-            organization = await _organizationRepository.AddAsync(organization, o => o.Cache()).AnyContext();
+            organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache()).AnyContext();
 
             var project = new Project {
                 Id = INTERNAL_PROJECT_ID,
@@ -124,7 +127,7 @@ namespace Exceptionless.Core.Utility {
                 NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
             };
             project.AddDefaultNotificationSettings(userId);
-            project = await _projectRepository.AddAsync(project, o => o.Cache()).AnyContext();
+            project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache()).AnyContext();
 
             await _tokenRepository.AddAsync(new Token {
                 Id = INTERNAL_API_KEY,
@@ -133,10 +136,10 @@ namespace Exceptionless.Core.Utility {
                 CreatedUtc = SystemClock.UtcNow,
                 UpdatedUtc = SystemClock.UtcNow,
                 Type = TokenType.Access
-            }).AnyContext();
+            }, o => o.ImmediateConsistency()).AnyContext();
 
             user.OrganizationIds.Add(organization.Id);
-            await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
+            await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Internal Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
         }
     }
