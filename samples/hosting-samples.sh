@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # simple instance for testing
-docker run --rm -it -p 5000:80 exceptionless/exceptionless
+docker run --rm -it -p 5000:80 exceptionless/exceptionless:6.1.0
 
 # persist data
 docker run --rm -it -p 5000:80 \
     -v ~/esdata:/usr/share/elasticsearch/data \
-    exceptionless/exceptionless
+    exceptionless/exceptionless:6.1.0
 
 # persist data, use ssl, enable mail sending
 docker run --rm -it -p 5000:80 -p 5001:443 \
@@ -17,5 +17,5 @@ docker run --rm -it -p 5000:80 -p 5001:443 \
     -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx \
     -v ~/.aspnet/https:/https/ \
     -v ~/esdata:/usr/share/elasticsearch/data \
-    exceptionless/exceptionless
+    exceptionless/exceptionless:6.1.0
 
