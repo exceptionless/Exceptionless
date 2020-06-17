@@ -72,9 +72,9 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("[2015-01-08 TO 2015-02-10]", 3)]
+        [InlineData("[2015-01-08 TO 2015-02-10]", 2)]
         [InlineData("\"2015-01-08T18:29:01.428Z\"", 1)]
-        [InlineData("\"2015-02-10T01:05:54.399Z\"", 2)]
+        [InlineData("\"2015-02-10T01:05:54.399Z\"", 1)]
         public async Task GetByFirstAsync(string first, int count) {
             var result = await GetByFilterAsync("first:" + first);
             Assert.NotNull(result);
@@ -83,7 +83,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("\"2015-02-03T16:52:41.982Z\"", 1)]
-        [InlineData("\"2015-02-11T20:54:04.3457274Z\"", 2)]
+        [InlineData("\"2015-02-11T20:54:04.3457274Z\"", 1)]
         public async Task GetByLastAsync(string last, int count) {
             var result = await GetByFilterAsync("last:" + last);
             Assert.NotNull(result);
