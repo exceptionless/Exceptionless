@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -227,7 +227,6 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task GetRecentStackMode() {
             await CreateStacksAndEventsAsync();
-            Log.MinimumLevel = LogLevel.Trace;
 
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
@@ -258,8 +257,6 @@ namespace Exceptionless.Tests.Controllers {
         private async Task CreateStacksAndEventsAsync() {
             await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
-
-            await RefreshDataAsync();
         }
     }
 }

@@ -1,12 +1,12 @@
-﻿{
+{
   "id": "5c59abbfa6fc240001efbe3d",
   "organization_id": "537650f3b77efe23a47914f3",
   "project_id": "537650f3b77efe23a47914f4",
   "stack_id": "2ecd0826e447a44e78877ab2",
   "is_first_occurrence": false,
-  "created_utc": "2015-02-12T17:25:37.2349867",
+  "created_utc": "2015-02-12T17:25:17.1172014",
   "type": "custom",
-  "date": "2015-02-12T17:25:27.1172014+00:00",
+  "date": "2015-02-12T17:25:17.1172014+00:00",
   "data": {
     "RequestPath": "/metadata/B2888F71-C379-4888-12C4-08D67C888012/Status",
     "EntityId": "88df3f71-c888-42a7-12c4-08d67c7d888",

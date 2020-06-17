@@ -21,7 +21,7 @@ namespace Exceptionless.Insulation.HealthChecks {
             var sw = Stopwatch.StartNew();
             
             try {
-                var response = await _config.Client.PingAsync(ct: cancellationToken).AnyContext();
+                var response = await _config.Client.PingAsync(p => p.RequestConfiguration(r => r.PingTimeout(TimeSpan.FromSeconds(1))), cancellationToken);
                 if (!response.IsValid)
                     return HealthCheckResult.Unhealthy("Elasticsearch Ping Failed", response.OriginalException);
             } catch (Exception ex) {

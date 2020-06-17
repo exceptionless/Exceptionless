@@ -147,7 +147,7 @@ namespace Exceptionless.Web {
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseHealthChecks("/health", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess && hcr.Tags.Contains("AllJobs")
+                Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
             });
             
             var readyTags = new List<string> { "Critical" };

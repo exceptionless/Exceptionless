@@ -9,6 +9,7 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 using Xunit;
 
@@ -63,6 +64,7 @@ namespace Exceptionless.Tests.Utility {
                 endDate = SystemClock.OffsetNow;
 
             var ev = new PersistentEvent {
+                Id = occurrenceDate.HasValue ? ObjectId.GenerateNewId(occurrenceDate.Value.UtcDateTime).ToString() : null,
                 OrganizationId = organizationIds.Random(TestConstants.OrganizationId),
                 ProjectId = projectIds.Random(TestConstants.ProjectId),
                 ReferenceId = referenceIds.Random(),

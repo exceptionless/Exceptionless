@@ -23,6 +23,7 @@ using Foundatio.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
@@ -131,9 +132,10 @@ namespace Exceptionless.Tests {
             }
         }
         
-        protected Task RefreshDataAsync(Indices indices = null) {
+        protected async Task RefreshDataAsync(Indices indices = null) {
             var configuration = GetService<ExceptionlessElasticConfiguration>();
-            return configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
+            var response = await configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
+            _logger.LogTraceRequest(response);
         }
         
         protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {
