@@ -38,9 +38,7 @@ namespace Exceptionless.Tests.Repositories {
             
             await StackData.CreateSearchDataAsync(_stackRepository, GetService<JsonSerializer>());
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
-            
-            await RefreshDataAsync();
-            
+
             Log.MinimumLevel = oldLoggingLevel;
         }
         [Theory]

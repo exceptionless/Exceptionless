@@ -1,4 +1,4 @@
-﻿{
+{
   "id": "3ecd0826e447a44e78877ab3",
   "organization_id": "537650f3b77efe23a47914f3",
   "project_id": "537650f3b77efe23a47914f4",
@@ -13,8 +13,8 @@
   "date_fixed": "2015-02-13T20:54:04.3457274Z",
   "title": "Row not found or changed.",
   "total_occurrences": 25,
-  "first_occurrence": "2015-02-13T01:05:54.399Z",
-  "last_occurrence": "2015-02-13T20:54:04.3457274Z",
+  "first_occurrence": "2015-02-11T01:05:54.399Z",
+  "last_occurrence": "2015-02-12T17:25:28.1172014Z",
   "description": null,
   "occurrences_are_critical": false,
   "references": [],

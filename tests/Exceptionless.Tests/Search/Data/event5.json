@@ -4,9 +4,9 @@
   "project_id": "537650f3b77efe23a47914f4",
   "stack_id": "3ecd0826e447a44e78877ab3",
   "is_first_occurrence": false,
-  "created_utc": "2015-02-12T17:25:37.2349867",
+  "created_utc": "2015-02-12T17:25:28.2349867",
   "type": "log",
-  "date": "2015-02-12T17:25:27.1172014+00:00",
+  "date": "2015-02-12T17:25:28.1172014+00:00",
   "source": "TestController",
   "message": "Row not found or changed.",
   "data": {

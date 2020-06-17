@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override void ConfigureSettings(ConnectionSettings settings) {
             if (_appOptions.AppMode == AppMode.Development)
-                settings.DisableDirectStreaming().PrettyJson();
+                settings.EnableDebugMode();
             
             settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
                 .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
