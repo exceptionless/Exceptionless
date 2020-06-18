@@ -1,5 +1,8 @@
 version: '3.5'
 
+# NOTE: This docker-compose file is for running services required to work on Exceptionless.
+# For self-hosting, look here: https://github.com/exceptionless/Exceptionless/tree/master/samples
+
 services:
   elasticsearch:
     image: exceptionless/elasticsearch:7.7.1
