@@ -408,7 +408,7 @@ namespace Exceptionless.Web.Controllers {
             if (project == null)
                 return NotFound();
 
-            var organization = await _organizationRepository.GetAsync(project.OrganizationId, o => o.Cache());
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
             if (organization == null)
                 return NotFound();
 
@@ -651,7 +651,7 @@ namespace Exceptionless.Web.Controllers {
 
             // TODO: We can optimize this by normalizing the project model to include the organization name.
             var viewProjects = models.OfType<ViewProject>().ToList();
-            var organizations = await _organizationRepository.GetAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             foreach (var viewProject in viewProjects) {
                 var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
                 if (organization != null) {
@@ -721,7 +721,7 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Task.FromResult<Organization>(null);
 
-            return _organizationRepository.GetAsync(organizationId, o => o.Cache(useCache));
+            return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
         }
 
         private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project) {
@@ -733,11 +733,11 @@ namespace Exceptionless.Web.Controllers {
                 return viewProjects;
 
             int maximumRetentionDays = _options.MaximumRetentionDays;
-            var organizations = await _organizationRepository.GetAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
+            var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
             var sf = new AppFilter(projects, organizations);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
-            var result = await _eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).AggregationsExpression($"terms:(project_id~{viewProjects.Count} cardinality:stack_id)"));
+            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).AggregationsExpression($"terms:(project_id~{viewProjects.Count} cardinality:stack_id)"));
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);
                 project.EventCount = term?.Total ?? 0;

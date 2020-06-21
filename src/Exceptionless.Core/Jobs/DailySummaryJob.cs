@@ -118,7 +118,7 @@ namespace Exceptionless.Core.Jobs {
                 return false;
             }
 
-            var results = await _userRepository.GetAsync(userIds, o => o.Cache()).AnyContext();
+            var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache()).AnyContext();
             var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
             if (users.Count == 0) {
                 _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
@@ -126,7 +126,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             // TODO: What should we do about suspended organizations.
-            var organization = await _organizationRepository.GetAsync(project.OrganizationId, o => o.Cache()).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null) {
                 _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
                 return false;
@@ -136,7 +136,7 @@ namespace Exceptionless.Core.Jobs {
             var sf = new AppFilter(project, organization);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
             string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:false";
-            var result = await _eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
+            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
 
             double total = result.Aggregations.Sum("sum_count")?.Value ?? result.Total;
             double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
@@ -145,7 +145,7 @@ namespace Exceptionless.Core.Jobs {
             bool isFreePlan = organization.PlanId == _plans.FreePlan.Id;
 
             string fixedFilter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:true";
-            var fixedResult = await _eventRepository.CountByQueryAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).AggregationsExpression("sum:count~1")).AnyContext();
+            var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).AggregationsExpression("sum:count~1")).AnyContext();
             double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
             var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
@@ -156,11 +156,11 @@ namespace Exceptionless.Core.Jobs {
             IReadOnlyCollection<Stack> mostFrequent = null;
             var stackTerms = result.Aggregations.Terms<string>("terms_stack_id");
             if (stackTerms?.Buckets.Count > 0)
-                mostFrequent = await _stackRepository.GetAsync(stackTerms.Buckets.Select(b => b.Key).ToArray()).AnyContext();
+                mostFrequent = await _stackRepository.GetByIdsAsync(stackTerms.Buckets.Select(b => b.Key).ToArray()).AnyContext();
 
             IReadOnlyCollection<Stack> newest = null;
             if (newTotal > 0)
-                newest = (await _stackRepository.QueryAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3)).AnyContext()).Documents;
+                newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3)).AnyContext()).Documents;
 
             foreach (var user in users) {
                 _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);

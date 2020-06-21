@@ -44,7 +44,7 @@ namespace Exceptionless.Tests.Controllers {
             var ev = await SubmitErrorEventAsync();
             Assert.NotNull(ev.StackId);
 
-            var stack = await _stackRepository.GetAsync(ev.StackId);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
             Assert.False(stack.IsFixed());
 
@@ -66,7 +66,7 @@ namespace Exceptionless.Tests.Controllers {
             var ev = await SubmitErrorEventAsync();
             Assert.NotNull(ev.StackId);
 
-            var stack = await _stackRepository.GetAsync(ev.StackId);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
             Assert.False(stack.IsFixed());
             
@@ -77,7 +77,7 @@ namespace Exceptionless.Tests.Controllers {
                 .QueryStringIf(() => !String.IsNullOrEmpty(version), "version", version)
                 .StatusCodeShouldBeOk());
             
-            stack = await _stackRepository.GetAsync(ev.StackId);
+            stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
             Assert.True(stack.IsFixed()); 
         }

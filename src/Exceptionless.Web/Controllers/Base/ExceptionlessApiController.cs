@@ -114,15 +114,15 @@ namespace Exceptionless.Web.Controllers {
                 if (scope.IsScopable) {
                     Organization organization = null;
                     if (scope.OrganizationId != null) {
-                        organization = await organizationRepository.GetAsync(scope.OrganizationId, o => o.Cache());
+                        organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, o => o.Cache());
                     } else if (scope.ProjectId != null) {
-                        var project = await projectRepository.GetAsync(scope.ProjectId, o => o.Cache());
+                        var project = await projectRepository.GetByIdAsync(scope.ProjectId, o => o.Cache());
                         if (project != null)
-                            organization = await organizationRepository.GetAsync(project.OrganizationId, o => o.Cache());
+                            organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
                     } else if (scope.StackId != null) {
-                        var stack = await stackRepository.GetAsync(scope.StackId, o => o.Cache());
+                        var stack = await stackRepository.GetByIdAsync(scope.StackId, o => o.Cache());
                         if (stack != null)
-                            organization = await organizationRepository.GetAsync(stack.OrganizationId, o => o.Cache());
+                            organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, o => o.Cache());
                     }
 
                     if (organization != null) {
@@ -134,7 +134,7 @@ namespace Exceptionless.Web.Controllers {
                 }
             }
 
-            var organizations = await organizationRepository.GetAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
+            var organizations = await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
             return organizations.ToList().AsReadOnly();
         }
 

@@ -76,7 +76,7 @@ namespace Exceptionless.Web.Controllers {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var organization = await _organizationRepository.GetAsync(organizationId, o => o.Cache());
+            var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
             if (organization == null)
                 return NotFound();
 

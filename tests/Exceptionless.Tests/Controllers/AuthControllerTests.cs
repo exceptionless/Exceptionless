@@ -290,10 +290,10 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(password.ToSaltedHash(user.Salt), user.Password);
             Assert.Contains(organization.Id, user.OrganizationIds);
 
-            organization = await _organizationRepository.GetAsync(organization.Id);
+            organization = await _organizationRepository.GetByIdAsync(organization.Id);
             Assert.Empty(organization.Invites);
 
-            var token = await _tokenRepository.GetAsync(result.Token);
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
             Assert.NotNull(token);
             Assert.Equal(user.Id, token.UserId);
             Assert.Equal(TokenType.Access, token.Type);
@@ -618,10 +618,10 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(result);
             Assert.NotEmpty(result.Token);
 
-            var token = await _tokenRepository.GetAsync(result.Token);
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
             Assert.NotNull(token);
 
-            var actualUser = await _userRepository.GetAsync(token.UserId);
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
@@ -640,8 +640,8 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(changePasswordResult);
             Assert.NotEmpty(changePasswordResult.Token);
 
-            Assert.Null(await _tokenRepository.GetAsync(result.Token));
-            Assert.NotNull(await _tokenRepository.GetAsync(changePasswordResult.Token));
+            Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(changePasswordResult.Token));
         }
 
         [Fact]
@@ -675,10 +675,10 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(result);
             Assert.NotEmpty(result.Token);
 
-            var token = await _tokenRepository.GetAsync(result.Token);
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
             Assert.NotNull(token);
 
-            var actualUser = await _userRepository.GetAsync(token.UserId);
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
@@ -693,7 +693,7 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeBadRequest()
             );
 
-            Assert.NotNull(await _tokenRepository.GetAsync(result.Token));
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
         }
 
         [Fact]
@@ -728,10 +728,10 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(result);
             Assert.NotEmpty(result.Token);
 
-            var token = await _tokenRepository.GetAsync(result.Token);
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
             Assert.NotNull(token);
 
-            var actualUser = await _userRepository.GetAsync(token.UserId);
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
@@ -747,7 +747,7 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Null(await _tokenRepository.GetAsync(result.Token));
+            Assert.Null(await _tokenRepository.GetByIdAsync(result.Token));
         }
 
         [Fact]
@@ -782,10 +782,10 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(result);
             Assert.NotEmpty(result.Token);
 
-            var token = await _tokenRepository.GetAsync(result.Token);
+            var token = await _tokenRepository.GetByIdAsync(result.Token);
             Assert.NotNull(token);
 
-            var actualUser = await _userRepository.GetAsync(token.UserId);
+            var actualUser = await _userRepository.GetByIdAsync(token.UserId);
             Assert.NotNull(actualUser);
             Assert.Equal(email, actualUser.EmailAddress);
 
@@ -800,7 +800,7 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeBadRequest()
             );
 
-            Assert.NotNull(await _tokenRepository.GetAsync(result.Token));
+            Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
         }
 
         private Task CreateTestOrganizationAndProjectsAsync() {

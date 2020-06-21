@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Billing {
             if (user == null)
                 return false;
 
-            var organizations = (await _organizationRepository.GetAsync(user.OrganizationIds.ToArray()).AnyContext()).Where(o => o.PlanId == _plans.FreePlan.Id);
+            var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()).AnyContext()).Where(o => o.PlanId == _plans.FreePlan.Id);
             return !organizations.Any();
         }
 
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Billing {
             if (String.IsNullOrWhiteSpace(project?.OrganizationId))
                 return false;
 
-            var organization = await _organizationRepository.GetAsync(project.OrganizationId).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId).AnyContext();
             if (organization == null)
                 return false;
 
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Billing {
         }
 
         public async Task<bool> HasPremiumFeaturesAsync(string organizationId) {
-            var organization = await _organizationRepository.GetAsync(organizationId).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
             if (organization == null)
                 return false;
 
@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Billing {
                 return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");
 
             // Ensure the user can't be apart of more than one free plan.
-            if (String.Equals(plan.Id, _plans.FreePlan.Id) && user != null && (await _organizationRepository.GetAsync(user.OrganizationIds.ToArray()).AnyContext()).Any(o => String.Equals(o.PlanId, _plans.FreePlan.Id)))
+            if (String.Equals(plan.Id, _plans.FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()).AnyContext()).Any(o => String.Equals(o.PlanId, _plans.FreePlan.Id)))
                 return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
 
             return new ChangePlanResult { Success = true };

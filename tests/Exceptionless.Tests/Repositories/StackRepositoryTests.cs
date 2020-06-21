@@ -36,7 +36,7 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanGetByStatus() {
             Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
             var organizationRepository = GetService<IOrganizationRepository>();
-            var organization = await organizationRepository.GetAsync(TestConstants.OrganizationId);
+            var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
             Assert.NotNull(organization);
             
             await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
@@ -69,11 +69,11 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanGetByFixedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
-            var results = await _repository.QueryAsync(q => q.FilterExpression("fixed:true"));
+            var results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
 
-            results = await _repository.QueryAsync(q => q.FilterExpression("fixed:false"));
+            results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
@@ -82,13 +82,13 @@ namespace Exceptionless.Tests.Repositories {
             stack.MarkFixed();
             await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
 
-            results = await _repository.QueryAsync(q => q.FilterExpression("fixed:true"));
+            results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
             Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(results.Documents.Single().DateFixed);
 
-            results = await _repository.QueryAsync(q => q.FilterExpression("fixed:false"));
+            results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
         }
@@ -102,7 +102,7 @@ namespace Exceptionless.Tests.Repositories {
 
             await _repository.MarkAsRegressedAsync(stack.Id);
 
-            stack = await _repository.GetAsync(stack.Id);
+            stack = await _repository.GetByIdAsync(stack.Id);
             Assert.NotNull(stack);
             Assert.True(stack.Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(stack.DateFixed);
@@ -123,7 +123,7 @@ namespace Exceptionless.Tests.Repositories {
             var utcNow = SystemClock.UtcNow;
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
 
-            stack = await _repository.GetAsync(stack.Id);
+            stack = await _repository.GetByIdAsync(stack.Id);
             Assert.Equal(1, stack.TotalOccurrences);
             Assert.Equal(utcNow, stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
@@ -132,14 +132,14 @@ namespace Exceptionless.Tests.Repositories {
 
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
 
-            stack = await _repository.GetAsync(stack.Id);
+            stack = await _repository.GetByIdAsync(stack.Id);
             Assert.Equal(2, stack.TotalOccurrences);
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
 
             await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.AddDays(1), utcNow.AddDays(1), 1);
 
-            stack = await _repository.GetAsync(stack.Id);
+            stack = await _repository.GetByIdAsync(stack.Id);
             Assert.Equal(3, stack.TotalOccurrences);
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);

@@ -36,7 +36,7 @@ namespace Exceptionless.Tests.Repositories {
             await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
             await RefreshDataAsync();
 
-            var updatedProject = await _repository.GetAsync(project.Id);
+            var updatedProject = await _repository.GetByIdAsync(project.Id);
             // TODO: Modified date isn't currently updated in the update scripts.
             //Assert.NotEqual(project.ModifiedUtc, updatedProject.ModifiedUtc);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
@@ -125,7 +125,7 @@ namespace Exceptionless.Tests.Repositories {
             project.Data[Project.KnownDataKeys.SlackToken] = token;
 
             await _repository.AddAsync(project, o => o.ImmediateConsistency());
-            var actual = await _repository.GetAsync(project.Id, o => o.Cache());
+            var actual = await _repository.GetByIdAsync(project.Id, o => o.Cache());
             Assert.Equal(project.Name, actual?.Name);
             var actualToken = actual.GetSlackToken();
             Assert.Equal(token.AccessToken, actualToken?.AccessToken);

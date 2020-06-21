@@ -82,7 +82,7 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = await _organizationRepository.GetAsync(organizationId);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -108,7 +108,7 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = await _organizationRepository.GetAsync(organizationId);
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 

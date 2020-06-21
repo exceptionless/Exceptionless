@@ -69,8 +69,8 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
         
-        private Task<QueryResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            return _eventRepository.QueryAsync(q => q.FilterExpression(filter));
+        private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
+            return _eventRepository.FindAsync(q => q.FilterExpression(filter));
         }
     }
 }

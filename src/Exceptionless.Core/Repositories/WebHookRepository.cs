@@ -15,19 +15,19 @@ namespace Exceptionless.Core.Repositories {
         public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, AppOptions options)
             : base(configuration.WebHooks, validator, options) {}
 
-        public Task<QueryResults<WebHook>> GetByUrlAsync(string targetUrl) {
-            return QueryAsync(q => q.FieldEquals(w => w.Url, targetUrl));
+        public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
+            return FindAsync(q => q.FieldEquals(w => w.Url, targetUrl));
         }
 
-        public Task<QueryResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
+        public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
             var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
             // TODO: This cache key may not always be cleared out if the web hook doesn't have both a org and project id.
-            return QueryAsync(q => q.ElasticFilter(filter), o => o.CacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
+            return FindAsync(q => q.ElasticFilter(filter), o => o.CacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
         }
 
         public async Task MarkDisabledAsync(string id) {
-            var webHook = await GetAsync(id).AnyContext();
+            var webHook = await GetByIdAsync(id).AnyContext();
             if (!webHook.IsEnabled)
                 return;
             

@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var workItem = context.GetData<OrganizationNotificationWorkItem>();
             Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", workItem.OrganizationId, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit);
 
-            var organization = await _organizationRepository.GetAsync(workItem.OrganizationId, o => o.Cache()).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId, o => o.Cache()).AnyContext();
             if (organization == null)
                 return;
 

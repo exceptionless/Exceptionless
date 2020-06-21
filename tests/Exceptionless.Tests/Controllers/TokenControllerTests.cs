@@ -62,7 +62,7 @@ namespace Exceptionless.Tests.Controllers {
             );
 
             var repository = GetService<ITokenRepository>();
-            var actualToken = await repository.GetAsync(token.Id);
+            var actualToken = await repository.GetByIdAsync(token.Id);
             Assert.NotNull(actualToken);
             actualToken.IsDisabled = false;
             await repository.SaveAsync(actualToken);

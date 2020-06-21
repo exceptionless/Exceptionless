@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Repositories {
     public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
         Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash);
         Task<string[]> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null);
-        Task<QueryResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null);
+        Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null);
         Task MarkAsRegressedAsync(string stackId);
         Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
     }

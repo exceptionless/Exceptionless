@@ -46,7 +46,7 @@ namespace Exceptionless.Tests.Services {
             await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, firstUtcNow, firstUtcNow, 1);
 
             // Assert stack state has no change after increment usage
-            stack = await _stackRepository.GetAsync(TestConstants.StackId);
+            stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(0, stack.TotalOccurrences);
             Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
             Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
@@ -83,7 +83,7 @@ namespace Exceptionless.Tests.Services {
             await Task.WhenAll(tasks);
 
             // Assert stack state has no change after increment usage
-            stack = await _stackRepository.GetAsync(TestConstants.StackId);
+            stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(0, stack.TotalOccurrences);
             Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
             Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
@@ -93,7 +93,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(maxOccurrenceDate, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMaxDateCacheKey(stack.Id)));
             Assert.Equal(100, await _cache.GetAsync<long>(_stackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));
 
-            stack2 = await _stackRepository.GetAsync(TestConstants.StackId2);
+            stack2 = await _stackRepository.GetByIdAsync(TestConstants.StackId2);
             Assert.Equal(0, stack2.TotalOccurrences);
             Assert.Equal(DateTime.MinValue, stack2.FirstOccurrence);
             Assert.Equal(DateTime.MinValue, stack2.LastOccurrence);
@@ -132,7 +132,7 @@ namespace Exceptionless.Tests.Services {
             Assert.Equal(0, await _cache.GetAsync<long>(_stackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));
 
             // Assert stack state after save stack usage
-            stack = await _stackRepository.GetAsync(TestConstants.StackId);
+            stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(10, stack.TotalOccurrences);
             Assert.Equal(minOccurrenceDate, stack.FirstOccurrence);
             Assert.Equal(maxOccurrenceDate, stack.LastOccurrence);

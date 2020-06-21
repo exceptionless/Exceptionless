@@ -29,20 +29,20 @@ namespace Exceptionless.Core.Repositories {
             AddPropertyRequiredForRemove(e => e.Date);
         }
 
-        public Task<QueryResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null) {
+        public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null) {
             var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
             if (createdBeforeUtc.Ticks > 0)
                 filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
 
-            return QueryAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
+            return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
         }
 
         public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true) {
-            var ev = await GetAsync(id).AnyContext();
+            var ev = await GetByIdAsync(id).AnyContext();
             if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
                 return false;
 
-            await this.SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
+            await SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
             return true;
         }
 
@@ -70,10 +70,10 @@ namespace Exceptionless.Core.Repositories {
             if (!String.IsNullOrEmpty(clientIpAddress))
                 query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
 
-            return RemoveByQueryAsync(q => query, options);
+            return RemoveAllAsync(q => query, options);
         }
 
-        public Task<QueryResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
+        public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
             IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
                 .DateRange(utcStart, utcEnd, field ?? InferField(e => e.Date))
                 .Index(utcStart, utcEnd)
@@ -81,12 +81,12 @@ namespace Exceptionless.Core.Repositories {
                 .FilterExpression(userFilter);
 
             query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(e => e.Date);
-            return QueryAsync(q => query, options);
+            return FindAsync(q => query, options);
         }
 
-        public Task<QueryResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
+        public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
             var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
-            return QueryAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
+            return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
         }
 
         public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
@@ -119,7 +119,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(userFilter))
                 userFilter = String.Concat(EventIndex.Alias.StackId, ":", ev.StackId);
 
-            var results = await QueryAsync(q => q
+            var results = await FindAsync(q => q
                 .DateRange(utcStart, utcEventDate, (PersistentEvent e) => e.Date)
                 .Index(utcStart, utcEventDate)
                 .SortDescending(e => e.Date)
@@ -163,7 +163,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(userFilter))
                 userFilter = String.Concat(EventIndex.Alias.StackId, ":", ev.StackId);
 
-            var results = await QueryAsync(q => q
+            var results = await FindAsync(q => q
                 .DateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)
                 .Index(utcEventDate, utcEnd)
                 .SortAscending(e => e.Date)
@@ -189,19 +189,19 @@ namespace Exceptionless.Core.Repositories {
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 
-        public override Task<QueryResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent> options = null) {
+        public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent> options = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return QueryAsync(q => q.Organization(organizationId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
+            return FindAsync(q => q.Organization(organizationId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
         }
 
-        public override Task<QueryResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null) {
-            return QueryAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
+        public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null) {
+            return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
         }
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
-            return CountByQueryAsync(q => q.Project(projectId));
+            return CountAsync(q => q.Project(projectId));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -43,7 +43,7 @@ namespace Exceptionless.Tests.Repositories {
                 Geo = "40,-70"
             });
 
-            Assert.Equal(ev, await _repository.GetAsync(ev.Id));
+            Assert.Equal(ev, await _repository.GetByIdAsync(ev.Id));
         }
 
         [Fact(Skip="Performance Testing")]
@@ -55,7 +55,7 @@ namespace Exceptionless.Tests.Repositories {
             var sw = Stopwatch.StartNew();
             const int MAX_ITERATIONS = 100;
             for (int i = 0; i < MAX_ITERATIONS; i++) {
-                Assert.NotNull(await _repository.GetAsync(ev.Id));
+                Assert.NotNull(await _repository.GetByIdAsync(ev.Id));
             }
 
             sw.Stop();
