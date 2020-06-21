@@ -23,19 +23,19 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 throw new ArgumentException("Event cannot be null.");
 
             if (ctx.Project == null)
-                ctx.Project = await _projectRepository.GetAsync(ctx.Event.ProjectId, o => o.Cache()).AnyContext();
+                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Event.ProjectId, o => o.Cache()).AnyContext();
 
             if (ctx.Project == null)
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = await _organizationRepository.GetAsync(ctx.Event.OrganizationId, o => o.Cache()).AnyContext();
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, o => o.Cache()).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");
 
             if (ctx.Stack == null)
-                ctx.Stack = await _stackRepository.GetAsync(ctx.Event.StackId).AnyContext();
+                ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId).AnyContext();
 
             if (ctx.Stack == null)
                 throw new ArgumentException("Stack not found.");
@@ -48,13 +48,13 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 throw new ArgumentException("Stack cannot be null.");
 
             if (ctx.Project == null)
-                ctx.Project = await _projectRepository.GetAsync(ctx.Stack.ProjectId, o => o.Cache()).AnyContext();
+                ctx.Project = await _projectRepository.GetByIdAsync(ctx.Stack.ProjectId, o => o.Cache()).AnyContext();
 
             if (ctx.Project == null)
                 throw new ArgumentException("Project not found.");
 
             if (ctx.Organization == null)
-                ctx.Organization = await _organizationRepository.GetAsync(ctx.Stack.OrganizationId, o => o.Cache()).AnyContext();
+                ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Stack.OrganizationId, o => o.Cache()).AnyContext();
 
             if (ctx.Organization == null)
                 throw new ArgumentException("Organization not found.");

@@ -198,7 +198,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var model = await _repository.GetAsync(id, o => o.Cache(useCache));
+            var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
             if (model == null)
                 return null;
 
@@ -301,7 +301,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            var project = await _projectRepository.GetAsync(projectId, o => o.Cache(useCache));
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return null;
 

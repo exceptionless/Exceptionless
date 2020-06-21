@@ -64,19 +64,19 @@ namespace Exceptionless.Core.Utility {
 
             user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Global Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
-            await CreateOrganizationAndProjectAsync(user.Id).AnyContext();
+            await CreateOrganizationAndProjectAsync(user).AnyContext();
             await CreateInternalOrganizationAndProjectAsync(user.Id).AnyContext();
         }
 
-        public async Task CreateOrganizationAndProjectAsync(string userId) {
-            if (await _tokenRepository.GetAsync(TEST_API_KEY).AnyContext() != null)
+        public async Task CreateOrganizationAndProjectAsync(User user) {
+            if (await _tokenRepository.ExistsAsync(TEST_API_KEY).AnyContext())
                 return;
-
-            var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
+            
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache()).AnyContext();
 
+            
             var project = new Project {
                 Id = TEST_PROJECT_ID,
                 Name = "Disintegrating Pistol",
@@ -84,7 +84,7 @@ namespace Exceptionless.Core.Utility {
                 NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
             };
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
-            project.AddDefaultNotificationSettings(userId);
+            project.AddDefaultNotificationSettings(user.Id);
             project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache()).AnyContext();
 
             await _tokenRepository.AddAsync(new List<Token>() 
@@ -112,10 +112,10 @@ namespace Exceptionless.Core.Utility {
         }
 
         public async Task CreateInternalOrganizationAndProjectAsync(string userId) {
-            if (await _tokenRepository.GetAsync(INTERNAL_API_KEY).AnyContext() != null)
+            if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() != null)
                 return;
 
-            var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
+            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             var organization = new Organization { Name = "Exceptionless" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache()).AnyContext();

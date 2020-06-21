@@ -38,12 +38,12 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<QueryResults<Organization>> GetByRetentionDaysEnabledAsync(CommandOptionsDescriptor<Organization> options = null) {
+        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(CommandOptionsDescriptor<Organization> options = null) {
             var filter = Query<Organization>.Range(f => f.Field(o => o.RetentionDays).GreaterThan(0));
-            return QueryAsync(q => q.ElasticFilter(filter).Include(o => o.Id, o => o.Name, o => o.RetentionDays), options);
+            return FindAsync(q => q.ElasticFilter(filter).Include(o => o.Id, o => o.Name, o => o.RetentionDays), options);
         }
 
-        public Task<QueryResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+        public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Query<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
                 filter &= Query<Organization>.Term(o => o.Name, criteria);
@@ -85,11 +85,11 @@ namespace Exceptionless.Core.Repositories {
                     break;
             }
 
-            return QueryAsync(q => query, options);
+            return FindAsync(q => query, options);
         }
 
         public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
-            var results = (await QueryAsync(q => q
+            var results = (await FindAsync(q => q
                 .Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
                 .SortDescending(o => o.PlanId)).AnyContext()).Documents;
             var smallOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallPlan.Id) && o.BillingPrice > 0).ToList();

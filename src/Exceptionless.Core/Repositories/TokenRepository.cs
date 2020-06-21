@@ -16,30 +16,30 @@ namespace Exceptionless.Core.Repositories {
             : base(configuration.Tokens, validator, options) {
         }
 
-        public Task<QueryResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null) {
+        public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null) {
             var filter = Query<Token>.Term(e => e.UserId, userId) && Query<Token>.Term(t => t.Type, type);
-            return QueryAsync(q => q.ElasticFilter(filter), options);
+            return FindAsync(q => q.ElasticFilter(filter), options);
         }
 
-        public Task<QueryResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token> options = null) {
-            return QueryAsync(q => q.Organization(organizationId).ElasticFilter(Query<Token>.Term(t => t.Type, type)), options);
+        public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token> options = null) {
+            return FindAsync(q => q.Organization(organizationId).ElasticFilter(Query<Token>.Term(t => t.Type, type)), options);
         }
 
-        public Task<QueryResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token> options = null) {
+        public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token> options = null) {
             var filter = (
                     Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)
                 ) && Query<Token>.Term(t => t.Type, type);
 
-            return QueryAsync(q => q.ElasticFilter(filter), options);
+            return FindAsync(q => q.ElasticFilter(filter), options);
         }
 
-        public override Task<QueryResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token> options = null) {
+        public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token> options = null) {
             var filter = (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId));
-            return QueryAsync(q => q.ElasticFilter(filter), options);
+            return FindAsync(q => q.ElasticFilter(filter), options);
         }
 
         public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token> options = null) {
-            return RemoveByQueryAsync(q => q.ElasticFilter(Query<Token>.Term(t => t.UserId, userId)), options);
+            return RemoveAllAsync(q => q.ElasticFilter(Query<Token>.Term(t => t.UserId, userId)), options);
         }
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token document, IDictionary<string, object> data = null, TimeSpan? delay = null) {

@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Services {
 
             string orgId = org.Id;
             try {
-                org = await _organizationRepository.GetAsync(orgId).AnyContext();
+                org = await _organizationRepository.GetByIdAsync(orgId).AnyContext();
                 if (org == null)
                     return;
 
@@ -133,7 +133,7 @@ namespace Exceptionless.Core.Services {
 
             string projectId = project.Id;
             try {
-                project = await _projectRepository.GetAsync(projectId).AnyContext();
+                project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
                 if (project == null)
                     return;
 

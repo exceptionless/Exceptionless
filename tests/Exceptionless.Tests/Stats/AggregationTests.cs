@@ -45,7 +45,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("cardinality:stack_id cardinality:id"));
+            var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("cardinality:stack_id cardinality:id"));
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
             Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Cardinality("cardinality_stack_id").Value.GetValueOrDefault());
@@ -57,7 +57,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("date:(date cardinality:id) cardinality:id"));
+            var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("date:(date cardinality:id) cardinality:id"));
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Total));
             Assert.Equal(1, result.Aggregations.DateHistogram("date_date").Buckets.First().Aggregations.Count);
@@ -66,7 +66,7 @@ namespace Exceptionless.Tests.Stats {
 
             var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageLimit(100));
             foreach (var stack in stacks.Documents) {
-                var stackResult = await _eventRepository.CountByQueryAsync(q => q.FilterExpression($"stack:{stack.Id}").AggregationsExpression("cardinality:id"));
+                var stackResult = await _eventRepository.CountAsync(q => q.FilterExpression($"stack:{stack.Id}").AggregationsExpression("cardinality:id"));
                 Assert.Equal(stack.TotalOccurrences, stackResult.Total);
                 Assert.Equal(stack.TotalOccurrences, stackResult.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
             }
@@ -78,7 +78,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("terms:(is_first_occurrence @include:true)"));
+            var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("terms:(is_first_occurrence @include:true)"));
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.First(b => b.KeyAsString == Boolean.TrueString.ToLower()).Total.GetValueOrDefault());
         }
@@ -92,7 +92,7 @@ namespace Exceptionless.Tests.Stats {
                 await CreateEventsAsync(1, null, value);
 
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            var result = await _eventRepository.CountByQueryAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("avg:value~0 cardinality:value~0 sum:value~0 min:value~0 max:value~0"));
+            var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("avg:value~0 cardinality:value~0 sum:value~0 min:value~0 max:value~0"));
 
             Assert.Equal(values.Length, result.Total);
             Assert.Equal(5, result.Aggregations.Count);
@@ -109,7 +109,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.AggregationsExpression("terms:tags"));
+            var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:tags"));
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
             Assert.InRange(result.Aggregations.Terms<string>("terms_tags").Buckets.Sum(t => t.Total.GetValueOrDefault()), eventCount, eventCount * 3);
@@ -124,7 +124,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.AggregationsExpression("terms:version"));
+            var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:version"));
             Assert.Equal(eventCount, result.Total);
             // NOTE: The events are created without a version.
             Assert.Equal(0, result.Aggregations.Terms<string>("terms_version").Buckets.Count);
@@ -137,7 +137,7 @@ namespace Exceptionless.Tests.Stats {
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
             long stackSize = await _stackRepository.CountAsync();
-            var result = await _eventRepository.CountByQueryAsync(q => q.AggregationsExpression($"terms:(stack_id terms:(is_first_occurrence~{stackSize} @include:true))"));
+            var result = await _eventRepository.CountAsync(q => q.AggregationsExpression($"terms:(stack_id terms:(is_first_occurrence~{stackSize} @include:true))"));
             Assert.Equal(eventCount, result.Total);
 
             var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
@@ -154,13 +154,13 @@ namespace Exceptionless.Tests.Stats {
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
             long stackSize = await _stackRepository.CountAsync();
-            var result = await _eventRepository.CountByQueryAsync(q => q.AggregationsExpression($"terms:(stack_id~{stackSize} min:date max:date)"));
+            var result = await _eventRepository.CountAsync(q => q.AggregationsExpression($"terms:(stack_id~{stackSize} min:date max:date)"));
             Assert.Equal(eventCount, result.Total);
 
             var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
             var largestStackBucket = termsAggregation.Buckets.First();
 
-            var events = await _eventRepository.QueryAsync(q => q.FilterExpression($"stack:{largestStackBucket.Key}"), o => o.PageLimit(eventCount));
+            var events = await _eventRepository.FindAsync(q => q.FilterExpression($"stack:{largestStackBucket.Key}"), o => o.PageLimit(eventCount));
             Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
 
             var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
@@ -176,7 +176,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync(eventCount);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.AggregationsExpression("terms:project_id"));
+            var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:project_id"));
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Aggregations.Terms<string>("terms_project_id").Buckets.Count, 1, 3); // 3 sample projects
             Assert.Equal(eventCount, result.Aggregations.Terms<string>("terms_project_id").Buckets.Sum(t => t.Total.GetValueOrDefault()));
@@ -187,7 +187,7 @@ namespace Exceptionless.Tests.Stats {
             await CreateDataAsync();
             await CreateSessionEventsAsync();
 
-            var result = await _eventRepository.CountByQueryAsync(q => q.FilterExpression("type:session").AggregationsExpression("avg:value cardinality:user"));
+            var result = await _eventRepository.CountAsync(q => q.FilterExpression("type:session").AggregationsExpression("avg:value cardinality:user"));
             Assert.Equal(3, result.Total);
             Assert.Equal(3, result.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
             Assert.Equal(3600.0 / result.Total, result.Aggregations.Average("avg_value").Value.GetValueOrDefault());
@@ -228,7 +228,7 @@ namespace Exceptionless.Tests.Stats {
             await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             await RefreshDataAsync();
 
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(3, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
 

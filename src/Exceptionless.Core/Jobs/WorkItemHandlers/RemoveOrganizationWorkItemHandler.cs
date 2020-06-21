@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Log.LogInformation("Received remove organization work item for: {organization}", wi.OrganizationId);
 
                 await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
-                var organization = await _organizationRepository.GetAsync(wi.OrganizationId).AnyContext();
+                var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId).AnyContext();
                 if (organization == null) {
                     await context.ReportProgressAsync(100, "Organization deleted").AnyContext();
                     return;

@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context) {
             var wi = context.QueueEntry.Value;
-            var ev = await _eventRepository.GetAsync(wi.EventId).AnyContext();
+            var ev = await _eventRepository.GetByIdAsync(wi.EventId).AnyContext();
             if (ev == null)
                 return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
@@ -54,7 +54,7 @@ namespace Exceptionless.Core.Jobs {
             int sent = 0;
             if (shouldLog) _logger.LogTrace("Process notification: project={project} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
-            var project = await _projectRepository.GetAsync(ev.ProjectId, o => o.Cache()).AnyContext();
+            var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache()).AnyContext();
             if (project == null)
                 return JobResult.SuccessWithMessage($"Could not load project: {ev.ProjectId}.");
 
@@ -136,7 +136,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task<bool> SendEmailNotificationAsync(string userId, Project project, PersistentEvent ev, EventNotification wi, bool shouldLog) {
-            var user = await _userRepository.GetAsync(userId, o => o.Cache()).AnyContext();
+            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
             if (String.IsNullOrEmpty(user?.EmailAddress)) {
                 if (shouldLog) _logger.LogError("Could not load user {user} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");
                 return false;

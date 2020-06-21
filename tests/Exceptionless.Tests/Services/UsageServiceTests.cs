@@ -55,7 +55,7 @@ namespace Exceptionless.Tests.Services {
             int totalToIncrement = o.GetHourlyEventLimit(_plans) - 1;
             Assert.False(await _usageService.IncrementUsageAsync(o, project, false, totalToIncrement));
             await RefreshDataAsync();
-            o = await _organizationRepository.GetAsync(o.Id);
+            o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(2, countdown.CurrentCount);
@@ -70,7 +70,7 @@ namespace Exceptionless.Tests.Services {
 
             Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 2));
             await RefreshDataAsync();
-            o = await _organizationRepository.GetAsync(o.Id);
+            o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(1, countdown.CurrentCount);
@@ -123,7 +123,7 @@ namespace Exceptionless.Tests.Services {
 
             Assert.False(await _usageService.IncrementUsageAsync(o, project, false, limit));
             await RefreshDataAsync();
-            o = await _organizationRepository.GetAsync(o.Id);
+            o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(2, countdown.CurrentCount);
@@ -138,7 +138,7 @@ namespace Exceptionless.Tests.Services {
 
             Assert.True(await _usageService.IncrementUsageAsync(o, project, false, 2));
             await RefreshDataAsync();
-            o = await _organizationRepository.GetAsync(o.Id);
+            o = await _organizationRepository.GetByIdAsync(o.Id);
 
             await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
             Assert.Equal(1, countdown.CurrentCount);

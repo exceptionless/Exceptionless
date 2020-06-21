@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             
             await _cache.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3)).AnyContext();
 
-            var ev = await _eventRepository.GetAsync(workItem.EventId).AnyContext();
+            var ev = await _eventRepository.GetByIdAsync(workItem.EventId).AnyContext();
             if (ev == null)
                 return;
 

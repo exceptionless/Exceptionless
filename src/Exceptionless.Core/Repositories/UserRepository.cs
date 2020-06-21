@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Repositories {
 
             provider = provider.ToLowerInvariant();
             var filter = Query<User>.Term(u => u.OAuthAccounts.First().ProviderUserId, providerUserId);
-            var results = (await QueryAsync(q => q.ElasticFilter(filter)).AnyContext()).Documents;
+            var results = (await FindAsync(q => q.ElasticFilter(filter)).AnyContext()).Documents;
             return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
 
@@ -55,16 +55,16 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<QueryResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null) {
+        public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult<QueryResults<User>>(new QueryResults<User>());
+                return Task.FromResult<FindResults<User>>(new FindResults<User>());
 
             var commandOptions = options.Configure();
             if (commandOptions.ShouldUseCache())
                 throw new Exception("Caching of paged queries is not allowed");
 
             var filter = Query<User>.Term(u => u.OrganizationIds, organizationId);
-            return QueryAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
+            return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
         }
 
         protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ICommandOptions options = null) {

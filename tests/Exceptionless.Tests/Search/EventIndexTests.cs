@@ -456,11 +456,11 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
 
-        private async Task<QueryResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null) {
+        private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null) {
             var result = await _validator.ValidateQueryAsync(filter);
             Assert.True(result.IsValid);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-            return await _repository.QueryAsync(q => q.FilterExpression(filter));
+            return await _repository.FindAsync(q => q.FilterExpression(filter));
         }
     }
 }

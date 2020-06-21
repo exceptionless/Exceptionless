@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Log.LogInformation("Received remove project work item for: {0} Reset Data: {1}", wi.ProjectId, wi.Reset);
 
                 await context.ReportProgressAsync(0, "Starting deletion...").AnyContext();
-                var project = await _projectRepository.GetAsync(wi.ProjectId).AnyContext();
+                var project = await _projectRepository.GetByIdAsync(wi.ProjectId).AnyContext();
                 if (project == null) {
                     await context.ReportProgressAsync(100, wi.Reset ? "Project data reset" : "Project deleted").AnyContext();
                     return;

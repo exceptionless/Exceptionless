@@ -62,7 +62,7 @@ namespace Exceptionless.Tests.Pipeline {
             var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.True(ev.Date < localTime.AddMinutes(10));
             Assert.True(ev.Date - localTime < TimeSpan.FromSeconds(5));
@@ -81,7 +81,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await RefreshDataAsync();
-            var events = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var events = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(2, events.Total);
             Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
 
@@ -103,7 +103,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await RefreshDataAsync();
-            var events = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var events = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(3, events.Total);
             Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
 
@@ -121,7 +121,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await RefreshDataAsync();
-            var events = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var events = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(1, events.Total);
             Assert.Equal(0, events.Documents.Count(e => e.IsSessionStart()));
             Assert.Empty(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
@@ -143,7 +143,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Contains(contexts, c => c.IsProcessed);
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(6, results.Total);
             Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
             Assert.Equal(2, results.Documents.Count(e => e.IsSessionEnd()));
@@ -170,7 +170,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Contains(contexts, c => c.IsProcessed);
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(1, results.Total);
             Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
             Assert.Equal(0, results.Documents.Count(e => e.IsSessionEnd()));
@@ -237,7 +237,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Contains(contexts, c => c.IsProcessed);
             
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(2, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
 
@@ -253,7 +253,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(1, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(3, results.Total);
             var sessionIds = results.Documents.Select(e => e.GetSessionId()).Distinct();
             Assert.Single(sessionIds);
@@ -278,7 +278,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.False(contexts.All(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(0, results.Total);
         }
 
@@ -295,12 +295,12 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(1, results.Total);
             var sessionStart = results.Documents.FirstOrDefault(e => e.IsSessionStart());
             Assert.NotNull(sessionStart);
 
-            var stack = await _stackRepository.GetAsync(sessionStart.StackId);
+            var stack = await _stackRepository.GetByIdAsync(sessionStart.StackId);
             Assert.NotNull(stack);
             Assert.True(stack.Status == StackStatus.Ignored);
         }
@@ -318,7 +318,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await RefreshDataAsync();
-            var events = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var events = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(2, events.Total);
             Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
 
@@ -341,7 +341,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
 
             await RefreshDataAsync();
-            var events = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var events = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(3, events.Total);
             Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
 
@@ -366,7 +366,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Contains(contexts, c => c.IsProcessed);
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(4, results.Total);
             Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
 
@@ -393,7 +393,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(3, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(4, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
@@ -421,7 +421,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Contains(contexts, c => c.IsProcessed);
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(3, results.Total);
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
             Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
@@ -454,7 +454,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Contains(contexts, c => c.IsProcessed);
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(3, results.Total);
             Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
             Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
@@ -481,7 +481,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.False(contexts.All(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(0, results.Total);
         }
 
@@ -498,12 +498,12 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
             await RefreshDataAsync();
-            var results = await _eventRepository.QueryAsync(q => q.SortExpression(EventIndex.Alias.Date));
+            var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));
             Assert.Equal(1, results.Total);
             var sessionStart = results.Documents.FirstOrDefault(e => e.IsSessionStart());
             Assert.NotNull(sessionStart);
 
-            var stack = await _stackRepository.GetAsync(sessionStart.StackId);
+            var stack = await _stackRepository.GetByIdAsync(sessionStart.StackId);
             Assert.NotNull(stack);
             Assert.True(stack.Status == StackStatus.Ignored);
         }
@@ -555,11 +555,11 @@ namespace Exceptionless.Tests.Pipeline {
             var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
 
-            var stack = await _stackRepository.GetAsync(ev.StackId, o => o.Cache());
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1 }, stack.Tags.ToArray());
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
@@ -568,7 +568,7 @@ namespace Exceptionless.Tests.Pipeline {
             await RefreshDataAsync();
             context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
-            stack = await _stackRepository.GetAsync(ev.StackId, o => o.Cache());
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1, Tag2 }, stack.Tags.ToArray());
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
@@ -577,7 +577,7 @@ namespace Exceptionless.Tests.Pipeline {
             await RefreshDataAsync();
             context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
-            stack = await _stackRepository.GetAsync(ev.StackId, o => o.Cache());
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(new [] { Tag1, Tag2}, stack.Tags.ToArray());
         }
 
@@ -591,12 +591,12 @@ namespace Exceptionless.Tests.Pipeline {
             var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
             Assert.Empty(ev.Tags);
 
-            var stack = await _stackRepository.GetAsync(ev.StackId, o => o.Cache());
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Empty(stack.Tags);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
@@ -606,12 +606,12 @@ namespace Exceptionless.Tests.Pipeline {
             context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
             Assert.Equal(50, ev.Tags.Count);
 
-            stack = await _stackRepository.GetAsync(ev.StackId, o => o.Cache());
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(50, stack.Tags.Count);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
@@ -623,14 +623,14 @@ namespace Exceptionless.Tests.Pipeline {
             context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
             Assert.False(context.HasError, context.ErrorMessage);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
             Assert.NotNull(ev.StackId);
             Assert.Equal(50, ev.Tags.Count);
             Assert.DoesNotContain(new string('x', 150), ev.Tags);
             Assert.Contains(Event.KnownTags.Critical, ev.Tags);
 
-            stack = await _stackRepository.GetAsync(ev.StackId, o => o.Cache());
+            stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
             Assert.Equal(50, stack.Tags.Count);
             Assert.DoesNotContain(new string('x', 150), stack.Tags);
             Assert.Contains(Event.KnownTags.Critical, stack.Tags);
@@ -692,10 +692,10 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
 
-            var stack = await _stackRepository.GetAsync(ev.StackId);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.MarkFixed();
             await _stackRepository.SaveAsync(stack, o => o.Cache());
 
@@ -746,10 +746,10 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
-            ev = await _eventRepository.GetAsync(ev.Id);
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
             Assert.NotNull(ev);
 
-            var stack = await _stackRepository.GetAsync(ev.StackId);
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             stack.MarkFixed(new SemanticVersion(1, 0, 1, new []{ "rc2" }));
             await _stackRepository.SaveAsync(stack, o => o.Cache());
 

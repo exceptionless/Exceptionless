@@ -75,7 +75,7 @@ namespace Exceptionless.Core.Pipeline {
                         stacks.Add(signatureHash, Tuple.Create(true, ctx.Stack));
                     }
                 } else {
-                    ctx.Stack = await _stackRepository.GetAsync(ctx.Event.StackId, o => o.Cache()).AnyContext();
+                    ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache()).AnyContext();
                     if (ctx.Stack == null || ctx.Stack.ProjectId != ctx.Event.ProjectId) {
                         ctx.SetError("Invalid StackId.");
                         continue;

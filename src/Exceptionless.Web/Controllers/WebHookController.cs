@@ -169,7 +169,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var webHook = await _repository.GetAsync(id, o => o.Cache(useCache));
+            var webHook = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
             if (webHook == null)
                 return null;
 
@@ -186,7 +186,7 @@ namespace Exceptionless.App.Controllers.API {
             if (ids == null || ids.Length == 0)
                 return EmptyModels;
 
-            var webHooks = await _repository.GetAsync(ids, o => o.Cache(useCache));
+            var webHooks = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
             if (webHooks.Count == 0)
                 return EmptyModels;
 
@@ -246,7 +246,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return null;
 
-            var project = await _projectRepository.GetAsync(projectId, o => o.Cache(useCache));
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return null;
 
