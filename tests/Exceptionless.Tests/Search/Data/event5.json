@@ -6,8 +6,8 @@
   "is_first_occurrence": false,
   "created_utc": "2015-02-12T17:25:28.2349867",
   "type": "log",
-  "date": "2015-02-12T17:25:28.1172014+00:00",
   "source": "TestController",
+  "date": "2015-02-12T17:25:28.1172014+00:00",
   "message": "Row not found or changed.",
   "data": {
     "@version": "1.2.2"

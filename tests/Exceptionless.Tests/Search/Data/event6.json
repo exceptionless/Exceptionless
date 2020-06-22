@@ -6,7 +6,7 @@
   "is_first_occurrence": false,
   "created_utc": "2015-02-11T20:55:04.3457274",
   "type": "log",
-  "date": "2015-02-11T20:55:04.3457274+00:00",
   "source": "GET /Print",
+  "date": "2015-02-11T20:55:04.3457274+00:00",
   "message": "GET /Print"
 }

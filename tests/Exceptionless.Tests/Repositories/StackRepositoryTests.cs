@@ -51,7 +51,7 @@ namespace Exceptionless.Tests.Repositories {
             long count = _cache.Count;
             long hits = _cache.Hits;
             long misses = _cache.Misses;
-            
+
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
             Assert.NotNull(stack?.Id);
             Assert.Equal(count + 2, _cache.Count);

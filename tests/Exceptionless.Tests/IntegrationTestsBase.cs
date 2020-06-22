@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Authentication;
@@ -30,7 +31,6 @@ using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
-using IAsyncLifetime = Xunit.IAsyncLifetime;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
@@ -57,11 +57,11 @@ namespace Exceptionless.Tests {
             if (configuredFactory == null) {
                 configuredFactory = factory.WithWebHostBuilder(builder => {
                    builder.ConfigureTestServices(RegisterServices); // happens after normal container configure and overrides services
-               });
+                });
             }
 
             _disposables.Add(_testSystemClock);
-            
+
             _httpClient = configuredFactory.CreateClient();
             _server = configuredFactory.Server;
             _httpClient.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
@@ -69,7 +69,7 @@ namespace Exceptionless.Tests {
             var testScope = configuredFactory.Services.CreateScope();
             _disposables.Add(testScope);
             ServiceProvider = testScope.ServiceProvider;
-            
+
             var settings = GetService<JsonSerializerSettings>();
             _client = new FluentClient(_httpClient, new NewtonsoftJsonSerializer(settings));
             _configuration = GetService<ExceptionlessElasticConfiguration>();
@@ -86,7 +86,7 @@ namespace Exceptionless.Tests {
         }
 
         private IServiceProvider ServiceProvider { get; }
-        
+
         protected TService GetService<TService>() {
             return ServiceProvider.GetRequiredService<TService>();
         }
@@ -98,7 +98,7 @@ namespace Exceptionless.Tests {
 
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
-            
+
             services.ReplaceSingleton(s => _server.CreateHandler());
         }
 
@@ -122,10 +122,10 @@ namespace Exceptionless.Tests {
                         Refresh = true
                     });
                 }
-                
+
                 if (isTraceLogLevelEnabled)
                     _logger.LogTrace("Configured Indexes");
-                
+
                 foreach (var index in _configuration.Indexes)
                     index.QueryParser.Configuration.RefreshMapping();
 
@@ -140,15 +140,16 @@ namespace Exceptionless.Tests {
                 Log.MinimumLevel = oldLoggingLevel;
             } finally {
                 _semaphoreSlim.Release();
+                _logger.LogDebug("Reset Data");
             }
         }
-        
+
         protected async Task RefreshDataAsync(Indices indices = null) {
             var configuration = GetService<ExceptionlessElasticConfiguration>();
             var response = await configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
             _logger.LogTraceRequest(response);
         }
-        
+
         protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {
             var request = new HttpRequestMessage(HttpMethod.Get, _client.HttpClient.BaseAddress);
             var builder = new AppSendBuilder(request);

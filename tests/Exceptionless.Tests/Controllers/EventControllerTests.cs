@@ -197,7 +197,7 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task CanGetMostFrequentStackMode() {
             await CreateStacksAndEventsAsync();
-            
+
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
@@ -208,11 +208,11 @@ namespace Exceptionless.Tests.Controllers {
 
             Assert.Equal(2, results.Count);
         }
-        
+
         [Fact]
         public async Task CanGetNewStackMode() {
             await CreateStacksAndEventsAsync();
-            
+
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
@@ -223,7 +223,7 @@ namespace Exceptionless.Tests.Controllers {
 
             Assert.Single(results);
         }
-        
+
         [Fact]
         public async Task GetRecentStackMode() {
             await CreateStacksAndEventsAsync();
@@ -242,7 +242,7 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task GetUsersStackMode() {
             await CreateStacksAndEventsAsync();
-            
+
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")

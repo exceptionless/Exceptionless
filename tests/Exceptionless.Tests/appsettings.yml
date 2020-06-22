@@ -12,6 +12,7 @@ BaseURL: 'http://localhost:5000'
 
 Scope: dev
 AppMode: Development
+EnableSampleData: false
 
 # Controls whether daily summary emails are sent
 EnableDailySummary: false

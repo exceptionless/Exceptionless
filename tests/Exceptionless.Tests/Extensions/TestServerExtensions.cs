@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Foundatio.Hosting.Startup;
 using Microsoft.AspNetCore.TestHost;
@@ -8,7 +9,7 @@ namespace Exceptionless.Tests {
     public static class TestServerExtensions {
         public static async Task WaitForReadyAsync(this TestServer server, TimeSpan? maxWaitTime = null) {
             var startupContext = server.Services.GetService<StartupActionsContext>();
-            maxWaitTime ??= TimeSpan.FromSeconds(5);
+            maxWaitTime ??= Debugger.IsAttached ? TimeSpan.FromMinutes(5) :TimeSpan.FromSeconds(5);
             
             var client = server.CreateClient();
             var startTime = DateTime.Now;
