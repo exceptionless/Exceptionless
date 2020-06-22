@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins {
     public class SummaryDataTests : TestWithServices {
-        public SummaryDataTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
+        public SummaryDataTests(ITestOutputHelper output) : base(output) {}
 
         [Theory]
         [MemberData(nameof(Events))]

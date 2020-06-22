@@ -29,7 +29,7 @@ namespace Exceptionless.Tests.Plugins {
         private readonly BillingPlans _plans;
         private readonly AppOptions _options;
 
-        public GeoTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public GeoTests(ITestOutputHelper output) : base(output) {
             _billingManager = GetService<BillingManager>();
             _plans = GetService<BillingPlans>();
             _options = GetService<AppOptions>();

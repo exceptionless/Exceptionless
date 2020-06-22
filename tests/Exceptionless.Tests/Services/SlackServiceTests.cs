@@ -14,7 +14,7 @@ namespace Exceptionless.Tests.Services {
         private readonly Project _project;
         private readonly SlackService _slackService;
 
-        public SlackServiceTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public SlackServiceTests(ITestOutputHelper output) : base(output) {
             _slackService = GetService<SlackService>();
             _project = ProjectData.GenerateSampleProject();
             _project.Data[Project.KnownDataKeys.SlackToken] = new SlackToken {

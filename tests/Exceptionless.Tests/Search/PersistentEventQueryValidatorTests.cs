@@ -17,7 +17,7 @@ namespace Exceptionless.Tests.Search {
         private readonly ElasticQueryParser _parser;
         private readonly PersistentEventQueryValidator _validator;
 
-        public PersistentEventQueryValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public PersistentEventQueryValidatorTests(ITestOutputHelper output) : base(output){
             _parser = GetService<ExceptionlessElasticConfiguration>().Events.QueryParser;
             _validator = GetService<PersistentEventQueryValidator>();
         }

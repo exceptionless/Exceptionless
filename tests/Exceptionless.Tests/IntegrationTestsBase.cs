@@ -34,14 +34,15 @@ using IAsyncLifetime = Xunit.IAsyncLifetime;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
-    public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+    public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+        private static bool _indexesHaveBeenConfigured = false;
         private static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         private readonly ExceptionlessElasticConfiguration _configuration;
-        protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly HttpClient _httpClient;
+        protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
         public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
             Log.MinimumLevel = LogLevel.Information;
@@ -108,9 +109,19 @@ namespace Exceptionless.Tests {
                 Log.MinimumLevel = LogLevel.Warning;
 
                 bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
-                
-                await _configuration.DeleteIndexesAsync();
-                await _configuration.ConfigureIndexesAsync();
+                await RefreshDataAsync();
+                if (!_indexesHaveBeenConfigured) {
+                    await _configuration.DeleteIndexesAsync();
+                    await _configuration.ConfigureIndexesAsync();
+                    _indexesHaveBeenConfigured = true;
+                } else {
+                    string indexes = String.Join(',', _configuration.Indexes.Select(i => i.Name));
+                    await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexes) {
+                        Query = new MatchAllQuery(),
+                        IgnoreUnavailable = true,
+                        Refresh = true
+                    });
+                }
                 
                 if (isTraceLogLevelEnabled)
                     _logger.LogTrace("Configured Indexes");

@@ -15,7 +15,7 @@ namespace Exceptionless.Tests.Plugins {
         private readonly WebHookDataPluginManager _webHookData;
         private readonly FormattingPluginManager _formatter;
 
-        public WebHookDataTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public WebHookDataTests(ITestOutputHelper output) : base(output) {
             _webHookData = GetService<WebHookDataPluginManager>();
             _formatter = GetService<FormattingPluginManager>();
         }
