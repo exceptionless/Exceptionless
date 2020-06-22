@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Messaging.Models;

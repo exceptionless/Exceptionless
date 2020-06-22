@@ -29,11 +29,11 @@ namespace Exceptionless.Core.Utility {
         public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
         public SampleDataService(
-            IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, 
-            IUserRepository userRepository, 
-            ITokenRepository tokenRepository, 
-            BillingManager billingManager, 
+            IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository,
+            IUserRepository userRepository,
+            ITokenRepository tokenRepository,
+            BillingManager billingManager,
             BillingPlans billingPlans,
             ILoggerFactory loggerFactory
         ) {
@@ -71,12 +71,11 @@ namespace Exceptionless.Core.Utility {
         public async Task CreateOrganizationAndProjectAsync(User user) {
             if (await _tokenRepository.ExistsAsync(TEST_API_KEY).AnyContext())
                 return;
-            
+
             var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
             organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache()).AnyContext();
 
-            
             var project = new Project {
                 Id = TEST_PROJECT_ID,
                 Name = "Disintegrating Pistol",
@@ -87,7 +86,7 @@ namespace Exceptionless.Core.Utility {
             project.AddDefaultNotificationSettings(user.Id);
             project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache()).AnyContext();
 
-            await _tokenRepository.AddAsync(new List<Token>() 
+            await _tokenRepository.AddAsync(new List<Token>()
             {
                 new Token {
                     Id = TEST_API_KEY,

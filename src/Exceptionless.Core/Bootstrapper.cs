@@ -238,8 +238,11 @@ namespace Exceptionless.Core {
 
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
             var options = container.GetRequiredService<AppOptions>();
+            if (!options.EnableSampleData)
+                return;
+            
             var elasticsearchOptions = container.GetRequiredService<ElasticsearchOptions>();
-            if (options.AppMode != AppMode.Development || elasticsearchOptions.DisableIndexConfiguration)
+            if (elasticsearchOptions.DisableIndexConfiguration)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();

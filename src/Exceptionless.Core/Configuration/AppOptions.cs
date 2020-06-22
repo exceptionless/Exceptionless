@@ -39,6 +39,8 @@ namespace Exceptionless.Core {
         public int ApiThrottleLimit { get; internal set; }
 
         public bool EnableArchive { get; internal set; }
+        
+        public bool EnableSampleData { get; internal set; }
 
         public bool EventSubmissionDisabled { get; internal set; }
 
@@ -95,6 +97,7 @@ namespace Exceptionless.Core {
 
             options.ApiThrottleLimit = config.GetValue(nameof(options.ApiThrottleLimit), options.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
             options.EnableArchive = config.GetValue(nameof(options.EnableArchive), true);
+            options.EnableSampleData = config.GetValue(nameof(options.EnableSampleData), options.AppMode != AppMode.Development);
             options.EventSubmissionDisabled = config.GetValue(nameof(options.EventSubmissionDisabled), false);
             options.DisabledPipelineActions = config.GetValueList(nameof(options.DisabledPipelineActions));
             options.DisabledPlugins = config.GetValueList(nameof(options.DisabledPlugins));

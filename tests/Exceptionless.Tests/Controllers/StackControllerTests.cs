@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -69,17 +69,17 @@ namespace Exceptionless.Tests.Controllers {
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
             Assert.False(stack.IsFixed());
-            
+
             await SendRequestAsAsync<WorkInProgressResult>(r => r
                 .Post()
                 .AsGlobalAdminUser()
                 .AppendPath($"stacks/{stack.Id}/mark-fixed")
                 .QueryStringIf(() => !String.IsNullOrEmpty(version), "version", version)
                 .StatusCodeShouldBeOk());
-            
+
             stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
-            Assert.True(stack.IsFixed()); 
+            Assert.True(stack.IsFixed());
         }
 
         private async Task<PersistentEvent> SubmitErrorEventAsync() {
