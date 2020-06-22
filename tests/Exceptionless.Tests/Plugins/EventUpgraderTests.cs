@@ -11,7 +11,7 @@ namespace Exceptionless.Tests.Plugins {
         private readonly EventUpgraderPluginManager _upgrader;
         private readonly EventParserPluginManager _parser;
 
-        public EventUpgraderTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public EventUpgraderTests(ITestOutputHelper output) : base(output) {
             _upgrader = GetService<EventUpgraderPluginManager>();
             _parser = GetService<EventParserPluginManager>();
         }

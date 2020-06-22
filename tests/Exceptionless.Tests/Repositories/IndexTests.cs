@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 namespace Exceptionless.Tests.Repositories {
     public sealed class IndexTests : TestWithServices {
         private readonly ExceptionlessElasticConfiguration _configuration;
-        public IndexTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public IndexTests(ITestOutputHelper output) : base(output) {
             _configuration = GetService<ExceptionlessElasticConfiguration>();
             _configuration.DeleteIndexesAsync().GetAwaiter().GetResult();
         }

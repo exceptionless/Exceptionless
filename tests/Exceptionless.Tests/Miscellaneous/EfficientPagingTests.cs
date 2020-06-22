@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Tests.Miscellaneous {
     public class EfficientPagingTests : TestWithServices {
-        public EfficientPagingTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public EfficientPagingTests(ITestOutputHelper output) : base(output) {}
 
         [Theory]
         [InlineData("http://localhost", false, false, false)]

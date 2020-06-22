@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Billing {
     public class BillingManagerTests : TestWithServices {
-        public BillingManagerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {}
+        public BillingManagerTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]
         public void GetBillingPlan() {
