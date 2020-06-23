@@ -143,26 +143,6 @@ namespace Exceptionless.Insulation {
         }
 
         private static ConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
-            string mode = options.GetString("mode");
-            string server = options.GetString("server");
-            bool isSentinel = !String.IsNullOrEmpty(mode) && mode == "sentinel" ? true : false;
-
-            if (isSentinel) {
-                var redisConfig = ConfigurationOptions.Parse(server);
-                if (String.IsNullOrEmpty(redisConfig.ServiceName))
-                    redisConfig.ServiceName = "exceptionless";
-
-                redisConfig.TieBreaker = "";
-                var sentinelRedisConfig = redisConfig.Clone();
-                sentinelRedisConfig.CommandMap = CommandMap.Sentinel;
-
-                var sentinelConnection = ConnectionMultiplexer.Connect(sentinelRedisConfig);
-                if (!sentinelConnection.IsConnected)
-                    throw new ApplicationException($"Unable to connect to redis sentinel server {redisConfig.EndPoints.First()}");
-
-                return sentinelConnection.GetSentinelMasterConnection(redisConfig);
-            }
-
             return ConnectionMultiplexer.Connect(options.GetString("server"));
         }
 
