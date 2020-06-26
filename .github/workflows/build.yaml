@@ -1,8 +1,5 @@
 name: Build
 on: [ push, pull_request ]
-env:
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_NOLOGO: true
 
 jobs:
   build:
@@ -71,7 +68,7 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
       with:
-        version: v3.2.3
+        version: v3.2.4
     - name: Deploy Changes to Development Environment
       if: github.ref == 'refs/heads/feature/discard-join' && github.event_name != 'pull_request'
       run: |
