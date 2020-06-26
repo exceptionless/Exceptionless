@@ -71,18 +71,18 @@ kubectl patch cronjob/ex-dev-jobs-stack-snapshot -p '{"spec":{"suspend": true}}'
 
 # resume the app
 kubectl scale deployment/ex-dev-app --replicas=1 --namespace ex-dev
-kubectl scale deployment/ex-dev-api --replicas=5 --namespace ex-dev
-kubectl scale deployment/ex-dev-collector --replicas=12 --namespace ex-dev
+kubectl scale deployment/ex-dev-api --replicas=1 --namespace ex-dev
+kubectl scale deployment/ex-dev-collector --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=1 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=2 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-event-posts --replicas=6 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=2 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-mail-message --replicas=2 --namespace ex-dev
+kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=1 --namespace ex-dev
+kubectl scale deployment/ex-dev-jobs-event-posts --replicas=1 --namespace ex-dev
+kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=1 --namespace ex-dev
+kubectl scale deployment/ex-dev-jobs-mail-message --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-retention-limits --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=1 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=4 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-work-item --replicas=5 --namespace ex-dev
+kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=1 --namespace ex-dev
+kubectl scale deployment/ex-dev-jobs-work-item --replicas=1 --namespace ex-dev
 
 kubectl patch cronjob/ex-dev-jobs-cleanup-snapshot -p '{"spec":{"suspend": false}}' --namespace ex-dev
 kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-dev
