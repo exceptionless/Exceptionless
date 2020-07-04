@@ -42,6 +42,10 @@ kubectl run --namespace ex-dev ex-dev-client --rm --tty -i --restart='Never' \
 # upgrade elasticsearch
 kubectl apply -f ex-dev-elasticsearch.yaml
 
+# upgrade redis
+helm repo update
+helm upgrade ex-dev-redis bitnami/redis --values ex-dev-redis-values.yaml --namespace ex-dev
+
 # upgrade exceptionless app to a new docker image tag
 APP_TAG="2.8.1502-pre"
 API_TAG="6.0.3534-pre"

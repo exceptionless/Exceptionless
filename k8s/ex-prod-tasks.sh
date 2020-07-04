@@ -41,10 +41,12 @@ kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' \
 
 # upgrade nginx ingress to latest
 # https://github.com/kubernetes/ingress-nginx/releases
+helm repo update
 helm upgrade --reset-values --namespace nginx-ingress -f nginx-values.yaml nginx-ingress stable/nginx-ingress --dry-run
 
 # upgrade cert-manager
 # https://github.com/jetstack/cert-manager/releases
+helm repo update
 kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.1/cert-manager.crds.yaml
 helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset-values --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --dry-run
 
@@ -53,9 +55,11 @@ helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.1/aio/deploy/recommended.yaml
 
 # upgrade kubecost
+helm repo update
 helm upgrade kubecost kubecost/cost-analyzer --namespace kubecost --reset-values --set kubecostToken="ZXNtaXRoQHNsaWRlcm9vbS5jb20=xm343yadf98" --dry-run
 
 # upgrade goldilocks
+helm repo update
 helm upgrade goldilocks fairwinds-stable/goldilocks --namespace goldilocks --reset-values --dry-run
 
 # upgrade elasticsearch operator
