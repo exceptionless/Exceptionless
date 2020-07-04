@@ -143,7 +143,9 @@ namespace Exceptionless.Insulation {
         }
 
         private static ConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
-            return ConnectionMultiplexer.Connect(options.GetString("server"));
+            // TODO: Remove this extra config parse step when sentinel bug is fixed
+            var config = ConfigurationOptions.Parse(options.GetString("server"));
+            return ConnectionMultiplexer.Connect(config);
         }
 
         private static void RegisterMetric(IServiceCollection container, MetricOptions options) {
