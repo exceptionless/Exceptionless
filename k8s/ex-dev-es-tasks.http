@@ -4,6 +4,10 @@ GET {{apiUrl}}_cat/indices/dev-*?v
 
 ###
 
+DELETE {{apiUrl}}dev-*
+
+###
+
 GET {{apiUrl}}_snapshot/prod-organizations/_all
 
 ###
@@ -20,7 +24,7 @@ POST {{apiUrl}}dev-*/_close
 
 ###
 
-POST {{apiUrl}}_snapshot/prod-stacks/prod-stacks-2020-03-28-18-40/_restore
+POST {{apiUrl}}_snapshot/prod-stacks/prod-stacks-2020-07-04-23-39/_restore?wait_for_completion=false
 Content-Type: application/json
 
 {
@@ -31,7 +35,7 @@ Content-Type: application/json
 
 ###
 
-POST {{apiUrl}}_snapshot/prod-organizations/prod-organizations-2020-03-28-18-30/_restore
+POST {{apiUrl}}_snapshot/prod-organizations/prod-organizations-2020-07-04-23-36/_restore?wait_for_completion=false
 Content-Type: application/json
 
 {
@@ -42,11 +46,11 @@ Content-Type: application/json
 
 ###
 
-POST {{apiUrl}}_snapshot/prod-events/prod-events-2020-03-28-12-00/_restore
+POST {{apiUrl}}_snapshot/prod-events/prod-events-2020-07-04-12-00/_restore?wait_for_completion=false
 Content-Type: application/json
 
 {
-  "indices": "prod-events-v2-2020.03.2*",
+  "indices": "prod-events-v1-2020.07.*",
   "include_global_state": true,
   "rename_pattern": "prod-(.+)",
   "rename_replacement": "dev-$1"
@@ -66,6 +70,8 @@ Content-Type: application/json
 ###
 
 PUT {{apiUrl}}dev-stacks-v1/_mapping
+Content-Type: application/json
+
 {
   "properties": {
     "status": {
@@ -79,10 +85,16 @@ PUT {{apiUrl}}dev-stacks-v1/_mapping
 
 ###
 
-POST {{apiUrl}}dev-stacks-v1/_update_by_query
+POST {{apiUrl}}dev-stacks-v1/_update_by_query?wait_for_completion=false
+Content-Type: application/json
+
 {
   "script": {
     "source": "if (ctx._source.is_regressed == true) ctx._source.status = 'regressed'; else if (ctx._source.is_hidden == true) ctx._source.status = 'ignored'; else if (ctx._source.disable_notifications == true) ctx._source.status = 'ignored'; else ctx._source.status = 'open';",
     "lang": "painless"
   }
 }
+
+###
+
+GET {{apiUrl}}_tasks/hCqJFzl1QZWFkO5o1pWSSQ:128803
