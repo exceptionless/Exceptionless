@@ -10,7 +10,7 @@ api:
 app:
   replicaCount: 1
   image:
-    tag: "2.9.2"
+    repository: exceptionless/ui-ci
   defaultDomain: dev-app.exceptionless.io
   domains:
     - dev-app.exceptionless.io
