@@ -51,6 +51,9 @@ APP_TAG="2.8.1502-pre"
 API_TAG="6.0.3534-pre"
 helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-dev ./exceptionless
 
+# upgrade exceptionless app to set a new env variable
+helm upgrade --set "config.EX_EnableSnapshotJobs=true" --reuse-values ex-dev ./exceptionless
+
 # stop the entire app
 kubectl scale deployment/ex-dev-app --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-api --replicas=0 --namespace ex-dev

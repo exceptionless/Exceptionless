@@ -4,7 +4,7 @@ metadata:
     name: {{ template "exceptionless.fullname" . }}-config
 data:
     EX_AppMode: {{ default "Production" .Values.appMode }}
-    {{- if .Values.scope }}
+    {{- if .Values.appScope }}
     EX_AppScope: {{ .Values.appScope }}
     {{- end }}
     EX_ApiUrl: https://{{.Values.api.defaultDomain}}
