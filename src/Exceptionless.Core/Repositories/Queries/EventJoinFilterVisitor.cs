@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Options;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
@@ -20,10 +21,14 @@ namespace Exceptionless.Core.Repositories.Queries {
         public const string StackFieldName = "@stack";
         private readonly IStackRepository _stackRepository;
         private readonly ILogger _logger;
+        private readonly Field _inferredEventDateField;
+        private readonly Field _inferredStackLastOccurrenceField;
 
         public EventJoinFilterVisitor(IStackRepository stackRepository, ILoggerFactory loggerFactory) {
             _stackRepository = stackRepository;
             _logger = loggerFactory.CreateLogger<EventJoinFilterVisitor>();
+            _inferredEventDateField = Infer.Field<PersistentEvent>(f => f.Date);
+            _inferredStackLastOccurrenceField = Infer.Field<Stack>(f => f.LastOccurrence);
         }
 
         public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
@@ -36,12 +41,17 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (isTraceLogLevelEnabled)
                     _logger.LogTrace("Visiting GroupNode Field {FieldName} with resolved term: {Term}", node.Field, term);
                 
-                var builderContext = context as IQueryBuilderContext;
-                var systemFilter = builderContext?.Source.GetAppFilter();
-                var ranges = builderContext?.Source.GetDateRanges();
-                var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MinValue;
-                var utcEnd = ranges?.Where(r => r.UseEndDate).OrderByDescending(r => r.EndDate).FirstOrDefault(r => r.Field == "date")?.StartDate ?? DateTime.MaxValue;
-                var stackIds = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(term).DateRange(utcStart, utcEnd), o => o.PageLimit(9999)).AnyContext();
+                string[] stackIds = null; 
+                if (!(context is IQueryVisitorContextWithValidator)) {
+                    var builderContext = context as IQueryBuilderContext;
+                    var systemFilter = builderContext?.Source.GetAppFilter();
+                    var ranges = builderContext?.Source.GetDateRanges()?.Where(r => r.Field == _inferredEventDateField || r.Field == "date").ToList();
+                    var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault()?.StartDate ?? DateTime.MinValue;
+                    var utcEnd = ranges?.Where(r => r.UseEndDate).OrderByDescending(r => r.EndDate).FirstOrDefault()?.EndDate ?? DateTime.MaxValue;
+ 
+                    stackIds = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(term).DateRange(utcStart, utcEnd, _inferredStackLastOccurrenceField), o => o.PageLimit(9999)).AnyContext();
+                }
+                
                 if (isTraceLogLevelEnabled) 
                     _logger.LogTrace("Setting term query with {IdCount} ids on parent GroupNode: {GroupNode}", stackIds?.Length ?? 0, node.Parent);
 
