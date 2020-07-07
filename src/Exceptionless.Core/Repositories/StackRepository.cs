@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -118,12 +118,8 @@ ctx._source.total_occurrences += params.count;";
             return FindAsync(q => query, options);
         }
 
-        public async Task<string[]> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
-            var results = await FindAsync(q => query.Configure().OnlyIds(), options).AnyContext();
-            if (results.Total > 10000)
-                throw new ApplicationException("Please limit your search query");
-            
-            return results.Hits.Select(s => s.Id).ToArray();
+        public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
+            return FindAsync(q => query.Configure().OnlyIds(), options);
         }
 
         public async Task MarkAsRegressedAsync(string stackId) {

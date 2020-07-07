@@ -43,7 +43,7 @@ namespace Exceptionless.Tests.Repositories {
 
             var appFilter = new AppFilter(organization);
             var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(9999));
-            Assert.Equal(2, stackIds.Length);
+            Assert.Equal(2, stackIds.Total);
         }
 
         [Fact]

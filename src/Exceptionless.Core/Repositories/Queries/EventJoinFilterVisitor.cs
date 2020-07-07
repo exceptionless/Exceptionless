@@ -40,16 +40,28 @@ namespace Exceptionless.Core.Repositories.Queries {
                 string term = ToTerm(node);
                 if (isTraceLogLevelEnabled)
                     _logger.LogTrace("Visiting GroupNode Field {FieldName} with resolved term: {Term}", node.Field, term);
-                
+
                 string[] stackIds = null; 
+                bool isStackIdsNegated = await HasStatusOpenVisitor.RunAsync(node).AnyContext();
                 if (!(context is IQueryVisitorContextWithValidator)) {
                     var builderContext = context as IQueryBuilderContext;
                     var systemFilter = builderContext?.Source.GetAppFilter();
                     var ranges = builderContext?.Source.GetDateRanges()?.Where(r => r.Field == _inferredEventDateField || r.Field == "date").ToList();
                     var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault()?.StartDate ?? DateTime.MinValue;
                     var utcEnd = ranges?.Where(r => r.UseEndDate).OrderByDescending(r => r.EndDate).FirstOrDefault()?.EndDate ?? DateTime.MaxValue;
- 
-                    stackIds = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(term).DateRange(utcStart, utcEnd, _inferredStackLastOccurrenceField), o => o.PageLimit(9999)).AnyContext();
+
+                    string filterExpression = isStackIdsNegated ? $"-({term})" : term;
+                    var results = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(filterExpression).DateRange(utcStart, utcEnd, _inferredStackLastOccurrenceField), o => o.PageLimit(9999)).AnyContext();
+                    if (results.Total > 10000) {
+                        isStackIdsNegated = !isStackIdsNegated;
+                        filterExpression = isStackIdsNegated ? $"-({term})" : term;
+                        results = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(filterExpression).DateRange(utcStart, utcEnd, _inferredStackLastOccurrenceField), o => o.PageLimit(9999)).AnyContext();
+                    }
+                    
+                    if (results.Total > 10000)
+                        throw new ApplicationException("Please limit your search query");
+                    
+                    stackIds = results.Hits.Select(h => h.Id).ToArray();
                 }
                 
                 if (isTraceLogLevelEnabled) 
@@ -59,7 +71,11 @@ namespace Exceptionless.Core.Repositories.Queries {
                 var parentNode = node.Parent ?? node;
                 var nodeOperator = parentNode is GroupNode gn ? gn.Operator : node.Operator;
                 var query = new TermsQuery { Field = "stack_id", Terms = stackIds != null && stackIds.Length > 0 ? stackIds : new[] { "none" } };
+                
                 bool isNegated = node.IsNegated.GetValueOrDefault() || node.Prefix == "-"; // TODO: We need to get parsers to populate the isNegated.
+                if (isStackIdsNegated)
+                    isNegated = !isNegated;
+                    
                 if (nodeOperator == GroupOperator.Or)
                     parentNode.SetQuery(parentQuery || (isNegated ? !query : query));
                 else
