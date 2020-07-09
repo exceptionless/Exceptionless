@@ -30,6 +30,10 @@ namespace Exceptionless.Core.Repositories {
 
 namespace Exceptionless.Core.Repositories.Options {
     public static class ReadAppFilterQueryExtensions {
+        public static bool HasAppFilter(this IRepositoryQuery query) {
+            return query.SafeHasOption(AppFilterQueryExtensions.SystemFilterKey);
+        }
+        
         public static AppFilter GetAppFilter(this IRepositoryQuery query) {
             return query.SafeGetOption<AppFilter>(AppFilterQueryExtensions.SystemFilterKey);
         }

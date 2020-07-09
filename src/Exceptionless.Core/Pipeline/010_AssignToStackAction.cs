@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
-        private static readonly string StackTypeName = typeof(Stack).Name;
+        private static readonly string StackTypeName = nameof(Stack);
         private readonly IStackRepository _stackRepository;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IMessagePublisher _publisher;
