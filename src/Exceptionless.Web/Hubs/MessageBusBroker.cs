@@ -14,8 +14,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Web.Hubs {
     public sealed class MessageBusBroker : IStartupAction {
-        private static readonly string TokenTypeName = typeof(Token).Name;
-        private static readonly string UserTypeName = typeof(User).Name;
+        private static readonly string TokenTypeName = nameof(Token);
+        private static readonly string UserTypeName = nameof(User);
         private readonly WebSocketConnectionManager _connectionManager;
         private readonly IConnectionMapping _connectionMapping;
         private readonly IMessageSubscriber _subscriber;

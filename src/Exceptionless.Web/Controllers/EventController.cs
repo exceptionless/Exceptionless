@@ -16,6 +16,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
@@ -282,10 +283,14 @@ namespace Exceptionless.Web.Controllers {
                         return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
                 }
             } catch (ApplicationException ex) {
+                string message = "An error has occurred. Please check your search filter.";
+                if (ex is DocumentLimitExceededException)
+                    message = $"An error has occurred. {ex.Message ?? "Please limit your search criteria."}";
+                
                 using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogError(ex, "An error has occurred. Please check your search filter.");
+                    _logger.LogError(ex, message);
 
-                return BadRequest("An error has occurred. Please check your search filter.");
+                return BadRequest(message);
             }
         }
 

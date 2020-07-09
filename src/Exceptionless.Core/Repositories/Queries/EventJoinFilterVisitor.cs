@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
@@ -12,8 +14,10 @@ using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
+using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
+using DateRange = Foundatio.Repositories.DateRange;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Repositories.Queries {
@@ -45,21 +49,26 @@ namespace Exceptionless.Core.Repositories.Queries {
                 bool isStackIdsNegated = await HasStatusOpenVisitor.RunAsync(node).AnyContext();
                 if (!(context is IQueryVisitorContextWithValidator)) {
                     var builderContext = context as IQueryBuilderContext;
-                    var systemFilter = builderContext?.Source.GetAppFilter();
-                    var ranges = builderContext?.Source.GetDateRanges()?.Where(r => r.Field == _inferredEventDateField || r.Field == "date").ToList();
-                    var utcStart = ranges?.Where(r => r.UseStartDate).OrderBy(r => r.StartDate).FirstOrDefault()?.StartDate ?? DateTime.MinValue;
-                    var utcEnd = ranges?.Where(r => r.UseEndDate).OrderByDescending(r => r.EndDate).FirstOrDefault()?.EndDate ?? DateTime.MaxValue;
+                    var systemFilter = builderContext?.Source.GetSystemFilter() ?? new RepositoryQuery<Stack>();
+                    var systemFilterQuery = systemFilter.GetQuery().Clone();
+                    if (!systemFilterQuery.HasAppFilter())
+                        systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
 
-                    string filterExpression = isStackIdsNegated ? $"-({term})" : term;
-                    var results = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(filterExpression).DateRange(utcStart, utcEnd, _inferredStackLastOccurrenceField), o => o.PageLimit(9999)).AnyContext();
+                    foreach (var range in systemFilterQuery.GetDateRanges() ?? new List<DateRange>()) {
+                        if (range.Field == _inferredEventDateField || range.Field == "date")
+                            range.Field = _inferredStackLastOccurrenceField;
+                    }
+                    
+                    systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term})" : term);
+                    var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(9999)).AnyContext();
                     if (results.Total > 10000) {
                         isStackIdsNegated = !isStackIdsNegated;
-                        filterExpression = isStackIdsNegated ? $"-({term})" : term;
-                        results = await _stackRepository.GetIdsByQueryAsync(q => q.AppFilter(systemFilter).FilterExpression(filterExpression).DateRange(utcStart, utcEnd, _inferredStackLastOccurrenceField), o => o.PageLimit(9999)).AnyContext();
+                        systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term})" : term);
+                        results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(9999)).AnyContext();
                     }
                     
                     if (results.Total > 10000)
-                        throw new ApplicationException("Please limit your search query");
+                        throw new DocumentLimitExceededException("Please limit your search criteria.");
                     
                     stackIds = results.Hits.Select(h => h.Id).ToArray();
                 }
