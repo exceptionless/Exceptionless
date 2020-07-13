@@ -22,12 +22,13 @@ namespace Exceptionless.Core.Migrations {
 
         public override async Task RunAsync() {
             _logger.LogInformation("Start migration for adding stack status...");
-            _logger.LogInformation("Add status and snooze_until_utc mappings to stack index.");
+            _logger.LogInformation("Add status, snooze_until_utc and is_deleted mappings to stack index.");
             var response = await _client.MapAsync<Stack>(d => {
                     d.Index(_config.Stacks.VersionedName);
                     d.Properties(p => p
                         .Keyword(f => f.Name(s => s.Status))
-                        .Date(f => f.Name(s => s.SnoozeUntilUtc)));
+                        .Date(f => f.Name(s => s.SnoozeUntilUtc))
+                        .Boolean(f => f.Name(s => s.IsDeleted)).FieldAlias(a => a.Path(p => p.IsDeleted).Name("deleted")));
                     
                 return d;
             });
