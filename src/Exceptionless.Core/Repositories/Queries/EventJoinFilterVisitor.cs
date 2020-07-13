@@ -48,17 +48,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 string[] stackIds = null; 
                 bool isStackIdsNegated = await HasStatusOpenVisitor.RunAsync(node).AnyContext();
                 if (!(context is IQueryVisitorContextWithValidator)) {
-                    var builderContext = context as IQueryBuilderContext;
-                    var systemFilter = builderContext?.Source.GetSystemFilter() ?? new RepositoryQuery<Stack>();
-                    var systemFilterQuery = systemFilter.GetQuery().Clone();
-                    if (!systemFilterQuery.HasAppFilter())
-                        systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
-
-                    foreach (var range in systemFilterQuery.GetDateRanges() ?? new List<DateRange>()) {
-                        if (range.Field == _inferredEventDateField || range.Field == "date")
-                            range.Field = _inferredStackLastOccurrenceField;
-                    }
-                    
+                    var systemFilterQuery = GetSystemFilterQuery(context);
                     systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term})" : term);
                     var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(9999)).AnyContext();
                     if (results.Total > 10000) {
@@ -97,6 +87,28 @@ namespace Exceptionless.Core.Repositories.Queries {
             } 
             
             await base.VisitAsync(node, context).AnyContext();
+        }
+
+        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context){
+            var builderContext = context as IQueryBuilderContext;
+            var systemFilter = builderContext?.Source.GetSystemFilter();
+            var systemFilterQuery = systemFilter?.GetQuery().Clone();
+            if (systemFilterQuery == null) {
+                systemFilterQuery = new RepositoryQuery<Stack>();
+                foreach (var range in builderContext?.Source.GetDateRanges() ?? Enumerable.Empty<DateRange>()) {
+                    systemFilterQuery.DateRange(range.StartDate, range.EndDate, range.Field, range.TimeZone);
+                }
+            }
+
+            if (!systemFilterQuery.HasAppFilter())
+                systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
+
+            foreach (var range in systemFilterQuery.GetDateRanges() ?? Enumerable.Empty<DateRange>()) {
+                if (range.Field == _inferredEventDateField || range.Field == "date")
+                    range.Field = _inferredStackLastOccurrenceField;
+            }
+
+            return systemFilterQuery;
         }
 
         public static Task<IQueryNode> RunAsync(IQueryNode node, EventJoinFilterVisitor visitor, IQueryVisitorContextWithIncludeResolver context = null) {
