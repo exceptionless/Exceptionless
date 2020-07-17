@@ -79,9 +79,6 @@ namespace Exceptionless.Web.Controllers {
             if (model == null)
                 return null;
 
-            if (_supportsSoftDeletes && ((ISupportSoftDeletes)model).IsDeleted)
-                return null;
-
             if (_isOwnedByOrganization && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
@@ -93,8 +90,6 @@ namespace Exceptionless.Web.Controllers {
                 return EmptyModels;
 
             var models = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
-            if (_supportsSoftDeletes)
-                models = models.Where(m => !((ISupportSoftDeletes)m).IsDeleted).ToList();
 
             if (_isOwnedByOrganization)
                 models = models.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();

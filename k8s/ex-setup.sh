@@ -110,8 +110,8 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
 # install exceptionless app
-APP_TAG="2.8.1502-pre"
-API_TAG="6.0.3534-pre"
+APP_TAG="2.8.1-alpha.0.45"
+API_TAG="6.1.1-alpha.0.81"
 helm install ex-$ENV ./exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml \
     --set "app.image.tag=$APP_TAG" \
     --set "api.image.tag=$API_TAG" \
@@ -132,6 +132,11 @@ helm install ex-$ENV ./exceptionless --namespace ex-$ENV --values ex-$ENV-values
     --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" \
     --set "config.EX_MaxMindGeoIpKey=$EX_MaxMindGeoIpKey" \
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
+
+ENV=dev
+REDIS_CONNECTIONSTRING="server=ex-dev-redis\,password=veR9d6VB6Z\,abortConnect=false\,serviceName=exceptionless"
+helm upgrade ex-$ENV ./exceptionless --namespace ex-$ENV --reuse-values --set "redis.connectionString=$REDIS_CONNECTIONSTRING"
+helm upgrade ex-$ENV ./exceptionless --namespace ex-$ENV --reuse-values --set "app.image.repository=exceptionless/ui-ci"
 
 # create service principal for talking to k8s
 ACCOUNT=`az account show -o json`
