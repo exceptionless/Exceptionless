@@ -304,6 +304,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  schedule: "0 0 29 2 1" # never, only manually
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
