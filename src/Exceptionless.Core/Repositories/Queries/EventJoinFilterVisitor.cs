@@ -45,19 +45,22 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (isTraceLogLevelEnabled)
                     _logger.LogTrace("Visiting GroupNode Field {FieldName} with resolved term: {Term}", node.Field, term);
 
+                const int stackIdLimit = 10000;
                 string[] stackIds = null; 
                 bool isStackIdsNegated = await HasStatusOpenVisitor.RunAsync(node).AnyContext();
                 if (!(context is IQueryVisitorContextWithValidator)) {
                     var systemFilterQuery = GetSystemFilterQuery(context);
-                    systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term})" : term);
-                    var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(9999)).AnyContext();
-                    if (results.Total > 10000) {
+                    systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term}) OR deleted:true" : term);
+                    var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
+                    var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
+                    if (results.Total > stackIdLimit) {
                         isStackIdsNegated = !isStackIdsNegated;
-                        systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term})" : term);
-                        results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(9999)).AnyContext();
+                        systemFilterQuery.FilterExpression(isStackIdsNegated ? $"-({term}) OR deleted:true" : term);
+                        softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
+                        results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                     }
                     
-                    if (results.Total > 10000)
+                    if (results.Total > stackIdLimit)
                         throw new DocumentLimitExceededException("Please limit your search criteria.");
                     
                     stackIds = results.Hits.Select(h => h.Id).ToArray();

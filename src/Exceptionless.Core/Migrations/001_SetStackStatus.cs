@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Migrations {
                     d.Properties(p => p
                         .Keyword(f => f.Name(s => s.Status))
                         .Date(f => f.Name(s => s.SnoozeUntilUtc))
-                        .Boolean(f => f.Name(s => s.IsDeleted)).FieldAlias(a => a.Path(p => p.IsDeleted).Name("deleted")));
+                        .Boolean(f => f.Name(s => s.IsDeleted)).FieldAlias(a => a.Path(p2 => p2.IsDeleted).Name("deleted")));
                     
                 return d;
             });

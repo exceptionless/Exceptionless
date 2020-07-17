@@ -11,6 +11,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
@@ -42,7 +43,7 @@ namespace Exceptionless.Tests.Repositories {
             await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
 
             var appFilter = new AppFilter(organization);
-            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(9999));
+            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
             Assert.Equal(2, stackIds.Total);
         }
 
