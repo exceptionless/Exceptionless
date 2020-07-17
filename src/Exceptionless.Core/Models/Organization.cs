@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -6,7 +6,7 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("{Id}, {Name}, {PlanName}")]
-    public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates {
+    public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, ISupportSoftDeletes {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
@@ -157,6 +157,7 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
+        public bool IsDeleted { get; set; }
 
         string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }

@@ -108,7 +108,6 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
-        
         public bool IsDeleted { get; set; }
 
         public bool AllowNotifications => Status != StackStatus.Ignored && Status != StackStatus.Discarded && Status != StackStatus.Snoozed;
