@@ -31,6 +31,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).Properties(ip => ip
                         .Keyword(fu => fu.Name(i => i.Token))
                         .Text(fu => fu.Name(i => i.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER))))
+                    .Date(f => f.Name(s => s.LastEventDateUtc))
                     .AddUsageMappings());
         }
 
