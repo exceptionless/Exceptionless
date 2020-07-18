@@ -2,10 +2,11 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
+using Elasticsearch.Net;
 using Exceptionless.Core.Repositories.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using Nest;
 
 namespace Exceptionless.Insulation.HealthChecks {
     public class ElasticsearchHealthCheck : IHealthCheck {
@@ -19,19 +20,22 @@ namespace Exceptionless.Insulation.HealthChecks {
         
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
             var sw = Stopwatch.StartNew();
-            
+
             try {
-                var response = await _config.Client.PingAsync(p => p.RequestConfiguration(r => r.PingTimeout(TimeSpan.FromSeconds(1))), cancellationToken);
-                if (!response.IsValid)
-                    return HealthCheckResult.Unhealthy("Elasticsearch Ping Failed", response.OriginalException);
+                var pingResult = await _config.Client.LowLevel.PingAsync<PingResponse>(ctx: cancellationToken, requestParameters: new PingRequestParameters {
+                    RequestConfiguration = new RequestConfiguration {
+                        RequestTimeout = TimeSpan.FromSeconds(60) // 60 seconds is default for NEST
+                    }
+                });
+                bool isSuccess = pingResult.ApiCall.HttpStatusCode == 200;
+
+                return isSuccess ? HealthCheckResult.Healthy() : new HealthCheckResult(context.Registration.FailureStatus);
             } catch (Exception ex) {
-                return HealthCheckResult.Unhealthy("Elasticsearch Not Working.", ex);
+                return new HealthCheckResult(context.Registration.FailureStatus, exception: ex);
             } finally {
                 sw.Stop();
                 _logger.LogTrace("Checking Elasticsearch took {Duration:g}", sw.Elapsed);
             }
-
-            return HealthCheckResult.Healthy();
         }
     }
 }
