@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;

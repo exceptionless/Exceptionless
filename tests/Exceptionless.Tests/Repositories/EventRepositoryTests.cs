@@ -10,7 +10,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;

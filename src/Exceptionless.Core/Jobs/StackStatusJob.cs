@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;

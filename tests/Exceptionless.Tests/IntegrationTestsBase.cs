@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Authentication;

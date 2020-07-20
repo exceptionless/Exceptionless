@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;

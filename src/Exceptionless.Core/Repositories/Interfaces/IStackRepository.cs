@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 
