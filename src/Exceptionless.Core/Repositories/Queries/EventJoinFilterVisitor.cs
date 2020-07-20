@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +12,6 @@ using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 using DateRange = Foundatio.Repositories.DateRange;

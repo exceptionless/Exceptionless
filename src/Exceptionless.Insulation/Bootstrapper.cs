@@ -16,7 +16,6 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
