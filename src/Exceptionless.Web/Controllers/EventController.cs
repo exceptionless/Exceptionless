@@ -1118,12 +1118,6 @@ namespace Exceptionless.Web.Controllers {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
 
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> values) {
-            var ids = values.Select(e => e.Id).Distinct().ToArray();
-            await _eventDeletionQueue.EnqueueAsync(new EventDeletion { EventIds = ids });
-            return ids;
-        }
-
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Task.FromResult<Organization>(null);
