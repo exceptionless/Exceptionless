@@ -406,12 +406,6 @@ namespace Exceptionless.Web.Controllers {
             return DeleteImplAsync(ids.FromDelimitedString());
         }
 
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> values) {
-            var ids = values.Select(e => e.Id).Distinct().ToArray();
-            await _eventDeletionQueue.EnqueueAsync(new EventDeletion { StackIds = ids });
-            return await base.DeleteModelsAsync(values);
-        }
-
         /// <summary>
         /// Get all
         /// </summary>
