@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.Models.Collections;
 
 namespace Exceptionless.Core.Models {
@@ -113,7 +114,7 @@ namespace Exceptionless.Core.Models {
             string value = GetString(name, @default);
 
             if (String.IsNullOrEmpty(value))
-                return new List<string>();
+                return Enumerable.Empty<string>();
 
             string[] values = value.Split(new[] { ",", ";", Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 
