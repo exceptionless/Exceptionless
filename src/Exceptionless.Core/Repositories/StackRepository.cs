@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
@@ -106,16 +105,6 @@ ctx._source.total_occurrences += params.count;";
                 await Cache.SetAsync(key, hit.Document, DefaultCacheExpiration).AnyContext();
 
             return hit?.Document;
-        }
-
-        public Task<FindResults<Stack>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<Stack> options = null) {
-            IRepositoryQuery<Stack> query = new RepositoryQuery<Stack>()
-                .DateRange(utcStart, utcEnd, field ?? InferField(s => s.LastOccurrence))
-                .AppFilter(systemFilter)
-                .FilterExpression(userFilter);
-
-            query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(s => s.LastOccurrence);
-            return FindAsync(q => query, options);
         }
 
         public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
