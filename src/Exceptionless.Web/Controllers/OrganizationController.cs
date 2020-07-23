@@ -12,18 +12,15 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
-using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -41,12 +38,11 @@ namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/organizations")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
+        private readonly OrganizationService _organizationService;
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IQueue<EventDeletion> _eventDeletionQueue;
-        private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
         private readonly IMailer _mailer;
@@ -54,13 +50,12 @@ namespace Exceptionless.Web.Controllers {
         private readonly AppOptions _options;
 
         public OrganizationController(
+            OrganizationService organizationService,
             IOrganizationRepository organizationRepository,
             ICacheClient cacheClient,
             IEventRepository eventRepository,
             IUserRepository userRepository,
             IProjectRepository projectRepository,
-            IQueue<EventDeletion> eventDeletionQueue,
-            IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
             IMailer mailer,
             IMessagePublisher messagePublisher,
@@ -69,12 +64,11 @@ namespace Exceptionless.Web.Controllers {
             AppOptions options,
             ILoggerFactory loggerFactory,
             BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory) {
+            _organizationService = organizationService;
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
-            _eventDeletionQueue = eventDeletionQueue;
-            _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _mailer = mailer;
             _messagePublisher = messagePublisher;
@@ -181,6 +175,17 @@ namespace Exceptionless.Web.Controllers {
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
+        }
+        
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
+            foreach (var organization in organizations) {
+                using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext))) {
+                    _logger.LogInformation("User {User} deleting organization: {OrganizationName}  ({OrganizationId})", CurrentUser.Id, organization.Name, organization.Id);
+                    await _organizationService.SoftDeleteOrganizationAsync(organization, CurrentUser.Id);
+                }
+            }
+            
+            return Enumerable.Empty<string>();
         }
 
         #endregion
@@ -702,26 +707,6 @@ namespace Exceptionless.Web.Controllers {
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 
             return await base.CanDeleteAsync(value);
-        }
-
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
-            var workItems = new List<string>(organizations.Count + 1) {
-                await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
-                    OrganizationIds = organizations.Select(o => o.Id).ToArray()
-                })
-            };
-
-            foreach (var organization in organizations) {
-                using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogInformation("User {user} deleting organization {organization}.", CurrentUser.Id, organization.Id);
-                
-                workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
-                    OrganizationId = organization.Id,
-                    CurrentUserId = CurrentUser.Id,
-                }));
-            }
-
-            return workItems;
         }
 
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {

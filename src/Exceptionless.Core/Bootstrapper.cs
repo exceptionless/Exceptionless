@@ -176,6 +176,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<UserAgentParser>();
             container.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
+            container.AddSingleton<OrganizationService>();
             container.AddSingleton<UsageService>();
             container.AddSingleton<SlackService>();
             container.AddSingleton<StackService>();
