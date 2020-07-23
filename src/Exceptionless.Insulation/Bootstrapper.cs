@@ -91,7 +91,6 @@ namespace Exceptionless.Insulation {
                 .AddAutoNamedCheck<CacheHealthCheck>("Critical")
                 .AddAutoNamedCheck<StorageHealthCheck>("EventPosts", "AllJobs")
                 
-                .AddAutoNamedCheck<QueueHealthCheck<EventDeletion>>("EventDeletions", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<EventPost>>("EventPosts", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<EventNotification>>("EventNotifications", "AllJobs")
@@ -103,7 +102,7 @@ namespace Exceptionless.Insulation {
                 .AddAutoNamedCheck<DailySummaryJob>("AllJobs")
                 .AddAutoNamedCheck<DownloadGeoIPDatabaseJob>("AllJobs")
                 .AddAutoNamedCheck<MaintainIndexesJob>("AllJobs")
-                .AddAutoNamedCheck<RetentionLimitsJob>("AllJobs")
+                .AddAutoNamedCheck<CleanupDataJob>("AllJobs")
                 .AddAutoNamedCheck<StackStatusJob>("AllJobs")
                 .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
         }
@@ -215,7 +214,6 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks) {
             if (String.Equals(options.Provider, "azurestorage")) {
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventDeletion>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, options, retries: 1));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotification>(s, options));
@@ -223,7 +221,6 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
             } else if (String.Equals(options.Provider, "redis")) {
-                container.ReplaceSingleton(s => CreateRedisQueue<EventDeletion>(s, options, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, options, runMaintenanceTasks, retries: 1));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventNotification>(s, options, runMaintenanceTasks));
@@ -231,7 +228,6 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
             } else if (String.Equals(options.Provider, "sqs")) {
-                container.ReplaceSingleton(s => CreateSQSQueue<EventDeletion>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<EventPost>(s, options, retries: 1));
                 container.ReplaceSingleton(s => CreateSQSQueue<EventUserDescription>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<EventNotification>(s, options));

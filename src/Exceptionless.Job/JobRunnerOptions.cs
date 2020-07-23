@@ -7,6 +7,10 @@ namespace Exceptionless.Job {
             if (args.Length > 1)
                 throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 
+            CleanupData = args.Length == 0 || args.Contains("CleanupData", StringComparer.OrdinalIgnoreCase);
+            if (EventPosts && args.Length != 0)
+                JobName = "CleanupData";
+            
             CleanupSnapshot = args.Length == 0 || args.Contains("CleanupSnapshot", StringComparer.OrdinalIgnoreCase);
             if (CleanupSnapshot && args.Length != 0)
                 JobName = "CleanupSnapshot";
@@ -26,10 +30,6 @@ namespace Exceptionless.Job {
             DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoIPDatabase", StringComparer.OrdinalIgnoreCase);
             if (DownloadGeoipDatabase && args.Length != 0)
                 JobName = "DownloadGeoIPDatabase";
-
-            EventDeletion = args.Length == 0 || args.Contains("EventDeletion", StringComparer.OrdinalIgnoreCase);
-            if (EventPosts && args.Length != 0)
-                JobName = "EventDeletion";
             
             EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
             if (EventNotifications && args.Length != 0)
@@ -63,10 +63,6 @@ namespace Exceptionless.Job {
             if (OrganizationSnapshot && args.Length != 0)
                 JobName = "OrganizationSnapshot";
 
-            RetentionLimits = args.Length == 0 || args.Contains("RetentionLimits", StringComparer.OrdinalIgnoreCase);
-            if (RetentionLimits && args.Length != 0)
-                JobName = "RetentionLimits";
-
             StackStatus = args.Length == 0 || args.Contains("StackStatus", StringComparer.OrdinalIgnoreCase);
             if (StackStatus && args.Length != 0)
                 JobName = "StackStatus";
@@ -89,13 +85,12 @@ namespace Exceptionless.Job {
         }
 
         public string JobName { get; }
-
+        public bool CleanupData { get; }
         public bool CleanupSnapshot { get; }
         public bool CloseInactiveSessions { get; }
         public bool DailySummary { get; }
         public bool DataMigration { get; }
         public bool DownloadGeoipDatabase { get; }
-        public bool EventDeletion { get; }
         public bool EventNotifications { get; }
         public bool EventPosts { get; }
         public bool EventSnapshot { get; }
@@ -104,7 +99,6 @@ namespace Exceptionless.Job {
         public bool MaintainIndexes { get; }
         public bool Migration { get; }
         public bool OrganizationSnapshot { get; }
-        public bool RetentionLimits { get; }
         public bool StackStatus { get; }
         public bool StackEventCount { get; }
         public bool StackSnapshot { get; }
