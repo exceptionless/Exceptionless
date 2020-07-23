@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -295,18 +295,12 @@ namespace Exceptionless.Web.Controllers {
             if (project == null)
                 return NotFound();
 
-            string deleteEventsWorkId = await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
-                OrganizationIds = new []{ project.OrganizationId },
-                ProjectIds = new []{ project.Id }
-            });
-            
-            string workItemId = await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
+            string workItemId = await _workItemQueue.EnqueueAsync(new RemoveStacksWorkItem {
                 OrganizationId = project.OrganizationId,
-                ProjectId = project.Id,
-                Reset = true
+                ProjectId = project.Id
             });
 
-            return WorkInProgress(new [] { deleteEventsWorkId, workItemId });
+            return WorkInProgress(new [] { workItemId });
         }
 
         [HttpGet("{id:objectid}/notifications")]
