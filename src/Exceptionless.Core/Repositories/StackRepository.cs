@@ -127,6 +127,19 @@ ctx._source.total_occurrences += params.count;";
             stack.Status = StackStatus.Regressed;
             await SaveAsync(stack, o => o.Cache()).AnyContext();
         }
+        
+        public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+            
+            return PatchAllAsync(
+                q => q.Organization(organizationId).Project(projectId),
+                new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow })
+            );
+        }
 
         protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ICommandOptions options = null) {
             if (!IsCacheEnabled)

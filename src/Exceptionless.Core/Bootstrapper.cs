@@ -99,6 +99,7 @@ namespace Exceptionless.Core {
                 handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
                 handlers.Register<RemoveOrganizationWorkItem>(s.GetRequiredService<RemoveOrganizationWorkItemHandler>);
                 handlers.Register<RemoveProjectWorkItem>(s.GetRequiredService<RemoveProjectWorkItemHandler>);
+                handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
                 handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
                 handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
                 handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
