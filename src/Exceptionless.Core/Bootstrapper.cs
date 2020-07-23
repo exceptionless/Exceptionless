@@ -108,7 +108,6 @@ namespace Exceptionless.Core {
                 return handlers;
             });
 
-            container.AddSingleton(s => CreateQueue<EventDeletion>(s));
             container.AddSingleton(s => CreateQueue<EventPost>(s));
             container.AddSingleton(s => CreateQueue<EventUserDescription>(s));
             container.AddSingleton(s => CreateQueue<EventNotification>(s));
@@ -255,23 +254,22 @@ namespace Exceptionless.Core {
         }
 
         public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
-            var logger = loggerFactory.CreateLogger("AppBuilder");
 
+            services.AddJob<CleanupDataJob>(true);
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
             services.AddJob<DownloadGeoIPDatabaseJob>(true);
-            services.AddJob<EventDeletionJob>(true);
             services.AddJob<EventNotificationsJob>(true);
             services.AddJob<EventPostsJob>(true);
             services.AddJob<EventUserDescriptionsJob>(true);
             services.AddJob<MailMessageJob>(true);
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
-            services.AddJob<RetentionLimitsJob>(true);
             services.AddJob<StackStatusJob>(true);
             services.AddJob<StackEventCountJob>(true);
             services.AddJob<WebHooksJob>(true);
             services.AddJob<WorkItemJob>(true);
 
+            var logger = loggerFactory.CreateLogger<Bootstrapper>();
             logger.LogWarning("Jobs running in process.");
         }
 

@@ -127,6 +127,8 @@ namespace Exceptionless.Job {
         private static void AddJobs(IServiceCollection services, JobRunnerOptions options) {
             services.AddJobLifetimeService();
             
+            if (options.CleanupData)
+                services.AddJob<CleanupDataJob>(true);
             if (options.CleanupSnapshot)
                 services.AddJob<CleanupSnapshotJob>(true);
             if (options.CloseInactiveSessions)
@@ -137,8 +139,6 @@ namespace Exceptionless.Job {
                 services.AddJob<DataMigrationJob>(true);
             if (options.DownloadGeoipDatabase)
                 services.AddJob<DownloadGeoIPDatabaseJob>(true);
-            if (options.EventDeletion)
-                services.AddJob<EventDeletionJob>(true);
             if (options.EventNotifications)
                 services.AddJob<EventNotificationsJob>(true);
             if (options.EventPosts)
@@ -155,8 +155,6 @@ namespace Exceptionless.Job {
                 services.AddJob<MigrationJob>(true);
             if (options.OrganizationSnapshot)
                 services.AddJob<OrganizationSnapshotJob>(true);
-            if (options.RetentionLimits)
-                services.AddJob<RetentionLimitsJob>(true);
             if (options.StackStatus)
                 services.AddJob<StackStatusJob>(true);
             if (options.StackEventCount)

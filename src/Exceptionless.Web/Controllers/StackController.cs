@@ -37,7 +37,6 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly IQueue<EventDeletion> _eventDeletionQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly SemanticVersionParser _semanticVersionParser;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
@@ -52,7 +51,6 @@ namespace Exceptionless.Web.Controllers {
             IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IEventRepository eventRepository,
-            IQueue<EventDeletion> eventDeletionQueue,
             IWebHookRepository webHookRepository,
             WebHookDataPluginManager webHookDataPluginManager,
             IQueue<WebHookNotification> webHookNotificationQueue,
@@ -69,7 +67,6 @@ namespace Exceptionless.Web.Controllers {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
-            _eventDeletionQueue = eventDeletionQueue;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
