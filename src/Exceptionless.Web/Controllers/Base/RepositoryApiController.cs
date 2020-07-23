@@ -222,7 +222,7 @@ namespace Exceptionless.Web.Controllers {
                 await _repository.RemoveAsync(values);
             }
 
-            return new List<string>();
+            return Enumerable.Empty<string>();
         }
     }
 }
