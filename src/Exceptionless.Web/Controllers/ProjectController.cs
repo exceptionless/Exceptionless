@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,7 +12,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Models;
@@ -35,7 +34,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
-        private readonly IQueue<EventDeletion> _eventDeletionQueue;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly SlackService _slackService;
@@ -46,7 +45,7 @@ namespace Exceptionless.Web.Controllers {
             IProjectRepository projectRepository,
             IStackRepository stackRepository,
             IEventRepository eventRepository,
-            IQueue<EventDeletion> eventDeletionQueue,
+            ITokenRepository tokenRepository,
             IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
             SlackService slackService,
@@ -59,7 +58,7 @@ namespace Exceptionless.Web.Controllers {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
-            _eventDeletionQueue = eventDeletionQueue;
+            _tokenRepository = tokenRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _slackService = slackService;
@@ -188,6 +187,17 @@ namespace Exceptionless.Web.Controllers {
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
+        }
+
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
+            foreach (var project in projects) {
+                using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogInformation("User {User} deleting project: {ProjectName}.", CurrentUser.Id, project.Name);
+
+                await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
+            }
+
+            return await base.DeleteModelsAsync(projects);
         }
 
         #endregion
@@ -693,24 +703,6 @@ namespace Exceptionless.Web.Controllers {
             return await base.CanUpdateAsync(original, changes);
         }
 
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
-            var workItems = new List<string>(projects.Count + 1) {
-                await _eventDeletionQueue.EnqueueAsync(new EventDeletion {
-                    ProjectIds = projects.Select(p => p.Id).ToArray()
-                })
-            };
-
-            foreach (var project in projects) {
-                workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
-                    OrganizationId = project.OrganizationId,
-                    ProjectId = project.Id,
-                    Reset = false
-                }));
-            }
-
-            return workItems;
-        }
-        
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Task.FromResult<Organization>(null);
