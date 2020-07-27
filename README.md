@@ -31,6 +31,8 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 
 ## Thanks
 
+Thanks to all the people who have contributed!
+
 [![contributors](https://contributors-img.web.app/image?repo=exceptionless/exceptionless)](https://github.com/exceptionless/exceptionless/graphs/contributors)
 
 Thanks to [JetBrains](http://jetbrains.com) for a community [WebStorm](https://www.jetbrains.com/webstorm/) and [ReSharper](https://www.jetbrains.com/resharper/) license to use on this project. It's the best JavaScript IDE/Visual Studio productivity enhancement hands down.
