@@ -6,8 +6,8 @@
     <PackageReference Include="App.Metrics.Reporting.Graphite" Version="4.1.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="4.1.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.1.0" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.8.1" />
-    <PackageReference Include="StackExchange.Redis" Version="2.1.100" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.8.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.1.107" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.2.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.0.0-beta6" />
@@ -31,6 +31,13 @@
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
+    <PackageReference Include="MailKit" Version="2.8.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.6" />
     <PackageReference Include="YamlDotNet" Version="8.1.2" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
