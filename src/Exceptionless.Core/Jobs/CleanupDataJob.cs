@@ -191,6 +191,9 @@ namespace Exceptionless.Core.Jobs {
             if (_appOptions.MaximumRetentionDays > 0 && retentionDays > _appOptions.MaximumRetentionDays)
                 retentionDays = _appOptions.MaximumRetentionDays;
 
+            if (retentionDays < 1)
+                return;
+            
             var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
             _logger.LogInformation("Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).", cutoff, organization.Name, organization.Id);
             
