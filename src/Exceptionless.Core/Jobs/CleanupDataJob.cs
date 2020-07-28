@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -24,6 +25,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly BillingManager _billingManager;
         private readonly AppOptions _appOptions;
         private readonly ILockProvider _lockProvider;
         private DateTime? _lastRun;
@@ -37,6 +39,7 @@ namespace Exceptionless.Core.Jobs {
             ITokenRepository tokenRepository, 
             IWebHookRepository webHookRepository, 
             ICacheClient cacheClient, 
+            BillingManager billingManager, 
             AppOptions appOptions, 
             ILoggerFactory loggerFactory = null
         ) : base(loggerFactory) {
@@ -47,6 +50,7 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _tokenRepository = tokenRepository;
             _webHookRepository = webHookRepository;
+            _billingManager = billingManager;
             _appOptions = appOptions;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
@@ -193,6 +197,10 @@ namespace Exceptionless.Core.Jobs {
 
             if (retentionDays < 1)
                 return;
+            
+            var nextPlan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays);
+            if (nextPlan != null)
+                retentionDays = nextPlan.RetentionDays;
             
             var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
             _logger.LogInformation("Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).", cutoff, organization.Name, organization.Id);
