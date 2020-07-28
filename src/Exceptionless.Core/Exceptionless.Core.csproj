@@ -21,9 +21,9 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="9.0.0" />
-    <PackageReference Include="AutoMapper.Collection" Version="6.0.0" />
-    <PackageReference Include="FluentValidation" Version="9.0.0" />
+    <PackageReference Include="AutoMapper" Version="10.0.0" />
+    <PackageReference Include="AutoMapper.Collection" Version="7.0.0" />
+    <PackageReference Include="FluentValidation" Version="9.0.1" />
     <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta6" />
     <PackageReference Include="Foundatio.JsonNet" Version="10.0.0-beta6" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.8.0-beta7.1" />
@@ -31,6 +31,11 @@
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.6" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.7.1" />
+    <PackageReference Include="Stripe.net" Version="37.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.6" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.7.1" />
     <PackageReference Include="Stripe.net" Version="37.10.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
