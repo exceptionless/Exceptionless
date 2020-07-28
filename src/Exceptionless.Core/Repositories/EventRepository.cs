@@ -46,42 +46,22 @@ namespace Exceptionless.Core.Repositories {
             return true;
         }
 
-        public Task<long> RemoveAllAsync(string[] organizationIds, string[] projectIds, string[] stackIds, string[] eventIds, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
-            var query = new RepositoryQuery<PersistentEvent>();
+        public Task<long> RemoveAllAsync(string organizationId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+            
+            var query = new RepositoryQuery<PersistentEvent>().Organization(organizationId);
             if (utcStart.HasValue && utcEnd.HasValue)
                 query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
             else if (utcEnd.HasValue)
                 query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcEnd)));
             else if (utcStart.HasValue)
                 query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).GreaterThan(utcStart)));
-            
-            if (organizationIds?.Length > 0)
-                query = query.Organization(organizationIds);
-                    
-            if (projectIds?.Length > 0)
-                query = query.Project(projectIds);
-            
-            if (stackIds?.Length > 0)
-                query = query.Stack(stackIds);
-                  
-            if (eventIds?.Length > 0)
-                query = query.Id(eventIds);
 
             if (!String.IsNullOrEmpty(clientIpAddress))
                 query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
 
             return RemoveAllAsync(q => query, options);
-        }
-
-        public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
-            IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
-                .DateRange(utcStart, utcEnd, field ?? InferField(e => e.Date))
-                .Index(utcStart, utcEnd)
-                .AppFilter(systemFilter)
-                .FilterExpression(userFilter);
-
-            query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(e => e.Date);
-            return FindAsync(q => query, options);
         }
 
         public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
@@ -202,6 +182,16 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
             return CountAsync(q => q.Project(projectId));
+        }
+        
+        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
+
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+            
+            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId));
         }
     }
 }
