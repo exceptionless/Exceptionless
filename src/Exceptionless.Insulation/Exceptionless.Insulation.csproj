@@ -6,7 +6,6 @@
     <PackageReference Include="App.Metrics.Reporting.Graphite" Version="4.1.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="4.1.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.1.0" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.8.2" />
     <PackageReference Include="StackExchange.Redis" Version="2.1.107" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="3.2.0" />
