@@ -95,7 +95,10 @@ namespace Exceptionless.Tests.Jobs {
 
         [Fact]
         public async Task CanCleanupEventsOutsideOfRetentionPeriod() {
-            var organization = await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+            _billingManager.ApplyBillingPlan(organization, _plans.FreePlan);
+            await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+            
             var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
             var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
