@@ -10,7 +10,7 @@ namespace Exceptionless.Job {
             CleanupData = args.Length == 0 || args.Contains("CleanupData", StringComparer.OrdinalIgnoreCase);
             if (EventPosts && args.Length != 0)
                 JobName = "CleanupData";
-            
+
             CleanupSnapshot = args.Length == 0 || args.Contains("CleanupSnapshot", StringComparer.OrdinalIgnoreCase);
             if (CleanupSnapshot && args.Length != 0)
                 JobName = "CleanupSnapshot";
@@ -22,15 +22,15 @@ namespace Exceptionless.Job {
             DailySummary = args.Length == 0 || args.Contains("DailySummary", StringComparer.OrdinalIgnoreCase);
             if (DailySummary && args.Length != 0)
                 JobName = "DailySummary";
-            
+
             DataMigration = args.Contains("DataMigration", StringComparer.OrdinalIgnoreCase);
             if (DataMigration && args.Length != 0)
                 JobName = "DataMigration";
-            
+
             DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoIPDatabase", StringComparer.OrdinalIgnoreCase);
             if (DownloadGeoipDatabase && args.Length != 0)
                 JobName = "DownloadGeoIPDatabase";
-            
+
             EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
             if (EventNotifications && args.Length != 0)
                 JobName = "EventNotifications";
@@ -58,7 +58,7 @@ namespace Exceptionless.Job {
             Migration = args.Length == 0 || args.Contains("Migration", StringComparer.OrdinalIgnoreCase);
             if (Migration && args.Length != 0)
                 JobName = "Migration";
-            
+
             OrganizationSnapshot = args.Length == 0 || args.Contains("OrganizationSnapshot", StringComparer.OrdinalIgnoreCase);
             if (OrganizationSnapshot && args.Length != 0)
                 JobName = "OrganizationSnapshot";
@@ -66,7 +66,7 @@ namespace Exceptionless.Job {
             StackStatus = args.Length == 0 || args.Contains("StackStatus", StringComparer.OrdinalIgnoreCase);
             if (StackStatus && args.Length != 0)
                 JobName = "StackStatus";
-            
+
             StackEventCount = args.Length == 0 || args.Contains("StackEventCount", StringComparer.OrdinalIgnoreCase);
             if (StackEventCount && args.Length != 0)
                 JobName = "StackEventCount";
