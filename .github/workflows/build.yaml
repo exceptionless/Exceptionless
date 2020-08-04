@@ -1,8 +1,7 @@
 name: Build
-on: [ push, pull_request ]
+on: [push, pull_request]
 env:
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_NOLOGO: true
+  DOTNET_NOLOGO: true # remove after: https://github.com/actions/virtual-environments/pull/957
 
 jobs:
   build:
@@ -23,66 +22,32 @@ jobs:
         dotnet tool install --global minver-cli --version 2.3.0
         version=$(minver --tag-prefix v)
         echo "::set-env name=MINVERVERSIONOVERRIDE::$version"
-        echo "::set-env name=VERSION::$version"
     - name: Build
-      run: dotnet build --configuration Release
-    - name: Start Services
-      run: docker-compose up -d elasticsearch && docker-compose up ready
+      run: dotnet build Foundatio.sln --configuration Release
     - name: Run Tests
-      run: dotnet test --configuration Release --no-build
-    - name: Build Docker Images
+      run: dotnet test Foundatio.sln --configuration Release --no-build
+    - name: Package
+      if: github.event_name != 'pull_request'
+      run: dotnet pack Foundatio.sln --configuration Release --no-build
+    - name: Add GitHub NuGet Source
+      if: github.event_name != 'pull_request'
+      run: dotnet nuget add source https://nuget.pkg.github.com/foundatiofx/index.json --name GitHub --username foundatiofx --password ${{secrets.GITHUB_TOKEN}} --store-password-in-clear-text
+    - name: Publish CI Packages
       if: github.event_name != 'pull_request'
       run: |
-        for image in {"api","job","app","exceptionless"}; do
-          docker build --target $image -t ex-$image .
-        done
-    - name: Log in to GitHub Packages
-      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
-    - name: Log in to Docker Hub
-      if: github.event_name != 'pull_request'
-      run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
-    - name: Push CI Packages
-      if: github.event_name != 'pull_request'
-      run: |
-        # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
-          for tag in {${VERSION},latest}; do
-            docker tag ex-$image docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
-            docker push docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
-          done
-        done
-        for image in {"api","job","app","exceptionless"}; do
-          for tag in {${VERSION},latest}; do
-            docker tag ex-$image exceptionless/$image-ci:$tag
-            docker push exceptionless/$image-ci:$tag
-          done
+        for package in $(find -name "*.nupkg" | grep "minver" -v); do
+          echo "${0##*/}": Pushing $package...
+          
+          # GPR
+          dotnet nuget push $package --source GitHub --skip-duplicate
+          
+          # feedz (remove once GPR supports anonymous access)
+          dotnet nuget push $package --source https://f.feedz.io/foundatio/foundatio/nuget --api-key ${{ secrets.FEEDZ_KEY }} --skip-duplicate
         done
     - name: Publish Release Packages
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
-        # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
-          for tag in {${VERSION},latest}; do
-            docker tag ex-$image exceptionless/$image:$tag
-            docker push exceptionless/$image:$tag
-          done
+        for package in $(find -name "*.nupkg" | grep "minver" -v); do
+          echo "${0##*/}": Pushing $package...
+          dotnet nuget push $package --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_KEY }} --skip-duplicate
         done
-    - name: Install Helm
-      if: github.event_name != 'pull_request'
-      uses: azure/setup-helm@v1
-      with:
-        version: v3.2.3
-    - name: Deploy Changes to Development Environment
-      if: github.ref == 'refs/heads/feature/discard-join' && github.event_name != 'pull_request'
-      run: |
-        az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
-        az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        sed -i "s/^appVersion:.*$/appVersion: ${VERSION}/" ./k8s/exceptionless/Chart.yaml
-        helm upgrade --set "api.image.tag=${VERSION}" --set "jobs.image.tag=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
-    - name: Deploy Changes to Production Environment
-      if: startsWith(github.ref, 'refs/tags/v')
-      run: |
-        az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
-        az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        sed -i "s/^appVersion:.*$/appVersion: ${VERSION}/" ./k8s/exceptionless/Chart.yaml
-        helm upgrade --set "api.image.tag=${VERSION}" --set "jobs.image.tag=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
