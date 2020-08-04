@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using FluentValidation;
@@ -12,7 +10,6 @@ using Foundatio.Repositories.Options;
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
         public RepositoryOwnedByOrganization(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options) {
-            DocumentsAdded.AddHandler(OnDocumentsAdded);
             AddPropertyRequiredForRemove(o => o.OrganizationId);
         }
 
@@ -32,24 +29,6 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException(nameof(organizationId));
 
             return RemoveAllAsync(q => q.Organization(organizationId));
-        }
-
-        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<T>> documents, ICommandOptions options = null) {
-            if (!IsCacheEnabled)
-                return Task.CompletedTask;
-
-            return Task.WhenAll(InvalidateCachedQueriesAsync(documents.Select(d => d.Value).ToList(), options), base.InvalidateCacheAsync(documents, options));
-        }
-
-        private Task OnDocumentsAdded(object sender, DocumentsEventArgs<T> documents) {
-            if (!IsCacheEnabled)
-                return Task.CompletedTask;
-
-            return InvalidateCachedQueriesAsync(documents.Documents, documents.Options);
-        }
-
-        protected virtual Task InvalidateCachedQueriesAsync(IReadOnlyCollection<T> documents, ICommandOptions options = null) {
-            return Task.CompletedTask;
         }
     }
 }

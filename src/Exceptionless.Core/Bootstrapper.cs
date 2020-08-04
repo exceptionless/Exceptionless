@@ -129,7 +129,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
-            container.AddSingleton<IMigrationRepository, MigrationRepository>();
+            container.AddSingleton<IMigrationStateRepository, MigrationStateRepository>();
             container.AddSingleton<MigrationManager>();
             container.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
             container.AddSingleton<IOrganizationRepository, OrganizationRepository>();

@@ -10,15 +10,18 @@ namespace Exceptionless.Core.Migrations {
     public class UpdateIndexMappings : MigrationBase {
         private readonly IElasticClient _client;
         private readonly ExceptionlessElasticConfiguration _config;
+        private readonly ILogger _logger;
 
-        public UpdateIndexMappings(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
+        public UpdateIndexMappings(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
+            _logger = loggerFactory.CreateLogger<UpdateIndexMappings>();
+
+            MigrationType = MigrationType.VersionedAndResumable;
+            Version = 1;
         }
 
-        public override int? Version => 1;
-
-        public override async Task RunAsync() {
+        public override async Task RunAsync(MigrationContext context) {
             _logger.LogInformation("Start migration for adding index mappings...");
             var response = await _client.MapAsync<Organization>(d => {
                 d.Index(_config.Organizations.VersionedName);

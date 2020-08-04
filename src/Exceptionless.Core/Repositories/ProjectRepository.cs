@@ -57,13 +57,13 @@ namespace Exceptionless.Core.Repositories {
                 return;
 
             string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay}L;";
-            await this.PatchAsync(projects.Select(p => p.Id).ToArray(), new ScriptPatch(script), o => o.Notifications(false)).AnyContext();
+            await PatchAsync(projects.Select(p => p.Id).ToArray(), new ScriptPatch(script), o => o.Notifications(false)).AnyContext();
             await InvalidateCacheAsync(projects).AnyContext();
         }
 
-        protected override Task InvalidateCachedQueriesAsync(IReadOnlyCollection<Project> documents, ICommandOptions options = null) {
-            var organizations = documents.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-            return Task.WhenAll(Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")), base.InvalidateCachedQueriesAsync(documents, options));
+        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents, ChangeType? changeType = null) {
+            var organizations = documents.Select(d => d.Value.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
+            return Task.WhenAll(Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")), base.InvalidateCacheAsync(documents, changeType));
         }
     }
 }
