@@ -16,7 +16,6 @@ namespace Exceptionless.Core.Repositories {
         public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, AppOptions options)
             : base(configuration.Users, validator, options) {
             AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
-            DocumentsAdded.AddHandler(OnDocumentsAdded);
         }
 
         public async Task<User> GetByEmailAddressAsync(string emailAddress) {
@@ -24,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             emailAddress = emailAddress.Trim().ToLowerInvariant();
-            var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.CacheKey(String.Concat("Email:", emailAddress))).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.CacheKey(EmailCacheKey(emailAddress))).AnyContext();
             return hit?.Document;
         }
 
@@ -57,7 +56,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null) {
             if (String.IsNullOrEmpty(organizationId))
-                return Task.FromResult<FindResults<User>>(new FindResults<User>());
+                return Task.FromResult(new FindResults<User>());
 
             var commandOptions = options.Configure();
             if (commandOptions.ShouldUseCache())
@@ -67,28 +66,22 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
         }
 
-        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ICommandOptions options = null) {
-            if (!IsCacheEnabled)
-                return Task.CompletedTask;
+        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options) {
+            await base.AddDocumentsToCacheAsync(findHits, options).AnyContext();
 
-            var users = documents.UnionOriginalAndModified();
-            var keysToRemove = users.Select(u => String.Concat("Email:", u.EmailAddress.ToLowerInvariant().Trim())).Distinct().ToList();
-            return Task.WhenAll(
-                Cache.RemoveAllAsync(keysToRemove),
-                InvalidateCachedQueriesAsync(users, options),
-                base.InvalidateCacheAsync(documents, options)
-            );
+            var cacheEntries = new Dictionary<string, FindHit<User>>();
+            foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.EmailAddress)))
+                cacheEntries.Add(EmailCacheKey(hit.Document.EmailAddress), hit);
+
+            if (cacheEntries.Count > 0)
+                await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn()).AnyContext();
         }
 
-        private Task OnDocumentsAdded(object sender, DocumentsEventArgs<User> documents) {
-            if (!IsCacheEnabled)
-                return Task.CompletedTask;
-
-            return InvalidateCachedQueriesAsync(documents.Documents, documents.Options);
+        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ChangeType? changeType = null) {
+            var keysToRemove = documents.UnionOriginalAndModified().Select(u => EmailCacheKey(u.EmailAddress)).Distinct();
+            return Task.WhenAll(Cache.RemoveAllAsync(keysToRemove), base.InvalidateCacheAsync(documents, changeType));
         }
-
-        protected virtual Task InvalidateCachedQueriesAsync(IReadOnlyCollection<User> documents, ICommandOptions options = null) {
-            return Task.CompletedTask;
-        }
+        
+        private string EmailCacheKey(string emailAddress) => String.Concat("Email:", emailAddress.Trim().ToLowerInvariant());
     }
 }

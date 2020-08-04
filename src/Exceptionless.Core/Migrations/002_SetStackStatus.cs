@@ -11,15 +11,18 @@ namespace Exceptionless.Core.Migrations {
     public class SetStackStatus : MigrationBase {
         private readonly IElasticClient _client;
         private readonly ExceptionlessElasticConfiguration _config;
+        private readonly ILogger _logger;
 
-        public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
+        public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
+            _logger = loggerFactory.CreateLogger<SetStackStatus>();
+            
+            MigrationType = MigrationType.VersionedAndResumable;
+            Version = 2;
         }
 
-        public override int? Version => 2;
-
-        public override async Task RunAsync() {
+        public override async Task RunAsync(MigrationContext context) {
             _logger.LogInformation("Begin refreshing all indices");
             await _config.Client.Indices.RefreshAsync(Indices.All);
             _logger.LogInformation("Done refreshing all indices");

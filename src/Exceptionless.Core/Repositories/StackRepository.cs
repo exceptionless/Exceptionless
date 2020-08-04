@@ -23,23 +23,6 @@ namespace Exceptionless.Core.Repositories {
             AddPropertyRequiredForRemove(s => s.SignatureHash);
         }
 
-        protected override async Task AddToCacheAsync(ICollection<Stack> documents, ICommandOptions options) {
-            if (!IsCacheEnabled || Cache == null || !options.ShouldUseCache())
-                return;
-
-            await base.AddToCacheAsync(documents, options).AnyContext();
-            foreach (var stack in documents)
-                await Cache.SetAsync(GetStackSignatureCacheKey(stack), stack, options.GetExpiresIn()).AnyContext();
-        }
-
-        private string GetStackSignatureCacheKey(Stack stack) {
-            return GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
-        }
-
-        private string GetStackSignatureCacheKey(string projectId, string signatureHash) {
-            return String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
-        }
-
         public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
             return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
         }
@@ -85,9 +68,7 @@ ctx._source.total_occurrences += params.count;";
                 return result.ServerError?.Status == 404;
             }
 
-            if (IsCacheEnabled)
-                await Cache.RemoveAsync(stackId).AnyContext();
-
+            await Cache.RemoveAsync(stackId).AnyContext();
             if (sendNotifications)
                 await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5)).AnyContext();
 
@@ -96,12 +77,12 @@ ctx._source.total_occurrences += params.count;";
 
         public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
             string key = GetStackSignatureCacheKey(projectId, signatureHash);
-            var stack = IsCacheEnabled ? await Cache.GetAsync(key, default(Stack)).AnyContext() : null;
+            var stack = await Cache.GetAsync(key, default(Stack)).AnyContext();
             if (stack != null)
                 return stack;
 
             var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
-            if (IsCacheEnabled && hit != null)
+            if (hit != null)
                 await Cache.SetAsync(key, hit.Document, DefaultCacheExpiration).AnyContext();
 
             return hit?.Document;
@@ -130,13 +111,24 @@ ctx._source.total_occurrences += params.count;";
             );
         }
 
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ICommandOptions options = null) {
-            if (!IsCacheEnabled)
-                return;
+        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options) {
+            await base.AddDocumentsToCacheAsync(findHits, options).AnyContext();
+            
+            var cacheEntries = new Dictionary<string, FindHit<Stack>>();
+            foreach (var hit in findHits)
+                cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
 
+            if (cacheEntries.Count > 0)
+                await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
+        }
+
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null) {
             var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
             await Cache.RemoveAllAsync(keys).AnyContext();
-            await base.InvalidateCacheAsync(documents, options).AnyContext();
+            await base.InvalidateCacheAsync(documents, changeType).AnyContext();
         }
+
+        private string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
+        private string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
     }
 }
