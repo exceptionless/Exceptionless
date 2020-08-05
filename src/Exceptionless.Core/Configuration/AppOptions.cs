@@ -54,8 +54,6 @@ namespace Exceptionless.Core {
 
         public int MaximumRetentionDays { get; internal set; }
 
-        public string ApplicationInsightsKey { get; internal set; }
-
         public bool EnableRepositoryNotifications { get; internal set; }
 
         public bool EnableWebSockets { get; internal set; }
@@ -103,7 +101,6 @@ namespace Exceptionless.Core {
             options.DisabledPlugins = config.GetValueList(nameof(options.DisabledPlugins));
             options.MaximumEventPostSize = config.GetValue(nameof(options.MaximumEventPostSize), 200000).NormalizeValue();
             options.MaximumRetentionDays = config.GetValue(nameof(options.MaximumRetentionDays), 180).NormalizeValue();
-            options.ApplicationInsightsKey = config.GetValue<string>(nameof(options.ApplicationInsightsKey));
 
             options.GoogleGeocodingApiKey = config.GetValue<string>(nameof(options.GoogleGeocodingApiKey));
             options.MaxMindGeoIpKey = config.GetValue<string>(nameof(options.MaxMindGeoIpKey));

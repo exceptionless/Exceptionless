@@ -10,8 +10,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
-using Exceptionless.Web.Utility;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,7 +66,6 @@ namespace Exceptionless.Web {
             var configDictionary = config.ToDictionary("Serilog");
             Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 
-            bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
                 .UseSerilog()
@@ -87,11 +84,6 @@ namespace Exceptionless.Web {
                     services.AddSingleton(config);
                     services.AddAppOptions(options);
                     services.AddHttpContextAccessor();
-
-                    if (useApplicationInsights) {
-                        services.AddSingleton<ITelemetryInitializer, ExceptionlessTelemetryInitializer>();
-                        services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);
-                    }
                 });
 
             if (!String.IsNullOrEmpty(options.MetricOptions.Provider))
