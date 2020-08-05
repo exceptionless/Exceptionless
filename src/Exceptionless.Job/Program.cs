@@ -72,9 +72,7 @@ namespace Exceptionless.Job {
             Log.Logger = loggerConfig.CreateLogger();
             var configDictionary = config.ToDictionary("Serilog");
             Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
-
-            bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
-
+            
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
                 .UseSerilog()
@@ -110,9 +108,6 @@ namespace Exceptionless.Job {
                 .ConfigureServices((ctx, services) => {
                     AddJobs(services, jobOptions);
                     services.AddAppOptions(options);
-                    
-                    if (useApplicationInsights)
-                        services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);
                     
                     Bootstrapper.RegisterServices(services);
                     Insulation.Bootstrapper.RegisterServices(services, options, true);
