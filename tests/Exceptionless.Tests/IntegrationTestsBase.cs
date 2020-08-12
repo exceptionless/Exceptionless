@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -126,7 +126,7 @@ namespace Exceptionless.Tests {
                     _logger.LogTrace("Configured Indexes");
 
                 foreach (var index in _configuration.Indexes)
-                    index.QueryParser.Configuration.RefreshMapping();
+                    index.QueryParser.Configuration.MappingResolver.RefreshMapping();
 
                 var cacheClient = GetService<ICacheClient>();
                 await cacheClient.RemoveAllAsync();

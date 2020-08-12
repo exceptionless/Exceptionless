@@ -7,15 +7,13 @@ using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Migrations {
-    public class UpdateIndexMappings : MigrationBase {
+    public sealed class UpdateIndexMappings : MigrationBase {
         private readonly IElasticClient _client;
         private readonly ExceptionlessElasticConfiguration _config;
-        private readonly ILogger _logger;
 
-        public UpdateIndexMappings(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) {
+        public UpdateIndexMappings(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
-            _logger = loggerFactory.CreateLogger<UpdateIndexMappings>();
 
             MigrationType = MigrationType.VersionedAndResumable;
             Version = 1;

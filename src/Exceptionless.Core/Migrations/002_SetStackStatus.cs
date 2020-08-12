@@ -8,15 +8,13 @@ using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Migrations {
-    public class SetStackStatus : MigrationBase {
+    public sealed class SetStackStatus : MigrationBase {
         private readonly IElasticClient _client;
         private readonly ExceptionlessElasticConfiguration _config;
-        private readonly ILogger _logger;
 
-        public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) {
+        public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
-            _logger = loggerFactory.CreateLogger<SetStackStatus>();
             
             MigrationType = MigrationType.VersionedAndResumable;
             Version = 2;
