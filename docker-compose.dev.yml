@@ -52,7 +52,7 @@ services:
       - appdata:/app/storage
 
   elasticsearch:
-    image: exceptionless/elasticsearch:7.7.1
+    image: exceptionless/elasticsearch:7.8.1
     environment:
       discovery.type: single-node
       xpack.security.enabled: 'false'
@@ -62,11 +62,11 @@ services:
       - 9300:9300
     volumes:
       - esdata7:/usr/share/elasticsearch/data
-  
+
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.7.1
+    image: docker.elastic.co/kibana/kibana:7.8.1
     ports:
       - 5601:5601
 
