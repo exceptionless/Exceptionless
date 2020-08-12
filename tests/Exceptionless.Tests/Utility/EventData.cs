@@ -181,7 +181,7 @@ namespace Exceptionless.Tests.Utility {
                 await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
             }
 
-            configuration.Events.QueryParser.Configuration.RefreshMapping();
+            configuration.Events.QueryParser.Configuration.MappingResolver.RefreshMapping();
         }
     }
 }
