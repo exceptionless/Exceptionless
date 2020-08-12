@@ -78,7 +78,7 @@ CMD [ "dotnet", "Exceptionless.Web.dll" ]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.7.1 AS exceptionless
+FROM exceptionless/elasticsearch:7.8.1 AS exceptionless
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
