@@ -77,14 +77,7 @@ ctx._source.total_occurrences += params.count;";
 
         public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
             string key = GetStackSignatureCacheKey(projectId, signatureHash);
-            var stack = await Cache.GetAsync(key, default(Stack)).AnyContext();
-            if (stack != null)
-                return stack;
-
-            var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash))).AnyContext();
-            if (hit != null)
-                await Cache.SetAsync(key, hit.Document, DefaultCacheExpiration).AnyContext();
-
+            var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key)).AnyContext();
             return hit?.Document;
         }
 
