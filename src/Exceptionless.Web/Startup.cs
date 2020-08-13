@@ -163,8 +163,8 @@ namespace Exceptionless.Web {
                 csp.AllowFonts.FromSelf()
                     .From("https://fonts.gstatic.com")
                     .From("http://fonts.gstatic.com")
-                    .From("https://www.jsdelivr.com")
-                    .From("http://www.jsdelivr.com");
+                    .From("https://cdn.jsdelivr.net")
+                    .From("http://cdn.jsdelivr.net");
                 csp.AllowImages.FromSelf()
                     .From("data:")
                     .From("https://q.stripe.com")
@@ -176,14 +176,14 @@ namespace Exceptionless.Web {
                     .AllowUnsafeEval()
                     .From("https://js.stripe.com")
                     .From("http://js.stripe.com")
-                    .From("https://www.jsdelivr.com")
-                    .From("http://www.jsdelivr.com");
+                    .From("https://cdn.jsdelivr.net")
+                    .From("http://cdn.jsdelivr.net");
                 csp.AllowStyles.FromSelf()
                     .AllowUnsafeInline()
                     .From("https://fonts.googleapis.com")
                     .From("http://fonts.googleapis.com")
-                    .From("https://www.jsdelivr.com")
-                    .From("http://www.jsdelivr.com");
+                    .From("https://cdn.jsdelivr.net")
+                    .From("http://cdn.jsdelivr.net");
             });
 
             app.Use(async (context, next) => {
