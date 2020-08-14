@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -268,7 +268,7 @@ namespace Exceptionless.Core.Jobs {
                     var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
 
                     // Put this single event back into the queue so we can retry it separately.
-                    await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive) {
+                    await _eventPostService.EnqueueAsync(new EventPost(false) {
                         ApiVersion = ep.ApiVersion,
                         CharSet = ep.CharSet,
                         ContentEncoding = null,
@@ -276,8 +276,7 @@ namespace Exceptionless.Core.Jobs {
                         MediaType = ep.MediaType,
                         OrganizationId = ep.OrganizationId ?? project.OrganizationId,
                         ProjectId = ep.ProjectId,
-                        UserAgent = ep.UserAgent,
-                        ShouldArchive = false
+                        UserAgent = ep.UserAgent
                     }, stream).AnyContext();
                 } catch (Exception ex) {
                     if (!isInternalProject && _logger.IsEnabled(LogLevel.Critical)) {
