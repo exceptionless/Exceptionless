@@ -15,7 +15,12 @@ spec:
         limits:
           memory: 125Mi
           cpu: 400m
-      args: [Migration]
+      args: [DataMigration]
+      env:
+        - name: EX_ConnectionStrings__ElasticsearchToMigrate
+          value: 'server=http://10.0.0.4:9200;field-limit=2000'
+#        - name: EX_ReindexCutOffDate
+#          value: '2019-12-02T18:00:00.00Z'
       envFrom:
         - configMapRef:
             name: ex-dev-config
