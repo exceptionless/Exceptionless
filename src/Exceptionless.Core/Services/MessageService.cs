@@ -41,13 +41,13 @@ namespace Exceptionless.Core.Services {
 
         private async Task BeforePublishStackEntityChanged(object sender, BeforePublishEntityChangedEventArgs<Stack> args) {
             args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
-            if (args.Cancel && _logger.IsEnabled(LogLevel.Trace))
+            if (args.Cancel)
                 _logger.LogTrace("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
         }
 
         private async Task BeforePublishEventEntityChanged(object sender, BeforePublishEntityChangedEventArgs<PersistentEvent> args) {
             args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
-            if (args.Cancel && _logger.IsEnabled(LogLevel.Trace))
+            if (args.Cancel)
                 _logger.LogTrace("Cancelled Persistent Event Entity Changed Message: {@Message}", args.Message);
         }
 

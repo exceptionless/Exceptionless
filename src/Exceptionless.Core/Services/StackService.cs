@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Services {
                     if (!await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications).AnyContext()) {
                         shouldRetry = true;
                         await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount).AnyContext();
-                    } else if (_logger.IsEnabled(LogLevel.Trace)) {
+                    } else {
                         _logger.LogTrace("Increment event count {OccurrenceCount} for organization:{OrganizationId} project:{ProjectId} stack:{StackId} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
                     }
                 } catch(Exception ex) {

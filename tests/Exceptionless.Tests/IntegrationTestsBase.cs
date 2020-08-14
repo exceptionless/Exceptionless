@@ -107,7 +107,6 @@ namespace Exceptionless.Tests {
                 var oldLoggingLevel = Log.MinimumLevel;
                 Log.MinimumLevel = LogLevel.Warning;
 
-                bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
                 await RefreshDataAsync();
                 if (!_indexesHaveBeenConfigured) {
                     await _configuration.DeleteIndexesAsync();
@@ -122,8 +121,7 @@ namespace Exceptionless.Tests {
                     });
                 }
 
-                if (isTraceLogLevelEnabled)
-                    _logger.LogTrace("Configured Indexes");
+                _logger.LogTrace("Configured Indexes");
 
                 foreach (var index in _configuration.Indexes)
                     index.QueryParser.Configuration.MappingResolver.RefreshMapping();

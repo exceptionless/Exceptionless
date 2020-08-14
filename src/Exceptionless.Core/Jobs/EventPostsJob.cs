@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -302,13 +302,11 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> entry) {
-            if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("Processing {QueueEntryName} queue entry ({QueueEntryId}).", _queueEntryName, entry.Id);
+            _logger.LogDebug("Processing {QueueEntryName} queue entry ({QueueEntryId}).", _queueEntryName, entry.Id);
         }
 
         protected override void LogAutoCompletedQueueEntry(IQueueEntry<EventPost> entry) {
-            if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("Auto completed {QueueEntryName} queue entry ({QueueEntryId}).", _queueEntryName, entry.Id);
+            _logger.LogDebug("Auto completed {QueueEntryName} queue entry ({QueueEntryId}).", _queueEntryName, entry.Id);
         }
     }
 }
