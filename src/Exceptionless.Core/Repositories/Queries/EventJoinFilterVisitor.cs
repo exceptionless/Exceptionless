@@ -33,14 +33,11 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
-            bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
-            if (isTraceLogLevelEnabled) 
-                _logger.LogTrace("Visiting GroupNode: {GroupNode}", node);
+            _logger.LogTrace("Visiting GroupNode: {GroupNode}", node);
             
             if (node.Field == StackFieldName && node.Left != null) {
                 string term = ToTerm(node);
-                if (isTraceLogLevelEnabled)
-                    _logger.LogTrace("Visiting GroupNode Field {FieldName} with resolved term: {Term}", node.Field, term);
+                _logger.LogTrace("Visiting GroupNode Field {FieldName} with resolved term: {Term}", node.Field, term);
 
                 const int stackIdLimit = 10000;
                 string[] stackIds = null; 
@@ -63,8 +60,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                     stackIds = results.Hits.Select(h => h.Id).ToArray();
                 }
                 
-                if (isTraceLogLevelEnabled) 
-                    _logger.LogTrace("Setting term query with {IdCount} ids on parent GroupNode: {GroupNode}", stackIds?.Length ?? 0, node.Parent);
+                _logger.LogTrace("Setting term query with {IdCount} ids on parent GroupNode: {GroupNode}", stackIds?.Length ?? 0, node.Parent);
 
                 var parentQuery = node.Parent?.GetQuery();
                 var parentNode = node.Parent ?? node;
@@ -82,8 +78,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 
                 node.Left = null;
                 node.Right = null;
-                if (isTraceLogLevelEnabled) 
-                    _logger.LogTrace("Reset left and right node for: {GroupNode}", node);
+                _logger.LogTrace("Reset left and right node for: {GroupNode}", node);
             } 
             
             await base.VisitAsync(node, context).AnyContext();
