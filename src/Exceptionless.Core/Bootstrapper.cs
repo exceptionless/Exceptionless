@@ -127,6 +127,7 @@ namespace Exceptionless.Core {
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
 
+            container.AddSingleton(typeof(IMigration), typeof(Bootstrapper).Assembly);
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
             container.AddSingleton<IMigrationStateRepository, MigrationStateRepository>();
