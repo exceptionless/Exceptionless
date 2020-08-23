@@ -44,7 +44,7 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwr
 
 # install dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.1/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.3/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -55,7 +55,7 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl apply -f https://download.elastic.co/downloads/eck/1.1.2/all-in-one.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.2.1/all-in-one.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator

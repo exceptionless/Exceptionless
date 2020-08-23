@@ -1,3 +1,5 @@
+appMode: Production
+appScope: prod
 api:
   replicaCount: 5
   defaultDomain: api.exceptionless.io
