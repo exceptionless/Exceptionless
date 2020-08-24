@@ -74,7 +74,7 @@ kubectl get es; kubectl get pods -l common.k8s.elastic.co/type=elasticsearch
 $ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # port forward elasticsearch
-kubectl port-forward service/ex-$ENV-es-http 9200
+$ELASTIC_JOB = kubectl port-forward service/ex-$ENV-es-http 9200 &
 
 # create daily snapshot repository
 
@@ -94,6 +94,8 @@ curl -X PUT -H "Content-Type: application/json" -k `
 curl -X PUT -H "Content-Type: application/json" -k `
     -d '{ \"schedule\": \"0 0 * * * ?\", \"name\": \"<hourly-{now/H{yyyy.MM.dd-HH|America/Chicago}}>\", \"repository\": \"hourly\", \"config\": { \"indices\": [\"*\"] }, \"retention\": { \"expire_after\": \"24h\", \"min_count\": 5, \"max_count\": 50 }}' `
     http://elastic:$ELASTIC_PASSWORD@localhost:9200/_slm/policy/hourly
+
+Remove-Job $ELASTIC_JOB
 
 # install nginx ingress
 helm install nginx-ingress stable/nginx-ingress --namespace nginx-ingress --values nginx-values.yaml
