@@ -2,11 +2,13 @@
 $ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # connect to kibana
+
 kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5601
 open "http://kibana-ex-prod.localtest.me:5601"
 
 # port forward elasticsearch
-kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200
+$ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200 &
+Remove-Job $ELASTIC_JOB
 
 # connect to redis
 $REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis-ha -o go-template='{{index .data \"redis-password\" | base64decode }}')

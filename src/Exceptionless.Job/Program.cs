@@ -124,8 +124,6 @@ namespace Exceptionless.Job {
             
             if (options.CleanupData)
                 services.AddJob<CleanupDataJob>(true);
-            if (options.CleanupSnapshot)
-                services.AddJob<CleanupSnapshotJob>(true);
             if (options.CloseInactiveSessions)
                 services.AddJob<CloseInactiveSessionsJob>(true);
             if (options.DailySummary)
@@ -139,8 +137,6 @@ namespace Exceptionless.Job {
             if (options.EventPosts)
                 services.AddJob<EventPostsJob>(true);
             if (options.EventSnapshot)
-                services.AddJob<EventSnapshotJob>(true);
-            if (options.EventUserDescriptions)
                 services.AddJob<EventUserDescriptionsJob>(true);
             if (options.MailMessage)
                 services.AddJob<MailMessageJob>(true);
@@ -148,14 +144,10 @@ namespace Exceptionless.Job {
                 services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
             if (options.Migration)
                 services.AddJob<MigrationJob>(true);
-            if (options.OrganizationSnapshot)
-                services.AddJob<OrganizationSnapshotJob>(true);
             if (options.StackStatus)
                 services.AddJob<StackStatusJob>(true);
             if (options.StackEventCount)
                 services.AddJob<StackEventCountJob>(true);
-            if (options.StackSnapshot)
-                services.AddJob<StackSnapshotJob>(true);
             if (options.WebHooks)
                 services.AddJob<WebHooksJob>(true);
             if (options.WorkItem)
