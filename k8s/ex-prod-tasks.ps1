@@ -9,7 +9,7 @@ open "http://kibana-ex-prod.localtest.me:5601"
 kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200
 
 # connect to redis
-$REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis -o go-template='{{index .data \"redis-password\" | base64decode }}')
+$REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis-ha -o go-template='{{index .data \"redis-password\" | base64decode }}')
 kubectl port-forward --namespace ex-prod service/ex-prod-redis-master 6379
 redis-cli -a $REDIS_PASSWORD
 
@@ -73,10 +73,30 @@ kubectl apply -f ex-prod-elasticsearch.yaml
 # upgrade exceptionless app to a new docker image tag
 $APP_TAG="2.8.1502-pre"
 $API_TAG="6.0.3534-pre"
-helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-prod .\exceptionless
-helm upgrade --reuse-values ex-prod .\exceptionless
+helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-prod --namespace ex-prod .\exceptionless
+helm upgrade --reuse-values ex-prod --namespace ex-prod .\exceptionless
 # see what an upgrade will do
-helm diff upgrade --reuse-values ex-prod .\exceptionless
+helm diff upgrade --reuse-values ex-prod --namespace ex-prod .\exceptionless
+
+# upgrade exceptionless app to set a new env variable
+helm upgrade `
+    --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" `
+    --set "email.connectionString=$EMAIL_CONNECTIONSTRING" `
+    --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" `
+    --set "redis.connectionString=$REDIS_CONNECTIONSTRING" `
+    --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" `
+    --set "statsd.token=$STATSD_TOKEN" `
+    --set "statsd.user=$STATSD_USER" `
+    --set "config.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" `
+    --set "config.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" `
+    --set "config.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" `
+    --set "config.EX_GoogleGeocodingApiKey=$EX_GoogleGeocodingApiKey" `
+    --set "config.EX_GoogleTagManagerId=$EX_GoogleTagManagerId" `
+    --set "config.EX_StripeApiKey=$EX_StripeApiKey" `
+    --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" `
+    --set "config.EX_MaxMindGeoIpKey=$EX_MaxMindGeoIpKey" `
+    --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" `
+    --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app
 kubectl scale deployment/ex-prod-api --replicas=0 --namespace ex-prod

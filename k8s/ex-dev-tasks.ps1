@@ -52,7 +52,16 @@ $API_TAG="6.0.3534-pre"
 helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-dev .\exceptionless
 
 # upgrade exceptionless app to set a new env variable
-helm upgrade --set "config.EX_EnableSnapshotJobs=true" --reuse-values ex-dev .\exceptionless
+helm upgrade `
+    --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" `
+    --set "email.connectionString=$EMAIL_CONNECTIONSTRING" `
+    --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" `
+    --set "redis.connectionString=$REDIS_CONNECTIONSTRING" `
+    --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" `
+    --set "config.EX_StripeApiKey=$EX_StripeApiKey" `
+    --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" `
+    --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" `
+    --reuse-values ex-dev --namespace ex-dev .\exceptionless
 
 # stop the entire app
 kubectl scale deployment/ex-dev-app --replicas=0 --namespace ex-dev
