@@ -197,3 +197,10 @@ az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 # set resource request and limits
 # scale ES up to 4 nodes
 # change VM reserved instances to 5 instead of 4
+
+# setup powershell alias to connect kibana
+# add these to your $PROFILE
+Function ExDevKibanaConnect { start-process http://kibana-ex-dev.localtest.me:5650 && kubectl port-forward --namespace ex-dev --context ex service/ex-dev-kb-http 5650:5601 }
+New-Alias Ex-Dev-Connect ExDevKibanaConnect
+
+New-Alias k kubectl
