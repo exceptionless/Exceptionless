@@ -31,7 +31,7 @@
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.7" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.7.1" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.9.0" />
     <PackageReference Include="Stripe.net" Version="37.10.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
     <PackageReference Include="UAParser" Version="3.1.44" />
