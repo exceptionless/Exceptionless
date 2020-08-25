@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Migrations {
             _logger.LogInformation("Start migrating stacks status");
             var sw = Stopwatch.StartNew();
             const string script = "if (ctx._source.is_regressed == true) ctx._source.status = 'regressed'; else if (ctx._source.is_hidden == true) ctx._source.status = 'ignored'; else if (ctx._source.disable_notifications == true) ctx._source.status = 'ignored'; else if (ctx._source.is_fixed == true) ctx._source.status = 'fixed'; else ctx._source.status = 'open';";
-            var stackResponse = await _client.UpdateByQueryAsync<Stack>(x => x.QueryOnQueryString("_missing_:status").Script(script));
+            var stackResponse = await _client.UpdateByQueryAsync<Stack>(x => x.QueryOnQueryString("NOT _exists_:status").Script(script));
             _logger.LogTraceRequest(stackResponse);
             _logger.LogInformation("Finished adding stack status: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, stackResponse.Total, stackResponse.Failures.Count);
         }
