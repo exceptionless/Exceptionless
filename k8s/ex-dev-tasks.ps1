@@ -6,7 +6,8 @@ kubectl port-forward --namespace ex-dev service/ex-dev-kb-http 5601
 open "http://kibana-ex-dev.localtest.me:5601"
 
 # port forward elasticsearch
-kubectl port-forward --namespace ex-dev service/ex-dev-es-http 9200
+$ELASTIC_JOB = kubectl port-forward --namespace ex-dev service/ex-dev-es-http 9200 &
+Remove-Job $ELASTIC_JOB
 
 # connect to redis
 $REDIS_PASSWORD=$(kubectl get secret --namespace ex-dev ex-dev-redis -o go-template='{{index .data \"redis-password\" | base64decode }}')

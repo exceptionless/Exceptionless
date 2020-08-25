@@ -79,20 +79,20 @@ $ELASTIC_JOB = kubectl port-forward service/ex-$ENV-es-http 9200 &
 # create daily snapshot repository
 
 curl -X PUT -H "Content-Type: application/json" -k `
-    -d '{ \"type\": \"azure\", \"settings\": { \"base_path\": \"daily\" }}' `
+    -d '{ \"type\": \"azure\", \"settings\": { \"base_path\": \"dev-daily\" }}' `
     http://elastic:$ELASTIC_PASSWORD@localhost:9200/_snapshot/daily
 
 curl -X PUT -H "Content-Type: application/json" -k `
-    -d '{ \"schedule\": \"0 30 2 * * ?\", \"name\": \"<daily-{now/d{yyyy.MM.dd|America/Chicago}}>\", \"repository\": \"daily\", \"config\": { \"indices\": [\"*\"] }, \"retention\": { \"expire_after\": \"30d\", \"min_count\": 5, \"max_count\": 50 }}' `
+    -d '{ \"schedule\": \"0 30 2 * * ?\", \"name\": \"<dev-daily-{now/d{yyyy.MM.dd|America/Chicago}}>\", \"repository\": \"daily\", \"config\": { \"indices\": [\"*\"] }, \"retention\": { \"expire_after\": \"30d\", \"min_count\": 5, \"max_count\": 50 }}' `
     http://elastic:$ELASTIC_PASSWORD@localhost:9200/_slm/policy/daily
 
 # create hourly snapshot repository
 curl -X PUT -H "Content-Type: application/json" -k `
-    -d '{ \"type\": \"azure\", \"settings\": { \"base_path\": \"hourly\" }}' `
+    -d '{ \"type\": \"azure\", \"settings\": { \"base_path\": \"dev-hourly\" }}' `
     http://elastic:$ELASTIC_PASSWORD@localhost:9200/_snapshot/hourly
 
 curl -X PUT -H "Content-Type: application/json" -k `
-    -d '{ \"schedule\": \"0 0 * * * ?\", \"name\": \"<hourly-{now/H{yyyy.MM.dd-HH|America/Chicago}}>\", \"repository\": \"hourly\", \"config\": { \"indices\": [\"*\"] }, \"retention\": { \"expire_after\": \"24h\", \"min_count\": 5, \"max_count\": 50 }}' `
+    -d '{ \"schedule\": \"0 0 * * * ?\", \"name\": \"<dev-hourly-{now/H{yyyy.MM.dd-HH|America/Chicago}}>\", \"repository\": \"hourly\", \"config\": { \"indices\": [\"*\"] }, \"retention\": { \"expire_after\": \"24h\", \"min_count\": 5, \"max_count\": 50 }}' `
     http://elastic:$ELASTIC_PASSWORD@localhost:9200/_slm/policy/hourly
 
 Remove-Job $ELASTIC_JOB

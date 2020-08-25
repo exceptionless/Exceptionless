@@ -8,15 +8,7 @@ DELETE {{apiUrl}}dev-*
 
 ###
 
-GET {{apiUrl}}_snapshot/prod-organizations/_all
-
-###
-
-GET {{apiUrl}}_snapshot/prod-stacks/_all
-
-###
-
-GET {{apiUrl}}_snapshot/prod-events/_all
+GET {{apiUrl}}_snapshot/prod-hourly/_all
 
 ###
 
@@ -24,34 +16,12 @@ POST {{apiUrl}}dev-*/_close
 
 ###
 
-POST {{apiUrl}}_snapshot/prod-stacks/prod-stacks-2020-07-04-23-39/_restore?wait_for_completion=false
+POST {{apiUrl}}_snapshot/prod-hourly/hourly-2020.08.25-15-jqtnjwlhtrekzrfwpp39lg/_restore?wait_for_completion=false
 Content-Type: application/json
 
 {
   "include_global_state": true,
-  "rename_pattern": "prod-(.+)",
-  "rename_replacement": "dev-$1"
-}
-
-###
-
-POST {{apiUrl}}_snapshot/prod-organizations/prod-organizations-2020-07-04-23-36/_restore?wait_for_completion=false
-Content-Type: application/json
-
-{
-  "include_global_state": true,
-  "rename_pattern": "prod-(.+)",
-  "rename_replacement": "dev-$1"
-}
-
-###
-
-POST {{apiUrl}}_snapshot/prod-events/prod-events-2020-07-04-12-00/_restore?wait_for_completion=false
-Content-Type: application/json
-
-{
-  "indices": "prod-events-v1-2020.07.*",
-  "include_global_state": true,
+  "indices": "prod-*,-prod-events-*,prod-events-v1-2020.08.2*",
   "rename_pattern": "prod-(.+)",
   "rename_replacement": "dev-$1"
 }
@@ -65,34 +35,6 @@ Content-Type: application/json
     "index" : {
         "number_of_replicas" : 0
     }
-}
-
-###
-
-PUT {{apiUrl}}dev-stacks-v1/_mapping
-Content-Type: application/json
-
-{
-  "properties": {
-    "status": {
-      "type": "keyword"
-    },
-    "snooze_until_utc": {
-      "type": "date"
-    }
-  }
-}
-
-###
-
-POST {{apiUrl}}dev-stacks-v1/_update_by_query?wait_for_completion=false
-Content-Type: application/json
-
-{
-  "script": {
-    "source": "if (ctx._source.is_regressed == true) ctx._source.status = 'regressed'; else if (ctx._source.is_hidden == true) ctx._source.status = 'ignored'; else if (ctx._source.disable_notifications == true) ctx._source.status = 'ignored'; else ctx._source.status = 'open';",
-    "lang": "painless"
-  }
 }
 
 ###
