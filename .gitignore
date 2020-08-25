@@ -123,5 +123,5 @@ k8s/output
 k8s/exceptionless/values.override.yaml
 k8s/ex-prod\.diff
 k8s/ex-prod\.yaml
-k8s/ex-*-secrets\.sh
+*secrets*
 k8s/ex-*-snapshots.yaml
