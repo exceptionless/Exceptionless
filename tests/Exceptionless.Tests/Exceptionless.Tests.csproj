@@ -10,7 +10,7 @@
     <PackageReference Include="Foundatio.Logging.Xunit" Version="9.1.1" />
     <PackageReference Include="FluentRest" Version="7.1.0.184" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.1.0.184" />
-    <PackageReference Include="Foundatio.Xunit" Version="10.0.0-beta8.7" />
+    <PackageReference Include="Foundatio.Xunit" Version="10.0.0-beta9" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="3.1.7" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.7" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.0" />
@@ -20,6 +20,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.6" />
     <PackageReference Include="Foundatio.Xunit" Version="10.0.0-beta8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

@@ -18,6 +18,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.6" />
     <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta8" />
     <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta8.7" />
+    <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta9" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
   </ItemGroup>
 
