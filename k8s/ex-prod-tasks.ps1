@@ -70,7 +70,7 @@ helm upgrade goldilocks fairwinds-stable/goldilocks --namespace goldilocks --res
 kubectl apply -f https://download.elastic.co/downloads/eck/1.2.1/all-in-one.yaml
 
 # upgrade elasticsearch
-kubectl apply -f ex-prod-elasticsearch.yaml
+kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
 # upgrade exceptionless app to a new docker image tag
 $APP_TAG="2.8.1502-pre"
