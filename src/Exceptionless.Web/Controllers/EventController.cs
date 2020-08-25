@@ -262,12 +262,12 @@ namespace Exceptionless.Web.Controllers {
                             _ => null
                         };
 
-                        var stackTerms = (await _repository.CountAsync(q => q
+                        var countResponse = await _repository.CountAsync(q => q
                             .SystemFilter(systemFilter)
                             .FilterExpression(filter)
-                            .AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {stackAggregations})")))
-                            .Aggregations.Terms<string>("terms_stack_id");
+                            .AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {stackAggregations})"));
                         
+                        var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                         if (stackTerms == null || stackTerms.Buckets.Count == 0)
                             return Ok(EmptyModels);
 

@@ -21,6 +21,8 @@ namespace Exceptionless.Core.Migrations {
 
         public override async Task RunAsync(MigrationContext context) {
             _logger.LogInformation("Start migration for adding index mappings...");
+            
+            _logger.LogInformation("Updating Organization mappings...");
             var response = await _client.MapAsync<Organization>(d => {
                 d.Index(_config.Organizations.VersionedName);
                 d.Properties(p => p
@@ -29,8 +31,15 @@ namespace Exceptionless.Core.Migrations {
                     
                 return d;
             });
-            _logger.LogTraceRequest(response); 
+            _logger.LogTraceRequest(response);
+
+            _logger.LogInformation("Setting Organization is_deleted=false...");
+            const string script = "ctx._source.is_deleted = false;";
+            await _config.Client.Indices.RefreshAsync(_config.Organizations.VersionedName);
+            var updateResponse = await _client.UpdateByQueryAsync<Organization>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(script));
+            _logger.LogTraceRequest(updateResponse);
             
+            _logger.LogInformation("Updating Project mappings...");
             response = await _client.MapAsync<Project>(d => {
                 d.Index(_config.Projects.VersionedName);
                 d.Properties(p => p
@@ -40,7 +49,13 @@ namespace Exceptionless.Core.Migrations {
                 return d;
             });
             _logger.LogTraceRequest(response);
+
+            _logger.LogInformation("Setting Project is_deleted=false...");
+            await _config.Client.Indices.RefreshAsync(_config.Projects.VersionedName);
+            updateResponse = await _client.UpdateByQueryAsync<Project>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(script));
+            _logger.LogTraceRequest(updateResponse);
             
+            _logger.LogInformation("Updating Stack mappings...");
             response = await _client.MapAsync<Stack>(d => {
                     d.Index(_config.Stacks.VersionedName);
                     d.Properties(p => p
@@ -51,6 +66,12 @@ namespace Exceptionless.Core.Migrations {
                 return d;
             });
             _logger.LogTraceRequest(response);
+            
+            _logger.LogInformation("Setting Stack is_deleted=false...");
+            await _config.Client.Indices.RefreshAsync(_config.Stacks.VersionedName);
+            updateResponse = await _client.UpdateByQueryAsync<Stack>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(script));
+            _logger.LogTraceRequest(updateResponse);
+            
             _logger.LogInformation("Finished adding mappings.");
         }
     }

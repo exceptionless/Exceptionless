@@ -111,7 +111,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("_exists_:submission", 1)]
-        [InlineData("_missing_:submission", 5)]
+        [InlineData("NOT _exists_:submission", 5)]
         [InlineData("submission:UnobservedTaskException", 1)]
         public async Task GetBySubmissionMethodAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
@@ -163,7 +163,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("_missing_:tag", 4)]
+        [InlineData("NOT _exists_:tag", 4)]
         [InlineData("tag:test", 1)]
         [InlineData("tag:Blake", 0)]
         [InlineData("tag:Niemyjski", 0)]
@@ -175,7 +175,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("_missing_:value", 5)]
+        [InlineData("NOT _exists_:value", 5)]
         [InlineData("_exists_:value", 1)]
         [InlineData("value:1", 1)]
         [InlineData("value:>0", 1)]
