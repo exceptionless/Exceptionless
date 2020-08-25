@@ -136,7 +136,7 @@ namespace Exceptionless.Job {
                 services.AddJob<EventNotificationsJob>(true);
             if (options.EventPosts)
                 services.AddJob<EventPostsJob>(true);
-            if (options.EventSnapshot)
+            if (options.EventUserDescriptions)
                 services.AddJob<EventUserDescriptionsJob>(true);
             if (options.MailMessage)
                 services.AddJob<MailMessageJob>(true);
