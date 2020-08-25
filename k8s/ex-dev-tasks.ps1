@@ -63,6 +63,24 @@ helm upgrade `
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" `
     --reuse-values ex-dev --namespace ex-dev .\exceptionless
 
+helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-dev --namespace ex-dev .\exceptionless
+helm upgrade --reuse-values ex-dev --namespace ex-dev .\exceptionless --dry-run | code-insiders -
+$APP_TAG="2.9.3-alpha.0.1"
+$API_TAG="6.1.4-alpha.0.11"
+helm upgrade ex-dev .\exceptionless --namespace ex-dev --values ex-dev-values.yaml `
+    --set "app.image.tag=$APP_TAG" `
+    --set "api.image.tag=$API_TAG" `
+    --set "jobs.image.tag=$API_TAG" `
+    --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" `
+    --set "email.connectionString=$EMAIL_CONNECTIONSTRING" `
+    --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" `
+    --set "redis.connectionString=$REDIS_CONNECTIONSTRING" `
+    --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" `
+    --set "config.EX_StripeApiKey=$EX_StripeApiKey" `
+    --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" `
+    --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" --dry-run | code-insiders -
+
+
 # stop the entire app
 kubectl scale deployment/ex-dev-app --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-api --replicas=0 --namespace ex-dev
