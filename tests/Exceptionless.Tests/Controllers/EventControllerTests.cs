@@ -246,7 +246,7 @@ namespace Exceptionless.Tests.Controllers {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:open")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:error (status:open OR status:regressed)")
                 .QueryString("mode", "stack_users")
                 .StatusCodeShouldBeOk()
             );
