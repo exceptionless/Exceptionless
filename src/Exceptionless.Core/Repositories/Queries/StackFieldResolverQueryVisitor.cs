@@ -5,8 +5,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 
-namespace Exceptionless.Core.Repositories.Queries
-{
+namespace Exceptionless.Core.Repositories.Queries {
     public class StackFieldResolverQueryVisitor : ChainableQueryVisitor {
         private readonly IDictionary<string, string> _fieldMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
             { "first_occurrence", "first_occurrence"},
@@ -30,8 +29,7 @@ namespace Exceptionless.Core.Repositories.Queries
             { "total_occurrences", "total_occurrences" }
         };
 
-        public StackFieldResolverQueryVisitor() {
-        }
+        public StackFieldResolverQueryVisitor() {}
         
         public override Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
             ResolveField(node, context);

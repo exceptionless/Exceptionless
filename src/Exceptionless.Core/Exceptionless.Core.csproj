@@ -26,6 +26,7 @@
     <PackageReference Include="FluentValidation" Version="9.1.3" />
     <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.JsonNet" Version="10.0.0-beta9" />
+    <PackageReference Include="Foundatio.Parsers.ElasticQueries" Version="7.9.0-beta1.5" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.9.0-beta1" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.9.0" />
     <PackageReference Include="Handlebars.Net" Version="1.10.1" />

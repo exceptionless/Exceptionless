@@ -41,6 +41,7 @@ namespace Exceptionless.Tests.Repositories {
 
             Log.MinimumLevel = oldLoggingLevel;
         }
+
         [Theory]
         [InlineData("status:fixed", 2)]
         [InlineData("status:regressed", 3)]
@@ -60,6 +61,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("type:log version_fixed:1.2.3", 1)]
         [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 2)]
         [InlineData("type:log status:fixed @stack:(version_fixed:1.2.3)", 1)]
+        [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
         [InlineData("54dbc16ca0f5c61398427b00", 1)] // Event Id
         [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
         [InlineData("type:error", 2)]
@@ -68,9 +70,9 @@ namespace Exceptionless.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         private Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter) {
-            return _eventRepository.FindAsync(q => q.FilterExpression(filter));
+            return _eventRepository.FindAsync(q => q.FilterExpression(filter), o => o.QueryLogLevel(LogLevel.Information));
         }
     }
 }
