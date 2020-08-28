@@ -13,6 +13,8 @@
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
+    <ReferenceFoundatioRepositoriesSource>true</ReferenceFoundatioRepositoriesSource>
   </PropertyGroup>
 
   <ItemGroup>
