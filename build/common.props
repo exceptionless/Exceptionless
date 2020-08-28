@@ -14,7 +14,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
-    <ReferenceFoundatioRepositoriesSource>true</ReferenceFoundatioRepositoriesSource>
+    <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
   </PropertyGroup>
 
   <ItemGroup>
