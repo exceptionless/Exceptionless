@@ -53,6 +53,7 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("is_fixed:true", 2)]
         [InlineData("status:fixed", 2)]
+        [InlineData("status:discarded", 0)]
         [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
         [InlineData("type:log status:fixed", 2)]
         [InlineData("type:log version_fixed:1.2.3", 1)]

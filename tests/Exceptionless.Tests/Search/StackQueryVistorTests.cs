@@ -10,6 +10,7 @@ namespace Exceptionless.Tests.Search {
         public StackQueryVistorTests(ITestOutputHelper output) : base(output) { }
 
         [Theory]
+        [InlineData("blah", "", "", "blah")]
         [InlineData("status:fixed", "status:fixed", "NOT status:fixed", "")]
         [InlineData("is_fixed:true", "status:fixed", "NOT status:fixed", "")]
         [InlineData("is_regressed:true", "status:regressed", "NOT status:regressed", "")]

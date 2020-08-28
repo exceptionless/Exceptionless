@@ -38,6 +38,14 @@ namespace Exceptionless.Core.Repositories.Queries {
             var stackFilter = await StacksAndEventsQueryVisitor.RunAsync(filter, StacksAndEventsQueryMode.Stacks, ctx);
             var invertedStackFilter = await StacksAndEventsQueryVisitor.RunAsync(filter, StacksAndEventsQueryMode.InvertedStacks, ctx);
 
+            // queries are the same, no need to allow inverting
+            if (invertedStackFilter.Query == stackFilter.Query)
+                invertedStackFilter.IsInvertSuccessful = false;
+
+            // filter does not contain any stack filter criteria
+            if (String.IsNullOrEmpty(stackFilter.Query) || !stackFilter.HasStackSpecificCriteria)
+                return;
+
             const int stackIdLimit = 10000;
             string[] stackIds = null;
 
@@ -65,9 +73,13 @@ namespace Exceptionless.Core.Repositories.Queries {
                 stackIds = results.Hits.Select(h => h.Id).ToArray();
             }
 
-            //_logger.LogTrace("Setting term query with {IdCount} ids on parent GroupNode: {GroupNode}", stackIds?.Length ?? 0, node.Parent);
+            _logger.LogTrace("Setting stack filter with {IdCount} ids", stackIds?.Length ?? 0);
 
-            ctx.Source.Stack(stackIds);
+            if (stackIds.Length > 0)
+                ctx.Source.Stack(stackIds);
+            else
+                ctx.Source.Stack("none");
+
             var eventsResult = await StacksAndEventsQueryVisitor.RunAsync(filter, StacksAndEventsQueryMode.Events, ctx);
             ctx.Source.FilterExpression(eventsResult.Query);
         }
