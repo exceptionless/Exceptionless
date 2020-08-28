@@ -34,11 +34,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             _inferredStackLastOccurrenceField = Infer.Field<Stack>(f => f.LastOccurrence);
         }
 
-        private string BuildStackFilter(string stackFilter, string term, bool isStackIdsNegated) {
-            if (!String.IsNullOrEmpty(stackFilter))
-                return isStackIdsNegated ? $"({stackFilter}) AND (-({term}) OR deleted:true)" : $"({stackFilter}) AND ({term})";
-            else
-                return isStackIdsNegated ? $"-({term}) OR deleted:true" : term;
+        private string BuildStackFilter(string term, bool isStackIdsNegated) {
+            return isStackIdsNegated ? $"-({term}) OR deleted:true" : term;
         }
 
         public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
@@ -50,18 +47,18 @@ namespace Exceptionless.Core.Repositories.Queries {
 
                 const int stackIdLimit = 10000;
                 string[] stackIds = null;
-                var rootNode = node.GetRootNode();
-                var filter = await GenerateQueryVisitor.RunAsync(rootNode);
-                string stackFilter = await StacksAndEventsQueryVisitor.RunAsync(rootNode);
+                //var rootNode = node.GetRootNode();
+                //var filter = await GenerateQueryVisitor.RunAsync(rootNode);
+                //string stackFilter = await StacksAndEventsQueryVisitor.RunAsync(rootNode);
                 bool isStackIdsNegated = await HasStatusOpenVisitor.RunAsync(node).AnyContext();
                 if (!(context is IQueryVisitorContextWithValidator)) {
                     var systemFilterQuery = GetSystemFilterQuery(context);
-                    systemFilterQuery.FilterExpression(BuildStackFilter(stackFilter, term, isStackIdsNegated));
+                    systemFilterQuery.FilterExpression(BuildStackFilter(term, isStackIdsNegated));
                     var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                     var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                     if (results.Total > stackIdLimit) {
                         isStackIdsNegated = !isStackIdsNegated;
-                        systemFilterQuery.FilterExpression(BuildStackFilter(stackFilter, term, isStackIdsNegated));
+                        systemFilterQuery.FilterExpression(BuildStackFilter(term, isStackIdsNegated));
                         softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                         results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                     }
