@@ -59,6 +59,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         public StacksAndEventsQueryMode QueryMode { get; set; } = StacksAndEventsQueryMode.Events;
         public bool IsInvertSuccessful { get; set; } = true;
         public bool HasStatusOpen { get; set; } = false;
+        public bool HasStackSpecificCriteria { get; set; } = false;
 
         public override Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
             ApplyFilter(node, context);
@@ -127,25 +128,33 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         private IFieldQueryNode ApplyFilter(IFieldQueryNode node, IQueryVisitorContext context) {
-            if (node.Field == null)
-                return node;
-
             var parent = node.Parent as GroupNode;
 
             if (QueryMode == StacksAndEventsQueryMode.Stacks || QueryMode == StacksAndEventsQueryMode.InvertedStacks) {
-                if (_stackFields.Contains(node.Field))
+                // if we don't have a field name and it's a group node, leave it alone
+                if (node.Field == null && node is GroupNode)
                     return node;
+
+                // if we have a field name and it's in the stack fields list, leave it alone
+                if (node.Field != null && _stackFields.Contains(node.Field)) {
+                    if (_stackOnlyFields.Contains(node.Field))
+                        HasStackSpecificCriteria = true;
+
+                    return node;
+                }
 
                 // check for special field names
                 if (node is TermNode termNode) {
                     switch (node.Field?.ToLowerInvariant()) {
                         case EventIndex.Alias.StackId:
                         case "stack_id":
+                            HasStackSpecificCriteria = true;
                             termNode.Field = "id";
                             return node;
 
                         case "is_fixed":
                         case StackIndex.Alias.IsFixed:
+                            HasStackSpecificCriteria = true;
                             bool isFixed = Boolean.TryParse(termNode.Term, out bool temp) && temp;
                             termNode.Field = "status";
                             termNode.Term = "fixed";
@@ -154,6 +163,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
                         case "is_regressed":
                         case StackIndex.Alias.IsRegressed:
+                            HasStackSpecificCriteria = true;
                             bool isRegressed = Boolean.TryParse(termNode.Term, out bool regressed) && regressed;
                             termNode.Field = "status";
                             termNode.Term = "regressed";
@@ -165,6 +175,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                             if (parent == null)
                                 break;
 
+                            HasStackSpecificCriteria = true;
                             bool isHidden = Boolean.TryParse(termNode.Term, out bool hidden) && hidden;
                             if (isHidden) {
                                 var isHiddenNode = new GroupNode {
@@ -206,6 +217,10 @@ namespace Exceptionless.Core.Repositories.Queries {
                 else if (parent.Right == node)
                     parent.Right = null;
             } else {
+                // don't remove terms without fields
+                if (String.IsNullOrEmpty(node.Field))
+                    return node;
+
                 if (_stackOnlyFields.Contains(node.Field) || _stackOnlySpecialFields.Contains(node.Field)) {
                     // remove criteria that is only for stacks
 
@@ -234,7 +249,8 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             return new StacksAndEventsQueryResult {
                 Query = result,
-                IsInvertSuccessful = visitor.IsInvertSuccessful
+                IsInvertSuccessful = visitor.IsInvertSuccessful,
+                HasStackSpecificCriteria = visitor.HasStackSpecificCriteria
             };
         }
 
@@ -257,6 +273,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         public string Query { get; set; }
         public bool IsInvertSuccessful { get; set; }
         public bool HasStatusOpen { get; set; }
+        public bool HasStackSpecificCriteria { get; set; }
     }
 
     public enum StacksAndEventsQueryMode {
