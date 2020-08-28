@@ -26,8 +26,6 @@ namespace Exceptionless.Tests.Repositories {
             
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
-            Log.SetLogLevel<EventJoinFilterVisitor>(LogLevel.Trace);
-            Log.SetLogLevel<StackFieldResolverQueryVisitor>(LogLevel.Trace);
         }
         
         protected override async Task ResetDataAsync() {
@@ -45,7 +43,7 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("status:fixed", 2)]
         [InlineData("status:regressed", 3)]
-        [InlineData("@stack:(status:open)", 1)]
+        [InlineData("status:open", 1)]
         public async Task GetByStatusAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
@@ -55,12 +53,10 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("is_fixed:true", 2)]
         [InlineData("status:fixed", 2)]
-        [InlineData("@stack:(status:fixed)", 2)]
         [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
         [InlineData("type:log status:fixed", 2)]
         [InlineData("type:log version_fixed:1.2.3", 1)]
         [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 2)]
-        [InlineData("type:log status:fixed @stack:(version_fixed:1.2.3)", 1)]
         [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
         [InlineData("54dbc16ca0f5c61398427b00", 1)] // Event Id
         [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
