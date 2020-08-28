@@ -10,6 +10,7 @@ using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nest;
@@ -31,6 +32,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddAlias($"{Name}-last7days", TimeSpan.FromDays(7));
             AddAlias($"{Name}-last30days", TimeSpan.FromDays(30));
             AddAlias($"{Name}-last90days", TimeSpan.FromDays(90));
+        }
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            var stacksRepository = _serviceProvider.GetRequiredService<IStackRepository>();
+            base.ConfigureQueryBuilder(builder);
+            builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackQueryBuilder(stacksRepository, _configuration.LoggerFactory));
         }
 
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
@@ -116,7 +123,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
-            var stackRepository = _serviceProvider.GetRequiredService<IStackRepository>();
             config
                 .SetDefaultFields(new[] {
                     "id",
@@ -134,7 +140,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     $"data.{Event.KnownDataKeys.UserInfo}.{nameof(UserInfo.Name).ToLowerUnderscoredWords()}"
                 })
                 .AddQueryVisitor(new EventFieldsQueryVisitor())
-                .AddQueryVisitorBefore<EventFieldsQueryVisitor>(new StackFieldResolverQueryVisitor())
                 .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.BrowserVersion}" },
                     { Alias.BrowserMajorVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.BrowserMajorVersion}" },
@@ -144,8 +149,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     { Alias.UserDescription, $"data.{Event.KnownDataKeys.UserDescription}.{nameof(UserDescription.Description).ToLowerUnderscoredWords()}" },
                     { Alias.OperatingSystemVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.OSVersion}" },
                     { Alias.OperatingSystemMajorVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.OSMajorVersion}" }
-                })
-                .UseEventJoinFilterVisitor(new EventJoinFilterVisitor(stackRepository, _configuration.LoggerFactory));
+                });
         }
 
         public ElasticsearchOptions Options => (Configuration as ExceptionlessElasticConfiguration)?.Options;

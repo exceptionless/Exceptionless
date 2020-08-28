@@ -21,37 +21,14 @@ namespace Exceptionless.Tests.Search {
         [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635)", "project:123 (status:open OR status:regressed)", "project:123 NOT (status:open OR status:regressed)", "project:123  (ref.session:5f3dce2668de920001466635)")]
         [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635 OR project:234)", "project:123 (status:open OR status:regressed) (project:234)", "project:123 NOT (status:open OR status:regressed) (project:234)", "project:123  (ref.session:5f3dce2668de920001466635 OR project:234)")]
         public void GetStackQuery(string filter, string expectedStackFilter, string expectedInvertedStackFilter, string expectedEventFilter) {
-            var context = new ElasticQueryVisitorContext();
+            var stackResult = StacksAndEventsQueryVisitor.Run(filter, StacksAndEventsQueryMode.Stacks);
+            Assert.Equal(expectedStackFilter, stackResult.Query.Trim());
 
-            var stackParser = new ElasticQueryParser(c => {
-                c.AddQueryVisitor(new StacksAndEventsQueryVisitor { QueryMode = QueryMode.Stacks });
-            });
+            var invertedStackResult = StacksAndEventsQueryVisitor.Run(filter, StacksAndEventsQueryMode.InvertedStacks);
+            Assert.Equal(expectedInvertedStackFilter, invertedStackResult.Query.Trim());
 
-            var invertedStackParser = new ElasticQueryParser(c => {
-                c.AddQueryVisitor(new StacksAndEventsQueryVisitor { QueryMode = QueryMode.InvertedStacks });
-            });
-
-            var eventParser = new ElasticQueryParser(c => {
-                c.AddQueryVisitor(new StacksAndEventsQueryVisitor { QueryMode = QueryMode.Events });
-            });
-
-            var stackResult = stackParser.Parse(filter, context);
-            Assert.NotNull(stackResult);
-
-            var invertedStackResult = invertedStackParser.Parse(filter, context);
-            Assert.NotNull(stackResult);
-
-            var eventResult = eventParser.Parse(filter, context);
-            Assert.NotNull(eventResult);
-
-            var stackFilter = GenerateQueryVisitor.Run(stackResult);
-            Assert.Equal(expectedStackFilter, stackFilter.Trim());
-
-            var invertedStackFilter = GenerateQueryVisitor.Run(invertedStackResult);
-            Assert.Equal(expectedInvertedStackFilter, invertedStackFilter.Trim());
-
-            var eventFilter = GenerateQueryVisitor.Run(eventResult);
-            Assert.Equal(expectedEventFilter, eventFilter.Trim());
+            var eventResult = StacksAndEventsQueryVisitor.Run(filter, StacksAndEventsQueryMode.Events);
+            Assert.Equal(expectedEventFilter, eventResult.Query.Trim());
         }
     }
 }
