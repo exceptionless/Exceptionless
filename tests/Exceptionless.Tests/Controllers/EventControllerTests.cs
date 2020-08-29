@@ -267,6 +267,16 @@ namespace Exceptionless.Tests.Controllers {
             );
 
             Assert.DoesNotContain(results, s => s.Id == "1ecd0826e447a44e78877ab5");
+
+            results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", $"@!(status:open OR status:regressed)")
+                .QueryString("mode", "stack_frequent")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.DoesNotContain(results, s => s.Id == "1ecd0826e447a44e78877ab5");
         }
 
         private async Task CreateStacksAndEventsAsync() {

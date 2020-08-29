@@ -32,9 +32,14 @@ namespace Exceptionless.Core.Repositories.Queries {
             string filter = ctx.Source.GetFilterExpression();
             if (String.IsNullOrEmpty(filter))
                 return;
-
+            
             // TODO: Handle search expressions as well
-
+            bool altInvertRequested = false;
+            if (filter.StartsWith("@!")) {
+                altInvertRequested = true;
+                filter = filter.Substring(2);
+            }
+            
             var stackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Stacks, ctx);
             var invertedStackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.InvertedStacks, ctx);
 
@@ -50,7 +55,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             string[] stackIds = null;
 
             string query = stackFilter.Query;
-            bool isStackIdsNegated = stackFilter.HasStatusOpen && invertedStackFilter.IsInvertSuccessful;
+            bool isStackIdsNegated = stackFilter.HasStatusOpen && invertedStackFilter.IsInvertSuccessful && !altInvertRequested;
             if (isStackIdsNegated)
                 query = invertedStackFilter.Query;
 

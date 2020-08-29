@@ -250,6 +250,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             return new EventStackFilterQueryResult {
                 Query = result,
                 IsInvertSuccessful = visitor.IsInvertSuccessful,
+                HasStatusOpen = visitor.HasStatusOpen,
                 HasStackSpecificCriteria = visitor.HasStackSpecificCriteria
             };
         }
