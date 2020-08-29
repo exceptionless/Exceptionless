@@ -14,16 +14,16 @@ using Nest;
 using DateRange = Foundatio.Repositories.DateRange;
 
 namespace Exceptionless.Core.Repositories.Queries {
-    public class EventStackQueryBuilder : IElasticQueryBuilder {
+    public class EventStackFilterQueryBuilder : IElasticQueryBuilder {
         public const string StackFieldName = "@stack";
         private readonly IStackRepository _stackRepository;
         private readonly ILogger _logger;
         private readonly Field _inferredEventDateField;
         private readonly Field _inferredStackLastOccurrenceField;
 
-        public EventStackQueryBuilder(IStackRepository stackRepository, ILoggerFactory loggerFactory) {
+        public EventStackFilterQueryBuilder(IStackRepository stackRepository, ILoggerFactory loggerFactory) {
             _stackRepository = stackRepository;
-            _logger = loggerFactory.CreateLogger<EventStackQueryBuilder>();
+            _logger = loggerFactory.CreateLogger<EventStackFilterQueryBuilder>();
             _inferredEventDateField = Infer.Field<PersistentEvent>(f => f.Date);
             _inferredStackLastOccurrenceField = Infer.Field<Stack>(f => f.LastOccurrence);
         }
@@ -35,8 +35,8 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             // TODO: Handle search expressions as well
 
-            var stackFilter = await StacksAndEventsQueryVisitor.RunAsync(filter, StacksAndEventsQueryMode.Stacks, ctx);
-            var invertedStackFilter = await StacksAndEventsQueryVisitor.RunAsync(filter, StacksAndEventsQueryMode.InvertedStacks, ctx);
+            var stackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Stacks, ctx);
+            var invertedStackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.InvertedStacks, ctx);
 
             // queries are the same, no need to allow inverting
             if (invertedStackFilter.Query == stackFilter.Query)
@@ -80,7 +80,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             else
                 ctx.Source.Stack("none");
 
-            var eventsResult = await StacksAndEventsQueryVisitor.RunAsync(filter, StacksAndEventsQueryMode.Events, ctx);
+            var eventsResult = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Events, ctx);
             ctx.Source.FilterExpression(eventsResult.Query);
         }
 

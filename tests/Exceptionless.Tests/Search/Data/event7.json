@@ -1,0 +1,12 @@
+﻿{
+  "id": "5c59abbfa6fc240001efbe6d",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "project_id": "537650f3b77efe23a47914f4",
+  "stack_id": "1ecd0826e447a44e78877ab5",
+  "is_first_occurrence": false,
+  "created_utc": "2015-02-11T20:55:04.3457274",
+  "type": "log",
+  "source": "GET /Print",
+  "date": "2015-02-11T20:55:04.3457274+00:00",
+  "message": "GET /Print"
+}
