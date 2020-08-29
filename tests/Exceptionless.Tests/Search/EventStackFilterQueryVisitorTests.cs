@@ -1,13 +1,10 @@
 ﻿using Exceptionless.Core.Repositories.Queries;
-using Foundatio.Parsers.ElasticQueries;
-using Foundatio.Parsers.ElasticQueries.Visitors;
-using Foundatio.Parsers.LuceneQueries.Visitors;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search {
-    public class StackQueryVistorTests : TestWithServices {
-        public StackQueryVistorTests(ITestOutputHelper output) : base(output) { }
+    public class EventStackFilterQueryVisitorTests : TestWithServices {
+        public EventStackFilterQueryVisitorTests(ITestOutputHelper output) : base(output) { }
 
         [Theory]
         [InlineData("blah", "", "", "blah")]
@@ -22,13 +19,13 @@ namespace Exceptionless.Tests.Search {
         [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635)", "project:123 (status:open OR status:regressed)", "project:123 NOT (status:open OR status:regressed)", "project:123  (ref.session:5f3dce2668de920001466635)")]
         [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635 OR project:234)", "project:123 (status:open OR status:regressed) (project:234)", "project:123 NOT (status:open OR status:regressed) (project:234)", "project:123  (ref.session:5f3dce2668de920001466635 OR project:234)")]
         public void GetStackQuery(string filter, string expectedStackFilter, string expectedInvertedStackFilter, string expectedEventFilter) {
-            var stackResult = StacksAndEventsQueryVisitor.Run(filter, StacksAndEventsQueryMode.Stacks);
+            var stackResult = EventStackFilterQueryVisitor.Run(filter, EventStackFilterQueryMode.Stacks);
             Assert.Equal(expectedStackFilter, stackResult.Query.Trim());
 
-            var invertedStackResult = StacksAndEventsQueryVisitor.Run(filter, StacksAndEventsQueryMode.InvertedStacks);
+            var invertedStackResult = EventStackFilterQueryVisitor.Run(filter, EventStackFilterQueryMode.InvertedStacks);
             Assert.Equal(expectedInvertedStackFilter, invertedStackResult.Query.Trim());
 
-            var eventResult = StacksAndEventsQueryVisitor.Run(filter, StacksAndEventsQueryMode.Events);
+            var eventResult = EventStackFilterQueryVisitor.Run(filter, EventStackFilterQueryMode.Events);
             Assert.Equal(expectedEventFilter, eventResult.Query.Trim());
         }
     }

@@ -10,7 +10,7 @@ using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 
 namespace Exceptionless.Core.Repositories.Queries {
-    public class StacksAndEventsQueryVisitor : ChainableQueryVisitor {
+    public class EventStackFilterQueryVisitor : ChainableQueryVisitor {
         private readonly ISet<string> _stackOnlyFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.LastOccurrence, "last_occurrence",
             StackIndex.Alias.References, "references",
@@ -49,14 +49,14 @@ namespace Exceptionless.Core.Repositories.Queries {
 
         private readonly ISet<string> _stackFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public StacksAndEventsQueryVisitor(StacksAndEventsQueryMode queryMode) {
+        public EventStackFilterQueryVisitor(EventStackFilterQueryMode queryMode) {
             _stackFields.AddRange(_stackOnlyFields);
             _stackFields.AddRange(_stackAndEventFields);
 
             QueryMode = queryMode;
         }
 
-        public StacksAndEventsQueryMode QueryMode { get; set; } = StacksAndEventsQueryMode.Events;
+        public EventStackFilterQueryMode QueryMode { get; set; } = EventStackFilterQueryMode.Events;
         public bool IsInvertSuccessful { get; set; } = true;
         public bool HasStatusOpen { get; set; } = false;
         public bool HasStackSpecificCriteria { get; set; } = false;
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 && String.Equals(node.Term, "open", StringComparison.OrdinalIgnoreCase))
                 HasStatusOpen = true;
 
-            if (QueryMode != StacksAndEventsQueryMode.InvertedStacks)
+            if (QueryMode != EventStackFilterQueryMode.InvertedStacks)
                 return;
 
             if (_stackNonInvertedFields.Contains(filteredNode.Field))
@@ -130,7 +130,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         private IFieldQueryNode ApplyFilter(IFieldQueryNode node, IQueryVisitorContext context) {
             var parent = node.Parent as GroupNode;
 
-            if (QueryMode == StacksAndEventsQueryMode.Stacks || QueryMode == StacksAndEventsQueryMode.InvertedStacks) {
+            if (QueryMode == EventStackFilterQueryMode.Stacks || QueryMode == EventStackFilterQueryMode.InvertedStacks) {
                 // if we don't have a field name and it's a group node, leave it alone
                 if (node.Field == null && node is GroupNode)
                     return node;
@@ -242,41 +242,41 @@ namespace Exceptionless.Core.Repositories.Queries {
             return node;
         }
 
-        public static async Task<StacksAndEventsQueryResult> RunAsync(IQueryNode node, StacksAndEventsQueryMode queryMode, IQueryVisitorContext context = null) {
-            var visitor = new StacksAndEventsQueryVisitor(queryMode);
+        public static async Task<EventStackFilterQueryResult> RunAsync(IQueryNode node, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
+            var visitor = new EventStackFilterQueryVisitor(queryMode);
             var stackNode = await visitor.AcceptAsync(node, context).AnyContext();
             var result = await GenerateQueryVisitor.RunAsync(stackNode, context).AnyContext();
 
-            return new StacksAndEventsQueryResult {
+            return new EventStackFilterQueryResult {
                 Query = result,
                 IsInvertSuccessful = visitor.IsInvertSuccessful,
                 HasStackSpecificCriteria = visitor.HasStackSpecificCriteria
             };
         }
 
-        public static async Task<StacksAndEventsQueryResult> RunAsync(string query, StacksAndEventsQueryMode queryMode, IQueryVisitorContext context = null) {
+        public static async Task<EventStackFilterQueryResult> RunAsync(string query, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
             var parser = new LuceneQueryParser();
             var result = await parser.ParseAsync(query, context).AnyContext();
             return await RunAsync(result, queryMode, context).AnyContext();
         }
 
-        public static StacksAndEventsQueryResult Run(IQueryNode node, StacksAndEventsQueryMode queryMode, IQueryVisitorContext context = null) {
+        public static EventStackFilterQueryResult Run(IQueryNode node, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
             return RunAsync(node, queryMode, context).GetAwaiter().GetResult();
         }
 
-        public static StacksAndEventsQueryResult Run(string query, StacksAndEventsQueryMode queryMode, IQueryVisitorContext context = null) {
+        public static EventStackFilterQueryResult Run(string query, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
             return RunAsync(query, queryMode, context).GetAwaiter().GetResult();
         }
     }
 
-    public class StacksAndEventsQueryResult {
+    public class EventStackFilterQueryResult {
         public string Query { get; set; }
         public bool IsInvertSuccessful { get; set; }
         public bool HasStatusOpen { get; set; }
         public bool HasStackSpecificCriteria { get; set; }
     }
 
-    public enum StacksAndEventsQueryMode {
+    public enum EventStackFilterQueryMode {
         Stacks,
         InvertedStacks,
         Events

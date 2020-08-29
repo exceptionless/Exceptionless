@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
             var stacksRepository = _serviceProvider.GetRequiredService<IStackRepository>();
             base.ConfigureQueryBuilder(builder);
-            builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackQueryBuilder(stacksRepository, _configuration.LoggerFactory));
+            builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackFilterQueryBuilder(stacksRepository, _configuration.LoggerFactory));
         }
 
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
