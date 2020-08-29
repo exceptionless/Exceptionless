@@ -254,29 +254,45 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Single(results);
         }
 
-        [Fact]
-        public async Task DontReturnIgnored() {
+        [Theory]
+        [InlineData("status:open", 1)]
+        [InlineData("status:regressed", 1)]
+        [InlineData("status:ignored", 1)]
+        [InlineData("(status:open OR status:regressed)", 2)]
+        [InlineData("is_fixed:true", 2)]
+        [InlineData("status:fixed", 2)]
+        [InlineData("status:discarded", 0)]
+        [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
+        [InlineData("type:log status:fixed", 2)]
+        [InlineData("type:log version_fixed:1.2.3", 1)]
+        [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 1)]
+        [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
+        [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
+        [InlineData("type:error", 1)]
+        public async Task CheckFrequentStackCounts(string filter, int expected) {
             await CreateStacksAndEventsAsync();
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", $"(status:open OR status:regressed)")
+                .QueryString("filter", filter)
                 .QueryString("mode", "stack_frequent")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.DoesNotContain(results, s => s.Id == "1ecd0826e447a44e78877ab5");
+            Assert.Equal(expected, results.Count);
 
+            // @! forces use of opposite of default filter inversion
             results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", $"@!(status:open OR status:regressed)")
+                .QueryString("filter", $"@!{filter}")
                 .QueryString("mode", "stack_frequent")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.DoesNotContain(results, s => s.Id == "1ecd0826e447a44e78877ab5");
+            Assert.Equal(expected, results.Count);
         }
 
         private async Task CreateStacksAndEventsAsync() {
