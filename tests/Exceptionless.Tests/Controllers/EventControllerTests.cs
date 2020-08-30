@@ -269,7 +269,50 @@ namespace Exceptionless.Tests.Controllers {
         [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
         [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
         [InlineData("type:error", 1)]
-        public async Task CheckFrequentStackCounts(string filter, int expected) {
+        public async Task CheckStackModeCounts(string filter, int expected) {
+            await CreateStacksAndEventsAsync();
+
+            var modes = new [] { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
+            foreach (string mode in modes) {
+                var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                    .AsGlobalAdminUser()
+                    .AppendPath("events")
+                    .QueryString("filter", filter)
+                    .QueryString("mode", mode)
+                    .StatusCodeShouldBeOk()
+                );
+
+                Assert.Equal(expected, results.Count);
+
+                // @! forces use of opposite of default filter inversion
+                results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                    .AsGlobalAdminUser()
+                    .AppendPath("events")
+                    .QueryString("filter", $"@!{filter}")
+                    .QueryString("mode", mode)
+                    .StatusCodeShouldBeOk()
+                );
+
+                Assert.Equal(expected, results.Count);
+            }
+        }
+        
+        [Theory]
+        [InlineData("status:open", 1)]
+        [InlineData("status:regressed", 3)]
+        [InlineData("status:ignored", 1)]
+        [InlineData("(status:open OR status:regressed)", 4)]
+        [InlineData("is_fixed:true", 2)]
+        [InlineData("status:fixed", 2)]
+        [InlineData("status:discarded", 0)]
+        [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
+        [InlineData("type:log status:fixed", 2)]
+        [InlineData("type:log version_fixed:1.2.3", 1)]
+        [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 2)]
+        [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
+        [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
+        [InlineData("type:error", 2)]
+        public async Task CheckSummaryModeCounts(string filter, int expected) {
             await CreateStacksAndEventsAsync();
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
@@ -277,7 +320,7 @@ namespace Exceptionless.Tests.Controllers {
                 .AsGlobalAdminUser()
                 .AppendPath("events")
                 .QueryString("filter", filter)
-                .QueryString("mode", "stack_frequent")
+                .QueryString("mode", "summary")
                 .StatusCodeShouldBeOk()
             );
 
@@ -288,7 +331,7 @@ namespace Exceptionless.Tests.Controllers {
                 .AsGlobalAdminUser()
                 .AppendPath("events")
                 .QueryString("filter", $"@!{filter}")
-                .QueryString("mode", "stack_frequent")
+                .QueryString("mode", "summary")
                 .StatusCodeShouldBeOk()
             );
 
