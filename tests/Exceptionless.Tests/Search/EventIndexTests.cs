@@ -31,7 +31,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("54dbc16ca0f5c61398427b00", 1)] // Id
-        [InlineData("\"GET /Print\"", 2)] // Source
+        [InlineData("\"GET /Print\"", 3)] // Source
         [InlineData("\"Invalid hash. Parameter name: hash\"", 1)] // Message
         [InlineData("\"Blake Niemyjski\"", 1)] // Tags
         [InlineData("502", 1)] // Error.Code
@@ -64,7 +64,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("537650f3b77efe23a47914f3", 6)]
+        [InlineData("537650f3b77efe23a47914f3", 7)]
         public async Task GetByOrganizationIdAsync(string id, int count) {
             var result = await GetByFilterAsync("organization:" + id);
             Assert.NotNull(result);
@@ -73,7 +73,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("537650f3b77efe23a47914f4", 6)]
+        [InlineData("537650f3b77efe23a47914f4", 7)]
         public async Task GetByProjectIdAsync(string id, int count) {
             var result = await GetByFilterAsync("project:" + id);
             Assert.NotNull(result);
@@ -100,7 +100,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("log", 3)]
+        [InlineData("log", 4)]
         [InlineData("error", 2)]
         [InlineData("custom", 1)]
         public async Task GetByTypeAsync(string type, int count) {
@@ -111,7 +111,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("_exists_:submission", 1)]
-        [InlineData("NOT _exists_:submission", 5)]
+        [InlineData("NOT _exists_:submission", 6)]
         [InlineData("submission:UnobservedTaskException", 1)]
         public async Task GetBySubmissionMethodAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
@@ -120,7 +120,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("\"GET /Print\"", 2)]
+        [InlineData("\"GET /Print\"", 3)]
         public async Task GetBySourceAsync(string source, int count) {
             var result = await GetByFilterAsync("source:" + source);
             Assert.NotNull(result);
@@ -146,7 +146,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData(false, 5)]
+        [InlineData(false, 6)]
         [InlineData(true, 1)]
         public async Task GetByFirstAsync(bool first, int count) {
             var result = await GetByFilterAsync("first:" + first.ToString().ToLowerInvariant());
@@ -163,7 +163,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("NOT _exists_:tag", 4)]
+        [InlineData("NOT _exists_:tag", 5)]
         [InlineData("tag:test", 1)]
         [InlineData("tag:Blake", 0)]
         [InlineData("tag:Niemyjski", 0)]
@@ -175,7 +175,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("NOT _exists_:value", 5)]
+        [InlineData("NOT _exists_:value", 6)]
         [InlineData("_exists_:value", 1)]
         [InlineData("value:1", 1)]
         [InlineData("value:>0", 1)]
@@ -332,7 +332,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("bot:false", 1)]
-        [InlineData("-bot:true", 5)]
+        [InlineData("-bot:true", 6)]
         [InlineData("bot:true", 1)]
         public async Task GetByBotAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
