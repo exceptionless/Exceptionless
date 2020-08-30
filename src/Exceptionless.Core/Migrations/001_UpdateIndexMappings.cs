@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Migrations {
             _logger.LogInformation("Setting Organization is_deleted=false...");
             const string script = "ctx._source.is_deleted = false;";
             await _config.Client.Indices.RefreshAsync(_config.Organizations.VersionedName);
-            var updateResponse = await _client.UpdateByQueryAsync<Organization>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(script));
+            var updateResponse = await _client.UpdateByQueryAsync<Organization>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(s => s.Source(script).Lang(ScriptLang.Painless)));
             _logger.LogTraceRequest(updateResponse);
             
             _logger.LogInformation("Updating Project mappings...");
@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Migrations {
 
             _logger.LogInformation("Setting Project is_deleted=false...");
             await _config.Client.Indices.RefreshAsync(_config.Projects.VersionedName);
-            updateResponse = await _client.UpdateByQueryAsync<Project>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(script));
+            updateResponse = await _client.UpdateByQueryAsync<Project>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(s => s.Source(script).Lang(ScriptLang.Painless)));
             _logger.LogTraceRequest(updateResponse);
             
             _logger.LogInformation("Updating Stack mappings...");
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Migrations {
             
             _logger.LogInformation("Setting Stack is_deleted=false...");
             await _config.Client.Indices.RefreshAsync(_config.Stacks.VersionedName);
-            updateResponse = await _client.UpdateByQueryAsync<Stack>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(script));
+            updateResponse = await _client.UpdateByQueryAsync<Stack>(x => x.QueryOnQueryString("NOT _exists_:deleted").Script(s => s.Source(script).Lang(ScriptLang.Painless)));
             _logger.LogTraceRequest(updateResponse);
             
             _logger.LogInformation("Finished adding mappings.");
