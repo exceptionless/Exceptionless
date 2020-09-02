@@ -293,6 +293,9 @@ namespace Exceptionless.Web.Controllers {
         }
 
         private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int page, int limit, string after, bool useSearchAfter) {
+            if (String.IsNullOrEmpty(sort))
+                sort = "-date";
+            
             return _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
                 o => useSearchAfter
                     ? o.SearchAfterPaging().SearchAfter(after).PageLimit(limit)
