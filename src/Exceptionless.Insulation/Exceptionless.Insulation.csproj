@@ -18,7 +18,7 @@
     <PackageReference Include="Foundatio.Aliyun" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.AppMetrics" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.AWS" Version="10.0.0-beta9" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="10.0.0-beta9" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="10.0.0-beta9.1" />
     <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.Minio" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="10.0.0-beta9" />
