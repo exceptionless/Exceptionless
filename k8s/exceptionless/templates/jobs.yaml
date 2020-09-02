@@ -266,12 +266,6 @@ spec:
             - name: {{ template "exceptionless.name" . }}-jobs-migration
               image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
-              livenessProbe:
-                httpGet:
-                  path: /health
-                  port: 80
-                initialDelaySeconds: 10
-                periodSeconds: 10
               resources:
                 requests:
                   memory: 75Mi
