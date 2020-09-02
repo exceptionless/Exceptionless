@@ -60,7 +60,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="404">The web hook could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetWebHookById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public Task<ActionResult<WebHook>> GetByIdAsync(string id) {
+        public Task<ActionResult<WebHook>> GetAsync(string id) {
             return GetByIdImplAsync(id);
         }
 

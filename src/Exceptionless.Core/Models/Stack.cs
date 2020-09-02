@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 using Foundatio.Repositories.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Type: {Type}, Title: {Title}, TotalOccurrences: {TotalOccurrences}")]
-    public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
+    public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes {
         public Stack() {
             Tags = new TagSet();
             References = new Collection<string>();
@@ -32,6 +35,16 @@ namespace Exceptionless.Core.Models {
         /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
         /// </summary>
         public string Type { get; set; }
+
+        /// <summary>
+        /// The stack status (ie. open, fixed, regressed, 
+        /// </summary>
+        public StackStatus Status { get; set; }
+
+        /// <summary>
+        /// The date that the stack should be snoozed until.
+        /// </summary>
+        public DateTime? SnoozeUntilUtc { get; set; }
 
         /// <summary>
         /// The signature used for stacking future occurrences.
@@ -79,21 +92,6 @@ namespace Exceptionless.Core.Models {
         public string Description { get; set; }
 
         /// <summary>
-        /// If true, notifications will not be sent for this stack.
-        /// </summary>
-        public bool DisableNotifications { get; set; }
-
-        /// <summary>
-        /// Controls whether occurrences are hidden from reports.
-        /// </summary>
-        public bool IsHidden { get; set; }
-
-        /// <summary>
-        /// If true, the stack was previously marked as fixed and a new occurrence came in.
-        /// </summary>
-        public bool IsRegressed { get; set; }
-
-        /// <summary>
         /// If true, all future occurrences will be marked as critical.
         /// </summary>
         public bool OccurrencesAreCritical { get; set; }
@@ -110,6 +108,9 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
+        public bool IsDeleted { get; set; }
+
+        public bool AllowNotifications => Status != StackStatus.Ignored && Status != StackStatus.Discarded && Status != StackStatus.Snoozed;
 
         public static class KnownTypes {
             public const string Error = "error";
@@ -120,5 +121,15 @@ namespace Exceptionless.Core.Models {
             public const string Session = "session";
             public const string SessionEnd = "sessionend";
         }
+    }
+
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum StackStatus {
+        [EnumMember(Value = "open")] Open,
+        [EnumMember(Value = "fixed")] Fixed,
+        [EnumMember(Value = "regressed")] Regressed,
+        [EnumMember(Value = "snoozed")] Snoozed,
+        [EnumMember(Value = "ignored")] Ignored,
+        [EnumMember(Value = "discarded")] Discarded
     }
 }

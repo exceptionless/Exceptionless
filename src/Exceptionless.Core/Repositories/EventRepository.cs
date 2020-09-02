@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Repositories {
     public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
         public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, IValidator<PersistentEvent> validator)
             : base(configuration.Events, validator, options) {
-            DisableCache();
+            DisableCache(); // NOTE: If cache is ever enabled, then fast paths for patching/deleting with scripts will be super slow!
             BatchNotifications = true;
             DefaultPipeline = "events-pipeline";
 
@@ -42,70 +42,26 @@ namespace Exceptionless.Core.Repositories {
             if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
                 return false;
 
-            await this.SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
+            await SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
             return true;
         }
 
-        public Task<long> UpdateFixedByStackAsync(string organizationId, string projectId, string stackId, bool isFixed, bool sendNotifications = true) {
-            if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException(nameof(stackId));
-
-            // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsFixed, !isFixed), new PartialPatch(new { is_fixed = isFixed, updated_utc = SystemClock.UtcNow }));
-        }
-
-        public Task<long> UpdateHiddenByStackAsync(string organizationId, string projectId, string stackId, bool isHidden, bool sendNotifications = true) {
-            if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException(nameof(stackId));
-
-            // TODO: Update this to use the update by query syntax that's coming in 2.3.
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId).FieldEquals(e => e.IsHidden, !isHidden), new PartialPatch(new { is_hidden = isHidden, updated_utc = SystemClock.UtcNow }));
-        }
-
-        public Task<long> RemoveAllByDateAsync(string organizationId, DateTime utcCutoffDate) {
-            var filter = Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcCutoffDate));
-            return RemoveAllAsync(q => q.Organization(organizationId).ElasticFilter(filter).SoftDeleteMode(SoftDeleteQueryMode.All));
-        }
-
-        public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
+        public Task<long> RemoveAllAsync(string organizationId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
+            
+            var query = new RepositoryQuery<PersistentEvent>().Organization(organizationId);
+            if (utcStart.HasValue && utcEnd.HasValue)
+                query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
+            else if (utcEnd.HasValue)
+                query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcEnd)));
+            else if (utcStart.HasValue)
+                query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).GreaterThan(utcStart)));
 
-            return PatchAllAsync(q => q.Organization(organizationId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
-        }
+            if (!String.IsNullOrEmpty(clientIpAddress))
+                query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
 
-        public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException(nameof(organizationId));
-
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException(nameof(projectId));
-
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }));
-        }
-
-        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
-            return PatchAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId), new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow }), o => o.Consistency(Consistency.Wait));
-        }
-
-        public Task<long> HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStart, DateTime utcEnd) {
-            return PatchAllAsync(q => q
-                    .Organization(organizationId)
-                    .ElasticFilter(Query<PersistentEvent>.Term(EventIndex.Alias.IpAddress, clientIp))
-                    .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
-                    .Index(utcStart, utcEnd)
-                , new PartialPatch(new { is_hidden = true, updated_utc = SystemClock.UtcNow }));
-        }
-
-        public Task<FindResults<PersistentEvent>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, string field, DateTime utcStart, DateTime utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
-            IRepositoryQuery<PersistentEvent> query = new RepositoryQuery<PersistentEvent>()
-                .DateRange(utcStart, utcEnd, field ?? InferField(e => e.Date))
-                .Index(utcStart, utcEnd)
-                .AppFilter(systemFilter)
-                .FilterExpression(userFilter);
-
-            query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortDescending(e => e.Date);
-            return FindAsync(q => query, options);
+            return RemoveAllAsync(q => query, options);
         }
 
         public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
@@ -225,11 +181,17 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
-            return CountAsync(q => q.Project(projectId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
+            return CountAsync(q => q.Project(projectId));
         }
+        
+        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException(nameof(organizationId));
 
-        public Task<CountResult> GetCountByStackIdAsync(string stackId, bool includeDeleted = false) {
-            return CountAsync(q => q.Stack(stackId).SoftDeleteMode(includeDeleted ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly));
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException(nameof(projectId));
+            
+            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId));
         }
     }
 }

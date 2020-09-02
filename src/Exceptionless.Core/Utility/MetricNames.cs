@@ -5,6 +5,7 @@
         public const string EventsProcessingTime = "events.processingtime";
         public const string EventsPaidProcessed = "events.paid.processed";
         public const string EventsProcessErrors = "events.processing.errors";
+        public const string EventsDiscarded = "events.discarded";
         public const string EventsProcessCancelled = "events.processing.cancelled";
         public const string EventsRetryCount = "events.retry.count";
         public const string EventsRetryErrors = "events.retry.errors";
@@ -14,9 +15,7 @@
         public const string PostsEventCount = "posts.eventcount";
         public const string PostsSize = "posts.size";
         public const string PostsParseErrors = "posts.parse.errors";
-        public const string PostsFileInfoTime = "posts.fileinfotime";
         public const string PostsMarkFileActiveTime = "posts.markfileactivetime";
-        public const string PostsUpdateEventLimitTime = "posts.updateeventlimitime";
         public const string PostsParsingTime = "posts.parsingtime";
         public const string PostsRetryTime = "posts.retrytime";
         public const string PostsAbandonTime = "posts.abandontime";
@@ -31,6 +30,5 @@
         public const string PostsDecompressionErrors = "posts.decompression.errors";
 
         public const string UsageGeocodingApi = "usage.geocoding";
-        public const string ThrottleLimitExceeded = "throttle.limitexceeded";
     }
 }

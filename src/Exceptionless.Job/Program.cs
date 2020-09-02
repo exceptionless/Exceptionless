@@ -72,9 +72,7 @@ namespace Exceptionless.Job {
             Log.Logger = loggerConfig.CreateLogger();
             var configDictionary = config.ToDictionary("Serilog");
             Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
-
-            bool useApplicationInsights = !String.IsNullOrEmpty(options.ApplicationInsightsKey);
-
+            
             var builder = Host.CreateDefaultBuilder()
                 .UseEnvironment(environment)
                 .UseSerilog()
@@ -111,9 +109,6 @@ namespace Exceptionless.Job {
                     AddJobs(services, jobOptions);
                     services.AddAppOptions(options);
                     
-                    if (useApplicationInsights)
-                        services.AddApplicationInsightsTelemetry(options.ApplicationInsightsKey);
-                    
                     Bootstrapper.RegisterServices(services);
                     Insulation.Bootstrapper.RegisterServices(services, options, true);
                 });
@@ -127,8 +122,8 @@ namespace Exceptionless.Job {
         private static void AddJobs(IServiceCollection services, JobRunnerOptions options) {
             services.AddJobLifetimeService();
             
-            if (options.CleanupSnapshot)
-                services.AddJob<CleanupSnapshotJob>(true);
+            if (options.CleanupData)
+                services.AddJob<CleanupDataJob>(true);
             if (options.CloseInactiveSessions)
                 services.AddJob<CloseInactiveSessionsJob>(true);
             if (options.DailySummary)
@@ -141,8 +136,6 @@ namespace Exceptionless.Job {
                 services.AddJob<EventNotificationsJob>(true);
             if (options.EventPosts)
                 services.AddJob<EventPostsJob>(true);
-            if (options.EventSnapshot)
-                services.AddJob<EventSnapshotJob>(true);
             if (options.EventUserDescriptions)
                 services.AddJob<EventUserDescriptionsJob>(true);
             if (options.MailMessage)
@@ -151,14 +144,10 @@ namespace Exceptionless.Job {
                 services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
             if (options.Migration)
                 services.AddJob<MigrationJob>(true);
-            if (options.OrganizationSnapshot)
-                services.AddJob<OrganizationSnapshotJob>(true);
-            if (options.RetentionLimits)
-                services.AddJob<RetentionLimitsJob>(true);
+            if (options.StackStatus)
+                services.AddJob<StackStatusJob>(true);
             if (options.StackEventCount)
                 services.AddJob<StackEventCountJob>(true);
-            if (options.StackSnapshot)
-                services.AddJob<StackSnapshotJob>(true);
             if (options.WebHooks)
                 services.AddJob<WebHooksJob>(true);
             if (options.WorkItem)

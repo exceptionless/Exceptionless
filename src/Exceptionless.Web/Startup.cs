@@ -11,7 +11,6 @@ using Exceptionless.Web.Utility.Handlers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Joonasw.AspNetCore.SecurityHeaders;
@@ -147,7 +146,7 @@ namespace Exceptionless.Web {
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseHealthChecks("/health", new HealthCheckOptions {
-                Predicate = hcr => options.RunJobsInProcess && hcr.Tags.Contains("AllJobs")
+                Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
             });
             
             var readyTags = new List<string> { "Critical" };

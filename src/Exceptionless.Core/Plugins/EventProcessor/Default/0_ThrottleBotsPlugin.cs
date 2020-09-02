@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -55,14 +56,17 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {project}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
 
                 // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
-                await _workItemQueue.EnqueueAsync(new ThrottleBotsWorkItem {
+                await _workItemQueue.EnqueueAsync(new RemoveBotEventsWorkItem {
                     OrganizationId = firstContext.Event.OrganizationId,
                     ClientIpAddress = clientIpAddressGroup.Key,
                     UtcStartDate = SystemClock.UtcNow.Floor(_throttlingPeriod),
                     UtcEndDate = SystemClock.UtcNow.Ceiling(_throttlingPeriod)
                 }).AnyContext();
 
-                clientIpContexts.ForEach(c => c.Event.IsHidden = true);
+                clientIpContexts.ForEach(c => {
+                    c.IsDiscarded = true;
+                    c.IsCancelled = true;
+                });
             }
         }
     }

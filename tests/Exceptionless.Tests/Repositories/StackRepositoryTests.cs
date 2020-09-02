@@ -1,13 +1,17 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Options;
 using Foundatio.Utility;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,13 +24,33 @@ namespace Exceptionless.Tests.Repositories {
             _cache = GetService<ICacheClient>() as InMemoryCacheClient;
             _repository = GetService<IStackRepository>();
         }
+        
+        protected override async Task ResetDataAsync() {
+            await base.ResetDataAsync();
+            var service = GetService<SampleDataService>();
+            await service.CreateDataAsync();
+        }
+        
+        [Fact]
+        public async Task CanGetByStatus() {
+            Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
+            var organizationRepository = GetService<IOrganizationRepository>();
+            var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+            Assert.NotNull(organization);
+            
+            await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
+
+            var appFilter = new AppFilter(organization);
+            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
+            Assert.Equal(2, stackIds.Total);
+        }
 
         [Fact]
         public async Task CanGetByStackHashAsync() {
             long count = _cache.Count;
             long hits = _cache.Hits;
             long misses = _cache.Misses;
-            
+
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
             Assert.NotNull(stack?.Id);
             Assert.Equal(count + 2, _cache.Count);
@@ -44,26 +68,26 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanGetByFixedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
-            var results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
+            var results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
+            results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
-            Assert.False(results.Documents.Single().IsRegressed);
+            Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
             Assert.Null(results.Documents.Single().DateFixed);
 
             stack.MarkFixed();
             await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
 
-            results = await _repository.GetByFilterAsync(null, "fixed:true", null, null, DateTime.MinValue, DateTime.MaxValue);
+            results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
             Assert.NotNull(results);
             Assert.Equal(1, results.Total);
-            Assert.False(results.Documents.Single().IsRegressed);
+            Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(results.Documents.Single().DateFixed);
 
-            results = await _repository.GetByFilterAsync(null, "fixed:false", null, null, DateTime.MinValue, DateTime.MaxValue);
+            results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
             Assert.NotNull(results);
             Assert.Equal(0, results.Total);
         }
@@ -72,14 +96,14 @@ namespace Exceptionless.Tests.Repositories {
         public async Task CanMarkAsRegressedAsync() {
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.ImmediateConsistency());
             Assert.NotNull(stack);
-            Assert.False(stack.IsRegressed);
+            Assert.False(stack.Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(stack.DateFixed);
 
             await _repository.MarkAsRegressedAsync(stack.Id);
 
             stack = await _repository.GetByIdAsync(stack.Id);
             Assert.NotNull(stack);
-            Assert.True(stack.IsRegressed);
+            Assert.True(stack.Status == Core.Models.StackStatus.Regressed);
             Assert.NotNull(stack.DateFixed);
         }
 

@@ -125,7 +125,7 @@ namespace Exceptionless.Web.Controllers {
 
             int enqueued = 0;
             foreach (var file in await _fileStorage.GetFileListAsync(path)) {
-                await _eventPostQueue.EnqueueAsync(new EventPost(_appOptions.EnableArchive) { FilePath = file.Path, ShouldArchive = archive });
+                await _eventPostQueue.EnqueueAsync(new EventPost(_appOptions.EnableArchive && archive) { FilePath = file.Path });
                 enqueued++;
             }
 

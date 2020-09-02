@@ -13,7 +13,7 @@ namespace Exceptionless.Tests.Plugins {
     public sealed class EventParserTests : TestWithServices {
         private readonly EventParserPluginManager _parser;
 
-        public EventParserTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public EventParserTests(ITestOutputHelper output) : base(output) {
             _parser = GetService<EventParserPluginManager>();
         }
 

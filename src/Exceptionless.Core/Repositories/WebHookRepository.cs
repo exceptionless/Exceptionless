@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
             var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
             // TODO: This cache key may not always be cleared out if the web hook doesn't have both a org and project id.
-            return FindAsync(q => q.ElasticFilter(filter), o => o.CacheKey(String.Concat("paged:Organization:", organizationId, ":Project:", projectId)));
+            return FindAsync(q => q.ElasticFilter(filter), o => o.CacheKey(PagedCacheKey(organizationId, projectId)));
         }
 
         public async Task MarkDisabledAsync(string id) {
@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
                 return;
             
             webHook.IsEnabled = false;
-            await this.SaveAsync(webHook, o => o.Cache()).AnyContext();
+            await SaveAsync(webHook, o => o.Cache()).AnyContext();
         }
         
         public static class EventTypes {
@@ -45,22 +45,18 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ICommandOptions options = null) {
-            if (!IsCacheEnabled)
-                return Task.CompletedTask;
+        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ChangeType? changeType = null) {
+            var keysToRemove = documents.Select(d => d.Value).Select(CacheKey).Distinct();
+            await Cache.RemoveAllAsync(keysToRemove).AnyContext();
+            
+            var pagedKeysToRemove = documents.Select(d => PagedCacheKey(d.Value.OrganizationId, d.Value.ProjectId)).Distinct();
+            foreach (string key in pagedKeysToRemove) 
+                await Cache.RemoveByPrefixAsync(key).AnyContext();
 
-            var keys = documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d != null)).Select(h => String.Concat("Organization:", h.OrganizationId, ":Project:", h.ProjectId)).Distinct();
-            return Task.WhenAll(Cache.RemoveAllAsync(keys), base.InvalidateCacheAsync(documents, options));
+            await base.InvalidateCacheAsync(documents, changeType).AnyContext();
         }
 
-        protected override Task InvalidateCachedQueriesAsync(IReadOnlyCollection<WebHook> documents, ICommandOptions options = null) {
-            var keysToRemove = documents.Select(d => $"paged:Organization:{d.OrganizationId}:Project:{d.ProjectId}").Distinct();
-            var tasks = new List<Task>();
-            foreach (string key in keysToRemove)
-                tasks.Add(Cache.RemoveByPrefixAsync(key));
-
-            tasks.Add(base.InvalidateCachedQueriesAsync(documents, options));
-            return Task.WhenAll(tasks);
-        }
+        private string CacheKey(WebHook webHook) => String.Concat("Organization:", webHook.OrganizationId, ":Project:", webHook.ProjectId);
+        private string PagedCacheKey(string organizationId, string projectId) => String.Concat("paged:Organization:", organizationId, ":Project:", projectId);
     }
 }

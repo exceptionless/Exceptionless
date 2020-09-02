@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests {
     public class SerializerTests : TestWithServices {
-        public SerializerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public SerializerTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public void CanDeserializeEventWithUnknownNamesAndProperties() {

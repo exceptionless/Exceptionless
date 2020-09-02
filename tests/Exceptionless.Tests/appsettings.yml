@@ -10,8 +10,9 @@ ConnectionStrings:
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:5000'
 
-Scope: test
+Scope: dev
 AppMode: Development
+EnableSampleData: false
 
 # Controls whether daily summary emails are sent
 EnableDailySummary: false

@@ -10,7 +10,7 @@ namespace Exceptionless.Tests.Validation {
     public sealed class TokenValidatorTests : TestWithServices {
         private readonly TokenValidator _validator;
 
-        public TokenValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public TokenValidatorTests(ITestOutputHelper output) : base(output) {
             _validator = new TokenValidator();
         }
 

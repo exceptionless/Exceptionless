@@ -58,9 +58,9 @@ namespace Exceptionless.Insulation.Geo {
                 return result;
             } catch (Exception ex) {
                 if (ex is GeoIP2Exception) {
-                    if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace(ex, ex.Message);
+                    _logger.LogTrace(ex, ex.Message);
                     await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
-                } else if (_logger.IsEnabled(LogLevel.Error)) {
+                } else {
                     _logger.LogError(ex, "Unable to resolve geo location for ip: {IP}", ip);
                 }
 
@@ -84,16 +84,16 @@ namespace Exceptionless.Insulation.Geo {
             _databaseLastChecked = SystemClock.UtcNow;
 
             if (!await _storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH).AnyContext()) {
-                if (_logger.IsEnabled(LogLevel.Warning)) _logger.LogWarning("No GeoIP database was found.");
+                _logger.LogWarning("No GeoIP database was found.");
                 return null;
             }
 
-            if (_logger.IsEnabled(LogLevel.Information)) _logger.LogInformation("Loading GeoIP database.");
+            _logger.LogInformation("Loading GeoIP database.");
             try {
                 using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
                     _database = new DatabaseReader(stream);
             } catch (Exception ex) {
-                if (_logger.IsEnabled(LogLevel.Error)) _logger.LogError(ex, "Unable to open GeoIP database.");
+                _logger.LogError(ex, "Unable to open GeoIP database.");
             }
 
             return _database;

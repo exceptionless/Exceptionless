@@ -16,7 +16,7 @@ namespace Exceptionless.Tests.Validation {
         private readonly PersistentEvent _benchmarkEvent;
         private readonly PersistentEventValidator _validator;
 
-        public EventValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public EventValidatorTests(ITestOutputHelper output) : base(output) {
             _validator = new PersistentEventValidator();
 
             string path = Path.Combine("..", "..", "..", "Search", "Data", "event1.json");

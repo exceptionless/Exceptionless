@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
-            var stacks = contexts.Where(c => !c.Stack.IsRegressed && c.Stack.DateFixed.HasValue).OrderBy(c => c.Event.Date).GroupBy(c => c.Event.StackId);
+            var stacks = contexts.Where(c => c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue).OrderBy(c => c.Event.Date).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
                 try {
                     var stack = stackGroup.First().Stack;
@@ -54,20 +54,11 @@ namespace Exceptionless.Core.Pipeline {
                         return;
 
                     _logger.LogTrace("Marking stack and events as regressed in version: {Version}", regressedVersion);
-                    stack.IsRegressed = true;
+                    stack.Status = StackStatus.Regressed;
                     await _stackRepository.MarkAsRegressedAsync(stack.Id).AnyContext();
-                    await _workItemQueue.EnqueueAsync(new StackWorkItem {
-                        OrganizationId = stack.OrganizationId,
-                        ProjectId = stack.ProjectId,
-                        StackId = stack.Id,
-                        UpdateIsFixed = true,
-                        IsFixed = false
-                    }).AnyContext();
 
-                    foreach (var ctx in stackGroup) {
-                        ctx.Event.IsFixed = false;
+                    foreach (var ctx in stackGroup)
                         ctx.IsRegression = ctx == regressedContext;
-                    }
                 } catch (Exception ex) {
                     foreach (var context in stackGroup) {
                         bool cont = false;

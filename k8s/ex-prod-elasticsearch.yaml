@@ -4,8 +4,8 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.7.1
-  image: exceptionless/elasticsearch:7.7.1 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.9.0
+  image: exceptionless/elasticsearch:7.9.0 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-prod-snapshots
   http:
@@ -35,7 +35,6 @@ spec:
               cpu: 4
             limits:
               memory: 18Gi
-              cpu: 4
         # related to "node.store.allow_mmap: false" setting above
         initContainers:
         - name: sysctl
@@ -60,7 +59,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.7.1
+  version: 7.9.0
   count: 1
   elasticsearchRef:
     name: ex-prod

@@ -14,12 +14,12 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
     public class QueueNotificationAction : EventPipelineActionBase {
-        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
+        private readonly IQueue<EventNotification> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
             _notificationQueue = notificationQueue;
             _webHookNotificationQueue = webHookNotificationQueue;
             _webHookRepository = webHookRepository;
@@ -32,12 +32,11 @@ namespace Exceptionless.Core.Pipeline {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            // notifications are disabled or stack is hidden/fixed.
-            if (ctx.Stack.DisableNotifications || ctx.Stack.IsHidden || (ctx.Stack.DateFixed.HasValue && !ctx.Stack.IsRegressed))
+            if (!ctx.Stack.AllowNotifications)
                 return;
 
             if (ShouldQueueNotification(ctx))
-                await _notificationQueue.EnqueueAsync(new EventNotificationWorkItem {
+                await _notificationQueue.EnqueueAsync(new EventNotification {
                     EventId = ctx.Event.Id,
                     IsNew = ctx.IsNew,
                     IsRegression = ctx.IsRegression,

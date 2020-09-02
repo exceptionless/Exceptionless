@@ -7,7 +7,7 @@ namespace Exceptionless.Tests {
     public class SemanticVersionTests : TestWithServices {
         private readonly SemanticVersionParser _parser;
         
-        public SemanticVersionTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public SemanticVersionTests(ITestOutputHelper output) : base(output) {
             _parser = new SemanticVersionParser(Log);
         }
         

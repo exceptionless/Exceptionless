@@ -34,8 +34,7 @@ namespace Exceptionless.Web.Hubs {
             Task.Factory.StartNew(async () => { 
                 var sockets = GetAll();
                 var openSockets = sockets.Where(s => s.State == WebSocketState.Open).ToArray();
-                if (_logger.IsEnabled(LogLevel.Trace))
-                    _logger.LogTrace("Sending web socket keep alive to {OpenSocketsCount} open connections of {SocketCount} total connections", openSockets.Length, sockets.Count);
+                _logger.LogTrace("Sending web socket keep alive to {OpenSocketsCount} open connections of {SocketCount} total connections", openSockets.Length, sockets.Count);
 
                 foreach (var socket in openSockets) {
                     try {

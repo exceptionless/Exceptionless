@@ -19,28 +19,29 @@ using Exceptionless.Tests.Mail;
 using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Logging.Xunit;
+using Foundatio.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
-using IAsyncLifetime = Xunit.IAsyncLifetime;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests {
-    public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+    public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+        private static bool _indexesHaveBeenConfigured = false;
         private static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         private readonly ExceptionlessElasticConfiguration _configuration;
-        protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly HttpClient _httpClient;
+        protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
         public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
             Log.MinimumLevel = LogLevel.Information;
@@ -48,17 +49,18 @@ namespace Exceptionless.Tests {
             Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
             Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
             Log.SetLogLevel<InMemoryMetricsClient>(LogLevel.Information);
+            Log.SetLogLevel("StartupActions", LogLevel.Warning);
             Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
             var configuredFactory = factory.Factories.FirstOrDefault();
             if (configuredFactory == null) {
                 configuredFactory = factory.WithWebHostBuilder(builder => {
                    builder.ConfigureTestServices(RegisterServices); // happens after normal container configure and overrides services
-               });
+                });
             }
 
             _disposables.Add(_testSystemClock);
-            
+
             _httpClient = configuredFactory.CreateClient();
             _server = configuredFactory.Server;
             _httpClient.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
@@ -66,7 +68,7 @@ namespace Exceptionless.Tests {
             var testScope = configuredFactory.Services.CreateScope();
             _disposables.Add(testScope);
             ServiceProvider = testScope.ServiceProvider;
-            
+
             var settings = GetService<JsonSerializerSettings>();
             _client = new FluentClient(_httpClient, new NewtonsoftJsonSerializer(settings));
             _configuration = GetService<ExceptionlessElasticConfiguration>();
@@ -83,7 +85,7 @@ namespace Exceptionless.Tests {
         }
 
         private IServiceProvider ServiceProvider { get; }
-        
+
         protected TService GetService<TService>() {
             return ServiceProvider.GetRequiredService<TService>();
         }
@@ -95,7 +97,7 @@ namespace Exceptionless.Tests {
 
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
-            
+
             services.ReplaceSingleton(s => _server.CreateHandler());
         }
 
@@ -105,16 +107,24 @@ namespace Exceptionless.Tests {
                 var oldLoggingLevel = Log.MinimumLevel;
                 Log.MinimumLevel = LogLevel.Warning;
 
-                bool isTraceLogLevelEnabled = _logger.IsEnabled(LogLevel.Trace);
-                
-                await _configuration.DeleteIndexesAsync();
-                await _configuration.ConfigureIndexesAsync();
-                
-                if (isTraceLogLevelEnabled)
-                    _logger.LogTrace("Configured Indexes");
-                
+                await RefreshDataAsync();
+                if (!_indexesHaveBeenConfigured) {
+                    await _configuration.DeleteIndexesAsync();
+                    await _configuration.ConfigureIndexesAsync();
+                    _indexesHaveBeenConfigured = true;
+                } else {
+                    string indexes = String.Join(',', _configuration.Indexes.Select(i => i.Name));
+                    await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexes) {
+                        Query = new MatchAllQuery(),
+                        IgnoreUnavailable = true,
+                        Refresh = true
+                    });
+                }
+
+                _logger.LogTrace("Configured Indexes");
+
                 foreach (var index in _configuration.Indexes)
-                    index.QueryParser.Configuration.RefreshMapping();
+                    index.QueryParser.Configuration.MappingResolver.RefreshMapping();
 
                 var cacheClient = GetService<ICacheClient>();
                 await cacheClient.RemoveAllAsync();
@@ -127,14 +137,16 @@ namespace Exceptionless.Tests {
                 Log.MinimumLevel = oldLoggingLevel;
             } finally {
                 _semaphoreSlim.Release();
+                _logger.LogDebug("Reset Data");
             }
         }
-        
-        protected Task RefreshDataAsync(Indices indices = null) {
+
+        protected async Task RefreshDataAsync(Indices indices = null) {
             var configuration = GetService<ExceptionlessElasticConfiguration>();
-            return configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
+            var response = await configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
+            _logger.LogTraceRequest(response);
         }
-        
+
         protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {
             var request = new HttpRequestMessage(HttpMethod.Get, _client.HttpClient.BaseAddress);
             var builder = new AppSendBuilder(request);

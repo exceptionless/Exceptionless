@@ -60,7 +60,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="id">The identifier of the user.</param>
         /// <response code="404">The user could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetUserById")]
-        public Task<ActionResult<ViewUser>> GetByIdAsync(string id) {
+        public Task<ActionResult<ViewUser>> GetAsync(string id) {
             return GetByIdImplAsync(id);
         }
 

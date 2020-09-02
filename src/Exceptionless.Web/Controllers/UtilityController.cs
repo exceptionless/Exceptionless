@@ -9,10 +9,12 @@ namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX)]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class UtilityController : ExceptionlessApiController {
-        private readonly PersistentEventQueryValidator _validator;
+        private readonly PersistentEventQueryValidator _eventQueryValidator;
+        private readonly StackQueryValidator _stackQueryValidator;
 
-        public UtilityController(PersistentEventQueryValidator validator) {
-            _validator = validator;
+        public UtilityController(PersistentEventQueryValidator eventQueryValidator, StackQueryValidator stackQueryValidator) {
+            _eventQueryValidator = eventQueryValidator;
+            _stackQueryValidator = stackQueryValidator;
         }
 
         /// <summary>
@@ -24,7 +26,13 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="query">The query you wish to validate.</param>
         [HttpGet("search/validate")]
         public async Task<ActionResult<QueryValidator.QueryProcessResult>> ValidateAsync(string query) {
-            return Ok(await _validator.ValidateQueryAsync(query));
+            var eventResults = await _eventQueryValidator.ValidateQueryAsync(query);
+            var stackResults = await _stackQueryValidator.ValidateQueryAsync(query);
+            return Ok(new QueryValidator.QueryProcessResult {
+                IsValid = eventResults.IsValid || stackResults.IsValid,
+                UsesPremiumFeatures = eventResults.UsesPremiumFeatures && stackResults.UsesPremiumFeatures,
+                Message = eventResults.Message ?? stackResults.Message
+            });
         }
     }
 }

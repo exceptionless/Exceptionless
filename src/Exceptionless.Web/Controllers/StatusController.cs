@@ -21,7 +21,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IMessagePublisher _messagePublisher;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<MailMessage> _mailQueue;
-        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
+        private readonly IQueue<EventNotification> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly AppOptions _appOptions;
@@ -31,7 +31,7 @@ namespace Exceptionless.Web.Controllers {
             IMessagePublisher messagePublisher,
             IQueue<EventPost> eventQueue,
             IQueue<MailMessage> mailQueue,
-            IQueue<EventNotificationWorkItem> notificationQueue,
+            IQueue<EventNotification> notificationQueue,
             IQueue<WebHookNotification> webHooksQueue,
             IQueue<EventUserDescription> userDescriptionQueue,
             AppOptions appOptions) {

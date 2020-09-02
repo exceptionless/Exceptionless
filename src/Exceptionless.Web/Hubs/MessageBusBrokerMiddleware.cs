@@ -38,8 +38,7 @@ namespace Exceptionless.Web.Hubs {
                     await ReceiveAsync(socket, async (result, data) => {
                         switch (result.MessageType) {
                             case WebSocketMessageType.Text:
-                                if (_logger.IsEnabled(LogLevel.Trace))
-                                    _logger.LogTrace("WebSocket got message {ConnectionId}", connectionId);
+                                _logger.LogTrace("WebSocket got message {ConnectionId}", connectionId);
                                 // ignore incoming messages
                                 return;
                             case WebSocketMessageType.Close:
@@ -60,8 +59,7 @@ namespace Exceptionless.Web.Hubs {
         }
 
         private async Task OnConnected(HttpContext context, WebSocket socket, string connectionId) {
-            if (_logger.IsEnabled(LogLevel.Trace))
-                _logger.LogTrace("WebSocket connected {ConnectionId} ({State})", connectionId, socket?.State);
+            _logger.LogTrace("WebSocket connected {ConnectionId} ({State})", connectionId, socket?.State);
 
             try {
                 foreach (string organizationId in context.User.GetOrganizationIds())
@@ -75,8 +73,7 @@ namespace Exceptionless.Web.Hubs {
         }
 
         private async Task OnDisconnected(HttpContext context, WebSocket socket, string connectionId) {
-            if (_logger.IsEnabled(LogLevel.Trace))
-                _logger.LogTrace("WebSocket disconnected {ConnectionId} ({State})", connectionId, socket?.State);
+            _logger.LogTrace("WebSocket disconnected {ConnectionId} ({State})", connectionId, socket?.State);
 
             try {
                 foreach (string organizationId in context.User.GetOrganizationIds())

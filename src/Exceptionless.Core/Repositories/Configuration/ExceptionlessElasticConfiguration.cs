@@ -30,6 +30,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             JsonSerializerSettings serializerSettings,
             ICacheClient cacheClient, 
             IMessageBus messageBus, 
+            IServiceProvider serviceProvider,
             ILoggerFactory loggerFactory
         ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
             _appOptions = appOptions;
@@ -37,8 +38,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
             _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
             AddIndex(Stacks = new StackIndex(this));
-            AddIndex(Events = new EventIndex(this, appOptions));
-            AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.AppMode == AppMode.Development ? 0 : 1));
+            AddIndex(Events = new EventIndex(this, serviceProvider, appOptions));
+            AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.ElasticsearchOptions.NumberOfReplicas));
             AddIndex(Organizations = new OrganizationIndex(this));
             AddIndex(Projects = new ProjectIndex(this));
             AddIndex(Tokens = new TokenIndex(this));
@@ -92,7 +93,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override void ConfigureSettings(ConnectionSettings settings) {
             if (_appOptions.AppMode == AppMode.Development)
-                settings.DisableDirectStreaming().PrettyJson();
+                settings.EnableDebugMode();
             
             settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
                 .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())

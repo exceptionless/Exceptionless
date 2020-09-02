@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {

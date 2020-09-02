@@ -1,0 +1,9 @@
+﻿{
+  "id": "5c59abbfa6fc240001efbe6d",
+  "date": "2015-02-11T20:55:04.3457274+00:00",
+  "template_key": "event-log-summary",
+  "data": {
+    "Message": "GET /Print",
+    "Source": "GET /Print"
+  }
+}

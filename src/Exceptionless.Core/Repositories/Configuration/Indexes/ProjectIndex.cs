@@ -22,6 +22,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.OrganizationId))
                     .Text(f => f.Name(e => e.Name).AddKeywordField())
                     .Scalar(f => f.NextSummaryEndOfDayTicks, f => f)
+                    .Date(f => f.Name(s => s.LastEventDateUtc))
                     .AddUsageMappings()
                 );
         }

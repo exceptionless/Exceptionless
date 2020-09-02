@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Tests.Extensions;
@@ -34,7 +34,7 @@ namespace Exceptionless.Tests.Controllers {
                })
                .StatusCodeShouldBeCreated()
             );
-            
+
             Assert.NotNull(token.Id);
             Assert.False(token.IsDisabled);
             Assert.Equal(2, token.Scopes.Count);
@@ -43,7 +43,7 @@ namespace Exceptionless.Tests.Controllers {
                 IsDisabled = true,
                 Notes = "Disabling until next release"
             };
-            
+
             var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
                .Patch()
                .BearerToken(token.Id)
@@ -51,10 +51,10 @@ namespace Exceptionless.Tests.Controllers {
                .Content(updateToken)
                .StatusCodeShouldBeOk()
             );
-            
+
             Assert.True(updatedToken.IsDisabled);
             Assert.Equal(updateToken.Notes, updatedToken.Notes);
-            
+
             await SendRequestAsync(r => r
                .BearerToken(token.Id)
                .AppendPath($"tokens/{token.Id}")
@@ -66,13 +66,13 @@ namespace Exceptionless.Tests.Controllers {
             Assert.NotNull(actualToken);
             actualToken.IsDisabled = false;
             await repository.SaveAsync(actualToken);
-            
+
             token = await SendRequestAsAsync<ViewToken>(r => r
                .BearerToken(token.Id)
                .AppendPath($"tokens/{token.Id}")
                .StatusCodeShouldBeOk()
             );
-            
+
             Assert.False(token.IsDisabled);
         }
     }
