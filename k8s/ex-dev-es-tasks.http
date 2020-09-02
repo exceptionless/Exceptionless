@@ -1,0 +1,42 @@
+@apiUrl = http://elastic:{{elasticPassword}}@kibana-ex-dev.localtest.me:9200/
+
+GET {{apiUrl}}_cat/indices/dev-*?v
+
+###
+
+DELETE {{apiUrl}}dev-*
+
+###
+
+GET {{apiUrl}}_snapshot/prod-hourly/_all
+
+###
+
+POST {{apiUrl}}dev-*/_close
+
+###
+
+POST {{apiUrl}}_snapshot/prod-hourly/hourly-2020.08.25-15-jqtnjwlhtrekzrfwpp39lg/_restore?wait_for_completion=false
+Content-Type: application/json
+
+{
+  "include_global_state": true,
+  "indices": "prod-*,-prod-events-*,prod-events-v1-2020.08.2*",
+  "rename_pattern": "prod-(.+)",
+  "rename_replacement": "dev-$1"
+}
+
+###
+
+PUT {{apiUrl}}dev-*/_settings
+Content-Type: application/json
+
+{
+    "index" : {
+        "number_of_replicas" : 0
+    }
+}
+
+###
+
+GET {{apiUrl}}_tasks/hCqJFzl1QZWFkO5o1pWSSQ:128803

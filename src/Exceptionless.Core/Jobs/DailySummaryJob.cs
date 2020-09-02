@@ -136,7 +136,7 @@ namespace Exceptionless.Core.Jobs {
             var sf = new AppFilter(project, organization);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
             string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:false";
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, filter, "terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1").AnyContext();
+            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
 
             double total = result.Aggregations.Sum("sum_count")?.Value ?? result.Total;
             double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
@@ -145,7 +145,7 @@ namespace Exceptionless.Core.Jobs {
             bool isFreePlan = organization.PlanId == _plans.FreePlan.Id;
 
             string fixedFilter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:true";
-            var fixedResult = await _eventRepository.CountBySearchAsync(systemFilter, fixedFilter, "sum:count~1").AnyContext();
+            var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).AggregationsExpression("sum:count~1")).AnyContext();
             double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
             var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
@@ -160,7 +160,7 @@ namespace Exceptionless.Core.Jobs {
 
             IReadOnlyCollection<Stack> newest = null;
             if (newTotal > 0)
-                newest = (await _stackRepository.GetByFilterAsync(sf, filter, "-first", "first", data.UtcStartTime, data.UtcEndTime, o => o.PageLimit(3)).AnyContext()).Documents;
+                newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3)).AnyContext()).Documents;
 
             foreach (var user in users) {
                 _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);

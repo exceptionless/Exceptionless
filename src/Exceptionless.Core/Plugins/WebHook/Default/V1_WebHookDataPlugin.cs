@@ -36,6 +36,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 OrganizationId = ctx.Event.OrganizationId,
                 OrganizationName = ctx.Organization.Name,
                 ErrorStackId = ctx.Event.StackId,
+                ErrorStackStatus = ctx.Stack.Status,
                 ErrorStackTitle = ctx.Stack.Title,
                 ErrorStackDescription = ctx.Stack.Description,
                 ErrorStackTags = ctx.Stack.Tags,
@@ -54,6 +55,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
 
               return Task.FromResult<object>(new VersionOneWebHookStack(_options.BaseURL) {
                 Id = ctx.Stack.Id,
+                Status = ctx.Stack.Status,
                 Title = ctx.Stack.Title,
                 Description = ctx.Stack.Description,
                 Tags = ctx.Stack.Tags,
@@ -68,7 +70,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 FirstOccurrence = ctx.Stack.FirstOccurrence,
                 LastOccurrence = ctx.Stack.LastOccurrence,
                 DateFixed = ctx.Stack.DateFixed,
-                IsRegression = ctx.Stack.IsRegressed,
+                IsRegression = ctx.Stack.Status == StackStatus.Regressed,
                 IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags != null && ctx.Stack.Tags.Contains("Critical"),
                 FixedInVersion = ctx.Stack.FixedInVersion
             });
@@ -97,6 +99,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public string OrganizationId { get; set; }
             public string OrganizationName { get; set; }
             public string ErrorStackId { get; set; }
+            public StackStatus ErrorStackStatus { get; set; }
             public string ErrorStackUrl => String.Concat(_baseUrl, "/stack/", ErrorStackId);
             public string ErrorStackTitle { get; set; }
             public string ErrorStackDescription { get; set; }
@@ -118,6 +121,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             }
 
             public string Id { get; set; }
+            public StackStatus Status { get; set; }
             public string Url => String.Concat(_baseUrl, "/stack/", Id);
             public string Title { get; set; }
             public string Description { get; set; }

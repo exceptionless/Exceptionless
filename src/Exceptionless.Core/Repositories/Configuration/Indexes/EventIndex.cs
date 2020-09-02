@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Core.Configuration;
@@ -10,15 +10,19 @@ using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public sealed class EventIndex : DailyIndex<PersistentEvent> {
         private readonly ExceptionlessElasticConfiguration _configuration;
+        private readonly IServiceProvider _serviceProvider;
 
-        public EventIndex(ExceptionlessElasticConfiguration configuration, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
+        public EventIndex(ExceptionlessElasticConfiguration configuration, IServiceProvider serviceProvider, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
             _configuration = configuration;
+            _serviceProvider = serviceProvider;
 
             if (appOptions.MaximumRetentionDays > 0)
                 MaxIndexAge = TimeSpan.FromDays(appOptions.MaximumRetentionDays);
@@ -29,7 +33,13 @@ namespace Exceptionless.Core.Repositories.Configuration {
             AddAlias($"{Name}-last30days", TimeSpan.FromDays(30));
             AddAlias($"{Name}-last90days", TimeSpan.FromDays(90));
         }
-        
+
+        protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+            var stacksRepository = _serviceProvider.GetRequiredService<IStackRepository>();
+            base.ConfigureQueryBuilder(builder);
+            builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackFilterQueryBuilder(stacksRepository, _configuration.LoggerFactory));
+        }
+
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
             var mapping = map
                 .Dynamic(false)
@@ -61,10 +71,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Scalar(f => f.Count)
                     .Boolean(f => f.Name(e => e.IsFirstOccurrence))
                         .FieldAlias(a => a.Name(Alias.IsFirstOccurrence).Path(f => f.IsFirstOccurrence))
-                    .Boolean(f => f.Name(e => e.IsFixed))
-                        .FieldAlias(a => a.Name(Alias.IsFixed).Path(f => f.IsFixed))
-                    .Boolean(f => f.Name(e => e.IsHidden))
-                        .FieldAlias(a => a.Name(Alias.IsHidden).Path(f => f.IsHidden))
                     .Object<object>(f => f.Name(e => e.Idx).Dynamic())
                     .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
                         .AddVersionMapping()
@@ -204,7 +210,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string URL_PATH_TOKENIZER = "urlpath";
         private const string HOST_TOKENIZER = "hostname";
         private const string TYPENAME_HIERARCHY_TOKENIZER = "typename_hierarchy";
-        
+
         private const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error')))
   return;
@@ -298,7 +304,7 @@ ctx.error.code = codes;";
     internal static class EventIndexExtensions {
         public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
             return descriptor
-                 .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
+                .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
                 .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
                 .Object<object>(f => f.Name("error").Properties(p1 => p1
                     .Keyword(f3 => f3.Name("code").IgnoreAbove(1024).Boost(1.1))
@@ -307,7 +313,7 @@ ctx.error.code = codes;";
                     .Text(f6 => f6.Name("targettype").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
                     .Text(f6 => f6.Name("targetmethod").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())));
         }
-        
+
         public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryAliases(this PropertiesDescriptor<PersistentEvent> descriptor) {
             return descriptor
                 .FieldAlias(a => a.Name(EventIndex.Alias.Version).Path(f => (string)f.Data[Event.KnownDataKeys.Version]))

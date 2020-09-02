@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -112,6 +112,7 @@ namespace Exceptionless.Core.Services {
                 if (org == null)
                     return;
 
+                org.LastEventDateUtc = SystemClock.UtcNow;
                 org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig);
                 if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
                     org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, _plans);
@@ -137,6 +138,7 @@ namespace Exceptionless.Core.Services {
                 if (project == null)
                     return;
 
+                project.LastEventDateUtc = SystemClock.UtcNow;
                 project.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig, org.GetMaxEventsPerMonthWithBonus());
                 if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
                     project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(_plans));

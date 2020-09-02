@@ -94,7 +94,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="id">The identifier of the token.</param>
         /// <response code="404">The token could not be found.</response>
         [HttpGet("{id:token}", Name = "GetTokenById")]
-        public Task<ActionResult<ViewToken>> GetByIdAsync(string id) {
+        public Task<ActionResult<ViewToken>> GetAsync(string id) {
             return GetByIdImplAsync(id);
         }
 

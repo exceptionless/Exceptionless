@@ -17,7 +17,7 @@ namespace Exceptionless.Tests.Search {
         private readonly ElasticQueryParser _parser;
         private readonly PersistentEventQueryValidator _validator;
 
-        public PersistentEventQueryValidatorTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public PersistentEventQueryValidatorTests(ITestOutputHelper output) : base(output){
             _parser = GetService<ExceptionlessElasticConfiguration>().Events.QueryParser;
             _validator = GetService<PersistentEventQueryValidator>();
         }
@@ -25,7 +25,7 @@ namespace Exceptionless.Tests.Search {
         [Theory]
         [InlineData("data.@user.identity:blake", "data.@user.identity:blake", true, true)]
         [InlineData("user:blake", "data.@user.identity:blake", true, true)]
-        [InlineData("_missing_:data.sessionend", "_missing_:idx.sessionend-d", true, true)]
+        [InlineData("NOT _exists_:data.sessionend", "NOT _exists_:idx.sessionend-d", true, true)]
         [InlineData("data.SessionEnd:<now", "idx.sessionend-d:<now", true, true)]
         [InlineData("data.haserror:true", "idx.haserror-b:true", true, true)]
         [InlineData("data.field:(now criteria2)", "idx.field-s:(now criteria2)", true, true)]
@@ -43,9 +43,7 @@ namespace Exceptionless.Tests.Search {
         [InlineData("data.age:(->=10 AND < 20)", "idx.age-n:(->=10 AND <20)", true, true)]
         [InlineData("data.age:[10 TO *]", "idx.age-n:[10 TO *]", true, true)]
         [InlineData("data.age:[* TO 10]", "idx.age-n:[* TO 10]", true, true)]
-        [InlineData("hidden:true AND data.age:(>30 AND <=40)", "hidden:true AND idx.age-n:(>30 AND <=40)", true, true)]
-        [InlineData("hidden:true", "hidden:true", true, false)]
-        [InlineData("fixed:true", "fixed:true", true, false)]
+        [InlineData("type:404 AND data.age:(>30 AND <=40)", "type:404 AND idx.age-n:(>30 AND <=40)", true, true)]
         [InlineData("type:404", "type:404", true, false)]
         [InlineData("reference:404", "reference:404", true, false)]
         [InlineData("organization:404", "organization:404", true, false)]
@@ -91,8 +89,6 @@ namespace Exceptionless.Tests.Search {
         [InlineData("cardinality:source", true, true)]
         [InlineData("cardinality:tags", true, true)]
         [InlineData("cardinality:geo", true, true)]
-        [InlineData("cardinality:fixed", true, true)]
-        [InlineData("cardinality:hidden", true, true)]
         [InlineData("cardinality:organization", true, true)]
         [InlineData("cardinality:project", true, true)]
         [InlineData("cardinality:error.code", true, true)]

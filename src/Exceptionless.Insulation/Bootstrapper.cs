@@ -93,7 +93,7 @@ namespace Exceptionless.Insulation {
                 
                 .AddAutoNamedCheck<QueueHealthCheck<EventPost>>("EventPosts", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions", "AllJobs")
-                .AddAutoNamedCheck<QueueHealthCheck<EventNotificationWorkItem>>("EventNotifications", "AllJobs")
+                .AddAutoNamedCheck<QueueHealthCheck<EventNotification>>("EventNotifications", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<WebHookNotification>>("WebHooks", "AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<MailMessage>>("AllJobs")
                 .AddAutoNamedCheck<QueueHealthCheck<WorkItemData>>("WorkItem", "AllJobs")
@@ -102,13 +102,14 @@ namespace Exceptionless.Insulation {
                 .AddAutoNamedCheck<DailySummaryJob>("AllJobs")
                 .AddAutoNamedCheck<DownloadGeoIPDatabaseJob>("AllJobs")
                 .AddAutoNamedCheck<MaintainIndexesJob>("AllJobs")
-                .AddAutoNamedCheck<RetentionLimitsJob>("AllJobs")
+                .AddAutoNamedCheck<CleanupDataJob>("AllJobs")
+                .AddAutoNamedCheck<StackStatusJob>("AllJobs")
                 .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
         }
 
         private static void RegisterCache(IServiceCollection container, CacheOptions options) {
             if (String.Equals(options.Provider, "redis")) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.Data.GetString("server")));
+                container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
                 if (!String.IsNullOrEmpty(options.Scope))
                     container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
@@ -121,7 +122,7 @@ namespace Exceptionless.Insulation {
 
         private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options) {
             if (String.Equals(options.Provider, "redis")) {
-                container.AddSingleton<ConnectionMultiplexer>(s => ConnectionMultiplexer.Connect(options.Data.GetString("server")));
+                container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
                     Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
@@ -137,6 +138,12 @@ namespace Exceptionless.Insulation {
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 }));
             }
+        }
+
+        private static ConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
+            // TODO: Remove this extra config parse step when sentinel bug is fixed
+            var config = ConfigurationOptions.Parse(options.GetString("server"));
+            return ConnectionMultiplexer.Connect(config);
         }
 
         private static void RegisterMetric(IServiceCollection container, MetricOptions options) {
@@ -209,21 +216,21 @@ namespace Exceptionless.Insulation {
             if (String.Equals(options.Provider, "azurestorage")) {
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, options, retries: 1));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s, options));
-                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotificationWorkItem>(s, options));
+                container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotification>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WebHookNotification>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s, options));
                 container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
             } else if (String.Equals(options.Provider, "redis")) {
                 container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, options, runMaintenanceTasks, retries: 1));
                 container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
-                container.ReplaceSingleton(s => CreateRedisQueue<EventNotificationWorkItem>(s, options, runMaintenanceTasks));
+                container.ReplaceSingleton(s => CreateRedisQueue<EventNotification>(s, options, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<WebHookNotification>(s, options, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
                 container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
             } else if (String.Equals(options.Provider, "sqs")) {
                 container.ReplaceSingleton(s => CreateSQSQueue<EventPost>(s, options, retries: 1));
                 container.ReplaceSingleton(s => CreateSQSQueue<EventUserDescription>(s, options));
-                container.ReplaceSingleton(s => CreateSQSQueue<EventNotificationWorkItem>(s, options));
+                container.ReplaceSingleton(s => CreateSQSQueue<EventNotification>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<WebHookNotification>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<MailMessage>(s, options));
                 container.ReplaceSingleton(s => CreateSQSQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));

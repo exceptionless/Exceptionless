@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Extensions {
     public class StringExtensionsTests : TestWithServices {
-        public StringExtensionsTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) { }
+        public StringExtensionsTests(ITestOutputHelper output) : base(output) {}
 
         [Fact]
         public void ToAddress() {

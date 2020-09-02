@@ -15,5 +15,6 @@
         "editorconfig",
         "elasticsearch",
         "gitignore"
-    ]
+    ],
+    "powershell.codeFormatting.addWhitespaceAroundPipe": true
 }

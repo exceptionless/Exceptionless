@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -14,6 +14,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Xunit;
 using Xunit.Abstractions;
+using System.Collections.Generic;
 
 namespace Exceptionless.Tests.Controllers {
     public class StackControllerTests : IntegrationTestsBase {
@@ -38,6 +39,25 @@ namespace Exceptionless.Tests.Controllers {
             await service.CreateDataAsync();
         }
 
+        [Fact]
+        public async Task CanSearchByNonPremiumFields() {
+            var ev = await SubmitErrorEventAsync();
+            Assert.NotNull(ev.StackId);
+
+            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+            Assert.NotNull(stack);
+            Assert.False(stack.IsFixed());
+
+            var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("stacks")
+                .QueryString("f", "status:fixed")
+                .StatusCodeShouldBeOk());
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Count);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("1.0.0")]
@@ -45,60 +65,21 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CanMarkFixed(string version) {
             var ev = await SubmitErrorEventAsync();
             Assert.NotNull(ev.StackId);
-            Assert.False(ev.IsFixed); 
 
             var stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
             Assert.False(stack.IsFixed());
-            
-            await _workItemQueue.DeleteQueueAsync();
-            
-            var workIds = await SendRequestAsAsync<WorkInProgressResult>(r => r
+
+            await SendRequestAsAsync<WorkInProgressResult>(r => r
                 .Post()
                 .AsGlobalAdminUser()
                 .AppendPath($"stacks/{stack.Id}/mark-fixed")
                 .QueryStringIf(() => !String.IsNullOrEmpty(version), "version", version)
-                .StatusCodeShouldBeAccepted());
+                .StatusCodeShouldBeOk());
 
-            Assert.Single(workIds.Workers);
-            
-            var stats = await _workItemQueue.GetQueueStatsAsync();
-            Assert.Equal(1, stats.Enqueued);
-            Assert.Equal(0, stats.Completed);
-
-            var job = GetService<WorkItemJob>();
-            await job.RunAsync();
-            await RefreshDataAsync();
-
-            stats = await _workItemQueue.GetQueueStatsAsync();
-            Assert.Equal(1, stats.Completed);
-            
             stack = await _stackRepository.GetByIdAsync(ev.StackId);
             Assert.NotNull(stack);
-            Assert.True(stack.IsFixed()); 
-            
-            ev = await _eventRepository.GetByIdAsync(ev.Id);
-            Assert.NotNull(ev);
-            Assert.True(ev.IsFixed); 
-            
-            workIds = await SendRequestAsAsync<WorkInProgressResult>(r => r
-                .Delete()
-                .AsGlobalAdminUser()
-                .AppendPath($"stacks/{stack.Id}/mark-fixed")
-                .QueryStringIf(() => !String.IsNullOrEmpty(version), "version", version)
-                .StatusCodeShouldBeAccepted());
-            
-            Assert.Single(workIds.Workers);
-            
-            stack = await _stackRepository.GetByIdAsync(ev.StackId);
-            Assert.NotNull(stack);
-            Assert.False(stack.IsFixed()); 
-            
-            await job.RunAsync();
-            
-            ev = await _eventRepository.GetByIdAsync(ev.Id);
-            Assert.NotNull(ev);
-            Assert.False(ev.IsFixed); 
+            Assert.True(stack.IsFixed());
         }
 
         private async Task<PersistentEvent> SubmitErrorEventAsync() {

@@ -52,7 +52,7 @@ service:
 elasticsearch:
   connectionString: 
   image:
-    repository: slideroom/elasticsearch
+    repository: exceptionless/elasticsearch
     tag: 98
     pullPolicy: IfNotPresent
 

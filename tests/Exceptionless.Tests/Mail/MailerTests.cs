@@ -25,7 +25,7 @@ namespace Exceptionless.Tests.Mail {
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
 
-        public MailerTests(ServicesFixture fixture, ITestOutputHelper output) : base(fixture, output) {
+        public MailerTests(ITestOutputHelper output) : base(output) {
             _mailer = GetService<IMailer>();
             _options = GetService<AppOptions>();
             _billingManager = GetService<BillingManager>();

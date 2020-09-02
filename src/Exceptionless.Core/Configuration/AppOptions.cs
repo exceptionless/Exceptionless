@@ -39,6 +39,8 @@ namespace Exceptionless.Core {
         public int ApiThrottleLimit { get; internal set; }
 
         public bool EnableArchive { get; internal set; }
+        
+        public bool EnableSampleData { get; internal set; }
 
         public bool EventSubmissionDisabled { get; internal set; }
 
@@ -51,8 +53,6 @@ namespace Exceptionless.Core {
         public long MaximumEventPostSize { get; internal set; }
 
         public int MaximumRetentionDays { get; internal set; }
-
-        public string ApplicationInsightsKey { get; internal set; }
 
         public bool EnableRepositoryNotifications { get; internal set; }
 
@@ -88,19 +88,19 @@ namespace Exceptionless.Core {
             options.ExceptionlessServerUrl = config.GetValue<string>(nameof(options.ExceptionlessServerUrl));
 
             options.AppMode = config.GetValue(nameof(options.AppMode), AppMode.Production);
-            options.AppScope = options.AppMode.ToScope();
+            options.AppScope = config.GetValue(nameof(options.AppScope), options.AppMode.ToScope());
             options.RunJobsInProcess = config.GetValue(nameof(options.RunJobsInProcess), options.AppMode == AppMode.Development);
             options.JobsIterationLimit = config.GetValue(nameof(options.JobsIterationLimit), -1);
             options.BotThrottleLimit = config.GetValue(nameof(options.BotThrottleLimit), 25).NormalizeValue();
 
             options.ApiThrottleLimit = config.GetValue(nameof(options.ApiThrottleLimit), options.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
             options.EnableArchive = config.GetValue(nameof(options.EnableArchive), true);
+            options.EnableSampleData = config.GetValue(nameof(options.EnableSampleData), options.AppMode != AppMode.Development);
             options.EventSubmissionDisabled = config.GetValue(nameof(options.EventSubmissionDisabled), false);
             options.DisabledPipelineActions = config.GetValueList(nameof(options.DisabledPipelineActions));
             options.DisabledPlugins = config.GetValueList(nameof(options.DisabledPlugins));
             options.MaximumEventPostSize = config.GetValue(nameof(options.MaximumEventPostSize), 200000).NormalizeValue();
             options.MaximumRetentionDays = config.GetValue(nameof(options.MaximumRetentionDays), 180).NormalizeValue();
-            options.ApplicationInsightsKey = config.GetValue<string>(nameof(options.ApplicationInsightsKey));
 
             options.GoogleGeocodingApiKey = config.GetValue<string>(nameof(options.GoogleGeocodingApiKey));
             options.MaxMindGeoIpKey = config.GetValue<string>(nameof(options.MaxMindGeoIpKey));

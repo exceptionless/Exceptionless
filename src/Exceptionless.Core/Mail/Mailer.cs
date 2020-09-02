@@ -53,7 +53,6 @@ namespace Exceptionless.Core.Mail {
                 { "IsCritical", isCritical },
                 { "IsNew", isNew },
                 { "IsRegression", isRegression },
-                { "IsFixable", ev.Type == Event.KnownTypes.Error || ev.Type == Event.KnownTypes.NotFound },
                 { "TotalOccurrences", totalOccurrences },
                 { "Fields", result.Data }
             };
@@ -216,7 +215,7 @@ namespace Exceptionless.Core.Mail {
                 StackId = s.Id,
                 Title = s.Title.Truncate(50),
                 TypeName = s.GetTypeName().Truncate(50),
-                s.IsRegressed,
+                s.Status,
             });
         }
 

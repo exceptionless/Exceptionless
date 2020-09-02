@@ -26,8 +26,7 @@ namespace Exceptionless.Insulation.Mail {
         }
 
         public async Task SendAsync(MailMessage model) {
-            bool isTraceLogEnabled = _logger.IsEnabled(LogLevel.Trace);
-            if (isTraceLogEnabled) _logger.LogTrace("Creating Mail Message from model");
+            _logger.LogTrace("Creating Mail Message from model");
             
             var message = CreateMailMessage(model);
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
@@ -39,31 +38,31 @@ namespace Exceptionless.Insulation.Mail {
                 string host = _emailOptions.SmtpHost;
                 int port = _emailOptions.SmtpPort;
                 var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
-                if (isTraceLogEnabled) _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
+                _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
 
                 var sw = Stopwatch.StartNew();
                 await client.ConnectAsync(host, port, encryption).AnyContext();
-                if (isTraceLogEnabled) _logger.LogTrace("Connected to SMTP server took {Duration:g}", sw.Elapsed);
+                _logger.LogTrace("Connected to SMTP server took {Duration:g}", sw.Elapsed);
 
                 // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
                 string user = _emailOptions.SmtpUser;
                 if (!String.IsNullOrEmpty(user)) {
-                    if (isTraceLogEnabled) _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
+                    _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
                     sw.Restart();
                     await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
-                    if (isTraceLogEnabled) _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", user, sw.Elapsed);
+                    _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", user, sw.Elapsed);
                 }
 
-                if (isTraceLogEnabled) _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
+                _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
                 sw.Restart();
                 await client.SendAsync(message).AnyContext();
-                if (isTraceLogEnabled) _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);
+                _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);
                 
                 sw.Restart();
                 await client.DisconnectAsync(true).AnyContext();
-                if (isTraceLogEnabled) _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
+                _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
                 sw.Stop();
             }
 

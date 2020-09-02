@@ -16,6 +16,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
@@ -64,7 +65,8 @@ namespace Exceptionless.Web.Controllers {
             IMapper mapper,
             PersistentEventQueryValidator validator,
             AppOptions appOptions,
-            ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
+            ILoggerFactory loggerFactory
+        ) : base(repository, mapper, validator, loggerFactory) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -163,7 +165,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="426">Unable to view event occurrence due to plan limits.</response>
         [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<PersistentEvent>> GetByIdAsync(string id, string filter = null, string time = null, string offset = null) {
+        public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string filter = null, string time = null, string offset = null) {
             var model = await GetModelAsync(id, false);
             if (model == null)
                 return NotFound();
@@ -226,28 +228,75 @@ namespace Exceptionless.Web.Controllers {
             sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
             bool useSearchAfter = !String.IsNullOrEmpty(after);
 
-            FindResults<PersistentEvent> events;
             try {
-                events = await _repository.GetByFilterAsync(ShouldApplySystemFilter(sf, filter) ? sf : null, filter, sort, ti.Field, ti.Range.UtcStart, ti.Range.UtcEnd, o => useSearchAfter ? o.SearchAfterPaging().SearchAfter(after).PageLimit(limit) : o.PageNumber(page).PageLimit(limit));
+                FindResults<PersistentEvent> events;
+                switch (mode) {
+                    case "summary":
+                        events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, after, useSearchAfter);
+                        return OkWithResourceLinks(events.Documents.Select(e => {
+                            var summaryData = _formattingPluginManager.GetEventSummaryData(e);
+                            return new EventSummaryModel {
+                                TemplateKey = summaryData.TemplateKey,
+                                Id = e.Id,
+                                Date = e.Date,
+                                Data = summaryData.Data
+                            };
+                        }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+                    case "stack_recent":
+                    case "stack_frequent":
+                    case "stack_new":
+                    case "stack_users":
+                        if (!String.IsNullOrEmpty(sort))
+                            return BadRequest("Sort is not supported in stack mode.");
+                        
+                        var systemFilter = new RepositoryQuery<PersistentEvent>()
+                            .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                            .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
+                            .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
+
+                        string stackAggregations = mode switch {
+                            "stack_recent" => "cardinality:user sum:count~1 min:date -max:date",
+                            "stack_frequent" => "cardinality:user -sum:count~1 min:date max:date",
+                            "stack_new" => "cardinality:user sum:count~1 -min:date max:date",
+                            "stack_users" => "-cardinality:user sum:count~1 min:date max:date",
+                            _ => null
+                        };
+
+                        var countResponse = await _repository.CountAsync(q => q
+                            .SystemFilter(systemFilter)
+                            .FilterExpression(filter)
+                            .AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {stackAggregations})"));
+                        
+                        var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
+                        if (stackTerms == null || stackTerms.Buckets.Count == 0)
+                            return Ok(EmptyModels);
+
+                        string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
+                        var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
+
+                        var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
+                        return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
+                    default:
+                        events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, after, useSearchAfter);
+                        return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+                }
             } catch (ApplicationException ex) {
+                string message = "An error has occurred. Please check your search filter.";
+                if (ex is DocumentLimitExceededException)
+                    message = $"An error has occurred. {ex.Message ?? "Please limit your search criteria."}";
+                
                 using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogError(ex, "An error has occurred. Please check your search filter.");
+                    _logger.LogError(ex, message);
 
-                return BadRequest("An error has occurred. Please check your search filter.");
+                return BadRequest(message);
             }
+        }
 
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
-                return OkWithResourceLinks(events.Documents.Select(e => {
-                    var summaryData = _formattingPluginManager.GetEventSummaryData(e);
-                    return new EventSummaryModel {
-                        TemplateKey = summaryData.TemplateKey,
-                        Id = e.Id,
-                        Date = e.Date,
-                        Data = summaryData.Data
-                    };
-                }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
-
-            return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+        private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int page, int limit, string after, bool useSearchAfter) {
+            return _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
+                o => useSearchAfter
+                    ? o.SearchAfterPaging().SearchAfter(after).PageLimit(limit)
+                    : o.PageNumber(page).PageLimit(limit));
         }
 
         /// <summary>
@@ -761,8 +810,7 @@ namespace Exceptionless.Web.Controllers {
 
             var project = Request.GetProject();
             if (!String.Equals(project?.Id, projectId)) {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
+                _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
 
                 project = await GetProjectAsync(projectId);
 
@@ -1009,8 +1057,7 @@ namespace Exceptionless.Web.Controllers {
 
             var project = Request.GetProject();
             if (!String.Equals(project?.Id, projectId)) {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
+                _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
 
                 project = await GetProjectAsync(projectId);
 
@@ -1094,6 +1141,52 @@ namespace Exceptionless.Web.Controllers {
                 return null;
 
             return stack;
+        }
+
+        private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti) {
+            if (stacks.Count == 0)
+                return new List<StackSummaryModel>(0);
+
+            var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
+            return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) => {
+                var data = _formattingPluginManager.GetStackSummaryData(stack);
+                var summary = new StackSummaryModel {
+                    TemplateKey = data.TemplateKey,
+                    Data = data.Data,
+                    Id = stack.Id,
+                    Title = stack.Title,
+                    FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
+                    LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
+                    Total = (long)(term.Aggregations.Sum("sum_count").Value ?? term.Total.GetValueOrDefault()),
+
+                    Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
+                    TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
+                };
+
+                return summary;
+            }).ToList();
+        }
+
+        private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd) {
+            var scopedCacheClient = new ScopedCacheClient(_cache, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
+            var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
+            var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
+
+            var totals = cachedTotals.Where(kvp => kvp.Value.HasValue).ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value);
+            if (totals.Count == projectIds.Count)
+                return totals;
+
+            var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
+            var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
+            var countResult = await _repository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).AggregationsExpression("terms:(project_id cardinality:user)"));
+
+            // Cache all projects that have more than 10 users for 5 minutes.
+            var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id").Buckets;
+            var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
+            await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
+            totals.AddRange(aggregations);
+
+            return totals;
         }
     }
 }

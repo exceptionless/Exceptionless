@@ -80,6 +80,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
+            container.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
             container.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
             container.AddStartupAction<ExceptionlessElasticConfiguration>();
 
@@ -87,21 +88,19 @@ namespace Exceptionless.Core {
 
             container.AddSingleton<IQueueBehavior<EventPost>>(s => new MetricsQueueBehavior<EventPost>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<EventUserDescription>>(s => new MetricsQueueBehavior<EventUserDescription>(s.GetRequiredService<IMetricsClient>()));
-            container.AddSingleton<IQueueBehavior<EventNotificationWorkItem>>(s => new MetricsQueueBehavior<EventNotificationWorkItem>(s.GetRequiredService<IMetricsClient>()));
+            container.AddSingleton<IQueueBehavior<EventNotification>>(s => new MetricsQueueBehavior<EventNotification>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<WebHookNotification>>(s => new MetricsQueueBehavior<WebHookNotification>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<MailMessage>>(s => new MetricsQueueBehavior<MailMessage>(s.GetRequiredService<IMetricsClient>()));
             container.AddSingleton<IQueueBehavior<WorkItemData>>(s => new MetricsQueueBehavior<WorkItemData>(s.GetRequiredService<IMetricsClient>()));
 
-            container.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly);
+            container.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly, typeof(ReindexWorkItemHandler).Assembly);
             container.AddSingleton<WorkItemHandlers>(s => {
                 var handlers = new WorkItemHandlers();
                 handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
-                handlers.Register<RemoveOrganizationWorkItem>(s.GetRequiredService<RemoveOrganizationWorkItemHandler>);
-                handlers.Register<RemoveProjectWorkItem>(s.GetRequiredService<RemoveProjectWorkItemHandler>);
+                handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
+                handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
                 handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
                 handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
-                handlers.Register<StackWorkItem>(s.GetRequiredService<StackWorkItemHandler>);
-                handlers.Register<ThrottleBotsWorkItem>(s.GetRequiredService<ThrottleBotsWorkItemHandler>);
                 handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
                 handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
                 handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
@@ -111,7 +110,7 @@ namespace Exceptionless.Core {
 
             container.AddSingleton(s => CreateQueue<EventPost>(s));
             container.AddSingleton(s => CreateQueue<EventUserDescription>(s));
-            container.AddSingleton(s => CreateQueue<EventNotificationWorkItem>(s));
+            container.AddSingleton(s => CreateQueue<EventNotification>(s));
             container.AddSingleton(s => CreateQueue<WebHookNotification>(s));
             container.AddSingleton(s => CreateQueue<MailMessage>(s));
             container.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
@@ -128,9 +127,10 @@ namespace Exceptionless.Core {
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
 
+            container.AddSingleton(typeof(IMigration), typeof(Bootstrapper).Assembly);
             container.AddSingleton<IStackRepository, StackRepository>();
             container.AddSingleton<IEventRepository, EventRepository>();
-            container.AddSingleton<IMigrationRepository, MigrationRepository>();
+            container.AddSingleton<IMigrationStateRepository, MigrationStateRepository>();
             container.AddSingleton<MigrationManager>();
             container.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
             container.AddSingleton<IOrganizationRepository, OrganizationRepository>();
@@ -174,6 +174,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<UserAgentParser>();
             container.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
+            container.AddSingleton<OrganizationService>();
             container.AddSingleton<UsageService>();
             container.AddSingleton<SlackService>();
             container.AddSingleton<StackService>();
@@ -238,8 +239,11 @@ namespace Exceptionless.Core {
 
         private static async Task CreateSampleDataAsync(IServiceProvider container) {
             var options = container.GetRequiredService<AppOptions>();
+            if (!options.EnableSampleData)
+                return;
+            
             var elasticsearchOptions = container.GetRequiredService<ElasticsearchOptions>();
-            if (options.AppMode != AppMode.Development || elasticsearchOptions.DisableIndexConfiguration)
+            if (elasticsearchOptions.DisableIndexConfiguration)
                 return;
 
             var userRepository = container.GetRequiredService<IUserRepository>();
@@ -251,8 +255,8 @@ namespace Exceptionless.Core {
         }
 
         public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
-            var logger = loggerFactory.CreateLogger("AppBuilder");
 
+            services.AddJob<CleanupDataJob>(true);
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
             services.AddJob<DownloadGeoIPDatabaseJob>(true);
@@ -261,11 +265,12 @@ namespace Exceptionless.Core {
             services.AddJob<EventUserDescriptionsJob>(true);
             services.AddJob<MailMessageJob>(true);
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
-            services.AddJob<RetentionLimitsJob>(true);
+            services.AddJob<StackStatusJob>(true);
             services.AddJob<StackEventCountJob>(true);
             services.AddJob<WebHooksJob>(true);
             services.AddJob<WorkItemJob>(true);
 
+            var logger = loggerFactory.CreateLogger<Bootstrapper>();
             logger.LogWarning("Jobs running in process.");
         }
 

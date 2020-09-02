@@ -34,6 +34,7 @@ namespace Exceptionless.Web.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly SlackService _slackService;
@@ -44,6 +45,7 @@ namespace Exceptionless.Web.Controllers {
             IProjectRepository projectRepository,
             IStackRepository stackRepository,
             IEventRepository eventRepository,
+            ITokenRepository tokenRepository,
             IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
             SlackService slackService,
@@ -56,6 +58,7 @@ namespace Exceptionless.Web.Controllers {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
+            _tokenRepository = tokenRepository;
             _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _slackService = slackService;
@@ -129,7 +132,7 @@ namespace Exceptionless.Web.Controllers {
         /// <response code="404">The project could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetProjectById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<ViewProject>> GetByIdAsync(string id, string mode = null) {
+        public async Task<ActionResult<ViewProject>> GetAsync(string id, string mode = null) {
             var project = await GetModelAsync(id);
             if (project == null)
                 return NotFound();
@@ -184,6 +187,17 @@ namespace Exceptionless.Web.Controllers {
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
+        }
+
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
+            foreach (var project in projects) {
+                using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogInformation("User {User} deleting project: {ProjectName}.", CurrentUser.Id, project.Name);
+
+                await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
+            }
+
+            return await base.DeleteModelsAsync(projects);
         }
 
         #endregion
@@ -291,10 +305,9 @@ namespace Exceptionless.Web.Controllers {
             if (project == null)
                 return NotFound();
 
-            string workItemId = await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
+            string workItemId = await _workItemQueue.EnqueueAsync(new RemoveStacksWorkItem {
                 OrganizationId = project.OrganizationId,
-                ProjectId = project.Id,
-                Reset = true
+                ProjectId = project.Id
             });
 
             return WorkInProgress(new [] { workItemId });
@@ -690,19 +703,6 @@ namespace Exceptionless.Web.Controllers {
             return await base.CanUpdateAsync(original, changes);
         }
 
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
-            var workItems = new List<string>();
-            foreach (var project in projects) {
-                workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveProjectWorkItem {
-                    OrganizationId = project.OrganizationId,
-                    ProjectId = project.Id,
-                    Reset = false
-                }));
-            }
-
-            return workItems;
-        }
-        
         private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Task.FromResult<Organization>(null);
@@ -723,7 +723,7 @@ namespace Exceptionless.Web.Controllers {
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
             var sf = new AppFilter(projects, organizations);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(project_id~{viewProjects.Count} cardinality:stack_id)");
+            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).AggregationsExpression($"terms:(project_id~{viewProjects.Count} cardinality:stack_id)"));
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);
                 project.EventCount = term?.Total ?? 0;

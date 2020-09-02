@@ -6,7 +6,7 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates {
+    public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISupportSoftDeletes {
         public Project() {
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
@@ -44,6 +44,7 @@ namespace Exceptionless.Core.Models {
         /// Account event usage information.
         /// </summary>
         public ICollection<UsageInfo> Usage { get; set; }
+        public DateTime LastEventDateUtc { get; set; }
 
         /// <summary>
         /// Optional data entries that contain additional configuration information for this project.
@@ -64,6 +65,7 @@ namespace Exceptionless.Core.Models {
 
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
+        public bool IsDeleted { get; set; }
 
         public static class NotificationIntegrations {
             public const string Slack = "slack";

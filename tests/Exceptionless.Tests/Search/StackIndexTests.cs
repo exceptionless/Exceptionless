@@ -1,8 +1,7 @@
-using System;
-using System.IO;
 using System.Threading.Tasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Newtonsoft.Json;
@@ -16,28 +15,28 @@ namespace Exceptionless.Tests.Repositories {
         public StackIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
             _repository = GetService<IStackRepository>();
         }
-        
+
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
-            await CreateDataAsync();
+            await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>());
         }
 
         [Theory]
-        [InlineData("\"GET /Print\"", 1)] // Title
+        [InlineData("\"GET /Print\"", 3)] // Title
         [InlineData("\"my custom description\"", 1)] // Description
         [InlineData("\"Blake Niemyjski\"", 1)] // Tags
-        [InlineData("\"http://exceptionless.io\"", 1)] // References
+        [InlineData("\"http://exceptionless.io\"", 3)] // References
         public async Task GetByAllFieldAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
-        
+
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447a44e78877ab1", 1)]
         [InlineData("2ecd0826e447a44e78877ab2", 1)]
-        public async Task GetByIdAsync(string id, int count) {
+        public async Task GetAsync(string id, int count) {
             var result = await GetByFilterAsync("id:" + id);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -45,7 +44,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877555", 3)]
+        [InlineData("537650f3b77efe23a47914f3", 5)]
         public async Task GetByOrganizationIdAsync(string id, int count) {
             var result = await GetByFilterAsync("organization:" + id);
             Assert.NotNull(result);
@@ -54,7 +53,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877ab2", 3)]
+        [InlineData("537650f3b77efe23a47914f4", 5)]
         public async Task GetByProjectIdAsync(string id, int count) {
             var result = await GetByFilterAsync("project:" + id);
             Assert.NotNull(result);
@@ -62,7 +61,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("log", 2)]
+        [InlineData("log", 4)]
         [InlineData("error", 1)]
         [InlineData("custom", 0)]
         public async Task GetByTypeAsync(string type, int count) {
@@ -92,7 +91,7 @@ namespace Exceptionless.Tests.Repositories {
 
         [Theory]
         [InlineData("{5 TO 50}", 1)]
-        [InlineData("5", 1)]
+        [InlineData("5", 3)]
         [InlineData("50", 1)]
         public async Task GetByOccurrencesAsync(string occurrences, int count) {
             var result = await GetByFilterAsync("occurrences:" + occurrences);
@@ -101,7 +100,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("title:\"GET /Print\"", 1)]
+        [InlineData("title:\"GET /Print\"", 3)]
         [InlineData("title:\"The provided anti-forgery token was meant\"", 1)]
         [InlineData("title:\"test@exceptionless.com\"", 1)]
         [InlineData("title:\"Row not found or changed.\"", 1)]
@@ -112,7 +111,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("tag:test", 1)]
+        [InlineData("tag:test", 3)]
         [InlineData("tag:Blake", 0)]
         [InlineData("tag:Niemyjski", 0)]
         [InlineData("tag:\"Blake Niemyjski\"", 1)]
@@ -131,34 +130,17 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData(false, 1)]
-        [InlineData(true, 2)]
-        public async Task GetByFixedAsync(bool @fixed, int count) {
-            var result = await GetByFilterAsync("fixed:" + @fixed.ToString().ToLowerInvariant());
+        [InlineData("open", 1)]
+        [InlineData("fixed", 2)]
+        [InlineData("regressed", 1)]
+        public async Task GetByStatusAsync(string status, int count) {
+            var result = await GetByFilterAsync("status:" + status);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
 
         [Theory]
-        [InlineData(false, 2)]
-        [InlineData(true, 1)]
-        public async Task GetByHiddenAsync(bool hidden, int count) {
-            var result = await GetByFilterAsync("hidden:" + hidden.ToString().ToLowerInvariant());
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData(false, 2)]
-        [InlineData(true, 1)]
-        public async Task GetByRegressedAsync(bool regressed, int count) {
-            var result = await GetByFilterAsync("regressed:" + regressed.ToString().ToLowerInvariant());
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData(false, 2)]
+        [InlineData(false, 4)]
         [InlineData(true, 1)]
         public async Task GetByCriticalAsync(bool critical, int count) {
             var result = await GetByFilterAsync("critical:" + critical.ToString().ToLowerInvariant());
@@ -167,7 +149,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("links:\"http://exceptionless.io\"", 1)]
+        [InlineData("links:\"http://exceptionless.io\"", 3)]
         [InlineData("links:\"https://github.com/exceptionless/Exceptionless\"", 1)]
         public async Task GetByLinksAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
@@ -183,25 +165,8 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(count, result.Total);
         }
 
-        private async Task CreateDataAsync() {
-            string path = Path.Combine("..", "..", "..", "Search", "Data");
-            var serializer = GetService<JsonSerializer>();
-            foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
-                if (file.EndsWith("summary.json"))
-                    continue;
-
-                using (var stream = new FileStream(file, FileMode.Open)) {
-                    using (var streamReader = new StreamReader(stream)) {
-                        var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
-                        Assert.NotNull(stack);
-                        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
-                    }
-                }
-            }
-        }
-
         private Task<FindResults<Stack>> GetByFilterAsync(string filter) {
-            return _repository.GetByFilterAsync(null, filter, null, null, DateTime.MinValue, DateTime.MaxValue);
+            return _repository.FindAsync(q => q.FilterExpression(filter));
         }
     }
 }

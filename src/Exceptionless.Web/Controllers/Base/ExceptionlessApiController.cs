@@ -150,9 +150,10 @@ namespace Exceptionless.Web.Controllers {
             // Empty user filter
             if (String.IsNullOrEmpty(filter))
                 return true;
-
+            
             // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
-            bool hasOrganizationOrProjectOrStackFilter = filter.Contains("organization:") || filter.Contains("project:") || filter.Contains("stack:");
+            var scope = GetFilterScopeVisitor.Run(filter);
+            bool hasOrganizationOrProjectOrStackFilter = !String.IsNullOrEmpty(scope.OrganizationId) || !String.IsNullOrEmpty(scope.ProjectId) || !String.IsNullOrEmpty(scope.StackId);
             return !hasOrganizationOrProjectOrStackFilter;
         }
 

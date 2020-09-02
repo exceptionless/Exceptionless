@@ -8,7 +8,7 @@
       </p>
 
       <center>
-        <button class="button radius" href="\{{BaseUrl}}/account/verify?token=/\{{UserVerifyEmailAddressToken}}">
+        <button class="button radius" href="\{{BaseUrl}}/account/verify?token=\{{UserVerifyEmailAddressToken}}">
             Verify Address
           </button>
       </center>
@@ -28,15 +28,14 @@
   "description": "\{{Subject}}",
   "potentialAction": {
     "@type": "ViewAction",
-    "target": "\{{BaseUrl}}/account/verify?token=/\{{UserVerifyEmailAddressToken}}",
-    "url": "\{{BaseUrl}}/account/verify?token=/\{{UserVerifyEmailAddressToken}}",
+    "target": "\{{BaseUrl}}/account/verify?token=\{{UserVerifyEmailAddressToken}}",
+    "url": "\{{BaseUrl}}/account/verify?token=\{{UserVerifyEmailAddressToken}}",
     "name": "Verify Address"
   },
   "publisher": {
     "@type": "Organization",
     "name": "Exceptionless",
     "url": "https://exceptionless.com",
-    "url/googlePlus": "https://plus.google.com/111513069275546127753",
     "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
   }
 }

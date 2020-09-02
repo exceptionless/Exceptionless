@@ -1,3 +1,5 @@
+appMode: Production
+appScope: prod
 api:
   replicaCount: 5
   defaultDomain: api.exceptionless.io
@@ -38,4 +40,3 @@ jobs:
 
 config:
   EX_EnableSnapshotJobs: "true"
-  EX_Scope: "prod"

@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
-        private static readonly string StackTypeName = typeof(Stack).Name;
+        private static readonly string StackTypeName = nameof(Stack);
         private readonly IStackRepository _stackRepository;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IMessagePublisher _publisher;
@@ -65,9 +65,11 @@ namespace Exceptionless.Core.Pipeline {
                             Type = ctx.Event.Type,
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
-                            LastOccurrence = ctx.Event.Date.UtcDateTime,
-                            IsHidden = ctx.Event.IsHidden
+                            LastOccurrence = ctx.Event.Date.UtcDateTime
                         };
+
+                        if (ctx.Event.Type == Event.KnownTypes.Session)
+                            stack.Status = StackStatus.Ignored;
 
                         ctx.Stack = stack;
                         stacks.Add(signatureHash, Tuple.Create(true, ctx.Stack));
@@ -85,6 +87,11 @@ namespace Exceptionless.Core.Pipeline {
                         stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(false, ctx.Stack));
                     else
                         stacks[ctx.Stack.SignatureHash] = Tuple.Create(false, ctx.Stack);
+
+                    if (ctx.Stack.Status == StackStatus.Discarded) {
+                        ctx.IsDiscarded = true;
+                        ctx.IsCancelled = true;
+                    }
                 }
 
                 if (!ctx.IsNew && ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
@@ -104,10 +111,6 @@ namespace Exceptionless.Core.Pipeline {
                 }
 
                 ctx.Event.IsFirstOccurrence = ctx.IsNew;
-
-                // sync the fixed and hidden flags to the error occurrence
-                ctx.Event.IsFixed = ctx.Stack.DateFixed.HasValue && !ctx.Stack.IsRegressed;
-                ctx.Event.IsHidden = ctx.Stack.IsHidden;
             }
 
             var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();

@@ -1,0 +1,21 @@
+apiVersion:  v1
+kind: Pod
+metadata:
+  name: ex-prod-manual-migration
+  namespace: ex-prod
+spec:
+  restartPolicy: Never
+  containers:
+    - name: ex-prod-manual-data-migration
+      image: exceptionless/job-ci:6.1.4-alpha.0.30
+      resources:
+        requests:
+          memory: 75Mi
+          cpu: 200m
+        limits:
+          memory: 125Mi
+          cpu: 400m
+      args: [Migration]
+      envFrom:
+        - configMapRef:
+            name: ex-prod-config

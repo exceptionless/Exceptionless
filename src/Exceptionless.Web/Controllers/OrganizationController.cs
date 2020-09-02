@@ -12,17 +12,15 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
-using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -40,11 +38,11 @@ namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/organizations")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
+        private readonly OrganizationService _organizationService;
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IQueue<WorkItemData> _workItemQueue;
         private readonly BillingManager _billingManager;
         private readonly BillingPlans _plans;
         private readonly IMailer _mailer;
@@ -52,12 +50,12 @@ namespace Exceptionless.Web.Controllers {
         private readonly AppOptions _options;
 
         public OrganizationController(
+            OrganizationService organizationService,
             IOrganizationRepository organizationRepository,
             ICacheClient cacheClient,
             IEventRepository eventRepository,
             IUserRepository userRepository,
             IProjectRepository projectRepository,
-            IQueue<WorkItemData> workItemQueue,
             BillingManager billingManager,
             IMailer mailer,
             IMessagePublisher messagePublisher,
@@ -66,11 +64,11 @@ namespace Exceptionless.Web.Controllers {
             AppOptions options,
             ILoggerFactory loggerFactory,
             BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory) {
+            _organizationService = organizationService;
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
-            _workItemQueue = workItemQueue;
             _billingManager = billingManager;
             _mailer = mailer;
             _messagePublisher = messagePublisher;
@@ -124,7 +122,7 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
         /// <response code="404">The organization could not be found.</response>
         [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
-        public async Task<ActionResult<ViewOrganization>> GetByIdAsync(string id, string mode = null) {
+        public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string mode = null) {
             var organization = await GetModelAsync(id);
             if (organization == null)
                 return NotFound();
@@ -177,6 +175,17 @@ namespace Exceptionless.Web.Controllers {
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
             return DeleteImplAsync(ids.FromDelimitedString());
+        }
+        
+        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
+            foreach (var organization in organizations) {
+                using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext))) {
+                    _logger.LogInformation("User {User} deleting organization: {OrganizationName}  ({OrganizationId})", CurrentUser.Id, organization.Name, organization.Id);
+                    await _organizationService.SoftDeleteOrganizationAsync(organization, CurrentUser.Id);
+                }
+            }
+            
+            return Enumerable.Empty<string>();
         }
 
         #endregion
@@ -700,22 +709,6 @@ namespace Exceptionless.Web.Controllers {
             return await base.CanDeleteAsync(value);
         }
 
-        protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
-            var workItems = new List<string>();
-            foreach (var organization in organizations) {
-                using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogInformation("User {user} deleting organization {organization}.", CurrentUser.Id, organization.Id);
-
-                workItems.Add(await _workItemQueue.EnqueueAsync(new RemoveOrganizationWorkItem {
-                    OrganizationId = organization.Id,
-                    CurrentUserId = CurrentUser.Id,
-                    IsGlobalAdmin = User.IsInRole(AuthorizationRoles.GlobalAdmin)
-                }));
-            }
-
-            return workItems;
-        }
-
         protected override async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
             await base.AfterResultMapAsync(models);
 
@@ -740,7 +733,7 @@ namespace Exceptionless.Web.Controllers {
             var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
             var sf = new AppFilter(organizations);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
-            var result = await _eventRepository.CountBySearchAsync(systemFilter, null, $"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)");
+            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)"));
             foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Aggregations.Terms<string>("terms_organization_id")?.Buckets.FirstOrDefault(t => t.Key == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

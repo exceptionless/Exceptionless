@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -8,18 +9,21 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Exceptionless.Core.Billing;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
-using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
@@ -31,6 +35,8 @@ namespace Exceptionless.Tests.Controllers {
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
 
         public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+            Log.MinimumLevel = LogLevel.Warning;
+
             _eventRepository = GetService<IEventRepository>();
             _eventQueue = GetService<IQueue<EventPost>>();
             _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -39,7 +45,9 @@ namespace Exceptionless.Tests.Controllers {
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
             await _eventQueue.DeleteQueueAsync();
-            await CreateOrganizationAndProjectsAsync();
+            
+            var service = GetService<SampleDataService>();
+            await service.CreateDataAsync();
         }
 
         [Fact]
@@ -186,16 +194,153 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(batchSize * batchCount, await _eventRepository.CountAsync());
         }
 
-        private Task CreateOrganizationAndProjectsAsync() {
-            var organizationRepository = GetService<IOrganizationRepository>();
-            var projectRepository = GetService<IProjectRepository>();
-            var tokenRepository = GetService<ITokenRepository>();
+        [Fact]
+        public async Task CanGetMostFrequentStackMode() {
+            await CreateStacksAndEventsAsync();
 
-            return Task.WhenAll(
-                organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
-                projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency()),
-                tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency())
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", "status:fixed")
+                .QueryString("mode", "stack_frequent")
+                .StatusCodeShouldBeOk()
             );
+
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public async Task CanGetNewStackMode() {
+            await CreateStacksAndEventsAsync();
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", "status:open")
+                .QueryString("mode", "stack_new")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Single(results);
+        }
+
+        [Fact]
+        public async Task GetRecentStackMode() {
+            await CreateStacksAndEventsAsync();
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", "status:open")
+                .QueryString("mode", "stack_recent")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Single(results);
+        }
+
+        [Fact]
+        public async Task GetUsersStackMode() {
+            await CreateStacksAndEventsAsync();
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:error (status:open OR status:regressed)")
+                .QueryString("mode", "stack_users")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Single(results);
+        }
+
+        [Theory]
+        [InlineData("status:open", 1)]
+        [InlineData("status:regressed", 1)]
+        [InlineData("status:ignored", 1)]
+        [InlineData("(status:open OR status:regressed)", 2)]
+        [InlineData("is_fixed:true", 2)]
+        [InlineData("status:fixed", 2)]
+        [InlineData("status:discarded", 0)]
+        [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
+        [InlineData("type:log status:fixed", 2)]
+        [InlineData("type:log version_fixed:1.2.3", 1)]
+        [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 1)]
+        [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
+        [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
+        [InlineData("type:error", 1)]
+        public async Task CheckStackModeCounts(string filter, int expected) {
+            await CreateStacksAndEventsAsync();
+
+            var modes = new [] { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
+            foreach (string mode in modes) {
+                var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                    .AsGlobalAdminUser()
+                    .AppendPath("events")
+                    .QueryString("filter", filter)
+                    .QueryString("mode", mode)
+                    .StatusCodeShouldBeOk()
+                );
+
+                Assert.Equal(expected, results.Count);
+
+                // @! forces use of opposite of default filter inversion
+                results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                    .AsGlobalAdminUser()
+                    .AppendPath("events")
+                    .QueryString("filter", $"@!{filter}")
+                    .QueryString("mode", mode)
+                    .StatusCodeShouldBeOk()
+                );
+
+                Assert.Equal(expected, results.Count);
+            }
+        }
+        
+        [Theory]
+        [InlineData("status:open", 1)]
+        [InlineData("status:regressed", 3)]
+        [InlineData("status:ignored", 1)]
+        [InlineData("(status:open OR status:regressed)", 4)]
+        [InlineData("is_fixed:true", 2)]
+        [InlineData("status:fixed", 2)]
+        [InlineData("status:discarded", 0)]
+        [InlineData("tags:old_tag", 0)] // Stack only tags won't be resolved
+        [InlineData("type:log status:fixed", 2)]
+        [InlineData("type:log version_fixed:1.2.3", 1)]
+        [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 2)]
+        [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
+        [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
+        [InlineData("type:error", 2)]
+        public async Task CheckSummaryModeCounts(string filter, int expected) {
+            await CreateStacksAndEventsAsync();
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", filter)
+                .QueryString("mode", "summary")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(expected, results.Count);
+
+            // @! forces use of opposite of default filter inversion
+            results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", $"@!{filter}")
+                .QueryString("mode", "summary")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(expected, results.Count);
+        }
+
+        private async Task CreateStacksAndEventsAsync() {
+            await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
+            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
         }
     }
 }

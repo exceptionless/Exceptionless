@@ -35,8 +35,8 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
             if (project == null || project.IsConfigured.GetValueOrDefault())
                 return;
-
-            project.IsConfigured = workItem.IsConfigured || await _eventRepository.GetCountByProjectIdAsync(project.Id, true).AnyContext() > 0;
+            
+            project.IsConfigured = workItem.IsConfigured || await _eventRepository.CountAsync(q => q.Project(project.Id)).AnyContext() > 0;
             await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
         }
     }

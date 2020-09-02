@@ -75,8 +75,8 @@ namespace Exceptionless.Tests.Jobs {
         [Fact]
         public async Task CanRunJobWithMassiveEventAsync() {
             var ev = GenerateEvent();
-            for (int i = 1; i < 150; i++)
-                ev.Data[$"{i}MB"] = new string('0', 1024 * 1000);
+            for (int i = 1; i < 100; i++)
+                ev.Data[$"{i}MB"] = new string('0', 1024 * 1000); 
 
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
@@ -157,9 +157,7 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
-            if (!occurrenceDate.HasValue)
-                occurrenceDate = SystemClock.OffsetNow;
-
+            occurrenceDate ??= SystemClock.OffsetNow;
             return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
         }
     }
