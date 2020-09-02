@@ -8,8 +8,6 @@ api:
     - api.exceptionless.com
 app:
   replicaCount: 2
-  image:
-    tag: "2.9.2"
   defaultDomain: be.exceptionless.io
   domains:
     - be.exceptionless.io
