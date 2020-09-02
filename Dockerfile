@@ -1,4 +1,4 @@
-ARG UI_VERSION=ui:2.9.2
+ARG UI_VERSION=ui:3.0.0
 FROM exceptionless/${UI_VERSION} AS ui
 
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
@@ -78,7 +78,7 @@ CMD [ "dotnet", "Exceptionless.Web.dll" ]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.8.1 AS exceptionless
+FROM exceptionless/elasticsearch:7.9.0 AS exceptionless
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
