@@ -32,6 +32,7 @@ namespace Exceptionless.Core.Migrations {
             var stackResponse = await _client.UpdateByQueryAsync<Stack>(x => x
                 .QueryOnQueryString("NOT _exists_:status")
                 .Script(s => s.Source(script).Lang(ScriptLang.Painless))
+                .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                 .WaitForCompletion(false));
 
             _logger.LogTraceRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
@@ -55,7 +56,7 @@ namespace Exceptionless.Core.Migrations {
                 await Task.Delay(delay);
             } while (true);
 
-            _logger.LogInformation("Finished adding stack status: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, stackResponse.Total, stackResponse.Failures.Count);
+            _logger.LogInformation("Finished adding stack status: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures.Count);
         }
     }
 }
