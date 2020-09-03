@@ -106,6 +106,11 @@ namespace Exceptionless.Core.Models {
         /// </summary>
         public TagSet Tags { get; set; }
 
+        /// <summary>
+        /// The signature used for finding duplicate stacks. (ProjectId, SignatureHash)
+        /// </summary>
+        public string DuplicateSignature { get; set; }
+
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
         public bool IsDeleted { get; set; }

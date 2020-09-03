@@ -60,6 +60,7 @@ namespace Exceptionless.Core.Pipeline {
                             ProjectId = ctx.Event.ProjectId,
                             SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                             SignatureHash = signatureHash,
+                            DuplicateSignature = ctx.Event.ProjectId + ":" + signatureHash,
                             Title = title?.Truncate(1000),
                             Tags = ctx.Event.Tags ?? new TagSet(),
                             Type = ctx.Event.Type,
