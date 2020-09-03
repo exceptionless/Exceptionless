@@ -7,7 +7,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: ex-prod-manual-data-migration
-      image: exceptionless/job-ci:6.1.4-alpha.0.30
+      image: exceptionless/job-ci:6.1.5-alpha.0.2
       resources:
         requests:
           memory: 75Mi
