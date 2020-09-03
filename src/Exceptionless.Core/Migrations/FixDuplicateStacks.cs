@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -36,7 +37,7 @@ namespace Exceptionless.Core.Migrations {
             int total = buckets.Count;
             int processed = 0;
             int error = 0;
-            var lastStatus = DateTime.MinValue;
+            DateTime? lastStatus = null;
 
             _logger.LogInformation($"Found {total} duplicate stacks.");
 
@@ -44,13 +45,13 @@ namespace Exceptionless.Core.Migrations {
                 string projectId = null;
                 string signature = null;
                 try {
-                    var parts = duplicateSignature.KeyAsString.Split(':');
+                    var parts = duplicateSignature.Key.Split(':');
                     if (parts.Length != 2) {
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.KeyAsString);
                         continue;
                     }
-                    projectId = duplicateSignature.KeyAsString.Split(':').First();
-                    signature = duplicateSignature.KeyAsString.Split(':').Last();
+                    projectId = parts[0];
+                    signature = parts[1];
 
                     var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
                     var targetStack = stacks.Documents.OrderBy(s => s.CreatedUtc).First();
@@ -66,12 +67,13 @@ namespace Exceptionless.Core.Migrations {
                     targetStack.References = stacks.Documents.SelectMany(d => d.References).Distinct().ToList();
                     targetStack.OccurrencesAreCritical = stacks.Documents.Any(d => d.OccurrencesAreCritical);
                     
-                    await _stackRepository.RemoveAsync(duplicateStacks);
+                    duplicateStacks.ForEach(s => s.IsDeleted = true);
+                    await _stackRepository.SaveAsync(duplicateStacks);
                     await _stackRepository.SaveAsync(targetStack);
                     processed++;
 
-                    if (DateTime.Now.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
-                        lastStatus = DateTime.Now;
+                    if (!lastStatus.HasValue || SystemClock.UtcNow.Subtract(lastStatus.Value) > TimeSpan.FromSeconds(5)) {
+                        lastStatus = SystemClock.UtcNow;
                         _logger.LogInformation("Fixing duplicate stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                     }
                 } catch (Exception ex) {

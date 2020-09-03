@@ -47,6 +47,8 @@ namespace Exceptionless.Tests.Utility {
                 SignatureInfo = new SettingsDictionary()
             };
 
+            stack.DuplicateSignature = String.Concat(stack.ProjectId, ":", stack.SignatureHash);
+
             if (type == Event.KnownTypes.Error)
                 stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random());
 
