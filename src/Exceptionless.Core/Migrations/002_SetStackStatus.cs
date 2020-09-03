@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Caching;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
@@ -12,10 +13,12 @@ namespace Exceptionless.Core.Migrations {
     public sealed class SetStackStatus : MigrationBase {
         private readonly IElasticClient _client;
         private readonly ExceptionlessElasticConfiguration _config;
+        private readonly ICacheClient _cache;
 
         public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
+            _cache = configuration.Cache;
             
             MigrationType = MigrationType.VersionedAndResumable;
             Version = 2;
@@ -57,6 +60,10 @@ namespace Exceptionless.Core.Migrations {
             } while (true);
 
             _logger.LogInformation("Finished adding stack status: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures.Count);
+            
+            _logger.LogInformation("Invalidating Stack Cache");
+            await _cache.RemoveByPrefixAsync(nameof(Stack));
+            _logger.LogInformation("Invalidating Stack Cache");
         }
     }
 }
