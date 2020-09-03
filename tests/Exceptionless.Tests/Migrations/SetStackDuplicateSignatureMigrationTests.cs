@@ -28,7 +28,9 @@ namespace Exceptionless.Tests.Migrations {
 
         [Fact]
         public async Task WillSetStackDuplicateSignature() {
-            var stack =  await _repository.AddAsync(StackData.GenerateStack(), o => o.ImmediateConsistency());
+            var stack = StackData.GenerateStack();
+            stack.DuplicateSignature = null;
+            stack = await _repository.AddAsync(stack, o => o.ImmediateConsistency());
             Assert.NotEmpty(stack.ProjectId);
             Assert.NotEmpty(stack.SignatureHash);
             Assert.Null(stack.DuplicateSignature);
