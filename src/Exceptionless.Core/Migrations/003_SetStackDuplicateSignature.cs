@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Migrations {
             _logger.LogInformation("Updating Stack mappings...");
             var response = await _client.MapAsync<Stack>(d => {
                 d.Index(_config.Stacks.VersionedName);
-                d.Properties(p => p.Keyword(f => f.Name(s => s.DuplicateSignature).IgnoreAbove(1024)));
+                d.Properties(p => p.Keyword(f => f.Name(s => s.DuplicateSignature)));
 
                 return d;
             });
