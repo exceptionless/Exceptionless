@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Date(f => f.Name(s => s.SnoozeUntilUtc))
                     .Keyword(f => f.Name(s => s.SignatureHash).IgnoreAbove(1024))
                         .FieldAlias(a => a.Name(Alias.SignatureHash).Path(f => f.SignatureHash))
-                    .Keyword(f => f.Name(s => s.DuplicateSignature).IgnoreAbove(1024))
+                    .Keyword(f => f.Name(s => s.DuplicateSignature))
                     .Keyword(f => f.Name(e => e.Type).IgnoreAbove(1024))
                     .Date(f => f.Name(s => s.FirstOccurrence))
                         .FieldAlias(a => a.Name(Alias.FirstOccurrence).Path(f => f.FirstOccurrence))
