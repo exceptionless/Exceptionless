@@ -88,6 +88,7 @@ namespace Exceptionless.Core.Migrations {
                             .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                             .WaitForCompletion(false));
 
+                        var taskStartedTime = SystemClock.Now;
                         var taskId = response.Task;
                         int attempts = 0;
                         long affectedRecords = 0;
@@ -97,12 +98,14 @@ namespace Exceptionless.Core.Migrations {
                             var status = taskStatus.Task.Status;
                             if (taskStatus.Completed) {
                                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
-                                _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                                if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                                    _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                                 affectedRecords += status.Created + status.Updated + status.Deleted;
                                 break;
                             }
 
-                            _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                            if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                                _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                             var delay = TimeSpan.FromSeconds(attempts <= 5 ? 1 : 5);
                             await Task.Delay(delay);
                         } while (true);
