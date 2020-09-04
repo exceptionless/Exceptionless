@@ -44,6 +44,7 @@ namespace Exceptionless.Core.Migrations {
             int total = buckets.Count;
             int processed = 0;
             int error = 0;
+            long totalUpdatedEventCount = 0;
             var lastStatus = SystemClock.Now;
             int batch = 1;
 
@@ -78,7 +79,36 @@ namespace Exceptionless.Core.Migrations {
                         duplicateStacks.ForEach(s => s.IsDeleted = true);
                         await _stackRepository.SaveAsync(duplicateStacks);
                         await _stackRepository.SaveAsync(targetStack);
-                        await _eventRepository.PatchAllAsync(q => q.Stack(duplicateStacks.Select(s => s.Id)), new PartialPatch(new { stack_id = targetStack.Id }));
+
+                        var response = await _client.UpdateByQueryAsync<PersistentEvent>(u => u
+                            .Query(q => q.Bool(b => b.Must(m => m
+                                .Terms(t => t.Field(f => f.StackId).Terms(duplicateStacks.Select(s => s.Id)))
+                            )))
+                            .Script(s => s.Source($"ctx._source.stack_id = '{targetStack.Id}'").Lang(ScriptLang.Painless))
+                            .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
+                            .WaitForCompletion(false));
+
+                        var taskId = response.Task;
+                        int attempts = 0;
+                        long affectedRecords = 0;
+                        do {
+                            attempts++;
+                            var taskStatus = await _client.Tasks.GetTaskAsync(taskId);
+                            var status = taskStatus.Task.Status;
+                            if (taskStatus.Completed) {
+                                // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
+                                _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                                affectedRecords += status.Created + status.Updated + status.Deleted;
+                                break;
+                            }
+
+                            _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                            var delay = TimeSpan.FromSeconds(attempts <= 5 ? 1 : 5);
+                            await Task.Delay(delay);
+                        } while (true);
+                        _logger.LogInformation("Done fixing duplicate stack: Target={TargetId} Dupes={DuplicateIds} Events={UpdatedEvents}", targetStack.Id, duplicateStacks.Select(s => s.Id), affectedRecords);
+
+                        totalUpdatedEventCount += affectedRecords;
                         processed++;
 
                         if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
