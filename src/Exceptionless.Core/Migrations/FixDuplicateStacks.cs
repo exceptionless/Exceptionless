@@ -5,7 +5,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
@@ -87,6 +86,8 @@ namespace Exceptionless.Core.Migrations {
                             .Script(s => s.Source($"ctx._source.stack_id = '{targetStack.Id}'").Lang(ScriptLang.Painless))
                             .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                             .WaitForCompletion(false));
+                        
+                        _logger.LogInformation("Duplicate stack: Target={TargetId} Dupes={DuplicateIds} Events={EventCount}", targetStack.Id, duplicateStacks.Select(s => s.Id), response.Total);
 
                         var taskStartedTime = SystemClock.Now;
                         var taskId = response.Task;
@@ -116,14 +117,14 @@ namespace Exceptionless.Core.Migrations {
 
                             await Task.Delay(delay);
                         } while (true);
-                        _logger.LogInformation("Duplicate stack: Target={TargetId} Dupes={DuplicateIds} Events={UpdatedEvents}", targetStack.Id, duplicateStacks.Select(s => s.Id), affectedRecords);
+                        _logger.LogInformation("Move stack events: Target={TargetId} Dupes={DuplicateIds} Events={UpdatedEvents}", targetStack.Id, duplicateStacks.Select(s => s.Id), affectedRecords);
 
                         totalUpdatedEventCount += affectedRecords;
                         processed++;
 
                         if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
                             lastStatus = SystemClock.UtcNow;
-                            _logger.LogInformation("Duplicate stacks progress: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
+                            _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                             await _cache.RemoveByPrefixAsync(nameof(Stack));
                         }
                     } catch (Exception ex) {
