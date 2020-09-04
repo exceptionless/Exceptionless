@@ -41,51 +41,65 @@ namespace Exceptionless.Core.Migrations {
             int processed = 0;
             int error = 0;
             DateTime? lastStatus = null;
+            int batch = 1;
 
-            _logger.LogInformation($"Found {total} duplicate stacks.");
+            while (buckets.Count > 0) {
+                _logger.LogInformation($"Found {total} duplicate stacks in batch #{batch}.");
 
-            foreach (var duplicateSignature in buckets) {
-                string projectId = null;
-                string signature = null;
-                try {
-                    var parts = duplicateSignature.Key.Split(':');
-                    if (parts.Length != 2) {
-                        _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.KeyAsString);
-                        continue;
+                foreach (var duplicateSignature in buckets) {
+                    string projectId = null;
+                    string signature = null;
+                    try {
+                        var parts = duplicateSignature.Key.Split(':');
+                        if (parts.Length != 2) {
+                            _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.KeyAsString);
+                            continue;
+                        }
+                        projectId = parts[0];
+                        signature = parts[1];
+
+                        var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
+                        var targetStack = stacks.Documents.OrderBy(s => s.CreatedUtc).First();
+                        var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
+
+                        targetStack.Status = stacks.Documents.FirstOrDefault(d => d.Status != StackStatus.Open)?.Status ?? StackStatus.Open;
+                        targetStack.LastOccurrence = stacks.Documents.Max(d => d.LastOccurrence);
+                        targetStack.SnoozeUntilUtc = stacks.Documents.Max(d => d.SnoozeUntilUtc);
+                        targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed); ;
+                        targetStack.TotalOccurrences += duplicateStacks.Sum(d => d.TotalOccurrences);
+                        targetStack.Tags.AddRange(duplicateStacks.SelectMany(d => d.Tags));
+                        targetStack.References = stacks.Documents.SelectMany(d => d.References).Distinct().ToList();
+                        targetStack.OccurrencesAreCritical = stacks.Documents.Any(d => d.OccurrencesAreCritical);
+
+                        duplicateStacks.ForEach(s => s.IsDeleted = true);
+                        await _stackRepository.SaveAsync(duplicateStacks);
+                        await _stackRepository.SaveAsync(targetStack);
+                        processed++;
+
+                        if (!lastStatus.HasValue || SystemClock.UtcNow.Subtract(lastStatus.Value) > TimeSpan.FromSeconds(5)) {
+                            lastStatus = SystemClock.UtcNow;
+                            _logger.LogInformation("Fixing duplicate stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
+                            await _cache.RemoveByPrefixAsync(nameof(Stack));
+                        }
                     }
-                    projectId = parts[0];
-                    signature = parts[1];
-
-                    var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
-                    var targetStack = stacks.Documents.OrderBy(s => s.CreatedUtc).First();
-                    var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
-
-                    targetStack.Status = stacks.Documents.FirstOrDefault(d => d.Status != StackStatus.Open)?.Status ?? StackStatus.Open;
-                    targetStack.LastOccurrence = stacks.Documents.Max(d => d.LastOccurrence);
-                    targetStack.SnoozeUntilUtc = stacks.Documents.Max(d => d.SnoozeUntilUtc);
-                    targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed); ;
-                    targetStack.TotalOccurrences += duplicateStacks.Sum(d => d.TotalOccurrences);
-                    targetStack.Tags.AddRange(duplicateStacks.SelectMany(d => d.Tags));
-                    targetStack.References = stacks.Documents.SelectMany(d => d.References).Distinct().ToList();
-                    targetStack.OccurrencesAreCritical = stacks.Documents.Any(d => d.OccurrencesAreCritical);
-                    
-                    duplicateStacks.ForEach(s => s.IsDeleted = true);
-                    await _stackRepository.SaveAsync(duplicateStacks);
-                    await _stackRepository.SaveAsync(targetStack);
-                    processed++;
-
-                    if (!lastStatus.HasValue || SystemClock.UtcNow.Subtract(lastStatus.Value) > TimeSpan.FromSeconds(5)) {
-                        lastStatus = SystemClock.UtcNow;
-                        _logger.LogInformation("Fixing duplicate stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
+                    catch (Exception ex) {
+                        error++;
+                        _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                     }
-                } catch (Exception ex) {
-                    error++;
-                    _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                 }
-            }
 
-            _logger.LogInformation("Invalidating Stack Cache");
-            await _cache.RemoveByPrefixAsync(nameof(Stack));
+                duplicateStackAgg = await _client.SearchAsync<Stack>(q => q
+                    .QueryOnQueryString("is_deleted:false")
+                    .Size(0)
+                    .Aggregations(a => a.Terms("stacks", t => t.Field(f => f.DuplicateSignature).MinimumDocumentCount(2).Size(10000))));
+
+                buckets = duplicateStackAgg.Aggregations.Terms("stacks").Buckets;
+                total += buckets.Count;
+                batch++;
+
+                _logger.LogInformation("Invalidating stack cache");
+                await _cache.RemoveByPrefixAsync(nameof(Stack));
+            }
         }
     }
 }
