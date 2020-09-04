@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
@@ -40,7 +41,7 @@ namespace Exceptionless.Core.Migrations {
             int total = buckets.Count;
             int processed = 0;
             int error = 0;
-            DateTime? lastStatus = null;
+            var lastStatus = SystemClock.Now;
             int batch = 1;
 
             while (buckets.Count > 0) {
@@ -76,7 +77,7 @@ namespace Exceptionless.Core.Migrations {
                         await _stackRepository.SaveAsync(targetStack);
                         processed++;
 
-                        if (!lastStatus.HasValue || SystemClock.UtcNow.Subtract(lastStatus.Value) > TimeSpan.FromSeconds(5)) {
+                        if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
                             lastStatus = SystemClock.UtcNow;
                             _logger.LogInformation("Fixing duplicate stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                             await _cache.RemoveByPrefixAsync(nameof(Stack));
