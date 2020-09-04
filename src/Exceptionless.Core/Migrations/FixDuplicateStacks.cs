@@ -106,17 +106,24 @@ namespace Exceptionless.Core.Migrations {
 
                             if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                 _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
-                            var delay = TimeSpan.FromSeconds(attempts <= 5 ? 1 : 5);
+                            var delay = TimeSpan.FromMilliseconds(50);
+                            if (attempts > 20)
+                                delay = TimeSpan.FromSeconds(5);
+                            else if (attempts > 10)
+                                delay = TimeSpan.FromSeconds(1);
+                            else if (attempts > 5)
+                                delay = TimeSpan.FromMilliseconds(250);
+
                             await Task.Delay(delay);
                         } while (true);
-                        _logger.LogInformation("Done fixing duplicate stack: Target={TargetId} Dupes={DuplicateIds} Events={UpdatedEvents}", targetStack.Id, duplicateStacks.Select(s => s.Id), affectedRecords);
+                        _logger.LogInformation("Duplicate stack: Target={TargetId} Dupes={DuplicateIds} Events={UpdatedEvents}", targetStack.Id, duplicateStacks.Select(s => s.Id), affectedRecords);
 
                         totalUpdatedEventCount += affectedRecords;
                         processed++;
 
                         if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
                             lastStatus = SystemClock.UtcNow;
-                            _logger.LogInformation("Fixing duplicate stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
+                            _logger.LogInformation("Duplicate stacks progress: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                             await _cache.RemoveByPrefixAsync(nameof(Stack));
                         }
                     } catch (Exception ex) {
