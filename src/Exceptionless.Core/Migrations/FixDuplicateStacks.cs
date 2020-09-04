@@ -9,6 +9,7 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
@@ -18,13 +19,15 @@ namespace Exceptionless.Core.Migrations {
         private readonly IElasticClient _client;
         private readonly ICacheClient _cache;
         private readonly IStackRepository _stackRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly ExceptionlessElasticConfiguration _config;
 
-        public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, ILoggerFactory loggerFactory) : base(loggerFactory) {
+        public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
             _cache = configuration.Cache;
             _stackRepository = stackRepository;
+            _eventRepository = eventRepository;
 
             MigrationType = MigrationType.Repeatable;
         }
@@ -75,6 +78,7 @@ namespace Exceptionless.Core.Migrations {
                         duplicateStacks.ForEach(s => s.IsDeleted = true);
                         await _stackRepository.SaveAsync(duplicateStacks);
                         await _stackRepository.SaveAsync(targetStack);
+                        await _eventRepository.PatchAllAsync(q => q.Stack(duplicateStacks.Select(s => s.Id)), new PartialPatch(new { stack_id = targetStack.Id }));
                         processed++;
 
                         if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
