@@ -82,11 +82,10 @@ namespace Exceptionless.Core.Migrations {
                     error++;
                     _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                 }
-
-                _logger.LogInformation("Invalidating Stack Cache");
-                await _cache.RemoveByPrefixAsync(nameof(Stack));
-                _logger.LogInformation("Invalidating Stack Cache");
             }
+
+            _logger.LogInformation("Invalidating Stack Cache");
+            await _cache.RemoveByPrefixAsync(nameof(Stack));
         }
     }
 }
