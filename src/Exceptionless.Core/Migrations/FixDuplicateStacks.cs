@@ -86,8 +86,7 @@ namespace Exceptionless.Core.Migrations {
                             _logger.LogInformation("Fixing duplicate stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                             await _cache.RemoveByPrefixAsync(nameof(Stack));
                         }
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         error++;
                         _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                     }
