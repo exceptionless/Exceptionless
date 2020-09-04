@@ -61,7 +61,6 @@ namespace Exceptionless.Core.Migrations {
                     targetStack.LastOccurrence = stacks.Documents.Max(d => d.LastOccurrence);
                     targetStack.SnoozeUntilUtc = stacks.Documents.Max(d => d.SnoozeUntilUtc);
                     targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed); ;
-                    targetStack.UpdatedUtc = stacks.Documents.Max(d => d.UpdatedUtc);
                     targetStack.TotalOccurrences += duplicateStacks.Sum(d => d.TotalOccurrences);
                     targetStack.Tags.AddRange(duplicateStacks.SelectMany(d => d.Tags));
                     targetStack.References = stacks.Documents.SelectMany(d => d.References).Distinct().ToList();
