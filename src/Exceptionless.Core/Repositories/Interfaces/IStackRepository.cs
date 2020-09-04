@@ -7,7 +7,6 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
         Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash);
-        Task<FindResults<Stack>> GetStackByDuplicateSignatureAsync(string duplicateSignature);
         Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null);
         Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null);
         Task MarkAsRegressedAsync(string stackId);
