@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -86,8 +87,9 @@ namespace Exceptionless.Core.Migrations {
                             .Script(s => s.Source($"ctx._source.stack_id = '{targetStack.Id}'").Lang(ScriptLang.Painless))
                             .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                             .WaitForCompletion(false));
+                        _logger.LogTraceRequest(response, Microsoft.Extensions.Logging.LogLevel.Information);
                         
-                        _logger.LogInformation("Duplicate stack: Target={TargetId} Dupes={DuplicateIds} Events={EventCount}", targetStack.Id, duplicateStacks.Select(s => s.Id), response.Total);
+                        _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds}", targetStack.Id, response.Total, duplicateStacks.Select(s => s.Id));
 
                         var taskStartedTime = SystemClock.Now;
                         var taskId = response.Task;
@@ -101,12 +103,14 @@ namespace Exceptionless.Core.Migrations {
                                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
                                 if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                     _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                                
                                 affectedRecords += status.Created + status.Updated + status.Deleted;
                                 break;
                             }
 
                             if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                 _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+                            
                             var delay = TimeSpan.FromMilliseconds(50);
                             if (attempts > 20)
                                 delay = TimeSpan.FromSeconds(5);
@@ -117,7 +121,9 @@ namespace Exceptionless.Core.Migrations {
 
                             await Task.Delay(delay);
                         } while (true);
-                        _logger.LogInformation("Move stack events: Target={TargetId} Dupes={DuplicateIds} Events={UpdatedEvents}", targetStack.Id, duplicateStacks.Select(s => s.Id), affectedRecords);
+
+                        if (affectedRecords > 0)
+                            _logger.LogInformation("Migrated stack events: Target={TargetId} Events={UpdatedEvents} Dupes={DuplicateIds}", targetStack.Id, affectedRecords, duplicateStacks.Select(s => s.Id));
 
                         totalUpdatedEventCount += affectedRecords;
                         processed++;
