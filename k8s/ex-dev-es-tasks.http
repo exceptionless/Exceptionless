@@ -8,7 +8,7 @@ DELETE {{apiUrl}}dev-*
 
 ###
 
-GET {{apiUrl}}_snapshot/prod-hourly/_all
+GET {{apiUrl}}_cat/snapshots/prod-hourly
 
 ###
 

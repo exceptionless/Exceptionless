@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Utility;
@@ -14,12 +15,14 @@ using Nest;
 namespace Exceptionless.Core.Migrations {
     public sealed class FixDuplicateStacks : MigrationBase {
         private readonly IElasticClient _client;
+        private readonly ICacheClient _cache;
         private readonly IStackRepository _stackRepository;
         private readonly ExceptionlessElasticConfiguration _config;
 
         public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, ILoggerFactory loggerFactory) : base(loggerFactory) {
             _config = configuration;
             _client = configuration.Client;
+            _cache = configuration.Cache;
             _stackRepository = stackRepository;
 
             MigrationType = MigrationType.Repeatable;
@@ -79,6 +82,10 @@ namespace Exceptionless.Core.Migrations {
                     error++;
                     _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                 }
+
+                _logger.LogInformation("Invalidating Stack Cache");
+                await _cache.RemoveByPrefixAsync(nameof(Stack));
+                _logger.LogInformation("Invalidating Stack Cache");
             }
         }
     }
