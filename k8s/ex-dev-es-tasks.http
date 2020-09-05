@@ -16,12 +16,16 @@ POST {{apiUrl}}dev-*/_close
 
 ###
 
-POST {{apiUrl}}_snapshot/prod-hourly/hourly-2020.08.25-15-jqtnjwlhtrekzrfwpp39lg/_restore?wait_for_completion=false
+GET {{apiUrl}}_snapshot/prod-hourly/hourly-2020.09.05-10-sknpvrrjr0-0ahbpgopbfw
+
+###
+
+POST {{apiUrl}}_snapshot/prod-hourly/hourly-2020.09.05-10-sknpvrrjr0-0ahbpgopbfw/_restore?wait_for_completion=false
 Content-Type: application/json
 
 {
   "include_global_state": true,
-  "indices": "prod-*,-prod-events-*,prod-events-v1-2020.08.2*",
+  "indices": "prod-*,-prod-events-*,prod-events-v1-2020.09.*,prod-events-v1-2020.08.2*,prod-events-v1-2020.08.3*",
   "rename_pattern": "prod-(.+)",
   "rename_replacement": "dev-$1"
 }
@@ -40,3 +44,4 @@ Content-Type: application/json
 ###
 
 GET {{apiUrl}}_tasks/hCqJFzl1QZWFkO5o1pWSSQ:128803
+

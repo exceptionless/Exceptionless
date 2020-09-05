@@ -71,3 +71,8 @@ Hello World!
 
 GET {{apiUrl}}/events
 Authorization: Bearer {{token}}
+
+###
+
+GET {{apiUrl}}/projects/5f417a533d45cf00011180fd/events?filter=project:5f417a533d45cf00011180fd+(status:open+OR+status:regressed)&limit=20&mode=stack_frequent&offset=-300m
+Authorization: Bearer LpEhCYJkudne4nGMMmCswsByaH633Q1I5EWdli9m
