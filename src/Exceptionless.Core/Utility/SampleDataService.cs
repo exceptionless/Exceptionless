@@ -78,6 +78,27 @@ namespace Exceptionless.Core.Utility {
             await CreateFreeOrganizationAndProjectAsync().AnyContext();
         }
 
+        public async Task CreateOrganizationAdminUserAsync() {
+            if (await _userRepository.GetByEmailAddressAsync(TEST_ORG_USER_EMAIL).AnyContext() != null)
+                return;
+
+            var user = new User {
+                FullName = "Test Org User",
+                EmailAddress = TEST_ORG_USER_EMAIL,
+                IsEmailAddressVerified = true
+            };
+            user.Roles.Add(AuthorizationRoles.Client);
+            user.Roles.Add(AuthorizationRoles.User);
+
+            user.Salt = StringExtensions.GetRandomString(16);
+            user.Password = TEST_ORG_USER_PASSWORD.ToSaltedHash(user.Salt);
+
+            user.OrganizationIds.Add(TEST_ORG_ID);
+
+            user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
+            _logger.LogDebug("Created Org Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
+        }
+
         public async Task CreateOrganizationAndProjectAsync(User user) {
             if (await _tokenRepository.ExistsAsync(TEST_API_KEY).AnyContext())
                 return;

@@ -50,6 +50,7 @@ namespace Exceptionless.Tests.Search {
         [InlineData("project:404", "project:404", true, false)]
         [InlineData("stack:404", "stack:404", true, false)]
         [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
+        [InlineData("status:open", "status:open", true, false)]
         public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures) {
             var context = new ElasticQueryVisitorContext { QueryType = QueryType.Query };
 
@@ -110,6 +111,7 @@ namespace Exceptionless.Tests.Search {
         [InlineData("cardinality:bot", true, true)]
         [InlineData("cardinality:version", true, true)]
         [InlineData("cardinality:level", true, true)]
+        [InlineData("terms:status", true, false)]
         [InlineData("date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1", true, false)] // dashboards
         [InlineData("date:(date cardinality:user sum:value avg:value sum:count~1) min:date max:date cardinality:user sum:count~1", true, false)] // stack dashboard
         [InlineData("avg:value cardinality:user date:(date cardinality:user)", true, false)] // session dashboard
