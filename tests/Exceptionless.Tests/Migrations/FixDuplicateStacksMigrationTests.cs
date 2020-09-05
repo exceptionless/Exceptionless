@@ -51,8 +51,8 @@ namespace Exceptionless.Tests.Migrations {
             originalStack = await _stackRepository.AddAsync(originalStack, o => o.ImmediateConsistency());
             duplicateStack = await _stackRepository.AddAsync(duplicateStack, o => o.ImmediateConsistency());
 
-            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: originalStack.Id));
-            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: duplicateStack.Id));
+            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: originalStack.Id), o => o.ImmediateConsistency());
+            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: duplicateStack.Id), o => o.ImmediateConsistency());
 
             var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
             Assert.Equal(2, results.Total);
@@ -66,9 +66,9 @@ namespace Exceptionless.Tests.Migrations {
             results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
             Assert.Single(results.Documents);
 
-            var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+            var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
             Assert.False(updatedOriginalStack.IsDeleted);
-            var updatedDuplicateStack = await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+            var updatedDuplicateStack = await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes());
             Assert.True(updatedDuplicateStack.IsDeleted);
             
             Assert.Equal(originalStack.CreatedUtc, updatedOriginalStack.CreatedUtc);
@@ -104,8 +104,8 @@ namespace Exceptionless.Tests.Migrations {
             originalStack = await _stackRepository.AddAsync(originalStack, o => o.ImmediateConsistency());
             biggerStack = await _stackRepository.AddAsync(biggerStack, o => o.ImmediateConsistency());
 
-            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: originalStack.Id));
-            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: biggerStack.Id));
+            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: originalStack.Id), o => o.ImmediateConsistency());
+            await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: biggerStack.Id), o => o.ImmediateConsistency());
 
             var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
             Assert.Equal(2, results.Total);
@@ -119,9 +119,9 @@ namespace Exceptionless.Tests.Migrations {
             results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
             Assert.Single(results.Documents);
 
-            var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+            var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
             Assert.True(updatedOriginalStack.IsDeleted);
-            var updatedBiggerStack = await _stackRepository.GetByIdAsync(biggerStack.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+            var updatedBiggerStack = await _stackRepository.GetByIdAsync(biggerStack.Id, o => o.IncludeSoftDeletes());
             Assert.False(updatedBiggerStack.IsDeleted);
 
             Assert.Equal(originalStack.CreatedUtc, updatedBiggerStack.CreatedUtc);
