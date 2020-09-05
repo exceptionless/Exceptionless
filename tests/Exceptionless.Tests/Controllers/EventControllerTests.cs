@@ -197,12 +197,33 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task CanGetMostFrequentStackMode() {
             await CreateStacksAndEventsAsync();
-
+            
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:fixed")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_frequent")
+                .QueryString("offset", "-300m")
+                .QueryString("limit", 20)
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public async Task CanGetProjectLevelMostFrequentStackMode() {
+            await CreateStacksAndEventsAsync();
+
+            string projectId = SampleDataService.TEST_PROJECT_ID;
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("projects", projectId, "events")
+                .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
+                .QueryString("mode", "stack_frequent")
+                .QueryString("offset", "-300m")
+                .QueryString("limit", 20)
                 .StatusCodeShouldBeOk()
             );
 
@@ -216,12 +237,12 @@ namespace Exceptionless.Tests.Controllers {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:open")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_new")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Single(results);
+            Assert.Equal(2, results.Count);
         }
 
         [Fact]
@@ -231,12 +252,12 @@ namespace Exceptionless.Tests.Controllers {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:open")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_recent")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Single(results);
+            Assert.Equal(2, results.Count);
         }
 
         [Fact]
@@ -248,6 +269,7 @@ namespace Exceptionless.Tests.Controllers {
                 .AppendPath("events")
                 .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:error (status:open OR status:regressed)")
                 .QueryString("mode", "stack_users")
+                .QueryString("offset", "-300m")
                 .StatusCodeShouldBeOk()
             );
 
