@@ -103,9 +103,10 @@ namespace Exceptionless.Core.Migrations {
                         duplicateStacks.ForEach(s => s.IsDeleted = true);
                         await _stackRepository.SaveAsync(duplicateStacks);
                         await _stackRepository.SaveAsync(targetStack);
+                        processed++;
 
                         long eventsToMove = eventCountBuckets.Where(b => b.Key != targetStack.Id).Sum(b => b.Total) ?? 0;
-                        _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds} UpdateEvents={UpdateEvents}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id), shouldUpdateEvents);
+                        _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds} HasEvents={HasEvents}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id), shouldUpdateEvents);
 
                         if (shouldUpdateEvents) {
                             var response = await _client.UpdateByQueryAsync<PersistentEvent>(u => u
@@ -152,7 +153,6 @@ namespace Exceptionless.Core.Migrations {
 
                             totalUpdatedEventCount += affectedRecords;
                         }
-                        processed++;
 
                         if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
                             lastStatus = SystemClock.UtcNow;
@@ -176,7 +176,7 @@ namespace Exceptionless.Core.Migrations {
                 total += buckets.Count;
                 batch++;
 
-                _logger.LogInformation("Invalidating stack cache");
+                _logger.LogInformation("Done de-duping stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                 await _cache.RemoveByPrefixAsync(nameof(Stack));
             }
         }
