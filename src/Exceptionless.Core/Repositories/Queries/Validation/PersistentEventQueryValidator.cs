@@ -17,7 +17,8 @@ namespace Exceptionless.Core.Queries.Validation {
             EventIndex.Alias.ProjectId,
             "project_id",
             EventIndex.Alias.StackId,
-            "stack_id"
+            "stack_id",
+            "status"
         };
 
         private static readonly HashSet<string> _freeAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
@@ -30,7 +31,8 @@ namespace Exceptionless.Core.Queries.Validation {
             "stack",
             EventIndex.Alias.StackId,
             EventIndex.Alias.User,
-            "data.@user.identity"
+            "data.@user.identity",
+            "status"
         };
 
         private static readonly HashSet<string> _allowedAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
@@ -38,6 +40,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "source",
             "tags",
             "type",
+            "status",
             "value",
             "count",
             "geo",
