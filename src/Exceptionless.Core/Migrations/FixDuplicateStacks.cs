@@ -68,8 +68,10 @@ namespace Exceptionless.Core.Migrations {
                         signature = parts[1];
 
                         var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
-                        if (stacks.Documents.Count < 2)
+                        if (stacks.Documents.Count < 2) {
+                            _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);
                             continue;
+                        }
 
                         var eventCounts = await _eventRepository.CountAsync(q => q.Stack(stacks.Documents.Select(s => s.Id)).AggregationsExpression("terms:stack_id"));
                         var eventCountBuckets = eventCounts.Aggregations.Terms("terms_stack_id")?.Buckets ?? new List<Foundatio.Repositories.Models.KeyedBucket<string>>();
@@ -81,7 +83,7 @@ namespace Exceptionless.Core.Migrations {
                         var targetStack = stacks.Documents.OrderBy(s => s.CreatedUtc).First();
                         var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
 
-                        // if we found events on more than one stack, use the stack that has the most events on it so we can reduce the number of updates
+                        // use the stack that has the most events on it so we can reduce the number of updates
                         if (eventCountBuckets.Count > 0) {
                             var targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
                             targetStack = stacks.Documents.Single(d => d.Id == targetStackId);
@@ -103,7 +105,7 @@ namespace Exceptionless.Core.Migrations {
                         await _stackRepository.SaveAsync(targetStack);
 
                         long eventsToMove = eventCountBuckets.Where(b => b.Key != targetStack.Id).Sum(b => b.Total) ?? 0;
-                        _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id));
+                        _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds} UpdateEvents={UpdateEvents}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id), shouldUpdateEvents);
 
                         if (shouldUpdateEvents) {
                             var response = await _client.UpdateByQueryAsync<PersistentEvent>(u => u
@@ -146,12 +148,11 @@ namespace Exceptionless.Core.Migrations {
                                 await Task.Delay(delay);
                             } while (true);
 
-                            if (affectedRecords > 0)
-                                _logger.LogInformation("Migrated stack events: Target={TargetId} Events={UpdatedEvents} Dupes={DuplicateIds}", targetStack.Id, affectedRecords, duplicateStacks.Select(s => s.Id));
+                            _logger.LogInformation("Migrated stack events: Target={TargetId} Events={UpdatedEvents} Dupes={DuplicateIds}", targetStack.Id, affectedRecords, duplicateStacks.Select(s => s.Id));
 
                             totalUpdatedEventCount += affectedRecords;
-                            processed++;
                         }
+                        processed++;
 
                         if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
                             lastStatus = SystemClock.UtcNow;
