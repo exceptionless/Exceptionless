@@ -54,7 +54,7 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CanPostUserDescriptionAsync() {
             await SendRequestAsync(r => r
                .Post()
-               .AsClientUser()
+               .AsTestOrganizationClientUser()
                .AppendPath("events/by-ref/TestReferenceId/user-description")
                .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
                .StatusCodeShouldBeAccepted()
@@ -77,7 +77,7 @@ namespace Exceptionless.Tests.Controllers {
             const string message = "simple string";
             await SendRequestAsync(r => r
                 .Post()
-                .AsClientUser()
+                .AsTestOrganizationClientUser()
                 .AppendPath("events")
                 .Content(message, "text/plain")
                 .StatusCodeShouldBeAccepted()
@@ -139,7 +139,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await SendRequestAsync(r => r
                 .Post()
-                .AsClientUser()
+                .AsTestOrganizationClientUser()
                 .AppendPath("events")
                 .Content(ev)
                 .StatusCodeShouldBeAccepted()
@@ -170,7 +170,7 @@ namespace Exceptionless.Tests.Controllers {
                 var events = new RandomEventGenerator().Generate(batchSize, false);
                 await SendRequestAsync(r => r
                    .Post()
-                   .AsClientUser()
+                   .AsTestOrganizationClientUser()
                    .AppendPath("events")
                    .Content(events)
                    .StatusCodeShouldBeAccepted()
@@ -213,12 +213,31 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanGetProjectLevelMostFrequentStackMode() {
-            await CreateStacksAndEventsAsync();
+            await CreateStacksAndEventsAsync(true);
 
             string projectId = SampleDataService.TEST_PROJECT_ID;
 
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
-                .AsGlobalAdminUser()
+                .AsTestOrganizationUser()
+                .AppendPath("projects", projectId, "events")
+                .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
+                .QueryString("mode", "stack_frequent")
+                .QueryString("offset", "-300m")
+                .QueryString("limit", 20)
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public async Task CanGetFreeProjectLevelMostFrequentStackMode() {
+            await CreateStacksAndEventsAsync(true);
+
+            string projectId = SampleDataService.FREE_PROJECT_ID;
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsFreeOrganizationUser()
                 .AppendPath("projects", projectId, "events")
                 .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_frequent")
@@ -360,9 +379,14 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(expected, results.Count);
         }
 
-        private async Task CreateStacksAndEventsAsync() {
+        private async Task CreateStacksAndEventsAsync(bool alsoAddToFreeOrg = false) {
             await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
+
+            if (alsoAddToFreeOrg) {
+                await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true, SampleDataService.FREE_ORG_ID, SampleDataService.FREE_PROJECT_ID);
+                await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true, SampleDataService.FREE_ORG_ID, SampleDataService.FREE_PROJECT_ID);
+            }
         }
     }
 }
