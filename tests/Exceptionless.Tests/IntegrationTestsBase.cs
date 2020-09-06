@@ -31,6 +31,9 @@ using Nest;
 using Newtonsoft.Json;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Models;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Tests {
     public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
@@ -41,6 +44,7 @@ namespace Exceptionless.Tests {
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly HttpClient _httpClient;
+        private readonly List<TestEventBuilder> _eventBuilders = new List<TestEventBuilder>();
         protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
         public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
@@ -98,7 +102,32 @@ namespace Exceptionless.Tests {
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
 
+            services.AddTransient<TestEventBuilder>();
+
             services.ReplaceSingleton(s => _server.CreateHandler());
+        }
+
+        protected TestEventBuilder AddTestEvent() {
+            var eventBuilder = GetService<TestEventBuilder>();
+            _eventBuilders.Add(eventBuilder);
+            return eventBuilder;
+        }
+
+        protected async Task SaveTestDataAsync() {
+            var eventRepository = GetService<IEventRepository>();
+            var stackRepository = GetService<IStackRepository>();
+
+            var events = new HashSet<PersistentEvent>();
+            var stacks = new HashSet<Stack>();
+
+            foreach (var builder in _eventBuilders) {
+                var data = builder.Build();
+                events.Add(data.Event);
+                stacks.Add(data.Stack);
+            }
+
+            await stackRepository.AddAsync(stacks, o => o.ImmediateConsistency());
+            await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
         }
 
         protected virtual async Task ResetDataAsync() {

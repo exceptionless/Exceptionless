@@ -161,7 +161,7 @@ namespace Exceptionless.Tests.Utility {
             };
         }
         
-        public static async Task CreateSearchDataAsync(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager, bool updateDates = false, string organizationId = null, string projectId = null) {
+        public static async Task CreateSearchDataAsync(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager, bool updateDates = false) {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
             foreach (string file in Directory.GetFiles(path, "event*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
@@ -175,15 +175,6 @@ namespace Exceptionless.Tests.Utility {
                         ev.Date = SystemClock.OffsetNow;
                         ev.CreatedUtc = SystemClock.UtcNow;
                     }
-
-                    if (organizationId != null || projectId != null)
-                        ev.Id = ObjectId.GenerateNewId().ToString();
-
-                    if (organizationId != null)
-                        ev.OrganizationId = organizationId;
-
-                    if (projectId != null)
-                        ev.ProjectId = projectId;
 
                     ev.CopyDataToIndex(Array.Empty<string>());
                 }
