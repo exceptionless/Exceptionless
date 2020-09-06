@@ -63,7 +63,7 @@ namespace Exceptionless.Tests.Utility {
             return stack;
         }
         
-        public static  async Task CreateSearchDataAsync(IStackRepository stackRepository, JsonSerializer serializer, bool updateDates = false, string organizationId = null, string projectId = null) {
+        public static  async Task CreateSearchDataAsync(IStackRepository stackRepository, JsonSerializer serializer, bool updateDates = false) {
             string path = Path.Combine("..", "..", "..", "Search", "Data");
             foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories)) {
                 if (file.EndsWith("summary.json"))
@@ -78,15 +78,6 @@ namespace Exceptionless.Tests.Utility {
                             stack.CreatedUtc = stack.FirstOccurrence = SystemClock.UtcNow.SubtractDays(1);
                             stack.LastOccurrence = SystemClock.UtcNow;
                         }
-
-                        if (organizationId != null || projectId != null)
-                            stack.Id = ObjectId.GenerateNewId().ToString();
-
-                        if (organizationId != null)
-                            stack.OrganizationId = organizationId;
-
-                        if (projectId != null)
-                            stack.ProjectId = projectId;
 
                         await stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
                     }
