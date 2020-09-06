@@ -86,7 +86,7 @@ namespace Exceptionless.Tests.Controllers {
             const string message = "simple string";
             await SendRequestAsync(r => r
                 .Post()
-                .AsClientUser()
+                .AsTestOrganizationClientUser()
                 .AppendPath("events")
                 .Content(new Event {
                     Message = message,

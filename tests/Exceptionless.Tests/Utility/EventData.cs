@@ -9,6 +9,7 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 using Xunit;
 
@@ -174,7 +175,7 @@ namespace Exceptionless.Tests.Utility {
                         ev.Date = SystemClock.OffsetNow;
                         ev.CreatedUtc = SystemClock.UtcNow;
                     }
-                    
+
                     ev.CopyDataToIndex(Array.Empty<string>());
                 }
 

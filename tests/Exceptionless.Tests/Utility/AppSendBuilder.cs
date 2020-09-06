@@ -57,8 +57,20 @@ namespace Exceptionless.Tests.Utility {
             return this.BasicAuthorization(SampleDataService.TEST_USER_EMAIL, SampleDataService.TEST_USER_PASSWORD);
         }
 
-        public AppSendBuilder AsClientUser() {
+        public AppSendBuilder AsTestOrganizationUser() {
+            return this.BasicAuthorization(SampleDataService.TEST_ORG_USER_EMAIL, SampleDataService.TEST_ORG_USER_PASSWORD);
+        }
+
+        public AppSendBuilder AsFreeOrganizationUser() {
+            return this.BasicAuthorization(SampleDataService.FREE_USER_EMAIL, SampleDataService.FREE_USER_PASSWORD);
+        }
+
+        public AppSendBuilder AsTestOrganizationClientUser() {
             return this.BearerToken(SampleDataService.TEST_API_KEY);
+        }
+
+        public AppSendBuilder AsFreeOrganizationClientUser() {
+            return this.BearerToken(SampleDataService.FREE_API_KEY);
         }
 
         public bool IsAnonymous { get; private set; }

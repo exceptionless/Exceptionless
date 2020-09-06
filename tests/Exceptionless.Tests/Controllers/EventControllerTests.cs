@@ -27,6 +27,8 @@ using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
+using Foundatio.Utility;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Tests.Controllers {
     public class EventControllerTests : IntegrationTestsBase {
@@ -54,7 +56,7 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CanPostUserDescriptionAsync() {
             await SendRequestAsync(r => r
                .Post()
-               .AsClientUser()
+               .AsTestOrganizationClientUser()
                .AppendPath("events/by-ref/TestReferenceId/user-description")
                .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
                .StatusCodeShouldBeAccepted()
@@ -77,7 +79,7 @@ namespace Exceptionless.Tests.Controllers {
             const string message = "simple string";
             await SendRequestAsync(r => r
                 .Post()
-                .AsClientUser()
+                .AsTestOrganizationClientUser()
                 .AppendPath("events")
                 .Content(message, "text/plain")
                 .StatusCodeShouldBeAccepted()
@@ -139,7 +141,7 @@ namespace Exceptionless.Tests.Controllers {
 
             await SendRequestAsync(r => r
                 .Post()
-                .AsClientUser()
+                .AsTestOrganizationClientUser()
                 .AppendPath("events")
                 .Content(ev)
                 .StatusCodeShouldBeAccepted()
@@ -170,7 +172,7 @@ namespace Exceptionless.Tests.Controllers {
                 var events = new RandomEventGenerator().Generate(batchSize, false);
                 await SendRequestAsync(r => r
                    .Post()
-                   .AsClientUser()
+                   .AsTestOrganizationClientUser()
                    .AppendPath("events")
                    .Content(events)
                    .StatusCodeShouldBeAccepted()
@@ -197,16 +199,59 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public async Task CanGetMostFrequentStackMode() {
             await CreateStacksAndEventsAsync();
-
+            
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:fixed")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_frequent")
+                .QueryString("offset", "-300m")
+                .QueryString("limit", 20)
                 .StatusCodeShouldBeOk()
             );
 
             Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public async Task CanGetProjectLevelMostFrequentStackMode() {
+            await CreateStacksAndEventsAsync();
+
+            string projectId = SampleDataService.TEST_PROJECT_ID;
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsTestOrganizationUser()
+                .AppendPath("projects", projectId, "events")
+                .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
+                .QueryString("mode", "stack_frequent")
+                .QueryString("offset", "-300m")
+                .QueryString("limit", 20)
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, results.Count);
+        }
+
+        [Fact]
+        public async Task CanGetFreeProjectLevelMostFrequentStackMode() {
+            await CreateStacksAndEventsAsync();
+
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+            string projectId = SampleDataService.FREE_PROJECT_ID;
+
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsFreeOrganizationUser()
+                .AppendPath("projects", projectId, "events")
+                .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
+                .QueryString("mode", "stack_frequent")
+                .QueryString("offset", "-300m")
+                .QueryString("limit", 20)
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(3, results.Count);
         }
 
         [Fact]
@@ -216,12 +261,12 @@ namespace Exceptionless.Tests.Controllers {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:open")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_new")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Single(results);
+            Assert.Equal(2, results.Count);
         }
 
         [Fact]
@@ -231,12 +276,12 @@ namespace Exceptionless.Tests.Controllers {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
-                .QueryString("filter", "status:open")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_recent")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Single(results);
+            Assert.Equal(2, results.Count);
         }
 
         [Fact]
@@ -248,6 +293,7 @@ namespace Exceptionless.Tests.Controllers {
                 .AppendPath("events")
                 .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:error (status:open OR status:regressed)")
                 .QueryString("mode", "stack_users")
+                .QueryString("offset", "-300m")
                 .StatusCodeShouldBeOk()
             );
 
@@ -339,6 +385,55 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         private async Task CreateStacksAndEventsAsync() {
+            var utcNow = SystemClock.UtcNow;
+
+            // matches event1.json / stack1.json
+            AddTestEvent()
+                .FreeProject()
+                .Type(Event.KnownTypes.Log)
+                .Level("Error")
+                .Source("GET /Print")
+                .DateFixed()
+                .TotalOccurrences(5)
+                .StackReference("http://exceptionless.io")
+                .FirstOccurrence(utcNow.SubtractDays(1))
+                .Tag("test", "Critical")
+                .Geo("40,-70")
+                .Value(1.0M)
+                .RequestInfoSample()
+                .UserIdentity("My-User-Identity", "test user")
+                .UserDescription("test@exceptionless.com", "my custom description")
+                .Version("1.2.3.0")
+                .ReferenceId("876554321");
+
+            // matches event2.json / stack2.json
+            var stack2 = AddTestEvent()
+                .FreeProject()
+                .Type(Event.KnownTypes.Error)
+                .Status(StackStatus.Regressed)
+                .TotalOccurrences(50)
+                .FirstOccurrence(utcNow.SubtractDays(1))
+                .StackReference("https://github.com/exceptionless/Exceptionless")
+                .Tag("Blake Niemyjski")
+                .RequestInfoSample()
+                .UserIdentity("example@exceptionless.com")
+                .Version("3.2.1-beta1");
+
+            // matches event3.json and using the same stack as the previous event
+            AddTestEvent()
+                .FreeProject()
+                .Type(Event.KnownTypes.Error)
+                .Stack(stack2)
+                .Tag("Blake Niemyjski")
+                .RequestInfoSample()
+                .UserIdentity("example", "Blake")
+                .Version("4.0.1039 6f929bbe18");
+
+            // defaults everything
+            AddTestEvent().FreeProject();
+
+            await SaveTestDataAsync();
+
             await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
         }

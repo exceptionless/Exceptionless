@@ -7,7 +7,7 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless {
     public static class PersistentEventExtensions {
-        public static void CopyDataToIndex(this PersistentEvent ev, string[] keysToCopy) {
+        public static void CopyDataToIndex(this PersistentEvent ev, string[] keysToCopy = null) {
             keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
             foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k))) {
