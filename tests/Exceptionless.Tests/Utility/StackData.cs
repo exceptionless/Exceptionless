@@ -47,6 +47,8 @@ namespace Exceptionless.Tests.Utility {
                 SignatureInfo = new SettingsDictionary()
             };
 
+            stack.DuplicateSignature = String.Concat(stack.ProjectId, ":", stack.SignatureHash);
+
             if (type == Event.KnownTypes.Error)
                 stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random());
 
@@ -76,7 +78,7 @@ namespace Exceptionless.Tests.Utility {
                             stack.CreatedUtc = stack.FirstOccurrence = SystemClock.UtcNow.SubtractDays(1);
                             stack.LastOccurrence = SystemClock.UtcNow;
                         }
-                        
+
                         await stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
                     }
                 }

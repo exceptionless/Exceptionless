@@ -12,6 +12,8 @@ Serilog:
       Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Utility.ScheduledTimer: Warning
       Foundatio.Metrics: Warning
+      #Exceptionless.Core.Repositories.EventRepository: Verbose
+      #Exceptionless.Core.Repositories.StackRepository: Verbose
   WriteTo:
   - Name: Console
   Enrich:

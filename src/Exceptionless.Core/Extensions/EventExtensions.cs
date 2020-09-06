@@ -173,6 +173,10 @@ namespace Exceptionless {
             return ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object value) ? value as string : null;
         }
 
+        public static void SetLevel(this Event ev, string level) {
+            ev.Data[Event.KnownDataKeys.Level] = level;
+        }
+
         public static string GetSubmissionMethod(this Event ev) {
             return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionMethod, out object value) ? value as string : null;
         }

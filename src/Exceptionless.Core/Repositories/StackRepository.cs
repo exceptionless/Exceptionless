@@ -80,10 +80,6 @@ ctx._source.total_occurrences += params.count;";
             return hit?.Document;
         }
 
-        public Task<FindResults<Stack>> GetStackByDuplicateSignatureAsync(string duplicateSignature) {
-            return FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, duplicateSignature)));
-        }
-
         public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
             return FindAsync(q => query.Configure().OnlyIds(), options);
         }

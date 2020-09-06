@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Migrations;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
@@ -9,6 +10,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
+using Nest;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,7 +30,9 @@ namespace Exceptionless.Tests.Migrations {
 
         [Fact]
         public async Task WillSetStackDuplicateSignature() {
-            var stack =  await _repository.AddAsync(StackData.GenerateStack(), o => o.ImmediateConsistency());
+            var stack = StackData.GenerateStack();
+            stack.DuplicateSignature = null;
+            stack = await _repository.AddAsync(stack, o => o.ImmediateConsistency());
             Assert.NotEmpty(stack.ProjectId);
             Assert.NotEmpty(stack.SignatureHash);
             Assert.Null(stack.DuplicateSignature);
@@ -43,7 +47,7 @@ namespace Exceptionless.Tests.Migrations {
             Assert.NotEmpty(actualStack.SignatureHash);
             Assert.Equal($"{actualStack.ProjectId}:{actualStack.SignatureHash}", actualStack.DuplicateSignature);
 
-            var results = await _repository.GetStackByDuplicateSignatureAsync(expectedDuplicateSignature);
+            var results = await _repository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, expectedDuplicateSignature)));
             Assert.Single(results.Documents);
         }
     }
