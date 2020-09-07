@@ -90,6 +90,11 @@ namespace Exceptionless.Core.Pipeline {
 
                             stacks.Add(signatureHash, new StackInfo { IsNew = true, ShouldSave = false, Stack = ctx.Stack });
                         }, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
+
+                        if (!success) {
+                            ctx.SetError($"Unable to create new stack: project={ctx.Event.ProjectId} signature={signatureHash}");
+                            continue;
+                        }
                     }
                 } else {
                     ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache()).AnyContext();
