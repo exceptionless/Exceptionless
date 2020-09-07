@@ -10,7 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.1.0" />
-    <PackageReference Include="Exceptionless.AspNetCore" Version="4.4.1" />
+    <PackageReference Include="Exceptionless.AspNetCore" Version="4.4.2-alpha.0.3" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.7" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.7" />

@@ -141,9 +141,6 @@ namespace Exceptionless.Web {
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
             app.UseMiddleware<AllowSynchronousIOMiddleware>();
-            
-            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
-                app.UseExceptionless(ExceptionlessClient.Default);
 
             app.UseHealthChecks("/health", new HealthCheckOptions {
                 Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
@@ -154,7 +151,10 @@ namespace Exceptionless.Web {
                 readyTags.Add("Storage");
             app.UseReadyHealthChecks(readyTags.ToArray());
             app.UseWaitForStartupActionsBeforeServingRequests();
-            
+
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+                app.UseExceptionless(ExceptionlessClient.Default);
+
             app.UseCsp(csp => {
                 csp.ByDefaultAllow.FromSelf()
                     .From("https://js.stripe.com")
