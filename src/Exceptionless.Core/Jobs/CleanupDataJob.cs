@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -20,7 +20,7 @@ using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Jobs {
-    [Job(Description = "Deletes soft deleted data and retention data.", InitialDelay = "15m", Interval = "1h")]
+    [Job(Description = "Deletes soft deleted data and retention data.", IsContinuous = false)]
     public class CleanupDataJob : JobWithLockBase, IHealthCheck {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly OrganizationService _organizationService;

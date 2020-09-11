@@ -425,7 +425,7 @@ spec:
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-data
   labels:
@@ -436,43 +436,34 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      component: {{ template "exceptionless.fullname" . }}-jobs-cleanup-data
-  template:
-    metadata:
-      labels:
-        app: {{ template "exceptionless.name" . }}
-        component: {{ template "exceptionless.fullname" . }}-jobs-cleanup-data
-        tier: {{ template "exceptionless.fullname" . }}-job
-        chart: {{ template "exceptionless.chart" . }}
-        release: {{ .Release.Name }}
-        heritage: {{ .Release.Service }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+  schedule: "30 */4 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
     spec:
-      containers:
-        - name: {{ template "exceptionless.name" . }}-jobs-cleanup-data
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
-          imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          resources:
-            requests:
-              memory: 75Mi
-              cpu: 50m
-            limits:
-              memory: 250Mi
-              cpu: 400m
-          args: [CleanupData]
-          envFrom:
-            - configMapRef:
-                name: {{ template "exceptionless.fullname" . }}-config
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-cleanup-data
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 80
+                initialDelaySeconds: 10
+                periodSeconds: 10
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 50m
+                limits:
+                  memory: 250Mi
+                  cpu: 400m
+              args: [CleanupData]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
 
 ---
 apiVersion: apps/v1
