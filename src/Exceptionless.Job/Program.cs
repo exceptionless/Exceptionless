@@ -123,7 +123,7 @@ namespace Exceptionless.Job {
             services.AddJobLifetimeService();
             
             if (options.CleanupData)
-                services.AddJob<CleanupDataJob>(true);
+                services.AddCronJob<CleanupDataJob>("30 */4 * * *");
             if (options.CloseInactiveSessions)
                 services.AddJob<CloseInactiveSessionsJob>(true);
             if (options.DailySummary)
