@@ -1,18 +1,15 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper.Internal;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
-using Foundatio.Caching;
-using Foundatio.Jobs;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
@@ -112,6 +109,29 @@ namespace Exceptionless.Tests.Jobs {
             Assert.NotNull(await _projectRepository.GetByIdAsync(project.Id));
             Assert.NotNull(await _stackRepository.GetByIdAsync(stack.Id));
             Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
+        }
+
+        [Fact]
+        public async Task CanDeleteOrphanedEventsByStack() {
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+            await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+            var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+            var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+            await _eventRepository.AddAsync(EventData.GenerateEvents(5000, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+
+            var orphanedEvents = EventData.GenerateEvents(10000, organization.Id, project.Id).ToList();
+            orphanedEvents.ForEach(e => e.StackId = ObjectId.GenerateNewId().ToString());
+
+            await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
+
+            var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
+            Assert.Equal(15000, eventCount);
+
+            await _job.RunAsync();
+
+            eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
+            Assert.Equal(5000, eventCount);
         }
     }
 }
