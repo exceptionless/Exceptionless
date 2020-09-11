@@ -8,7 +8,7 @@ namespace Exceptionless.Job {
                 throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 
             CleanupData = args.Length == 0 || args.Contains("CleanupData", StringComparer.OrdinalIgnoreCase);
-            if (EventPosts && args.Length != 0)
+            if (CleanupData && args.Length != 0)
                 JobName = "CleanupData";
 
             CloseInactiveSessions = args.Length == 0 || args.Contains("CloseInactiveSessions", StringComparer.OrdinalIgnoreCase);
