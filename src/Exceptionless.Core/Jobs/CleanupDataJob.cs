@@ -79,6 +79,7 @@ namespace Exceptionless.Core.Jobs {
 
             await EnforceEventRetentionAsync(context).AnyContext();
 
+            _logger.LogInformation("Finished cleaning up data");
             return JobResult.Success;
         }
 
@@ -222,6 +223,8 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public async Task DeleteOrphanedEventsByStackAsync(JobContext context) {
+            _logger.LogInformation("Cleaning up Orphaned Events By Stack");
+            
             // get approximate number of unique stack ids
             var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
@@ -236,7 +239,7 @@ namespace Exceptionless.Core.Jobs {
             buckets = Math.Max(1, buckets);
 
             for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
-                await context.RenewLockAsync();
+                await RenewLockAsync(context).AnyContext();
 
                 var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                     .Terms("terms_stack_id", c => c.Field(f => f.StackId).Include(batchNumber, buckets).Size(batchSize * 2))));
@@ -257,6 +260,8 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public async Task DeleteOrphanedEventsByProjectAsync(JobContext context) {
+            _logger.LogInformation("Cleaning up Orphaned Events By Project");
+            
             // get approximate number of unique project ids
             var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
@@ -271,7 +276,7 @@ namespace Exceptionless.Core.Jobs {
             buckets = Math.Max(1, buckets);
 
             for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
-                await context.RenewLockAsync();
+                await RenewLockAsync(context).AnyContext();
 
                 var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                     .Terms("terms_project_id", c => c.Field(f => f.ProjectId).Include(batchNumber, buckets).Size(batchSize * 2))));
@@ -292,6 +297,8 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context) {
+            _logger.LogInformation("Cleaning up Orphaned Events By Organization");
+
             // get approximate number of unique organization ids
             var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
@@ -306,7 +313,7 @@ namespace Exceptionless.Core.Jobs {
             buckets = Math.Max(1, buckets);
 
             for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
-                await context.RenewLockAsync();
+                await RenewLockAsync(context).AnyContext();
 
                 var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                     .Terms("terms_organization_id", c => c.Field(f => f.OrganizationId).Include(batchNumber, buckets).Size(batchSize * 2))));
