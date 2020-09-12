@@ -39,7 +39,8 @@ namespace Exceptionless.Core.Jobs {
             IEventRepository eventRepository,
             ITokenRepository tokenRepository,
             IWebHookRepository webHookRepository,
-            ICacheClient cacheClient,
+            IElasticClient elasticClient,
+            ILockProvider lockProvider,
             BillingManager billingManager,
             AppOptions appOptions,
             ILoggerFactory loggerFactory = null
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Jobs {
             _webHookRepository = webHookRepository;
             _billingManager = billingManager;
             _appOptions = appOptions;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
+            _lockProvider = lockProvider;
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
