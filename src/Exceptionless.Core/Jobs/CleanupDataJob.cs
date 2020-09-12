@@ -167,13 +167,13 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task RemoveStackAsync(Stack stack, JobContext context) {
-            _logger.LogInformation("Removing stack: {Stack} ({StackId})", stack.Title, stack.Id);
+            _logger.LogInformation("Removing stack: {StackId}", stack.Id);
 
             await RenewLockAsync(context).AnyContext();
             long removedEvents = await _eventRepository.RemoveAllByStackIdAsync(stack.OrganizationId, stack.ProjectId, stack.Id).AnyContext();
 
             await _stackRepository.RemoveAsync(stack).AnyContext();
-            _logger.LogInformation("Removed stack: {Stack} ({StackId}), Removed {RemovedEvents} Events", stack.Title, stack.Id, removedEvents);
+            _logger.LogInformation("Removed stack: {StackId}, Removed {RemovedEvents} Events", stack.Id, removedEvents);
         }
 
         private async Task EnforceEventRetentionAsync(JobContext context) {
