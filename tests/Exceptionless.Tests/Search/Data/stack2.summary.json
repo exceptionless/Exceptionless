@@ -1,6 +1,7 @@
 ﻿{
   "id": "2ecd0826e447a44e78877ab2",
   "title": "The provided anti-forgery token was meant for user \"\", but the current user is \"test@exceptionless.com\".",
+  "status": "regressed",
   "first_occurrence": "0001-01-01T00:00:00",
   "last_occurrence": "0001-01-01T00:00:00",
   "total": 1,

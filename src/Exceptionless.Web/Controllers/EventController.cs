@@ -1158,6 +1158,7 @@ namespace Exceptionless.Web.Controllers {
                     Data = data.Data,
                     Id = stack.Id,
                     Title = stack.Title,
+                    Status = stack.Status,
                     FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
                     LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
                     Total = (long)(term.Aggregations.Sum("sum_count").Value ?? term.Total.GetValueOrDefault()),

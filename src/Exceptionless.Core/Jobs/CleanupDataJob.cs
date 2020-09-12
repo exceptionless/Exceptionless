@@ -39,7 +39,8 @@ namespace Exceptionless.Core.Jobs {
             IEventRepository eventRepository,
             ITokenRepository tokenRepository,
             IWebHookRepository webHookRepository,
-            ICacheClient cacheClient,
+            IElasticClient elasticClient,
+            ILockProvider lockProvider,
             BillingManager billingManager,
             AppOptions appOptions,
             ILoggerFactory loggerFactory = null
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Jobs {
             _webHookRepository = webHookRepository;
             _billingManager = billingManager;
             _appOptions = appOptions;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
+            _lockProvider = lockProvider;
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
@@ -167,13 +168,13 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task RemoveStackAsync(Stack stack, JobContext context) {
-            _logger.LogInformation("Removing stack: {Stack} ({StackId})", stack.Title, stack.Id);
+            _logger.LogInformation("Removing stack: {StackId}", stack.Id);
 
             await RenewLockAsync(context).AnyContext();
             long removedEvents = await _eventRepository.RemoveAllByStackIdAsync(stack.OrganizationId, stack.ProjectId, stack.Id).AnyContext();
 
             await _stackRepository.RemoveAsync(stack).AnyContext();
-            _logger.LogInformation("Removed stack: {Stack} ({StackId}), Removed {RemovedEvents} Events", stack.Title, stack.Id, removedEvents);
+            _logger.LogInformation("Removed stack: {StackId}, Removed {RemovedEvents} Events", stack.Id, removedEvents);
         }
 
         private async Task EnforceEventRetentionAsync(JobContext context) {

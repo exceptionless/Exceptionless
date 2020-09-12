@@ -1,4 +1,4 @@
-@apiUrl = http://elastic:{{elasticPassword}}@kibana-ex-dev.localtest.me:9200/
+@apiUrl = http://elastic:{{elasticPassword}}@elastic-ex-dev.localtest.me:9250/
 
 GET {{apiUrl}}_cat/indices/dev-*?v
 

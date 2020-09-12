@@ -424,7 +424,7 @@ spec:
           restartPolicy: OnFailure
 
 ---
-apiVersion: apps/v1
+apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-data
@@ -466,7 +466,7 @@ spec:
           restartPolicy: OnFailure
 
 ---
-apiVersion: apps/v1
+apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-orphaned-data
