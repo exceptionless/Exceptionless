@@ -1,9 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper.Internal;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
@@ -128,7 +126,7 @@ namespace Exceptionless.Tests.Jobs {
             var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
             Assert.Equal(15000, eventCount);
 
-            await _job.RunAsync();
+            await GetService<CleanupOrphanedDataJob>().RunAsync();
 
             eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
             Assert.Equal(5000, eventCount);
