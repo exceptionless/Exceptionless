@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Utility;
@@ -19,9 +18,9 @@ namespace Exceptionless.Core.Jobs {
         private readonly ILockProvider _lockProvider;
         private DateTime? _lastRun;
 
-        public CleanupOrphanedDataJob(IElasticClient elasticClient, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        public CleanupOrphanedDataJob(IElasticClient elasticClient, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _elasticClient = elasticClient;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
+            _lockProvider = lockProvider;
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
