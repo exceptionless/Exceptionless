@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
@@ -13,14 +11,13 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Jobs {
-    [Job(Description = "Deletes soft deleted data and retention data.", IsContinuous = false)]
+    [Job(Description = "Deletes soft deleted data and enforces data retention.", IsContinuous = false)]
     public class CleanupDataJob : JobWithLockBase, IHealthCheck {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly OrganizationService _organizationService;
@@ -29,7 +26,6 @@ namespace Exceptionless.Core.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly ITokenRepository _tokenRepository;
         private readonly IWebHookRepository _webHookRepository;
-        private readonly IElasticClient _elasticClient;
         private readonly BillingManager _billingManager;
         private readonly AppOptions _appOptions;
         private readonly ILockProvider _lockProvider;
@@ -43,7 +39,6 @@ namespace Exceptionless.Core.Jobs {
             IEventRepository eventRepository,
             ITokenRepository tokenRepository,
             IWebHookRepository webHookRepository,
-            IElasticClient elasticClient,
             ICacheClient cacheClient,
             BillingManager billingManager,
             AppOptions appOptions,
@@ -56,22 +51,17 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _tokenRepository = tokenRepository;
             _webHookRepository = webHookRepository;
-            _elasticClient = elasticClient;
             _billingManager = billingManager;
             _appOptions = appOptions;
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
-            return _lockProvider.AcquireAsync(nameof(StackEventCountJob), TimeSpan.FromHours(2), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromHours(2), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             _lastRun = SystemClock.UtcNow;
-
-            await DeleteOrphanedEventsByStackAsync(context).AnyContext();
-            await DeleteOrphanedEventsByProjectAsync(context).AnyContext();
-            await DeleteOrphanedEventsByOrganizationAsync(context).AnyContext();
 
             await CleanupSoftDeletedOrganizationsAsync(context).AnyContext();
             await CleanupSoftDeletedProjectsAsync(context).AnyContext();
@@ -80,6 +70,7 @@ namespace Exceptionless.Core.Jobs {
             await EnforceEventRetentionAsync(context).AnyContext();
 
             _logger.LogInformation("Finished cleaning up data");
+
             return JobResult.Success;
         }
 
@@ -190,7 +181,7 @@ namespace Exceptionless.Core.Jobs {
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
                     using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id))) {
-                        await EnforceEventCountLimitsAsync(organization, context).AnyContext();
+                        await EnforceEventRetentionDaysAsync(organization, context).AnyContext();
 
                         // Sleep so we are not hammering the backend.
                         await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
@@ -202,7 +193,7 @@ namespace Exceptionless.Core.Jobs {
             }
         }
 
-        private async Task EnforceEventCountLimitsAsync(Organization organization, JobContext context) {
+        private async Task EnforceEventRetentionDaysAsync(Organization organization, JobContext context) {
             int retentionDays = organization.RetentionDays;
             if (_appOptions.MaximumRetentionDays > 0 && retentionDays > _appOptions.MaximumRetentionDays)
                 retentionDays = _appOptions.MaximumRetentionDays;
@@ -220,117 +211,6 @@ namespace Exceptionless.Core.Jobs {
             await RenewLockAsync(context).AnyContext();
             long removedEvents = await _eventRepository.RemoveAllAsync(organization.Id, null, null, cutoff).AnyContext();
             _logger.LogInformation("Enforced retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events", organization.Name, organization.Id, removedEvents);
-        }
-
-        public async Task DeleteOrphanedEventsByStackAsync(JobContext context) {
-            _logger.LogInformation("Cleaning up Orphaned Events By Stack");
-            
-            // get approximate number of unique stack ids
-            var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
-                .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
-
-            var uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id").Value;
-            if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
-                return;
-
-            // break into batches of 500
-            const int batchSize = 500;
-            int buckets = (int)uniqueStackIdCount.Value / batchSize;
-            buckets = Math.Max(1, buckets);
-
-            for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
-                await RenewLockAsync(context).AnyContext();
-
-                var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
-                    .Terms("terms_stack_id", c => c.Field(f => f.StackId).Include(batchNumber, buckets).Size(batchSize * 2))));
-
-                var stackIds = stackIdTerms.Aggregations.Terms("terms_stack_id").Buckets.Select(b => b.Key).ToArray();
-                if (stackIds.Length == 0)
-                    continue;
-
-                var stacks = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Stack>(stackIds));
-                var missingStackIds = stacks.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
-
-                if (missingStackIds.Length == 0)
-                    continue;
-
-                _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing stacks {MissingStackIds}", missingStackIds.Length, missingStackIds);
-                await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.StackId).Terms(missingStackIds))));
-            }
-        }
-
-        public async Task DeleteOrphanedEventsByProjectAsync(JobContext context) {
-            _logger.LogInformation("Cleaning up Orphaned Events By Project");
-            
-            // get approximate number of unique project ids
-            var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
-                .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
-
-            var uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id").Value;
-            if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
-                return;
-
-            // break into batches of 500
-            const int batchSize = 500;
-            int buckets = (int)uniqueProjectIdCount.Value / batchSize;
-            buckets = Math.Max(1, buckets);
-
-            for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
-                await RenewLockAsync(context).AnyContext();
-
-                var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
-                    .Terms("terms_project_id", c => c.Field(f => f.ProjectId).Include(batchNumber, buckets).Size(batchSize * 2))));
-
-                var projectIds = projectIdTerms.Aggregations.Terms("terms_project_id").Buckets.Select(b => b.Key).ToArray();
-                if (projectIds.Length == 0)
-                    continue;
-
-                var projects = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Project>(projectIds));
-                var missingProjectIds = projects.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
-
-                if (missingProjectIds.Length == 0)
-                    continue;
-
-                _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing projects {MissingProjectIds}", missingProjectIds.Length, missingProjectIds);
-                await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.ProjectId).Terms(missingProjectIds))));
-            }
-        }
-
-        public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context) {
-            _logger.LogInformation("Cleaning up Orphaned Events By Organization");
-
-            // get approximate number of unique organization ids
-            var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
-                .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
-
-            var uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id").Value;
-            if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
-                return;
-
-            // break into batches of 500
-            const int batchSize = 500;
-            int buckets = (int)uniqueOrganizationIdCount.Value / batchSize;
-            buckets = Math.Max(1, buckets);
-
-            for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
-                await RenewLockAsync(context).AnyContext();
-
-                var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
-                    .Terms("terms_organization_id", c => c.Field(f => f.OrganizationId).Include(batchNumber, buckets).Size(batchSize * 2))));
-
-                var organizationIds = organizationIdTerms.Aggregations.Terms("terms_organization_id").Buckets.Select(b => b.Key).ToArray();
-                if (organizationIds.Length == 0)
-                    continue;
-
-                var organizations = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Organization>(organizationIds));
-                var missingOrganizationIds = organizations.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
-
-                if (missingOrganizationIds.Length == 0)
-                    continue;
-
-                _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing organizations {MissingOrganizationIds}", missingOrganizationIds.Length, missingOrganizationIds);
-                await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.OrganizationId).Terms(missingOrganizationIds))));
-            }
         }
 
         private Task RenewLockAsync(JobContext context) {

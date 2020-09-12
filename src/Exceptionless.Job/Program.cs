@@ -123,7 +123,9 @@ namespace Exceptionless.Job {
             services.AddJobLifetimeService();
             
             if (options.CleanupData)
-                services.AddCronJob<CleanupDataJob>("30 */4 * * *");
+                services.AddJob<CleanupDataJob>();
+            if (options.CleanupOrphanedData)
+                services.AddJob<CleanupOrphanedDataJob>();
             if (options.CloseInactiveSessions)
                 services.AddJob<CloseInactiveSessionsJob>(true);
             if (options.DailySummary)
@@ -141,7 +143,7 @@ namespace Exceptionless.Job {
             if (options.MailMessage)
                 services.AddJob<MailMessageJob>(true);
             if (options.MaintainIndexes)
-                services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
+                services.AddJob<MaintainIndexesJob>();
             if (options.Migration)
                 services.AddJob<MigrationJob>(true);
             if (options.StackStatus)

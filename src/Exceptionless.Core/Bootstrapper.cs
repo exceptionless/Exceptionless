@@ -255,20 +255,21 @@ namespace Exceptionless.Core {
         }
 
         public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
-
-            services.AddJob<CleanupDataJob>(true);
             services.AddJob<CloseInactiveSessionsJob>(true);
             services.AddJob<DailySummaryJob>(true);
-            services.AddJob<DownloadGeoIPDatabaseJob>(true);
             services.AddJob<EventNotificationsJob>(true);
             services.AddJob<EventPostsJob>(true);
             services.AddJob<EventUserDescriptionsJob>(true);
             services.AddJob<MailMessageJob>(true);
-            services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
             services.AddJob<StackStatusJob>(true);
             services.AddJob<StackEventCountJob>(true);
             services.AddJob<WebHooksJob>(true);
             services.AddJob<WorkItemJob>(true);
+
+            services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
+            services.AddCronJob<CleanupDataJob>("30 */4 * * *");
+            services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
+            services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
 
             var logger = loggerFactory.CreateLogger<Bootstrapper>();
             logger.LogWarning("Jobs running in process.");

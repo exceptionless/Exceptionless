@@ -11,6 +11,10 @@ namespace Exceptionless.Job {
             if (CleanupData && args.Length != 0)
                 JobName = "CleanupData";
 
+            CleanupOrphanedData = args.Length == 0 || args.Contains("CleanupOrphanedData", StringComparer.OrdinalIgnoreCase);
+            if (CleanupOrphanedData && args.Length != 0)
+                JobName = "CleanupOrphanedData";
+
             CloseInactiveSessions = args.Length == 0 || args.Contains("CloseInactiveSessions", StringComparer.OrdinalIgnoreCase);
             if (CloseInactiveSessions && args.Length != 0)
                 JobName = "CloseInactiveSessions";
@@ -70,6 +74,7 @@ namespace Exceptionless.Job {
 
         public string JobName { get; }
         public bool CleanupData { get; }
+        public bool CleanupOrphanedData { get; }
         public bool CloseInactiveSessions { get; }
         public bool DailySummary { get; }
         public bool DataMigration { get; }
