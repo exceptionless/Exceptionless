@@ -467,6 +467,48 @@ spec:
 
 ---
 apiVersion: apps/v1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-orphaned-data
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-cleanup-orphaned-data
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "45 */8 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-cleanup-orphaned-data
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 80
+                initialDelaySeconds: 10
+                periodSeconds: 10
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 50m
+                limits:
+                  memory: 250Mi
+                  cpu: 400m
+              args: [CleanupOrphanedData]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
