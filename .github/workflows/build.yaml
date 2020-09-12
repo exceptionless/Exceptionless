@@ -72,7 +72,7 @@ jobs:
       with:
         version: v3.3.0
     - name: Deploy Changes to Development Environment
-      if: github.ref == 'refs/heads/feature/discard-join' && github.event_name != 'pull_request'
+      if: github.ref == 'refs/heads/bug/orphaned-data' && github.event_name != 'pull_request'
       run: |
         az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
         az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
