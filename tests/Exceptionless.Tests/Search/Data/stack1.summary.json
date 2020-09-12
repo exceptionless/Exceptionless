@@ -1,6 +1,7 @@
 ﻿{
   "id": "1ecd0826e447a44e78877ab1",
   "title": "GET /Print",
+  "status": "fixed",
   "first_occurrence": "0001-01-01T00:00:00",
   "last_occurrence": "0001-01-01T00:00:00",
   "total": 1,

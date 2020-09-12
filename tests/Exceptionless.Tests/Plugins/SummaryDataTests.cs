@@ -50,7 +50,8 @@ namespace Exceptionless.Tests.Plugins {
                 Data = data.Data,
                 Id = stack.Id,
                 Title = stack.Title,
-                Total = 1,
+                Status = stack.Status,
+                Total = 1
             };
 
             string expectedContent = File.ReadAllText(Path.ChangeExtension(path, "summary.json"));
