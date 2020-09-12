@@ -14,6 +14,7 @@ Serilog:
       Foundatio.Metrics: Warning
       #Exceptionless.Core.Repositories.EventRepository: Verbose
       #Exceptionless.Core.Repositories.StackRepository: Verbose
+      #Exceptionless.Core.Repositories: Verbose
   WriteTo:
   - Name: Console
   Enrich:
