@@ -76,7 +76,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
             container.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
-            container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), CloneValues = true }));
+            container.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), CloneValues = true, Serializer = s.GetRequiredService<ISerializer>() }));
             container.AddSingleton<IMetricsClient>(s => new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
             container.AddSingleton<ExceptionlessElasticConfiguration>();
@@ -118,7 +118,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IConnectionMapping, ConnectionMapping>();
             container.AddSingleton<MessageService>();
             container.AddStartupAction<MessageService>();
-            container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+            container.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), Serializer = s.GetRequiredService<ISerializer>()}));
             container.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
             container.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
