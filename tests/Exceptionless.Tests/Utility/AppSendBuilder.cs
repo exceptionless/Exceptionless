@@ -80,8 +80,10 @@ namespace Exceptionless.Tests.Utility {
         }
         
         public AppSendBuilder ExpectedStatus(HttpStatusCode statusCode) {
-            RequestMessage.Properties["ExpectedStatus"] = statusCode;
+            RequestMessage.Options.Set(ExpectedStatusKey, statusCode);
             return this;
         }
+
+        public static readonly HttpRequestOptionsKey<HttpStatusCode> ExpectedStatusKey = new HttpRequestOptionsKey<HttpStatusCode>("ExpectedStatus");
     }
 }

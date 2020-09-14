@@ -25,20 +25,19 @@ namespace Exceptionless.Tests.Extensions {
             return builder.ExpectedStatus(HttpStatusCode.Unauthorized);
         }
 
-        private const string _expectedStatusKey = "ExpectedStatus";
         public static HttpStatusCode? GetExpectedStatus(this HttpRequestMessage requestMessage) {
             if (requestMessage == null)
                 throw new ArgumentNullException(nameof(requestMessage));
 
-            requestMessage.Properties.TryGetValue(_expectedStatusKey, out object propertyValue);
-            return (HttpStatusCode?)propertyValue;
+            requestMessage.Options.TryGetValue(AppSendBuilder.ExpectedStatusKey, out var propertyValue);
+            return propertyValue;
         }
 
         public static void SetExpectedStatus(this HttpRequestMessage requestMessage, HttpStatusCode statusCode) {
             if (requestMessage == null)
                 throw new ArgumentNullException(nameof(requestMessage));
 
-            requestMessage.Properties[_expectedStatusKey] = statusCode;
+            requestMessage.Options.Set(AppSendBuilder.ExpectedStatusKey, statusCode);
         }
     }
 }
