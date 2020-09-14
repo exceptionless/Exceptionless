@@ -67,7 +67,7 @@ namespace Exceptionless.Job {
  
             var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
-                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Verbose);
+                loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
 
             Log.Logger = loggerConfig.CreateLogger();
             var configDictionary = config.ToDictionary("Serilog");

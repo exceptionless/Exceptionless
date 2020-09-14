@@ -80,7 +80,7 @@ namespace Exceptionless.Web.Utility {
                 if (size > _appOptions.MaximumEventPostSize) {
                     if (_logger.IsEnabled(LogLevel.Warning)) {
                         using (_logger.BeginScope(new ExceptionlessState().Value(size).Tag(context.Request.Headers.TryGetAndReturn(Headers.ContentEncoding))))
-                            _logger.LogWarning("Event submission discarded for being too large: {@value} bytes.", size);
+                            _logger.LogInformation("Event submission discarded for being too large: {@value} bytes.", size);
                     }
 
                     _metricsClient.Counter(MetricNames.PostsDiscarded);

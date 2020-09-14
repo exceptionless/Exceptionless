@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 // cancel duplicate start events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => {
-                    _logger.LogWarning("Discarding duplicate session start events.");
+                    _logger.LogInformation("Discarding duplicate session start events.");
                     ev.IsCancelled = true;
                 });
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 // cancel duplicate end events (1 per session id)
                 session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev => {
-                    _logger.LogWarning("Discarding duplicate session end events.");
+                    _logger.LogInformation("Discarding duplicate session end events.");
                     ev.IsCancelled = true;
                 });
                 var sessionEndEvent = session.FirstOrDefault(ev => ev.Event.IsSessionEnd());
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                 // do we already have a session start for this session id?
                 if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
-                    _logger.LogWarning("Discarding duplicate session start event for session: {SessionStartEventId}", sessionStartEventId);
+                    _logger.LogInformation("Discarding duplicate session start event for session: {SessionStartEventId}", sessionStartEventId);
                     sessionStartEvent.IsCancelled = true;
                 } else if (String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null) {
                     // no existing session, session start is in the batch
@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     // if session end, without any session events, cancel
                     if (session.Count(s => !s.IsCancelled) == 1 && firstSessionEvent.Event.IsSessionEnd()) {
-                        _logger.LogWarning("Discarding session end event with no session events.");
+                        _logger.LogInformation("Discarding session end event with no session events.");
                         firstSessionEvent.IsCancelled = true;
                         continue;
                     }
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     // cancel duplicate start events
                     session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev => {
-                        _logger.LogWarning("Discarding duplicate session start events.");
+                        _logger.LogInformation("Discarding duplicate session start events.");
                         ev.IsCancelled = true;
                     });
                     var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
@@ -139,7 +139,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
                     // if session end, without any session events, cancel
                     if (String.IsNullOrEmpty(sessionId) && session.Count == 1 && firstSessionEvent.Event.IsSessionEnd()) {
-                        _logger.LogWarning("Discarding session end event with no session events.");
+                        _logger.LogInformation("Discarding session end event with no session events.");
                         firstSessionEvent.IsCancelled = true;
                         continue;
                     }
@@ -165,7 +165,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
                     } else {
                         // we already have a session start, cancel this one
                         if (sessionStartEvent != null) {
-                            _logger.LogWarning("Discarding duplicate session start event.");
+                            _logger.LogInformation("Discarding duplicate session start event.");
                             sessionStartEvent.IsCancelled = true;
                         }
 
