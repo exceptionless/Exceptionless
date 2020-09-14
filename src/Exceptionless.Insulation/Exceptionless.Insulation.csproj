@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.7" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.8" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.AppMetrics" Version="10.0.0-beta9" />
     <PackageReference Include="Foundatio.AWS" Version="10.0.0-beta9" />
