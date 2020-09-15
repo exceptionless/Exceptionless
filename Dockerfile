@@ -1,7 +1,7 @@
 ARG UI_VERSION=ui:3.0.1
 FROM exceptionless/${UI_VERSION} AS ui
 
-FROM mcr.microsoft.com/dotnet/core/sdk:5.0.100-rc.1 AS build
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /app
 
 COPY ./*.sln ./NuGet.Config ./
@@ -36,7 +36,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:5.0.100-rc.1 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
@@ -50,14 +50,14 @@ RUN dotnet publish -c Release -o out
 
 # api
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:5.0.100-rc.1 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 
 # app
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:5.0.100-rc.1 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS app
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
@@ -87,10 +87,16 @@ COPY --from=ui /usr/local/bin/bootstrap /usr/local/bin/bootstrap
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
+# install 5.0 from script until it's available in RPM
+RUN mkdir $HOME/dotnet_install && \
+    cd $HOME/dotnet_install && \
+    curl -H 'Cache-Control: no-cache' -L https://aka.ms/install-dotnet-preview -o install-dotnet-preview.sh && \
+    bash install-dotnet-preview.sh
+
 # install dotnet and supervisor
-RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
-    yum -y install aspnetcore-runtime-5.0.100-rc.1 && \
-    yum -y install epel-release && \
+#RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
+#    yum -y install aspnetcore-runtime-5.0 && \
+RUN yum -y install epel-release && \
     yum -y install supervisor
 
 ENV discovery.type=single-node \
