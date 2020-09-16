@@ -112,7 +112,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 })));
 
             var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
-            logger.LogTraceRequest(response);
+            logger.LogRequest(response);
 
             if (!response.IsValid) {
                 logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", pipeline, response.GetErrorMessage());

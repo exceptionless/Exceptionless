@@ -24,8 +24,8 @@
     <PackageReference Include="AutoMapper" Version="10.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="7.0.0" />
     <PackageReference Include="FluentValidation" Version="9.2.0" />
-    <PackageReference Include="Foundatio.Hosting" Version="10.0.0-beta9" />
-    <PackageReference Include="Foundatio.JsonNet" Version="10.0.0-beta9" />
+    <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.0.0-beta10" />
+    <PackageReference Include="Foundatio.JsonNet" Version="10.0.0-beta10" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.9.0" />
     <PackageReference Include="Handlebars.Net" Version="1.10.1" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.0" />
@@ -35,7 +35,7 @@
     <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
     <PackageReference Include="UAParser" Version="3.1.44" />
 
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.9.0-beta3.1" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.9.0-beta5" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
     <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj" Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
   </ItemGroup>
 </Project>

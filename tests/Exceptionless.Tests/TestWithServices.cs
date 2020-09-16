@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 using Exceptionless.Core;
 using Foundatio.Caching;
-using Foundatio.Hosting.Startup;
+using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using IAsyncLifetime = Foundatio.Utility.IAsyncLifetime;

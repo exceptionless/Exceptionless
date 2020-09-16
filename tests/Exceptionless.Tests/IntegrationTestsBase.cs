@@ -173,7 +173,7 @@ namespace Exceptionless.Tests {
         protected async Task RefreshDataAsync(Indices indices = null) {
             var configuration = GetService<ExceptionlessElasticConfiguration>();
             var response = await configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
-            _logger.LogTraceRequest(response);
+            _logger.LogRequest(response);
         }
 
         protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {

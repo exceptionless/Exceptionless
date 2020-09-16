@@ -9,7 +9,7 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models;
-using Foundatio.Hosting.Startup;
+using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;

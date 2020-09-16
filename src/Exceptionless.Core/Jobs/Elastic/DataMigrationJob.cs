@@ -124,7 +124,7 @@ namespace Exceptionless.Core.Jobs.Elastic {
                 double highestProgress = 0;
                 foreach (var workItem in workingTasks.ToArray()) {
                     var taskStatus = await client.Tasks.GetTaskAsync(workItem.TaskId, t => t.WaitForCompletion(false)).AnyContext();
-                    _logger.LogTraceRequest(taskStatus);
+                    _logger.LogRequest(taskStatus);
 
                     var status = taskStatus?.Task?.Status;
                     if (status == null) {

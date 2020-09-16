@@ -8,7 +8,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Serialization;
 using Foundatio.Caching;
-using Foundatio.Hosting.Startup;
+using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
