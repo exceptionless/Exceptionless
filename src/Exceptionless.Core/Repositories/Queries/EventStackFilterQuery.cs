@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 query = invertedStackFilter.Query;
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
-                var systemFilterQuery = GetSystemFilterQuery(ctx);
+                var systemFilterQuery = GetSystemFilterQuery(ctx, true);
                 systemFilterQuery.FilterExpression(query);
                 var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
@@ -95,7 +95,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             ctx.Source.FilterExpression(eventsResult.Query);
         }
 
-        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context) {
+        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context, bool excludeEndDateInRanges = false) {
             var builderContext = context as IQueryBuilderContext;
             var systemFilter = builderContext?.Source.GetSystemFilter();
             var systemFilterQuery = systemFilter?.GetQuery().Clone();
@@ -112,6 +112,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             foreach (var range in systemFilterQuery.GetDateRanges() ?? Enumerable.Empty<DateRange>()) {
                 if (range.Field == _inferredEventDateField || range.Field == "date")
                     range.Field = _inferredStackLastOccurrenceField;
+                if (excludeEndDateInRanges)
+                    range.EndDate = null;
             }
 
             return systemFilterQuery;
