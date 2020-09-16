@@ -7,7 +7,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
-using Foundatio.Hosting.Startup;
+using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;

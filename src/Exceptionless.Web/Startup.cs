@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
 using Exceptionless.Web.Extensions;
-using Foundatio.Hosting.Startup;
+using Foundatio.Extensions.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.OpenApi.Models;

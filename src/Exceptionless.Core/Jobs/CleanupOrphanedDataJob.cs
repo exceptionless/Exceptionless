@@ -191,7 +191,7 @@ namespace Exceptionless.Core.Jobs {
                 .QueryOnQueryString("is_deleted:false")
                 .Size(0)
                 .Aggregations(a => a.Terms("stacks", t => t.Field(f => f.DuplicateSignature).MinimumDocumentCount(2).Size(10000))));
-            _logger.LogTraceRequest(duplicateStackAgg, LogLevel.Trace);
+            _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
 
             var buckets = duplicateStackAgg.Aggregations.Terms("stacks").Buckets;
             int total = buckets.Count;
@@ -266,7 +266,7 @@ namespace Exceptionless.Core.Jobs {
                                 .Script(s => s.Source($"ctx._source.stack_id = '{targetStack.Id}'").Lang(ScriptLang.Painless))
                                 .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                                 .WaitForCompletion(false));
-                            _logger.LogTraceRequest(response, LogLevel.Trace);
+                            _logger.LogRequest(response, LogLevel.Trace);
 
                             var taskStartedTime = SystemClock.Now;
                             var taskId = response.Task;
@@ -322,7 +322,7 @@ namespace Exceptionless.Core.Jobs {
                     .QueryOnQueryString("is_deleted:false")
                     .Size(0)
                     .Aggregations(a => a.Terms("stacks", t => t.Field(f => f.DuplicateSignature).MinimumDocumentCount(2).Size(10000))));
-                _logger.LogTraceRequest(duplicateStackAgg, LogLevel.Trace);
+                _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
 
                 buckets = duplicateStackAgg.Aggregations.Terms("stacks").Buckets;
                 total += buckets.Count;

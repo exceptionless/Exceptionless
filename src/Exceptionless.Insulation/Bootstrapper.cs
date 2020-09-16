@@ -23,7 +23,7 @@ using Exceptionless.Insulation.HealthChecks;
 using Exceptionless.Insulation.Mail;
 using Exceptionless.Insulation.Redis;
 using Foundatio.Caching;
-using Foundatio.Hosting.Startup;
+using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Metrics;

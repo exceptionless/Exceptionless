@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Migrations {
 
                 return d;
             });
-            _logger.LogTraceRequest(response);
+            _logger.LogRequest(response);
 
             _logger.LogInformation("Start populating stack duplicate signature");
             var sw = Stopwatch.StartNew();
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Migrations {
                 .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                 .WaitForCompletion(false));
 
-            _logger.LogTraceRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
+            _logger.LogRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
 
             var taskId = stackResponse.Task;
             int attempts = 0;

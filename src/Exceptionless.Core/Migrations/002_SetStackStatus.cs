@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Migrations {
                 .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
                 .WaitForCompletion(false));
 
-            _logger.LogTraceRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
+            _logger.LogRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
 
             var taskId = stackResponse.Task;
             int attempts = 0;
