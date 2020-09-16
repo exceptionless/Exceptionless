@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.0" />
-    <PackageReference Include="Foundatio.Xunit" Version="10.0.0-beta10" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="3.1.8" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.8" />
+    <PackageReference Include="Foundatio.Xunit" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.0-rc.1.*" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.0-rc.1.*" />
     <PackageReference Include="FluentRest" Version="7.1.0.184" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.1.0.184" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
