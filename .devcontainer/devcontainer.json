@@ -1,0 +1,10 @@
+{
+  "build.dockerfile": "Dockerfile",
+  "extensions": [
+    "ms-dotnettools.csharp",
+    "streetsidesoftware.code-spell-checker",
+    "tintoy.msbuild-project-tools",
+    "humao.rest-client",
+    "ms-kubernetes-tools.vscode-kubernetes-tools"
+  ]
+}
