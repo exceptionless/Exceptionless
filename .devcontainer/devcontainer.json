@@ -1,5 +1,7 @@
 {
-  "build.dockerfile": "Dockerfile",
+  "build": {
+		"dockerfile": "Dockerfile"
+	},
   "extensions": [
     "ms-dotnettools.csharp",
     "streetsidesoftware.code-spell-checker",
