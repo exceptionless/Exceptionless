@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Models {
         public string Type { get; set; }
 
         /// <summary>
-        /// The event source (ie. machine name, log name).
+        /// The event source (ie. machine name, log name, feature name).
         /// </summary>
         public string Source { get; set; }
 

@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Jobs {
             var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
 
-            var uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id").Value;
+            var uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id")?.Value;
             if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
                 return;
 

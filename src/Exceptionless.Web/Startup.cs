@@ -119,9 +119,10 @@ namespace Exceptionless.Web {
                         new string[0]
                     }
                 });
-                
-                if (File.Exists($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml"))
-                    c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Exceptionless.Web.xml");
+
+                string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
+                if (File.Exists(xmlDocPath))
+                    c.IncludeXmlComments(xmlDocPath);
                 
                 c.IgnoreObsoleteActions();
             });
