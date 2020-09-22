@@ -710,83 +710,106 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
         [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
+        public Task<ActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(projectId, 1, type, userAgent, parameters);
         }
 
         /// <summary>
-        /// Create
+        /// Submit event by GET
         /// </summary>
         /// <remarks>
-        /// You can create an event using query string parameters.
+        /// You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.
         ///
         /// Feature usage named build with a duration of 10:
         /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
-        /// OR
-        /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
         ///
         /// Log with message, geo and extended data
         /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
-        /// OR
-        /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
+        /// <param name="type">The event type (ie. error, log message, feature usage).</param>
+        /// <param name="source">The event source (ie. machine name, log name, feature name).</param>
+        /// <param name="message">The event message.</param>
+        /// <param name="reference">An optional identifier to be used for referencing this event instance at a later time.</param>
+        /// <param name="date">The date that the event occurred on.</param>
+        /// <param name="count">The number of duplicated events.</param>
+        /// <param name="value">The value of the event if any.</param>
+        /// <param name="geo">The geo coordinates where the event happened.</param>
+        /// <param name="tags">A list of tags used to categorize this event (comma separated).</param>
+        /// <param name="identity">The user's identity that the event happened to.</param>
+        /// <param name="identityname">The user's friendly name that the event happened to.</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
-        /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
+        /// <param name="parameters">Query string parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet("submit")]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> GetSubmitEventV2Async([UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
+        public Task<ActionResult> GetSubmitEventV2Async(string type = null, string source = null, string message = null, string reference = null,
+            string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
+            string identityname = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(null, 2, null, userAgent, parameters);
         }
 
         /// <summary>
-        /// Create
+        /// Submit event type by GET
         /// </summary>
         /// <remarks>
-        /// You can create an event using query string parameters.
+        /// You can submit an event using an HTTP GET and query string parameters.
         ///
-        /// Feature usage named build with a duration of 10:
-        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
-        /// OR
+        /// Feature usage event named build with a value of 10:
         /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
         ///
-        /// Log with message, geo and extended data
-        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
-        /// OR
+        /// Log event with message, geo and extended data
         /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
-        /// <param name="type">The event type</param>
+        /// <param name="type">The event type (ie. error, log message, feature usage).</param>
+        /// <param name="source">The event source (ie. machine name, log name, feature name).</param>
+        /// <param name="message">The event message.</param>
+        /// <param name="reference">An optional identifier to be used for referencing this event instance at a later time.</param>
+        /// <param name="date">The date that the event occurred on.</param>
+        /// <param name="count">The number of duplicated events.</param>
+        /// <param name="value">The value of the event if any.</param>
+        /// <param name="geo">The geo coordinates where the event happened.</param>
+        /// <param name="tags">A list of tags used to categorize this event (comma separated).</param>
+        /// <param name="identity">The user's identity that the event happened to.</param>
+        /// <param name="identityname">The user's friendly name that the event happened to.</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
-        /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
+        /// <param name="parameters">Query string parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
         /// <response code="400">No project id specified and no default project was found.</response>
         /// <response code="404">No project was found.</response>
         [HttpGet("submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> GetSubmitEventV2Async(string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
+        public Task<ActionResult> GetSubmitEventByTypeV2Async(string type, string source = null, string message = null, string reference = null,
+            string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
+            string identityname = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(null, 2, type, userAgent, parameters);
         }
 
         /// <summary>
-        /// Create
+        /// Submit event type by GET for a specific project
         /// </summary>
         /// <remarks>
-        /// You can create an event using query string parameters.
+        /// You can submit an event using an HTTP GET and query string parameters.
         ///
         /// Feature usage named build with a duration of 10:
-        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
-        /// OR
-        /// <code><![CDATA[/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10]]></code>
+        /// <code><![CDATA[/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10]]></code>
         ///
         /// Log with message, geo and extended data
-        /// <code><![CDATA[/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
-        /// OR
-        /// <code><![CDATA[/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
+        /// <code><![CDATA[/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true]]></code>
         /// </remarks>
         /// <param name="projectId">The identifier of the project.</param>
-        /// <param name="type">The event type</param>
+        /// <param name="type">The event type (ie. error, log message, feature usage).</param>
+        /// <param name="source">The event source (ie. machine name, log name, feature name).</param>
+        /// <param name="message">The event message.</param>
+        /// <param name="reference">An optional identifier to be used for referencing this event instance at a later time.</param>
+        /// <param name="date">The date that the event occurred on.</param>
+        /// <param name="count">The number of duplicated events.</param>
+        /// <param name="value">The value of the event if any.</param>
+        /// <param name="geo">The geo coordinates where the event happened.</param>
+        /// <param name="tags">A list of tags used to categorize this event (comma separated).</param>
+        /// <param name="identity">The user's identity that the event happened to.</param>
+        /// <param name="identityname">The user's friendly name that the event happened to.</param>
         /// <param name="userAgent">The user agent that submitted the event.</param>
         /// <param name="parameters">Query String parameters that control what properties are set on the event</param>
         /// <response code="200">OK</response>
@@ -795,11 +818,13 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit")]
         [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> GetSubmitEventByProjectV2Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [QueryStringParameters] IQueryCollection parameters = null) {
+        public Task<ActionResult> GetSubmitEventByProjectV2Async(string projectId, string type = null, string source = null, string message = null, string reference = null,
+            string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
+            string identityname = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(projectId, 2, type, userAgent, parameters);
         }
 
-        private async Task<IActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, string userAgent = null, IQueryCollection parameters = null) {
+        private async Task<ActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, string userAgent = null, IQueryCollection parameters = null) {
             var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
             if (filteredParameters == null || filteredParameters.Count == 0)
                 return Ok();
@@ -935,7 +960,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         ///  <summary>
-        ///  Create
+        ///  Submit event by POST
         ///  </summary>
         ///  <remarks>
         ///  You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
@@ -991,7 +1016,7 @@ namespace Exceptionless.Web.Controllers {
         }
 
         ///  <summary>
-        ///  Create
+        ///  Submit event by POST for a specific project
         ///  </summary>
         ///  <remarks>
         ///  You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it
