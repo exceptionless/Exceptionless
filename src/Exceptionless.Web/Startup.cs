@@ -98,7 +98,7 @@ namespace Exceptionless.Web {
                     In = ParameterLocation.Query,
                     Type = SecuritySchemeType.ApiKey
                 });
-                
+
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement {
                     {
                         new OpenApiSecurityScheme {
@@ -123,8 +123,9 @@ namespace Exceptionless.Web {
                 string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
                 if (File.Exists(xmlDocPath))
                     c.IncludeXmlComments(xmlDocPath);
-                
+
                 c.IgnoreObsoleteActions();
+                c.OperationFilter<RequestBodyOperationFilter>();
             });
 
             var appOptions = AppOptions.ReadFromConfiguration(Configuration);
@@ -146,7 +147,7 @@ namespace Exceptionless.Web {
             app.UseHealthChecks("/health", new HealthCheckOptions {
                 Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
             });
-            
+
             var readyTags = new List<string> { "Critical" };
             if (!options.EventSubmissionDisabled)
                 readyTags.Add("Storage");
@@ -189,7 +190,7 @@ namespace Exceptionless.Web {
             app.Use(async (context, next) => {
                 if (options.AppMode != AppMode.Development && context.Request.IsLocal() == false)
                     context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-                
+
                 context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
                 context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 context.Response.Headers.Add("X-Frame-Options", "DENY");
@@ -198,18 +199,18 @@ namespace Exceptionless.Web {
 
                 await next();
             });
-            
+
             var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
             if (serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://")))
                 app.UseHttpsRedirection();
-            
+
             app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
                 if (ex != null || context.Response.StatusCode > 499)
                     return LogEventLevel.Error;
-                
+
                 if (context.Response.StatusCode > 399)
                     return LogEventLevel.Information;
-                
+
                 if (duration < 1000 || context.Request.Path.StartsWithSegments("/api/v2/push"))
                     return LogEventLevel.Debug;
 
@@ -229,10 +230,10 @@ namespace Exceptionless.Web {
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
-            
+
             app.UseAuthentication();
             app.UseAuthorization();
-            
+
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
@@ -257,7 +258,7 @@ namespace Exceptionless.Web {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
             }
-            
+
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("{**slug:nonfile}", "index.html");

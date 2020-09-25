@@ -248,7 +248,7 @@ namespace Exceptionless.Web.Controllers {
                     case "stack_users":
                         if (!String.IsNullOrEmpty(sort))
                             return BadRequest("Sort is not supported in stack mode.");
-                        
+
                         var systemFilter = new RepositoryQuery<PersistentEvent>()
                             .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
                             .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
@@ -266,7 +266,7 @@ namespace Exceptionless.Web.Controllers {
                             .SystemFilter(systemFilter)
                             .FilterExpression(filter)
                             .AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {stackAggregations})"));
-                        
+
                         var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                         if (stackTerms == null || stackTerms.Buckets.Count == 0)
                             return Ok(EmptyModels);
@@ -284,7 +284,7 @@ namespace Exceptionless.Web.Controllers {
                 string message = "An error has occurred. Please check your search filter.";
                 if (ex is DocumentLimitExceededException)
                     message = $"An error has occurred. {ex.Message ?? "Please limit your search criteria."}";
-                
+
                 using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, message);
 
@@ -295,7 +295,7 @@ namespace Exceptionless.Web.Controllers {
         private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int page, int limit, string after, bool useSearchAfter) {
             if (String.IsNullOrEmpty(sort))
                 sort = "-date";
-            
+
             return _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
                 o => useSearchAfter
                     ? o.SearchAfterPaging().SearchAfter(after).PageLimit(limit)
@@ -710,7 +710,7 @@ namespace Exceptionless.Web.Controllers {
         [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
         [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
         [ConfigurationResponseFilter]
-        public Task<ActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
+        public Task<ActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(projectId, 1, type, userAgent, parameters);
         }
 
@@ -746,7 +746,7 @@ namespace Exceptionless.Web.Controllers {
         [ConfigurationResponseFilter]
         public Task<ActionResult> GetSubmitEventV2Async(string type = null, string source = null, string message = null, string reference = null,
             string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
-            string identityname = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
+            string identityname = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(null, 2, null, userAgent, parameters);
         }
 
@@ -782,7 +782,7 @@ namespace Exceptionless.Web.Controllers {
         [ConfigurationResponseFilter]
         public Task<ActionResult> GetSubmitEventByTypeV2Async(string type, string source = null, string message = null, string reference = null,
             string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
-            string identityname = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
+            string identityname = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(null, 2, type, userAgent, parameters);
         }
 
@@ -820,7 +820,7 @@ namespace Exceptionless.Web.Controllers {
         [ConfigurationResponseFilter]
         public Task<ActionResult> GetSubmitEventByProjectV2Async(string projectId, string type = null, string source = null, string message = null, string reference = null,
             string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
-            string identityname = null, [UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
+            string identityname = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null) {
             return GetSubmitEventAsync(projectId, 2, type, userAgent, parameters);
         }
 
@@ -944,8 +944,9 @@ namespace Exceptionless.Web.Controllers {
         [Obsolete]
         [HttpPost("~/api/v1/error")]
         [Consumes("application/json", "text/plain")]
+        [RequestBodyContentAttribute]
         [ConfigurationResponseFilter]
-        public Task<IActionResult> LegacyPostAsync([UserAgent] string userAgent = null) {
+        public Task<IActionResult> LegacyPostAsync([FromHeader][UserAgent] string userAgent = null) {
             return PostAsync(null, 1, userAgent);
         }
 
@@ -953,9 +954,10 @@ namespace Exceptionless.Web.Controllers {
         [HttpPost("~/api/v1/events")]
         [HttpPost("~/api/v1/projects/{projectId:objectid}/events")]
         [Consumes("application/json", "text/plain")]
+        [RequestBodyContentAttribute]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public Task <IActionResult> PostV1Async(string projectId = null, [UserAgent]string userAgent = null) {
+        public Task <IActionResult> PostV1Async(string projectId = null, [FromHeader][UserAgent]string userAgent = null) {
             return PostAsync(projectId, 1, userAgent);
         }
 
@@ -1009,9 +1011,10 @@ namespace Exceptionless.Web.Controllers {
         ///  <response code="404">No project was found.</response>
         [HttpPost]
         [Consumes("application/json", "text/plain")]
+        [RequestBodyContentAttribute]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public Task<IActionResult> PostV2Async([UserAgent]string userAgent = null) {
+        public Task<IActionResult> PostV2Async([FromHeader][UserAgent]string userAgent = null) {
             return PostAsync(null, 2, userAgent);
         }
 
@@ -1066,13 +1069,14 @@ namespace Exceptionless.Web.Controllers {
         ///  <response code="404">No project was found.</response>
         [HttpPost("~/api/v2/projects/{projectId:objectid}/events")]
         [Consumes("application/json", "text/plain")]
+        [RequestBodyContentAttribute]
         [ConfigurationResponseFilter]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
-        public Task <IActionResult> PostByProjectV2Async(string projectId = null, [UserAgent]string userAgent = null) {
+        public Task <IActionResult> PostByProjectV2Async(string projectId = null, [FromHeader][UserAgent]string userAgent = null) {
             return PostAsync(projectId, 2, userAgent);
         }
 
-        private async Task <IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [UserAgent]string userAgent = null) {
+        private async Task <IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [FromHeader][UserAgent]string userAgent = null) {
             if (Request.ContentLength.HasValue && Request.ContentLength.Value <= 0)
                 return StatusCode(StatusCodes.Status202Accepted);
 
