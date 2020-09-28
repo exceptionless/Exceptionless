@@ -386,8 +386,12 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         [InlineData(null)]
+        [InlineData("")]
+        [InlineData("@!")]
         [InlineData("status:open OR status:regressed")]
         [InlineData("(status:open OR status:regressed)")]
+        [InlineData("@!status:open OR status:regressed")]
+        [InlineData("@!(status:open OR status:regressed)")]
         [Theory]
         public async Task WillExcludeDeletedStacks(string filter) {
             var utcNow = SystemClock.UtcNow;
@@ -441,7 +445,7 @@ namespace Exceptionless.Tests.Controllers {
             double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
             
             Assert.Equal(1, total);
-            Assert.Equal(1, newTotal);
+            Assert.Equal(0, newTotal);
             Assert.Equal(1, uniqueTotal);
         }
         
