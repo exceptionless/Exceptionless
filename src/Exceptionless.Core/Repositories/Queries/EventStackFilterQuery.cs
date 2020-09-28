@@ -29,9 +29,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
-            string filter = ctx.Source.GetFilterExpression();
-            if (String.IsNullOrEmpty(filter))
-                return;
+            string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
 
             // TODO: Handle search expressions as well
             bool altInvertRequested = false;
@@ -44,13 +42,12 @@ namespace Exceptionless.Core.Repositories.Queries {
             var stackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Stacks, ctx);
             var invertedStackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.InvertedStacks, ctx);
 
+            if (ctx.Options.GetSoftDeleteMode() == SoftDeleteQueryMode.ActiveOnly)
+                invertedStackFilter.Query = !String.IsNullOrEmpty(invertedStackFilter.Query) ? $"(is_deleted:true OR ({invertedStackFilter.Query}))" : "is_deleted:true";
+
             // queries are the same, no need to allow inverting
             if (invertedStackFilter.Query == stackFilter.Query)
                 invertedStackFilter.IsInvertSuccessful = false;
-
-            // filter does not contain any stack filter criteria
-            if (String.IsNullOrEmpty(stackFilter.Query) || !stackFilter.HasStackSpecificCriteria)
-                return;
 
             const int stackIdLimit = 10000;
             string[] stackIds = null;
@@ -59,6 +56,9 @@ namespace Exceptionless.Core.Repositories.Queries {
             bool isStackIdsNegated = stackFilter.HasStatusOpen && invertedStackFilter.IsInvertSuccessful && !altInvertRequested;
             if (isStackIdsNegated)
                 query = invertedStackFilter.Query;
+
+            if (String.IsNullOrEmpty(query) && ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly)
+                return;
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
                 var systemFilterQuery = GetSystemFilterQuery(ctx);
@@ -84,7 +84,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (!isStackIdsNegated) {
                 if (stackIds.Length > 0)
                     ctx.Source.Stack(stackIds);
-                else
+                else if (stackFilter.HasStackSpecificCriteria)
                     ctx.Source.Stack("none");
             } else {
                 if (stackIds.Length > 0)
