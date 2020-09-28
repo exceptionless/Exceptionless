@@ -981,7 +981,7 @@ namespace Exceptionless.Web.Controllers {
         ///      {
         ///          "type": "log",
         ///          "message": "Exceptionless is amazing!",
-        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "date":"2030-01-01T12:00:00.0000000-05:00",
         ///          "@user":{ "identity":"123456789", "name": "Test User" }
         ///      }
         ///  </code>
@@ -996,7 +996,7 @@ namespace Exceptionless.Web.Controllers {
         ///  <code>
         ///      {
         ///          "type": "error",
-        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "date":"2030-01-01T12:00:00.0000000-05:00",
         ///          "@simple_error": {
         ///              "message": "Simple Exception",
         ///              "type": "System.Exception",
@@ -1038,7 +1038,7 @@ namespace Exceptionless.Web.Controllers {
         ///      {
         ///          "type": "log",
         ///          "message": "Exceptionless is amazing!",
-        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "date":"2030-01-01T12:00:00.0000000-05:00",
         ///          "@user":{ "identity":"123456789", "name": "Test User" }
         ///      }
         ///  </code>
@@ -1053,7 +1053,7 @@ namespace Exceptionless.Web.Controllers {
         ///  <code>
         ///      {
         ///          "type": "error",
-        ///          "date":"2020-01-01T12:00:00.0000000-05:00",
+        ///          "date":"2030-01-01T12:00:00.0000000-05:00",
         ///          "@simple_error": {
         ///              "message": "Simple Exception",
         ///              "type": "System.Exception",
