@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -87,12 +87,6 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var groupNode = node.GetGroupNode();
 
-            // went to root node, just negate current node
-            if (!groupNode.HasParens) {
-                node.IsNegated = node.IsNegated.HasValue ? !node.IsNegated : true;
-                return;
-            }
-
             // check to see if we already inverted the group
             if (groupNode.Data.ContainsKey("@IsInverted"))
                 return;
@@ -110,8 +104,12 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             // negate the entire group
-            if (groupNode.Left != null && groupNode.Right != null)
+            if (groupNode.Left != null) {
                 groupNode.IsNegated = groupNode.IsNegated.HasValue ? !groupNode.IsNegated : true;
+                if (groupNode.Right != null)
+                    groupNode.HasParens = true;
+            }
+
             groupNode.Data["@IsInverted"] = true;
         }
 
