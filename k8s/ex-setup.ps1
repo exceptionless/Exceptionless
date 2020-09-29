@@ -178,6 +178,9 @@ $AZ_USERNAME=$(Write-Output $SERVICE_PRINCIPAL | jq -r '.appId')
 $AZ_PASSWORD=$(Write-Output $SERVICE_PRINCIPAL | jq -r '.password')
 az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $AZ_USERNAME --client-secret $AZ_PASSWORD
 
+# renew service principal
+az ad sp credential reset --name "$CLUSTER-ci" --years 2
+
 # delete the entire thing
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER
 
