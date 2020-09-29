@@ -29,6 +29,7 @@ using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
 using Foundatio.Utility;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Tests.Controllers {
     public class EventControllerTests : IntegrationTestsBase {
@@ -384,6 +385,70 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(expected, results.Count);
         }
 
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("@!")]
+        [InlineData("status:open OR status:regressed")]
+        [InlineData("(status:open OR status:regressed)")]
+        [InlineData("@!status:open OR status:regressed")]
+        [InlineData("@!(status:open OR status:regressed)")]
+        [Theory]
+        public async Task WillExcludeDeletedStacks(string filter) {
+            var utcNow = SystemClock.UtcNow;
+            
+            var stack1 = AddTestEvent()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Status(StackStatus.Open)
+                .Deleted()
+                .TotalOccurrences(50)
+                .FirstOccurrence(utcNow.SubtractDays(1));
+
+            var stack2 = AddTestEvent()
+                .TestProject()
+                .Type(Event.KnownTypes.Error)
+                .Status(StackStatus.Regressed)
+                .TotalOccurrences(10)
+                .FirstOccurrence(utcNow.SubtractDays(2))
+                .StackReference("https://github.com/exceptionless/Exceptionless")
+                .Version("3.2.1-beta1");
+
+            await SaveTestDataAsync();
+
+            Log.MinimumLevel = LogLevel.Trace;
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryStringIf(() => !String.IsNullOrEmpty(filter), "filter", filter)
+                .QueryString("mode", "stack_new")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Single(results);
+            
+            var countResult = await SendRequestAsAsync<CountResult>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events", "count")
+                .QueryStringIf(() => !String.IsNullOrEmpty(filter), "filter", filter)
+                .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
+                .StatusCodeShouldBeOk()
+            );
+
+            var dateAgg = countResult.Aggregations.DateHistogram("date_date");
+            double dateAggStackCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
+            double dateAggEventCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
+            Assert.Equal(1, dateAggStackCount);
+            Assert.Equal(1, dateAggEventCount);
+            
+            var total = countResult.Aggregations.Sum("sum_count")?.Value;
+            double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
+            double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
+            
+            Assert.Equal(1, total);
+            Assert.Equal(0, newTotal);
+            Assert.Equal(1, uniqueTotal);
+        }
+        
         private async Task CreateStacksAndEventsAsync() {
             var utcNow = SystemClock.UtcNow;
 

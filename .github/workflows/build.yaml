@@ -19,7 +19,7 @@ jobs:
       run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
     - name: Build Version
       run: |
-        dotnet tool install --global minver-cli --version 2.3.0
+        dotnet tool install --global minver-cli --version 2.3.1
         version=$(minver --tag-prefix v)
         echo "::set-env name=MINVERVERSIONOVERRIDE::$version"
         echo "::set-env name=VERSION::$version"
@@ -70,7 +70,7 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
       with:
-        version: v3.3.0
+        version: v3.3.4
     - name: Deploy Changes to Development Environment
       if: github.ref == 'refs/heads/bug/orphaned-data' && github.event_name != 'pull_request'
       run: |
