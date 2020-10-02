@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
