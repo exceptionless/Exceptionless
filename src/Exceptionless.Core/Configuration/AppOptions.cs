@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -45,6 +46,7 @@ namespace Exceptionless.Core {
         public bool EventSubmissionDisabled { get; internal set; }
 
         internal List<string> DisabledPipelineActions { get; set; }
+
         internal List<string> DisabledPlugins { get; set; }
 
         /// <summary>
@@ -53,6 +55,8 @@ namespace Exceptionless.Core {
         public long MaximumEventPostSize { get; internal set; }
 
         public int MaximumRetentionDays { get; internal set; }
+
+        public List<string> KnownProxies { get; internal set; }
 
         public bool EnableRepositoryNotifications { get; internal set; }
 
@@ -109,6 +113,8 @@ namespace Exceptionless.Core {
 
             options.EnableRepositoryNotifications = config.GetValue(nameof(options.EnableRepositoryNotifications), true);
             options.EnableWebSockets = config.GetValue(nameof(options.EnableWebSockets), true);
+            
+            options.KnownProxies = config.GetValueList(nameof(KnownProxies));
 
             try {
                 var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);

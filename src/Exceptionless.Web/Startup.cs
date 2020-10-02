@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Joonasw.AspNetCore.SecurityHeaders;
 using System.Collections.Generic;
+using System.Net;
 using Exceptionless.Web.Extensions;
 using Foundatio.Extensions.Hosting.Startup;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -35,6 +36,8 @@ namespace Exceptionless.Web {
         public IConfiguration Configuration { get; }
 
         public void ConfigureServices(IServiceCollection services) {
+            var appOptions = AppOptions.ReadFromConfiguration(Configuration);
+            
             services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
                 .AllowAnyMethod()
@@ -46,6 +49,11 @@ namespace Exceptionless.Web {
             services.Configure<ForwardedHeadersOptions>(options => {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.RequireHeaderSymmetry = false;
+
+                foreach (string knownProxy in appOptions.KnownProxies) {
+                    if (IPAddress.TryParse(knownProxy, out var ipAddress))
+                        options.KnownProxies.Add(ipAddress);
+                }
             });
 
             services.AddControllers(o => {
@@ -128,7 +136,6 @@ namespace Exceptionless.Web {
                 c.OperationFilter<RequestBodyOperationFilter>();
             });
 
-            var appOptions = AppOptions.ReadFromConfiguration(Configuration);
             Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
             services.AddSingleton(s => {
                 return new ThrottlingOptions {
