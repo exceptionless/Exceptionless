@@ -13,9 +13,27 @@ using Microsoft.Extensions.Logging;
 using Nest;
 using DateRange = Foundatio.Repositories.DateRange;
 
+namespace Exceptionless.Core.Repositories {
+    public static class EventStackFilterQueryExtensions {
+        internal const string EnforceEventStackFilterKey = "@EnforceEventStackFilter";
+
+        public static T EnforceEventStackFilter<T>(this T query, bool shouldEnforceEventStackFilter = true) where T : IRepositoryQuery {
+            query.Values.Set(EnforceEventStackFilterKey, shouldEnforceEventStackFilter);
+            return query;
+        }
+    }
+}
+
+namespace Exceptionless.Core.Repositories.Options {
+    public static class ReadEventStackFilterQueryExtensions {
+        public static bool ShouldEnforceEventStackFilter(this IRepositoryQuery query) {
+            return query.SafeGetOption<bool>(EventStackFilterQueryExtensions.EnforceEventStackFilterKey, false);
+        }
+    }
+}
+
 namespace Exceptionless.Core.Repositories.Queries {
     public class EventStackFilterQueryBuilder : IElasticQueryBuilder {
-        public const string StackFieldName = "@stack";
         private readonly IStackRepository _stackRepository;
         private readonly ILogger _logger;
         private readonly Field _inferredEventDateField;
@@ -30,6 +48,9 @@ namespace Exceptionless.Core.Repositories.Queries {
 
         public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
             string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
+
+            if (String.IsNullOrEmpty(filter) && !ctx.Source.ShouldEnforceEventStackFilter())
+                return;
 
             // TODO: Handle search expressions as well
             bool altInvertRequested = false;
@@ -57,7 +78,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (isStackIdsNegated)
                 query = invertedStackFilter.Query;
 
-            if (String.IsNullOrEmpty(query) && ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly)
+            if (String.IsNullOrEmpty(query) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
