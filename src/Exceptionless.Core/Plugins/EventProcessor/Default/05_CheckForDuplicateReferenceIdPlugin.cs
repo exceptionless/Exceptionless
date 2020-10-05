@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 return;
             }
 
-            _logger.LogWarning("Discarding event due to duplicate reference id: {ReferenceId}", context.Event.ReferenceId);
+            _logger.LogInformation("Discarding event due to duplicate reference id: {ReferenceId}", context.Event.ReferenceId);
             context.IsCancelled = true;
         }
 
