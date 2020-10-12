@@ -230,6 +230,8 @@ namespace Exceptionless.Web.Controllers {
                 Total = stripeInvoice.Total / 100.0m
             };
 
+            
+            var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             foreach (var line in stripeInvoice.Lines.Data) {
                 var item = new InvoiceLineItem { Amount = line.Amount / 100.0m };
 
@@ -240,7 +242,9 @@ namespace Exceptionless.Web.Controllers {
                     item.Description = line.Description;
                 }
 
-                item.Date = $"{(line.Period.Start ?? stripeInvoice.PeriodStart).ToShortDateString()} - {(line.Period.End ?? stripeInvoice.PeriodEnd).ToShortDateString()}";
+                var periodStart = line.Period.Start >= 0 ? unixEpoch.AddSeconds(line.Period.Start) : stripeInvoice.PeriodStart;
+                var periodEnd = line.Period.End >= 0 ? unixEpoch.AddSeconds(line.Period.End) : stripeInvoice.PeriodEnd;
+                item.Date = $"{periodStart.ToShortDateString()} - {periodEnd.ToShortDateString()}";
                 invoice.Items.Add(item);
             }
 
