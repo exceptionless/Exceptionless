@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -19,7 +20,7 @@ public class RequestBodyOperationFilter : IOperationFilter {
         operation.RequestBody = new OpenApiRequestBody { Required = true };
         foreach (string contentType in consumesAttribute.ContentTypes) {
             operation.RequestBody.Content.Add(contentType, new OpenApiMediaType {
-                Schema = new OpenApiSchema { Type = "string" }
+                Schema = new OpenApiSchema { Type = "string", Example = new OpenApiString(String.Empty) }
             });
         }
     }
