@@ -1,4 +1,4 @@
-ARG UI_VERSION=ui:3.0.2
+ARG UI_VERSION=ui:3.0.4
 FROM exceptionless/${UI_VERSION} AS ui
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
