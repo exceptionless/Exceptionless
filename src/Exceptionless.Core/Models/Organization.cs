@@ -149,7 +149,7 @@ namespace Exceptionless.Core.Models {
         /// Account event usage information.
         /// </summary>
         public ICollection<UsageInfo> Usage { get; set; }
-        public DateTime LastEventDateUtc { get; set; }
+        public DateTime? LastEventDateUtc { get; set; }
 
         /// <summary>
         /// Optional data entries that contain additional configuration information for this organization.
