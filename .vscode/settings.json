@@ -10,6 +10,9 @@
     "cSpell.words": [
         "Exceptionless",
         "Guid",
+        "LDAP",
+        "Serilog",
+        "Xunit",
         "circleci",
         "dockerignore",
         "editorconfig",

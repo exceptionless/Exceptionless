@@ -56,7 +56,7 @@ namespace Exceptionless.Tests {
         public void CanDeserializeEventWithInvalidKnownDataTypes() {
             const string json = @"{""Message"":""Hello"",""Some"":""{\""Blah\"":\""SomeVal\""}"",""@Some"":""{\""Blah\"":\""SomeVal\""}""}";
             const string jsonWithInvalidDataType = @"{""Message"":""Hello"",""@Some"":""Testing"",""@string"":""Testing""}";
-            
+
             var settings = new JsonSerializerSettings();
             var knownDataTypes = new Dictionary<string, Type> {
                 { "Some", typeof(SomeModel) },
@@ -92,7 +92,7 @@ namespace Exceptionless.Tests {
             Assert.Equal("Hello", ev.Message);
             Assert.Equal("SomeVal", ev.Data["Blah"]);
         }
-        
+
         [Fact]
         public void CanDeserializeWebHook() {
             var hook = new WebHook {
