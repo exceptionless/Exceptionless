@@ -203,7 +203,7 @@ namespace Exceptionless.Web {
             });
 
             var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-            if (serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://")))
+            if (options.AppMode != AppMode.Development && serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://")))
                 app.UseHttpsRedirection();
 
             app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
