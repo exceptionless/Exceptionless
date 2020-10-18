@@ -62,14 +62,16 @@ namespace Exceptionless.Serializer {
                     }
 
                     if (accessor.MemberType == typeof(DateTime)) {
-                        accessor.SetValue(target, p.Value.ToObject<DateTimeOffset>(serializer).DateTime);
-                        continue;
-                    }
-
-                    if (accessor.MemberType == typeof(DateTime?)) {
-                        var offset = p.Value.ToObject<DateTimeOffset?>(serializer);
-                        accessor.SetValue(target, offset?.DateTime);
-                        continue;
+                        if (p.Value.Type == JTokenType.Date || p.Value.Type == JTokenType.String && p.Value.Value<string>().Contains("+")) {
+                            accessor.SetValue(target, p.Value.ToObject<DateTimeOffset>(serializer).DateTime);
+                            continue;
+                        }
+                    } else if (accessor.MemberType == typeof(DateTime?)) {
+                        if (p.Value.Type == JTokenType.Date || p.Value.Type == JTokenType.String && p.Value.Value<string>().Contains("+")) {
+                            var offset = p.Value.ToObject<DateTimeOffset?>(serializer);
+                            accessor.SetValue(target, offset?.DateTime);
+                            continue;
+                        }
                     }
 
                     accessor.SetValue(target, p.Value.ToObject(accessor.MemberType, serializer));

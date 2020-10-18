@@ -110,6 +110,18 @@ namespace Exceptionless.Tests {
             Assert.Equal(hook.EventTypes, model.EventTypes);
             Assert.Equal(hook.Version, model.Version);
         }
+
+        [Fact]
+        public void CanDeserializeProject() {
+            string json = "{\"last_event_date_utc\":\"2020-10-18T20:54:04.3457274+01:00\", \"created_utc\":\"0001-01-01T00:00:00\",\"updated_utc\":\"2020-09-21T04:41:32.7458321Z\"}";
+            
+            var serializer = GetService<ITextSerializer>();
+            var model = serializer.Deserialize<Project>(json);
+            Assert.NotNull(model?.LastEventDateUtc);
+            Assert.NotEqual(DateTime.MinValue, model.LastEventDateUtc);
+            Assert.Equal(DateTime.MinValue, model.CreatedUtc);
+            Assert.NotEqual(DateTime.MinValue, model.UpdatedUtc);
+        }
     }
 
     public class SomeModel {
