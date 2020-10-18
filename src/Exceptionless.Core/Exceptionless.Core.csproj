@@ -21,7 +21,7 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="10.0.0" />
+    <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="AutoMapper.Collection" Version="7.0.0" />
     <PackageReference Include="FluentValidation" Version="9.2.2" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.0.0" />
@@ -32,7 +32,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0-rc.2.20475.5" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.0-rc.2.*" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Stripe.net" Version="39.14.0" />
+    <PackageReference Include="Stripe.net" Version="39.16.0" />
     <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
     <PackageReference Include="UAParser" Version="3.1.44" />
 
