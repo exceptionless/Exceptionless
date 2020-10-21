@@ -421,7 +421,10 @@ namespace Exceptionless.Web.Controllers {
                     var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
                     bool cardUpdated = false;
 
-                    var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name, Email = CurrentUser.EmailAddress };
+                    var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
+                    if (!Request.IsGlobalAdmin()) 
+                        customerUpdateOptions.Email = CurrentUser.EmailAddress;
+
                     if (!String.IsNullOrEmpty(stripeToken)) {
                         customerUpdateOptions.Source = stripeToken;
                         cardUpdated = true;
