@@ -46,7 +46,7 @@ namespace Exceptionless.Tests.Mail {
             Assert.Equal("test@test.com", uri.User);
             Assert.Equal("testpass", uri.Password);
         }
-        
+
         [Fact]
         public Task SendEventNoticeSimpleErrorAsync() {
             var ex = GetException();

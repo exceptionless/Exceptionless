@@ -60,8 +60,7 @@ namespace Exceptionless.Core.Utility {
 
             var user = new User {
                 FullName = "Test User",
-                EmailAddress = TEST_USER_EMAIL,
-                IsEmailAddressVerified = true
+                EmailAddress = TEST_USER_EMAIL
             };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
@@ -84,8 +83,7 @@ namespace Exceptionless.Core.Utility {
 
             var user = new User {
                 FullName = "Test Org User",
-                EmailAddress = TEST_ORG_USER_EMAIL,
-                IsEmailAddressVerified = true
+                EmailAddress = TEST_ORG_USER_EMAIL
             };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
@@ -147,8 +145,7 @@ namespace Exceptionless.Core.Utility {
 
             var user = new User {
                 FullName = "Free User",
-                EmailAddress = FREE_USER_EMAIL,
-                IsEmailAddressVerified = true
+                EmailAddress = FREE_USER_EMAIL
             };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
