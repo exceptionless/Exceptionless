@@ -69,6 +69,14 @@ namespace Exceptionless.Core.Utility {
             user.Salt = StringExtensions.GetRandomString(16);
             user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
 
+            var options = container.GetRequiredService<AppOptions>();
+            if (options.AppMode == AppMode.Production) 
+            {
+                // Disable user in 'Production' Mode
+                user.IsEmailAddressVerified = false;
+                user.IsActive = false;
+            }
+
             user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Global Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
             await CreateOrganizationAndProjectAsync(user).AnyContext();
@@ -92,6 +100,14 @@ namespace Exceptionless.Core.Utility {
             user.Password = TEST_ORG_USER_PASSWORD.ToSaltedHash(user.Salt);
 
             user.OrganizationIds.Add(TEST_ORG_ID);
+
+            var options = container.GetRequiredService<AppOptions>();
+            if (options.AppMode == AppMode.Production) 
+            {
+                // Disable user in 'Production' Mode
+                user.IsEmailAddressVerified = false;
+                user.IsActive = false;
+            }
 
             user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Org Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
@@ -135,6 +151,15 @@ namespace Exceptionless.Core.Utility {
             }, o => o.ImmediateConsistency().Cache()).AnyContext();
 
             user.OrganizationIds.Add(organization.Id);
+
+            var options = container.GetRequiredService<AppOptions>();
+            if (options.AppMode == AppMode.Production) 
+            {
+                // Disable user in 'Production' Mode
+                user.IsEmailAddressVerified = false;
+                user.IsActive = false;
+            }
+
             await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
         }
@@ -191,6 +216,15 @@ namespace Exceptionless.Core.Utility {
                 }
             }, o => o.ImmediateConsistency().Cache()).AnyContext();
 
+
+            var options = container.GetRequiredService<AppOptions>();
+            if (options.AppMode == AppMode.Production) 
+            {
+                // Disable user in 'Production' Mode
+                user.IsEmailAddressVerified = false;
+                user.IsActive = false;
+            }
+
             user.OrganizationIds.Add(organization.Id);
             await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Free Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
@@ -224,6 +258,15 @@ namespace Exceptionless.Core.Utility {
             }, o => o.ImmediateConsistency()).AnyContext();
 
             user.OrganizationIds.Add(organization.Id);
+
+            var options = container.GetRequiredService<AppOptions>();
+            if (options.AppMode == AppMode.Production) 
+            {
+                // Disable user in 'Production' Mode
+                user.IsEmailAddressVerified = false;
+                user.IsActive = false;
+            }
+
             await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
             _logger.LogDebug("Created Internal Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
         }
