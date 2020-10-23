@@ -1,8 +1,15 @@
 {
-  "build": {
-    "dockerfile": "Dockerfile",
-    "runArgs": [ "-v", "/var/run/docker.sock:/var/run/docker.sock" ]
-	},
+  "dockerFile": "Dockerfile",
+  "forwardPorts": [
+    5000,
+    5001,
+    5100,
+    9200,
+    5601
+  ],
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
   "extensions": [
     "ms-dotnettools.csharp",
     "streetsidesoftware.code-spell-checker",

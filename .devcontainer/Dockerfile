@@ -21,6 +21,17 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | b
 ## Install Docker CLI
 RUN curl -fsSL https://get.docker.com | bash
 
+# Install kubectl
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && \
+  echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list && \
+  sudo apt-get update && \
+  sudo apt-get install -y kubectl
+
+# Install helm
+RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 && \
+  chmod 700 get_helm.sh && \
+  ./get_helm.sh
+
 ## Update to the latest PowerShell
 RUN curl -sSL https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh | bash
 
