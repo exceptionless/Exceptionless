@@ -414,8 +414,7 @@ namespace Exceptionless.Web.Controllers {
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
                     organization.StripeCustomerId = customer.Id;
-                    if (customer.Sources.Data.Count > 0)
-                        organization.CardLast4 = (customer.Sources.Data.First() as Card)?.Last4;
+                    organization.CardLast4 = last4;
                 } else {
                     var update = new SubscriptionUpdateOptions { Items =  new List<SubscriptionItemOptions>() };
                     var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
