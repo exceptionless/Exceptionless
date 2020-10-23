@@ -5,7 +5,7 @@ services:
     depends_on:
       - elasticsearch
       - redis
-    image: exceptionless/app:6.1.0
+    image: exceptionless/app:latest
     environment:
       EX_AppMode: Production
       EX_ConnectionStrings__Cache: provider=redis
@@ -29,7 +29,7 @@ services:
   jobs:
     depends_on:
       - app
-    image: exceptionless/job:6.1.0
+    image: exceptionless/job:latest
     environment:
       EX_AppMode: Production
       EX_BaseURL: http://localhost:5100
