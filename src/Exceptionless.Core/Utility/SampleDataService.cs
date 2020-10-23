@@ -62,6 +62,8 @@ namespace Exceptionless.Core.Utility {
                 FullName = "Test User",
                 EmailAddress = TEST_USER_EMAIL
             };
+
+            user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
@@ -85,6 +87,8 @@ namespace Exceptionless.Core.Utility {
                 FullName = "Test Org User",
                 EmailAddress = TEST_ORG_USER_EMAIL
             };
+            
+            user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
 
@@ -147,6 +151,8 @@ namespace Exceptionless.Core.Utility {
                 FullName = "Free User",
                 EmailAddress = FREE_USER_EMAIL
             };
+            
+            user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
 
