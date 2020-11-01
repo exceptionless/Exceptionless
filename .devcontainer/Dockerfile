@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0
 
+# https://github.com/microsoft/vscode-dev-containers/tree/master/containers/dotnetcore
+# try using this as base: mcr.microsoft.com/vscode/devcontainers/dotnetcore
+
 # Update and install some utilities
 RUN apt-get update && \
   apt-get install -y curl git gnupg2 jq sudo zsh htop gnupg gnupg-agent software-properties-common apt-transport-https ca-certificates nano
