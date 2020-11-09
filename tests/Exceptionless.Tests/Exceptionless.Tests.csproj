@@ -9,7 +9,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.0-rc.2.*" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.0-rc.2.*" />
     <PackageReference Include="FluentRest" Version="7.1.0.184" />
-    <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.1.0.184" />
+    <PackageReference Include="FluentRest.NewtonsoftJson" Version="7.1.0.216" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
