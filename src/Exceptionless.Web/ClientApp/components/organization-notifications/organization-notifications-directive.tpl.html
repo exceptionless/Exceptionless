@@ -1,0 +1,119 @@
+<div>
+  <div ng-if="vm.hasNotifications" refresh-on="filterChanged" refresh-action="vm.onFilterChanged()">
+    <div refresh-on="OrganizationChanged ProjectChanged PersistentEventChanged PlanChanged PlanOverage" refresh-action="vm.get()" refresh-throttle="10000"></div>
+
+    <div class="alert alert-success alert-banner m-b-none" ng-if="!vm.hasOrganizations()">
+      <h4>{{::"Setup your first project" | translate}}</h4>
+      <p>
+        Please <a ui-sref="app.project.add">add a new project</a> and start becoming exceptionless in less than 60 seconds!
+      </p>
+    </div>
+
+    <div class="alert alert-success alert-banner m-b-none" ng-if="vm.hasOrganizationsWithNoProjects()">
+      <h4>{{::"Setup your first project" | translate}}</h4>
+      <p>
+        <strong ng-repeat="organization in vm.organizationsWithNoProjects">
+          <span ng-if="!$first">, </span><a ui-sref="app.project.add({ organizationId: organization.id })">{{organization.name}}</a>
+        </strong>
+        currently has no projects. <a ui-sref="app.project.add({ organizationId: vm.organizationsWithNoProjects[0].id })">Add a new project</a> and start becoming exceptionless in less than 60 seconds!
+      </p>
+    </div>
+
+    <div class="alert alert-success alert-banner m-b-none" ng-if="vm.hasProjectsRequiringConfiguration()">
+      <h4>{{::"We haven't received any data!" | translate}}</h4>
+      <p>
+        Please configure your clients for
+        <strong ng-repeat="project in vm.projectsRequiringConfiguration">
+          <span ng-if="!$first">, </span><a ui-sref="app.project.configure({ id: project.id, redirect: true })" title="{{::'Configure_Project_Title' | translate:{projectName: project.name, organizationName: project.organization_name} }}">{{project.name}}</a>
+        </strong>
+        projects and start becoming exceptionless in less than 60 seconds!
+      </p>
+    </div>
+
+    <div class="alert alert-danger alert-banner m-b-none" ng-if="vm.hasSuspendedOrganizations()">
+      <h4>
+        <span ng-repeat="organization in vm.suspendedOrganizations">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </span> has been suspended.
+      </h4>
+      <p><em>{{::'Please note that while your account is suspended all new client events will be discarded.' | translate}}</em></p>
+
+      <p ng-if="vm.hasSuspendedForBillingOrganizations()">
+        To unsuspend
+        <strong ng-repeat="organization in vm.suspendedForBillingOrganizations">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </strong>
+        , please <a ng-click="vm.showChangePlanDialog(vm.suspendedForBillingOrganizations[0].id)">update your billing information</a>.
+      </p>
+
+      <p ng-if="vm.hasSuspendedForAbuseOrOverageOrNotActiveOrganizations()">
+        <strong ng-repeat="organization in vm.suspendedForAbuseOrOverageOrNotActiveOrganizations">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </strong>
+        has exceeded the plan limits. To unsuspend your account, please
+        <a ng-click="vm.showChangePlanDialog(vm.suspendedForAbuseOrOverageOrNotActiveOrganizations[0].id)">upgrade your plan</a>.
+      </p>
+
+      <p ng-if="vm.isIntercomEnabled()">
+        Please <a ng-click="appVm.showIntercom()">contact us</a>
+        for more information on why your account was suspended.
+      </p>
+    </div>
+
+    <div class="alert alert-danger alert-banner m-b-none" ng-if="vm.hasExceededRequestLimitOrganizations()">
+      <h4>
+        {{::'API requests are currently being throttled for' | translate}}
+        <span ng-repeat="organization in vm.exceededRequestLimitOrganizations">
+          <span ng-if="!$first">, </span>{{organization.name}}
+        </span>
+      </h4>
+
+      <p ng-if="vm.isIntercomEnabled()">
+        Please <a ng-click="appVm.showIntercom()">contact us</a> for more information.
+      </p>
+    </div>
+
+    <div class="alert alert-danger alert-banner m-b-none" ng-if="vm.hasHourlyOverageOrganizations()">
+      <h4>
+        {{::'Events are currently being throttled for' | translate}}
+        <span ng-repeat="organization in vm.hourlyOverageOrganizations">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </span>
+      </h4>
+
+      <p>{{::'Events are currently being throttled to prevent using up your plan limit in a small window of time.' | translate}} <a ng-click="vm.showChangePlanDialog(vm.hourlyOverageOrganizations[0].id)">{{::'Upgrade now' | translate}}</a> {{::'to increase your limits.' | translate}}</p>
+    </div>
+
+    <div class="alert alert-danger alert-banner m-b-none" ng-if="vm.hasMonthlyOverageOrganizations()">
+      <h4>
+        <span ng-repeat="organization in vm.monthlyOverageOrganizations">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </span>
+        {{::'has reached its monthly plan limit.' | translate}}
+      </h4>
+
+      <p><a ng-click="vm.showChangePlanDialog(vm.monthlyOverageOrganizations[0].id)">{{::'Upgrade now' | translate}}</a> {{::'to continue receiving events.' | translate}}</p>
+    </div>
+
+    <div class="alert alert-danger alert-banner m-b-none" ng-if="vm.hasOrganizationsWithoutPremiumFeatures()">
+      <h4>
+        <span ng-repeat="organization in vm.organizationsWithoutPremiumFeatures">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </span>
+        {{::'is attempting to use a premium feature.' | translate}}
+      </h4>
+
+      <p><a ng-click="vm.showChangePlanDialog(vm.organizationsWithoutPremiumFeatures[0].id)">{{::'Upgrade now' | translate}}</a> {{::'to enable search and other premium features!' | translate}}</p>
+    </div>
+
+    <div class="alert alert-success alert-banner m-b-none" ng-if="vm.hasFreeOrganizations()">
+      <h4>
+        <span ng-repeat="organization in vm.freeOrganizations">
+          <span ng-if="!$first">, </span><a ng-click="vm.showChangePlanDialog(organization.id)">{{organization.name}}</a>
+        </span> {{::'is currently on a free plan.' | translate}}
+      </h4>
+
+      <p><a ng-click="vm.showChangePlanDialog(vm.freeOrganizations[0].id)">{{::'Upgrade now' | translate}}</a> {{::'to enable premium features and extra storage!' | translate}}</p>
+    </div>
+  </div>
+</div>

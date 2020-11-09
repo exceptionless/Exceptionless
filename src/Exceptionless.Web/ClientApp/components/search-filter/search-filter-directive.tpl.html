@@ -1,0 +1,21 @@
+<form class="navbar-form navbar-form-search no-shadow" name="vm.searchFilterForm" role="search" refresh-on="filterChanged" refresh-action="vm.updateFilter()">
+  <div class="form-group">
+    <div class="input-group">
+      <input id="search" name="search" type="search" class="form-control" placeholder="{{::'Filter' | translate}}"
+             ng-model="vm.filter"
+             ng-model-options="{ debounce: 500 }"
+             ng-change="vm.setSearchFilter(vm.filter)"
+             search-filter-validator
+             uib-tooltip="{{(vm.searchFilterForm.search.$invalid) ? 'An invalid search term was found.' : ''}}"
+             tooltip-class="error-tooltip"
+             tooltip-is-open="vm.searchFilterForm.search.$invalid"
+             tooltip-placement="bottom" />
+
+      <div class="input-group-btn">
+        <a class="btn btn-search-help btn-dark" href="https://github.com/exceptionless/Exceptionless/wiki/Filtering-Searching" target="_blank" title="{{::'Search Documentation' | translate}}" aria-label="Search Documentation">
+          <i class="fa fa-fw fa-question-circle"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</form>

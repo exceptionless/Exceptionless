@@ -1,0 +1,22 @@
+<div ng-if="vm.hasData">
+  <div class="pull-right hidden-print">
+    <button type="button" role="button" class="btn btn-dark btn-xs" title="{{::'Copy to Clipboard' | translate}}" clipboard text="vm.data_json" on-copied="vm.copied()" supported="vm.clipboardSupported" ng-show="vm.clipboardSupported">
+      <i class="fa fa-copy"></i>
+    </button>
+    <div class="btn-group btn-group-xs">
+      <button type="button" role="button" class="btn btn-dark btn-xs" ng-click="vm.showRaw = !vm.showRaw">{{::'Toggle View' | translate}}</button>
+      <button type="button" role="button" class="btn btn-dark btn-xs dropdown-toggle" data-toggle="dropdown" ng-if="vm.canPromote">
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu pull-right"  ng-if="vm.canPromote">
+        <li ng-if="!vm.isPromoted"><a ng-click="vm.promoteTab()">{{::'Promote to Tab' | translate}}</a></li>
+        <li ng-if="vm.isPromoted"><a ng-click="vm.demoteTab()">{{::'Demote Tab' | translate}}</a></li>
+      </ul>
+    </div>
+  </div>
+  <h3>{{::vm.title | toSpacedWords}}</h3>
+  <div ng-if="!vm.showRaw">
+    <object-dump content="vm.data"></object-dump>
+  </div>
+  <pre ng-if="vm.showRaw">{{::vm.data | json }}</pre>
+</div>

@@ -1,0 +1,64 @@
+.rickshaw-container {
+  min-height: 150px;
+}
+
+.chart-holder-small {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 150px;
+  margin-bottom: 8px;
+}
+
+.rickshaw_graph .detail .item {
+  line-height: 1;
+  padding: .2em
+}
+
+.rickshaw_graph .detail .x_label {
+  background: rgba(0, 0, 0, .5);
+  color: #fff;
+  padding: 5px;
+  opacity: 1;
+  line-height: 1em;
+  border: 1px solid #929292;
+  -moz-border-radius: 0 3px 3px 0;
+  -webkit-border-radius: 0 3px 3px 0;
+  border-radius: 0 3px 3px 0
+}
+
+.rickshaw_graph .detail .x_label .detail-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 4px 3px 0 0
+}
+
+.rickshaw_graph .detail .x_label .date {
+  color: #cacaca;
+  padding: 0;
+  margin: 0
+}
+
+.rickshaw_graph .x_tick .title {
+  bottom: -20px;
+  left: -5px;
+}
+
+/* rangeSelector */
+
+.rickshaw_range_selector {
+  outline: 1px dashed rgba(0, 0, 0, 0.1);
+  background: rgba(51, 51, 51, 0.1);
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.rickshaw_graph:active,
+.rickshaw_graph:focus,
+.rickshaw_graph *:active,
+.rickshaw_graph *:focus {
+  cursor: crosshair !important;
+}

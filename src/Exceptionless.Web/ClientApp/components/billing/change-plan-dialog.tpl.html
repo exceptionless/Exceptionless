@@ -1,0 +1,137 @@
+<form name="vm.changePlanForm" role="form" class="form-validation" autocomplete="on">
+  <div class="modal-header dialog-header-notify">
+    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title"><i class="fa fa-credit-card fa-fw"></i> {{::'Exceptionless Plan' | translate}}</h4>
+  </div>
+
+  <div class="modal-body">
+    <div class="alert alert-danger" role="alert" ng-if="vm.paymentMessage">
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      {{vm.paymentMessage}}
+    </div>
+
+    <div class="form-group" ng-if="vm.organizations.length > 1">
+      <label for="organization">{{::'Organization to change' | translate}}</label>
+      <select id="organization" class="form-control"
+              ng-change="vm.changeOrganization()"
+              ng-model="vm.currentOrganization"
+              ng-disabled="!vm.isBillingEnabled()"
+              ng-options="organization.name for organization in vm.organizations track by organization.id"></select>
+    </div>
+
+    <p ng-bind-html="'Organization_Payment_Plan' | translate:{organization: vm.currentOrganization.name, planName: vm.currentOrganization.plan_name}"></p>
+
+    <div class="form-group">
+      <label for="plan" ng-bind-html="'Payment_Select_New_Plan' | translate"></label>
+
+      <select id="plan" class="form-control"
+              ng-init="vm.currentPlan = vm.plans[0]"
+              ng-model="vm.currentPlan"
+              ng-disabled="!vm.isBillingEnabled()"
+              ng-options="plan.description for plan in vm.plans track by plan.id"
+              autofocus></select>
+    </div>
+
+    <div ng-if="vm.isPaidPlan()">
+      <div ng-if="!vm.hasAdminRole()">
+        <h4>{{::'Credit Card' | translate}}</h4>
+        <div class="row" ng-if="vm.hasExistingCard()">
+          <div class="form-group col-sm-6">
+            <div class="radio">
+              <label class="checks">
+                <input type="radio" class="form-control" ng-model="vm.card.mode" ng-disabled="!vm.isBillingEnabled()" value="existing" />
+                <i></i> {{::'Credit_Card_Ending' | translate:vm.currentOrganization }}
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-sm-6">
+            <div class="radio">
+              <label class="checks">
+                <input type="radio" class="form-control" ng-model="vm.card.mode" ng-disabled="!vm.isBillingEnabled()" value="new" />
+                <i></i> {{::'Use a new credit card' | translate}}
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div ng-if="vm.isNewCard()">
+          <div class="row">
+            <div class="form-group col-xs-8">
+              <label for="cardNumber">{{::'Card number' | translate}}</label>
+              <div class="input-group">
+                <input id="cardNumber" type="text" class="form-control" placeholder="•••• •••• •••• ••••"
+                       x-autocompletetype="cc-number"
+                       ng-model="vm.card.number"
+                       payments-validate="card"
+                       payments-format="card"
+                       payments-type-model="vm.card.type"
+                       ng-disabled="!vm.isBillingEnabled()"
+                       ng-required="true" />
+                  <span class="input-group-addon"><img ng-src="/img/cards/{{ vm.card.type ? vm.card.type : 'placeholder' }}.png" alt="Card Type" /></span>
+                </div>
+            </div>
+
+            <div class="form-group col-xs-4">
+              <label for="cardExpiry">{{::'Expires' | translate}}</label>
+              <input id="cardExpiry" type="text" class="form-control" placeholder="MM / YY"
+                     x-autocompletetype="cc-exp"
+                     ng-model="vm.card.expiry"
+                     ng-disabled="!vm.isBillingEnabled()"
+                     payments-validate="expiry"
+                     payments-format="expiry"
+                     ng-required="true" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="form-group col-xs-8">
+              <label for="cardName">{{::'Name on card' | translate}}</label>
+              <input id="cardName" type="text" class="form-control" placeholder="{{::'Name on card' | translate}}"
+                     x-autocompletetype="full-name" autocapitalize="words" autocorrect="off" spellcheck="false"
+                     ng-model="vm.card.name"
+                     ng-disabled="!vm.isBillingEnabled()"
+                     ng-required="true" />
+            </div>
+
+            <div class="form-group col-xs-4">
+              <label for="cardCVC">{{::'Card code' | translate}}</label>
+              <input id="cardCVC" type="text" class="form-control" placeholder="CVC"
+                     x-autocompletetype="cc-csc" autocomplete="off"
+                     ng-model="vm.card.cvc"
+                     ng-disabled="!vm.isBillingEnabled()"
+                     payments-validate="cvc"
+                     payments-format="cvc"
+                     payments-type-model="vm.card.type"
+                     ng-required="true" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group"  ng-if="!vm.hasExistingCard()">
+        <label for="couponId">{{::'Coupon code' | translate}}</label>
+        <input id="couponId" type="text" class="form-control" placeholder="{{::'Coupon code' | translate}}" ng-model="vm.coupon" ng-disabled="!vm.isBillingEnabled()" />
+      </div>
+    </div>
+
+    <div ng-if="vm.isCancellingPlan()">
+      <p><strong>{{::'Help us improve Exceptionless!' | translate}}</strong></p>
+      <p>
+        We hate to see you downgrade, but we'll be more than happy to take care of that for you.
+        Use the <a ng-click="vm.showIntercom()">Contact Us</a> button below to let us know why you're downgrading,
+        so we can serve you better in the future.
+      </p>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
+    <span ng-if="vm.isCancellingPlan()">
+      <button type="submit" role="button" class="btn btn-primary" ng-click="vm.showIntercom()">{{::'Contact Us' | translate}}</button>
+    </span>
+    <span ng-if="!vm.isCancellingPlan()">
+      <button type="submit" role="button" class="btn btn-primary" promise-button="vm.save(vm.changePlanForm.$valid)" promise-button-busy-text="{{::'Changing Plan' | translate}}">{{::'Change Plan' | translate}}</button>
+    </span>
+  </div>
+</form>

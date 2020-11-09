@@ -1,0 +1,49 @@
+<h3 class="visible-print">{{::'Exception' | translate}}</h3>
+<table class="table table-striped table-bordered table-fixed table-key-value b-t">
+  <tr>
+    <th>{{::'Occurred On' | translate}}</th>
+    <td>{{::'DateTime' | translate:vm.event}} (<timeago date="vm.event.date"></timeago>)</td>
+  </tr>
+  <tr>
+    <th>{{::'Error Type' | translate}}</th>
+    <td><span truncate>{{::vm.errorType}}</span></td>
+  </tr>
+  <tr>
+    <th>{{::'Message' | translate}}</th>
+    <td><span truncate lines="10">{{::vm.message}}</span></td>
+  </tr>
+  <tr ng-if="vm.event.data['@error'].code">
+    <th>{{::'Code' | translate}}</th>
+    <td><span truncate>{{::vm.event.data['@error'].code}}</span></td>
+  </tr>
+  <tr ng-if="vm.event.data['@submission_method']">
+    <th>{{::'Submission Method' | translate}}</th>
+    <td><span truncate>{{::vm.event.data['@submission_method']}}</span></td>
+  </tr>
+</table>
+
+<div class="pull-right m-t-xs hidden-print">
+  <a clipboard text="vm.textStackTrace" on-copied="vm.copied()" supported="vm.clipboardSupported" ng-show="vm.textStackTrace && vm.clipboardSupported" class="btn btn-default btn-xs fa fa-code hidden-xs" role="button" title="{{::'Copy Stack Trace to Clipboard' | translate}}"></a>
+</div>
+<h3>{{::'Stack Trace' | translate}}</h3>
+<stack-trace exception="vm.event.data['@error']" text-stack-trace="vm.textStackTrace"></stack-trace>
+
+<extended-data-item can-promote="false" title="'Additional Data'" data="vm.event.data['@error'].data['@ext']"></extended-data-item>
+
+<div ng-if="vm.event.data['@error'].modules.length > 0">
+  <h4>{{::'Loaded Modules' | translate}}</h4>
+  <table class="table table-striped table-bordered table-fixed b-t">
+    <thead>
+    <tr>
+      <th>{{::'Module Name' | translate}}</th>
+      <th class="version">{{::'Version' | translate}}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="module in vm.event.data['@error'].modules">
+      <td><span truncate>{{::module.name}}</span></td>
+      <td>{{::module.version}}</td>
+    </tr>
+    </tbody>
+  </table>
+</div>

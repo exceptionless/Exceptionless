@@ -1,0 +1,116 @@
+<div class="alert in fade alert-success" ng-if="!vm.hasPremiumFeatures">
+  <a ng-click="vm.showChangePlanDialog()">{{::'Upgrade now' | translate}}</a> {{::'to enable integrations!' | translate}}
+</div>
+
+<div ng-if="appVm.isSlackEnabled">
+  <h4>Slack</h4>
+
+  <div ng-if="vm.project.has_slack_integration">
+    <p>{{::'Choose how often you want to receive slack notifications for event occurrences in this project.' | translate}}</p>
+
+    <div class="checkbox">
+      <label class="checks">
+        <input type="checkbox"
+               ng-model="vm.slackNotificationSettings.send_daily_summary"
+               ng-model-options="{ debounce: 500 }"
+               ng-change="vm.saveSlackNotificationSettings()">
+        <i></i>
+        {{::'Send daily project summary' | translate}} <strong>{{::'(Coming soon!)' | translate}}</strong>
+      </label>
+    </div>
+
+    <div class="checkbox">
+      <label class="checks">
+        <input type="checkbox"
+               ng-model="vm.slackNotificationSettings.report_new_errors"
+               ng-model-options="{ debounce: 500 }"
+               ng-change="vm.saveSlackNotificationSettings()">
+        <i></i>
+        {{::'Notify me on new errors' | translate}}
+      </label>
+    </div>
+
+    <div class="checkbox">
+      <label class="checks">
+        <input type="checkbox"
+               ng-model="vm.slackNotificationSettings.report_critical_errors"
+               ng-model-options="{ debounce: 500 }"
+               ng-change="vm.saveSlackNotificationSettings()">
+        <i></i>
+        {{::'Notify me on critical errors' | translate}}
+      </label>
+    </div>
+
+    <div class="checkbox">
+      <label class="checks">
+        <input type="checkbox"
+               ng-model="vm.slackNotificationSettings.report_event_regressions"
+               ng-model-options="{ debounce: 500 }"
+               ng-change="vm.saveSlackNotificationSettings()">
+        <i></i>
+        {{::'Notify me on error regressions' | translate}}
+      </label>
+    </div>
+
+    <div class="checkbox">
+      <label class="checks">
+        <input type="checkbox"
+               ng-model="vm.slackNotificationSettings.report_new_events"
+               ng-model-options="{ debounce: 500 }"
+               ng-change="vm.saveSlackNotificationSettings()">
+        <i></i>
+        {{::'Notify me on new events' | translate}}
+      </label>
+    </div>
+
+    <div class="checkbox">
+      <label class="checks">
+        <input type="checkbox"
+               ng-model="vm.slackNotificationSettings.report_critical_events"
+               ng-model-options="{ debounce: 500 }"
+               ng-change="vm.saveSlackNotificationSettings()">
+        <i></i>
+        {{::'Notify me on critical events' | translate}}
+      </label>
+    </div>
+  </div>
+
+  <p>
+    <a ng-if="!vm.project.has_slack_integration" ng-click="vm.addSlack()" class="btn btn-primary" role="button" title="{{::'Add to Slack' | translate}}">
+      <i class="fa fa-fw fa-slack"></i> {{::'Add Slack Notifications' | translate}}
+    </a>
+    <a ng-if="vm.project.has_slack_integration" ng-click="vm.removeSlack()" class="btn btn-danger" role="button" title="{{::'Remove Slack' | translate}}">
+      <i class="fa fa-fw fa-slack"></i> {{::'Remove Slack' | translate}}
+    </a>
+  </p>
+</div>
+
+<h4>Web hooks</h4>
+<p ng-bind-html="'Notice_Web_hooks' | translate">
+</p>
+
+<table class="table table-striped table-bordered table-fixed b-t">
+  <thead>
+  <tr>
+    <th>{{::'Url' | translate}}</th>
+    <th>{{::'Event Types' | translate}}</th>
+    <th class="action">{{::'Actions' | translate}}</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr ng-repeat="hook in vm.webHooks track by hook.id">
+    <td>{{::hook.url}}</td>
+    <td>
+      <span class="label label-success" ng-repeat="type in hook.event_types track by type">{{::type}}</span>
+    </td>
+    <td>
+      <button type="button" role="button" class="btn btn-sm" title="{{::'Delete' | translate}}" ng-click="vm.removeWebHook(hook)"><i class="fa fa-times"></i></button>
+    </td>
+  </tr>
+  <tr ng-if="vm.webHooks.length === 0">
+    <td colspan="3">{{::'This project does not contain any integrations.' | translate}}</td>
+  </tr>
+  </tbody>
+</table>
+
+<button type="button" role="button" ng-click="vm.addWebHook()" class="btn btn-primary">{{::'Add Web Hook' | translate}}</button>

@@ -3,7 +3,7 @@ Serilog:
   Using:
   - Serilog.Sinks.Console
   MinimumLevel:
-    Default: Information
+    Default: Debug
     Override:
       Microsoft: Warning
       Microsoft.Hosting.Lifetime: Information

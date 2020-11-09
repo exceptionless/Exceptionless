@@ -1,0 +1,63 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build",
+            "dependsOn": [
+                "npm install"
+            ],
+            "command": "node_modules/.bin/grunt",
+            "args": [
+                "build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$lessCompile",
+                "$jshint"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "test",
+            "dependsOn": "build",
+            "command": "node_modules/.bin/grunt",
+            "args": [
+                "test"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "options": {
+              "cwd": "${workspaceFolder}"
+          },
+      },
+        {
+            "type": "shell",
+            "label": "serve",
+            "dependsOn": "build",
+            "command": "node_modules/.bin/grunt",
+            "args": [
+                "serve"
+            ],
+            "options": {
+              "cwd": "${workspaceFolder}"
+          },
+          "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "label": "npm install",
+            "script": "install",
+            "path": "${workspaceFolder}/",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+<organization-notifications organization-id="vm.event.organization_id"></organization-notifications>
+
+<div class="hbox hbox-auto-xs hbox-auto-sm">
+  <div class="wrapper-md">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <i class="fa fa-calendar"></i> {{::'Event Occurrence' | translate}}
+
+        <div class="pull-right hidden-print">
+          <a clipboard text="vm.event_json" on-copied="vm.copied()" supported="vm.clipboardSupported" ng-show="vm.event.stack_id && vm.clipboardSupported" class="btn btn-default btn-xs fa fa-code hidden-xs" role="button" title="{{::'Copy Event JSON to Clipboard' | translate}}"></a>
+          <a ui-sref="app.stack({ id: vm.event.stack_id })" ng-class="{'disabled': !vm.event.stack_id}" class="btn btn-default btn-xs fa fa-fw fa-caret-up" role="button" title="{{::'Go To Stack' | translate}}"></a>
+          <a ui-sref="app.event({ id: vm.previous, tab: vm.getCurrentTab() })" ng-class="{'disabled': !vm.previous}" class="btn btn-default btn-xs fa fa-fw fa-caret-left" role="button" title="{{::'Previous Occurrence' | translate}}"></a>
+          <a ui-sref="app.event({ id: vm.next, tab: vm.getCurrentTab() })" ng-class="{'disabled': !vm.next}" class="btn btn-default btn-xs fa fa-fw fa-caret-right" role="button" title="{{::'Next Occurrence' | translate}}"></a>
+        </div>
+      </div>
+      <div class="panel-body">
+        <uib-tabset class="tab-container hidden-xs" active="vm.activeTabIndex">
+          <uib-tab ng-repeat="tab in vm.tabs" heading="{{::tab.title | toSpacedWords | translate}}" ng-click="vm.activateTab(tab.title)">
+            <div ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'"></div>
+          </uib-tab>
+        </uib-tabset>
+
+        <uib-accordion class="visible-xs">
+          <div uib-accordion-group class="panel-default" ng-repeat="tab in vm.tabs" heading="{{::tab.title | toSpacedWords}}" is-open="tab.active" ng-click="vm.activateTab(tab.title)">
+            <div ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'"></div>
+          </div>
+        </uib-accordion>
+      </div>
+      <footer class="panel-footer hidden-xs">
+        <div class="pull-right">
+          <a ui-sref="app.stack({ id: vm.event.stack_id })" ng-class="{'disabled': !vm.event.stack_id}" class="btn btn-default" role="button">{{::'Go To Stack' | translate}}</a>
+        </div>
+        <a ui-sref="app.event({ id: vm.previous, tab: vm.getCurrentTab() })" ng-class="{'disabled': !vm.previous}" class="btn btn-primary" role="button">{{::'Previous Occurrence' | translate}}</a>
+        <a ui-sref="app.event({ id: vm.next, tab: vm.getCurrentTab() })" ng-class="{'disabled': !vm.next}" class="btn btn-primary" role="button">{{::'Next Occurrence' | translate}}</a>
+      </footer>
+    </div>
+  </div>
+</div>

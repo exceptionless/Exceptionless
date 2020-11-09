@@ -1,0 +1,44 @@
+<p ng-bind-html="'NOTICE_CONFIGURATION' | translate">
+</p>
+
+<!-- TODO: The add new dropdown should be populated with default settings we know about. -->
+<table class="table table-striped table-bordered table-fixed b-t">
+  <thead>
+  <tr>
+    <th>{{::'Key' | translate}}</th>
+    <th>{{::'Value' | translate}}</th>
+    <th class="action-lg">{{::'Actions' | translate}}</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr ng-repeat="conf in vm.config track by conf.key">
+    <td>
+      <div class="control-group">{{::conf.key}}</div>
+    </td>
+    <td ng-class="{'row-clickable': !rowform.$visible}" ng-click="rowform.$show()">
+      <div editable-text="conf.value" e-name="value" e-form="rowform" e-required
+           onbeforesave="vm.validateClientConfiguration(conf.value, $data)"
+           onaftersave="vm.saveClientConfiguration(conf)">{{conf.value}}</div>
+    </td>
+    <td>
+      <form name="rowform" editable-form ng-show="rowform.$visible" class="form-buttons form-inline">
+        <button type="submit" role="button" ng-disabled="rowform.$waiting" class="btn btn-sm btn-primary">
+          {{::'Save' | translate}}
+        </button>
+        <button type="button" role="button" ng-disabled="rowform.$waiting" ng-click="rowform.$cancel()" class="btn btn-sm btn-default">
+          {{::'Cancel' | translate}}
+        </button>
+      </form>
+      <div class="buttons" ng-show="!rowform.$visible">
+        <button type="button" role="button" class="btn btn-sm btn-default" ng-click="rowform.$show()">{{::'Edit' | translate}}</button>
+        <button type="button" role="button" class="btn btn-sm btn-danger" title="{{::'Delete' | translate}}" ng-click="vm.removeConfig(conf)"><i class="fa fa-times"></i></button>
+      </div>
+    </td>
+  </tr>
+  <tr ng-if="vm.config.length === 0">
+    <td colspan="3">{{::'This project does not contain any custom configuration settings.' | translate}}</td>
+  </tr>
+  </tbody>
+</table>
+
+<button ng-click="vm.addConfiguration()" class="btn btn-primary">{{::'New Client Configuration' | translate}}</button>

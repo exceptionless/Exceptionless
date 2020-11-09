@@ -1,0 +1,10 @@
+<div>
+  <strong>
+    <abbr title="{{::source.data.TypeFullName}}">{{::source.data.Type}}</abbr>:
+  </strong>
+
+  <a ui-sref="app.event({ id: source.id })" truncate lines="2">{{::source.data.Message}}</a>
+</div>
+
+<div class="hidden-xs error-path" ng-if="source.data.Path"><i class="fa fa-caret-right"></i> <span truncate>{{::source.data.Path}}</span>
+</div>

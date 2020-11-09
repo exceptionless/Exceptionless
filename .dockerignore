@@ -11,3 +11,8 @@ LICENSE.txt
 **/obj/
 **/TestResult/
 **/out/
+**/.vscode
+**/.vs
+.dotnet
+**/node_modules
+**/bower_components

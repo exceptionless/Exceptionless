@@ -1,0 +1,11 @@
+<span ng-if="source.data.Level" class="label label-default"
+      ng-class="{ 'label-success': isLevelSuccess, 'label-info': isLevelInfo, 'label-warning': isLevelWarning, 'label-danger': isLevelError }">
+  {{::source.data.Level}}
+</span>
+
+<span ng-if="showType"><strong>Log</strong><span ng-if="source.data.Source">&nbsp;in&nbsp;</span></span>
+<strong ng-if="source.data.Source">
+  <abbr ng-if="source.data.SourceShortName" title="{{::source.data.Source}}">{{::source.data.SourceShortName}}</abbr>
+  <span ng-if="!source.data.SourceShortName">{{::source.data.Source}}</span>
+</strong>
+<span ng-if="showType || source.data.Source">:&nbsp;</span><a ui-sref="app.event({ id: source.id })" truncate lines="2">{{::source.data.Message}}</a>

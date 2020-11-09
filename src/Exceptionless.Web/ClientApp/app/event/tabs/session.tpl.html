@@ -1,0 +1,30 @@
+<div class="hidden-print">
+  <div ng-if="!vm.project.has_premium_features">
+    <div class="alert alert-danger alert-banner m-b-none">
+      <h4><a ng-click="appVm.changePlan(vm.project.organization_id)">{{vm.project.organization_name}}</a> {{::'is attempting to use a premium feature.' | translate}}</h4>
+
+      <p><a ng-click="appVm.changePlan(vm.project.organization_id)">{{::'Upgrade now' | translate}}</a> {{::'to enable sessions and other premium features!' | translate}}</p>
+    </div>
+    <br />
+  </div>
+
+  <table class="table table-striped table-bordered table-fixed table-key-value b-t">
+    <tr>
+      <th>{{::'Occurred On' | translate}}</th>
+      <td>{{::'DateTime' | translate:vm.event}} (<timeago date="vm.event.date"></timeago>)</td>
+    </tr>
+    <tr ng-if="vm.isSessionStart">
+      <th>{{::'Duration' | translate}}</th>
+      <td>
+        <span ng-if="!vm.event.data.sessionend" class="glyphicon glyphicon-one-fine-dot glyphicon-green" title="{{::'Online' | translate}}"></span>
+        <abbr title="{{::'Seconds' | translate:{duration : vm.getDuration()} }}"><duration value="vm.getDuration()"></duration></abbr>
+        <span ng-if="vm.event.data.sessionend">
+          ({{::'ended' | translate}} <timeago date="vm.event.data.sessionend"></timeago>)
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <h3>{{::'Session Events' | translate}}</h3>
+  <events settings="vm.sessionEvents"></events>
+</div>

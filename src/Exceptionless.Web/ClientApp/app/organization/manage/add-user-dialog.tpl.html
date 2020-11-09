@@ -1,0 +1,22 @@
+<form name="addUserForm" role="form" class="form-validation">
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title"><i class="fa fa-user-plus fa-fw"></i> {{::'Invite User' | translate}}</h4>
+  </div>
+
+  <div class="modal-body">
+    <div class="form-group">
+      <label for="email">{{::'Email Address' | translate}}</label>
+      <input id="email" name="email" type="email" class="form-control input-lg" placeholder="{{::'Email Address' | translate}}" x-autocompletetype="email" autocorrect="off" spellcheck="false" ng-model="vm.data.email" ng-required="true" autofocus />
+      <div class="error" ng-messages="addUserForm.email.$error" ng-if="addUserForm.$submitted || addUserForm.email.$touched">
+        <small ng-message="required">{{::'Email Address is required.' | translate}}</small>
+        <small ng-message="email">{{::'Email Address is required.' | translate}}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
+    <input type="submit" role="button" class="btn btn-primary" ng-click="vm.save(addUserForm.$valid)" value="{{::'Invite User' | translate}}" />
+  </div>
+</form>

@@ -61,6 +61,10 @@ namespace Exceptionless.Web {
                 o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
             });
 
+            services.AddSpaStaticFiles(c => {
+                c.RootPath = "ClientApp/dist";
+            });
+
             services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
             services.AddAuthorization(options => {
                 options.DefaultPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
@@ -218,7 +222,9 @@ namespace Exceptionless.Web {
 
                 return LogEventLevel.Information;
             });
-            app.UseStaticFiles(new StaticFileOptions {
+
+            app.UseDefaultFiles();
+            app.UseSpaStaticFiles(new StaticFileOptions {
                 ContentTypeProvider = new FileExtensionContentTypeProvider {
                     Mappings = {
                         [".less"] = "plain/text"
@@ -226,7 +232,6 @@ namespace Exceptionless.Web {
                 }
             });
 
-            app.UseDefaultFiles();
             app.UseFileServer();
             app.UseRouting();
             app.UseCors("AllowAny");
@@ -263,7 +268,12 @@ namespace Exceptionless.Web {
 
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
-                endpoints.MapFallbackToFile("{**slug:nonfile}", "index.html");
+            });
+
+            app.UseSpa(spa => {
+                spa.Options.SourcePath = "ClientApp";
+                if (options.AppMode == AppMode.Development)
+                    spa.UseAngularDevelopmentServer();
             });
         }
     }

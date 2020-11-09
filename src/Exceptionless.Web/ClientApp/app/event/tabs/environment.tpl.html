@@ -1,0 +1,61 @@
+<h3 class="visible-print">{{::'Environment' | translate}}</h3>
+<table class="table table-striped table-bordered table-fixed table-key-value b-t">
+  <tr>
+    <th>{{::'Occurred On' | translate}}</th>
+    <td>{{::'DateTime' | translate:vm.event}} (<timeago date="vm.event.date"></timeago>)</td>
+  </tr>
+  <tr ng-if="vm.environment.machine_name">
+    <th>{{::'Machine Name' | translate}}</th>
+    <td><span truncate>{{::vm.environment.machine_name}}</span></td>
+  </tr>
+  <tr ng-if="vm.environment.ip_address">
+    <th>{{::'IP Address' | translate}}</th>
+    <td>{{::vm.environment.ip_address}}</td>
+  </tr>
+  <tr ng-if="vm.environment.processor_count">
+    <th>{{::'Processor Count' | translate}}</th>
+    <td>{{::vm.environment.processor_count}}</td>
+  </tr>
+  <tr ng-if="vm.environment.total_physical_memory">
+    <th>{{::'Total Memory' | translate}}</th>
+    <td>{{::vm.environment.total_physical_memory | bytes}}</td>
+  </tr>
+  <tr ng-if="vm.environment.available_physical_memory">
+    <th>{{::'Available Memory' | translate}}</th>
+    <td>{{::vm.environment.available_physical_memory | bytes}}</td>
+  </tr>
+  <tr ng-if="vm.environment.process_memory_size">
+    <th>{{::'Process Memory' | translate}}</th>
+    <td>{{::vm.environment.process_memory_size | bytes}}</td>
+  </tr>
+  <tr ng-if="vm.environment.o_s_name">
+    <th>{{::'OS Name' | translate}}</th>
+    <td><span truncate>{{::vm.environment.o_s_name}}</span></td>
+  </tr>
+  <tr ng-if="vm.environment.o_s_version">
+    <th>{{::'OS Version' | translate}}</th>
+    <td>{{::vm.environment.o_s_version}}</td>
+  </tr>
+  <tr ng-if="vm.environment.architecture">
+    <th>{{::'Architecture' | translate}}</th>
+    <td>{{::vm.environment.architecture}}</td>
+  </tr>
+  <tr ng-if="vm.environment.runtime_version">
+    <th>{{::'Runtime Version' | translate}}</th>
+    <td>{{::vm.environment.runtime_version}}</td>
+  </tr>
+  <tr ng-if="vm.environment.process_id">
+    <th>{{::'Process ID' | translate}}</th>
+    <td>{{::vm.environment.process_id}}</td>
+  </tr>
+  <tr ng-if="vm.environment.process_name">
+    <th>{{::'Process Name' | translate}}</th>
+    <td><span truncate>{{::vm.environment.process_name}}</span></td>
+  </tr>
+  <tr ng-if="vm.environment.command_line">
+    <th>{{::'Command Line' | translate}}</th>
+    <td><span truncate lines="2">{{::vm.environment.command_line}}</span></td>
+  </tr>
+</table>
+
+<extended-data-item can-promote="false" title="'Additional Data'" data="vm.environment.data"></extended-data-item>

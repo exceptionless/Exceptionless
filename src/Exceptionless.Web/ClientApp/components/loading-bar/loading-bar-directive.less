@@ -1,0 +1,24 @@
+#loading-bar .bar {
+  background: @brand-primary;
+}
+
+/* Fancy blur effect */
+#loading-bar .peg {
+  -moz-box-shadow: @brand-primary 1px 0 6px 1px;
+  -ms-box-shadow: @brand-primary 1px 0 6px 1px;
+  -webkit-box-shadow: @brand-primary 1px 0 6px 1px;
+  box-shadow: @brand-primary 1px 0 6px 1px;
+}
+
+.loading-bar-disabled #loading-bar {
+  display: none;
+}
+
+#loading-bar-spinner {
+  display: none;
+}
+
+#loading-bar-spinner .spinner-icon {
+  border-top-color:  @brand-primary;
+  border-left-color: @brand-primary;
+}

@@ -1,0 +1,76 @@
+<div>
+  <rate-limit></rate-limit>
+  <div class="container invoice">
+    <div class="row">
+      <div class="col-sm-5">
+        <img src="/img/exceptionless.png" alt="logo" />
+        <address>
+          <strong>Exceptionless</strong><br />
+          5250 Hwy 78, Suite 750-324<br />
+          Sachse, TX 75048<br>
+        </address>
+      </div>
+      <div class="col-sm-7">
+        <table class="table table-bordered bg-white">
+          <tbody>
+            <tr>
+              <th>{{::'Organization' | translate}}</th>
+              <td>{{vm.invoice.organization_name}}</td>
+            </tr>
+            <tr>
+              <th>{{::'Invoice #' | translate}}</th>
+              <td>{{vm.invoice.id}}</td>
+            </tr>
+            <tr>
+              <th>{{::'Invoice Date' | translate}}</th>
+              <td>{{vm.invoice.date | date}}</td>
+            </tr>
+            <tr>
+              <th>{{::'Status' | translate}}</th>
+              <td>{{vm.invoice.paid ? 'Paid' : 'Unpaid' | translate}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12 hbox hbox-auto-xs hbox-auto-sm">
+        <div class="panel panel-default">
+          <div class="panel-heading"> <i class="fa fa-file"></i> {{vm.invoice.paid ? "Receipt" : "Invoice" | translate}}</div>
+           <div class="table-responsive">
+            <table class="table table-striped table-bordered table-fixed b-t invoice">
+              <thead>
+                <tr>
+                  <th>{{::'Description' | translate}}</th>
+                  <th class="date">{{::'Date' | translate}}</th>
+                  <th class="amount"><div class="text-right">{{::'Amount' | translate}}</div></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="line in vm.invoice.items">
+                  <td>{{line.description}}</td>
+                  <td>{{line.date}}</td>
+                  <td><div class="text-right"><strong>{{line.amount | currency}}</strong></div></td>
+                </tr>
+                <tr>
+                  <td>&nbsp;</td>
+                  <td><strong>{{::'Total' | translate}}</strong></td>
+                  <td><div class="text-right"><strong>{{vm.invoice.total | currency}}</strong></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-xs-6">
+        <strong>{{::'Email:' | translate}}</strong> <a href="mailto:team@exceptionless.com">sales@exceptionless.com</a>
+      </div>
+      <div class="col-xs-6">
+        <strong>{{::'Website:' | translate}}</strong> <a href="https://exceptionless.com">https://exceptionless.com</a>
+      </div>
+    </div>
+  </div>
+</div>

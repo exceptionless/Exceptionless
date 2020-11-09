@@ -1,4 +1,4 @@
-@apiUrl = http://localhost:5000/api/v2
+@apiUrl = https://localhost:5001/api/v2
 @email = test@test.com
 @password = tester
 

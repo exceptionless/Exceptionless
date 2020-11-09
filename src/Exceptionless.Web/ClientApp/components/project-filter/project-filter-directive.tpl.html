@@ -1,0 +1,32 @@
+<li class="dropdown" refresh-on="OrganizationChanged ProjectChanged" refresh-action="vm.get()" refresh-throttle="5000">
+  <a class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" refresh-on="filterChanged" refresh-action="vm.update()">
+    {{vm.filteredDisplayName | translate}} <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu w-xl scrollable-menu" ng-style="{'max-height': vm.filterDropDownMaxHeight + 'px'}" auto-active>
+    <li ng-if="vm.showSearch()">
+      <div class="form-group" style="padding: 0px 10px;">
+        <input name="search" type="search" class="form-control" placeholder="{{::'Filter' | translate}}"
+           autocomplete="off"
+           ng-model="vm.filter"
+           ng-model-options="{ debounce: 500 }"
+        />
+      </div>
+    </li>
+    <li><a ng-href="{{vm.urls.projects.all}}">{{::'All Projects' | translate}}</a></li>
+    <li role="separator" class="divider"></li>
+    <li ng-if="vm.isLoadingOrganizations" disabled><a href="#">{{::'Loading Organizations...' | translate}}</a></li>
+    <li ng-repeat-start="organization in vm.getFilteredOrganizations() | orderBy: 'name' track by organization.id" class="heading-menu">
+      <a ng-href="{{vm.urls.organizations[organization.id]}}">
+        {{::organization.name}} <span class="icon-right" ui-sref="app.organization.manage({ id: organization.id })" show-on-hover-parent><i class="fa fa-gear fa-fw"></i></span>
+      </a>
+    </li>
+    <li ng-if="vm.isLoadingProjects" class="child-menu" disabled><a href="#">{{::'Loading Projects...' | translate}}</a></li>
+    <li ng-repeat="project in vm.getFilteredProjectsByOrganizationId(organization.id) | orderBy: 'name' track by project.id" class="child-menu">
+      <a ng-href="{{vm.urls.projects[project.id]}}">
+        {{::project.name}} <span class="icon-right" ui-sref="app.project.manage({ id: project.id })" show-on-hover-parent><i class="fa fa-gear fa-fw"></i></span>
+      </a>
+    </li>
+    <li ng-repeat-end role="separator" class="divider"></li>
+    <li><a ui-sref="app.project.add">{{::'Add New Project' | translate}}</a></li>
+  </ul>
+</li>

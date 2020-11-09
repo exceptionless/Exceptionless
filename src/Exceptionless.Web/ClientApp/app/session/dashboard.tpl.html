@@ -1,0 +1,79 @@
+<organization-notifications requires-premium="true"></organization-notifications>
+
+<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="PersistentEventChanged PlanChanged" refresh-action="vm.get()" refresh-if="vm.canRefresh(data)" refresh-throttle="10000">
+  <div class="col" refresh-on="filterChanged" refresh-action="vm.get()">
+    <div class="wrapper-md">
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="row row-sm text-center">
+            <div class="col-md-3 col-sm-6 col-xs-6">
+              <div class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-area-chart fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">{{::'Sessions' | translate}}</span>
+                  <span class="sub">{{vm.stats.total}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-6">
+              <div class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-line-chart fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">{{::'Per Hour' | translate}}</span>
+                  <span class="sub">{{vm.stats.avg_per_hour}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-6">
+              <div class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-users fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">{{::'Users' | translate}}</span>
+                  <span class="sub">{{vm.stats.users}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-6">
+              <div class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-clock-o fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">{{::'Average Duration' | translate}}</span>
+                  <span class="sub"><duration value="vm.stats.avg_duration"></duration></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <i class="fa fa-bar-chart-o"></i> {{::'Sessions and Users' | translate}}
+          <div class="pull-right">
+            <label class="switch bg-success">
+              <input type="checkbox" ng-model="vm.includeLiveFilter" ng-click="vm.updateLiveFilter(vm.includeLiveFilter)">
+              <i></i>
+            </label>
+            <div class="switch-text" ng-class="{'text-success': vm.includeLiveFilter}" ng-click="vm.updateLiveFilter(!vm.includeLiveFilter)">{{::'View Active' | translate}}</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-area-chart"></i>{{::'Recent Sessions' | translate}}</div>
+        <sessions settings="vm.recentSessions"></sessions>
+      </div>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,15 @@ FROM exceptionless/${UI_VERSION} AS ui
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /app
 
+ARG VERSION_SUFFIX=0-dev
+ENV VERSION_SUFFIX=$VERSION_SUFFIX
+
+# install nodejs 11.x
+RUN curl -sL https://deb.nodesource.com/setup_11.x | bash - \
+    && apt-get update \
+    && apt-get -y install nodejs \
+    && apt-get -y install build-essential
+
 COPY ./*.sln ./NuGet.Config ./
 COPY ./build/*.props ./build/
 
