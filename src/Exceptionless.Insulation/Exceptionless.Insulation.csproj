@@ -17,12 +17,12 @@
     <PackageReference Include="Foundatio.Minio" Version="10.0.0" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="10.0.0" />
     <PackageReference Include="Foundatio.Redis" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0-rc.2.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
     <PackageReference Include="MailKit" Version="2.9.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
