@@ -78,7 +78,7 @@ CMD [ "dotnet", "Exceptionless.Web.dll" ]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.9.2 AS exceptionless
+FROM exceptionless/elasticsearch:7.9.3 AS exceptionless
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
@@ -90,7 +90,7 @@ COPY ./build/supervisord.conf /etc/
 # install dotnet and supervisor
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
     yum -y install aspnetcore-runtime-5.0 && \
-RUN yum -y install epel-release && \
+    yum -y install epel-release && \
     yum -y install supervisor
 
 ENV discovery.type=single-node \
