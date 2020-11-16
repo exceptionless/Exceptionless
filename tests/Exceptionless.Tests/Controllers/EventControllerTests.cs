@@ -301,6 +301,22 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Single(results);
         }
 
+        [Fact]
+        public async Task WillExcludeDeletedSessions() {
+            await CreateSessionsAsync();
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+            var results = await SendRequestAsAsync<CountResult>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "count")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:session (status:open OR status:regressed) type:session _missing_:data.sessionend")
+                .QueryString("offset", "-360m")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(0, results.Total);
+        }
+
         [Theory]
         [InlineData("status:open", 1)]
         [InlineData("status:regressed", 1)]
@@ -496,6 +512,23 @@ namespace Exceptionless.Tests.Controllers {
 
             // defaults everything
             AddTestEvent().FreeProject();
+
+            await SaveTestDataAsync();
+
+            await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
+            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
+        }
+
+        private async Task CreateSessionsAsync() {
+            var utcNow = SystemClock.UtcNow;
+
+            AddTestEvent()
+                .FreeProject()
+                .Type(Event.KnownTypes.Session)
+                .UserIdentity("My-User-Identity", "test user")
+                .UserDescription("test@exceptionless.com", "my custom description")
+                .Version("1.2.3.0")
+                .Deleted();
 
             await SaveTestDataAsync();
 
