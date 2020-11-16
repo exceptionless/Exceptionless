@@ -56,8 +56,7 @@ namespace Exceptionless.Web.Utility {
 
             string json = _serializer.SerializeToString(project.Configuration);
             context.Response.StatusCode = StatusCodes.Status200OK;
-            context.Response.ContentType = "application/json";
-            context.Response.ContentLength = json.Length;
+            context.Response.ContentType = "application/json; charset=utf-8";
             await context.Response.WriteAsync(json);
         }
     }
