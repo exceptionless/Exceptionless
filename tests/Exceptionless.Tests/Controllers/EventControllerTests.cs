@@ -306,15 +306,24 @@ namespace Exceptionless.Tests.Controllers {
             await CreateSessionsAsync();
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-            var results = await SendRequestAsAsync<CountResult>(r => r
+            var countResult = await SendRequestAsAsync<CountResult>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "count")
-                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:session (status:open OR status:regressed) type:session _missing_:data.sessionend")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed) type:session _missing_:data.sessionend")
                 .QueryString("offset", "-360m")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Equal(0, results.Total);
+            Assert.Equal(0, countResult.Total);
+            var results = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "sessions")
+                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:session _missing_:data.sessionend")
+                .QueryString("offset", "-360m")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Empty(results);
         }
 
         [Theory]
