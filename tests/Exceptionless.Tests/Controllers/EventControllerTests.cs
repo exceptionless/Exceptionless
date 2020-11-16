@@ -520,10 +520,8 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         private async Task CreateSessionsAsync() {
-            var utcNow = SystemClock.UtcNow;
-
             AddTestEvent()
-                .FreeProject()
+                .TestProject()
                 .Type(Event.KnownTypes.Session)
                 .UserIdentity("My-User-Identity", "test user")
                 .UserDescription("test@exceptionless.com", "my custom description")
