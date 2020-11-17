@@ -41,6 +41,11 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("source:/Print", 1)]
         [InlineData("source:Bagle", 1)]
         [InlineData("source:exceptionless.web*", 1)]
+        [InlineData("source:reason", 1)]
+        [InlineData("source:randomText", 1)]
+        [InlineData("source:getUrlV2", 1)] // not sure if we want to support this.
+        [InlineData("source:namespace.controller.getUrlV2", 1)]
+        [InlineData("source:blake", 1)]
         public async Task GetBySourceAsync(string search, int count) {
             await CreateDataAsync(d => {
                 d.Event().Source("Exceptionless.Web.GET.Print.SomeClass");
@@ -48,6 +53,7 @@ namespace Exceptionless.Tests.Repositories {
                 d.Event().Source("Exceptionless");
                 d.Event().Source("GET /Print");
                 d.Event().Source("Gotham Bagle Company");
+                d.Event().Source("randomText,namespace.controller.getUrlV2 (blake) reason https://10.0.1.1:1234/namespace/v2/controller/getUrl?mode=summary&message=test reason2");
             });
 
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
