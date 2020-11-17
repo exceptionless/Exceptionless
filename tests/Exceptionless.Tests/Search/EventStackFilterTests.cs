@@ -22,17 +22,17 @@ namespace Exceptionless.Tests.Repositories {
             TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
             _stackRepository = GetService<IStackRepository>();
             _eventRepository = GetService<IEventRepository>();
-            
+
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
         }
-        
+
         protected override async Task ResetDataAsync() {
             await base.ResetDataAsync();
-            
+
             var oldLoggingLevel = Log.MinimumLevel;
             Log.MinimumLevel = LogLevel.Warning;
-            
+
             await StackData.CreateSearchDataAsync(_stackRepository, GetService<JsonSerializer>());
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
 

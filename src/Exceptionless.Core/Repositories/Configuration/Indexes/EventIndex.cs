@@ -255,7 +255,6 @@ ctx.error.code = codes;";
             public const string IsFixed = "fixed";
             public const string IsHidden = "hidden";
             public const string IDX = "idx";
-            public const string All = "all";
 
             public const string Version = "version";
             public const string Level = "level";

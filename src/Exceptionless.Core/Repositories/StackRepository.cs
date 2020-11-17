@@ -60,7 +60,7 @@ ctx._source.total_occurrences += params.count;";
                     }
                 }
             };
-            
+
             var result = await _client.UpdateAsync(request).AnyContext();
             if (!result.IsValid) {
                 _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
@@ -89,14 +89,14 @@ ctx._source.total_occurrences += params.count;";
             stack.Status = StackStatus.Regressed;
             await SaveAsync(stack, o => o.Cache()).AnyContext();
         }
-        
+
         public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
-            
+
             return PatchAllAsync(
                 q => q.Organization(organizationId).Project(projectId),
                 new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow })
@@ -105,7 +105,7 @@ ctx._source.total_occurrences += params.count;";
 
         protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options) {
             await base.AddDocumentsToCacheAsync(findHits, options).AnyContext();
-            
+
             var cacheEntries = new Dictionary<string, FindHit<Stack>>();
             foreach (var hit in findHits)
                 cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
