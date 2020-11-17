@@ -31,8 +31,8 @@ namespace Exceptionless.Tests.Services {
 
             // Assert stack state in elasticsearch before increment usage
             Assert.Equal(0, stack.TotalOccurrences);
-            Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
-            Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
+            Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
+            Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
 
             // Assert state in cache before increment usage
             Assert.Equal(DateTime.MinValue, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
@@ -48,8 +48,8 @@ namespace Exceptionless.Tests.Services {
             // Assert stack state has no change after increment usage
             stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(0, stack.TotalOccurrences);
-            Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
-            Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
+            Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
+            Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
 
             // Assert state in cache has been changed after increment usage
             Assert.Equal(firstUtcNow, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
@@ -85,8 +85,8 @@ namespace Exceptionless.Tests.Services {
             // Assert stack state has no change after increment usage
             stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
             Assert.Equal(0, stack.TotalOccurrences);
-            Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
-            Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
+            Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
+            Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
 
             // Assert state in cache has been changed after increment usage
             Assert.Equal(minOccurrenceDate, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
@@ -95,8 +95,8 @@ namespace Exceptionless.Tests.Services {
 
             stack2 = await _stackRepository.GetByIdAsync(TestConstants.StackId2);
             Assert.Equal(0, stack2.TotalOccurrences);
-            Assert.Equal(DateTime.MinValue, stack2.FirstOccurrence);
-            Assert.Equal(DateTime.MinValue, stack2.LastOccurrence);
+            Assert.True(stack2.FirstOccurrence <= SystemClock.UtcNow);
+            Assert.True(stack2.LastOccurrence <= SystemClock.UtcNow);
 
             // Assert state in cache has been changed after increment usage
             Assert.Equal(minOccurrenceDate, await _cache.GetUnixTimeMillisecondsAsync(_stackService.GetStackOccurrenceMinDateCacheKey(stack2.Id)));

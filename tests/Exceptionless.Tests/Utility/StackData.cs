@@ -32,6 +32,7 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null, string title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string signatureHash = null) {
+            var utcNow = SystemClock.UtcNow;
             var stack = new Stack {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
@@ -39,8 +40,8 @@ namespace Exceptionless.Tests.Utility {
                 Title = title ?? RandomData.GetTitleWords(),
                 Type = type ?? Stack.KnownTypes.Error,
                 DateFixed = dateFixed,
-                FirstOccurrence = utcFirstOccurrence ?? DateTime.MinValue,
-                LastOccurrence = utcLastOccurrence ?? DateTime.MinValue,
+                FirstOccurrence = utcFirstOccurrence ?? utcNow,
+                LastOccurrence = utcLastOccurrence ?? utcNow,
                 TotalOccurrences = totalOccurrences,
                 Status = status,
                 SignatureHash = signatureHash ?? RandomData.GetAlphaNumericString(10, 10),

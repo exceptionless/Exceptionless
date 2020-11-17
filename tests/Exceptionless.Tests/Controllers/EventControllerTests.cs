@@ -30,6 +30,7 @@ using Run = Exceptionless.Tests.Utility.Run;
 using Foundatio.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
+using Exceptionless.Core.Repositories.Queries;
 
 namespace Exceptionless.Tests.Controllers {
     public class EventControllerTests : IntegrationTestsBase {
@@ -303,27 +304,32 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task WillExcludeDeletedSessions() {
-            await CreateSessionsAsync();
+            await CreateDataAsync(d => {
+                d.Event().TestProject().Type(Event.KnownTypes.Session).Deleted();
+                d.Event().TestProject().Type(Event.KnownTypes.Session);
+            });
+            
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
             var countResult = await SendRequestAsAsync<CountResult>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "count")
-                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed) type:session _missing_:data.sessionend")
-                .QueryString("offset", "-360m")
+                .QueryString("filter", $"type:session _missing_:data.sessionend")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Equal(0, countResult.Total);
+            Assert.Equal(1, countResult.Total);
+
             var results = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "sessions")
-                .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:session _missing_:data.sessionend")
-                .QueryString("offset", "-360m")
+                .QueryString("filter", $"_missing_:data.sessionend")
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Empty(results);
+            Assert.Single(results);
         }
 
         [Theory]
@@ -420,25 +426,25 @@ namespace Exceptionless.Tests.Controllers {
         [Theory]
         public async Task WillExcludeDeletedStacks(string filter) {
             var utcNow = SystemClock.UtcNow;
-            
-            var stack1 = AddTestEvent()
-                .TestProject()
-                .Type(Event.KnownTypes.Log)
-                .Status(StackStatus.Open)
-                .Deleted()
-                .TotalOccurrences(50)
-                .FirstOccurrence(utcNow.SubtractDays(1));
 
-            var stack2 = AddTestEvent()
-                .TestProject()
-                .Type(Event.KnownTypes.Error)
-                .Status(StackStatus.Regressed)
-                .TotalOccurrences(10)
-                .FirstOccurrence(utcNow.SubtractDays(2))
-                .StackReference("https://github.com/exceptionless/Exceptionless")
-                .Version("3.2.1-beta1");
+            await CreateDataAsync(d => {
+                d.Event()
+                    .TestProject()
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Open)
+                    .Deleted()
+                    .TotalOccurrences(50)
+                    .FirstOccurrence(utcNow.SubtractDays(1));
 
-            await SaveTestDataAsync();
+                d.Event()
+                    .TestProject()
+                    .Type(Event.KnownTypes.Error)
+                    .Status(StackStatus.Regressed)
+                    .TotalOccurrences(10)
+                    .FirstOccurrence(utcNow.SubtractDays(2))
+                    .StackReference("https://github.com/exceptionless/Exceptionless")
+                    .Version("3.2.1-beta1");
+            });
 
             Log.MinimumLevel = LogLevel.Trace;
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
@@ -477,67 +483,52 @@ namespace Exceptionless.Tests.Controllers {
         private async Task CreateStacksAndEventsAsync() {
             var utcNow = SystemClock.UtcNow;
 
-            // matches event1.json / stack1.json
-            AddTestEvent()
-                .FreeProject()
-                .Type(Event.KnownTypes.Log)
-                .Level("Error")
-                .Source("GET /Print")
-                .DateFixed()
-                .TotalOccurrences(5)
-                .StackReference("http://exceptionless.io")
-                .FirstOccurrence(utcNow.SubtractDays(1))
-                .Tag("test", "Critical")
-                .Geo("40,-70")
-                .Value(1.0M)
-                .RequestInfoSample()
-                .UserIdentity("My-User-Identity", "test user")
-                .UserDescription("test@exceptionless.com", "my custom description")
-                .Version("1.2.3.0")
-                .ReferenceId("876554321");
+            await CreateDataAsync(d => {
+                // matches event1.json / stack1.json
+                d.Event()
+                    .FreeProject()
+                    .Type(Event.KnownTypes.Log)
+                    .Level("Error")
+                    .Source("GET /Print")
+                    .DateFixed()
+                    .TotalOccurrences(5)
+                    .StackReference("http://exceptionless.io")
+                    .FirstOccurrence(utcNow.SubtractDays(1))
+                    .Tag("test", "Critical")
+                    .Geo("40,-70")
+                    .Value(1.0M)
+                    .RequestInfoSample()
+                    .UserIdentity("My-User-Identity", "test user")
+                    .UserDescription("test@exceptionless.com", "my custom description")
+                    .Version("1.2.3.0")
+                    .ReferenceId("876554321");
 
-            // matches event2.json / stack2.json
-            var stack2 = AddTestEvent()
-                .FreeProject()
-                .Type(Event.KnownTypes.Error)
-                .Status(StackStatus.Regressed)
-                .TotalOccurrences(50)
-                .FirstOccurrence(utcNow.SubtractDays(1))
-                .StackReference("https://github.com/exceptionless/Exceptionless")
-                .Tag("Blake Niemyjski")
-                .RequestInfoSample()
-                .UserIdentity("example@exceptionless.com")
-                .Version("3.2.1-beta1");
+                // matches event2.json / stack2.json
+                var stack2 = d.Event()
+                    .FreeProject()
+                    .Type(Event.KnownTypes.Error)
+                    .Status(StackStatus.Regressed)
+                    .TotalOccurrences(50)
+                    .FirstOccurrence(utcNow.SubtractDays(1))
+                    .StackReference("https://github.com/exceptionless/Exceptionless")
+                    .Tag("Blake Niemyjski")
+                    .RequestInfoSample()
+                    .UserIdentity("example@exceptionless.com")
+                    .Version("3.2.1-beta1");
 
-            // matches event3.json and using the same stack as the previous event
-            AddTestEvent()
-                .FreeProject()
-                .Type(Event.KnownTypes.Error)
-                .Stack(stack2)
-                .Tag("Blake Niemyjski")
-                .RequestInfoSample()
-                .UserIdentity("example", "Blake")
-                .Version("4.0.1039 6f929bbe18");
+                // matches event3.json and using the same stack as the previous event
+                d.Event()
+                    .FreeProject()
+                    .Type(Event.KnownTypes.Error)
+                    .Stack(stack2)
+                    .Tag("Blake Niemyjski")
+                    .RequestInfoSample()
+                    .UserIdentity("example", "Blake")
+                    .Version("4.0.1039 6f929bbe18");
 
-            // defaults everything
-            AddTestEvent().FreeProject();
-
-            await SaveTestDataAsync();
-
-            await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
-            await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
-        }
-
-        private async Task CreateSessionsAsync() {
-            AddTestEvent()
-                .TestProject()
-                .Type(Event.KnownTypes.Session)
-                .UserIdentity("My-User-Identity", "test user")
-                .UserDescription("test@exceptionless.com", "my custom description")
-                .Version("1.2.3.0")
-                .Deleted();
-
-            await SaveTestDataAsync();
+                // defaults everything
+                d.Event().FreeProject();
+            });
 
             await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);

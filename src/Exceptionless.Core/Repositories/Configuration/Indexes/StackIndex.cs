@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
@@ -67,7 +68,10 @@ namespace Exceptionless.Core.Repositories.Configuration {
             string dateFixedFieldName = InferPropertyName(f => f.DateFixed);
             config
                 .SetDefaultFields(new[] { "id", Alias.Title, Alias.Description, Alias.Tags, Alias.References })
-                .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName));
+                .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName))
+                .UseFieldMap(new Dictionary<string, string> {
+                    { Alias.Stack, "id" }
+                });
         }
         
         private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
@@ -80,6 +84,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public class Alias {
+            public const string Stack = "stack";
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";
             public const string SignatureHash = "signature";

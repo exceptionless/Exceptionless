@@ -81,6 +81,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (String.IsNullOrEmpty(query) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
+            _logger.LogTrace("Stack filter: {StackFilter} Invert Success: {InvertSuccess} Inverted: {InvertedStackFilter}", stackFilter.Query, invertedStackFilter.IsInvertSuccessful, invertedStackFilter.Query);
+
             if (!(ctx is IQueryVisitorContextWithValidator)) {
                 var systemFilterQuery = GetSystemFilterQuery(ctx);
                 systemFilterQuery.FilterExpression(query);
@@ -105,7 +107,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (!isStackIdsNegated) {
                 if (stackIds.Length > 0)
                     ctx.Source.Stack(stackIds);
-                else if (stackFilter.HasStackSpecificCriteria)
+                else
                     ctx.Source.Stack("none");
             } else {
                 if (stackIds.Length > 0)
