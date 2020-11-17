@@ -73,8 +73,7 @@ kubectl apply -f https://download.elastic.co/downloads/eck/1.2.1/all-in-one.yaml
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
 # upgrade exceptionless app to a new docker image tag
-$APP_TAG="2.8.1502-pre"
-$API_TAG="6.0.3534-pre"
+$API_TAG="7.0.7"
 helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 helm upgrade --reuse-values ex-prod --namespace ex-prod .\exceptionless
 # see what an upgrade will do

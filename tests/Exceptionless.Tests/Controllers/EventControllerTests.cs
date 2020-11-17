@@ -316,7 +316,7 @@ namespace Exceptionless.Tests.Controllers {
             var countResult = await SendRequestAsAsync<CountResult>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "count")
-                .QueryString("filter", $"type:session _missing_:data.sessionend")
+                .QueryString("filter", "type:session _missing_:data.sessionend")
                 .StatusCodeShouldBeOk()
             );
 
@@ -325,11 +325,65 @@ namespace Exceptionless.Tests.Controllers {
             var results = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "sessions")
-                .QueryString("filter", $"_missing_:data.sessionend")
+                .QueryString("filter", "_missing_:data.sessionend")
                 .StatusCodeShouldBeOk()
             );
 
             Assert.Single(results);
+        }
+        
+        [Fact]
+        public async Task WillGetStackEvents() {
+            var (stacks, _) = await CreateDataAsync(d => {
+                d.Event().TestProject();
+            });
+            
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
+            var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("stacks", stacks.Single().Id, "events")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Single(result);
+        }
+        
+        [Fact]
+        public async Task WillGetEventSessions() {
+            string sessionId = Guid.NewGuid().ToString("N");
+            await CreateDataAsync(d => {
+                d.Event().TestProject().Type(Event.KnownTypes.Session).SessionId(sessionId);
+                d.Event().TestProject().Type(Event.KnownTypes.Log).SessionId(sessionId);
+            });
+            
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+            
+            var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events/sessions", sessionId)
+                .QueryString("filter", "-type:heartbeat")
+                .QueryString("limit", "10")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, result.Count);
+            
+            result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events/sessions", sessionId)
+                .QueryString("filter", "-type:heartbeat")
+                .QueryString("limit", "10")
+                .QueryString("offset", "-360m")
+                .QueryString("time", $"{SystemClock.UtcNow.SubtractDays(180):s}-now")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, result.Count);
         }
 
         [Theory]
