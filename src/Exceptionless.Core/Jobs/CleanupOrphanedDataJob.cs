@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Jobs {
             var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
 
-            var uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id").Value;
+            var uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id")?.Value;
             if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
                 return;
 
@@ -146,7 +146,7 @@ namespace Exceptionless.Core.Jobs {
             var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
 
-            var uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id").Value;
+            var uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id")?.Value;
             if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
                 return;
 
