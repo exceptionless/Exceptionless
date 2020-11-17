@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -11,97 +12,114 @@ using Foundatio.Serializer;
 using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility {
-    public class TestEventBuilder {
+    public class DataBuilder {
+        private readonly List<EventDataBuilder> _eventBuilders;
+        private readonly IServiceProvider _serviceProvider;
+
+        public DataBuilder(List<EventDataBuilder> eventBuilders, IServiceProvider serviceProvider) {
+            _eventBuilders = eventBuilders;
+            _serviceProvider = serviceProvider;
+        }
+
+        public EventDataBuilder Event() {
+            var eventBuilder = _serviceProvider.GetService<EventDataBuilder>();
+            _eventBuilders.Add(eventBuilder);
+            return eventBuilder;
+        }
+    }
+
+    public class EventDataBuilder {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly ISerializer _serializer;
         private readonly ICollection<Action<Stack>> _stackMutations;
         private PersistentEvent _event = new PersistentEvent();
         private Stack _stack = null;
-        private TestEventBuilder _stackEventBuilder;
+        private EventDataBuilder _stackEventBuilder;
         private bool _isFirstOccurrenceSet = false;
 
-        public TestEventBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer) {
+        public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer) {
             _stackMutations = new List<Action<Stack>>();
             _formattingPluginManager = formattingPluginManager;
             _serializer = serializer;
         }
 
-        public TestEventBuilder Mutate(Action<PersistentEvent> mutation) {
+        public EventDataBuilder Mutate(Action<PersistentEvent> mutation) {
             mutation?.Invoke(_event);
 
             return this;
         }
 
-        public TestEventBuilder MutateStack(Action<Stack> mutation) {
+        public EventDataBuilder MutateStack(Action<Stack> mutation) {
             _stackMutations.Add(mutation);
 
             return this;
         }
 
-        public TestEventBuilder Stack(TestEventBuilder stackEventBuilder) {
+        public EventDataBuilder Stack(EventDataBuilder stackEventBuilder) {
             _stackEventBuilder = stackEventBuilder;
 
             return this;
         }
 
-        public TestEventBuilder Stack(Stack stack) {
+        public EventDataBuilder Stack(Stack stack) {
             _stack = stack;
 
             return this;
         }
 
-        public TestEventBuilder StackId(string stackId) {
+        public EventDataBuilder StackId(string stackId) {
             _event.StackId = stackId;
+            _stackMutations.Add(s => s.Id = stackId);
 
             return this;
         }
 
-        public TestEventBuilder Id(string id) {
+        public EventDataBuilder Id(string id) {
             _event.Id = id;
 
             return this;
         }
 
-        public TestEventBuilder TestProject() {
+        public EventDataBuilder TestProject() {
             Organization(SampleDataService.TEST_ORG_ID);
             Project(SampleDataService.TEST_PROJECT_ID);
 
             return this;
         }
 
-        public TestEventBuilder FreeProject() {
+        public EventDataBuilder FreeProject() {
             Organization(SampleDataService.FREE_ORG_ID);
             Project(SampleDataService.FREE_PROJECT_ID);
 
             return this;
         }
 
-        public TestEventBuilder Organization(string organizationId) {
+        public EventDataBuilder Organization(string organizationId) {
             _event.OrganizationId = organizationId;
             return this;
         }
 
-        public TestEventBuilder Project(string projectId) {
+        public EventDataBuilder Project(string projectId) {
             _event.ProjectId = projectId;
             return this;
         }
 
-        public TestEventBuilder Type(string type) {
+        public EventDataBuilder Type(string type) {
             _event.Type = type;
             return this;
         }
 
-        public TestEventBuilder Date(DateTimeOffset date) {
+        public EventDataBuilder Date(DateTimeOffset date) {
             _event.Date = date;
             return this;
         }
 
-        public TestEventBuilder Date(DateTime date) {
+        public EventDataBuilder Date(DateTime date) {
             _event.Date = date.ToUniversalTime();
             return this;
         }
 
-        public TestEventBuilder Date(string date) {
+        public EventDataBuilder Date(string date) {
             if (DateTimeOffset.TryParse(date, out var dt))
                 _event.Date = dt;
             else
@@ -110,19 +128,19 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder IsFirstOccurrence(bool isFirstOccurrence = true) {
+        public EventDataBuilder IsFirstOccurrence(bool isFirstOccurrence = true) {
             _isFirstOccurrenceSet = true;
             _event.IsFirstOccurrence = isFirstOccurrence;
 
             return this;
         }
 
-        public TestEventBuilder CreatedDate(DateTime createdUtc) {
+        public EventDataBuilder CreatedDate(DateTime createdUtc) {
             _event.CreatedUtc = createdUtc;
             return this;
         }
 
-        public TestEventBuilder CreatedDate(string createdUtc) {
+        public EventDataBuilder CreatedDate(string createdUtc) {
             if (DateTime.TryParse(createdUtc, out var dt))
                 _event.CreatedUtc = dt;
             else
@@ -131,47 +149,47 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder Message(string message) {
+        public EventDataBuilder Message(string message) {
             _event.Message = message;
             return this;
         }
 
-        public TestEventBuilder Source(string source) {
+        public EventDataBuilder Source(string source) {
             _event.Source = source;
             return this;
         }
 
-        public TestEventBuilder Tag(params string[] tags) {
+        public EventDataBuilder Tag(params string[] tags) {
             _event.Tags.AddRange(tags);
             return this;
         }
 
-        public TestEventBuilder Geo(string geo) {
+        public EventDataBuilder Geo(string geo) {
             _event.Geo = geo;
             return this;
         }
 
-        public TestEventBuilder Value(decimal? value) {
+        public EventDataBuilder Value(decimal? value) {
             _event.Value = value;
             return this;
         }
 
-        public TestEventBuilder EnvironmentInfo(EnvironmentInfo environmentInfo) {
+        public EventDataBuilder EnvironmentInfo(EnvironmentInfo environmentInfo) {
             _event.SetEnvironmentInfo(environmentInfo);
             return this;
         }
 
-        public TestEventBuilder RequestInfo(RequestInfo requestInfo) {
+        public EventDataBuilder RequestInfo(RequestInfo requestInfo) {
             _event.AddRequestInfo(requestInfo);
             return this;
         }
 
-        public TestEventBuilder RequestInfo(string json) {
+        public EventDataBuilder RequestInfo(string json) {
             _event.AddRequestInfo(_serializer.Deserialize<RequestInfo>(json));
             return this;
         }
 
-        public TestEventBuilder RequestInfoSample(Action<RequestInfo> requestMutator = null) {
+        public EventDataBuilder RequestInfoSample(Action<RequestInfo> requestMutator = null) {
             var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo);
             requestMutator?.Invoke(requestInfo);
             _event.AddRequestInfo(requestInfo);
@@ -179,90 +197,90 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder ReferenceId(string id) {
+        public EventDataBuilder ReferenceId(string id) {
             _event.ReferenceId = id;
             return this;
         }
 
-        public TestEventBuilder Reference(string name, string id) {
+        public EventDataBuilder Reference(string name, string id) {
             _event.SetEventReference(name, id);
             return this;
         }
 
-        public TestEventBuilder UserDescription(string emailAddress, string description) {
+        public EventDataBuilder UserDescription(string emailAddress, string description) {
             _event.SetUserDescription(emailAddress, description);
             return this;
         }
 
-        public TestEventBuilder ManualStackingKey(string title, string manualStackingKey) {
+        public EventDataBuilder ManualStackingKey(string title, string manualStackingKey) {
             _event.SetManualStackingKey(title, manualStackingKey);
             return this;
         }
 
-        public TestEventBuilder ManualStackingKey(string manualStackingKey) {
+        public EventDataBuilder ManualStackingKey(string manualStackingKey) {
             _event.SetManualStackingKey(manualStackingKey);
             return this;
         }
 
-        public TestEventBuilder SessionId(string sessionId) {
+        public EventDataBuilder SessionId(string sessionId) {
             _event.SetSessionId(sessionId);
             return this;
         }
 
-        public TestEventBuilder SubmissionClient(SubmissionClient submissionClient) {
+        public EventDataBuilder SubmissionClient(SubmissionClient submissionClient) {
             _event.SetSubmissionClient(submissionClient);
             return this;
         }
 
-        public TestEventBuilder UserIdentity(string identity) {
+        public EventDataBuilder UserIdentity(string identity) {
             _event.SetUserIdentity(identity);
             return this;
         }
 
-        public TestEventBuilder UserIdentity(string identity, string name) {
+        public EventDataBuilder UserIdentity(string identity, string name) {
             _event.SetUserIdentity(identity, name);
             return this;
         }
 
-        public TestEventBuilder UserIdentity(UserInfo userInfo) {
+        public EventDataBuilder UserIdentity(UserInfo userInfo) {
             _event.SetUserIdentity(userInfo);
             return this;
         }
 
-        public TestEventBuilder Level(string level) {
+        public EventDataBuilder Level(string level) {
             _event.SetLevel(level);
             return this;
         }
 
-        public TestEventBuilder Version(string version) {
+        public EventDataBuilder Version(string version) {
             _event.SetVersion(version);
             return this;
         }
 
-        public TestEventBuilder Location(Location location) {
+        public EventDataBuilder Location(Location location) {
             _event.SetLocation(location);
             return this;
         }
 
-        public TestEventBuilder Deleted() {
+        public EventDataBuilder Deleted() {
             _stackMutations.Add(s => s.IsDeleted = true);
 
             return this;
         }
 
-        public TestEventBuilder Status(StackStatus status) {
+        public EventDataBuilder Status(StackStatus status) {
             _stackMutations.Add(s => s.Status = StackStatus.Open);
 
             return this;
         }
 
-        public TestEventBuilder StackReference(string reference) {
+        public EventDataBuilder StackReference(string reference) {
             _stackMutations.Add(s => s.References.Add(reference));
 
             return this;
         }
 
-        public TestEventBuilder OccurrencesAreCritical(bool occurrencesAreCritical = true) {
+        public EventDataBuilder OccurrencesAreCritical(bool occurrencesAreCritical = true) {
             if (occurrencesAreCritical)
                 _event.MarkAsCritical();
 
@@ -271,19 +289,19 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder TotalOccurrences(int totalOccurrences) {
+        public EventDataBuilder TotalOccurrences(int totalOccurrences) {
             _stackMutations.Add(s => s.TotalOccurrences = totalOccurrences);
 
             return this;
         }
 
-        public TestEventBuilder FirstOccurrence(DateTime firstOccurrenceUtc) {
+        public EventDataBuilder FirstOccurrence(DateTime firstOccurrenceUtc) {
             _stackMutations.Add(s => s.FirstOccurrence = firstOccurrenceUtc);
 
             return this;
         }
 
-        public TestEventBuilder FirstOccurrence(string firstOccurrenceUtc) {
+        public EventDataBuilder FirstOccurrence(string firstOccurrenceUtc) {
             if (DateTime.TryParse(firstOccurrenceUtc, out var dt))
                 _event.CreatedUtc = dt;
             else
@@ -294,13 +312,13 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder LastOccurrence(DateTime lastOccurrenceUtc) {
+        public EventDataBuilder LastOccurrence(DateTime lastOccurrenceUtc) {
             _stackMutations.Add(s => s.LastOccurrence = lastOccurrenceUtc);
 
             return this;
         }
 
-        public TestEventBuilder LastOccurrence(string lastOccurrenceUtc) {
+        public EventDataBuilder LastOccurrence(string lastOccurrenceUtc) {
             if (DateTime.TryParse(lastOccurrenceUtc, out var dt))
                 _event.CreatedUtc = dt;
             else
@@ -311,14 +329,14 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder DateFixed(DateTime? dateFixed = null) {
+        public EventDataBuilder DateFixed(DateTime? dateFixed = null) {
             Status(StackStatus.Fixed);
             _stackMutations.Add(s => s.DateFixed = dateFixed ?? SystemClock.UtcNow);
 
             return this;
         }
 
-        public TestEventBuilder DateFixed(string dateFixedUtc) {
+        public EventDataBuilder DateFixed(string dateFixedUtc) {
             if (DateTime.TryParse(dateFixedUtc, out var dt))
                 _event.CreatedUtc = dt;
             else
@@ -330,14 +348,14 @@ namespace Exceptionless.Tests.Utility {
             return this;
         }
 
-        public TestEventBuilder FixedInVersion(string version) {
+        public EventDataBuilder FixedInVersion(string version) {
             Status(StackStatus.Fixed);
             _stackMutations.Add(s => s.FixedInVersion = version);
 
             return this;
         }
 
-        public TestEventBuilder Snooze(DateTime? snoozeUntil = null) {
+        public EventDataBuilder Snooze(DateTime? snoozeUntil = null) {
             Status(StackStatus.Snoozed);
             _stackMutations.Add(s => s.SnoozeUntilUtc = snoozeUntil ?? SystemClock.UtcNow.AddDays(1));
 
@@ -383,8 +401,7 @@ namespace Exceptionless.Tests.Utility {
                     _stack.LastOccurrence = _event.Date.UtcDateTime;
 
                 _stack.Tags.AddRange(_event.Tags ?? new TagSet());
-            }
-            else if (_stack == null) {
+            } else if (_stack == null) {
                 string title = _formattingPluginManager.GetStackTitle(_event);
                 _stack = new Stack {
                     OrganizationId = _event.OrganizationId,

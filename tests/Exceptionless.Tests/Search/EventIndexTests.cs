@@ -63,48 +63,10 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("000000000000000000000000", 0)]
-        [InlineData("537650f3b77efe23a47914f3", 7)]
-        public async Task GetByOrganizationIdAsync(string id, int count) {
-            var result = await GetByFilterAsync("organization:" + id);
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData("000000000000000000000000", 0)]
-        [InlineData("537650f3b77efe23a47914f4", 7)]
-        public async Task GetByProjectIdAsync(string id, int count) {
-            var result = await GetByFilterAsync("project:" + id);
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447a44e78877ab1", 1)]
-        [InlineData("2ecd0826e447a44e78877ab2", 3)]
-        public async Task GetByStackIdAsync(string id, int count) {
-            var result = await GetByFilterAsync("stack:" + id);
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
         [InlineData("000000000", 0)]
         [InlineData("876554321", 1)]
         public async Task GetByReferenceIdAsync(string id, int count) {
             var result = await GetByFilterAsync("reference:" + id);
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData("log", 4)]
-        [InlineData("error", 2)]
-        [InlineData("custom", 1)]
-        public async Task GetByTypeAsync(string type, int count) {
-            var result = await GetByFilterAsync("type:" + type);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
         }
@@ -157,18 +119,6 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("message:\"Invalid hash. Parameter name: hash\"", 1)]
         public async Task GetByMessageAsync(string filter, int count) {
-            var result = await GetByFilterAsync(filter);
-            Assert.NotNull(result);
-            Assert.Equal(count, result.Total);
-        }
-
-        [Theory]
-        [InlineData("NOT _exists_:tag", 5)]
-        [InlineData("tag:test", 1)]
-        [InlineData("tag:Blake", 0)]
-        [InlineData("tag:Niemyjski", 0)]
-        [InlineData("tag:\"Blake Niemyjski\"", 1)]
-        public async Task GetByTagAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Total);
@@ -404,7 +354,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("user:My-User-Identity", 1)]
         [InlineData("example@exceptionless.com", 2)]
         [InlineData("user:example@exceptionless.com", 1)]
-        [InlineData("user:exceptionless.com", 1)]
+        [InlineData("user:exceptionless.com", 2)]
         [InlineData("example", 2)]
         public async Task GetByUserAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
@@ -424,7 +374,7 @@ namespace Exceptionless.Tests.Repositories {
         [Theory]
         [InlineData("test@exceptionless.com", 1)]
         [InlineData("user.email:test@exceptionless.com", 1)]
-        [InlineData("user.email:exceptionless.com", 1)]
+        [InlineData("user.email:exceptionless.com", 2)]
         public async Task GetByUserEmailAddressAsync(string filter, int count) {
             var result = await GetByFilterAsync(filter);
             Assert.NotNull(result);

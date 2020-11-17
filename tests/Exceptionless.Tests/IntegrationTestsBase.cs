@@ -34,6 +34,7 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories;
+using Amazon.CloudWatch.Model;
 
 namespace Exceptionless.Tests {
     public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
@@ -44,7 +45,6 @@ namespace Exceptionless.Tests {
         protected readonly TestServer _server;
         protected readonly FluentClient _client;
         protected readonly HttpClient _httpClient;
-        private readonly List<TestEventBuilder> _eventBuilders = new List<TestEventBuilder>();
         protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
         public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
@@ -102,25 +102,24 @@ namespace Exceptionless.Tests {
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
 
-            services.AddTransient<TestEventBuilder>();
+            services.AddTransient<Utility.EventDataBuilder>();
 
             services.ReplaceSingleton(s => _server.CreateHandler());
         }
 
-        protected TestEventBuilder AddTestEvent() {
-            var eventBuilder = GetService<TestEventBuilder>();
-            _eventBuilders.Add(eventBuilder);
-            return eventBuilder;
-        }
+        public async Task<(List<Stack> Stacks, List<PersistentEvent> Events)> CreateDataAsync(Action<DataBuilder> dataBuilderFunc) {
+            var eventBuilders = new List<Utility.EventDataBuilder>();
 
-        protected async Task SaveTestDataAsync() {
+            var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider);
+            dataBuilderFunc(dataBuilder);
+
             var eventRepository = GetService<IEventRepository>();
             var stackRepository = GetService<IStackRepository>();
 
             var events = new HashSet<PersistentEvent>();
             var stacks = new HashSet<Stack>();
 
-            foreach (var builder in _eventBuilders) {
+            foreach (var builder in eventBuilders) {
                 var data = builder.Build();
                 events.Add(data.Event);
                 stacks.Add(data.Stack);
@@ -128,6 +127,10 @@ namespace Exceptionless.Tests {
 
             await stackRepository.AddAsync(stacks, o => o.ImmediateConsistency());
             await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+
+            await RefreshDataAsync();
+
+            return (stacks.ToList(), events.ToList());
         }
 
         protected virtual async Task ResetDataAsync() {

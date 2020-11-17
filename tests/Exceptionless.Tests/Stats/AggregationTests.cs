@@ -152,6 +152,7 @@ namespace Exceptionless.Tests.Stats {
             const int eventCount = 100;
             await CreateDataAsync(eventCount, false);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
 
             long stackSize = await _stackRepository.CountAsync();
             var result = await _eventRepository.CountAsync(q => q.AggregationsExpression($"terms:(stack_id~{stackSize} min:date max:date)"));

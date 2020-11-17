@@ -85,6 +85,8 @@ namespace Exceptionless.Tests.Repositories {
         [Fact]
         public async Task GetPreviousEventIdInStackTestAsync() {
             await CreateDataAsync();
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
             _logger.LogDebug("Actual order:");
             foreach (var t in _ids)

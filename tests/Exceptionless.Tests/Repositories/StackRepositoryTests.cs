@@ -112,8 +112,8 @@ namespace Exceptionless.Tests.Repositories {
             var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
             Assert.NotNull(stack);
             Assert.Equal(0, stack.TotalOccurrences);
-            Assert.Equal(DateTime.MinValue, stack.FirstOccurrence);
-            Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
+            Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
+            Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
             Assert.NotEqual(DateTime.MinValue, stack.CreatedUtc);
             Assert.NotEqual(DateTime.MinValue, stack.UpdatedUtc);
             Assert.Equal(stack.CreatedUtc, stack.UpdatedUtc);
