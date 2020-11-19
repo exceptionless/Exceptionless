@@ -14,6 +14,7 @@ services:
       #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
+      EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       #ASPNETCORE_URLS: http://+;https://+
       #ASPNETCORE_HTTPS_PORT: 5001
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
