@@ -249,6 +249,8 @@ namespace Exceptionless.Web {
 
             app.UseSwagger(c => {
                 c.RouteTemplate = "docs/{documentName}/swagger.json";
+                // TODO: Remove once 5.6.4+ is released 
+                c.PreSerializeFilters.Add((doc, _) => doc.Servers?.Clear());
             });
             app.UseSwaggerUI(s => {
                 s.RoutePrefix = "docs";
