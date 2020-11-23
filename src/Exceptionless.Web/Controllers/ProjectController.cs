@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Exceptionless.Core.Repositories.Options;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/projects")]
@@ -723,7 +724,10 @@ namespace Exceptionless.Web.Controllers {
             var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
             var sf = new AppFilter(projects, organizations);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
-            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).AggregationsExpression($"terms:(project_id~{viewProjects.Count} cardinality:stack_id)"));
+            var result = await _eventRepository.CountAsync(q => q
+                .SystemFilter(systemFilter)
+                .AggregationsExpression($"terms:(project_id~{viewProjects.Count} cardinality:stack_id)")
+                .EnforceEventStackFilter());
             foreach (var project in viewProjects) {
                 var term = result.Aggregations.Terms<string>("terms_project_id")?.Buckets.FirstOrDefault(t => t.Key == project.Id);
                 project.EventCount = term?.Total ?? 0;
