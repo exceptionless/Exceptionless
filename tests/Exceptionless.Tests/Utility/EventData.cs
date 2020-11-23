@@ -29,7 +29,7 @@ namespace Exceptionless.Tests.Utility {
             return GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, maxErrorNestingLevel: 4);
         }
 
-        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = -1, string semver = null) {
+        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = -1, string semver = null, string source = null) {
             return GenerateEvent(
                 organizationId != null ? new[] { organizationId } : null,
                 projectId != null ? new[] { projectId } : null,
@@ -45,7 +45,8 @@ namespace Exceptionless.Tests.Utility {
                 sessionId,
                 userIdentity,
                 value,
-                semver
+                semver,
+                source
             );
         }
 
@@ -57,7 +58,7 @@ namespace Exceptionless.Tests.Utility {
             return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
         }
 
-        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null, decimal? value = -1, string semver = null) {
+        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[] referenceIds = null, string type = null, string sessionId = null,  string userIdentity = null, decimal? value = -1, string semver = null, string source = null) {
             if (!startDate.HasValue || startDate > SystemClock.OffsetNow.AddHours(1))
                 startDate = SystemClock.OffsetNow.AddDays(-30);
             if (!endDate.HasValue || endDate > SystemClock.OffsetNow.AddHours(1))
@@ -69,7 +70,8 @@ namespace Exceptionless.Tests.Utility {
                 ReferenceId = referenceIds.Random(),
                 Date = occurrenceDate ?? RandomData.GetDateTimeOffset(startDate, endDate),
                 Value = value.GetValueOrDefault() >= 0 ? value : RandomData.GetDecimal(0, Int32.MaxValue),
-                StackId = stackIds.Random()
+                StackId = stackIds.Random(),
+                Source = source
             };
 
             if (!String.IsNullOrEmpty(userIdentity))
