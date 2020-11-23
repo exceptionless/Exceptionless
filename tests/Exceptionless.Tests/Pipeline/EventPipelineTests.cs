@@ -843,6 +843,43 @@ namespace Exceptionless.Tests.Pipeline {
                 Assert.Null(userDescription?.EmailAddress);
             }
         }
+        
+        [Fact]
+        public async Task WillHandleDiscardedStack() {
+            var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+            var project = ProjectData.GenerateSampleProject();
+            
+            var ev = EventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+            var context = await _pipeline.RunAsync(ev, organization, project);
+            Assert.True(context.IsProcessed);
+            Assert.False(context.HasError);
+            Assert.False(context.IsCancelled);
+            Assert.False(context.IsDiscarded);
+            await RefreshDataAsync();
+
+            var stack = context.Stack;
+            Assert.Equal(StackStatus.Open, stack.Status);
+            
+            stack.Status = StackStatus.Discarded;
+            stack = await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            
+            
+            ev = EventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: ev.StackId, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+            context = await _pipeline.RunAsync(ev, organization, project);
+            Assert.False(context.IsProcessed);
+            Assert.False(context.HasError);
+            Assert.True(context.IsCancelled);
+            Assert.True(context.IsDiscarded);
+            await RefreshDataAsync();
+            
+            ev = EventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+            context = await _pipeline.RunAsync(ev, organization, project);
+            Assert.False(context.IsProcessed);
+            Assert.False(context.HasError);
+            Assert.True(context.IsCancelled);
+            Assert.True(context.IsDiscarded);
+            await RefreshDataAsync();
+        }
 
         [Theory]
         [MemberData(nameof(Events))]
