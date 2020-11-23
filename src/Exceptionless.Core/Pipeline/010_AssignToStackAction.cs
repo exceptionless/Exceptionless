@@ -109,11 +109,12 @@ namespace Exceptionless.Core.Pipeline {
                         stacks.Add(ctx.Stack.SignatureHash, new StackInfo { IsNew = false, ShouldSave = false, Stack = ctx.Stack });
                     else
                         stacks[ctx.Stack.SignatureHash].Stack = ctx.Stack;
-
-                    if (ctx.Stack.Status == StackStatus.Discarded) {
-                        ctx.IsDiscarded = true;
-                        ctx.IsCancelled = true;
-                    }
+                }
+                
+                if (ctx.Stack.Status == StackStatus.Discarded) {
+                    ctx.IsDiscarded = true;
+                    ctx.IsCancelled = true;
+                    continue;
                 }
 
                 if (!ctx.IsNew && ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
