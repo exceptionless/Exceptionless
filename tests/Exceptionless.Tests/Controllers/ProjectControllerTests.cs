@@ -1,14 +1,12 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using FluentRest;
-using Foundatio.Jobs;
-using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -39,59 +37,6 @@ namespace Exceptionless.Tests.Controllers {
             var config = await response.DeserializeAsync<ClientConfiguration>();
             Assert.True(config.Settings.GetBoolean("IncludeConditionalData"));
             Assert.Equal(0, config.Version);
-        }
-        
-        [Fact]
-        public async Task CanGetProjectListStats() {
-            var projects = await SendRequestAsAsync<List<ViewProject>>(r => r
-                .AsTestOrganizationUser()
-                .AppendPath("projects")
-                .QueryString("mode", "stats")
-                .StatusCodeShouldBeOk()
-            );
-
-            var project = projects.Single();
-            Assert.Equal(0, project.StackCount);
-            Assert.Equal(0, project.EventCount);
-            
-            var (stacks, events) = await CreateDataAsync(d => {
-                d.Event().Message("test");
-            });
-            
-            projects = await SendRequestAsAsync<List<ViewProject>>(r => r
-                .AsTestOrganizationUser()
-                .AppendPath("projects")
-                .QueryString("mode", "stats")
-                .StatusCodeShouldBeOk()
-            );
-
-            project = projects.Single();
-            Assert.Equal(stacks.Count, project.StackCount);
-            Assert.Equal(events.Count, project.EventCount);
-            
-            // Reset Project data and ensure soft deleted counts don't show up
-            var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
-                .AsTestOrganizationUser()
-                .AppendPath("projects", project.Id, "reset-data")
-                .StatusCodeShouldBeAccepted()
-            );
-            
-            Assert.Single(workItems.Workers);
-            var workItemJob = GetService<WorkItemJob>();
-            await workItemJob.RunUntilEmptyAsync();
-            await RefreshDataAsync();
-
-            Log.MinimumLevel = LogLevel.Trace;
-            projects = await SendRequestAsAsync<List<ViewProject>>(r => r
-                .AsTestOrganizationUser()
-                .AppendPath("projects")
-                .QueryString("mode", "stats")
-                .StatusCodeShouldBeOk()
-            );
-
-            project = projects.Single();
-            Assert.Equal(0, project.StackCount);
-            Assert.Equal(0, project.EventCount);
         }
     }
 }
