@@ -30,29 +30,36 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("source:Exceptionless.Web.GET.Print.SomeClass", 1)]
         [InlineData("source:exceptionless.web.gET.print.someClass", 1)]
         [InlineData("source:some/web/path", 1)]
-        //[InlineData("source:some/web*", 1)]
+        [InlineData("source:some\\\\/web*", 1)]
         [InlineData("source:Exceptionless*", 2)]
         [InlineData("source:exceptionless.web.gET.p*", 1)]
-        [InlineData("source:Exceptionless", 1)]
-        [InlineData("source:\"Exceptionless\"", 1)]
-        [InlineData("source:GET", 1)]
-        [InlineData("source:gEt", 1)]
-        [InlineData("source:Print", 0)]
+        [InlineData("source:Exceptionless", 2)]
+        [InlineData("source:\"Exceptionless\"", 2)]
+        [InlineData("source:GET", 2)]
+        [InlineData("source:gEt", 2)]
+        [InlineData("source:Print", 2)]
         [InlineData("source:/Print", 1)]
         [InlineData("source:Bagle", 1)]
         [InlineData("source:exceptionless.web*", 1)]
         [InlineData("source:reason", 1)]
         [InlineData("source:randomText", 1)]
-        [InlineData("source:getUrlV2", 1)] // not sure if we want to support this.
+        [InlineData("source:getUrlV2", 1)]
         [InlineData("source:namespace.controller.getUrlV2", 1)]
+        [InlineData("source:namespace.controller", 1)]
         [InlineData("source:blake", 1)]
+        [InlineData("source:System.Text.StringBuilder", 1)]
+        [InlineData("source:System.Text", 1)]
+        [InlineData("source:System.Text.StringBuilder,System.Text", 1)]
         public async Task GetBySourceAsync(string search, int count) {
+            Log.MinimumLevel = LogLevel.Trace;
+
             await CreateDataAsync(d => {
                 d.Event().Source("Exceptionless.Web.GET.Print.SomeClass");
                 d.Event().Source("some/web/path");
                 d.Event().Source("Exceptionless");
                 d.Event().Source("GET /Print");
                 d.Event().Source("Gotham Bagle Company");
+                d.Event().Source("System.Text.StringBuilder,System.Text");
                 d.Event().Source("randomText,namespace.controller.getUrlV2 (blake) reason https://10.0.1.1:1234/namespace/v2/controller/getUrl?mode=summary&message=test reason2");
             });
 

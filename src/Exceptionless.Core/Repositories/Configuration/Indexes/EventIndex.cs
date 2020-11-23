@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.ReferenceId))
                         .FieldAlias(a => a.Name(Alias.ReferenceId).Path(f => f.ReferenceId))
                     .Text(f => f.Name(e => e.Type).Analyzer(LOWER_KEYWORD_ANALYZER).AddKeywordField())
-                    .Text(f => f.Name(e => e.Source).Analyzer(EventIndex.STANDARDPLUS_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
+                    .Text(f => f.Name(e => e.Source).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
                     .Date(f => f.Name(e => e.Date))
                     .Text(f => f.Name(e => e.Message))
                     .Text(f => f.Name(e => e.Tags).Analyzer(LOWER_KEYWORD_ANALYZER).Boost(1.2).AddKeywordField())
@@ -160,16 +160,21 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Custom(EMAIL_ANALYZER, c => c.Filters(EMAIL_TOKEN_FILTER, "lowercase", TLD_STOPWORDS_TOKEN_FILTER, EDGE_NGRAM_TOKEN_FILTER, "unique").Tokenizer("keyword"))
                 .Custom(VERSION_INDEX_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, VERSION_TOKEN_FILTER, "lowercase", "unique").Tokenizer("whitespace"))
                 .Custom(VERSION_SEARCH_ANALYZER, c => c.Filters(VERSION_PAD1_TOKEN_FILTER, VERSION_PAD2_TOKEN_FILTER, VERSION_PAD3_TOKEN_FILTER, VERSION_PAD4_TOKEN_FILTER, "lowercase").Tokenizer("whitespace"))
-                .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("whitespace"))
+                .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
                 .Custom(TYPENAME_ANALYZER, c => c.Filters(TYPENAME_TOKEN_FILTER, "lowercase", "unique").Tokenizer(TYPENAME_HIERARCHY_TOKENIZER))
-                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("lowercase", "unique").Tokenizer("whitespace"))
+                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters(STANDARDPLUS_TOKEN_FILTER, "lowercase", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
                 .Custom(LOWER_KEYWORD_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))
                 .Custom(HOST_ANALYZER, c => c.Filters("lowercase").Tokenizer(HOST_TOKENIZER))
                 .Custom(URL_PATH_ANALYZER, c => c.Filters("lowercase").Tokenizer(URL_PATH_TOKENIZER)))
             .TokenFilters(f => f
                 .EdgeNGram(EDGE_NGRAM_TOKEN_FILTER, p => p.MaxGram(50).MinGram(2).Side(EdgeNGramSide.Front))
                 .PatternCapture(EMAIL_TOKEN_FILTER, p => p.PreserveOriginal().Patterns("(\\w+)","(\\p{L}+)","(\\d+)","@(.+)","@(.+)\\.","(.+)@"))
-                .PatternCapture(TYPENAME_TOKEN_FILTER, p => p.PreserveOriginal().Patterns(@"^(\w+)", @"\.(\w+)", @"([^\(\)]+)"))
+                .PatternCapture(STANDARDPLUS_TOKEN_FILTER, p => p.PreserveOriginal().Patterns(
+                    @"([^\.\(\)\[\]\/\\\{\}\?=&;:\<\>]+)",
+                    @"([^\.\(\)\[\]\/\\\{\}\?=&;:\<\>]+[\.\/\\][^\.\(\)\[\]\/\\\{\}\?=&;:\<\>]+)",
+                    @"([^\.\(\)\[\]\/\\\{\}\?=&;:\<\>]+[\.\/\\][^\.\(\)\[\]\/\\\{\}\?=&;:\<\>]+[\.\/\\][^\.\(\)\[\]\/\\\{\}\?=&;:\<\>]+)"
+                ))
+                .PatternCapture(TYPENAME_TOKEN_FILTER, p => p.PreserveOriginal().Patterns(@" ^ (\w+)", @"\.(\w+)", @"([^\(\)]+)"))
                 .PatternCapture(VERSION_TOKEN_FILTER, p => p.Patterns(@"^(\d+)\.", @"^(\d+\.\d+)", @"^(\d+\.\d+\.\d+)"))
                 .PatternReplace(VERSION_PAD1_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{1})(?=\.|-|$)").Replacement("$10000$2"))
                 .PatternReplace(VERSION_PAD2_TOKEN_FILTER, p => p.Pattern(@"(\.|^)(\d{2})(?=\.|-|$)").Replacement("$1000$2"))
@@ -189,6 +194,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         private const string EMAIL_TOKEN_FILTER = "email";
         private const string TYPENAME_TOKEN_FILTER = "typename";
         private const string VERSION_TOKEN_FILTER = "version";
+        private const string STANDARDPLUS_TOKEN_FILTER = "standardplus";
         private const string VERSION_PAD1_TOKEN_FILTER = "version_pad1";
         private const string VERSION_PAD2_TOKEN_FILTER = "version_pad2";
         private const string VERSION_PAD3_TOKEN_FILTER = "version_pad3";
