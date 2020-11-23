@@ -58,8 +58,10 @@ namespace Exceptionless.Core.Repositories.Queries {
 
         public EventStackFilterQueryMode QueryMode { get; set; } = EventStackFilterQueryMode.Events;
         public bool IsInvertSuccessful { get; set; } = true;
+        public bool HasStatus { get; set; } = false;
         public bool HasStatusOpen { get; set; } = false;
         public bool HasStackSpecificCriteria { get; set; } = false;
+        public bool HasStackIds { get; set; } = false;
 
         public override Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
             ApplyFilter(node, context);
@@ -73,11 +75,19 @@ namespace Exceptionless.Core.Repositories.Queries {
                 await base.VisitAsync(newGroupNode, context);
                 return;
             }
-            
-            if (String.Equals(node.Field, "status", StringComparison.OrdinalIgnoreCase)
-                && !node.IsNegated.GetValueOrDefault()
-                && String.Equals(node.Term, "open", StringComparison.OrdinalIgnoreCase))
-                HasStatusOpen = true;
+
+            if (String.Equals(node.Field, "status", StringComparison.OrdinalIgnoreCase)) {
+                HasStatus = true;
+
+                if (!node.IsNegated.GetValueOrDefault() && String.Equals(node.Term, "open", StringComparison.OrdinalIgnoreCase))
+                    HasStatusOpen = true;
+            }
+
+            if ((String.Equals(node.Field, EventIndex.Alias.StackId, StringComparison.OrdinalIgnoreCase)
+                || String.Equals(node.Field, "stack_id", StringComparison.OrdinalIgnoreCase))
+                && !String.IsNullOrEmpty(node.Term)) {
+                HasStackIds = true;
+            }
 
             if (QueryMode != EventStackFilterQueryMode.InvertedStacks)
                 return;
@@ -248,8 +258,10 @@ namespace Exceptionless.Core.Repositories.Queries {
             return new EventStackFilterQueryResult {
                 Query = result,
                 IsInvertSuccessful = visitor.IsInvertSuccessful,
+                HasStatus = visitor.HasStatus,
                 HasStatusOpen = visitor.HasStatusOpen,
-                HasStackSpecificCriteria = visitor.HasStackSpecificCriteria
+                HasStackSpecificCriteria = visitor.HasStackSpecificCriteria,
+                HasStackIds = visitor.HasStackIds
             };
         }
 
@@ -271,8 +283,10 @@ namespace Exceptionless.Core.Repositories.Queries {
     public class EventStackFilterQueryResult {
         public string Query { get; set; }
         public bool IsInvertSuccessful { get; set; }
+        public bool HasStatus { get; set; }
         public bool HasStatusOpen { get; set; }
         public bool HasStackSpecificCriteria { get; set; }
+        public bool HasStackIds { get; set; }
     }
 
     public enum EventStackFilterQueryMode {

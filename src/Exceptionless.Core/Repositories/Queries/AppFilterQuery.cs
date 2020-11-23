@@ -107,15 +107,16 @@ namespace Exceptionless.Core.Repositories.Queries {
             string field = shouldApplyRetentionFilter ? GetDateField(index) : null;
             
             if (sfq.Stack != null) {
+                var stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
                 if (organization != null) {
                     if (shouldApplyRetentionFilter)
-                        ctx.Filter &= (Query<T>.Term(_stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays, sfq.Stack.FirstOccurrence));
+                        ctx.Filter &= (Query<T>.Term(stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays, sfq.Stack.FirstOccurrence));
                     else {
-                        ctx.Filter &= Query<T>.Term(_stackIdFieldName, sfq.Stack.Id);
+                        ctx.Filter &= Query<T>.Term(stackIdFieldName, sfq.Stack.Id);
                     }
                 } else {
-                    ctx.Filter &= Query<T>.Term(_stackIdFieldName, "none");
+                    ctx.Filter &= Query<T>.Term(stackIdFieldName, "none");
                 }
 
                 return Task.CompletedTask;
