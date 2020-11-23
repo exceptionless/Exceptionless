@@ -6,9 +6,9 @@
     <PackageReference Include="App.Metrics.Reporting.Graphite" Version="4.1.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="4.1.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.1.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.1.139" />
+    <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MaxMind.GeoIP2" Version="3.3.0" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="4.0.1" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.0.0" />
     <PackageReference Include="Foundatio.AppMetrics" Version="10.0.1" />
     <PackageReference Include="Foundatio.AWS" Version="10.0.0" />
@@ -23,13 +23,13 @@
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
-    <PackageReference Include="MailKit" Version="2.9.0" />
+    <PackageReference Include="MailKit" Version="2.10.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.2" />
-    <PackageReference Include="YamlDotNet" Version="8.1.2" />
+    <PackageReference Include="YamlDotNet" Version="9.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />
