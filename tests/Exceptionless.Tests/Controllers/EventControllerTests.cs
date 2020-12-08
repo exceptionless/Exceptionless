@@ -534,6 +534,102 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(1, uniqueTotal);
         }
         
+        [Fact]
+        public async Task WillExcludeOldStacksForStackNewMode() {
+            var utcNow = SystemClock.UtcNow;
+
+            await CreateDataAsync(d => {
+                d.Event()
+                    .TestProject()
+                    .Message("New stack - skip due to date filter")
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Open)
+                    .TotalOccurrences(50)
+                    .IsFirstOccurrence()
+                    .FirstOccurrence(utcNow.SubtractYears(1))
+                    .LastOccurrence(utcNow.SubtractMonths(5));
+
+                d.Event()
+                    .TestProject()
+                    .Message("Old stack - new event")
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Regressed)
+                    .TotalOccurrences(33)
+                    .FirstOccurrence(utcNow.SubtractYears(1))
+                    .LastOccurrence(utcNow);
+
+                d.Event()
+                    .TestProject()
+                    .Message("New Stack - event not marked as first occurrence")
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Open)
+                    .TotalOccurrences(15)
+                    .FirstOccurrence(utcNow.SubtractDays(2))
+                    .Version("1.2.3");
+                
+                d.Event()
+                    .TestProject()
+                    .Message("New Stack - event marked as first occurrence")
+                    .Type(Event.KnownTypes.Error)
+                    .Status(StackStatus.Regressed)
+                    .TotalOccurrences(10)
+                    .FirstOccurrence(utcNow.SubtractDays(2))
+                    .Date(utcNow.SubtractDays(2))
+                    .IsFirstOccurrence()
+                    .StackReference("https://github.com/exceptionless/Exceptionless")
+                    .Version("3.2.1-beta1");
+
+                d.Event()
+                    .TestProject()
+                    .Message("Deleted New stack - event is first occurrence")
+                    .Type(Event.KnownTypes.FeatureUsage)
+                    .Status(StackStatus.Open)
+                    .TotalOccurrences(7)
+                    .FirstOccurrence(utcNow.Date)
+                    .IsFirstOccurrence()
+                    .Date(utcNow.Date)
+                    .Deleted();
+            });
+
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            const string filter = "(status:open OR status:regressed)";
+            const string time = "last week";
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", filter)
+                .QueryString("time", time)
+                .QueryString("mode", "stack_new")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, results.Count);
+            
+            var countResult = await SendRequestAsAsync<CountResult>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events", "count")
+                .QueryString("filter", filter)
+                .QueryString("time", time)
+                .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
+                .StatusCodeShouldBeOk()
+            );
+
+            var dateAgg = countResult.Aggregations.DateHistogram("date_date");
+            double dateAggStackCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
+            double dateAggEventCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
+            Assert.Equal(1, dateAggStackCount);
+            Assert.Equal(1, dateAggEventCount);
+            
+            var total = countResult.Aggregations.Sum("sum_count")?.Value;
+            double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
+            double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
+            
+            Assert.Equal(1, total);
+            Assert.Equal(0, newTotal);
+            Assert.Equal(1, uniqueTotal);
+        }
+        
         private async Task CreateStacksAndEventsAsync() {
             var utcNow = SystemClock.UtcNow;
 
