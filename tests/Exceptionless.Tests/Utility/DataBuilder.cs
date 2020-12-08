@@ -6,6 +6,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
@@ -121,11 +122,9 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder Date(string date) {
             if (DateTimeOffset.TryParse(date, out var dt))
-                _event.Date = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(date));
-
-            return this;
+                return Date(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(date));
         }
 
         public EventDataBuilder IsFirstOccurrence(bool isFirstOccurrence = true) {
@@ -142,15 +141,14 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder CreatedDate(string createdUtc) {
             if (DateTime.TryParse(createdUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(createdUtc));
-
-            return this;
+                return CreatedDate(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(createdUtc));
         }
 
         public EventDataBuilder Message(string message) {
             _event.Message = message;
+            _stackMutations.Add(s => s.Title = message);
             return this;
         }
 
@@ -269,7 +267,7 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public EventDataBuilder Status(StackStatus status) {
-            _stackMutations.Add(s => s.Status = StackStatus.Open);
+            _stackMutations.Add(s => s.Status = status);
 
             return this;
         }
@@ -284,8 +282,10 @@ namespace Exceptionless.Tests.Utility {
             if (occurrencesAreCritical)
                 _event.MarkAsCritical();
 
-            _stackMutations.Add(s => s.OccurrencesAreCritical = occurrencesAreCritical);
-
+            _stackMutations.Add(s => {
+                s.OccurrencesAreCritical = occurrencesAreCritical;
+                s.Tags.Add(Event.KnownTags.Critical);
+            });
             return this;
         }
 
@@ -296,6 +296,7 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public EventDataBuilder FirstOccurrence(DateTime firstOccurrenceUtc) {
+            _event.CreatedUtc = firstOccurrenceUtc;
             _stackMutations.Add(s => s.FirstOccurrence = firstOccurrenceUtc);
 
             return this;
@@ -303,49 +304,53 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder FirstOccurrence(string firstOccurrenceUtc) {
             if (DateTime.TryParse(firstOccurrenceUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(firstOccurrenceUtc));
-
-            _stackMutations.Add(s => s.FirstOccurrence = dt);
-
-            return this;
+                return FirstOccurrence(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(firstOccurrenceUtc));
         }
 
         public EventDataBuilder LastOccurrence(DateTime lastOccurrenceUtc) {
-            _stackMutations.Add(s => s.LastOccurrence = lastOccurrenceUtc);
+            if (_event.CreatedUtc.IsAfter(lastOccurrenceUtc))
+                _event.CreatedUtc = lastOccurrenceUtc;
 
+            if (_event.Date.IsAfter(lastOccurrenceUtc))
+                _event.Date = lastOccurrenceUtc;
+            
+            _stackMutations.Add(s => {
+                if (s.FirstOccurrence.IsAfter(lastOccurrenceUtc))
+                    s.FirstOccurrence = lastOccurrenceUtc;
+                
+                s.LastOccurrence = lastOccurrenceUtc;
+            });
+            
             return this;
         }
 
         public EventDataBuilder LastOccurrence(string lastOccurrenceUtc) {
             if (DateTime.TryParse(lastOccurrenceUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(lastOccurrenceUtc));
+                return LastOccurrence(dt);
             
-            _stackMutations.Add(s => s.LastOccurrence = dt);
-
-            return this;
+            throw new ArgumentException("Invalid date specified", nameof(lastOccurrenceUtc));
         }
 
         public EventDataBuilder DateFixed(DateTime? dateFixed = null) {
             Status(StackStatus.Fixed);
-            _stackMutations.Add(s => s.DateFixed = dateFixed ?? SystemClock.UtcNow);
+            _stackMutations.Add(s => {
+                var fixedOn = dateFixed ?? SystemClock.UtcNow;
+                if (s.FirstOccurrence.IsAfter(fixedOn))
+                    throw new ArgumentException("Fixed on date is before first occurence");
+                
+                s.DateFixed = fixedOn;
+            });
 
             return this;
         }
 
         public EventDataBuilder DateFixed(string dateFixedUtc) {
             if (DateTime.TryParse(dateFixedUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(dateFixedUtc));
-
-            Status(StackStatus.Fixed);
-            _stackMutations.Add(s => s.DateFixed = dt);
-
-            return this;
+                return DateFixed(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(dateFixedUtc));
         }
 
         public EventDataBuilder FixedInVersion(string version) {
