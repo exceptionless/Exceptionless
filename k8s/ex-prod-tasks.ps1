@@ -44,17 +44,16 @@ kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' `
 # upgrade nginx ingress to latest
 # https://github.com/kubernetes/ingress-nginx/releases
 helm repo update
-helm upgrade --reset-values --namespace nginx-ingress -f nginx-values.yaml nginx-ingress stable/nginx-ingress --dry-run
+helm upgrade --reset-values --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx --dry-run
 
 # upgrade cert-manager
 # https://github.com/jetstack/cert-manager/releases
 helm repo update
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.1/cert-manager.crds.yaml
 helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset-values --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --dry-run
 
 # upgrade dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.3/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.1.0/aio/deploy/recommended.yaml
 
 # upgrade kubecost
 helm repo update
@@ -67,7 +66,7 @@ helm upgrade goldilocks fairwinds-stable/goldilocks --namespace goldilocks --res
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl apply -f https://download.elastic.co/downloads/eck/1.2.1/all-in-one.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.3.1/all-in-one.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
