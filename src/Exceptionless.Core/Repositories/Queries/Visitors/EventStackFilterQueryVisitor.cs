@@ -97,8 +97,8 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var groupNode = node.GetGroupNode();
 
-            // check to see if we already inverted the group
-            if (groupNode.Data.ContainsKey("@IsInverted"))
+            // check to see if we already inverted a higher group
+            if (node.GetParent(n => n.Data.ContainsKey("@IsInverted")) != null)
                 return;
 
             var referencedFields = await GetReferencedFieldsQueryVisitor.RunAsync(groupNode, context);
@@ -123,8 +123,41 @@ namespace Exceptionless.Core.Repositories.Queries {
             groupNode.Data["@IsInverted"] = true;
         }
 
-        public override void Visit(TermRangeNode node, IQueryVisitorContext context) {
-            ApplyFilter(node, context);
+        public override async Task VisitAsync(TermRangeNode node, IQueryVisitorContext context) {
+            var filteredNode = ApplyFilter(node, context);
+
+            if (QueryMode != EventStackFilterQueryMode.InvertedStacks)
+                return;
+
+            if (_stackNonInvertedFields.Contains(filteredNode.Field))
+                return;
+
+            var groupNode = node.GetGroupNode();
+
+            // check to see if we already inverted a higher group
+            if (node.GetParent(n => n.Data.ContainsKey("@IsInverted")) != null)
+                return;
+
+            var referencedFields = await GetReferencedFieldsQueryVisitor.RunAsync(groupNode, context);
+            if (referencedFields.Any(f => _stackNonInvertedFields.Contains(f))) {
+                // if we have referenced fields that are on the list of non-inverted fields and the operator is an OR then its an issue, mark invert unsuccessful
+                if (node.GetOperator(context) == GroupOperator.Or) {
+                    IsInvertSuccessful = false;
+                    return;
+                }
+
+                node.IsNegated = node.IsNegated.HasValue ? !node.IsNegated : true;
+                return;
+            }
+
+            // negate the entire group
+            if (groupNode.Left != null) {
+                groupNode.IsNegated = groupNode.IsNegated.HasValue ? !groupNode.IsNegated : true;
+                if (groupNode.Right != null)
+                    groupNode.HasParens = true;
+            }
+
+            groupNode.Data["@IsInverted"] = true;
         }
 
         public override void Visit(ExistsNode node, IQueryVisitorContext context) {
@@ -253,6 +286,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         public static async Task<EventStackFilterQueryResult> RunAsync(IQueryNode node, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
             var visitor = new EventStackFilterQueryVisitor(queryMode);
             var stackNode = await visitor.AcceptAsync(node, context).AnyContext();
+            await new StripEmptyParensVisitor().VisitAsync(stackNode, context).AnyContext();
             var result = await GenerateQueryVisitor.RunAsync(stackNode, context).AnyContext();
 
             return new EventStackFilterQueryResult {
@@ -293,5 +327,37 @@ namespace Exceptionless.Core.Repositories.Queries {
         Stacks,
         InvertedStacks,
         Events
+    }
+
+    public class StripEmptyParensVisitor : ChainableQueryVisitor {
+        public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
+            if (node.Left == null && node.Right == null) {
+                if (node.HasParens)
+                    node.HasParens = false;
+
+                var parent = node.Parent as GroupNode;
+                if (parent != null) {
+                    if (parent.Left == node)
+                        parent.Left = null;
+                    else if (parent.Right == node)
+                        parent.Right = null;
+                }
+            }
+
+            await base.VisitAsync(node, context).AnyContext();
+
+            if (node.Left == null && node.Right == null) {
+                if (node.HasParens)
+                    node.HasParens = false;
+
+                var parent = node.Parent as GroupNode;
+                if (parent != null) {
+                    if (parent.Left == node)
+                        parent.Left = null;
+                    else if (parent.Right == node)
+                        parent.Right = null;
+                }
+            }
+        }
     }
 }

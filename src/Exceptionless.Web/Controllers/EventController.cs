@@ -34,6 +34,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/events")]
@@ -89,17 +90,18 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<CountResult>> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null) {
+        public async Task<ActionResult<CountResult>> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
             if (organizations.Count(o => !o.IsSuspended) == 0)
                 return Ok(CountResult.Empty);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
             var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-            return await GetCountImplAsync(sf, ti, filter, aggregations);
+            return await CountInternalAsync(sf, ti, filter, aggregations, mode);
         }
 
         /// <summary>
@@ -110,10 +112,11 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<CountResult>> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null) {
+        public async Task<ActionResult<CountResult>> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null) {
             var organization = await GetOrganizationAsync(organizationId);
             if (organization == null)
                 return NotFound();
@@ -123,7 +126,7 @@ namespace Exceptionless.Web.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
             var sf = new AppFilter(organization);
-            return await GetCountImplAsync(sf, ti, filter, aggregations);
+            return await CountInternalAsync(sf, ti, filter, aggregations, mode);
         }
 
         /// <summary>
@@ -134,10 +137,11 @@ namespace Exceptionless.Web.Controllers {
         /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
         /// <response code="400">Invalid filter.</response>
         [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null) {
+        public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null) {
             var project = await GetProjectAsync(projectId);
             if (project == null)
                 return NotFound();
@@ -151,35 +155,7 @@ namespace Exceptionless.Web.Controllers {
 
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
             var sf = new AppFilter(project, organization);
-            return await GetCountImplAsync(sf, ti, filter, aggregations);
-        }
-
-        private async Task<ActionResult<CountResult>> GetCountImplAsync(AppFilter sf, TimeInfo ti, string filter = null, string aggregations = null) {
-            var pr = await _validator.ValidateQueryAsync(filter);
-            if (!pr.IsValid)
-                return BadRequest(pr.Message);
-
-            var far = await _validator.ValidateAggregationsAsync(aggregations);
-            if (!far.IsValid)
-                return BadRequest(far.Message);
-
-            sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
-            var query = new RepositoryQuery<PersistentEvent>()
-                .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
-                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
-                .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-
-            CountResult result;
-            try {
-                result = await _repository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations));
-            } catch (Exception ex) {
-                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
-
-                return BadRequest("An error has occurred. Please check your search filter.");
-            }
-
-            return Ok(result);
+            return await CountInternalAsync(sf, ti, filter, aggregations, mode);
         }
 
         /// <summary>
@@ -242,6 +218,38 @@ namespace Exceptionless.Web.Controllers {
             return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
         }
 
+        private async Task<ActionResult<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string aggregations = null, string mode = null) {
+            var pr = await _validator.ValidateQueryAsync(filter);
+            if (!pr.IsValid)
+                return BadRequest(pr.Message);
+
+            var far = await _validator.ValidateAggregationsAsync(aggregations);
+            if (!far.IsValid)
+                return BadRequest(far.Message);
+
+            sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
+
+            if (mode == "stack_new")
+                filter = AddFirstOccurrenceFilter(ti.Range, filter);
+
+            var query = new RepositoryQuery<PersistentEvent>()
+                .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
+                .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
+
+            CountResult result;
+            try {
+                result = await _repository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations));
+            } catch (Exception ex) {
+                using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                    _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
+
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
+            return Ok(result);
+        }
+
         private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, string after = null, bool usesPremiumFeatures = false) {
             page = GetPage(page);
             limit = GetLimit(limit);
@@ -291,6 +299,9 @@ namespace Exceptionless.Web.Controllers {
                             _ => null
                         };
 
+                        if (mode == "stack_new")
+                            filter = AddFirstOccurrenceFilter(ti.Range, filter);
+
                         var countResponse = await _repository.CountAsync(q => q
                             .SystemFilter(systemFilter)
                             .FilterExpression(filter)
@@ -320,6 +331,36 @@ namespace Exceptionless.Web.Controllers {
 
                 return BadRequest(message);
             }
+        }
+
+        private string AddFirstOccurrenceFilter(DateTimeRange timeRange, string filter) {
+            bool inverted = false;
+            if (filter != null && filter.StartsWith("@!")) {
+                inverted = true;
+                filter = filter.Substring(2);
+            }
+
+            var sb = new StringBuilder();
+            if (inverted)
+                sb.Append("@!");
+
+            sb.Append("first_occurrence:[");
+            sb.Append((long)timeRange.UtcStart.Subtract(DateTime.UnixEpoch).TotalMilliseconds);
+            sb.Append(" TO ");
+            sb.Append((long)timeRange.UtcEnd.Subtract(DateTime.UnixEpoch).TotalMilliseconds);
+            sb.Append("]");
+
+            if (String.IsNullOrEmpty(filter))
+                return sb.ToString();
+
+            bool isGrouped = filter.StartsWith('(') && filter.EndsWith(')');
+
+            if (isGrouped)
+                sb.Append(filter);
+            else
+                sb.Append("(").Append(filter).Append(")");
+
+            return sb.ToString();
         }
 
         private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int page, int limit, string after, bool useSearchAfter) {

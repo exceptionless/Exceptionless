@@ -593,8 +593,24 @@ namespace Exceptionless.Tests.Controllers {
 
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventControllerTests>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
             const string filter = "(status:open OR status:regressed)";
             const string time = "last week";
+
+            _logger.LogInformation("Running inverted");
+            var invertedResults = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", "@!" + filter)
+                .QueryString("time", time)
+                .QueryString("mode", "stack_new")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, invertedResults.Count);
+
+            _logger.LogInformation("Running normal");
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
@@ -605,12 +621,14 @@ namespace Exceptionless.Tests.Controllers {
             );
 
             Assert.Equal(2, results.Count);
-            
+
+            _logger.LogInformation("Running normal count");
             var countResult = await SendRequestAsAsync<CountResult>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events", "count")
                 .QueryString("filter", filter)
                 .QueryString("time", time)
+                .QueryString("mode", "stack_new")
                 .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
                 .StatusCodeShouldBeOk()
             );
@@ -618,16 +636,16 @@ namespace Exceptionless.Tests.Controllers {
             var dateAgg = countResult.Aggregations.DateHistogram("date_date");
             double dateAggStackCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
             double dateAggEventCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
-            Assert.Equal(1, dateAggStackCount);
-            Assert.Equal(1, dateAggEventCount);
+            Assert.Equal(2, dateAggStackCount);
+            Assert.Equal(2, dateAggEventCount);
             
             var total = countResult.Aggregations.Sum("sum_count")?.Value;
             double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
             
-            Assert.Equal(1, total);
-            Assert.Equal(0, newTotal);
-            Assert.Equal(1, uniqueTotal);
+            Assert.Equal(2, total);
+            Assert.Equal(1, newTotal);
+            Assert.Equal(2, uniqueTotal);
         }
         
         private async Task CreateStacksAndEventsAsync() {

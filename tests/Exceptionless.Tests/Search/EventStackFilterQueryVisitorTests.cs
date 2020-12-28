@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Repositories.Queries;
+﻿using System;
+using Exceptionless.Core.Repositories.Queries;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,9 +17,10 @@ namespace Exceptionless.Tests.Search {
         [InlineData("blah:true (status:fixed OR status:open)", "(status:fixed OR status:open)", "NOT (status:fixed OR status:open)", "blah:true")]
         [InlineData("blah:true", "", "", "blah:true")]
         [InlineData("type:session", "type:session", "type:session", "type:session")]
-        [InlineData("(organization:123 AND type:log) AND (blah:true (status:fixed OR status:open))", "(organization:123 AND type:log) AND ((status:fixed OR status:open))", "(organization:123 AND type:log) AND (NOT (status:fixed OR status:open))", "(organization:123 AND type:log) AND (blah:true )")]
-        [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635)", "project:123 (status:open OR status:regressed)", "project:123 NOT (status:open OR status:regressed)", "project:123  (ref.session:5f3dce2668de920001466635)")]
-        [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635 OR project:234)", "project:123 (status:open OR status:regressed) (project:234)", "project:123 NOT (status:open OR status:regressed) (project:234)", "project:123  (ref.session:5f3dce2668de920001466635 OR project:234)")]
+        [InlineData("(organization:123 AND type:log) AND (blah:true (status:fixed OR status:open))", "(organization:123 AND type:log) AND ((status:fixed OR status:open))", "(organization:123 AND type:log) AND (NOT (status:fixed OR status:open))", "(organization:123 AND type:log) AND (blah:true)")]
+        [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635)", "project:123 (status:open OR status:regressed)", "project:123 NOT (status:open OR status:regressed)", "project:123 (ref.session:5f3dce2668de920001466635)")]
+        [InlineData("project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635 OR project:234)", "project:123 (status:open OR status:regressed) (project:234)", "project:123 NOT (status:open OR status:regressed) (project:234)", "project:123 (ref.session:5f3dce2668de920001466635 OR project:234)")]
+        [InlineData("first_occurrence:[1608854400000 TO 1609188757249] AND ((status:open OR status:regressed))", "first_occurrence:[1608854400000 TO 1609188757249] AND ((status:open OR status:regressed))", "NOT (first_occurrence:[1608854400000 TO 1609188757249] AND ((status:open OR status:regressed)))", "")]
         public void GetStackQuery(string filter, string expectedStackFilter, string expectedInvertedStackFilter, string expectedEventFilter) {
             Log.SetLogLevel<EventStackFilterQueryVisitor>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
