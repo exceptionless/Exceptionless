@@ -114,9 +114,9 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             // negate the entire group
-            if (groupNode.Left != null) {
+            if (groupNode.Left != null || groupNode.Right != null) {
                 groupNode.IsNegated = groupNode.IsNegated.HasValue ? !groupNode.IsNegated : true;
-                if (groupNode.Right != null)
+                if (groupNode.Right != null && groupNode.Left != null)
                     groupNode.HasParens = true;
             }
 
@@ -331,6 +331,17 @@ namespace Exceptionless.Core.Repositories.Queries {
 
     public class StripEmptyParensVisitor : ChainableQueryVisitor {
         public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
+            CleanNode(node);
+
+            await base.VisitAsync(node, context).AnyContext();
+
+            CleanNode(node);
+        }
+
+        private void CleanNode(GroupNode node) {
+            if (node.Left != null && node.Right != null)
+                return;
+
             if (node.Left == null && node.Right == null) {
                 if (node.HasParens)
                     node.HasParens = false;
@@ -342,20 +353,14 @@ namespace Exceptionless.Core.Repositories.Queries {
                     else if (parent.Right == node)
                         parent.Right = null;
                 }
-            }
+            } else if (node.HasParens) {
+                var leftNode = node.Left as GroupNode;
+                var rightNode = node.Right as GroupNode;
 
-            await base.VisitAsync(node, context).AnyContext();
-
-            if (node.Left == null && node.Right == null) {
-                if (node.HasParens)
+                if (leftNode != null && leftNode.HasParens) {
                     node.HasParens = false;
-
-                var parent = node.Parent as GroupNode;
-                if (parent != null) {
-                    if (parent.Left == node)
-                        parent.Left = null;
-                    else if (parent.Right == node)
-                        parent.Right = null;
+                } else if (rightNode != null && rightNode.HasParens) {
+                    node.HasParens = false;
                 }
             }
         }

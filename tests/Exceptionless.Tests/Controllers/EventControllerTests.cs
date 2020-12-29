@@ -595,6 +595,7 @@ namespace Exceptionless.Tests.Controllers {
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventControllerTests>(LogLevel.Trace);
             Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
             const string filter = "(status:open OR status:regressed)";
             const string time = "last week";
 
