@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
+using Foundatio.Parsers.LuceneQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -87,12 +88,16 @@ namespace Exceptionless.Core.Repositories.Queries {
                 var systemFilterQuery = GetSystemFilterQuery(ctx);
                 systemFilterQuery.FilterExpression(query);
                 var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
+                if (isStackIdsNegated)
+                    systemFilterQuery.AddCollectionOptionValue("IsStackIdsNegated", true);
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertSuccessful)) {
                     isStackIdsNegated = !isStackIdsNegated;
                     query = isStackIdsNegated ? invertedStackFilter.Query : stackFilter.Query;
                     systemFilterQuery.FilterExpression(query);
                     softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
+                    if (isStackIdsNegated)
+                        systemFilterQuery.AddCollectionOptionValue("IsStackIdsNegated", true);
                     results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 }
 

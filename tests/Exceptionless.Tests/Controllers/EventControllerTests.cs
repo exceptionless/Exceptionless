@@ -599,7 +599,7 @@ namespace Exceptionless.Tests.Controllers {
             const string filter = "(status:open OR status:regressed)";
             const string time = "last week";
 
-            _logger.LogInformation("Running inverted");
+            _logger.LogInformation("Running non-inverted query");
             var invertedResults = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
@@ -611,7 +611,7 @@ namespace Exceptionless.Tests.Controllers {
 
             Assert.Equal(2, invertedResults.Count);
 
-            _logger.LogInformation("Running normal");
+            _logger.LogInformation("Running inverted query");
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")

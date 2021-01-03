@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             var index = ctx.Options.GetElasticIndex();
-            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index);
+            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index, ctx);
             string field = shouldApplyRetentionFilter ? GetDateField(index) : null;
             
             if (sfq.Stack != null) {
@@ -161,9 +161,13 @@ namespace Exceptionless.Core.Repositories.Queries {
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
         
-        private bool ShouldApplyRetentionFilter(IIndex index) {
+        private bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new() {
             if (index == null)
                 throw new ArgumentNullException(nameof(index));
+
+            bool isInverted = ctx.Source.Values.Contains("IsStackIdsNegated");
+            if (isInverted)
+                return false;
             
             var indexType = index.GetType();
             if (indexType == typeof(StackIndex))
