@@ -260,6 +260,10 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CanGetNewStackMode() {
             await CreateStacksAndEventsAsync();
 
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")

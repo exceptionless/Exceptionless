@@ -22,6 +22,13 @@ namespace Exceptionless.Core.Repositories {
             query.Values.Set(EnforceEventStackFilterKey, shouldEnforceEventStackFilter);
             return query;
         }
+
+        internal const string EventStackFilterInvertedKey = "@IsStackFilterInverted";
+
+        public static T EventStackFilterInverted<T>(this T query, bool eventStackFilterInverted = true) where T : IRepositoryQuery {
+            query.Values.Set(EventStackFilterInvertedKey, eventStackFilterInverted);
+            return query;
+        }
     }
 }
 
@@ -29,6 +36,10 @@ namespace Exceptionless.Core.Repositories.Options {
     public static class ReadEventStackFilterQueryExtensions {
         public static bool ShouldEnforceEventStackFilter(this IRepositoryQuery query) {
             return query.SafeGetOption<bool>(EventStackFilterQueryExtensions.EnforceEventStackFilterKey, false);
+        }
+
+        public static bool IsEventStackFilterInverted(this IRepositoryQuery query) {
+            return query.SafeGetOption<bool>(EventStackFilterQueryExtensions.EventStackFilterInvertedKey, false);
         }
     }
 }
@@ -85,19 +96,17 @@ namespace Exceptionless.Core.Repositories.Queries {
             _logger.LogTrace("Stack filter: {StackFilter} Invert Success: {InvertSuccess} Inverted: {InvertedStackFilter}", stackFilter.Query, invertedStackFilter.IsInvertSuccessful, invertedStackFilter.Query);
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
-                var systemFilterQuery = GetSystemFilterQuery(ctx);
+                var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
                 systemFilterQuery.FilterExpression(query);
                 var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
-                if (isStackIdsNegated)
-                    systemFilterQuery.AddCollectionOptionValue("IsStackIdsNegated", true);
+                systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertSuccessful)) {
                     isStackIdsNegated = !isStackIdsNegated;
                     query = isStackIdsNegated ? invertedStackFilter.Query : stackFilter.Query;
                     systemFilterQuery.FilterExpression(query);
                     softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
-                    if (isStackIdsNegated)
-                        systemFilterQuery.AddCollectionOptionValue("IsStackIdsNegated", true);
+                    systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                     results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 }
 
@@ -123,7 +132,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             ctx.Source.FilterExpression(eventsResult.Query);
         }
 
-        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context) {
+        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context, bool isStackIdsNegated) {
             var builderContext = context as IQueryBuilderContext;
             var systemFilter = builderContext?.Source.GetSystemFilter();
             var systemFilterQuery = systemFilter?.GetQuery().Clone();
@@ -140,6 +149,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             foreach (var range in systemFilterQuery.GetDateRanges() ?? Enumerable.Empty<DateRange>()) {
                 if (range.Field == _inferredEventDateField || range.Field == "date") {
                     range.Field = _inferredStackLastOccurrenceField;
+                    if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
+                        range.StartDate = null;
                     range.EndDate = null;
                 }
             }
