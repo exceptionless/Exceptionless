@@ -253,7 +253,7 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Equal(3, results.Count);
+            Assert.Equal(2, results.Count);
         }
 
         [Fact]

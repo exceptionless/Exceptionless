@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (String.IsNullOrEmpty(query) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            _logger.LogTrace("Stack filter: {StackFilter} Invert Success: {InvertSuccess} Inverted: {InvertedStackFilter}", stackFilter.Query, invertedStackFilter.IsInvertSuccessful, invertedStackFilter.Query);
+            _logger.LogTrace("Stack filter: {StackFilter} Invert Success: {InvertSuccess} Inverted: {InvertedStackFilter} Is Negated: {IsNegated} Query: {query}", stackFilter.Query, invertedStackFilter.IsInvertSuccessful, invertedStackFilter.Query, isStackIdsNegated, query);
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
                 var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
@@ -102,6 +102,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertSuccessful)) {
+                    _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", query, results.Total);
                     isStackIdsNegated = !isStackIdsNegated;
                     query = isStackIdsNegated ? invertedStackFilter.Query : stackFilter.Query;
                     systemFilterQuery.FilterExpression(query);

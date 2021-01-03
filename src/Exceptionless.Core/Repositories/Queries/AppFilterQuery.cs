@@ -165,12 +165,9 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (index == null)
                 throw new ArgumentNullException(nameof(index));
 
-            if (ctx.Source.IsEventStackFilterInverted())
-                return false;
-            
             var indexType = index.GetType();
             if (indexType == typeof(StackIndex))
-                return true;
+                return !ctx.Source.IsEventStackFilterInverted();
 
             if (indexType == typeof(EventIndex))
                 return true;
