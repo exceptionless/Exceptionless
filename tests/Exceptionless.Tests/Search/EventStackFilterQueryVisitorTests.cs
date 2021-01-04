@@ -117,6 +117,12 @@ namespace Exceptionless.Tests.Search {
                 InvertedStack = "NOT (first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed))",
                 Event = ""
             }};
+            yield return new object[] { new FilterScenario {
+                Source = "first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 (status:open OR status:regressed))",
+                Stack = "first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 (status:open OR status:regressed))",
+                InvertedStack = "NOT first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 NOT (status:open OR status:regressed))",
+                Event = "(project:537650f3b77efe23a47914f4)"
+            }};
         }
     }
 

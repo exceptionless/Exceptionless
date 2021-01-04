@@ -240,6 +240,7 @@ namespace Exceptionless.Tests.Controllers {
 
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
             string projectId = SampleDataService.FREE_PROJECT_ID;
 

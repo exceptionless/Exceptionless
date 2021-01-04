@@ -93,7 +93,10 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (String.IsNullOrEmpty(query) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            _logger.LogTrace("Stack filter: {StackFilter} Invert Success: {InvertSuccess} Inverted: {InvertedStackFilter} Is Negated: {IsNegated} Query: {query}", stackFilter.Query, invertedStackFilter.IsInvertSuccessful, invertedStackFilter.Query, isStackIdsNegated, query);
+            if (invertedStackFilter.IsInvertSuccessful)
+                _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Query, invertedStackFilter.Query);
+            else
+                _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: <None>", filter, stackFilter.Query);
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
                 var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
@@ -101,7 +104,8 @@ namespace Exceptionless.Core.Repositories.Queries {
                 var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
-                if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertSuccessful)) {
+                
+                if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertSuccessful)) { 
                     _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", query, results.Total);
                     isStackIdsNegated = !isStackIdsNegated;
                     query = isStackIdsNegated ? invertedStackFilter.Query : stackFilter.Query;
