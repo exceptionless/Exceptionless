@@ -1,4 +1,5 @@
-﻿using System.DirectoryServices;
+﻿# pragma warning disable CA1416
+using System.DirectoryServices;
 using Exceptionless.Core.Configuration;
 
 namespace Exceptionless.Core.Authentication {
@@ -61,3 +62,4 @@ namespace Exceptionless.Core.Authentication {
         }
     }
 }
+# pragma warning restore CA1416
