@@ -121,7 +121,7 @@ namespace Exceptionless.Tests {
 
             foreach (var builder in eventBuilders) {
                 var data = builder.Build();
-                events.Add(data.Event);
+                events.AddRange(data.Events);
                 stacks.Add(data.Stack);
             }
 

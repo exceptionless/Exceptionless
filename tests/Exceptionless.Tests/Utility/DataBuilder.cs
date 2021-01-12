@@ -77,7 +77,6 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder Id(string id) {
             _event.Id = id;
-
             return this;
         }
 
@@ -373,9 +372,9 @@ namespace Exceptionless.Tests.Utility {
         }
 
         private bool _isBuilt = false;
-        public (Stack Stack, PersistentEvent Event) Build() {
-            if (_isBuilt)
-                return (_stack, _event);
+        public (Stack Stack, PersistentEvent[] Events) Build() {
+            if (_isBuilt) 
+                return (_stack, BuildEvents(_stack, _event));
 
             if (String.IsNullOrEmpty(_event.OrganizationId))
                 _event.OrganizationId = SampleDataService.TEST_ORG_ID;
@@ -469,8 +468,26 @@ namespace Exceptionless.Tests.Utility {
             _event.StackId = _stack.Id;
 
             _isBuilt = true;
+            return (_stack, BuildEvents(_stack, _event));
+        }
 
-            return (_stack, _event);
+        private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev) {
+            var events = new List<PersistentEvent>(stack.TotalOccurrences) { ev };
+            if (stack.TotalOccurrences <= 1) 
+                return events.ToArray();
+            
+            int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / stack.TotalOccurrences;
+            for (int index = 0; index < stack.TotalOccurrences - 1; index++) {
+                var clone = ev.DeepClone();
+                clone.Id = null;
+                clone.IsFirstOccurrence = !ev.IsFirstOccurrence && index == 0;
+                if (interval > 0)
+                    clone.Date = new DateTimeOffset(stack.FirstOccurrence.AddMilliseconds(interval * index), ev.Date.Offset);
+
+                events.Add(clone);
+            }
+
+            return events.ToArray();
         }
 
         private const string _sampleRequestInfo = @"{
