@@ -33,6 +33,7 @@ namespace Exceptionless.Tests.Utility {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly ISerializer _serializer;
         private readonly ICollection<Action<Stack>> _stackMutations;
+        private int _additionalEventsToCreate = 0;
         private PersistentEvent _event = new PersistentEvent();
         private Stack _stack = null;
         private EventDataBuilder _stackEventBuilder;
@@ -293,7 +294,17 @@ namespace Exceptionless.Tests.Utility {
 
             return this;
         }
+        
+        public EventDataBuilder Create(int additionalOccurrences) {
+            _additionalEventsToCreate = additionalOccurrences;
+            _stackMutations.Add(s => {
+                if (s.TotalOccurrences <= additionalOccurrences)
+                    s.TotalOccurrences = additionalOccurrences + 1;
+            });
 
+            return this;
+        }
+        
         public EventDataBuilder FirstOccurrence(DateTime firstOccurrenceUtc) {
             _event.CreatedUtc = firstOccurrenceUtc;
             _stackMutations.Add(s => s.FirstOccurrence = firstOccurrenceUtc);
@@ -472,15 +483,14 @@ namespace Exceptionless.Tests.Utility {
         }
 
         private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev) {
-            var events = new List<PersistentEvent>(stack.TotalOccurrences) { ev };
-            if (stack.TotalOccurrences <= 1) 
+            var events = new List<PersistentEvent>(_additionalEventsToCreate) { ev };
+            if (_additionalEventsToCreate <= 0) 
                 return events.ToArray();
             
-            int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / stack.TotalOccurrences;
+            int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / _additionalEventsToCreate;
             for (int index = 0; index < stack.TotalOccurrences - 1; index++) {
                 var clone = ev.DeepClone();
                 clone.Id = null;
-                clone.IsFirstOccurrence = !ev.IsFirstOccurrence && index == 0;
                 if (interval > 0)
                     clone.Date = new DateTimeOffset(stack.FirstOccurrence.AddMilliseconds(interval * index), ev.Date.Offset);
 
