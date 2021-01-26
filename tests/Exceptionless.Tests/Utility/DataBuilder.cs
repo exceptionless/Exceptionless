@@ -34,7 +34,7 @@ namespace Exceptionless.Tests.Utility {
         private readonly ISerializer _serializer;
         private readonly ICollection<Action<Stack>> _stackMutations;
         private int _additionalEventsToCreate = 0;
-        private PersistentEvent _event = new PersistentEvent();
+        private readonly PersistentEvent _event = new PersistentEvent();
         private Stack _stack = null;
         private EventDataBuilder _stackEventBuilder;
         private bool _isFirstOccurrenceSet = false;

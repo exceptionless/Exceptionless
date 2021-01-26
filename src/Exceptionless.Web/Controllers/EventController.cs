@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -96,7 +96,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<ActionResult<CountResult>> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count(o => !o.IsSuspended) == 0)
+            if (organizations.All(o => o.IsSuspended))
                 return Ok(CountResult.Empty);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
@@ -210,7 +210,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count(o => !o.IsSuspended) == 0)
+            if (organizations.All(o => o.IsSuspended))
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
@@ -348,7 +348,7 @@ namespace Exceptionless.Web.Controllers {
             sb.Append((long)timeRange.UtcStart.Subtract(DateTime.UnixEpoch).TotalMilliseconds);
             sb.Append(" TO ");
             sb.Append((long)timeRange.UtcEnd.Subtract(DateTime.UnixEpoch).TotalMilliseconds);
-            sb.Append("]");
+            sb.Append(']');
 
             if (String.IsNullOrEmpty(filter))
                 return sb.ToString();
@@ -358,7 +358,7 @@ namespace Exceptionless.Web.Controllers {
             if (isGrouped)
                 sb.Append(filter);
             else
-                sb.Append("(").Append(filter).Append(")");
+                sb.Append('(').Append(filter).Append(')');
 
             return sb.ToString();
         }
@@ -485,7 +485,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
-            if (organizations.Count(o => !o.IsSuspended) == 0)
+            if (organizations.All(o => o.IsSuspended))
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
@@ -542,7 +542,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count(o => !o.IsSuspended) == 0)
+            if (organizations.All(o => o.IsSuspended))
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
@@ -601,7 +601,7 @@ namespace Exceptionless.Web.Controllers {
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
         public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
             var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-            if (organizations.Count(o => !o.IsSuspended) == 0)
+            if (organizations.All(o => o.IsSuspended))
                 return Ok(EmptyModels);
 
             var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));

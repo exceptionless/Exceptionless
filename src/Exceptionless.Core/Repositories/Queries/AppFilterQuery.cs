@@ -107,7 +107,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             string field = shouldApplyRetentionFilter ? GetDateField(index) : null;
             
             if (sfq.Stack != null) {
-                var stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
+                string stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
                 if (organization != null) {
                     if (shouldApplyRetentionFilter)
