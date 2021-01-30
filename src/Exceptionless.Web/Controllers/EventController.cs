@@ -868,7 +868,7 @@ namespace Exceptionless.Web.Controllers {
 
             var project = Request.GetProject();
             if (!String.Equals(project?.Id, projectId)) {
-                _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
+                _logger.ProjectRouteDoesNotMatch(project?.Id, projectId);
 
                 project = await GetProjectAsync(projectId);
 
@@ -1119,7 +1119,7 @@ namespace Exceptionless.Web.Controllers {
 
             var project = Request.GetProject();
             if (!String.Equals(project?.Id, projectId)) {
-                _logger.LogInformation("Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}", project?.Id, projectId);
+                _logger.ProjectRouteDoesNotMatch(project?.Id, projectId);
 
                 project = await GetProjectAsync(projectId);
 
