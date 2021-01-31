@@ -143,7 +143,7 @@ namespace Exceptionless.App.Controllers.API {
                 if (results.Documents.Any(h => h.OrganizationId != organizationId))
                     throw new ArgumentException("All OrganizationIds must be the same.");
 
-                _logger.LogInformation("Removing {Count} zapier urls matching: {Url}", results.Documents.Count, targetUrl);
+                _logger.RemovingZapierUrls(results.Documents.Count, targetUrl);
                 await _repository.RemoveAsync(results.Documents);
             }
 

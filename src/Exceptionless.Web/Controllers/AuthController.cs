@@ -149,7 +149,7 @@ namespace Exceptionless.Web.Controllers {
                 await _cache.RemoveAsync(userLoginAttemptsCacheKey);
                 await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
-                _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
+                _logger.UserLoggedIn(user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
             }
         }
@@ -265,7 +265,7 @@ namespace Exceptionless.Web.Controllers {
                 if (!user.IsEmailAddressVerified)
                     await _mailer.SendUserEmailVerifyAsync(user);
 
-                _logger.LogInformation("{EmailAddress} signed up.", user.EmailAddress);
+                _logger.UserSignedUp(user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
             }
         }
@@ -362,7 +362,7 @@ namespace Exceptionless.Web.Controllers {
 
                 await ResetUserTokensAsync(CurrentUser, nameof(RemoveExternalLoginAsync));
 
-                _logger.LogInformation("{EmailAddress} removed an external login: {ProviderName}", CurrentUser.EmailAddress, providerName);
+                _logger.UserRemovedExternalLogin(CurrentUser.EmailAddress, providerName);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
             }
         }
@@ -412,7 +412,7 @@ namespace Exceptionless.Web.Controllers {
                 if (attempts <= 0)
                     await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
-                _logger.LogInformation("{EmailAddress} changed their password.", CurrentUser.EmailAddress);
+                _logger.UserChangedPassword(CurrentUser.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
             }
         }
@@ -471,7 +471,7 @@ namespace Exceptionless.Web.Controllers {
                 await _userRepository.SaveAsync(user, o => o.Cache());
 
                 await _mailer.SendUserPasswordResetAsync(user);
-                _logger.LogInformation("{EmailAddress} forgot their password.", user.EmailAddress);
+                _logger.UserForgotPassword(user.EmailAddress);
                 return Ok();
             }
         }
@@ -529,7 +529,7 @@ namespace Exceptionless.Web.Controllers {
                 if (attempts <= 0)
                     await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
-                _logger.LogInformation("{EmailAddress} reset their password.", user.EmailAddress);
+                _logger.UserResetPassword(user.EmailAddress);
                 return Ok();
             }
         }
@@ -557,7 +557,7 @@ namespace Exceptionless.Web.Controllers {
             await _userRepository.SaveAsync(user, o => o.Cache());
 
             using (_logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext)))
-                _logger.LogInformation("{EmailAddress} canceled the reset password", user.EmailAddress);
+                _logger.UserCanceledResetPassword(user.EmailAddress);
 
             return Ok();
         }
@@ -616,7 +616,7 @@ namespace Exceptionless.Web.Controllers {
                 if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                     await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user);
 
-                _logger.LogInformation("{EmailAddress} logged in.", user.EmailAddress);
+                _logger.UserLoggedIn(user.EmailAddress);
                 return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
             }
         }
@@ -701,18 +701,18 @@ namespace Exceptionless.Web.Controllers {
                 var organization = await _organizationRepository.GetByInviteTokenAsync(token);
                 var invite = organization?.GetInvite(token);
                 if (organization == null || invite == null) {
-                    _logger.LogInformation("Unable to add the invited user {EmailAddress}. Invalid invite token: {Token}", user.EmailAddress, token);
+                    _logger.UnableToAddInvitedUserInvalidToken(user.EmailAddress, token);
                     return;
                 }
 
                 if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
-                    _logger.LogInformation("Marking the invited users email address {EmailAddress} as verified.", user.EmailAddress);
+                    _logger.MarkedInvitedUserAsVerified(user.EmailAddress);
                     user.MarkEmailAddressVerified();
                     await _userRepository.SaveAsync(user, o => o.Cache());
                 }
 
                 if (!user.OrganizationIds.Contains(organization.Id)) {
-                    _logger.LogInformation("{EmailAddress} joined from invite.", user.EmailAddress);
+                    _logger.UserJoinedFromInvite(user.EmailAddress);
                     user.OrganizationIds.Add(organization.Id);
                     await _userRepository.SaveAsync(user, o => o.Cache());
                 }
@@ -732,7 +732,7 @@ namespace Exceptionless.Web.Controllers {
 
                 try {
                     await _userRepository.SaveAsync(user, o => o.Cache());
-                    _logger.LogInformation("Changed password for {EmailAddress}", user.EmailAddress);
+                    _logger.ChangedUserPassword(user.EmailAddress);
                 } catch (Exception ex) {
                     _logger.LogCritical(ex, "Error changing password for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
                     throw;
@@ -744,7 +744,7 @@ namespace Exceptionless.Web.Controllers {
             using (_logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(HttpContext))) {
                 try {
                     long total = await _tokenRepository.RemoveAllByUserIdAsync(user.Id, o => o.ImmediateConsistency(true));
-                    _logger.LogInformation("Removed user {TokenCount} tokens for {EmailAddress}", total, user.EmailAddress);
+                    _logger.RemovedUserTokens(total, user.EmailAddress);
                 } catch (Exception ex) {
                     _logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
                 }

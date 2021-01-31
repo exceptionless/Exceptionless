@@ -180,7 +180,7 @@ namespace Exceptionless.Web.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations) {
             foreach (var organization in organizations) {
                 using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext))) {
-                    _logger.LogInformation("User {User} deleting organization: {OrganizationName}  ({OrganizationId})", CurrentUser.Id, organization.Name, organization.Id);
+                    _logger.UserDeletingOrganization(CurrentUser.Id, organization.Name, organization.Id);
                     await _organizationService.SoftDeleteOrganizationAsync(organization, CurrentUser.Id);
                 }
             }
