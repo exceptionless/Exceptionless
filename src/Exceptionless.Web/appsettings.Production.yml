@@ -19,3 +19,11 @@ EnableAccountCreation: true
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://collector.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
+
+Serilog:
+  MinimumLevel:
+    Default: Warning
+  WriteTo:
+  - Name: Console
+    Args: 
+      theme: "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console"
