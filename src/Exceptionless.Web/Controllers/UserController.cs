@@ -309,7 +309,7 @@ namespace Exceptionless.Web.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<User> values) {
             foreach (var user in values) {
                 long removed = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
-                _logger.LogInformation("Removed {RemovedCount} tokens for user: {UserId}", removed, user.Id);
+                _logger.RemovedTokens(removed, user.Id);
             }
 
             return await base.DeleteModelsAsync(values);
