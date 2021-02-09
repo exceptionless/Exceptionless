@@ -193,7 +193,7 @@ namespace Exceptionless.Web.Controllers {
         protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects) {
             foreach (var project in projects) {
                 using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogInformation("User {User} deleting project: {ProjectName}.", CurrentUser.Id, project.Name);
+                    _logger.UserDeletingProject(CurrentUser.Id, project.Name);
 
                 await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
             }
