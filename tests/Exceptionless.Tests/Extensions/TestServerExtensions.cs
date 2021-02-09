@@ -7,10 +7,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Exceptionless.Tests {
     public static class TestServerExtensions {
-        public static async Task WaitForReadyAsync(this TestServer server, TimeSpan? maxWaitTime = null) {
+        private static bool _alreadyWaited;
+
+        public static async Task WaitForReadyAsync(this TestServer server) {
             var startupContext = server.Services.GetService<StartupActionsContext>();
-            maxWaitTime ??= Debugger.IsAttached ? TimeSpan.FromMinutes(5) :TimeSpan.FromSeconds(5);
-            
+            var maxWaitTime = !_alreadyWaited ? TimeSpan.FromSeconds(30) : TimeSpan.FromSeconds(2);
+            if (Debugger.IsAttached)
+                maxWaitTime = maxWaitTime.Add(TimeSpan.FromMinutes(1));
+
+            _alreadyWaited = true;
+
             var client = server.CreateClient();
             var startTime = DateTime.Now;
             do {
