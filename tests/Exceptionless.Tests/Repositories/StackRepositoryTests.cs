@@ -41,7 +41,7 @@ namespace Exceptionless.Tests.Repositories {
             await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
 
             var appFilter = new AppFilter(organization);
-            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
+            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxPagingDepthLimit()));
             Assert.Equal(2, stackIds.Total);
         }
 

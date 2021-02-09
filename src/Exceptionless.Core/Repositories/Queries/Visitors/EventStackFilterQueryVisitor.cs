@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public EventStackFilterQueryMode QueryMode { get; set; } = EventStackFilterQueryMode.Events;
-        public bool IsInvertSuccessful { get; set; } = true;
+        public bool IsInvertable { get; set; } = true;
         public bool HasStatus { get; set; } = false;
         public bool HasStatusOpen { get; set; } = false;
         public bool HasStackSpecificCriteria { get; set; } = false;
@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (referencedFields.Any(f => _stackNonInvertedFields.Contains(f))) {
                 // if we have referenced fields that are on the list of non-inverted fields and the operator is an OR then its an issue, mark invert unsuccessful
                 if (node.GetOperator(context) == GroupOperator.Or) {
-                    IsInvertSuccessful = false;
+                    IsInvertable = false;
                     return;
                 }
 
@@ -142,7 +142,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (referencedFields.Any(f => _stackNonInvertedFields.Contains(f))) {
                 // if we have referenced fields that are on the list of non-inverted fields and the operator is an OR then its an issue, mark invert unsuccessful
                 if (node.GetOperator(context) == GroupOperator.Or) {
-                    IsInvertSuccessful = false;
+                    IsInvertable = false;
                     return;
                 }
 
@@ -291,7 +291,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             return new EventStackFilterQueryResult {
                 Query = result,
-                IsInvertSuccessful = visitor.IsInvertSuccessful,
+                IsInvertable = visitor.IsInvertable,
                 HasStatus = visitor.HasStatus,
                 HasStatusOpen = visitor.HasStatusOpen,
                 HasStackSpecificCriteria = visitor.HasStackSpecificCriteria,
@@ -316,7 +316,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
     public class EventStackFilterQueryResult {
         public string Query { get; set; }
-        public bool IsInvertSuccessful { get; set; }
+        public bool IsInvertable { get; set; }
         public bool HasStatus { get; set; }
         public bool HasStatusOpen { get; set; }
         public bool HasStackSpecificCriteria { get; set; }

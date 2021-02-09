@@ -80,20 +80,20 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             // queries are the same, no need to allow inverting
             if (invertedStackFilter.Query == stackFilter.Query)
-                invertedStackFilter.IsInvertSuccessful = false;
+                invertedStackFilter.IsInvertable = false;
 
             const int stackIdLimit = 10000;
             string[] stackIds = null;
 
             string query = stackFilter.Query;
-            bool isStackIdsNegated = stackFilter.HasStatusOpen && invertedStackFilter.IsInvertSuccessful && !altInvertRequested;
+            bool isStackIdsNegated = stackFilter.HasStatusOpen && invertedStackFilter.IsInvertable && !altInvertRequested;
             if (isStackIdsNegated)
                 query = invertedStackFilter.Query;
 
             if (String.IsNullOrEmpty(query) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            if (invertedStackFilter.IsInvertSuccessful)
+            if (invertedStackFilter.IsInvertable)
                 _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Query, invertedStackFilter.Query);
             else
                 _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: <None>", filter, stackFilter.Query);
@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 
-                if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertSuccessful)) { 
+                if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertable)) { 
                     _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", query, results.Total);
                     isStackIdsNegated = !isStackIdsNegated;
                     query = isStackIdsNegated ? invertedStackFilter.Query : stackFilter.Query;

@@ -58,40 +58,40 @@ namespace Exceptionless.Tests.Search
         }
         
         [Theory]
-        [InlineData("-type:heartbeat (reference:sessionId OR ref.session:sessionId)", 13000)] // Need project system filter?
-        [InlineData("status:open or status:regressed", 3000)]
-        [InlineData("NOT (status:open or status:regressed)", 10000)]
-        [InlineData("status:fixed", 3000)]
-        [InlineData("NOT status:fixed", 10000)]
-        [InlineData("stack:" + TestConstants.StackId, 1)]
-        [InlineData("-stack:" + TestConstants.StackId, 12999)]
-        [InlineData("stack:" + TestConstants.StackId + " (status:open or status:regressed)", 0)]
-        [InlineData("(stack:" + TestConstants.StackId + " status:open or status:regressed)", 0)]
-        [InlineData("NOT (stack:" + TestConstants.StackId + " status:open or status:regressed)", 13000)]
-        [InlineData("NOT (stack:" + TestConstants.StackId + " status:fixed)", 12999)]
-        public async Task VerifyEventStackFilter(string filter, long total) {
+        [InlineData("-type:heartbeat (reference:sessionId OR ref.session:sessionId)", 13000, true)]
+        [InlineData("status:open OR status:regressed", 3000, true)]
+        [InlineData("NOT (status:open OR status:regressed)", 10000, true)]
+        [InlineData("status:fixed", 3000, true)]
+        [InlineData("NOT status:fixed", 10000, true)]
+        [InlineData("stack:" + TestConstants.StackId, 1, true)]
+        [InlineData("-stack:" + TestConstants.StackId, 12999, true)]
+        [InlineData("stack:" + TestConstants.StackId + " (status:open OR status:regressed)", 0, true)]
+        public async Task VerifyEventStackFilter(string filter, long total, bool isInvertable) {
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
-            
+            const int stackIdLimit = 10000;
+
             var ctx = new ElasticQueryVisitorContext();
             var stackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Stacks, ctx);
             _logger.LogInformation("Finding Filter: {Filter}", stackFilter.Query);
-            var stacks = await _repository.FindAsync(q => q.FilterExpression(stackFilter.Query).OnlyIds());
+            var stacks = await _repository.GetIdsByQueryAsync(q => q.FilterExpression(stackFilter.Query), o => o.PageLimit(stackIdLimit).SoftDeleteMode(SoftDeleteQueryMode.All));
             Assert.Equal(total, stacks.Total);
             
             var invertedStackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.InvertedStacks, ctx);
-            _logger.LogInformation("Finding Inverted Filter: {Filter}", invertedStackFilter.Query);
-            var invertedStacks = await _repository.FindAsync(q => q.FilterExpression(invertedStackFilter.Query).OnlyIds(), o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
-            Assert.Equal(13000 - total, invertedStacks.Total);
+            Assert.Equal(isInvertable, invertedStackFilter.IsInvertable);
 
-            var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
-            while(await stacks.NextPageAsync())
-                stackIds.AddRange(stacks.Hits.Select(h => h.Id));
+            // non-inverted conditions (project, org, stack) must be at beginning of filter
+            // invert will validate this and then just wrap the rest of the query in a NOT (<original>)
 
-            var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id));
-            while (await invertedStacks.NextPageAsync())
-                invertedStackIds.AddRange(invertedStacks.Hits.Select(h => h.Id));
-            
-            Assert.Equal(total, stackIds.Except(invertedStackIds).Count());
+            if (isInvertable) {
+                _logger.LogInformation("Finding Inverted Filter: {Filter}", invertedStackFilter.Query);
+                var invertedStacks = await _repository.GetIdsByQueryAsync(q => q.FilterExpression(invertedStackFilter.Query), o => o.PageLimit(stackIdLimit).SoftDeleteMode(SoftDeleteQueryMode.All));
+                Assert.Equal(13000 - total, invertedStacks.Total);
+
+                var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
+                var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id));
+
+                Assert.Equal(total, stackIds.Except(invertedStackIds).Count());
+            }
         }
     }
 }
