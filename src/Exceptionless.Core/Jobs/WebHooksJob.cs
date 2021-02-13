@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Jobs {
             get => _client ??= new HttpClient();
         }
 
-        public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+        public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, ILoggerFactory? loggerFactory = null) : base(queue, loggerFactory) {
             _projectRepository = projectRepository;
             _slackService = slackService;
             _webHookRepository = webHookRepository;
