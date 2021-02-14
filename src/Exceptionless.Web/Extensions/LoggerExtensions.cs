@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 #nullable enable
 
 namespace Exceptionless.Web.Extensions {
-    public static class LoggerExtensions {
+    internal static class LoggerExtensions {
         
         private static readonly Action<ILogger, string?, string, Exception?> _projectRouteDoesNotMatch =
             LoggerMessage.Define<string?, string>(
