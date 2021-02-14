@@ -7,69 +7,69 @@ namespace Exceptionless.Job {
             if (args.Length > 1)
                 throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 
-            CleanupData = args.Length == 0 || args.Contains("CleanupData", StringComparer.OrdinalIgnoreCase);
+            CleanupData = args.Length == 0 || args.Contains(nameof(CleanupData), StringComparer.OrdinalIgnoreCase);
             if (CleanupData && args.Length != 0)
-                JobName = "CleanupData";
+                JobName = nameof(CleanupData);
 
-            CleanupOrphanedData = args.Length == 0 || args.Contains("CleanupOrphanedData", StringComparer.OrdinalIgnoreCase);
+            CleanupOrphanedData = args.Length == 0 || args.Contains(nameof(CleanupOrphanedData), StringComparer.OrdinalIgnoreCase);
             if (CleanupOrphanedData && args.Length != 0)
-                JobName = "CleanupOrphanedData";
+                JobName = nameof(CleanupOrphanedData);
 
-            CloseInactiveSessions = args.Length == 0 || args.Contains("CloseInactiveSessions", StringComparer.OrdinalIgnoreCase);
+            CloseInactiveSessions = args.Length == 0 || args.Contains(nameof(CloseInactiveSessions), StringComparer.OrdinalIgnoreCase);
             if (CloseInactiveSessions && args.Length != 0)
-                JobName = "CloseInactiveSessions";
+                JobName = nameof(CloseInactiveSessions);
 
-            DailySummary = args.Length == 0 || args.Contains("DailySummary", StringComparer.OrdinalIgnoreCase);
+            DailySummary = args.Length == 0 || args.Contains(nameof(DailySummary), StringComparer.OrdinalIgnoreCase);
             if (DailySummary && args.Length != 0)
-                JobName = "DailySummary";
+                JobName = nameof(DailySummary);
 
-            DataMigration = args.Contains("DataMigration", StringComparer.OrdinalIgnoreCase);
+            DataMigration = args.Contains(nameof(DataMigration), StringComparer.OrdinalIgnoreCase);
             if (DataMigration && args.Length != 0)
-                JobName = "DataMigration";
+                JobName = nameof(DataMigration);
 
-            DownloadGeoipDatabase = args.Length == 0 || args.Contains("DownloadGeoIPDatabase", StringComparer.OrdinalIgnoreCase);
-            if (DownloadGeoipDatabase && args.Length != 0)
-                JobName = "DownloadGeoIPDatabase";
+            DownloadGeoIPDatabase = args.Length == 0 || args.Contains(nameof(DownloadGeoIPDatabase), StringComparer.OrdinalIgnoreCase);
+            if (DownloadGeoIPDatabase && args.Length != 0)
+                JobName = nameof(DownloadGeoIPDatabase);
 
-            EventNotifications = args.Length == 0 || args.Contains("EventNotifications", StringComparer.OrdinalIgnoreCase);
+            EventNotifications = args.Length == 0 || args.Contains(nameof(EventNotifications), StringComparer.OrdinalIgnoreCase);
             if (EventNotifications && args.Length != 0)
-                JobName = "EventNotifications";
+                JobName = nameof(EventNotifications);
 
-            EventPosts = args.Length == 0 || args.Contains("EventPosts", StringComparer.OrdinalIgnoreCase);
+            EventPosts = args.Length == 0 || args.Contains(nameof(EventPosts), StringComparer.OrdinalIgnoreCase);
             if (EventPosts && args.Length != 0)
-                JobName = "EventPosts";
+                JobName = nameof(EventPosts);
 
-            EventUserDescriptions = args.Length == 0 || args.Contains("EventUserDescriptions", StringComparer.OrdinalIgnoreCase);
+            EventUserDescriptions = args.Length == 0 || args.Contains(nameof(EventUserDescriptions), StringComparer.OrdinalIgnoreCase);
             if (EventUserDescriptions && args.Length != 0)
-                JobName = "EventUserDescriptions";
+                JobName = nameof(EventUserDescriptions);
 
-            MailMessage = args.Length == 0 || args.Contains("MailMessage", StringComparer.OrdinalIgnoreCase);
+            MailMessage = args.Length == 0 || args.Contains(nameof(MailMessage), StringComparer.OrdinalIgnoreCase);
             if (MailMessage && args.Length != 0)
-                JobName = "MailMessage";
+                JobName = nameof(MailMessage);
 
-            MaintainIndexes = args.Length == 0 || args.Contains("MaintainIndexes", StringComparer.OrdinalIgnoreCase);
+            MaintainIndexes = args.Length == 0 || args.Contains(nameof(MaintainIndexes), StringComparer.OrdinalIgnoreCase);
             if (MaintainIndexes && args.Length != 0)
-                JobName = "MaintainIndexes";
+                JobName = nameof(MaintainIndexes);
 
-            Migration = args.Length == 0 || args.Contains("Migration", StringComparer.OrdinalIgnoreCase);
+            Migration = args.Length == 0 || args.Contains(nameof(Migration), StringComparer.OrdinalIgnoreCase);
             if (Migration && args.Length != 0)
-                JobName = "Migration";
+                JobName = nameof(Migration);
 
-            StackStatus = args.Length == 0 || args.Contains("StackStatus", StringComparer.OrdinalIgnoreCase);
+            StackStatus = args.Length == 0 || args.Contains(nameof(StackStatus), StringComparer.OrdinalIgnoreCase);
             if (StackStatus && args.Length != 0)
-                JobName = "StackStatus";
+                JobName = nameof(StackStatus);
 
-            StackEventCount = args.Length == 0 || args.Contains("StackEventCount", StringComparer.OrdinalIgnoreCase);
+            StackEventCount = args.Length == 0 || args.Contains(nameof(StackEventCount), StringComparer.OrdinalIgnoreCase);
             if (StackEventCount && args.Length != 0)
-                JobName = "StackEventCount";
+                JobName = nameof(StackEventCount);
 
-            WebHooks = args.Length == 0 || args.Contains("WebHooks", StringComparer.OrdinalIgnoreCase);
+            WebHooks = args.Length == 0 || args.Contains(nameof(WebHooks), StringComparer.OrdinalIgnoreCase);
             if (WebHooks && args.Length != 0)
-                JobName = "WebHooks";
+                JobName = nameof(WebHooks);
 
-            WorkItem = args.Length == 0 || args.Contains("WorkItem", StringComparer.OrdinalIgnoreCase);
+            WorkItem = args.Length == 0 || args.Contains(nameof(WorkItem), StringComparer.OrdinalIgnoreCase);
             if (WorkItem && args.Length != 0)
-                JobName = "WorkItem";
+                JobName = nameof(WorkItem);
         }
 
         public string JobName { get; }
@@ -78,7 +78,7 @@ namespace Exceptionless.Job {
         public bool CloseInactiveSessions { get; }
         public bool DailySummary { get; }
         public bool DataMigration { get; }
-        public bool DownloadGeoipDatabase { get; }
+        public bool DownloadGeoIPDatabase { get; }
         public bool EventNotifications { get; }
         public bool EventPosts { get; }
         public bool EventUserDescriptions { get; }
