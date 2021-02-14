@@ -70,14 +70,14 @@ namespace Exceptionless.Core.Jobs {
 
             await EnforceEventRetentionAsync(context).AnyContext();
 
-            _logger.LogInformation("Finished cleaning up data");
+            _logger.CleanupFinished();
 
             return JobResult.Success;
         }
 
         private async Task CleanupSoftDeletedOrganizationsAsync(JobContext context) {
             var organizationResults = await _organizationRepository.GetAllAsync(q => q.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SnapshotPaging().PageLimit(5)).AnyContext();
-            _logger.LogInformation("Cleaning up {OrganizationTotal} soft deleted organization(s)", organizationResults.Total);
+            _logger.CleanupOrganizationSoftDeletes(organizationResults.Total);
 
             while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in organizationResults.Documents) {
@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Jobs {
 
         private async Task CleanupSoftDeletedProjectsAsync(JobContext context) {
             var projectResults = await _projectRepository.GetAllAsync(q => q.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SnapshotPaging().PageLimit(5)).AnyContext();
-            _logger.LogInformation("Cleaning up {ProjectTotal} soft deleted project(s)", projectResults.Total);
+            _logger.CleanupProjectSoftDeletes(projectResults.Total);
 
             while (projectResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var project in projectResults.Documents) {
@@ -115,7 +115,7 @@ namespace Exceptionless.Core.Jobs {
 
         private async Task CleanupSoftDeletedStacksAsync(JobContext context) {
             var stackResults = await _stackRepository.GetAllAsync(q => q.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SnapshotPaging().PageLimit(100)).AnyContext();
-            _logger.LogInformation("Cleaning up {StackTotal} soft deleted stack(s)", stackResults.Total);
+            _logger.CleanupStackSoftDeletes(stackResults.Total);
 
             while (stackResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var stack in stackResults.Documents) {
@@ -133,7 +133,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task RemoveOrganizationAsync(Organization organization, JobContext context) {
-            _logger.LogInformation("Removing organization: {Organization} ({OrganizationId})", organization.Name, organization.Id);
+            _logger.RemoveOrganizationStart(organization.Name, organization.Id);
             await _organizationService.RemoveTokensAsync(organization).AnyContext();
             await _organizationService.RemoveWebHooksAsync(organization).AnyContext();
             await _organizationService.CancelSubscriptionsAsync(organization).AnyContext();
@@ -149,11 +149,11 @@ namespace Exceptionless.Core.Jobs {
             long removedProjects = await _projectRepository.RemoveAllByOrganizationIdAsync(organization.Id).AnyContext();
 
             await _organizationRepository.RemoveAsync(organization).AnyContext();
-            _logger.LogInformation("Removed organization: {Organization} ({OrganizationId}), Removed {RemovedProjects} Projects, {RemovedStacks} Stacks, {RemovedEvents} Events", organization.Name, organization.Id, removedProjects, removedStacks, removedEvents);
+            _logger.RemoveOrganizationComplete(organization.Name, organization.Id, removedProjects, removedStacks, removedEvents);
         }
 
         private async Task RemoveProjectsAsync(Project project, JobContext context) {
-            _logger.LogInformation("Removing project: {Project} ({ProjectId})", project.Name, project.Id);
+            _logger.RemoveProjectStart(project.Name, project.Id);
             await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
             await _webHookRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
 
@@ -164,17 +164,17 @@ namespace Exceptionless.Core.Jobs {
             long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id).AnyContext();
 
             await _projectRepository.RemoveAsync(project).AnyContext();
-            _logger.LogInformation("Removed project: {Project} ({ProjectId}), Removed {RemovedStacks} Stacks, {RemovedEvents} Events", project.Name, project.Id, removedStacks, removedEvents);
+            _logger.RemoveProjectComplete(project.Name, project.Id, removedStacks, removedEvents);
         }
 
         private async Task RemoveStackAsync(Stack stack, JobContext context) {
-            _logger.LogInformation("Removing stack: {StackId}", stack.Id);
+            _logger.RemoveStackStart(stack.Id);
 
             await RenewLockAsync(context).AnyContext();
             long removedEvents = await _eventRepository.RemoveAllByStackIdAsync(stack.OrganizationId, stack.ProjectId, stack.Id).AnyContext();
 
             await _stackRepository.RemoveAsync(stack).AnyContext();
-            _logger.LogInformation("Removed stack: {StackId}, Removed {RemovedEvents} Events", stack.Id, removedEvents);
+            _logger.RemoveStackComplete(stack.Id, removedEvents);
         }
 
         private async Task EnforceEventRetentionAsync(JobContext context) {
@@ -207,11 +207,11 @@ namespace Exceptionless.Core.Jobs {
                 retentionDays = nextPlan.RetentionDays;
 
             var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
-            _logger.LogInformation("Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).", cutoff, organization.Name, organization.Id);
+            _logger.RetentionEnforcementStart(cutoff, organization.Name, organization.Id);
 
             await RenewLockAsync(context).AnyContext();
             long removedEvents = await _eventRepository.RemoveAllAsync(organization.Id, null, null, cutoff).AnyContext();
-            _logger.LogInformation("Enforced retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events", organization.Name, organization.Id, removedEvents);
+            _logger.RetentionEnforcementComplete(organization.Name, organization.Id, removedEvents);
         }
 
         private Task RenewLockAsync(JobContext context) {
