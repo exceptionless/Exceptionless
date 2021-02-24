@@ -115,7 +115,7 @@ namespace Exceptionless.Core.Models {
         public DateTime UpdatedUtc { get; set; }
         public bool IsDeleted { get; set; }
 
-        public bool AllowNotifications => Status != StackStatus.Ignored && Status != StackStatus.Discarded && Status != StackStatus.Snoozed;
+        public bool AllowNotifications => Status != StackStatus.Fixed && Status != StackStatus.Ignored && Status != StackStatus.Discarded && Status != StackStatus.Snoozed;
 
         public static class KnownTypes {
             public const string Error = "error";
