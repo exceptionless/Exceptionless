@@ -58,40 +58,35 @@ namespace Exceptionless.Tests.Search
         }
         
         [Theory]
-        [InlineData("-type:heartbeat (reference:sessionId OR ref.session:sessionId)", 13000, true)]
-        [InlineData("status:open OR status:regressed", 3000, true)]
-        [InlineData("NOT (status:open OR status:regressed)", 10000, true)]
-        [InlineData("status:fixed", 3000, true)]
-        [InlineData("NOT status:fixed", 10000, true)]
-        [InlineData("stack:" + TestConstants.StackId, 1, true)]
-        [InlineData("-stack:" + TestConstants.StackId, 12999, true)]
-        [InlineData("stack:" + TestConstants.StackId + " (status:open OR status:regressed)", 0, true)]
-        public async Task VerifyEventStackFilter(string filter, long total, bool isInvertable) {
+        [InlineData("-type:heartbeat (reference:sessionId OR ref.session:sessionId)", 13000)]
+        [InlineData("status:open OR status:regressed", 3000)]
+        [InlineData("NOT (status:open OR status:regressed)", 10000)]
+        [InlineData("status:fixed", 3000)]
+        [InlineData("NOT status:fixed", 10000)]
+        [InlineData("stack:" + TestConstants.StackId, 1)]
+        [InlineData("-stack:" + TestConstants.StackId, 12999)]
+        [InlineData("stack:" + TestConstants.StackId + " (status:open OR status:regressed)", 0)]
+        public async Task VerifyEventStackFilter(string filter, long total) {
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
             const int stackIdLimit = 10000;
 
             var ctx = new ElasticQueryVisitorContext();
-            var stackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Stacks, ctx);
-            _logger.LogInformation("Finding Filter: {Filter}", stackFilter.Query);
-            var stacks = await _repository.GetIdsByQueryAsync(q => q.FilterExpression(stackFilter.Query), o => o.PageLimit(stackIdLimit).SoftDeleteMode(SoftDeleteQueryMode.All));
+            var stackFilter = await new EventStackFilter().GetStackFilterAsync(filter, ctx);
+            _logger.LogInformation("Finding Filter: {Filter}", stackFilter.Filter);
+            var stacks = await _repository.GetIdsByQueryAsync(q => q.FilterExpression(stackFilter.Filter), o => o.PageLimit(stackIdLimit).SoftDeleteMode(SoftDeleteQueryMode.All));
             Assert.Equal(total, stacks.Total);
-            
-            var invertedStackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.InvertedStacks, ctx);
-            Assert.Equal(isInvertable, invertedStackFilter.IsInvertable);
 
             // non-inverted conditions (project, org, stack) must be at beginning of filter
             // invert will validate this and then just wrap the rest of the query in a NOT (<original>)
 
-            if (isInvertable) {
-                _logger.LogInformation("Finding Inverted Filter: {Filter}", invertedStackFilter.Query);
-                var invertedStacks = await _repository.GetIdsByQueryAsync(q => q.FilterExpression(invertedStackFilter.Query), o => o.PageLimit(stackIdLimit).SoftDeleteMode(SoftDeleteQueryMode.All));
-                Assert.Equal(13000 - total, invertedStacks.Total);
+            _logger.LogInformation("Finding Inverted Filter: {Filter}", stackFilter.InvertedFilter);
+            var invertedStacks = await _repository.GetIdsByQueryAsync(q => q.FilterExpression(stackFilter.InvertedFilter), o => o.PageLimit(stackIdLimit).SoftDeleteMode(SoftDeleteQueryMode.All));
+            Assert.Equal(13000 - total, invertedStacks.Total);
 
-                var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
-                var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id));
+            var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
+            var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id));
 
-                Assert.Equal(total, stackIds.Except(invertedStackIds).Count());
-            }
+            Assert.Equal(total, stackIds.Except(invertedStackIds).Count());
         }
     }
 }

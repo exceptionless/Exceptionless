@@ -62,6 +62,7 @@ helm upgrade kubecost kubecost/cost-analyzer --namespace kubecost --reset-values
 # upgrade goldilocks
 helm repo update
 helm upgrade goldilocks fairwinds-stable/goldilocks --namespace goldilocks --reset-values --dry-run
+helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset-values --dry-run
 
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html

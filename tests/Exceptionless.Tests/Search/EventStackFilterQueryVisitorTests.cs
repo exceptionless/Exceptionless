@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Repositories.Queries;
 using Newtonsoft.Json;
 using Xunit;
@@ -11,29 +12,32 @@ namespace Exceptionless.Tests.Search {
 
         [Theory]
         [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
-        public void CanBuildStackFilter(FilterScenario scenario) {
-            Log.SetLogLevel<EventStackFilterQueryVisitor>(Microsoft.Extensions.Logging.LogLevel.Trace);
+        public async Task CanBuildStackFilter(FilterScenario scenario) {
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
-            var stackResult = EventStackFilterQueryVisitor.Run(scenario.Source, EventStackFilterQueryMode.Stacks);
-            Assert.Equal(scenario.Stack, stackResult.Query.Trim());
+            var eventStackFilter = new EventStackFilter();
+            var stackFilter = await eventStackFilter.GetStackFilterAsync(scenario.Source);
+            Assert.Equal(scenario.Stack, stackFilter.Filter.Trim());
         }
 
         [Theory]
         [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
-        public void CanBuildInvertedStackFilter(FilterScenario scenario) {
-            Log.SetLogLevel<EventStackFilterQueryVisitor>(Microsoft.Extensions.Logging.LogLevel.Trace);
+        public async Task CanBuildInvertedStackFilter(FilterScenario scenario) {
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
-            var invertedStackResult = EventStackFilterQueryVisitor.Run(scenario.Source, EventStackFilterQueryMode.InvertedStacks);
-            Assert.Equal(scenario.InvertedStack, invertedStackResult.Query.Trim());
+            var eventStackFilter = new EventStackFilter();
+            var stackFilter = await eventStackFilter.GetStackFilterAsync(scenario.Source);
+            Assert.Equal(scenario.InvertedStack, stackFilter.InvertedFilter.Trim());
         }
 
         [Theory]
         [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
-        public void CanBuildEventFilter(FilterScenario scenario) {
-            Log.SetLogLevel<EventStackFilterQueryVisitor>(Microsoft.Extensions.Logging.LogLevel.Trace);
+        public async Task CanBuildEventFilter(FilterScenario scenario) {
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
-            var eventResult = EventStackFilterQueryVisitor.Run(scenario.Source, EventStackFilterQueryMode.Events);
-            Assert.Equal(scenario.Event, eventResult.Query.Trim());
+            var eventStackFilter = new EventStackFilter();
+            var stackFilter = await eventStackFilter.GetEventFilterAsync(scenario.Source);
+            Assert.Equal(scenario.Event, stackFilter.Trim());
         }
     }
 
@@ -97,22 +101,22 @@ namespace Exceptionless.Tests.Search {
                 Source = "(organization:123 AND type:log) AND (blah:true (status:fixed OR status:open))",
                 Stack = "(organization:123 AND type:log) AND (status:fixed OR status:open)",
                 InvertedStack = "(organization:123 AND type:log) AND NOT (status:fixed OR status:open)",
-                Event = "(organization:123 AND type:log) AND (blah:true)"
+                Event = "(organization:123 AND type:log) AND blah:true"
             }};
             yield return new object[] { new FilterScenario {
                 Source = "project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635)",
                 Stack = "project:123 (status:open OR status:regressed)",
                 InvertedStack = "project:123 NOT (status:open OR status:regressed)",
-                Event = "project:123 (ref.session:5f3dce2668de920001466635)"
+                Event = "project:123 ref.session:5f3dce2668de920001466635"
             }};
             yield return new object[] { new FilterScenario {
                 Source = "project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635 OR project:234)",
-                Stack = "project:123 (status:open OR status:regressed) (project:234)",
-                InvertedStack = "project:123 NOT (status:open OR status:regressed) (project:234)",
+                Stack = "project:123 (status:open OR status:regressed) project:234",
+                InvertedStack = "project:123 NOT (status:open OR status:regressed) project:234",
                 Event = "project:123 (ref.session:5f3dce2668de920001466635 OR project:234)"
             }};
             yield return new object[] { new FilterScenario {
-                Source = "first_occurrence:[1608854400000 TO 1609188757249] AND ((status:open OR status:regressed))",
+                Source = "first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed)",
                 Stack = "first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed)",
                 InvertedStack = "NOT (first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed))",
                 Event = ""
@@ -121,7 +125,7 @@ namespace Exceptionless.Tests.Search {
                 Source = "first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 (status:open OR status:regressed))",
                 Stack = "first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 (status:open OR status:regressed))",
                 InvertedStack = "NOT first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 NOT (status:open OR status:regressed))",
-                Event = "(project:537650f3b77efe23a47914f4)"
+                Event = "project:537650f3b77efe23a47914f4"
             }};
         }
     }

@@ -5,7 +5,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
-using Foundatio.Parsers.LuceneQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
@@ -50,12 +49,14 @@ namespace Exceptionless.Core.Repositories.Queries {
         private readonly ILogger _logger;
         private readonly Field _inferredEventDateField;
         private readonly Field _inferredStackLastOccurrenceField;
+        private readonly EventStackFilter _eventStackFilter;
 
         public EventStackFilterQueryBuilder(IStackRepository stackRepository, ILoggerFactory loggerFactory) {
             _stackRepository = stackRepository;
             _logger = loggerFactory.CreateLogger<EventStackFilterQueryBuilder>();
             _inferredEventDateField = Infer.Field<PersistentEvent>(f => f.Date);
             _inferredStackLastOccurrenceField = Infer.Field<Stack>(f => f.LastOccurrence);
+            _eventStackFilter = new EventStackFilter();
         }
 
         public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
@@ -72,44 +73,36 @@ namespace Exceptionless.Core.Repositories.Queries {
                 ctx.Source.FilterExpression(filter);
             }
 
-            var stackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Stacks, ctx);
-            var invertedStackFilter = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.InvertedStacks, ctx);
+            var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
             if (ctx.Options.GetSoftDeleteMode() == SoftDeleteQueryMode.ActiveOnly)
-                invertedStackFilter.Query = !String.IsNullOrEmpty(invertedStackFilter.Query) ? $"(is_deleted:true OR ({invertedStackFilter.Query}))" : "is_deleted:true";
-
-            // queries are the same, no need to allow inverting
-            if (invertedStackFilter.Query == stackFilter.Query)
-                invertedStackFilter.IsInvertable = false;
+                stackFilter.InvertedFilter = !String.IsNullOrEmpty(stackFilter.InvertedFilter) ? $"(is_deleted:true OR ({stackFilter.InvertedFilter}))" : "is_deleted:true";
 
             const int stackIdLimit = 10000;
             string[] stackIds = null;
 
-            string query = stackFilter.Query;
-            bool isStackIdsNegated = stackFilter.HasStatusOpen && invertedStackFilter.IsInvertable && !altInvertRequested;
+            string stackFilterValue = stackFilter.Filter;
+            bool isStackIdsNegated = stackFilter.HasStatusOpen && !altInvertRequested;
             if (isStackIdsNegated)
-                query = invertedStackFilter.Query;
+                stackFilterValue = stackFilter.InvertedFilter;
 
-            if (String.IsNullOrEmpty(query) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
+            if (String.IsNullOrEmpty(stackFilterValue) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            if (invertedStackFilter.IsInvertable)
-                _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Query, invertedStackFilter.Query);
-            else
-                _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: <None>", filter, stackFilter.Query);
+            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Filter, stackFilter.InvertedFilter);
 
             if (!(ctx is IQueryVisitorContextWithValidator)) {
                 var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
-                systemFilterQuery.FilterExpression(query);
+                systemFilterQuery.FilterExpression(stackFilterValue);
                 var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                 var results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                 
-                if (results.Total > stackIdLimit && (isStackIdsNegated || invertedStackFilter.IsInvertable)) { 
-                    _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", query, results.Total);
+                if (results.Total > stackIdLimit && isStackIdsNegated) { 
+                    _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, results.Total);
                     isStackIdsNegated = !isStackIdsNegated;
-                    query = isStackIdsNegated ? invertedStackFilter.Query : stackFilter.Query;
-                    systemFilterQuery.FilterExpression(query);
+                    stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
+                    systemFilterQuery.FilterExpression(stackFilterValue);
                     softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                     systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
                     results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
@@ -133,8 +126,9 @@ namespace Exceptionless.Core.Repositories.Queries {
                     ctx.Source.ExcludeStack(stackIds);
             }
 
-            var eventsResult = await EventStackFilterQueryVisitor.RunAsync(filter, EventStackFilterQueryMode.Events, ctx);
-            ctx.Source.FilterExpression(eventsResult.Query);
+            // Strips stack only fields and stack only special fields
+            var eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
+            ctx.Source.FilterExpression(eventFilter);
         }
 
         private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context, bool isStackIdsNegated) {

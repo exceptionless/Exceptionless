@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CONTRIBUTING.md = CONTRIBUTING.md
 		docker-compose.yml = docker-compose.yml
 		Dockerfile = Dockerfile
+		build\docker\elasticsearch\Dockerfile = build\docker\elasticsearch\Dockerfile
 		global.json = global.json
 		LICENSE.txt = LICENSE.txt
 		NuGet.Config = NuGet.Config
@@ -26,6 +27,18 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Tests", "tests\Exceptionless.Tests\Exceptionless.Tests.csproj", "{AE44C5E1-4B6E-48CF-A387-AAF3CE0D5B18}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Job", "src\Exceptionless.Job\Exceptionless.Job.csproj", "{788BA00C-FFBE-42A9-92A3-89E24FC137B5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Repositories", "..\Foundatio.Repositories\src\Foundatio.Repositories\Foundatio.Repositories.csproj", "{29983624-C32D-4453-B496-487AE82FEDE2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Repositories.Elasticsearch", "..\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj", "{8A8E8E2A-A55B-4F72-AC23-CF53ED200405}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Parsers.ElasticQueries", "..\Foundatio.Parsers\src\Foundatio.Parsers.ElasticQueries\Foundatio.Parsers.ElasticQueries.csproj", "{77FE37AE-B24F-4330-B90A-0EC704849F57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Parsers.LuceneQueries", "..\Foundatio.Parsers\src\Foundatio.Parsers.LuceneQueries\Foundatio.Parsers.LuceneQueries.csproj", "{65A04292-557B-4F7A-B944-CFC4EEF4523B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Parsers.LuceneQueries.Tests", "..\Foundatio.Parsers\tests\Foundatio.Parsers.LuceneQueries.Tests\Foundatio.Parsers.LuceneQueries.Tests.csproj", "{0B3219E6-C718-4ADB-A925-DB2287FAB5DE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Parsers.ElasticQueries.Tests", "..\Foundatio.Parsers\tests\Foundatio.Parsers.ElasticQueries.Tests\Foundatio.Parsers.ElasticQueries.Tests.csproj", "{73720795-550C-49A0-AA5D-E0B8C4415BBF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,12 +66,35 @@ Global
 		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29983624-C32D-4453-B496-487AE82FEDE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29983624-C32D-4453-B496-487AE82FEDE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29983624-C32D-4453-B496-487AE82FEDE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29983624-C32D-4453-B496-487AE82FEDE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A8E8E2A-A55B-4F72-AC23-CF53ED200405}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A8E8E2A-A55B-4F72-AC23-CF53ED200405}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A8E8E2A-A55B-4F72-AC23-CF53ED200405}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A8E8E2A-A55B-4F72-AC23-CF53ED200405}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77FE37AE-B24F-4330-B90A-0EC704849F57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77FE37AE-B24F-4330-B90A-0EC704849F57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77FE37AE-B24F-4330-B90A-0EC704849F57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77FE37AE-B24F-4330-B90A-0EC704849F57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65A04292-557B-4F7A-B944-CFC4EEF4523B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65A04292-557B-4F7A-B944-CFC4EEF4523B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65A04292-557B-4F7A-B944-CFC4EEF4523B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65A04292-557B-4F7A-B944-CFC4EEF4523B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B3219E6-C718-4ADB-A925-DB2287FAB5DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B3219E6-C718-4ADB-A925-DB2287FAB5DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B3219E6-C718-4ADB-A925-DB2287FAB5DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B3219E6-C718-4ADB-A925-DB2287FAB5DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73720795-550C-49A0-AA5D-E0B8C4415BBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73720795-550C-49A0-AA5D-E0B8C4415BBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73720795-550C-49A0-AA5D-E0B8C4415BBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73720795-550C-49A0-AA5D-E0B8C4415BBF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-			GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1A90AFA5-B81C-4B1B-9DFA-2D90F8CA0EF0}
 	EndGlobalSection
 EndGlobal
