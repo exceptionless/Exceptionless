@@ -122,9 +122,9 @@ namespace Exceptionless.Tests.Search {
                 Event = ""
             }};
             yield return new object[] { new FilterScenario {
-                Source = "first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 (status:open OR status:regressed))",
-                Stack = "first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 (status:open OR status:regressed))",
-                InvertedStack = "NOT first_occurrence:[1609459200000 TO 1609730450521] (project:537650f3b77efe23a47914f4 NOT (status:open OR status:regressed))",
+                Source = "project:537650f3b77efe23a47914f4 first_occurrence:[1609459200000 TO 1609730450521] (status:open OR status:regressed)",
+                Stack = "project:537650f3b77efe23a47914f4 first_occurrence:[1609459200000 TO 1609730450521] (status:open OR status:regressed)",
+                InvertedStack = "project:537650f3b77efe23a47914f4 NOT (first_occurrence:[1609459200000 TO 1609730450521] (status:open OR status:regressed))",
                 Event = "project:537650f3b77efe23a47914f4"
             }};
         }
