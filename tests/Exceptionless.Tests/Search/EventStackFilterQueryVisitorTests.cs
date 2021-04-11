@@ -69,8 +69,8 @@ namespace Exceptionless.Tests.Search {
             }};
             yield return new object[] { new FilterScenario {
                 Source = "is_hidden:true",
-                Stack = "NOT (status:open AND status:regressed)",
-                InvertedStack = "(status:open AND status:regressed)",
+                Stack = "NOT (status:open OR status:regressed)",
+                InvertedStack = "(status:open OR status:regressed)",
                 Event = ""
             }};
             yield return new object[] { new FilterScenario {

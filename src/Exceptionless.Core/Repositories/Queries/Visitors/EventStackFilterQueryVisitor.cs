@@ -144,7 +144,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                         var isHiddenNode = new GroupNode {
                             HasParens = true,
                             IsNegated = true,
-                            Operator = GroupOperator.And,
+                            Operator = GroupOperator.Or,
                             Left = new TermNode { Field = "status", Term = "open" },
                             Right = new TermNode { Field = "status", Term = "regressed" }
                         };
