@@ -132,7 +132,7 @@ namespace Exceptionless.Job {
                 services.AddJob<DailySummaryJob>(true);
             if (options.DataMigration)
                 services.AddJob<DataMigrationJob>(true);
-            if (options.DownloadGeoipDatabase)
+            if (options.DownloadGeoIPDatabase)
                 services.AddJob<DownloadGeoIPDatabaseJob>(true);
             if (options.EventNotifications)
                 services.AddJob<EventNotificationsJob>(true);

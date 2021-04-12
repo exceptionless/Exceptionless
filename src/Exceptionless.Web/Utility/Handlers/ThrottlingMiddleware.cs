@@ -75,7 +75,7 @@ namespace Exceptionless.Web.Utility.Handlers {
 
             long maxRequests = _options.MaxRequestsForUserIdentifierFunc(identifier);
             if (requestCount > maxRequests) {
-                context.Response.StatusCode = StatusCodes.Status409Conflict;
+                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 return;
             }
 
