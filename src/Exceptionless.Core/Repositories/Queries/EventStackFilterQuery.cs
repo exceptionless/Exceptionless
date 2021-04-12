@@ -6,12 +6,14 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
 using Foundatio.Parsers.LuceneQueries.Visitors;
+using Foundatio.Parsers.LuceneQueries.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
 using Nest;
 using DateRange = Foundatio.Repositories.DateRange;
+using Foundatio.Parsers.LuceneQueries.Nodes;
 
 namespace Exceptionless.Core.Repositories {
     public static class EventStackFilterQueryExtensions {
@@ -73,10 +75,11 @@ namespace Exceptionless.Core.Repositories.Queries {
                 ctx.Source.FilterExpression(filter);
             }
 
-            var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
-
+            // when inverting to get excluded stack ids, add is_deleted as an alternate inverted criteria
             if (ctx.Options.GetSoftDeleteMode() == SoftDeleteQueryMode.ActiveOnly)
-                stackFilter.InvertedFilter = !String.IsNullOrEmpty(stackFilter.InvertedFilter) ? $"(is_deleted:true OR ({stackFilter.InvertedFilter}))" : "is_deleted:true";
+                ctx.SetValue("AlternateInvertedCriteria", new TermNode { Field = "is_deleted", Term = "true" });
+
+            var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
             const int stackIdLimit = 10000;
             string[] stackIds = null;

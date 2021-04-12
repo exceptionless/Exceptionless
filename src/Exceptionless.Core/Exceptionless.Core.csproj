@@ -36,7 +36,7 @@
     <PackageReference Include="System.DirectoryServices" Version="5.0.0" />
     <PackageReference Include="UAParser" Version="3.1.46" />
 
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.10.5" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.10.6-alpha.0.7" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
     <ProjectReference Include="..\..\..\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj" Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
   </ItemGroup>
   <ItemGroup>

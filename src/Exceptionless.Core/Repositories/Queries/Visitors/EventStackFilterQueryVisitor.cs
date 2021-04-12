@@ -94,8 +94,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             var result = await _parser.ParseAsync(query, context);
             var invertedResult = result.Clone();
 
-            await _stackQueryVisitor.AcceptAsync(result, context);
-            await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context);
+            result = await _stackQueryVisitor.AcceptAsync(result, context);
+            invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context);
 
             return new StackFilter {
                 Filter = result.ToString(),

@@ -296,12 +296,13 @@ namespace Exceptionless.Tests.Controllers {
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
-
+            
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
                 .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_new")
+                .QueryString("time", "last 12 hours")
                 .StatusCodeShouldBeOk()
             );
 
@@ -716,7 +717,7 @@ namespace Exceptionless.Tests.Controllers {
                     .Type(Event.KnownTypes.Error)
                     .Status(StackStatus.Regressed)
                     .TotalOccurrences(50)
-                    .FirstOccurrence(utcNow.SubtractDays(1))
+                    .FirstOccurrence(utcNow.SubtractDays(2))
                     .StackReference("https://github.com/exceptionless/Exceptionless")
                     .Tag("Blake Niemyjski")
                     .RequestInfoSample()

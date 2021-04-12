@@ -106,19 +106,19 @@ namespace Exceptionless.Web {
                         new OpenApiSecurityScheme {
                             Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
                         },
-                        new string[0]
+                        Array.Empty<string>()
                     },
                     {
                         new OpenApiSecurityScheme {
                             Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
                         },
-                        new string[0]
+                        Array.Empty<string>()
                     },
                     {
                         new OpenApiSecurityScheme {
                             Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
                         },
-                        new string[0]
+                        Array.Empty<string>()
                     }
                 });
 

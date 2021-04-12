@@ -353,6 +353,8 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(filter))
                 return sb.ToString();
 
+            sb.Append(' ');
+
             bool isGrouped = filter.StartsWith('(') && filter.EndsWith(')');
 
             if (isGrouped)
