@@ -10,7 +10,7 @@ choco install azure-cli
 
 # install helm
 choco install kubernetes-helm
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm repo add "stable" "https://charts.helm.sh/stable" --force-update
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 
@@ -48,7 +48,7 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwr
 
 # install dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.3/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.1.0/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -59,7 +59,7 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl apply -f https://download.elastic.co/downloads/eck/1.2.1/all-in-one.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.3.1/all-in-one.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
@@ -98,11 +98,11 @@ curl -X PUT -H "Content-Type: application/json" -k `
 Remove-Job $ELASTIC_JOB
 
 # install nginx ingress
-helm install nginx-ingress stable/nginx-ingress --namespace nginx-ingress --values nginx-values.yaml
+helm install --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx
 
 # wait for external ip to be assigned
-kubectl get service -l app=nginx-ingress --namespace nginx-ingress
-$IP=$(kubectl get service -l app=nginx-ingress --namespace nginx-ingress -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx
+$IP=$(kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 $PUBLICIPID=$(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
 az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
@@ -117,11 +117,14 @@ helm install cert-manager jetstack/cert-manager --namespace cert-manager --set i
 # https://kubecost.com/install?ref=home
 kubectl create namespace kubecost
 helm repo add kubecost https://kubecost.github.io/cost-analyzer/
+$KUBECOST_KEY=""
 helm install kubecost kubecost/cost-analyzer --namespace kubecost --set kubecostToken=$KUBECOST_KEY
 
 # install goldilocks
 helm repo add fairwinds-stable https://charts.fairwinds.com/stable
+helm install vpa fairwinds-stable/vpa --namespace vpa --create-namespace -f vpa-values.yaml
 helm install goldilocks fairwinds-stable/goldilocks --namespace goldilocks
+kubectl label ns ex-$ENV goldilocks.fairwinds.com/enabled=true
 
 # TODO: update this file using the cluster name for the dns
 kubectl apply -f certificates.yaml

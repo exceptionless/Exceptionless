@@ -3,7 +3,9 @@ using FluentValidation.Validators;
 
 namespace Exceptionless.Core.Validation {
     public class IsObjectIdValidator : PropertyValidator {
-        public IsObjectIdValidator() : base("Value is not a valid object id.") {}
+        protected override string GetDefaultMessageTemplate() {
+            return "Value is not a valid object id.";
+        }
 
         protected override bool IsValid(PropertyValidatorContext context) {
             string value = context.PropertyValue as string;

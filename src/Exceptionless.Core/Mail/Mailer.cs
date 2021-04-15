@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
-        private readonly ConcurrentDictionary<string, Func<object, string>> _cachedTemplates = new ConcurrentDictionary<string, Func<object, string>>();
+        private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new ConcurrentDictionary<string, HandlebarsTemplate<object, object>>();
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly AppOptions _appOptions;
@@ -134,10 +134,11 @@ namespace Exceptionless.Core.Mail {
                 { "InviteToken", invite.Token }
             };
 
+            var body = RenderTemplate(template, data);
             return QueueMessageAsync(new MailMessage {
                 To = invite.EmailAddress,
                 Subject = subject,
-                Body = RenderTemplate(template, data)
+                Body = body
             }, template);
         }
 
@@ -261,10 +262,11 @@ namespace Exceptionless.Core.Mail {
 
         private string RenderTemplate(string name, IDictionary<string, object> data) {
             var template = GetCompiledTemplate(name);
-            return template(data);
+            var result = template(data);
+            return result?.ToString();
         }
 
-        private Func<object, string> GetCompiledTemplate(string name) {
+        private HandlebarsTemplate<object, object> GetCompiledTemplate(string name) {
             return _cachedTemplates.GetOrAdd(name, templateName => {
                 var assembly = typeof(Mailer).Assembly;
                 string resourceName = $"Exceptionless.Core.Mail.Templates.{templateName}.html";
@@ -272,7 +274,8 @@ namespace Exceptionless.Core.Mail {
                 using (var stream = assembly.GetManifestResourceStream(resourceName)) {
                     using (var reader = new StreamReader(stream)) {
                         string template = reader.ReadToEnd();
-                        return Handlebars.Compile(template);
+                        var compiledTemplateFunc = Handlebars.Compile(template);
+                        return compiledTemplateFunc;
                     }
                 }
             });

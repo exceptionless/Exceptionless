@@ -19,7 +19,7 @@ jobs:
       run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
     - name: Build Version
       run: |
-        dotnet tool install --global minver-cli --version 2.3.1
+        dotnet tool install --global minver-cli --version 2.5.0
         version=$(minver --tag-prefix v)
         echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
         echo "VERSION=$version" >> $GITHUB_ENV

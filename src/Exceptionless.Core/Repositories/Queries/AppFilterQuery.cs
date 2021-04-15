@@ -103,11 +103,11 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             var index = ctx.Options.GetElasticIndex();
-            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index);
+            bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index, ctx);
             string field = shouldApplyRetentionFilter ? GetDateField(index) : null;
             
             if (sfq.Stack != null) {
-                var stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
+                string stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
                 if (organization != null) {
                     if (shouldApplyRetentionFilter)
@@ -161,13 +161,13 @@ namespace Exceptionless.Core.Repositories.Queries {
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
         
-        private bool ShouldApplyRetentionFilter(IIndex index) {
+        private bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new() {
             if (index == null)
                 throw new ArgumentNullException(nameof(index));
-            
+
             var indexType = index.GetType();
             if (indexType == typeof(StackIndex))
-                return true;
+                return !ctx.Source.IsEventStackFilterInverted();
 
             if (indexType == typeof(EventIndex))
                 return true;

@@ -134,6 +134,38 @@ namespace Exceptionless.Tests.Controllers {
             var ev = (await _eventRepository.GetAllAsync()).Documents.Single();
             Assert.Equal(message, ev.Message);
         }
+        
+        [Fact]
+        public async Task CanPostJsonWithUserInfoAsync() {
+            const string json = "{\"message\":\"test\",\"@user\":{\"identity\":\"Test user\",\"name\":null}}";
+            await SendRequestAsync(r => r
+                .Post()
+                .AsTestOrganizationClientUser()
+                .AppendPath("events")
+                .Content(json, "application/json")
+                .StatusCodeShouldBeAccepted()
+            );
+
+            var stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
+
+            var processEventsJob = GetService<EventPostsJob>();
+            await processEventsJob.RunAsync();
+            await RefreshDataAsync();
+
+            stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Completed);
+
+            var events = await _eventRepository.GetAllAsync();
+            var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
+            Assert.Equal("test", ev.Message);
+
+            var userInfo = ev.GetUserIdentity();
+            Assert.NotNull(userInfo);
+            Assert.Equal("Test user", userInfo.Identity);
+            Assert.Null(userInfo.Name);
+        }
 
         [Fact]
         public async Task CanPostEventAsync() {
@@ -240,9 +272,9 @@ namespace Exceptionless.Tests.Controllers {
 
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
             string projectId = SampleDataService.FREE_PROJECT_ID;
-
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsFreeOrganizationUser()
                 .AppendPath("projects", projectId, "events")
@@ -253,18 +285,24 @@ namespace Exceptionless.Tests.Controllers {
                 .StatusCodeShouldBeOk()
             );
 
-            Assert.Equal(3, results.Count);
+            Assert.Equal(2, results.Count);
         }
 
         [Fact]
         public async Task CanGetNewStackMode() {
+            Log.MinimumLevel = LogLevel.Warning;
             await CreateStacksAndEventsAsync();
 
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+            
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
                 .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
                 .QueryString("mode", "stack_new")
+                .QueryString("time", "last 12 hours")
                 .StatusCodeShouldBeOk()
             );
 
@@ -534,6 +572,122 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(1, uniqueTotal);
         }
         
+        [Fact]
+        public async Task WillExcludeOldStacksForStackNewMode() {
+            var utcNow = SystemClock.UtcNow;
+
+            await CreateDataAsync(d => {
+                d.Event()
+                    .TestProject()
+                    .Message("New stack - skip due to date filter")
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Open)
+                    .TotalOccurrences(50)
+                    .IsFirstOccurrence()
+                    .FirstOccurrence(utcNow.SubtractYears(1))
+                    .LastOccurrence(utcNow.SubtractMonths(5));
+
+                d.Event()
+                    .TestProject()
+                    .Message("Old stack - new event")
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Regressed)
+                    .TotalOccurrences(33)
+                    .FirstOccurrence(utcNow.SubtractYears(1))
+                    .LastOccurrence(utcNow);
+
+                d.Event()
+                    .TestProject()
+                    .Message("New Stack - event not marked as first occurrence")
+                    .Type(Event.KnownTypes.Log)
+                    .Status(StackStatus.Open)
+                    .TotalOccurrences(15)
+                    .FirstOccurrence(utcNow.SubtractDays(2))
+                    .Version("1.2.3");
+                
+                d.Event()
+                    .TestProject()
+                    .Message("New Stack - event marked as first occurrence")
+                    .Type(Event.KnownTypes.Error)
+                    .Status(StackStatus.Regressed)
+                    .TotalOccurrences(10)
+                    .FirstOccurrence(utcNow.SubtractDays(2))
+                    .Date(utcNow.SubtractDays(2))
+                    .IsFirstOccurrence()
+                    .StackReference("https://github.com/exceptionless/Exceptionless")
+                    .Version("3.2.1-beta1");
+
+                d.Event()
+                    .TestProject()
+                    .Message("Deleted New stack - event is first occurrence")
+                    .Type(Event.KnownTypes.FeatureUsage)
+                    .Status(StackStatus.Open)
+                    .TotalOccurrences(7)
+                    .FirstOccurrence(utcNow.Date)
+                    .IsFirstOccurrence()
+                    .Date(utcNow.Date)
+                    .Deleted();
+            });
+
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventControllerTests>(LogLevel.Trace);
+            Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
+            const string filter = "(status:open OR status:regressed)";
+            const string time = "last week";
+
+            /*
+            _logger.LogInformation("Running non-inverted query");
+            var invertedResults = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", "@!" + filter)
+                .QueryString("time", time)
+                .QueryString("mode", "stack_new")
+                .StatusCodeShouldBeOk()
+            );*/
+
+            //Assert.Equal(2, invertedResults.Count);
+
+            _logger.LogInformation("Running inverted query");
+            var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("filter", filter)
+                .QueryString("time", time)
+                .QueryString("mode", "stack_new")
+                .StatusCodeShouldBeOk()
+            );
+
+            Assert.Equal(2, results.Count);
+
+            _logger.LogInformation("Running normal count");
+            var countResult = await SendRequestAsAsync<CountResult>(r => r
+                .AsGlobalAdminUser()
+                .AppendPath("events", "count")
+                .QueryString("filter", filter)
+                .QueryString("time", time)
+                .QueryString("mode", "stack_new")
+                .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
+                .StatusCodeShouldBeOk()
+            );
+
+            var dateAgg = countResult.Aggregations.DateHistogram("date_date");
+            double dateAggStackCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
+            double dateAggEventCount =  dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
+            Assert.Equal(2, dateAggStackCount);
+            Assert.Equal(2, dateAggEventCount);
+            
+            var total = countResult.Aggregations.Sum("sum_count")?.Value;
+            double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
+            double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
+            
+            Assert.Equal(2, total);
+            Assert.Equal(1, newTotal);
+            Assert.Equal(2, uniqueTotal);
+        }
+        
         private async Task CreateStacksAndEventsAsync() {
             var utcNow = SystemClock.UtcNow;
 
@@ -563,7 +717,7 @@ namespace Exceptionless.Tests.Controllers {
                     .Type(Event.KnownTypes.Error)
                     .Status(StackStatus.Regressed)
                     .TotalOccurrences(50)
-                    .FirstOccurrence(utcNow.SubtractDays(1))
+                    .FirstOccurrence(utcNow.SubtractDays(2))
                     .StackReference("https://github.com/exceptionless/Exceptionless")
                     .Tag("Blake Niemyjski")
                     .RequestInfoSample()
@@ -584,8 +738,10 @@ namespace Exceptionless.Tests.Controllers {
                 d.Event().FreeProject();
             });
 
+            Log.MinimumLevel = LogLevel.Warning;
             await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
             await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
+            Log.MinimumLevel = LogLevel.Trace;
         }
     }
 }
