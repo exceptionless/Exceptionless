@@ -77,7 +77,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             // when inverting to get excluded stack ids, add is_deleted as an alternate inverted criteria
             if (ctx.Options.GetSoftDeleteMode() == SoftDeleteQueryMode.ActiveOnly)
-                ctx.SetValue("AlternateInvertedCriteria", new TermNode { Field = "is_deleted", Term = "true" });
+                ctx.SetAlternateInvertedCriteria(new TermNode { Field = "is_deleted", Term = "true" });
 
             var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
