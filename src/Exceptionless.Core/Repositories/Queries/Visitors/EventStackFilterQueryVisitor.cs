@@ -4,13 +4,29 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
+using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 
 namespace Exceptionless.Core.Repositories.Queries {
-    public class EventStackFilterQueryVisitor : ChainableQueryVisitor {
+    public class EventStackFilter {
+        private readonly ISet<string> _stackNonInvertedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "organization_id", StackIndex.Alias.OrganizationId,
+            "project_id", StackIndex.Alias.ProjectId,
+            EventIndex.Alias.StackId, "stack_id",
+            StackIndex.Alias.Type,
+        };
+
+        private readonly ISet<string> _stackAndEventFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "organization_id", StackIndex.Alias.OrganizationId,
+            "project_id", StackIndex.Alias.ProjectId,
+            EventIndex.Alias.StackId, "stack_id",
+            StackIndex.Alias.Type,
+            StackIndex.Alias.Tags, "tags"
+        };
+
         private readonly ISet<string> _stackOnlyFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.LastOccurrence, "last_occurrence",
             StackIndex.Alias.References, "references",
@@ -32,266 +48,152 @@ namespace Exceptionless.Core.Repositories.Queries {
             StackIndex.Alias.IsHidden, "is_hidden"
         };
 
-        private readonly ISet<string> _stackNonInvertedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "organization_id", StackIndex.Alias.OrganizationId,
-            "project_id", StackIndex.Alias.ProjectId,
-            EventIndex.Alias.StackId, "stack_id",
-            StackIndex.Alias.Type,
-        };
+        private readonly LuceneQueryParser _parser;
+        private readonly ChainedQueryVisitor _eventQueryVisitor;
+        private readonly ChainedQueryVisitor _stackQueryVisitor;
+        private readonly ChainedQueryVisitor _invertedStackQueryVisitor;
 
-        private readonly ISet<string> _stackAndEventFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "organization_id", StackIndex.Alias.OrganizationId,
-            "project_id", StackIndex.Alias.ProjectId,
-            EventIndex.Alias.StackId, "stack_id",
-            StackIndex.Alias.Type,
-            StackIndex.Alias.Tags, "tags"
-        };
+        public EventStackFilter() {
+            var stackOnlyFields = _stackOnlyFields.Union(_stackOnlySpecialFields);
+            var stackFields = stackOnlyFields.Union(_stackAndEventFields);
 
-        private readonly ISet<string> _stackFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _parser = new LuceneQueryParser();
+            _eventQueryVisitor = new ChainedQueryVisitor();
+            _eventQueryVisitor.AddVisitor(new RemoveFieldsQueryVisitor(stackOnlyFields));
+            _eventQueryVisitor.AddVisitor(new CleanupQueryVisitor());
 
-        public EventStackFilterQueryVisitor(EventStackFilterQueryMode queryMode) {
-            _stackFields.AddRange(_stackOnlyFields);
-            _stackFields.AddRange(_stackAndEventFields);
+            _stackQueryVisitor = new ChainedQueryVisitor();
+            // remove everything not in the stack fields list
+            _stackQueryVisitor.AddVisitor(new RemoveFieldsQueryVisitor(f => !stackFields.Contains(f)));
+            _stackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
+            // handles stack special fields and changing event field names to their stack equivalent
+            _stackQueryVisitor.AddVisitor(new StackFilterQueryVisitor());
+            _stackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
 
-            QueryMode = queryMode;
+            _invertedStackQueryVisitor = new ChainedQueryVisitor();
+            // remove everything not in the stack fields list
+            _invertedStackQueryVisitor.AddVisitor(new RemoveFieldsQueryVisitor(f => !stackFields.Contains(f)));
+            _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
+            // handles stack special fields and changing event field names to their stack equivalent
+            _invertedStackQueryVisitor.AddVisitor(new StackFilterQueryVisitor());
+            _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
+            // inverts the filter
+            _invertedStackQueryVisitor.AddVisitor(new InvertQueryVisitor(_stackNonInvertedFields));
+            _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
         }
 
-        public EventStackFilterQueryMode QueryMode { get; set; } = EventStackFilterQueryMode.Events;
-        public bool IsInvertSuccessful { get; set; } = true;
-        public bool HasStatus { get; set; } = false;
-        public bool HasStatusOpen { get; set; } = false;
-        public bool HasStackSpecificCriteria { get; set; } = false;
-        public bool HasStackIds { get; set; } = false;
-
-        public override Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
-            ApplyFilter(node, context);
-
-            return base.VisitAsync(node, context);
+        public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext context = null) {
+            context = context ?? new ElasticQueryVisitorContext();
+            var result = await _parser.ParseAsync(query, context);
+            await _eventQueryVisitor.AcceptAsync(result, context);
+            return result.ToString();
         }
 
-        public override async Task VisitAsync(TermNode node, IQueryVisitorContext context) {
-            var filteredNode = ApplyFilter(node, context);
-            if (filteredNode is GroupNode newGroupNode) {
-                await base.VisitAsync(newGroupNode, context);
-                return;
-            }
+        public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext context = null) {
+            context = context ?? new ElasticQueryVisitorContext();
+            var result = await _parser.ParseAsync(query, context);
+            var invertedResult = result.Clone();
 
-            if (String.Equals(node.Field, "status", StringComparison.OrdinalIgnoreCase)) {
-                HasStatus = true;
+            result = await _stackQueryVisitor.AcceptAsync(result, context);
+            invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context);
 
-                if (!node.IsNegated.GetValueOrDefault() && String.Equals(node.Term, "open", StringComparison.OrdinalIgnoreCase))
-                    HasStatusOpen = true;
-            }
-
-            if ((String.Equals(node.Field, EventIndex.Alias.StackId, StringComparison.OrdinalIgnoreCase)
-                || String.Equals(node.Field, "stack_id", StringComparison.OrdinalIgnoreCase))
-                && !String.IsNullOrEmpty(node.Term)) {
-                HasStackIds = true;
-            }
-
-            if (QueryMode != EventStackFilterQueryMode.InvertedStacks)
-                return;
-
-            if (_stackNonInvertedFields.Contains(filteredNode.Field))
-                return;
-
-            var groupNode = node.GetGroupNode();
-
-            // check to see if we already inverted the group
-            if (groupNode.Data.ContainsKey("@IsInverted"))
-                return;
-
-            var referencedFields = await GetReferencedFieldsQueryVisitor.RunAsync(groupNode, context);
-            if (referencedFields.Any(f => _stackNonInvertedFields.Contains(f))) {
-                // if we have referenced fields that are on the list of non-inverted fields and the operator is an OR then its an issue, mark invert unsuccessful
-                if (node.GetOperator(context) == GroupOperator.Or) {
-                    IsInvertSuccessful = false;
-                    return;
-                }
-
-                node.IsNegated = node.IsNegated.HasValue ? !node.IsNegated : true;
-                return;
-            }
-
-            // negate the entire group
-            if (groupNode.Left != null) {
-                groupNode.IsNegated = groupNode.IsNegated.HasValue ? !groupNode.IsNegated : true;
-                if (groupNode.Right != null)
-                    groupNode.HasParens = true;
-            }
-
-            groupNode.Data["@IsInverted"] = true;
-        }
-
-        public override void Visit(TermRangeNode node, IQueryVisitorContext context) {
-            ApplyFilter(node, context);
-        }
-
-        public override void Visit(ExistsNode node, IQueryVisitorContext context) {
-            ApplyFilter(node, context);
-        }
-
-        public override void Visit(MissingNode node, IQueryVisitorContext context) {
-            ApplyFilter(node, context);
-        }
-
-        private IFieldQueryNode ApplyFilter(IFieldQueryNode node, IQueryVisitorContext context) {
-            var parent = node.Parent as GroupNode;
-
-            if (QueryMode == EventStackFilterQueryMode.Stacks || QueryMode == EventStackFilterQueryMode.InvertedStacks) {
-                // if we don't have a field name and it's a group node, leave it alone
-                if (node.Field == null && node is GroupNode)
-                    return node;
-
-                // if we have a field name and it's in the stack fields list, leave it alone
-                if (node.Field != null && _stackFields.Contains(node.Field)) {
-                    if (_stackOnlyFields.Contains(node.Field))
-                        HasStackSpecificCriteria = true;
-
-                    return node;
-                }
-
-                // check for special field names
-                if (node is TermNode termNode) {
-                    switch (node.Field?.ToLowerInvariant()) {
-                        case EventIndex.Alias.StackId:
-                        case "stack_id":
-                            HasStackSpecificCriteria = true;
-                            termNode.Field = "id";
-                            return node;
-
-                        case "is_fixed":
-                        case StackIndex.Alias.IsFixed:
-                            HasStackSpecificCriteria = true;
-                            bool isFixed = Boolean.TryParse(termNode.Term, out bool temp) && temp;
-                            termNode.Field = "status";
-                            termNode.Term = "fixed";
-                            termNode.IsNegated = !isFixed;
-                            return node;
-
-                        case "is_regressed":
-                        case StackIndex.Alias.IsRegressed:
-                            HasStackSpecificCriteria = true;
-                            bool isRegressed = Boolean.TryParse(termNode.Term, out bool regressed) && regressed;
-                            termNode.Field = "status";
-                            termNode.Term = "regressed";
-                            termNode.IsNegated = !isRegressed;
-                            return node;
-
-                        case "is_hidden":
-                        case StackIndex.Alias.IsHidden:
-                            if (parent == null)
-                                break;
-
-                            HasStackSpecificCriteria = true;
-                            bool isHidden = Boolean.TryParse(termNode.Term, out bool hidden) && hidden;
-                            if (isHidden) {
-                                var isHiddenNode = new GroupNode {
-                                    HasParens = true,
-                                    IsNegated = true,
-                                    Operator = GroupOperator.And,
-                                    Left = new TermNode { Field = "status", Term = "open" },
-                                    Right = new TermNode { Field = "status", Term = "regressed" }
-                                };
-                                if (parent.Left == node)
-                                    parent.Left = isHiddenNode;
-                                else if (parent.Right == node)
-                                    parent.Right = isHiddenNode;
-
-                                return isHiddenNode;
-                            } else {
-                                var notHiddenNode = new GroupNode {
-                                    HasParens = true,
-                                    Operator = GroupOperator.Or,
-                                    Left = new TermNode { Field = "status", Term = "open" },
-                                    Right = new TermNode { Field = "status", Term = "regressed" }
-                                };
-
-                                if (parent.Left == node)
-                                    parent.Left = notHiddenNode;
-                                else if (parent.Right == node)
-                                    parent.Right = notHiddenNode;
-
-                                return notHiddenNode;
-                            }
-                    }
-                }
-
-                if (parent == null)
-                    return node;
-
-                if (parent.Left == node)
-                    parent.Left = null;
-                else if (parent.Right == node)
-                    parent.Right = null;
-            } else {
-                // don't remove terms without fields
-                if (String.IsNullOrEmpty(node.Field))
-                    return node;
-
-                if (_stackOnlyFields.Contains(node.Field) || _stackOnlySpecialFields.Contains(node.Field)) {
-                    // remove criteria that is only for stacks
-
-                    if (parent == null)
-                        return node;
-
-                    if (parent.Left == node)
-                        parent.Left = null;
-                    else if (parent.Right == node)
-                        parent.Right = null;
-                }
-            }
-
-            return node;
-        }
-
-        public override async Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context) {
-            await node.AcceptAsync(this, context).AnyContext();
-            return node;
-        }
-
-        public static async Task<EventStackFilterQueryResult> RunAsync(IQueryNode node, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
-            var visitor = new EventStackFilterQueryVisitor(queryMode);
-            var stackNode = await visitor.AcceptAsync(node, context).AnyContext();
-            var result = await GenerateQueryVisitor.RunAsync(stackNode, context).AnyContext();
-
-            return new EventStackFilterQueryResult {
-                Query = result,
-                IsInvertSuccessful = visitor.IsInvertSuccessful,
-                HasStatus = visitor.HasStatus,
-                HasStatusOpen = visitor.HasStatusOpen,
-                HasStackSpecificCriteria = visitor.HasStackSpecificCriteria,
-                HasStackIds = visitor.HasStackIds
+            return new StackFilter {
+                Filter = result.ToString(),
+                InvertedFilter = invertedResult.ToString(),
+                HasStatus = context.GetBoolean(nameof(StackFilter.HasStatus)),
+                HasStackIds = context.GetBoolean(nameof(StackFilter.HasStackIds)),
+                HasStatusOpen = context.GetBoolean(nameof(StackFilter.HasStatusOpen))
             };
         }
+    }
 
-        public static async Task<EventStackFilterQueryResult> RunAsync(string query, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
-            var parser = new LuceneQueryParser();
-            var result = await parser.ParseAsync(query, context).AnyContext();
-            return await RunAsync(result, queryMode, context).AnyContext();
+    public class StackFilterQueryVisitor : ChainableQueryVisitor {
+        public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context) {
+            IQueryNode result = node;
+
+            // don't include terms without fields
+            if (node.Field == null) {
+                node.RemoveSelf();
+                return Task.FromResult<IQueryNode>(null);
+            }
+
+            // process special stack fields
+            switch (node.Field?.ToLowerInvariant()) {
+                case EventIndex.Alias.StackId:
+                case "stack_id":
+                    node.Field = "id";
+                    break;
+                case "is_fixed":
+                case StackIndex.Alias.IsFixed:
+                    bool isFixed = Boolean.TryParse(node.Term, out bool temp) && temp;
+                    node.Field = "status";
+                    node.Term = "fixed";
+                    node.IsNegated = !isFixed;
+                    break;
+                case "is_regressed":
+                case StackIndex.Alias.IsRegressed:
+                    bool isRegressed = Boolean.TryParse(node.Term, out bool regressed) && regressed;
+                    node.Field = "status";
+                    node.Term = "regressed";
+                    node.IsNegated = !isRegressed;
+                    break;
+                case "is_hidden":
+                case StackIndex.Alias.IsHidden:
+                    bool isHidden = Boolean.TryParse(node.Term, out bool hidden) && hidden;
+                    if (isHidden) {
+                        var isHiddenNode = new GroupNode {
+                            HasParens = true,
+                            IsNegated = true,
+                            Operator = GroupOperator.Or,
+                            Left = new TermNode { Field = "status", Term = "open" },
+                            Right = new TermNode { Field = "status", Term = "regressed" }
+                        };
+
+                        result = node.ReplaceSelf(isHiddenNode);
+
+                        break;
+                    } else {
+                        var notHiddenNode = new GroupNode {
+                            HasParens = true,
+                            Operator = GroupOperator.Or,
+                            Left = new TermNode { Field = "status", Term = "open" },
+                            Right = new TermNode { Field = "status", Term = "regressed" }
+                        };
+
+                        result = node.ReplaceSelf(notHiddenNode);
+
+                        break;
+                    }
+            }
+
+            if (result is TermNode termNode) {
+                if (String.Equals(termNode.Field, "status", StringComparison.OrdinalIgnoreCase)) {
+                    context.SetValue(nameof(StackFilter.HasStatus), true);
+
+                    if (!termNode.IsNegated.GetValueOrDefault() && String.Equals(termNode.Term, "open", StringComparison.OrdinalIgnoreCase))
+                        context.SetValue(nameof(StackFilter.HasStatusOpen), true);
+                }
+
+                if ((String.Equals(termNode.Field, EventIndex.Alias.StackId, StringComparison.OrdinalIgnoreCase)
+                    || String.Equals(termNode.Field, "stack_id", StringComparison.OrdinalIgnoreCase))
+                    && !String.IsNullOrEmpty(termNode.Term)) {
+                    context.SetValue(nameof(StackFilter.HasStackIds), true);
+                }
+            }
+
+            return Task.FromResult<IQueryNode>(result);
         }
 
-        public static EventStackFilterQueryResult Run(IQueryNode node, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
-            return RunAsync(node, queryMode, context).GetAwaiter().GetResult();
-        }
-
-        public static EventStackFilterQueryResult Run(string query, EventStackFilterQueryMode queryMode, IQueryVisitorContext context = null) {
-            return RunAsync(query, queryMode, context).GetAwaiter().GetResult();
+        public override Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context) {
+            return node.AcceptAsync(this, context);
         }
     }
 
-    public class EventStackFilterQueryResult {
-        public string Query { get; set; }
-        public bool IsInvertSuccessful { get; set; }
+    public class StackFilter {
+        public string Filter { get; set; }
+        public string InvertedFilter { get; set; }
         public bool HasStatus { get; set; }
         public bool HasStatusOpen { get; set; }
-        public bool HasStackSpecificCriteria { get; set; }
         public bool HasStackIds { get; set; }
-    }
-
-    public enum EventStackFilterQueryMode {
-        Stacks,
-        InvertedStacks,
-        Events
     }
 }

@@ -102,13 +102,13 @@ namespace Exceptionless.Tests {
             services.AddSingleton<IMailer, NullMailer>();
             services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
 
-            services.AddTransient<Utility.EventDataBuilder>();
+            services.AddTransient<EventDataBuilder>();
 
             services.ReplaceSingleton(s => _server.CreateHandler());
         }
 
         public async Task<(List<Stack> Stacks, List<PersistentEvent> Events)> CreateDataAsync(Action<DataBuilder> dataBuilderFunc) {
-            var eventBuilders = new List<Utility.EventDataBuilder>();
+            var eventBuilders = new List<EventDataBuilder>();
 
             var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider);
             dataBuilderFunc(dataBuilder);
@@ -121,7 +121,7 @@ namespace Exceptionless.Tests {
 
             foreach (var builder in eventBuilders) {
                 var data = builder.Build();
-                events.Add(data.Event);
+                events.AddRange(data.Events);
                 stacks.Add(data.Stack);
             }
 

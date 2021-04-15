@@ -38,7 +38,7 @@ namespace Exceptionless.Tests.Repositories {
         [InlineData("source:GET", 2)]
         [InlineData("source:gEt", 2)]
         [InlineData("source:Print", 2)]
-        [InlineData("source:/Print", 1)]
+        [InlineData("source:\"/Print\"", 1)]
         [InlineData("source:Bagle", 1)]
         [InlineData("source:exceptionless.web*", 1)]
         [InlineData("source:reason", 1)]

@@ -86,7 +86,7 @@ namespace Exceptionless.Web.Hubs {
             }
         }
 
-        private async Task ReceiveAsync(WebSocket socket, Action<WebSocketReceiveResult, string> handleMessage) {
+        private async Task ReceiveAsync(WebSocket socket, Func<WebSocketReceiveResult, string, Task> handleMessage) {
             var buffer = new ArraySegment<byte>(new byte[1024 * 4]);
             var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
             LogFrame(result, buffer.Array);
@@ -108,7 +108,7 @@ namespace Exceptionless.Web.Hubs {
                         data = await reader.ReadToEndAsync();
                 }
 
-                handleMessage(result, data);
+                await handleMessage(result, data);
             }
         }
 

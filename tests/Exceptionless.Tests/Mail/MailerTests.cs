@@ -199,8 +199,10 @@ namespace Exceptionless.Tests.Mail {
 
             await RunMailJobAsync();
 
-            if (GetService<IMailSender>() is InMemoryMailSender sender)
-                Assert.Contains("Join Organization", sender.LastMessage.Body);
+            var sender = GetService<IMailSender>() as InMemoryMailSender;
+            Assert.NotNull(sender);
+
+            Assert.Contains("Join Organization", sender.LastMessage.Body);
         }
 
         [Fact]

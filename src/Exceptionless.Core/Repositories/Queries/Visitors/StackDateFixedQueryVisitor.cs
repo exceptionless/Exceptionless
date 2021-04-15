@@ -15,17 +15,17 @@ namespace Exceptionless.Core.Repositories.Queries {
             _dateFixedFieldName = dateFixedFieldName;
         }
 
-        public override Task VisitAsync(TermNode node, IQueryVisitorContext context) {
+        public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context) {
             if (!String.Equals(node.Field, "fixed", StringComparison.OrdinalIgnoreCase))
-                return Task.CompletedTask;
+                return Task.FromResult<IQueryNode>(node);
 
             if (!Boolean.TryParse(node.Term, out bool isFixed))
-                return Task.CompletedTask;
+                return Task.FromResult<IQueryNode>(node);
 
             var query = new ExistsQuery { Field = _dateFixedFieldName };
             node.SetQuery(isFixed ? query : !query);
 
-            return Task.CompletedTask;
+            return Task.FromResult<IQueryNode>(node);
         }
     }
 }

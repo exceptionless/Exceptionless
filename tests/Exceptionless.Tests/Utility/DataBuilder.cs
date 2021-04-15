@@ -6,6 +6,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
 using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
@@ -32,7 +33,8 @@ namespace Exceptionless.Tests.Utility {
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly ISerializer _serializer;
         private readonly ICollection<Action<Stack>> _stackMutations;
-        private PersistentEvent _event = new PersistentEvent();
+        private int _additionalEventsToCreate = 0;
+        private readonly PersistentEvent _event = new PersistentEvent();
         private Stack _stack = null;
         private EventDataBuilder _stackEventBuilder;
         private bool _isFirstOccurrenceSet = false;
@@ -76,7 +78,6 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder Id(string id) {
             _event.Id = id;
-
             return this;
         }
 
@@ -121,11 +122,9 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder Date(string date) {
             if (DateTimeOffset.TryParse(date, out var dt))
-                _event.Date = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(date));
-
-            return this;
+                return Date(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(date));
         }
 
         public EventDataBuilder IsFirstOccurrence(bool isFirstOccurrence = true) {
@@ -142,15 +141,14 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder CreatedDate(string createdUtc) {
             if (DateTime.TryParse(createdUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(createdUtc));
-
-            return this;
+                return CreatedDate(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(createdUtc));
         }
 
         public EventDataBuilder Message(string message) {
             _event.Message = message;
+            _stackMutations.Add(s => s.Title = message);
             return this;
         }
 
@@ -269,7 +267,7 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public EventDataBuilder Status(StackStatus status) {
-            _stackMutations.Add(s => s.Status = StackStatus.Open);
+            _stackMutations.Add(s => s.Status = status);
 
             return this;
         }
@@ -284,8 +282,10 @@ namespace Exceptionless.Tests.Utility {
             if (occurrencesAreCritical)
                 _event.MarkAsCritical();
 
-            _stackMutations.Add(s => s.OccurrencesAreCritical = occurrencesAreCritical);
-
+            _stackMutations.Add(s => {
+                s.OccurrencesAreCritical = occurrencesAreCritical;
+                s.Tags.Add(Event.KnownTags.Critical);
+            });
             return this;
         }
 
@@ -294,8 +294,19 @@ namespace Exceptionless.Tests.Utility {
 
             return this;
         }
+        
+        public EventDataBuilder Create(int additionalOccurrences) {
+            _additionalEventsToCreate = additionalOccurrences;
+            _stackMutations.Add(s => {
+                if (s.TotalOccurrences <= additionalOccurrences)
+                    s.TotalOccurrences = additionalOccurrences + 1;
+            });
 
+            return this;
+        }
+        
         public EventDataBuilder FirstOccurrence(DateTime firstOccurrenceUtc) {
+            _event.CreatedUtc = firstOccurrenceUtc;
             _stackMutations.Add(s => s.FirstOccurrence = firstOccurrenceUtc);
 
             return this;
@@ -303,49 +314,53 @@ namespace Exceptionless.Tests.Utility {
 
         public EventDataBuilder FirstOccurrence(string firstOccurrenceUtc) {
             if (DateTime.TryParse(firstOccurrenceUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(firstOccurrenceUtc));
-
-            _stackMutations.Add(s => s.FirstOccurrence = dt);
-
-            return this;
+                return FirstOccurrence(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(firstOccurrenceUtc));
         }
 
         public EventDataBuilder LastOccurrence(DateTime lastOccurrenceUtc) {
-            _stackMutations.Add(s => s.LastOccurrence = lastOccurrenceUtc);
+            if (_event.CreatedUtc.IsAfter(lastOccurrenceUtc))
+                _event.CreatedUtc = lastOccurrenceUtc;
 
+            if (_event.Date.IsAfter(lastOccurrenceUtc))
+                _event.Date = lastOccurrenceUtc;
+            
+            _stackMutations.Add(s => {
+                if (s.FirstOccurrence.IsAfter(lastOccurrenceUtc))
+                    s.FirstOccurrence = lastOccurrenceUtc;
+                
+                s.LastOccurrence = lastOccurrenceUtc;
+            });
+            
             return this;
         }
 
         public EventDataBuilder LastOccurrence(string lastOccurrenceUtc) {
             if (DateTime.TryParse(lastOccurrenceUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(lastOccurrenceUtc));
+                return LastOccurrence(dt);
             
-            _stackMutations.Add(s => s.LastOccurrence = dt);
-
-            return this;
+            throw new ArgumentException("Invalid date specified", nameof(lastOccurrenceUtc));
         }
 
         public EventDataBuilder DateFixed(DateTime? dateFixed = null) {
             Status(StackStatus.Fixed);
-            _stackMutations.Add(s => s.DateFixed = dateFixed ?? SystemClock.UtcNow);
+            _stackMutations.Add(s => {
+                var fixedOn = dateFixed ?? SystemClock.UtcNow;
+                if (s.FirstOccurrence.IsAfter(fixedOn))
+                    throw new ArgumentException("Fixed on date is before first occurence");
+                
+                s.DateFixed = fixedOn;
+            });
 
             return this;
         }
 
         public EventDataBuilder DateFixed(string dateFixedUtc) {
             if (DateTime.TryParse(dateFixedUtc, out var dt))
-                _event.CreatedUtc = dt;
-            else
-                throw new ArgumentException("Invalid date specified", nameof(dateFixedUtc));
-
-            Status(StackStatus.Fixed);
-            _stackMutations.Add(s => s.DateFixed = dt);
-
-            return this;
+                return DateFixed(dt);
+            
+            throw new ArgumentException("Invalid date specified", nameof(dateFixedUtc));
         }
 
         public EventDataBuilder FixedInVersion(string version) {
@@ -368,9 +383,9 @@ namespace Exceptionless.Tests.Utility {
         }
 
         private bool _isBuilt = false;
-        public (Stack Stack, PersistentEvent Event) Build() {
-            if (_isBuilt)
-                return (_stack, _event);
+        public (Stack Stack, PersistentEvent[] Events) Build() {
+            if (_isBuilt) 
+                return (_stack, BuildEvents(_stack, _event));
 
             if (String.IsNullOrEmpty(_event.OrganizationId))
                 _event.OrganizationId = SampleDataService.TEST_ORG_ID;
@@ -464,8 +479,25 @@ namespace Exceptionless.Tests.Utility {
             _event.StackId = _stack.Id;
 
             _isBuilt = true;
+            return (_stack, BuildEvents(_stack, _event));
+        }
 
-            return (_stack, _event);
+        private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev) {
+            var events = new List<PersistentEvent>(_additionalEventsToCreate) { ev };
+            if (_additionalEventsToCreate <= 0) 
+                return events.ToArray();
+            
+            int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / _additionalEventsToCreate;
+            for (int index = 0; index < stack.TotalOccurrences - 1; index++) {
+                var clone = ev.DeepClone();
+                clone.Id = null;
+                if (interval > 0)
+                    clone.Date = new DateTimeOffset(stack.FirstOccurrence.AddMilliseconds(interval * index), ev.Date.Offset);
+
+                events.Add(clone);
+            }
+
+            return events.ToArray();
         }
 
         private const string _sampleRequestInfo = @"{

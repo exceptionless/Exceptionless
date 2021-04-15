@@ -1,0 +1,5 @@
+recommender:
+  extraArgs:
+    prometheus-address: |
+      http://kubecost-prometheus-server.kubecost.svc.cluster.local
+    storage: prometheus
