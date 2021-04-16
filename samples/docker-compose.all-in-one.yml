@@ -1,0 +1,19 @@
+version: '3.5'
+
+# Runs the all in one Exceptionless docker image and a Kibana instance pointing to the Elasticsearch running inside of it
+
+services:
+  elasticsearch:
+    image: exceptionless
+    ports:
+      - 5000:80
+      - 9200:9200
+      - 9300:9300
+
+  kibana:
+    depends_on:
+      - elasticsearch
+    image: docker.elastic.co/kibana/kibana:7.12.0
+    ports:
+      - 5601:5601
+

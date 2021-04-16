@@ -19,3 +19,5 @@ docker run --rm -it -p 5000:80 -p 5001:443 \
     -v ~/esdata:/usr/share/elasticsearch/data \
     exceptionless/exceptionless:latest
 
+# run the datamigration job
+docker run --rm -it exceptionless/exceptionless:latest DataMigration

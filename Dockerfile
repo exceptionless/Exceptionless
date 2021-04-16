@@ -1,4 +1,4 @@
-ARG UI_VERSION=ui:latest
+ARG UI_VERSION="ui:latest"
 FROM exceptionless/${UI_VERSION} AS ui
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
@@ -81,6 +81,7 @@ CMD [ "dotnet", "Exceptionless.Web.dll" ]
 FROM exceptionless/elasticsearch:7.12.0 AS exceptionless
 
 WORKDIR /app
+COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY --from=ui /app ./wwwroot
 COPY --from=ui /usr/local/bin/bootstrap /usr/local/bin/bootstrap
