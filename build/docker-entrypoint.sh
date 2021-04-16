@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# ensure the correct owner for the Elasticsearch data directory
+chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/data
+
 if [ "$#" -ne 0 ]; then
     echo "Running Exceptionless Job $@"
 
