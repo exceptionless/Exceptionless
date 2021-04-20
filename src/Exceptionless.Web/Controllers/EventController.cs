@@ -162,14 +162,13 @@ namespace Exceptionless.Web.Controllers {
         /// Get by id
         /// </summary>
         /// <param name="id">The identifier of the event.</param>
-        /// <param name="filter">A filter that controls what data is returned from the server.</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
         /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         /// <response code="404">The event occurrence could not be found.</response>
         /// <response code="426">Unable to view event occurrence due to plan limits.</response>
         [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
         [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-        public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string filter = null, string time = null, string offset = null) {
+        public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string time = null, string offset = null) {
             var model = await GetModelAsync(id, false);
             if (model == null)
                 return NotFound();
@@ -181,16 +180,9 @@ namespace Exceptionless.Web.Controllers {
             if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < SystemClock.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
-            if (!String.IsNullOrEmpty(filter))
-                filter = filter.ReplaceFirst("stack:current", $"stack:{model.StackId}");
-
-            var pr = await _validator.ValidateQueryAsync(filter);
-            if (!pr.IsValid)
-                return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
-
             var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
             var sf = new AppFilter(organization);
-            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, filter, ti.Range.UtcStart, ti.Range.UtcEnd);
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
             return OkWithLinks(model, new [] { GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent") });
         }
 
