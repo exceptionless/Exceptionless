@@ -10,8 +10,6 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
 
-#pragma warning disable 1998
-
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Processes queued event user descriptions.", InitialDelay = "3s")]
     public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription> {

@@ -83,14 +83,14 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext context = null) {
-            context = context ?? new ElasticQueryVisitorContext();
+            context ??= new ElasticQueryVisitorContext();
             var result = await _parser.ParseAsync(query, context);
             await _eventQueryVisitor.AcceptAsync(result, context);
             return result.ToString();
         }
 
         public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext context = null) {
-            context = context ?? new ElasticQueryVisitorContext();
+            context ??= new ElasticQueryVisitorContext();
             var result = await _parser.ParseAsync(query, context);
             var invertedResult = result.Clone();
 
