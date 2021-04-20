@@ -56,12 +56,78 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public async Task CanPostUserDescriptionAsync() {
+            const string json = "{\"message\":\"test\",\"reference_id\":\"TestReferenceId\",\"@user\":{\"identity\":\"Test user\",\"name\":null}}";
             await SendRequestAsync(r => r
-               .Post()
-               .AsTestOrganizationClientUser()
-               .AppendPath("events/by-ref/TestReferenceId/user-description")
-               .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
-               .StatusCodeShouldBeAccepted()
+                .Post()
+                .AsTestOrganizationClientUser()
+                .AppendPath("events")
+                .Content(json, "application/json")
+                .StatusCodeShouldBeAccepted()
+            );
+
+            var stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
+
+            var processEventsJob = GetService<EventPostsJob>();
+            await processEventsJob.RunAsync();
+            await RefreshDataAsync();
+
+            stats = await _eventQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Completed);
+
+            var events = await _eventRepository.GetAllAsync();
+            var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
+            Assert.Equal("test", ev.Message);
+            Assert.Equal("TestReferenceId", ev.ReferenceId);
+
+            var identity = ev.GetUserIdentity();
+            Assert.Equal("Test user", identity.Identity);
+            Assert.Null(identity.Name);
+            Assert.Null(identity.Name);
+            Assert.Null(ev.GetUserDescription());
+
+            // post description
+            await _eventUserDescriptionQueue.DeleteQueueAsync();
+            await SendRequestAsync(r => r
+                .Post()
+                .AsTestOrganizationClientUser()
+                .AppendPath("events/by-ref/TestReferenceId/user-description")
+                .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
+                .StatusCodeShouldBeAccepted()
+            );
+
+            stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Enqueued);
+            Assert.Equal(0, stats.Completed);
+
+            var userDescriptionJob = GetService<EventUserDescriptionsJob>();
+            await userDescriptionJob.RunAsync();
+
+            stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
+            Assert.Equal(1, stats.Dequeued);
+            Assert.Equal(0, stats.Abandoned);
+            Assert.Equal(1, stats.Completed);
+
+            ev = await _eventRepository.GetByIdAsync(ev.Id);
+            identity = ev.GetUserIdentity();
+            Assert.Equal("Test user", identity.Identity);
+            Assert.Null(identity.Name);
+            Assert.Null(identity.Name);
+
+            var description = ev.GetUserDescription();
+            Assert.Equal("Test Description", description.Description);
+            Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
+        }
+
+        [Fact]
+        public async Task CanPostUserDescriptionWithNoMatchingEventAsync() {
+            await SendRequestAsync(r => r
+                .Post()
+                .AsTestOrganizationClientUser()
+                .AppendPath("events/by-ref/TestReferenceId/user-description")
+                .Content(new EventUserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
+                .StatusCodeShouldBeAccepted()
             );
 
             var stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
@@ -442,7 +508,7 @@ namespace Exceptionless.Tests.Controllers {
         public async Task CheckStackModeCounts(string filter, int expected) {
             await CreateStacksAndEventsAsync();
 
-            var modes = new [] { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
+            string[] modes = new [] { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
             foreach (string mode in modes) {
                 var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                     .AsGlobalAdminUser()
@@ -563,7 +629,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(1, dateAggStackCount);
             Assert.Equal(1, dateAggEventCount);
             
-            var total = countResult.Aggregations.Sum("sum_count")?.Value;
+            double? total = countResult.Aggregations.Sum("sum_count")?.Value;
             double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
             
@@ -679,7 +745,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(2, dateAggStackCount);
             Assert.Equal(2, dateAggEventCount);
             
-            var total = countResult.Aggregations.Sum("sum_count")?.Value;
+            double? total = countResult.Aggregations.Sum("sum_count")?.Value;
             double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
             double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
             
