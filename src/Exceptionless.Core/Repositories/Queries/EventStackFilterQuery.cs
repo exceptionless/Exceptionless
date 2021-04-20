@@ -62,12 +62,11 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
-            string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
-
-            if (String.IsNullOrEmpty(filter) && !ctx.Source.ShouldEnforceEventStackFilter())
+            if (!ctx.Source.ShouldEnforceEventStackFilter())
                 return;
 
             // TODO: Handle search expressions as well
+            string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
             bool altInvertRequested = false;
             if (filter.StartsWith("@!")) {
                 altInvertRequested = true;
@@ -130,7 +129,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             }
 
             // Strips stack only fields and stack only special fields
-            var eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
+            string eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
             ctx.Source.FilterExpression(eventFilter);
         }
 

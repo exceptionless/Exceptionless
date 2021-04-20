@@ -72,7 +72,7 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         private Task<FindResults<PersistentEvent>> GetAsync(string filter) {
-            return _eventRepository.FindAsync(q => q.FilterExpression(filter), o => o.QueryLogLevel(LogLevel.Information));
+            return _eventRepository.FindAsync(q => q.FilterExpression(filter).EnforceEventStackFilter(), o => o.QueryLogLevel(LogLevel.Information));
         }
     }
 }

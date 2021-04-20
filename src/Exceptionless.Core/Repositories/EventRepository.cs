@@ -69,9 +69,9 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
         }
 
-        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, string userFilter, DateTime? utcStart, DateTime? utcEnd) {
-            var previous = GetPreviousEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd);
-            var next = GetNextEventIdAsync(ev, systemFilter, userFilter, utcStart, utcEnd);
+        public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, DateTime? utcStart, DateTime? utcEnd) {
+            var previous = GetPreviousEventIdAsync(ev, systemFilter, utcStart, utcEnd);
+            var next = GetNextEventIdAsync(ev, systemFilter, utcStart, utcEnd);
             await Task.WhenAll(previous, next).AnyContext();
 
             return new PreviousAndNextEventIdResult {
@@ -80,7 +80,7 @@ namespace Exceptionless.Core.Repositories {
             };
         }
 
-        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -96,9 +96,6 @@ namespace Exceptionless.Core.Repositories {
             if (utcStart > utcEventDate || utcEnd < utcEventDate)
                 return null;
 
-            if (String.IsNullOrEmpty(userFilter))
-                userFilter = String.Concat(EventIndex.Alias.StackId, ":", ev.StackId);
-
             var results = await FindAsync(q => q
                 .DateRange(utcStart, utcEventDate, (PersistentEvent e) => e.Date)
                 .Index(utcStart, utcEventDate)
@@ -106,7 +103,8 @@ namespace Exceptionless.Core.Repositories {
                 .Include(e => e.Id, e => e.Date)
                 .AppFilter(systemFilter)
                 .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-                .FilterExpression(userFilter), o => o.PageLimit(10)).AnyContext();
+                .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+                .EnforceEventStackFilter(false), o => o.PageLimit(10)).AnyContext();
 
             if (results.Total == 0)
                 return null;
@@ -125,7 +123,7 @@ namespace Exceptionless.Core.Repositories {
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
-        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+        private async Task<string> GetNextEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null,  DateTime? utcStart = null, DateTime? utcEnd = null) {
             if (ev == null)
                 return null;
 
@@ -140,9 +138,6 @@ namespace Exceptionless.Core.Repositories {
             if (utcStart > utcEventDate || utcEnd < utcEventDate)
                 return null;
 
-            if (String.IsNullOrEmpty(userFilter))
-                userFilter = String.Concat(EventIndex.Alias.StackId, ":", ev.StackId);
-
             var results = await FindAsync(q => q
                 .DateRange(utcEventDate, utcEnd, (PersistentEvent e) => e.Date)
                 .Index(utcEventDate, utcEnd)
@@ -150,7 +145,8 @@ namespace Exceptionless.Core.Repositories {
                 .Include(e => e.Id, e => e.Date)
                 .AppFilter(systemFilter)
                 .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-                .FilterExpression(userFilter), o => o.PageLimit(10)).AnyContext();
+                .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+                .EnforceEventStackFilter(false), o => o.PageLimit(10)).AnyContext();
 
             if (results.Total == 0)
                 return null;
@@ -178,10 +174,6 @@ namespace Exceptionless.Core.Repositories {
 
         public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null) {
             return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
-        }
-
-        public Task<CountResult> GetCountByProjectIdAsync(string projectId, bool includeDeleted = false) {
-            return CountAsync(q => q.Project(projectId));
         }
         
         public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {

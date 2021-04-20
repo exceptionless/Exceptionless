@@ -103,10 +103,10 @@ namespace Exceptionless.Tests.Search {
             Log.SetLogLevel<EventRepository>(LogLevel.Trace);
             Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
-            var events = await _eventRepository.FindAsync(q => q.FilterExpression(filter), o => o.PageLimit(1000));
+            var events = await _eventRepository.FindAsync(q => q.FilterExpression(filter).EnforceEventStackFilter(), o => o.PageLimit(1000));
             Assert.Equal(expected, events.Total);
 
-            var invertedEvents = await _eventRepository.FindAsync(q => q.FilterExpression("@!" + filter), o => o.PageLimit(1000));
+            var invertedEvents = await _eventRepository.FindAsync(q => q.FilterExpression("@!" + filter).EnforceEventStackFilter(), o => o.PageLimit(1000));
             Assert.Equal(expected, invertedEvents.Total);
         }
     }

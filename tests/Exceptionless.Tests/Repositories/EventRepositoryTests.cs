@@ -140,6 +140,19 @@ namespace Exceptionless.Tests.Repositories {
         }
 
         [Fact]
+        public async Task CanGetPreviousAndNExtEventIdWithFilterTestAsync() {
+            await CreateDataAsync();
+            Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+            Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+
+            var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
+            var result = await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[1].Item1);
+            Assert.Equal(sortedIds[0].Item1, result.Previous);
+            Assert.Equal(sortedIds[2].Item1, result.Next);
+        }
+
+        [Fact]
         public async Task GetByReferenceIdAsync() {
             string referenceId = ObjectId.GenerateNewId().ToString();
             await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList());
