@@ -64,7 +64,7 @@ namespace Exceptionless.Tests.Search {
         public async Task VerifyStackFilter(string filter, int expected, int? expectedInverted = null) {
             Log.SetLogLevel<StackRepository>(LogLevel.Trace);
 
-            var totalStacks = await _stackRepository.CountAsync(o => o.IncludeSoftDeletes());
+            long totalStacks = await _stackRepository.CountAsync(o => o.IncludeSoftDeletes());
 
             var ctx = new ElasticQueryVisitorContext();
             var stackFilter = await new EventStackFilter().GetStackFilterAsync(filter, ctx);
@@ -74,7 +74,7 @@ namespace Exceptionless.Tests.Search {
 
             _logger.LogInformation("Finding Inverted Filter: {Filter}", stackFilter.InvertedFilter);
             var invertedStacks = await _stackRepository.FindAsync(q => q.FilterExpression(stackFilter.InvertedFilter), o => o.SoftDeleteMode(SoftDeleteQueryMode.All).PageLimit(1000));
-            var expectedInvert = expectedInverted.HasValue ? expectedInverted.Value : totalStacks - expected;
+            long expectedInvert = expectedInverted ?? totalStacks - expected;
             Assert.Equal(expectedInvert, invertedStacks.Total);
 
             var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
