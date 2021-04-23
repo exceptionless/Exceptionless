@@ -4,7 +4,7 @@ version: '3.5'
 
 services:
   elasticsearch:
-    image: exceptionless
+    image: exceptionless/execeptionless:latest
     ports:
       - 5000:80
       - 9200:9200
