@@ -10,7 +10,7 @@
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="4.0.1" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.0.0" />
-    <PackageReference Include="Foundatio.AppMetrics" Version="10.1.1" />
+    <PackageReference Include="Foundatio.AppMetrics" Version="10.1.3" />
     <PackageReference Include="Foundatio.AWS" Version="10.0.2" />
     <PackageReference Include="Foundatio.AzureStorage" Version="10.0.2" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.1.1" />
