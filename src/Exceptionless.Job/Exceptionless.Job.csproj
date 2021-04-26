@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.5" />
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.2.0" />
-    <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.1.1" />
+    <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.1.3" />
   </ItemGroup>
 
   <ItemGroup>
