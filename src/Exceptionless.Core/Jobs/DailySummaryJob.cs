@@ -135,7 +135,7 @@ namespace Exceptionless.Core.Jobs {
             _logger.LogInformation("Sending daily summary: users={UserCount} project={project}", users.Count, project.Id);
             var sf = new AppFilter(project, organization);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
-            string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:false";
+            string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} ({StackIndex.Alias.Status}:open {StackIndex.Alias.Status}:regressed)";
             var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
 
             double total = result.Aggregations.Sum("sum_count")?.Value ?? result.Total;
@@ -144,7 +144,7 @@ namespace Exceptionless.Core.Jobs {
             bool hasSubmittedEvents = total > 0 || project.IsConfigured.GetValueOrDefault();
             bool isFreePlan = organization.PlanId == _plans.FreePlan.Id;
 
-            string fixedFilter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {EventIndex.Alias.IsHidden}:false {EventIndex.Alias.IsFixed}:true";
+            string fixedFilter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {StackIndex.Alias.Status}:fixed";
             var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).AggregationsExpression("sum:count~1")).AnyContext();
             double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
