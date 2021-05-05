@@ -257,8 +257,6 @@ ctx.error.code = codes;";
             public const string Value = "value";
             public const string Count = "count";
             public const string IsFirstOccurrence = "first";
-            public const string IsFixed = "fixed";
-            public const string IsHidden = "hidden";
             public const string IDX = "idx";
 
             public const string Version = "version";

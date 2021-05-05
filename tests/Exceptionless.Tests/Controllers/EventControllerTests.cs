@@ -502,6 +502,7 @@ namespace Exceptionless.Tests.Controllers {
         [InlineData("type:log status:fixed", 2)]
         [InlineData("type:log version_fixed:1.2.3", 1)]
         [InlineData("type:error is_hidden:false is_fixed:false is_regressed:true", 1)]
+        [InlineData("type:error hidden:false fixed:false", 1)]
         [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
         [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
         [InlineData("type:error", 1)]
