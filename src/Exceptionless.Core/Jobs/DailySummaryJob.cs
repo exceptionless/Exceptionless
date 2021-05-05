@@ -135,8 +135,8 @@ namespace Exceptionless.Core.Jobs {
             _logger.LogInformation("Sending daily summary: users={UserCount} project={project}", users.Count, project.Id);
             var sf = new AppFilter(project, organization);
             var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
-            string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} ({StackIndex.Alias.Status}:open {StackIndex.Alias.Status}:regressed)";
-            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
+            string filter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} ({StackIndex.Alias.Status}:open OR {StackIndex.Alias.Status}:regressed)";
+            var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
 
             double total = result.Aggregations.Sum("sum_count")?.Value ?? result.Total;
             double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
@@ -145,7 +145,7 @@ namespace Exceptionless.Core.Jobs {
             bool isFreePlan = organization.PlanId == _plans.FreePlan.Id;
 
             string fixedFilter = $"{EventIndex.Alias.Type}:{Event.KnownTypes.Error} {StackIndex.Alias.Status}:fixed";
-            var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).AggregationsExpression("sum:count~1")).AnyContext();
+            var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).EnforceEventStackFilter().AggregationsExpression("sum:count~1")).AnyContext();
             double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
             var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
