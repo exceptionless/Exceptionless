@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Utility;
@@ -80,8 +81,22 @@ namespace Exceptionless.Tests.Controllers {
             var workItemJob = GetService<WorkItemJob>();
             await workItemJob.RunUntilEmptyAsync();
             await RefreshDataAsync();
+            
+            projects = await SendRequestAsAsync<List<ViewProject>>(r => r
+                .AsTestOrganizationUser()
+                .AppendPath("projects")
+                .QueryString("mode", "stats")
+                .StatusCodeShouldBeOk()
+            );
 
-            Log.MinimumLevel = LogLevel.Trace;
+            project = projects.Single();
+            // Stacks and event counts include soft deleted (performance reasons)
+            Assert.Equal(stacks.Count, project.StackCount);
+            Assert.Equal(events.Count, project.EventCount);
+
+            var cleanupJob = GetService<CleanupDataJob>();
+            await cleanupJob.RunAsync();
+
             projects = await SendRequestAsAsync<List<ViewProject>>(r => r
                 .AsTestOrganizationUser()
                 .AppendPath("projects")
