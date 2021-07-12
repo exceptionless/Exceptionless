@@ -25,7 +25,7 @@
     <PackageReference Include="AutoMapper.Collection" Version="7.0.1" />
     <PackageReference Include="FluentValidation" Version="9.5.3" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.1.1" />
-    <PackageReference Include="Foundatio.JsonNet" Version="10.1.1" />
+    <PackageReference Include="Foundatio.JsonNet" Version="10.2.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.12.0" />
     <PackageReference Include="Handlebars.Net" Version="2.0.7" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.1" />
