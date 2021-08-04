@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;

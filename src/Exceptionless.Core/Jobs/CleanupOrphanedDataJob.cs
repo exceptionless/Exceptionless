@@ -12,6 +12,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;

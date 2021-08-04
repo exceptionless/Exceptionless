@@ -13,6 +13,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 using Foundatio.Lock;
+using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]

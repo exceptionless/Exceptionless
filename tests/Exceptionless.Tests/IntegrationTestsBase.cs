@@ -35,6 +35,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories;
 using Amazon.CloudWatch.Model;
+using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Tests {
     public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
