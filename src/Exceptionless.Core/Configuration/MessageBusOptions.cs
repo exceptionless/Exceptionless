@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Extensions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 

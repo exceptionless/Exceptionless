@@ -8,6 +8,7 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
 using Foundatio.Utility;

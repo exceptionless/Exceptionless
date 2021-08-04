@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
+using Foundatio.Repositories.Extensions;
 using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Serializer {

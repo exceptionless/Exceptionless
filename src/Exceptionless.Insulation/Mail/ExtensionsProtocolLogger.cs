@@ -10,6 +10,8 @@ namespace Exceptionless.Insulation.Mail {
 
         private readonly ILogger _logger;
 
+        public IAuthenticationSecretDetector AuthenticationSecretDetector { get; set; }
+
         public ExtensionsProtocolLogger(ILogger logger) {
             _logger = logger;
         }

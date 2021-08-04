@@ -19,6 +19,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
 using McSherry.SemanticVersioning;

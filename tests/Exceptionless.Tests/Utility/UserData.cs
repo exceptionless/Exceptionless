@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Tests.Utility {
