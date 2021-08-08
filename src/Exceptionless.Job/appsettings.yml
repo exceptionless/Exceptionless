@@ -11,8 +11,12 @@ Serilog:
       System: Warning
       Foundatio.Utility.ScheduledTimer: Warning
       Foundatio.Metrics: Warning
+      Microsoft.AspNetCore.Hosting.Diagnostics: Warning
+      Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
   WriteTo:
   - Name: Console
+    Args: 
+      theme: "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Literate, Serilog.Sinks.Console"
   Enrich:
   - FromLogContext
   - WithMachineName

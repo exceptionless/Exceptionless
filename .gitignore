@@ -74,9 +74,6 @@ _Ncrunch*
 *.Publish.xml
 *.pubxml
 
-# NuGet Packages Directory
-packages/
-
 # Others
 *.Cache
 [Ss]tyle[Cc]op.*

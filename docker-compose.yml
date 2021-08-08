@@ -12,7 +12,6 @@ services:
       ES_JAVA_OPTS: -Xms1g -Xmx1g
     ports:
       - 9200:9200
-      - 9300:9300
 
   kibana:
     depends_on:
@@ -20,6 +19,29 @@ services:
     image: docker.elastic.co/kibana/kibana:7.14.0
     ports:
       - 5601:5601
+
+  apm:
+    image: docker.elastic.co/apm/apm-server:7.14.0
+    depends_on:
+      - elasticsearch
+    ports:
+      - 8200:8200
+    command: >
+       apm-server -e
+         -E apm-server.rum.enabled=true
+         -E setup.kibana.host=kibana:5601
+         -E setup.template.settings.index.number_of_replicas=0
+         -E apm-server.kibana.enabled=true
+         -E apm-server.kibana.host=kibana:5601
+         -E output.elasticsearch.hosts=["elasticsearch:9200"]
+
+  otel:
+    image: otel/opentelemetry-collector:latest
+    ports:
+      - 4317:4317
+    volumes:
+      - ./otel-config.yml:/etc/otel-config.yaml:ro
+    command: [ "--config=/etc/otel-config.yaml", "--log-level=DEBUG" ]
 
   redis:
     image: redis:6-alpine
