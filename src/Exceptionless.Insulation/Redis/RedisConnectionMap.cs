@@ -9,9 +9,9 @@ using StackExchange.Redis;
 namespace Exceptionless.Insulation.Redis {
     public sealed class RedisConnectionMapping : IConnectionMapping {
         private const string KeyPrefix = "Hub:";
-        private readonly ConnectionMultiplexer _muxer;
+        private readonly IConnectionMultiplexer _muxer;
 
-        public RedisConnectionMapping(ConnectionMultiplexer muxer) {
+        public RedisConnectionMapping(IConnectionMultiplexer muxer) {
             _muxer = muxer;
         }
 
