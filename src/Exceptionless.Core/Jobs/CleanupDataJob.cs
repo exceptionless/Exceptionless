@@ -117,9 +117,6 @@ namespace Exceptionless.Core.Jobs {
                 foreach (var stack in stackResults.Documents) {
                     using var _ = _logger.BeginScope(new ExceptionlessState().Organization(stack.OrganizationId).Project(stack.ProjectId));
                     await RemoveStackAsync(stack, context).AnyContext();
-
-                    // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
@@ -213,9 +210,6 @@ namespace Exceptionless.Core.Jobs {
                     using var _ = _logger.BeginScope(new ExceptionlessState().Project(stack.ProjectId));
                     await RemoveStackAsync(stack, context).AnyContext();
                     removedStacks++;
-
-                    // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
