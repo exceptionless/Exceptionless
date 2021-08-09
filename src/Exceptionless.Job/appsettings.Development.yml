@@ -18,4 +18,4 @@ Apm:
   Enabled: false
   FullDetails: true
   SampleRate: 1.0
-  Debug: true
+  Debug: false

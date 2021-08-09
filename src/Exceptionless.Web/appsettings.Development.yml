@@ -1,4 +1,4 @@
-﻿---
+---
 ConnectionStrings:
 #  Redis: server="localhost,abortConnect=false"
 #  Elasticsearch: server=http://localhost:9200
@@ -22,4 +22,4 @@ Apm:
   Enabled: false
   FullDetails: true
   SampleRate: 1.0
-  Debug: true
+  Debug: false
