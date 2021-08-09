@@ -115,29 +115,48 @@ namespace Exceptionless.Core.Extensions {
                 new EventId(18, nameof(RemoveStackComplete)),
                 "Removed stack: {StackId}, Removed {RemovedEvents} Events");
 
-        private static readonly Action<ILogger, DateTime, string, string, Exception?> _retentionEnforcementStart =
-            LoggerMessage.Define<DateTime, string, string>(
+        private static readonly Action<ILogger, DateTime, string, string, long, Exception?> _retentionEnforcementStackStart =
+            LoggerMessage.Define<DateTime, string, string, long>(
                 LogLevel.Information,
-                new EventId(19, nameof(RetentionEnforcementStart)),
-                "Enforcing event count limits older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).");
+                new EventId(19, nameof(RetentionEnforcementStackStart)),
+                "Enforcing stack retention period older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}), Found {TotalStacks} Stacks");
 
-        private static readonly Action<ILogger, string, string, long, Exception?> _retentionEnforcementComplete =
+        private static readonly Action<ILogger, string, string, long, Exception?> _retentionEnforcementStackComplete =
             LoggerMessage.Define<string, string, long>(
                 LogLevel.Information,
-                new EventId(20, nameof(RetentionEnforcementComplete)),
-                "Enforced retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events");
+                new EventId(20, nameof(RetentionEnforcementStackComplete)),
+                "Enforced stack retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedStacks} Stacks");
 
-        public static void RetentionEnforcementComplete(this ILogger logger, string organizationName, string organizationId, long removedEvents)
-            => _retentionEnforcementComplete(logger, organizationName, organizationId, removedEvents, null);
+        private static readonly Action<ILogger, DateTime, string, string, Exception?> _retentionEnforcementEventStart =
+            LoggerMessage.Define<DateTime, string, string>(
+                LogLevel.Information,
+                new EventId(21, nameof(RetentionEnforcementEventStart)),
+                "Enforcing event retention period older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).");
 
-        public static void RetentionEnforcementStart(this ILogger logger, DateTime cutoff, string organizationName, string organizationId)
-            => _retentionEnforcementStart(logger, cutoff, organizationName, organizationId, null);
-
-        public static void RemoveStackComplete(this ILogger logger, string stackId, long removedEvents)
-            => _removeStackComplete(logger, stackId, removedEvents, null);
+        private static readonly Action<ILogger, string, string, long, Exception?> _retentionEnforcementEventComplete =
+            LoggerMessage.Define<string, string, long>(
+                LogLevel.Information,
+                new EventId(22, nameof(RetentionEnforcementEventComplete)),
+                "Enforced event retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events");
 
         public static void RemoveStackStart(this ILogger logger, string stackId)
             => _removeStackStart(logger, stackId, null);
+        public static void RemoveStackComplete(this ILogger logger, string stackId, long removedStacks)
+            => _removeStackComplete(logger, stackId, removedStacks, null);
+
+        public static void RetentionEnforcementStackStart(this ILogger logger, DateTime cutoff, string organizationName, string organizationId, long totalStacks)
+            => _retentionEnforcementStackStart(logger, cutoff, organizationName, organizationId, totalStacks, null);
+
+        public static void RetentionEnforcementStackComplete(this ILogger logger, string organizationName, string organizationId, long removedEvents)
+            => _retentionEnforcementStackComplete(logger, organizationName, organizationId, removedEvents, null);
+
+
+        public static void RetentionEnforcementEventStart(this ILogger logger, DateTime cutoff, string organizationName, string organizationId)
+            => _retentionEnforcementEventStart(logger, cutoff, organizationName, organizationId, null);
+
+        public static void RetentionEnforcementEventComplete(this ILogger logger, string organizationName, string organizationId, long removedEvents)
+            => _retentionEnforcementEventComplete(logger, organizationName, organizationId, removedEvents, null);
+
 
         public static void RemoveProjectComplete(this ILogger logger, string projectName, string projectId, long removedStacks, long removedEvents)
             => _removeProjectComplete(logger, projectName, projectId, removedStacks, removedEvents, null);
