@@ -13,6 +13,8 @@ Serilog:
       Foundatio.Metrics: Warning
       Microsoft.AspNetCore.Hosting.Diagnostics: Warning
       Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
+      Exceptionless: Information
+      Foundatio: Information
   WriteTo:
   - Name: Console
     Args: 
