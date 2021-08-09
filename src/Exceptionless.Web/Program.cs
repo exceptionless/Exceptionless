@@ -14,7 +14,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry;
 using Serilog;
+using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
@@ -53,16 +55,20 @@ namespace Exceptionless.Web {
             return CreateHostBuilder(config, environment);
         }
 
-        public static IHostBuilder CreateHostBuilder(IConfiguration config, string environment) {
+        public static IHostBuilder CreateHostBuilder(IConfigurationRoot config, string environment) {
             Console.Title = "Exceptionless Web";
 
             var options = AppOptions.ReadFromConfiguration(config);
 
-            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
+            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config)
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithSpan();
+
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
 
-            Log.Logger = loggerConfig.CreateLogger();
+            Log.Logger = loggerConfig.CreateBootstrapLogger();
             var configDictionary = config.ToDictionary("Serilog");
             Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 
@@ -84,6 +90,7 @@ namespace Exceptionless.Web {
                     services.AddSingleton(config);
                     services.AddAppOptions(options);
                     services.AddHttpContextAccessor();
+                    services.AddApm(new ApmConfig(config, "Exceptionless.Web", "Exceptionless", options.InformationalVersion, options.CacheOptions.Provider == "redis"));
                 });
 
             if (!String.IsNullOrEmpty(options.MetricOptions.Provider))

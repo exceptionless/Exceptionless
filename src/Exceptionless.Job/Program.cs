@@ -23,7 +23,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
 using Serilog;
+using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
@@ -65,7 +67,11 @@ namespace Exceptionless.Job {
 
             var options = AppOptions.ReadFromConfiguration(config);
  
-            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
+            var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config)
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithSpan();
+
             if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                 loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
 
@@ -80,11 +86,14 @@ namespace Exceptionless.Job {
                     webBuilder
                         .UseConfiguration(config)
                         .Configure(app => {
-                            app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
-                                if (ex != null || context.Response.StatusCode > 499)
-                                    return LogEventLevel.Error;
-                
-                                return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
+                            app.UseSerilogRequestLogging(o => {
+                                o.MessageTemplate = "traceID={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+                                o.GetLevel = (context, duration, ex) => {
+                                    if (ex != null || context.Response.StatusCode > 499)
+                                        return LogEventLevel.Error;
+
+                                    return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
+                                };
                             });    
                         })
                         .Configure(app => {
@@ -111,6 +120,8 @@ namespace Exceptionless.Job {
                     
                     Bootstrapper.RegisterServices(services);
                     Insulation.Bootstrapper.RegisterServices(services, options, true);
+                    
+                    services.AddApm(new ApmConfig(config, "Exceptionless.Job", "Exceptionless", options.InformationalVersion, options.CacheOptions.Provider == "redis"));
                 });
 
             if (!String.IsNullOrEmpty(options.MetricOptions.Provider))
