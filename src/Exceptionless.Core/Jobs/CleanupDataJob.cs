@@ -217,7 +217,7 @@ namespace Exceptionless.Core.Jobs {
                     removedStacks++;
 
                     // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(1)).AnyContext();
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
