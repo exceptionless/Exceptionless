@@ -14,7 +14,6 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes soft deleted data and enforces data retention.", IsContinuous = false)]
@@ -39,7 +38,6 @@ namespace Exceptionless.Core.Jobs {
             IEventRepository eventRepository,
             ITokenRepository tokenRepository,
             IWebHookRepository webHookRepository,
-            IElasticClient elasticClient,
             ILockProvider lockProvider,
             BillingManager billingManager,
             AppOptions appOptions,
@@ -58,7 +56,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
-            return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromHours(2), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
