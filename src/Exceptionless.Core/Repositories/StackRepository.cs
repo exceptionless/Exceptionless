@@ -26,6 +26,14 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
         }
 
+        public Task<FindResults<Stack>> GetStacksForCleanupAsync(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
+            return FindAsync(q => q
+                .ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.LastOccurrence).LessThanOrEquals(utcNow)))
+                .FieldEquals(f => f.Status, StackStatus.Open)
+                .FieldEmpty(f => f.References)
+            , options);
+        }
+
         public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.

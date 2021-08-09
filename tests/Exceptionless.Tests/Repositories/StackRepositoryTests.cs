@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
@@ -165,6 +167,32 @@ namespace Exceptionless.Tests.Repositories {
 
             await _repository.RemoveAsync(stacks.Documents, o => o.ImmediateConsistency());
             Assert.Equal(0, await _repository.CountAsync());
+        }
+
+        [Fact]
+        public async Task GetStacksForCleanupAsync() {
+            var openStack10DaysOldWithReference = StackData.GenerateStack(id: TestConstants.StackId3, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Open);
+            openStack10DaysOldWithReference.References.Add("test");
+
+            await _repository.AddAsync(new List<Stack> {
+                StackData.GenerateStack(id: TestConstants.StackId, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(5), status: StackStatus.Open),
+                StackData.GenerateStack(id: TestConstants.StackId2, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Open),
+                openStack10DaysOldWithReference,
+                StackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Fixed)
+            }, o => o.ImmediateConsistency());
+
+            var stacks = await _repository.GetStacksForCleanupAsync(SystemClock.UtcNow.SubtractDays(8));
+            Assert.NotNull(stacks);
+            Assert.Equal(1, stacks.Total);
+            Assert.Equal(1, stacks.Documents.Count);
+            Assert.Equal(TestConstants.StackId2, stacks.Documents.Single().Id);
+
+            stacks = await _repository.GetStacksForCleanupAsync(SystemClock.UtcNow.SubtractDays(1));
+            Assert.NotNull(stacks);
+            Assert.Equal(2, stacks.Total);
+            Assert.Equal(2, stacks.Documents.Count);
+            Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId)));
+            Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId2)));
         }
     }
 }
