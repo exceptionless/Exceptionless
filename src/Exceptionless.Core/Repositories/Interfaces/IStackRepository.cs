@@ -11,7 +11,6 @@ namespace Exceptionless.Core.Repositories {
         Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null);
         Task MarkAsRegressedAsync(string stackId);
         Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
-
         Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff);
         Task<FindResults<Stack>> GetSoftDeleted();
         Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId);
