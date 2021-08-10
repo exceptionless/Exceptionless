@@ -176,14 +176,17 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
         }
         
-        public Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId) {
+        public Task<long> RemoveAllByStackIdsAsync(string organizationId, string projectId, string[] stackIds) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException(nameof(projectId));
-            
-            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackId));
+
+            if (stackIds is null || stackIds.Length == 0)
+                throw new ArgumentNullException(nameof(stackIds));
+
+            return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId).Stack(stackIds));
         }
     }
 }
