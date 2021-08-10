@@ -104,11 +104,11 @@ namespace Exceptionless.Core.Extensions {
                 "Removed project: {Project} ({ProjectId}), Removed {RemovedStacks} Stacks, {RemovedEvents} Events");
 
 
-        private static readonly Action<ILogger, string[], long, Exception?> _removeStacksComplete =
-            LoggerMessage.Define<string[], long>(
+        private static readonly Action<ILogger, long, long, Exception?> _removeStacksComplete =
+            LoggerMessage.Define<long, long>(
                 LogLevel.Information,
                 new EventId(17, nameof(RemoveStacksComplete)),
-                "Removed stacks: {StackIds}, Removed {RemovedEvents} Events");
+                "Removed {RemovedStacks} Stacks and {RemovedEvents} Events");
 
         private static readonly Action<ILogger, DateTime, string, string, long, Exception?> _retentionEnforcementStackStart =
             LoggerMessage.Define<DateTime, string, string, long>(
@@ -134,8 +134,8 @@ namespace Exceptionless.Core.Extensions {
                 new EventId(21, nameof(RetentionEnforcementEventComplete)),
                 "Enforced event retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events");
 
-        public static void RemoveStacksComplete(this ILogger logger, string[] stackIds, long removedStacks)
-            => _removeStacksComplete(logger, stackIds, removedStacks, null);
+        public static void RemoveStacksComplete(this ILogger logger, long removedStacks, long removedEvents)
+            => _removeStacksComplete(logger, removedStacks, removedEvents, null);
 
         public static void RetentionEnforcementStackStart(this ILogger logger, DateTime cutoff, string organizationName, string organizationId, long totalStacks)
             => _retentionEnforcementStackStart(logger, cutoff, organizationName, organizationId, totalStacks, null);

@@ -166,11 +166,11 @@ namespace Exceptionless.Core.Jobs {
                 string[] stackIds = groupedStacks.Select(s => s.Id).ToArray();
 
                 await RenewLockAsync(context).AnyContext();
-                using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organizationId).Project(projectId));
+                using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organizationId).Project(projectId).Property("StackIds", stackIds));
 
                 long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(organizationId, projectId, stackIds).AnyContext();
                 await _stackRepository.RemoveAsync(groupedStacks).AnyContext();
-                _logger.RemoveStacksComplete(stackIds, removedEvents);
+                _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
             }
         }
         
