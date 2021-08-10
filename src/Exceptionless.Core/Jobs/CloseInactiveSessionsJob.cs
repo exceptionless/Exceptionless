@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Jobs {
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
             _lastActivity = SystemClock.UtcNow;
-            var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SnapshotPaging().PageLimit(100)).AnyContext();
+            var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SearchAfterPaging().PageLimit(100)).AnyContext();
             int sessionsClosed = 0;
             int totalSessions = 0;
             if (results.Documents.Count == 0)
