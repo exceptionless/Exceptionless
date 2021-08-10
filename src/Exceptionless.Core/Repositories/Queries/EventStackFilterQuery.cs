@@ -194,9 +194,11 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var appFilter = query.GetAppFilter();
             var projectIds = query.GetProjects();
-            projectIds.AddRange(appFilter.Projects.Select(p => p.Id));
+            if (appFilter?.Projects != null)
+                projectIds.AddRange(appFilter.Projects.Select(p => p.Id));
             var organizationIds = query.GetOrganizations();
-            organizationIds.AddRange(appFilter.Organizations.Select(o => o.Id));
+            if (appFilter?.Organizations != null)
+                organizationIds.AddRange(appFilter.Organizations.Select(o => o.Id));
 
             var hashCode = new HashCode();
             
