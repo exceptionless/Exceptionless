@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Repositories {
         Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null);
         Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
         Task<long> RemoveAllAsync(string organizationId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null);
-        Task<long> RemoveAllByStackIdAsync(string organizationId, string projectId, string stackId);
+        Task<long> RemoveAllByStackIdsAsync(string organizationId, string projectId, string[] stackIds);
     }
 
     public static class EventRepositoryExtensions {

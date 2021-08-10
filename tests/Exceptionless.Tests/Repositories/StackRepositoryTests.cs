@@ -181,13 +181,13 @@ namespace Exceptionless.Tests.Repositories {
                 StackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Fixed)
             }, o => o.ImmediateConsistency());
 
-            var stacks = await _repository.GetStacksForCleanupAsync(SystemClock.UtcNow.SubtractDays(8));
+            var stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(8));
             Assert.NotNull(stacks);
             Assert.Equal(1, stacks.Total);
             Assert.Equal(1, stacks.Documents.Count);
             Assert.Equal(TestConstants.StackId2, stacks.Documents.Single().Id);
 
-            stacks = await _repository.GetStacksForCleanupAsync(SystemClock.UtcNow.SubtractDays(1));
+            stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(1));
             Assert.NotNull(stacks);
             Assert.Equal(2, stacks.Total);
             Assert.Equal(2, stacks.Documents.Count);
