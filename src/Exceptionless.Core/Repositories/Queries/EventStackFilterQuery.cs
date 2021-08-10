@@ -115,7 +115,9 @@ namespace Exceptionless.Core.Repositories.Queries {
                 }
                 
                 if (stackTotal > stackIdLimit) {
-                    await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
+                    if (!tooManyStacksCheck.HasValue)
+                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
+
                     _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, results.Total);
                     isStackIdsNegated = !isStackIdsNegated;
                     stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
@@ -133,7 +135,8 @@ namespace Exceptionless.Core.Repositories.Queries {
                 }
 
                 if (stackTotal > stackIdLimit) {
-                    await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
+                    if (!tooManyStacksCheck.HasValue)
+                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
                     throw new DocumentLimitExceededException("Please limit your search criteria.");
                 }
 
