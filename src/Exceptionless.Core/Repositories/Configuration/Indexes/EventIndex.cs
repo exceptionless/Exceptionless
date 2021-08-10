@@ -5,6 +5,7 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Caching;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -35,8 +36,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
             var stacksRepository = _serviceProvider.GetRequiredService<IStackRepository>();
+            var cacheClient = _serviceProvider.GetRequiredService<ICacheClient>();
             base.ConfigureQueryBuilder(builder);
-            builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackFilterQueryBuilder(stacksRepository, _configuration.LoggerFactory));
+            builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackFilterQueryBuilder(stacksRepository, cacheClient, _configuration.LoggerFactory));
         }
 
         public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
