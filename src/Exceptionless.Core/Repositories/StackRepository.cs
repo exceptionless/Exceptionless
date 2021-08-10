@@ -33,13 +33,12 @@ namespace Exceptionless.Core.Repositories {
                 .FieldEquals(f => f.Status, StackStatus.Open)
                 .FieldEmpty(f => f.References)
                 .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
-                .Sort(f => f.ProjectId)
             , o => o.SearchAfterPaging().PageLimit(500));
         }
 
         public Task<FindResults<Stack>> GetSoftDeleted() {
             return FindAsync(
-                q => q.Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash).Sort(f => f.ProjectId),
+                q => q.Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash),
                 o => o.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SearchAfterPaging().PageLimit(500)
             );
         }

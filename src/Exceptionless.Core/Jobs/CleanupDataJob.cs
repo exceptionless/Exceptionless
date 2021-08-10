@@ -9,7 +9,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -159,37 +158,26 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task RemoveStacksAsync(IReadOnlyCollection<Stack> stacks, JobContext context) {
-            foreach (var group in stacks.GroupBy(s => s.ProjectId)) {
-                var groupedStacks = group.ToList();
-                string organizationId = groupedStacks.Single().OrganizationId;
-                string projectId = groupedStacks.Single().ProjectId;
-                string[] stackIds = groupedStacks.Select(s => s.Id).ToArray();
+            await RenewLockAsync(context).AnyContext();
 
-                await RenewLockAsync(context).AnyContext();
-                using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organizationId).Project(projectId).Property("StackIds", stackIds));
-
-                long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(organizationId, projectId, stackIds).AnyContext();
-                await _stackRepository.RemoveAsync(groupedStacks).AnyContext();
-                _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
-            }
+            string[] stackIds = stacks.Select(s => s.Id).ToArray();
+            long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds).AnyContext();
+            await _stackRepository.RemoveAsync(stacks).AnyContext();
+            _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
         }
         
         private async Task EnforceRetentionAsync(JobContext context) {
-            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(o => o.SearchAfterPaging().PageLimit(100)).AnyContext();
+            var results = await _organizationRepository.FindAsync(q => q.Include(o => o.Id, o => o.Name, o => o.RetentionDays), o => o.SearchAfterPaging().PageLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
                     using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
-                    int retentionDays = organization.RetentionDays;
-                    if (_appOptions.MaximumRetentionDays > 0 && retentionDays > _appOptions.MaximumRetentionDays)
+
+                    var retentionDays = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays)?.RetentionDays ?? _appOptions.MaximumRetentionDays;
+                    if (retentionDays <= 0)
                         retentionDays = _appOptions.MaximumRetentionDays;
+                    retentionDays = Math.Min(retentionDays, _appOptions.MaximumRetentionDays);
 
-                    if (retentionDays < 1)
-                        continue;
-
-                    var nextPlan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays);
-                    if (nextPlan != null)
-                        retentionDays = nextPlan.RetentionDays;
-
+                    // adding 60 days to retention in order to keep track of whether a stack is new or not
                     await EnforceStackRetentionDaysAsync(organization, retentionDays + 60, context).AnyContext();
                     await EnforceEventRetentionDaysAsync(organization, retentionDays, context).AnyContext();
 

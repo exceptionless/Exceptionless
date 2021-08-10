@@ -38,11 +38,6 @@ namespace Exceptionless.Core.Repositories {
             return hit?.Document;
         }
 
-        public Task<FindResults<Organization>> GetByRetentionDaysEnabledAsync(CommandOptionsDescriptor<Organization> options = null) {
-            var filter = Query<Organization>.Range(f => f.Field(o => o.RetentionDays).GreaterThan(0));
-            return FindAsync(q => q.ElasticFilter(filter).Include(o => o.Id, o => o.Name, o => o.RetentionDays), options);
-        }
-
         public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Query<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
