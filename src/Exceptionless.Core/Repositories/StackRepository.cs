@@ -25,13 +25,23 @@ namespace Exceptionless.Core.Repositories {
         public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
             return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
         }
-
-        public Task<FindResults<Stack>> GetStacksForCleanupAsync(DateTime cutoff, CommandOptionsDescriptor<Stack> options = null) {
+        
+        public Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff) {
             return FindAsync(q => q
+                .Organization(organizationId)
                 .ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.LastOccurrence).LessThanOrEquals(cutoff)))
                 .FieldEquals(f => f.Status, StackStatus.Open)
                 .FieldEmpty(f => f.References)
-            , options);
+                .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
+                .Sort(f => f.ProjectId)
+            , o => o.SearchAfterPaging().PageLimit(500));
+        }
+
+        public Task<FindResults<Stack>> GetSoftDeleted() {
+            return FindAsync(
+                q => q.Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash).Sort(f => f.ProjectId),
+                o => o.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SearchAfterPaging().PageLimit(500)
+            );
         }
 
         public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
