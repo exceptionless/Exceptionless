@@ -86,7 +86,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
             const int stackIdLimit = 10000;
-            string[] stackIds = null;
+            string[] stackIds = new string[0];
             long stackTotal = 0;
 
             string stackFilterValue = stackFilter.Filter;
@@ -118,7 +118,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                     if (!tooManyStacksCheck.HasValue)
                         await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
 
-                    _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, results.Total);
+                    _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
                     isStackIdsNegated = !isStackIdsNegated;
                     stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
                     systemFilterQuery.FilterExpression(stackFilterValue);
@@ -140,10 +140,8 @@ namespace Exceptionless.Core.Repositories.Queries {
                     throw new DocumentLimitExceededException("Please limit your search criteria.");
                 }
 
-                if (results != null)
+                if (results?.Hits != null)
                     stackIds = results.Hits.Select(h => h.Id).ToArray();
-                else
-                    stackIds = new string[0];
             }
 
             _logger.LogTrace("Setting stack filter with {IdCount} ids", stackIds?.Length ?? 0);
