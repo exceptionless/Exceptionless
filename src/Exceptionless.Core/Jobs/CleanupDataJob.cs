@@ -81,10 +81,14 @@ namespace Exceptionless.Core.Jobs {
             while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in organizationResults.Documents) {
                     using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
-                    await RemoveOrganizationAsync(organization, context).AnyContext();
+                    try {
+                        await RemoveOrganizationAsync(organization, context).AnyContext();
+                    } catch (Exception ex) {
+                        _logger.LogError(ex, "Error removing soft deleted organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                    }
 
                     // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync().AnyContext())
@@ -99,10 +103,14 @@ namespace Exceptionless.Core.Jobs {
             while (projectResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var project in projectResults.Documents) {
                     using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id));
-                    await RemoveProjectsAsync(project, context).AnyContext();
+                    try {
+                        await RemoveProjectsAsync(project, context).AnyContext();
+                    } catch (Exception ex) {
+                        _logger.LogError(ex, "Error removing soft deleted project {ProjectId}: {Message}", project.Id, ex.Message);
+                    }
 
                     // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await projectResults.NextPageAsync().AnyContext())
@@ -115,7 +123,11 @@ namespace Exceptionless.Core.Jobs {
             _logger.CleanupStackSoftDeletes(stackResults.Total);
 
             while (stackResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                await RemoveStacksAsync(stackResults.Documents, context).AnyContext();
+                try {
+                    await RemoveStacksAsync(stackResults.Documents, context).AnyContext();
+                } catch (Exception ex) {
+                    _logger.LogError(ex, "Error removing soft deleted stacks: {Message}", ex.Message);
+                }
 
                 if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
                     break;
@@ -172,17 +184,21 @@ namespace Exceptionless.Core.Jobs {
                 foreach (var organization in results.Documents) {
                     using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
 
-                    var retentionDays = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays)?.RetentionDays ?? _appOptions.MaximumRetentionDays;
+                    int retentionDays = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays)?.RetentionDays ?? _appOptions.MaximumRetentionDays;
                     if (retentionDays <= 0)
                         retentionDays = _appOptions.MaximumRetentionDays;
                     retentionDays = Math.Min(retentionDays, _appOptions.MaximumRetentionDays);
 
-                    // adding 60 days to retention in order to keep track of whether a stack is new or not
-                    await EnforceStackRetentionDaysAsync(organization, retentionDays + 60, context).AnyContext();
-                    await EnforceEventRetentionDaysAsync(organization, retentionDays, context).AnyContext();
+                    try {
+                        // adding 60 days to retention in order to keep track of whether a stack is new or not
+                        await EnforceStackRetentionDaysAsync(organization, retentionDays + 60, context).AnyContext();
+                        await EnforceEventRetentionDaysAsync(organization, retentionDays, context).AnyContext();
+                    } catch (Exception ex) {
+                        _logger.LogError(ex, "Error enforcing retention for Organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                    }
 
                     // Sleep so we are not hammering the backend.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
@@ -198,7 +214,11 @@ namespace Exceptionless.Core.Jobs {
             _logger.RetentionEnforcementStackStart(cutoff, organization.Name, organization.Id, stackResults.Total);
             
             while (stackResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                await RemoveStacksAsync(stackResults.Documents, context).AnyContext();
+                try {
+                    await RemoveStacksAsync(stackResults.Documents, context).AnyContext();
+                } catch (Exception ex) {
+                    _logger.LogError(ex, "Error removing stacks: {Message}", ex.Message);
+                }
 
                 if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
                     break;
