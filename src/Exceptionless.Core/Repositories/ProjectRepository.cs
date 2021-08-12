@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return CountAsync(q => q.Organization(organizationId), o => o.CacheKey(String.Concat("Organization:", organizationId)));
+            return CountAsync(q => q.Organization(organizationId), o => o.Cache(String.Concat("Organization:", organizationId)));
         }
 
         public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project> options = null) {
