@@ -62,13 +62,14 @@ namespace Exceptionless.Core.Extensions {
 
             if (user.Roles.Count > 0) {
                 // add implied scopes
-                if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
-                    user.Roles.Add(AuthorizationRoles.User);
+                var roles = user.Roles.ToHashSet();
+                if (roles.Contains(AuthorizationRoles.GlobalAdmin))
+                    roles.Add(AuthorizationRoles.User);
 
-                if (user.Roles.Contains(AuthorizationRoles.User))
-                    user.Roles.Add(AuthorizationRoles.Client);
+                if (roles.Contains(AuthorizationRoles.User))
+                    roles.Add(AuthorizationRoles.Client);
 
-                foreach (string role in user.Roles)
+                foreach (string role in roles)
                     claims.Add(new Claim(ClaimTypes.Role, role));
             } else {
                 claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
