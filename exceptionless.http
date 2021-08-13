@@ -3,8 +3,8 @@
 @password = tester
 
 ### create an account
-# @name account
 
+# @name signup
 POST {{apiUrl}}/auth/signup
 Content-Type: application/json
 
@@ -14,13 +14,9 @@ Content-Type: application/json
     "password": "{{password}}"
 }
 
-@token = {{account.response.body.$.token}}
-@email = {{account.request.body.$.email}}
-@password = {{account.request.body.$.password}}
-
 ### login to test account
-# @name login
 
+# @name login
 POST {{apiUrl}}/auth/login
 Content-Type: application/json
 
@@ -28,6 +24,8 @@ Content-Type: application/json
     "email": "{{email}}",
     "password": "{{password}}"
 }
+
+###
 
 @token = {{login.response.body.$.token}}
 
@@ -42,11 +40,12 @@ GET {{apiUrl}}/organizations
 Authorization: Bearer {{token}}
 
 ### get projects
-# @name projects
 
+# @name projects
 GET {{apiUrl}}/projects
 Authorization: Bearer {{token}}
 
+###
 @projectId = {{projects.response.body.$[0].id}}
 
 ### post a sample JSON event

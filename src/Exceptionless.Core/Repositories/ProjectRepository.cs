@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException(nameof(organizationId));
 
-            return CountAsync(q => q.Organization(organizationId), o => o.CacheKey(String.Concat("Organization:", organizationId)));
+            return CountAsync(q => q.Organization(organizationId), o => o.Cache(String.Concat("Organization:", organizationId)));
         }
 
         public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project> options = null) {
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50) {
             var filter = Query<Project>.Range(r => r.Field(o => o.NextSummaryEndOfDayTicks).LessThan(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return FindAsync(q => q.ElasticFilter(filter).SortAscending(p => p.OrganizationId), o => o.SnapshotPaging().PageLimit(limit));
+            return FindAsync(q => q.ElasticFilter(filter).SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
         }
 
         public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects) {

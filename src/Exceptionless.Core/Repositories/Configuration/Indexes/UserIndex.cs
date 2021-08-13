@@ -21,8 +21,11 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Keyword(f => f.Name(e => e.OrganizationIds))
                     .Text(f => f.Name(u => u.FullName).AddKeywordField())
                     .Text(f => f.Name(u => u.EmailAddress).Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
+                    .Boolean(f => f.Name(u => u.IsEmailAddressVerified))
                     .Keyword(f => f.Name(u => u.VerifyEmailAddressToken))
+                    .Date(f => f.Name(u => u.VerifyEmailAddressTokenExpiration))
                     .Keyword(f => f.Name(u => u.PasswordResetToken))
+                    .Date(f => f.Name(u => u.PasswordResetTokenExpiration))
                     .Keyword(f => f.Name(u => u.Roles))
                     .Object<OAuthAccount>(f => f.Name(o => o.OAuthAccounts.First()).Properties(mp => mp
                         .Keyword(fu => fu.Name(m => m.Provider))

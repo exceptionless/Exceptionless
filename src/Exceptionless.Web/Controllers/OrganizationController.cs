@@ -742,7 +742,7 @@ namespace Exceptionless.Web.Controllers {
             var result = await _eventRepository.CountAsync(q => q
                 .SystemFilter(systemFilter)
                 .AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)")
-                .EnforceEventStackFilter());
+                .EnforceEventStackFilter(false));
             foreach (var organization in viewOrganizations) {
                 var organizationStats = result.Aggregations.Terms<string>("terms_organization_id")?.Buckets.FirstOrDefault(t => t.Key == organization.Id);
                 organization.EventCount = organizationStats?.Total ?? 0;

@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             emailAddress = emailAddress.Trim().ToLowerInvariant();
-            var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.CacheKey(EmailCacheKey(emailAddress))).AnyContext();
+            var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.Cache(EmailCacheKey(emailAddress))).AnyContext();
             return hit?.Document;
         }
 

@@ -13,8 +13,9 @@ BaseURL: 'http://localhost:9001/#!'
 Serilog:
   MinimumLevel:
     Default: Debug
-    Override:
-      Microsoft: Warning
-      System: Warning
-      Foundatio.Utility.ScheduledTimer: Warning
-      Foundatio.Metrics: Warning
+
+Apm:
+  Enabled: false
+  FullDetails: true
+  SampleRate: 1.0
+  Debug: false

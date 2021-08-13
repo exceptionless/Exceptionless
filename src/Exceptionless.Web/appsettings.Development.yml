@@ -1,4 +1,4 @@
-﻿---
+---
 ConnectionStrings:
 #  Redis: server="localhost,abortConnect=false"
 #  Elasticsearch: server=http://localhost:9200
@@ -17,3 +17,9 @@ RunJobsInProcess: true
 Serilog:
   MinimumLevel:
     Default: Debug
+
+Apm:
+  Enabled: false
+  FullDetails: true
+  SampleRate: 1.0
+  Debug: false

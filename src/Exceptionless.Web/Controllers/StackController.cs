@@ -21,6 +21,7 @@ using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;

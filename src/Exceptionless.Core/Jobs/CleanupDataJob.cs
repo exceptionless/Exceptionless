@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
@@ -7,14 +9,12 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Core.Jobs {
     [Job(Description = "Deletes soft deleted data and enforces data retention.", IsContinuous = false)]
@@ -39,7 +39,6 @@ namespace Exceptionless.Core.Jobs {
             IEventRepository eventRepository,
             ITokenRepository tokenRepository,
             IWebHookRepository webHookRepository,
-            IElasticClient elasticClient,
             ILockProvider lockProvider,
             BillingManager billingManager,
             AppOptions appOptions,
@@ -58,7 +57,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
-            return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromHours(2), new CancellationToken(true));
+            return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         protected override async Task<JobResult> RunInternalAsync(JobContext context) {
@@ -68,7 +67,7 @@ namespace Exceptionless.Core.Jobs {
             await CleanupSoftDeletedProjectsAsync(context).AnyContext();
             await CleanupSoftDeletedStacksAsync(context).AnyContext();
 
-            await EnforceEventRetentionAsync(context).AnyContext();
+            await EnforceRetentionAsync(context).AnyContext();
 
             _logger.CleanupFinished();
 
@@ -76,17 +75,20 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task CleanupSoftDeletedOrganizationsAsync(JobContext context) {
-            var organizationResults = await _organizationRepository.GetAllAsync(q => q.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SnapshotPaging().PageLimit(5)).AnyContext();
+            var organizationResults = await _organizationRepository.GetAllAsync(o => o.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SearchAfterPaging().PageLimit(5)).AnyContext();
             _logger.CleanupOrganizationSoftDeletes(organizationResults.Total);
 
             while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in organizationResults.Documents) {
-                    using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id))) {
+                    using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
+                    try {
                         await RemoveOrganizationAsync(organization, context).AnyContext();
-
-                        // Sleep so we are not hammering the backend.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    } catch (Exception ex) {
+                        _logger.LogError(ex, "Error removing soft deleted organization {OrganizationId}: {Message}", organization.Id, ex.Message);
                     }
+
+                    // Sleep so we are not hammering the backend.
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync().AnyContext())
@@ -95,17 +97,20 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task CleanupSoftDeletedProjectsAsync(JobContext context) {
-            var projectResults = await _projectRepository.GetAllAsync(q => q.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SnapshotPaging().PageLimit(5)).AnyContext();
+            var projectResults = await _projectRepository.GetAllAsync(o => o.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SearchAfterPaging().PageLimit(5)).AnyContext();
             _logger.CleanupProjectSoftDeletes(projectResults.Total);
 
             while (projectResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var project in projectResults.Documents) {
-                    using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id))) {
+                    using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id));
+                    try {
                         await RemoveProjectsAsync(project, context).AnyContext();
-
-                        // Sleep so we are not hammering the backend.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    } catch (Exception ex) {
+                        _logger.LogError(ex, "Error removing soft deleted project {ProjectId}: {Message}", project.Id, ex.Message);
                     }
+
+                    // Sleep so we are not hammering the backend.
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await projectResults.NextPageAsync().AnyContext())
@@ -114,17 +119,14 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private async Task CleanupSoftDeletedStacksAsync(JobContext context) {
-            var stackResults = await _stackRepository.GetAllAsync(q => q.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SnapshotPaging().PageLimit(100)).AnyContext();
+            var stackResults = await _stackRepository.GetSoftDeleted().AnyContext();
             _logger.CleanupStackSoftDeletes(stackResults.Total);
 
             while (stackResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
-                foreach (var stack in stackResults.Documents) {
-                    using (_logger.BeginScope(new ExceptionlessState().Organization(stack.OrganizationId).Project(stack.ProjectId))) {
-                        await RemoveStackAsync(stack, context).AnyContext();
-
-                        // Sleep so we are not hammering the backend.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
-                    }
+                try {
+                    await RemoveStacksAsync(stackResults.Documents, context).AnyContext();
+                } catch (Exception ex) {
+                    _logger.LogError(ex, "Error removing soft deleted stacks: {Message}", ex.Message);
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
@@ -167,26 +169,36 @@ namespace Exceptionless.Core.Jobs {
             _logger.RemoveProjectComplete(project.Name, project.Id, removedStacks, removedEvents);
         }
 
-        private async Task RemoveStackAsync(Stack stack, JobContext context) {
-            _logger.RemoveStackStart(stack.Id);
-
+        private async Task RemoveStacksAsync(IReadOnlyCollection<Stack> stacks, JobContext context) {
             await RenewLockAsync(context).AnyContext();
-            long removedEvents = await _eventRepository.RemoveAllByStackIdAsync(stack.OrganizationId, stack.ProjectId, stack.Id).AnyContext();
 
-            await _stackRepository.RemoveAsync(stack).AnyContext();
-            _logger.RemoveStackComplete(stack.Id, removedEvents);
+            string[] stackIds = stacks.Select(s => s.Id).ToArray();
+            long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds).AnyContext();
+            await _stackRepository.RemoveAsync(stacks).AnyContext();
+            _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
         }
-
-        private async Task EnforceEventRetentionAsync(JobContext context) {
-            var results = await _organizationRepository.GetByRetentionDaysEnabledAsync(o => o.SnapshotPaging().PageLimit(100)).AnyContext();
+        
+        private async Task EnforceRetentionAsync(JobContext context) {
+            var results = await _organizationRepository.FindAsync(q => q.Include(o => o.Id, o => o.Name, o => o.RetentionDays), o => o.SearchAfterPaging().PageLimit(100)).AnyContext();
             while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
                 foreach (var organization in results.Documents) {
-                    using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id))) {
-                        await EnforceEventRetentionDaysAsync(organization, context).AnyContext();
+                    using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
 
-                        // Sleep so we are not hammering the backend.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(5)).AnyContext();
+                    int retentionDays = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays)?.RetentionDays ?? _appOptions.MaximumRetentionDays;
+                    if (retentionDays <= 0)
+                        retentionDays = _appOptions.MaximumRetentionDays;
+                    retentionDays = Math.Min(retentionDays, _appOptions.MaximumRetentionDays);
+
+                    try {
+                        // adding 60 days to retention in order to keep track of whether a stack is new or not
+                        await EnforceStackRetentionDaysAsync(organization, retentionDays + 60, context).AnyContext();
+                        await EnforceEventRetentionDaysAsync(organization, retentionDays, context).AnyContext();
+                    } catch (Exception ex) {
+                        _logger.LogError(ex, "Error enforcing retention for Organization {OrganizationId}: {Message}", organization.Id, ex.Message);
                     }
+
+                    // Sleep so we are not hammering the backend.
+                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                 }
 
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
@@ -194,24 +206,35 @@ namespace Exceptionless.Core.Jobs {
             }
         }
 
-        private async Task EnforceEventRetentionDaysAsync(Organization organization, JobContext context) {
-            int retentionDays = organization.RetentionDays;
-            if (_appOptions.MaximumRetentionDays > 0 && retentionDays > _appOptions.MaximumRetentionDays)
-                retentionDays = _appOptions.MaximumRetentionDays;
-
-            if (retentionDays < 1)
-                return;
-
-            var nextPlan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays);
-            if (nextPlan != null)
-                retentionDays = nextPlan.RetentionDays;
+        private async Task EnforceStackRetentionDaysAsync(Organization organization, int retentionDays, JobContext context) {
+            await RenewLockAsync(context).AnyContext();
 
             var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
-            _logger.RetentionEnforcementStart(cutoff, organization.Name, organization.Id);
+            var stackResults = await _stackRepository.GetStacksForCleanupAsync(organization.Id, cutoff).AnyContext();
+            _logger.RetentionEnforcementStackStart(cutoff, organization.Name, organization.Id, stackResults.Total);
+            
+            while (stackResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
+                try {
+                    await RemoveStacksAsync(stackResults.Documents, context).AnyContext();
+                } catch (Exception ex) {
+                    _logger.LogError(ex, "Error removing stacks: {Message}", ex.Message);
+                }
 
+                if (context.CancellationToken.IsCancellationRequested || !await stackResults.NextPageAsync().AnyContext())
+                    break;
+            }
+            
+            _logger.RetentionEnforcementStackComplete(organization.Name, organization.Id, stackResults.Documents.Count);
+        }
+
+        private async Task EnforceEventRetentionDaysAsync(Organization organization, int retentionDays, JobContext context) {
             await RenewLockAsync(context).AnyContext();
+
+            var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
+            _logger.RetentionEnforcementEventStart(cutoff, organization.Name, organization.Id);
+
             long removedEvents = await _eventRepository.RemoveAllAsync(organization.Id, null, null, cutoff).AnyContext();
-            _logger.RetentionEnforcementComplete(organization.Name, organization.Id, removedEvents);
+            _logger.RetentionEnforcementEventComplete(organization.Name, organization.Id, removedEvents);
         }
 
         private Task RenewLockAsync(JobContext context) {

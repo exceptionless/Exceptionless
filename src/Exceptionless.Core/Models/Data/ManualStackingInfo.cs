@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Exceptionless.Core.Extensions;
+using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Core.Models.Data {
     public class ManualStackingInfo {

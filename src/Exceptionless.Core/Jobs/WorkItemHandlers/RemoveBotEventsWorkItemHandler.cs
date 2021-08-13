@@ -22,18 +22,19 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers
         }
 
         public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            string cacheKey = $"{nameof(RemoveBotEventsWorkItem)}:{((RemoveBotEventsWorkItem)workItem).OrganizationId}";
+            var wi = (RemoveBotEventsWorkItem)workItem;
+            string cacheKey = $"{nameof(RemoveBotEventsWorkItem)}:{wi.OrganizationId}:{wi.ProjectId}";
             return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
         }
 
         public override async Task HandleItemAsync(WorkItemContext context) {
             var wi = context.GetData<RemoveBotEventsWorkItem>();
-            using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId))) {
-                Log.LogInformation("Received remove bot events work item OrganizationId={OrganizationId}, ClientIpAddress={ClientIpAddress}, UtcStartDate={UtcStartDate}, UtcEndDate={UtcEndDate}", wi.OrganizationId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate);
-                await context.ReportProgressAsync(0, "Starting deleting of bot events...").AnyContext();
-                long deleted = await _eventRepository.RemoveAllAsync(wi.OrganizationId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate).AnyContext();
-                await context.ReportProgressAsync(100, $"Bot events deleted: {deleted}").AnyContext();
-            }
+            using var _ = Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId));
+            Log.LogInformation("Received remove bot events work item OrganizationId={OrganizationId} ProjectId={ProjectId}, ClientIpAddress={ClientIpAddress}, UtcStartDate={UtcStartDate}, UtcEndDate={UtcEndDate}", wi.OrganizationId, wi.ProjectId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate);
+            
+            await context.ReportProgressAsync(0, $"Starting deleting of bot events... OrganizationId={wi.OrganizationId}").AnyContext();
+            long deleted = await _eventRepository.RemoveAllAsync(wi.OrganizationId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate).AnyContext();
+            await context.ReportProgressAsync(100, $"Bot events deleted: {deleted} OrganizationId={wi.OrganizationId}").AnyContext();
         }
     }
 }

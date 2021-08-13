@@ -144,6 +144,16 @@ namespace Exceptionless.Web {
             var options = app.ApplicationServices.GetRequiredService<AppOptions>();
             Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
+            app.UseSerilogRequestLogging(o => {
+                o.MessageTemplate = "traceID={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+                o.GetLevel = (context, duration, ex) => {
+                    if (ex != null || context.Response.StatusCode > 499)
+                        return LogEventLevel.Error;
+
+                    return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
+                };
+            });
+
             app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
             app.UseHealthChecks("/health", new HealthCheckOptions {

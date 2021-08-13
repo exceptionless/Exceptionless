@@ -125,7 +125,7 @@ namespace Exceptionless.Insulation {
                 container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
                 container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
-                    Subscriber = s.GetRequiredService<ConnectionMultiplexer>().GetSubscriber(),
+                    Subscriber = s.GetRequiredService<IConnectionMultiplexer>().GetSubscriber(),
                     Topic = options.Topic,
                     Serializer = s.GetRequiredService<ISerializer>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
@@ -140,7 +140,7 @@ namespace Exceptionless.Insulation {
             }
         }
 
-        private static ConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
+        private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
             // TODO: Remove this extra config parse step when sentinel bug is fixed
             var config = ConfigurationOptions.Parse(options.GetString("server"));
             return ConnectionMultiplexer.Connect(config);
@@ -290,7 +290,7 @@ namespace Exceptionless.Insulation {
 
         private static IQueue<T> CreateRedisQueue<T>(IServiceProvider container, QueueOptions options, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
             return new RedisQueue<T>(new RedisQueueOptions<T> {
-                ConnectionMultiplexer = container.GetRequiredService<ConnectionMultiplexer>(),
+                ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
                 Name = GetQueueName<T>(options),
                 Retries = retries,
                 Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
@@ -303,7 +303,7 @@ namespace Exceptionless.Insulation {
 
         private static RedisCacheClient CreateRedisCacheClient(IServiceProvider container) {
             return new RedisCacheClient(new RedisCacheClientOptions {
-                ConnectionMultiplexer = container.GetRequiredService<ConnectionMultiplexer>(),
+                ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
                 Serializer = container.GetRequiredService<ISerializer>(),
                 LoggerFactory = container.GetRequiredService<ILoggerFactory>()
             });

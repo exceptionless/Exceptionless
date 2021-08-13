@@ -85,6 +85,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public class Alias {
             public const string Stack = "stack";
+            public const string Status = "status";
             public const string OrganizationId = "organization";
             public const string ProjectId = "project";
             public const string SignatureHash = "signature";

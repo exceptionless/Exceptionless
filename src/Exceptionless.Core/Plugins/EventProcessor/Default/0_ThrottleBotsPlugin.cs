@@ -58,6 +58,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
                 await _workItemQueue.EnqueueAsync(new RemoveBotEventsWorkItem {
                     OrganizationId = firstContext.Event.OrganizationId,
+                    ProjectId = firstContext.Event.ProjectId,
                     ClientIpAddress = clientIpAddressGroup.Key,
                     UtcStartDate = SystemClock.UtcNow.Floor(_throttlingPeriod),
                     UtcEndDate = SystemClock.UtcNow.Ceiling(_throttlingPeriod)

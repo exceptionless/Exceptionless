@@ -8,6 +8,7 @@ using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs {

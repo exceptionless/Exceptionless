@@ -51,6 +51,11 @@ namespace Exceptionless.Core.Services {
                 } else {
                     _logger.LogInformation("Removing user {User} from organization: {OrganizationName} ({OrganizationId})", user.Id, organization.Name, organization.Id);
                     user.OrganizationIds.Remove(organization.Id);
+                    
+                    // Temp fix for old user records :\.
+                    if (!user.IsEmailAddressVerified && String.IsNullOrEmpty(user.VerifyEmailAddressToken))
+                        user.CreateVerifyEmailAddressToken();
+
                     await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
                 }
             }

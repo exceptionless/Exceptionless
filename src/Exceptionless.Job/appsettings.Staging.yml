@@ -15,3 +15,11 @@ BaseURL: https://dev.exceptionless.io
 # Exceptionless Client Settings
 ExceptionlessServerUrl: https://dev-api.exceptionless.io
 InternalProjectId: 50ca6b2423d6c8493020b823
+
+Serilog:
+  MinimumLevel:
+    Default: Warning
+  WriteTo:
+  - Name: Console
+    Args: 
+      theme: "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console"

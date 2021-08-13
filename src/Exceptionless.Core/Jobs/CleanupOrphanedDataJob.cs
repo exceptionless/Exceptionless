@@ -12,6 +12,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -193,7 +194,7 @@ namespace Exceptionless.Core.Jobs {
                 .Aggregations(a => a.Terms("stacks", t => t.Field(f => f.DuplicateSignature).MinimumDocumentCount(2).Size(10000))));
             _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
 
-            var buckets = duplicateStackAgg.Aggregations.Terms("stacks").Buckets;
+            var buckets = duplicateStackAgg.Aggregations.Terms("stacks")?.Buckets ?? new List<Nest.KeyedBucket<string>>();
             int total = buckets.Count;
             int processed = 0;
             int error = 0;

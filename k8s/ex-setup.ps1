@@ -174,15 +174,11 @@ $AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
 $AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
 Write-Output "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
 
-# create new service principal and update the cluster to use it (seems these expire after a year)
-# https://docs.microsoft.com/en-us/azure/aks/update-credentials
-$SERVICE_PRINCIPAL=$(az ad sp create-for-rbac --skip-assignment --name $CLUSTER -o json)
-$AZ_USERNAME=$(Write-Output $SERVICE_PRINCIPAL | jq -r '.appId')
-$AZ_PASSWORD=$(Write-Output $SERVICE_PRINCIPAL | jq -r '.password')
-az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $AZ_USERNAME --client-secret $AZ_PASSWORD
-
 # renew service principal
-az ad sp credential reset --name "$CLUSTER-ci" --years 2
+$SP_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER --query servicePrincipalProfile.clientId -o tsv)
+$SP_SECRET=$(az ad sp credential reset --name $SP_ID --years 2 --query password -o tsv)
+# store secret in 1Password
+az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 
 # delete the entire thing
 az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER

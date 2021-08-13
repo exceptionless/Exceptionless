@@ -35,6 +35,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using System.Text;
+using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Web.Controllers {
     [Route(API_PREFIX + "/events")]

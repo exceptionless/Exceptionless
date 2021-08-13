@@ -39,19 +39,14 @@ namespace Exceptionless.Core.Extensions {
                     yield return element;
         }
 
-        public static void AddRange<T>(this ICollection<T> list, IEnumerable<T> range) {
-            foreach (var r in range)
-                list.Add(r);
-        }
-
         public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action) {
             foreach (var item in collection ?? new List<T>())
                 action(item);
         }
 
         public static bool CollectionEquals<T>(this IEnumerable<T> source, IEnumerable<T> other) {
-            var sourceEnumerator = source.GetEnumerator();
-            var otherEnumerator = other.GetEnumerator();
+            using var sourceEnumerator = source.GetEnumerator();
+            using var otherEnumerator = other.GetEnumerator();
 
             while (sourceEnumerator.MoveNext()) {
                 if (!otherEnumerator.MoveNext()) {
@@ -59,18 +54,13 @@ namespace Exceptionless.Core.Extensions {
                     return false;
                 }
 
-                if (sourceEnumerator.Current.Equals(otherEnumerator.Current)) {
+                if (sourceEnumerator.Current != null && sourceEnumerator.Current.Equals(otherEnumerator.Current)) {
                     // values aren't equal
                     return false;
                 }
             }
 
-            if (otherEnumerator.MoveNext()) {
-                // counts differ
-                return false;
-            }
-
-            return true;
+            return !otherEnumerator.MoveNext();
         }
 
         public static int GetCollectionHashCode<T>(this IEnumerable<T> source) {
