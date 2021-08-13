@@ -54,21 +54,20 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
             _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
         }
 
-        public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
-            string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{((OrganizationNotificationWorkItem)workItem).OrganizationId}";
-            return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
-        }
+        public override Task HandleItemAsync(WorkItemContext context) {
+            var wi = context.GetData<OrganizationNotificationWorkItem>();
+            string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{wi.OrganizationId}";
+            
+            return _lockProvider.TryUsingAsync(cacheKey, async () => {
+                Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
 
-        public override async Task HandleItemAsync(WorkItemContext context) {
-            var workItem = context.GetData<OrganizationNotificationWorkItem>();
-            Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", workItem.OrganizationId, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit);
+                var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache()).AnyContext();
+                if (organization == null)
+                    return;
 
-            var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId, o => o.Cache()).AnyContext();
-            if (organization == null)
-                return;
-
-            if (workItem.IsOverMonthlyLimit)
-                await SendOverageNotificationsAsync(organization, workItem.IsOverHourlyLimit, workItem.IsOverMonthlyLimit).AnyContext();
+                if (wi.IsOverMonthlyLimit)
+                    await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit).AnyContext();
+            }, TimeSpan.FromMinutes(15), new CancellationToken(true));
         }
 
         private async Task SendOverageNotificationsAsync(Organization organization, bool isOverHourlyLimit, bool isOverMonthlyLimit) {
