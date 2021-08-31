@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Jobs {
             var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
 
-            var uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id")?.Value;
+            double? uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id")?.Value;
             if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
                 return;
 
@@ -76,14 +76,14 @@ namespace Exceptionless.Core.Jobs {
                 var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                     .Terms("terms_stack_id", c => c.Field(f => f.StackId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
-                var stackIds = stackIdTerms.Aggregations.Terms("terms_stack_id").Buckets.Select(b => b.Key).ToArray();
+                string[] stackIds = stackIdTerms.Aggregations.Terms("terms_stack_id").Buckets.Select(b => b.Key).ToArray();
                 if (stackIds.Length == 0)
                     continue;
 
                 totalStackIds += stackIds.Length;
 
                 var stacks = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Stack>(stackIds));
-                var missingStackIds = stacks.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
+                string[] missingStackIds = stacks.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
 
 
                 if (missingStackIds.Length == 0) {
@@ -104,7 +104,7 @@ namespace Exceptionless.Core.Jobs {
             var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
 
-            var uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id")?.Value;
+            double? uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id")?.Value;
             if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
                 return;
 
@@ -121,14 +121,14 @@ namespace Exceptionless.Core.Jobs {
                 var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                     .Terms("terms_project_id", c => c.Field(f => f.ProjectId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
-                var projectIds = projectIdTerms.Aggregations.Terms("terms_project_id").Buckets.Select(b => b.Key).ToArray();
+                string[] projectIds = projectIdTerms.Aggregations.Terms("terms_project_id").Buckets.Select(b => b.Key).ToArray();
                 if (projectIds.Length == 0)
                     continue;
 
                 totalProjectIds += projectIds.Length;
 
                 var projects = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Project>(projectIds));
-                var missingProjectIds = projects.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
+                string[] missingProjectIds = projects.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
 
                 if (missingProjectIds.Length == 0) {
                     _logger.LogInformation("{BatchNumber}/{BatchCount}: Did not find any missing projects out of {ProjectIdCount}", batchNumber, buckets, projectIds.Length);
@@ -147,7 +147,7 @@ namespace Exceptionless.Core.Jobs {
             var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                 .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
 
-            var uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id")?.Value;
+            double? uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id")?.Value;
             if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
                 return;
 
@@ -164,14 +164,14 @@ namespace Exceptionless.Core.Jobs {
                 var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
                     .Terms("terms_organization_id", c => c.Field(f => f.OrganizationId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
-                var organizationIds = organizationIdTerms.Aggregations.Terms("terms_organization_id").Buckets.Select(b => b.Key).ToArray();
+                string[] organizationIds = organizationIdTerms.Aggregations.Terms("terms_organization_id").Buckets.Select(b => b.Key).ToArray();
                 if (organizationIds.Length == 0)
                     continue;
 
                 totalOrganizationIds += organizationIds.Length;
 
                 var organizations = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Organization>(organizationIds));
-                var missingOrganizationIds = organizations.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
+                string[] missingOrganizationIds = organizations.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
 
                 if (missingOrganizationIds.Length == 0) {
                     _logger.LogInformation("{BatchNumber}/{BatchCount}: Did not find any missing organizations out of {OrganizationIdCount}", batchNumber, buckets, organizationIds.Length);
@@ -210,7 +210,7 @@ namespace Exceptionless.Core.Jobs {
                     string projectId = null;
                     string signature = null;
                     try {
-                        var parts = duplicateSignature.Key.Split(':');
+                        string[] parts = duplicateSignature.Key.Split(':');
                         if (parts.Length != 2) {
                             _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key);
                             continue;
@@ -236,7 +236,7 @@ namespace Exceptionless.Core.Jobs {
 
                         // use the stack that has the most events on it so we can reduce the number of updates
                         if (eventCountBuckets.Count > 0) {
-                            var targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
+                            string targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
                             targetStack = stacks.Documents.Single(d => d.Id == targetStackId);
                             duplicateStacks = stacks.Documents.Where(d => d.Id != targetStackId).ToList();
                         }

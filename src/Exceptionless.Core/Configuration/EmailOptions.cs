@@ -60,15 +60,12 @@ namespace Exceptionless.Core.Configuration {
         }
 
         private static SmtpEncryption GetDefaultSmtpEncryption(int port) {
-            switch (port) {
-                case 465:
-                    return SmtpEncryption.SSL;
-                case 587:
-                case 2525:
-                    return SmtpEncryption.StartTLS;
-                default:
-                    return SmtpEncryption.None;
-            }
+            return port switch {
+                465 => SmtpEncryption.SSL,
+                587 => SmtpEncryption.StartTLS,
+                2525 => SmtpEncryption.StartTLS,
+                _ => SmtpEncryption.None
+            };
         }
     }
 
