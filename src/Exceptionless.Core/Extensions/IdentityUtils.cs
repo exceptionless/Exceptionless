@@ -126,7 +126,7 @@ namespace Exceptionless.Core.Extensions {
         public static string[] GetOrganizationIds(this ClaimsPrincipal principal) {
             string ids = GetClaimValue(principal, OrganizationIdsClaim);
             if (String.IsNullOrEmpty(ids))
-                return new string[] { };
+                return Array.Empty<string>();
 
             return ids.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         }
@@ -149,7 +149,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string GetClaimValue(this IIdentity identity, string type) {
-            if (!(identity is ClaimsIdentity claimsIdentity))
+            if (identity is not ClaimsIdentity claimsIdentity)
                 return null;
 
             var claim = claimsIdentity.FindAll(type).FirstOrDefault();
