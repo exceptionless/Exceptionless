@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Configuration {
 
             options.EnableDailySummary = config.GetValue(nameof(options.EnableDailySummary), appOptions.AppMode == AppMode.Production);
             options.AllowedOutboundAddresses = config.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
-            options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), "noreply@exceptionless.io");
+            options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "test@localhost" : "");
 
             string emailConnectionString = config.GetConnectionString("Email");
             if (!String.IsNullOrEmpty(emailConnectionString)) {
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Configuration {
                 options.SmtpPassword = uri.Password;
             }
 
-            options.SmtpFrom = config.GetValue(nameof(options.SmtpFrom), "Exceptionless <noreply@exceptionless.io>");
+            options.SmtpFrom = config.GetValue(nameof(options.SmtpFrom), appOptions.AppMode == AppMode.Development ? "Exceptionless <noreply@localhost>" : "");
             options.SmtpEncryption = config.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
 
             if (String.IsNullOrWhiteSpace(options.SmtpUser) != String.IsNullOrWhiteSpace(options.SmtpPassword))

@@ -193,7 +193,7 @@ namespace Exceptionless.Tests.Mail {
 
             await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
                 DateAdded = SystemClock.UtcNow,
-                EmailAddress = _options.EmailOptions.TestEmailAddress,
+                EmailAddress = "test@exceptionless.com",
                 Token = "1"
             });
 

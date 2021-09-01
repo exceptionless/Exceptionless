@@ -76,7 +76,7 @@ namespace Exceptionless.Insulation.Mail {
                 case SmtpEncryption.SSL:
                     return SecureSocketOptions.SslOnConnect;
                 default:
-                    return SecureSocketOptions.Auto;
+                    return SecureSocketOptions.None;
             }
         }
 

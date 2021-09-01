@@ -9,6 +9,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -29,6 +30,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly BillingManager _billingManager;
         private readonly AppOptions _appOptions;
         private readonly ILockProvider _lockProvider;
+        private readonly ICacheClient _cacheClient;
         private DateTime? _lastRun;
 
         public CleanupDataJob(
@@ -40,6 +42,7 @@ namespace Exceptionless.Core.Jobs {
             ITokenRepository tokenRepository,
             IWebHookRepository webHookRepository,
             ILockProvider lockProvider,
+            ICacheClient cacheClient,
             BillingManager billingManager,
             AppOptions appOptions,
             ILoggerFactory loggerFactory = null
@@ -54,6 +57,7 @@ namespace Exceptionless.Core.Jobs {
             _billingManager = billingManager;
             _appOptions = appOptions;
             _lockProvider = lockProvider;
+            _cacheClient = cacheClient;
         }
 
         protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
@@ -175,6 +179,9 @@ namespace Exceptionless.Core.Jobs {
             string[] stackIds = stacks.Select(s => s.Id).ToArray();
             long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds).AnyContext();
             await _stackRepository.RemoveAsync(stacks).AnyContext();
+            foreach (var orgGroup in stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)))
+                await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", orgGroup.Key.OrganizationId, ":", orgGroup.Key.ProjectId));
+
             _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
         }
         

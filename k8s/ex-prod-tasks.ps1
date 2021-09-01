@@ -3,8 +3,8 @@ $ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-u
 
 # connect to kibana
 
-kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5601
-open "http://kibana-ex-prod.localtest.me:5601"
+kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601
+open "http://kibana-ex-prod.localtest.me:5660"
 
 # port forward elasticsearch
 $ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200 &
@@ -67,7 +67,8 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl apply -f https://download.elastic.co/downloads/eck/1.3.1/all-in-one.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/1.7.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.7.0/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
@@ -123,7 +124,7 @@ kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": tr
 
 # resume the app
 kubectl scale deployment/ex-prod-api --replicas=5 --namespace ex-prod
-kubectl scale deployment/ex-prod-collector --replicas=12 --namespace ex-prod
+kubectl scale deployment/ex-prod-collector --replicas=5 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-close-inactive-sessions --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-daily-summary --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-notifications --replicas=2 --namespace ex-prod

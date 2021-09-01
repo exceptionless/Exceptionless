@@ -6,6 +6,7 @@ ConnectionStrings:
 #  MessageBus: provider=redis;
 #  Queue: provider=redis;
   Storage: provider=folder;path=..\..\..\..\Exceptionless.Web\storage
+  Email: smtp://localhost:1025
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
