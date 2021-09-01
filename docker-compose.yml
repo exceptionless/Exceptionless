@@ -48,6 +48,12 @@ services:
     ports:
       - 6379:6379
 
+  mail:
+    image: mailhog/mailhog:latest
+    ports:
+      - 8025:8025
+      - 1025:1025
+
   ui:
     image: exceptionless/ui:latest
     environment:

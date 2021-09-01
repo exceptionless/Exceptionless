@@ -42,7 +42,7 @@ services:
       EX_BaseURL: http://localhost:5000
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
-      #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
+      EX_ConnectionStrings__Email: smtp://localhost:1025
       EX_ConnectionStrings__MessageBus: provider=redis
       #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
       EX_ConnectionStrings__Queue: provider=redis
@@ -74,6 +74,12 @@ services:
     image: redis:6.0-alpine
     ports:
       - 6379:6379
+
+  mail:
+    image: mailhog/mailhog:latest
+    ports:
+      - 8025:8025
+      - 1025:1025
 
 volumes:
   esdata7:

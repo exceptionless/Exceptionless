@@ -19,15 +19,15 @@ namespace Exceptionless.Core.Utility {
         private readonly IUserRepository _userRepository;
         private readonly ILogger<SampleDataService> _logger;
 
-        public const string TEST_USER_EMAIL = "test@test.com";
+        public const string TEST_USER_EMAIL = "test@localhost";
         public const string TEST_USER_PASSWORD = "tester";
         public const string TEST_ORG_ID = "537650f3b77efe23a47914f3";
         public const string TEST_PROJECT_ID = "537650f3b77efe23a47914f4";
         public const string TEST_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271nTest";
         public const string TEST_USER_API_KEY = "5f8aT5j0M1SdWCMOiJKCrlDNHMI38LjCH4LTTest";
-        public const string TEST_ORG_USER_EMAIL = "org@test.com";
+        public const string TEST_ORG_USER_EMAIL = "org@localhost";
         public const string TEST_ORG_USER_PASSWORD = "tester";
-        public const string FREE_USER_EMAIL = "free@test.com";
+        public const string FREE_USER_EMAIL = "free@localhost";
         public const string FREE_USER_PASSWORD = "tester";
         public const string FREE_ORG_ID = "537650f3b77efe23a47914f5";
         public const string FREE_PROJECT_ID = "537650f3b77efe23a47914f6";

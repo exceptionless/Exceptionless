@@ -7,12 +7,17 @@ ConnectionStrings:
 #  Queue: provider=redis;
   Storage: provider=folder;path=.\storage
 #  LDAP: ''
+  Email: smtp://localhost:1025
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
 
 # Wether or not to run the jobs in process. Requires Redis to be configured when running jobs out of process.
 RunJobsInProcess: true
+#AppScope: dev
+#EnableAccountCreation: false
+#DisableIndexConfiguration: false
+#AllowedOutboundAddresses: "exceptionless"
 
 Serilog:
   MinimumLevel:

@@ -218,9 +218,7 @@ namespace Exceptionless.Core {
             if (!appOptions.EnableWebSockets)
                 logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
 
-            if (appOptions.AppMode == AppMode.Development)
-                logger.LogWarning("Emails will NOT be sent in Development mode on {MachineName}", Environment.MachineName);
-            else if (String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
+            if (String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
                 logger.LogWarning("Emails will NOT be sent until the SmtpHost is configured on {MachineName}", Environment.MachineName);
 
             var fileStorage = serviceProvider.GetService<IFileStorage>();

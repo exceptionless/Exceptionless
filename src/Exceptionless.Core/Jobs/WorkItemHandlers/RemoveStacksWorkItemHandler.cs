@@ -14,9 +14,11 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
     public class RemoveStacksWorkItemHandler : WorkItemHandlerBase {
         private readonly IStackRepository _stackRepository;
         private readonly ILockProvider _lockProvider;
+        private readonly ICacheClient _cacheClient;
 
         public RemoveStacksWorkItemHandler(IStackRepository stackRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
             _stackRepository = stackRepository;
+            _cacheClient = cacheClient;
             _lockProvider = new CacheLockProvider(cacheClient, messageBus);
         }
 
@@ -31,6 +33,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers {
                 Log.LogInformation("Received remove stacks work item for project: {ProjectId}", wi.ProjectId);
                 await context.ReportProgressAsync(0, "Starting soft deleting of stacks...").AnyContext();
                 long deleted = await _stackRepository.SoftDeleteByProjectIdAsync(wi.OrganizationId, wi.ProjectId).AnyContext();
+                await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", wi.OrganizationId, ":", wi.ProjectId));
                 await context.ReportProgressAsync(100, $"Stacks soft deleted: {deleted}").AnyContext();
             }
         }

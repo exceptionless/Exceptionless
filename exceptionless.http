@@ -70,3 +70,8 @@ Hello World!
 
 GET {{apiUrl}}/events
 Authorization: Bearer {{token}}
+
+###
+
+GET {{apiUrl}}/events/count?filter=(status:open%20OR%20status:regressed)&offset=-300m&time=last%2024%20hours&aggregations=date:(date^-300m%20cardinality:stack%20sum:count~1)%20cardinality:stack%20terms:(first%20@include:true)%20sum:count~1
+Authorization: Bearer {{token}}

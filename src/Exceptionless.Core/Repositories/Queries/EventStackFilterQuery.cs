@@ -116,7 +116,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 
                 if (stackTotal > stackIdLimit) {
                     if (!tooManyStacksCheck.HasValue)
-                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
+                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
 
                     _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
                     isStackIdsNegated = !isStackIdsNegated;
@@ -136,7 +136,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
                 if (stackTotal > stackIdLimit) {
                     if (!tooManyStacksCheck.HasValue)
-                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromHours(1));
+                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
                     throw new DocumentLimitExceededException("Please limit your search criteria.");
                 }
 
@@ -188,14 +188,14 @@ namespace Exceptionless.Core.Repositories.Queries {
         }
 
         private string GetQueryHash(IRepositoryQuery query) {
-            // org ids, project ids, stack ids, date ranges, filter expression
+            // org ids, project ids, date ranges, filter expression
 
             var appFilter = query.GetAppFilter();
             var projectIds = query.GetProjects();
-            if (appFilter?.Projects != null)
+            if (projectIds.Count == 0 && appFilter?.Projects != null)
                 projectIds.AddRange(appFilter.Projects.Select(p => p.Id));
             var organizationIds = query.GetOrganizations();
-            if (appFilter?.Organizations != null)
+            if (organizationIds.Count == 0 && appFilter?.Organizations != null)
                 organizationIds.AddRange(appFilter.Organizations.Select(o => o.Id));
 
             var hashCode = new HashCode();
@@ -215,7 +215,16 @@ namespace Exceptionless.Core.Repositories.Queries {
             hashCode.Add(maxDate);
             
             hashCode.Add(query.GetFilterExpression());
-            return hashCode.ToHashCode().ToString();
+
+            string cacheScope = "";
+            if (organizationIds.Count == 1 && projectIds.Count == 1)
+                cacheScope = String.Concat(organizationIds.Single(), ":", projectIds.Single(), ":");
+            else if (organizationIds.Count == 1)
+                cacheScope = String.Concat(organizationIds.Single(), ":");
+            else if (projectIds.Count == 1)
+                cacheScope = String.Concat("project:", projectIds.Single(), ":");
+
+            return String.Concat(cacheScope, hashCode.ToHashCode().ToString());
         }
     }
 }
