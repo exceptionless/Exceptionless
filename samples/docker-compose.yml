@@ -24,8 +24,8 @@ services:
       - 5000:80
       - 5001:443
     volumes:
-      - appdata:/app/storage
-      - ssldata:/https
+      - ex_appdata:/app/storage
+      - ex_ssldata:/https
 
   jobs:
     depends_on:
@@ -43,7 +43,7 @@ services:
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
     volumes:
-      - appdata:/app/storage
+      - ex_appdata:/app/storage
 
   elasticsearch:
     image: exceptionless/elasticsearch:7.14.0
@@ -55,12 +55,12 @@ services:
       - 9200:9200
       - 9300:9300
     volumes:
-      - esdata7:/usr/share/elasticsearch/data
+      - ex_esdata:/usr/share/elasticsearch/data
 
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.14.0
+    image: docker.elastic.co/kibana/kibana:latest
     ports:
       - 5601:5601
 
@@ -70,9 +70,9 @@ services:
       - 6379:6379
 
 volumes:
-  esdata7:
+  ex_esdata:
     driver: local
-  appdata:
+  ex_appdata:
     driver: local
-  ssldata:
+  ex_ssldata:
     driver: local

@@ -74,12 +74,11 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
 
 EXPOSE 80
 
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD [ "dotnet", "Exceptionless.Web.dll" ]
+ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.12.0 AS exceptionless
+FROM exceptionless/elasticsearch:7.14.0 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
