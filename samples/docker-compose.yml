@@ -15,8 +15,8 @@ services:
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
-      #ASPNETCORE_URLS: http://+;https://+
-      #ASPNETCORE_HTTPS_PORT: 5001
+      ASPNETCORE_URLS: http://+;https://+
+      ASPNETCORE_HTTPS_PORT: 5001
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
       #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
       EX_RunJobsInProcess: 'false'
@@ -60,7 +60,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:latest
+    image: docker.elastic.co/kibana/kibana:7.14.1
     ports:
       - 5601:5601
 
