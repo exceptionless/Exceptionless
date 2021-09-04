@@ -63,9 +63,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS app
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/bootstrap /usr/local/bin/bootstrap
-COPY ./build/docker-entrypoint.sh ./
-COPY ./build/supervisord.conf /etc/
+COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
+COPY ./build/app-docker-entrypoint.sh ./
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
@@ -74,7 +73,7 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
 
 EXPOSE 80
 
-ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
+ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
@@ -84,7 +83,7 @@ WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/bootstrap /usr/local/bin/bootstrap
+COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
