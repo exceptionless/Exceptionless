@@ -24,7 +24,7 @@ $ENV="dev"
 az network vnet create -g $RESOURCE_GROUP -n $VNET --subnet-name $CLUSTER --address-prefixes 10.60.0.0/16 --subnet-prefixes 10.60.0.0/18 --location eastus
 $SUBNET_ID=$(az network vnet subnet list --resource-group $RESOURCE_GROUP --vnet-name $VNET --query '[0].id' --output tsv)
 
-# create new service principal and update the cluster to use it (seems these expire after a year)
+# create new service principal and update the cluster to use it (check how to renew below)
 az ad sp create-for-rbac --skip-assignment --name $CLUSTER
 az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 
@@ -176,8 +176,8 @@ Write-Output "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TE
 
 # renew service principal
 $SP_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER --query servicePrincipalProfile.clientId -o tsv)
-$SP_SECRET=$(az ad sp credential reset --name $SP_ID --years 2 --query password -o tsv)
-# store secret in 1Password
+$SP_SECRET=$(az ad sp credential reset --name $SP_ID --years 3 --query password -o tsv)
+# store secret in 1Password (Exceptionless Azure CI Service Principal)
 az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 
 # delete the entire thing

@@ -71,6 +71,8 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     ASPNETCORE_URLS=http://+:80 \
     EX_Html5Mode=true
 
+RUN chmod +x /app/app-docker-entrypoint.sh
+
 EXPOSE 80
 
 ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
@@ -101,6 +103,8 @@ ENV discovery.type=single-node \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
     EX_Html5Mode=true
+
+RUN chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 80 9200
 
