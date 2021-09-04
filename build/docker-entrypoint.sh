@@ -18,11 +18,9 @@ else
     mkdir -p /var/log/supervisor
     mkdir -p Temp/
 
-    sed -i -E "s/app\/app\./app\/wwwroot\/app\./" /usr/local/bin/bootstrap
-    sed -i -E "s/app\/index\./app\/wwwroot\/index\./" /usr/local/bin/bootstrap
-    sed -i -E "s/echo \"Running NGINX\"//" /usr/local/bin/bootstrap
-    sed -i -E "s/nginx//" /usr/local/bin/bootstrap
-    /usr/local/bin/bootstrap
+    pushd /app/wwwroot
+    update-config
+    popd
 
     supervisord -c /etc/supervisord.conf
 
