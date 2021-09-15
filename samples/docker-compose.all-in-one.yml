@@ -1,15 +1,22 @@
 version: '3.5'
 
-# Runs the all in one Exceptionless docker image and a Kibana instance pointing to the Elasticsearch running inside of it
-
 services:
-  elasticsearch:
+  exceptionless:
     image: exceptionless/exceptionless:latest
     ports:
       - 5000:80
       - 9200:9200
-      - 9300:9300
+    environment:
+      EX_AppMode: Production
+      #ASPNETCORE_URLS: http://+;https://+
+      #ASPNETCORE_HTTPS_PORT: 5001
+      #ASPNETCORE_Kestrel__Certificates__Default__Password: password
+      #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
+    volumes:
+      - ex_ssldata:/https
+      - ex_esdata:/usr/share/elasticsearch/data
 
+  # Runs Kibana for working with Elasticsearch data directly. This is normally not needed and takes up resources when running.
   kibana:
     depends_on:
       - elasticsearch
@@ -17,3 +24,8 @@ services:
     ports:
       - 5601:5601
 
+volumes:
+  ex_esdata:
+    driver: local
+  ex_ssldata:
+    driver: local

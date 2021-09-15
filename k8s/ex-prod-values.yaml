@@ -40,3 +40,4 @@ config:
   EX_EnableSnapshotJobs: "true"
   EX_SmtpFrom: "Exceptionless <noreply@exceptionless.io>"
   EX_TestEmailAddress: "test@exceptionless.io"
+  EX_EnableArchive: true

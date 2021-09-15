@@ -94,7 +94,7 @@ namespace Exceptionless.Core {
             options.BotThrottleLimit = config.GetValue(nameof(options.BotThrottleLimit), 25).NormalizeValue();
 
             options.ApiThrottleLimit = config.GetValue(nameof(options.ApiThrottleLimit), options.AppMode == AppMode.Development ? Int32.MaxValue : 3500).NormalizeValue();
-            options.EnableArchive = config.GetValue(nameof(options.EnableArchive), true);
+            options.EnableArchive = config.GetValue(nameof(options.EnableArchive), false);
             options.EnableSampleData = config.GetValue(nameof(options.EnableSampleData), options.AppMode == AppMode.Development);
             options.EventSubmissionDisabled = config.GetValue(nameof(options.EventSubmissionDisabled), false);
             options.DisabledPipelineActions = config.GetValueList(nameof(options.DisabledPipelineActions));
