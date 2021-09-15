@@ -46,7 +46,7 @@ services:
       - ex_appdata:/app/storage
 
   elasticsearch:
-    image: exceptionless/elasticsearch:7.14.0
+    image: exceptionless/elasticsearch:7.14.1
     environment:
       discovery.type: single-node
       xpack.security.enabled: 'false'
