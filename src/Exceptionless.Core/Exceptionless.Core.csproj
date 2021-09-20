@@ -30,7 +30,7 @@
     <PackageReference Include="Handlebars.Net" Version="2.0.9" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="Stripe.net" Version="39.64.0" />
     <PackageReference Include="System.DirectoryServices" Version="5.0.0" />
