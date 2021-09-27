@@ -14,7 +14,7 @@
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.9" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.9" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.13.2" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.15.0" />
     <PackageReference Include="OAuth2" Version="0.10.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
