@@ -14,7 +14,7 @@
     <PackageReference Include="Foundatio.AWS" Version="10.2.0" />
     <PackageReference Include="Foundatio.AzureStorage" Version="10.2.0" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.2.1" />
-    <PackageReference Include="Foundatio.Minio" Version="10.2.0" />
+    <PackageReference Include="Foundatio.Minio" Version="10.2.2" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="10.2.0" />
     <PackageReference Include="Foundatio.Redis" Version="10.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0" />
