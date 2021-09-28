@@ -48,7 +48,7 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwr
 
 # install dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.1.0/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -59,7 +59,8 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl apply -f https://download.elastic.co/downloads/eck/1.3.1/all-in-one.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/1.8.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.8.0/operator.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
@@ -108,10 +109,9 @@ az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
 # https://github.com/jetstack/cert-manager/releases
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.1/cert-manager.crds.yaml
-kubectl create namespace cert-manager
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.crds.yaml
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
 kubectl apply -f cluster-issuer.yaml
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
 
 # install kubecost
 # https://kubecost.com/install?ref=home
