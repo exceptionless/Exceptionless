@@ -34,13 +34,12 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories;
-using Amazon.CloudWatch.Model;
 using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Tests {
     public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
         private static bool _indexesHaveBeenConfigured = false;
-        private static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+        private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
         private readonly IDisposable _testSystemClock = TestSystemClock.Install();
         private readonly ExceptionlessElasticConfiguration _configuration;
         protected readonly TestServer _server;

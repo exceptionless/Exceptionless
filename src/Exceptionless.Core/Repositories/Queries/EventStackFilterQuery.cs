@@ -86,7 +86,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
             const int stackIdLimit = 10000;
-            string[] stackIds = new string[0];
+            string[] stackIds = Array.Empty<string>();
             long stackTotal = 0;
 
             string stackFilterValue = stackFilter.Filter;
@@ -185,7 +185,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             return systemFilterQuery;
         }
 
-        private string GetQueryHash(IRepositoryQuery query) {
+        private static string GetQueryHash(IRepositoryQuery query) {
             // org ids, project ids, date ranges, filter expression
 
             var appFilter = query.GetAppFilter();
