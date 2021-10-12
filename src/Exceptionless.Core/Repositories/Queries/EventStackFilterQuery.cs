@@ -99,50 +99,48 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Filter, stackFilter.InvertedFilter);
 
-            if (ctx is not IQueryVisitorContext) {
-                var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
-                systemFilterQuery.FilterExpression(stackFilterValue);
-                var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
-                systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
+            var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
+            systemFilterQuery.FilterExpression(stackFilterValue);
+            var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
+            systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
 
-                FindResults<Stack> results = null;
-                var tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
+            FindResults<Stack> results = null;
+            var tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
+            if (tooManyStacksCheck.HasValue) {
+                stackTotal = tooManyStacksCheck.Value;
+            } else {
+                results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
+                stackTotal = results.Total;
+            }
+                
+            if (stackTotal > stackIdLimit) {
+                if (!tooManyStacksCheck.HasValue)
+                    await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
+
+                _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
+                isStackIdsNegated = !isStackIdsNegated;
+                stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
+                systemFilterQuery.FilterExpression(stackFilterValue);
+                softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
+                systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
+                    
+                tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
                 if (tooManyStacksCheck.HasValue) {
                     stackTotal = tooManyStacksCheck.Value;
                 } else {
                     results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
                     stackTotal = results.Total;
                 }
-                
-                if (stackTotal > stackIdLimit) {
-                    if (!tooManyStacksCheck.HasValue)
-                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
-
-                    _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
-                    isStackIdsNegated = !isStackIdsNegated;
-                    stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
-                    systemFilterQuery.FilterExpression(stackFilterValue);
-                    softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
-                    systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
-                    
-                    tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
-                    if (tooManyStacksCheck.HasValue) {
-                        stackTotal = tooManyStacksCheck.Value;
-                    } else {
-                        results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
-                        stackTotal = results.Total;
-                    }
-                }
-
-                if (stackTotal > stackIdLimit) {
-                    if (!tooManyStacksCheck.HasValue)
-                        await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
-                    throw new DocumentLimitExceededException("Please limit your search criteria.");
-                }
-
-                if (results?.Hits != null)
-                    stackIds = results.Hits.Select(h => h.Id).ToArray();
             }
+
+            if (stackTotal > stackIdLimit) {
+                if (!tooManyStacksCheck.HasValue)
+                    await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
+                throw new DocumentLimitExceededException("Please limit your search criteria.");
+            }
+
+            if (results?.Hits != null)
+                stackIds = results.Hits.Select(h => h.Id).ToArray();
 
             _logger.LogTrace("Setting stack filter with {IdCount} ids", stackIds?.Length ?? 0);
 
