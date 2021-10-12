@@ -143,7 +143,7 @@ namespace Exceptionless.Core {
             container.AddSingleton<IGeoIpService, NullGeoIpService>();
 
             container.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
-            container.AddSingleton<IQueryValidator, QueryValidator>();
+            container.AddSingleton<IAppQueryValidator, AppQueryValidator>();
             container.AddSingleton<PersistentEventQueryValidator>();
             container.AddSingleton<StackQueryValidator>();
 

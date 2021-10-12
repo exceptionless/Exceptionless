@@ -51,7 +51,7 @@ namespace Exceptionless.Web.Controllers {
             BillingManager billingManager,
             SlackService slackService,
             IMapper mapper,
-            IQueryValidator validator,
+            IAppQueryValidator validator,
             AppOptions options,
             ILoggerFactory loggerFactory
         ) : base(projectRepository, mapper, validator, loggerFactory) {

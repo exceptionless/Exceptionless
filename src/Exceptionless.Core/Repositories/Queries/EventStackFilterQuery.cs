@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Filter, stackFilter.InvertedFilter);
 
-            if (!(ctx is IQueryVisitorContextWithValidator)) {
+            if (ctx is not IQueryVisitorContext) {
                 var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
                 systemFilterQuery.FilterExpression(stackFilterValue);
                 var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;

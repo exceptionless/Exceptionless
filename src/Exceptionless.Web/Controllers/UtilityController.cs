@@ -25,10 +25,10 @@ namespace Exceptionless.Web.Controllers {
         /// </remarks>
         /// <param name="query">The query you wish to validate.</param>
         [HttpGet("search/validate")]
-        public async Task<ActionResult<QueryValidator.QueryProcessResult>> ValidateAsync(string query) {
+        public async Task<ActionResult<AppQueryValidator.QueryProcessResult>> ValidateAsync(string query) {
             var eventResults = await _eventQueryValidator.ValidateQueryAsync(query);
             var stackResults = await _stackQueryValidator.ValidateQueryAsync(query);
-            return Ok(new QueryValidator.QueryProcessResult {
+            return Ok(new AppQueryValidator.QueryProcessResult {
                 IsValid = eventResults.IsValid || stackResults.IsValid,
                 UsesPremiumFeatures = eventResults.UsesPremiumFeatures && stackResults.UsesPremiumFeatures,
                 Message = eventResults.Message ?? stackResults.Message

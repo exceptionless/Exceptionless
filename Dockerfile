@@ -1,7 +1,7 @@
 ARG UI_VERSION="ui:latest"
 FROM exceptionless/${UI_VERSION} AS ui
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
 COPY ./*.sln ./NuGet.Config ./
@@ -37,7 +37,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
@@ -51,14 +51,14 @@ RUN dotnet publish -c Release -o out
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS app
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
@@ -91,7 +91,7 @@ COPY ./build/supervisord.conf /etc/
 
 # install dotnet and supervisor
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
-    yum -y install aspnetcore-runtime-5.0 && \
+    yum -y install aspnetcore-runtime-6.0 && \
     yum -y install epel-release && \
     yum -y install supervisor
 

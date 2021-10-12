@@ -8,21 +8,21 @@ using Foundatio.Parsers.LuceneQueries.Visitors;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Queries.Validation {
-    public interface IQueryValidator {
-        Task<QueryValidator.QueryProcessResult> ValidateQueryAsync(string query);
+    public interface IAppQueryValidator {
+        Task<AppQueryValidator.QueryProcessResult> ValidateQueryAsync(string query);
 
-        Task<QueryValidator.QueryProcessResult> ValidateQueryAsync(IQueryNode query);
+        Task<AppQueryValidator.QueryProcessResult> ValidateQueryAsync(IQueryNode query);
 
-        Task<QueryValidator.QueryProcessResult> ValidateAggregationsAsync(string aggs);
+        Task<AppQueryValidator.QueryProcessResult> ValidateAggregationsAsync(string aggs);
 
-        Task<QueryValidator.QueryProcessResult> ValidateAggregationsAsync(IQueryNode query);
+        Task<AppQueryValidator.QueryProcessResult> ValidateAggregationsAsync(IQueryNode query);
     }
 
-    public class QueryValidator : IQueryValidator {
+    public class AppQueryValidator : IAppQueryValidator {
         private readonly IQueryParser _parser;
         private readonly ILogger _logger;
 
-        public QueryValidator(IQueryParser parser, ILoggerFactory loggerFactory) {
+        public AppQueryValidator(IQueryParser parser, ILoggerFactory loggerFactory) {
             _parser = parser;
             _logger = loggerFactory?.CreateLogger(GetType());
         }
