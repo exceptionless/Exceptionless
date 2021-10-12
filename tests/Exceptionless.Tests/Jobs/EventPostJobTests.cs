@@ -59,7 +59,8 @@ namespace Exceptionless.Tests.Jobs {
             var ev = GenerateEvent();
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(2, (await _storage.GetFileListAsync()).Count);
+            var files = await _storage.GetFileListAsync();
+            Assert.Equal(1, files.Count);
 
             var result = await _job.RunAsync();
             Assert.True(result.IsSuccess);
@@ -80,7 +81,7 @@ namespace Exceptionless.Tests.Jobs {
 
             Assert.NotNull(await EnqueueEventPostAsync(ev));
             Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-            Assert.Equal(2, (await _storage.GetFileListAsync()).Count);
+            Assert.Equal(1, (await _storage.GetFileListAsync()).Count);
 
             var result = await _job.RunAsync();
             Assert.False(result.IsSuccess);
