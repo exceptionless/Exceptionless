@@ -111,7 +111,10 @@ namespace Exceptionless.Job {
                             });
 
                             app.UseWaitForStartupActionsBeforeServingRequests();
-                            app.Use((context, func) => context.Response.WriteAsync($"Running Job: {jobOptions.JobName}"));
+                            app.Run(async context =>
+                            {
+                                await context.Response.WriteAsync($"Running Job: {jobOptions.JobName}");
+                            });
                         });
                 })
                 .ConfigureServices((ctx, services) => {

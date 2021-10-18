@@ -120,8 +120,8 @@ ctx._source.total_occurrences += params.count;";
             );
         }
 
-        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options) {
-            await base.AddDocumentsToCacheAsync(findHits, options).AnyContext();
+        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options, bool isDirtyRead) {
+            await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
 
             var cacheEntries = new Dictionary<string, FindHit<Stack>>();
             foreach (var hit in findHits)

@@ -21,10 +21,10 @@ namespace Exceptionless.Web.Controllers {
         protected static readonly bool _supportsSoftDeletes = typeof(ISupportSoftDeletes).IsAssignableFrom(typeof(TModel));
         protected static readonly IReadOnlyCollection<TModel> EmptyModels = new List<TModel>(0).AsReadOnly();
         protected readonly IMapper _mapper;
-        protected readonly IQueryValidator _validator;
+        protected readonly IAppQueryValidator _validator;
         protected readonly ILogger _logger;
 
-        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) {
+        public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) {
             _repository = repository;
             _mapper = mapper;
             _validator = validator;

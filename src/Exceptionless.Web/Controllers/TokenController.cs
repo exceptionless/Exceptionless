@@ -25,7 +25,7 @@ namespace Exceptionless.App.Controllers.API {
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, UpdateToken> {
         private readonly IProjectRepository _projectRepository;
 
-        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
+        public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
             _projectRepository = projectRepository;
         }
 

@@ -80,22 +80,20 @@ namespace Exceptionless.Core.Extensions {
             if (byteSize < allowedCharSet.Length)
                 throw new ArgumentException($"allowedChars may contain no more than {byteSize} characters.");
 
-            using (var rng = new RNGCryptoServiceProvider()) {
-                var result = new StringBuilder();
-                byte[] buf = new byte[128];
+            var result = new StringBuilder();
+            byte[] buf = new byte[128];
 
-                while (result.Length < length) {
-                    rng.GetBytes(buf);
-                    for (int i = 0; i < buf.Length && result.Length < length; ++i) {
-                        int outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
-                        if (outOfRangeStart <= buf[i])
-                            continue;
-                        result.Append(allowedCharSet[buf[i] % allowedCharSet.Length]);
-                    }
+            while (result.Length < length) {
+                RandomNumberGenerator.Fill(buf);
+                for (int i = 0; i < buf.Length && result.Length < length; ++i) {
+                    int outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
+                    if (outOfRangeStart <= buf[i])
+                        continue;
+                    result.Append(allowedCharSet[buf[i] % allowedCharSet.Length]);
                 }
-
-                return result.ToString();
             }
+
+            return result.ToString();
         }
 
         // TODO: Add support for detecting the culture number separators as well as suffix (Ex. 100d)

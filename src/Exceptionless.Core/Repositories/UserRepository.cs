@@ -66,8 +66,8 @@ namespace Exceptionless.Core.Repositories {
             return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
         }
 
-        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options) {
-            await base.AddDocumentsToCacheAsync(findHits, options).AnyContext();
+        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead) {
+            await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
 
             var cacheEntries = new Dictionary<string, FindHit<User>>();
             foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.EmailAddress)))

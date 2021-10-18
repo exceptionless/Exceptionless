@@ -6,7 +6,7 @@ using Foundatio.Parsers.LuceneQueries.Visitors;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Queries.Validation {
-    public sealed class StackQueryValidator : QueryValidator {
+    public sealed class StackQueryValidator : AppQueryValidator {
         private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.FirstOccurrence,
             "first_occurrence",

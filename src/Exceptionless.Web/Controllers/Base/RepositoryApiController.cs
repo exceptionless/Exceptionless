@@ -19,7 +19,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Web.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
-        public RepositoryApiController(TRepository repository, IMapper mapper, IQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {}
+        public RepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {}
 
         protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value) {
             if (value == null)

@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Extensions {
         /// <param name="input">The string to compute hash on.</param>
         /// <returns>The hash as a hexadecimal String.</returns>
         public static string ToSHA1(this string input) {
-            return ComputeHash(input, new SHA1Managed());
+            return ComputeHash(input, SHA1.Create());
         }
 
         /// <summary>Compute SHA1 hash on a collection of input string</summary>
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Extensions {
         /// <param name="input">The string to compute hash on.</param>
         /// <returns>The hash as a hexadecimal String.</returns>
         public static string ToSHA256(this string input) {
-            return ComputeHash(input, new SHA256Managed());
+            return ComputeHash(input, SHA256.Create());
         }
 
         /// <summary>
