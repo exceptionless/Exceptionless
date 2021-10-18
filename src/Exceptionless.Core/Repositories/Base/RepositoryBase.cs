@@ -15,11 +15,17 @@ using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
+        protected readonly IValidator<T> _validator;
         protected readonly AppOptions _options;
 
-        public RepositoryBase(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator) {
+        public RepositoryBase(IIndex index, IValidator<T> validator, AppOptions options) : base(index) {
+            _validator = validator;
             _options = options;
             NotificationsEnabled = options.EnableRepositoryNotifications;
+        }
+
+        protected override Task ValidateAndThrowAsync(T document) {
+            return _validator.ValidateAndThrowAsync(document);
         }
 
         protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {

@@ -6,7 +6,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Queries.Validation {
-    public sealed class PersistentEventQueryValidator : QueryValidator {
+    public sealed class PersistentEventQueryValidator : AppQueryValidator {
         private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
             "type",

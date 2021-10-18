@@ -61,7 +61,7 @@ namespace OpenTelemetry {
                 b.AddSource("Foundatio");
                 if (config.EnableRedis)
                     b.AddRedisInstrumentation(null, c => {
-                        c.SetCommandKey = config.FullDetails;
+                        c.SetVerboseDatabaseStatements = config.FullDetails;
                         c.Enrich = (activity, command) => {
                             activity.SetTag("service.name", "Redis");
                         };

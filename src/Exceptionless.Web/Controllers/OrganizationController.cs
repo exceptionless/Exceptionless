@@ -60,7 +60,7 @@ namespace Exceptionless.Web.Controllers {
             IMailer mailer,
             IMessagePublisher messagePublisher,
             IMapper mapper,
-            IQueryValidator validator,
+            IAppQueryValidator validator,
             AppOptions options,
             ILoggerFactory loggerFactory,
             BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory) {

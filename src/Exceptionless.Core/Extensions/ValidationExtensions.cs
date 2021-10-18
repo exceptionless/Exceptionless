@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static IRuleBuilderOptions<T, TProperty> IsObjectId<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
-            return ruleBuilder.SetValidator(new IsObjectIdValidator());
+            return ruleBuilder.SetValidator(new IsObjectIdValidator<T, TProperty>());
         }
     }
 }
