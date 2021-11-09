@@ -26,7 +26,7 @@ public sealed class WebHookDataTests : TestWithServices {
         object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
         if (expectData) {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
-            string expectedContent = File.ReadAllText(filePath);
+            string expectedContent = await File.ReadAllTextAsync(filePath);
             string actualContent = JsonConvert.SerializeObject(data, settings);
             Assert.Equal(expectedContent, actualContent);
         }
@@ -43,7 +43,7 @@ public sealed class WebHookDataTests : TestWithServices {
         object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
         if (expectData) {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
-            string expectedContent = File.ReadAllText(filePath);
+            string expectedContent = await File.ReadAllTextAsync(filePath);
             string actualContent = JsonConvert.SerializeObject(data, settings);
             Assert.Equal(expectedContent, actualContent);
         }

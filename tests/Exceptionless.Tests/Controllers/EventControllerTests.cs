@@ -168,8 +168,8 @@ public class EventControllerTests : IntegrationTestsBase {
 
         byte[] data = Encoding.UTF8.GetBytes(message);
         var ms = new MemoryStream();
-        using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
-            gzip.Write(data, 0, data.Length);
+        await using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
+            await gzip.WriteAsync(data, CancellationToken.None);
         ms.Position = 0;
 
         var content = new StreamContent(ms);

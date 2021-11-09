@@ -147,7 +147,7 @@ public class EventPostJobTests : IntegrationTestsBase {
         }
     }
 
-    private async Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
+    private Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
         var eventPostInfo = new EventPost(_options.EnableArchive) {
             OrganizationId = ev.OrganizationId,
             ProjectId = ev.ProjectId,
@@ -159,10 +159,10 @@ public class EventPostJobTests : IntegrationTestsBase {
         };
 
         var stream = new MemoryStream(_serializer.SerializeToBytes(ev).Compress());
-        return await _eventPostService.EnqueueAsync(eventPostInfo, stream).AnyContext();
+        return _eventPostService.EnqueueAsync(eventPostInfo, stream);
     }
 
-    private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
+    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
         occurrenceDate ??= SystemClock.OffsetNow;
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
     }

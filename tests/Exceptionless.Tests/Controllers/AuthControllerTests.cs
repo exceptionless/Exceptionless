@@ -43,8 +43,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CannotSignupWithoutPassword() {
-        await SendRequestAsync(r => r
+    public Task CannotSignupWithoutPassword() {
+        return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
             .Content(new SignupModel {
@@ -59,7 +59,7 @@ public class AuthControllerTests : IntegrationTestsBase {
     [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
     [InlineData(true, "test1.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
     [InlineData(false, "test1@exceptionless.io", "Password1$")]
-    public async Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
+    public Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
@@ -68,7 +68,7 @@ public class AuthControllerTests : IntegrationTestsBase {
             email = provider.GetEmailAddressFromUsername(email);
         }
 
-        await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
             .Content(new SignupModel {
@@ -85,7 +85,7 @@ public class AuthControllerTests : IntegrationTestsBase {
     [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
     [InlineData(true, "test2.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
     [InlineData(false, "test2@exceptionless.io", "Password1$")]
-    public async Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password) {
+    public Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password) {
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
@@ -94,7 +94,7 @@ public class AuthControllerTests : IntegrationTestsBase {
             email = provider.GetEmailAddressFromUsername(email);
         }
 
-        await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
             .Content(new SignupModel {
@@ -225,11 +225,11 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync() {
+    public Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync() {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
-        await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
            .Content(new SignupModel {
@@ -523,13 +523,13 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginValidNonExistantActiveDirectoryAsync() {
+    public Task LoginValidNonExistantActiveDirectoryAsync() {
         _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-        await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
            .Content(new LoginModel {
