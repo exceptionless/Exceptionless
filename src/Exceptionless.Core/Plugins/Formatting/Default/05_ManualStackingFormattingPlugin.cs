@@ -1,15 +1,14 @@
-﻿using System;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 
-namespace Exceptionless.Core.Plugins.Formatting {
-    [Priority(5)]
-    public sealed class ManualStackingFormattingPlugin : FormattingPluginBase {
-        public ManualStackingFormattingPlugin(AppOptions options) : base(options) { }
+namespace Exceptionless.Core.Plugins.Formatting;
 
-        public override string GetStackTitle(PersistentEvent ev) {
-            var msi = ev.GetManualStackingInfo();
-            return !String.IsNullOrWhiteSpace(msi?.Title) ? msi.Title : null;
-        }
+[Priority(5)]
+public sealed class ManualStackingFormattingPlugin : FormattingPluginBase {
+    public ManualStackingFormattingPlugin(AppOptions options) : base(options) { }
+
+    public override string GetStackTitle(PersistentEvent ev) {
+        var msi = ev.GetManualStackingInfo();
+        return !String.IsNullOrWhiteSpace(msi?.Title) ? msi.Title : null;
     }
 }

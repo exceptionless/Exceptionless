@@ -1,5 +1,5 @@
-﻿namespace Exceptionless.Core.Models {
-    public interface IData {
-        DataDictionary Data { get; set; }
-    }
+﻿namespace Exceptionless.Core.Models;
+
+public interface IData {
+    DataDictionary Data { get; set; }
 }

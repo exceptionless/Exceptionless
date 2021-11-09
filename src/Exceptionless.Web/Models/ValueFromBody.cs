@@ -1,14 +1,14 @@
 ﻿using System.Diagnostics;
 
-namespace Exceptionless.Web.Models {
-    [DebuggerDisplay("{Value}")]
-    public class ValueFromBody<T> {
-        private ValueFromBody() {}
-        
-        public ValueFromBody(T value) {
-            Value = value;
-        }
+namespace Exceptionless.Web.Models;
 
-        public T Value { get; set; }
+[DebuggerDisplay("{Value}")]
+public class ValueFromBody<T> {
+    private ValueFromBody() { }
+
+    public ValueFromBody(T value) {
+        Value = value;
     }
+
+    public T Value { get; set; }
 }

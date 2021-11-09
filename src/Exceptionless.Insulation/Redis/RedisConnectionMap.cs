@@ -1,49 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using StackExchange.Redis;
 
-namespace Exceptionless.Insulation.Redis {
-    public sealed class RedisConnectionMapping : IConnectionMapping {
-        private const string KeyPrefix = "Hub:";
-        private readonly IConnectionMultiplexer _muxer;
+namespace Exceptionless.Insulation.Redis;
 
-        public RedisConnectionMapping(IConnectionMultiplexer muxer) {
-            _muxer = muxer;
-        }
+public sealed class RedisConnectionMapping : IConnectionMapping {
+    private const string KeyPrefix = "Hub:";
+    private readonly IConnectionMultiplexer _muxer;
 
-        public Task AddAsync(string key, string connectionId) {
-            if (key == null)
-                return Task.CompletedTask;
+    public RedisConnectionMapping(IConnectionMultiplexer muxer) {
+        _muxer = muxer;
+    }
 
-            return Database.SetAddAsync(String.Concat(KeyPrefix, key), connectionId);
-        }
+    public Task AddAsync(string key, string connectionId) {
+        if (key == null)
+            return Task.CompletedTask;
 
-        private IDatabase Database => _muxer.GetDatabase();
+        return Database.SetAddAsync(String.Concat(KeyPrefix, key), connectionId);
+    }
 
-        public async Task<ICollection<string>> GetConnectionsAsync(string key) {
-            if (key == null)
-                return new List<string>();
+    private IDatabase Database => _muxer.GetDatabase();
 
-            var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key)).AnyContext();
-            return values.Select(v => v.ToString()).ToList();
-        }
+    public async Task<ICollection<string>> GetConnectionsAsync(string key) {
+        if (key == null)
+            return new List<string>();
 
-        public async Task<int> GetConnectionCountAsync(string key) {
-            if (key == null)
-                return 0;
+        var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key)).AnyContext();
+        return values.Select(v => v.ToString()).ToList();
+    }
 
-            return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key)).AnyContext();
-        }
+    public async Task<int> GetConnectionCountAsync(string key) {
+        if (key == null)
+            return 0;
 
-        public Task RemoveAsync(string key, string connectionId) {
-            if (key == null)
-                return Task.CompletedTask;
+        return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key)).AnyContext();
+    }
 
-            return Database.SetRemoveAsync(String.Concat(KeyPrefix, key), connectionId);
-        }
+    public Task RemoveAsync(string key, string connectionId) {
+        if (key == null)
+            return Task.CompletedTask;
+
+        return Database.SetRemoveAsync(String.Concat(KeyPrefix, key), connectionId);
     }
 }

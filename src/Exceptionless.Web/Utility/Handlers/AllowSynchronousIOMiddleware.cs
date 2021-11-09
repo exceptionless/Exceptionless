@@ -1,21 +1,19 @@
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace Exceptionless.Web.Utility.Handlers {
-    public class AllowSynchronousIOMiddleware {
-        private readonly RequestDelegate _next;
+namespace Exceptionless.Web.Utility.Handlers;
 
-        public AllowSynchronousIOMiddleware(RequestDelegate next) {
-            _next = next;
-        }
+public class AllowSynchronousIOMiddleware {
+    private readonly RequestDelegate _next;
 
-        public Task Invoke(HttpContext context) {
-            var syncIOFeature = context.Features.Get<IHttpBodyControlFeature>();
-            if (syncIOFeature != null) 
-                syncIOFeature.AllowSynchronousIO = true;
+    public AllowSynchronousIOMiddleware(RequestDelegate next) {
+        _next = next;
+    }
 
-            return _next(context);
-        }
+    public Task Invoke(HttpContext context) {
+        var syncIOFeature = context.Features.Get<IHttpBodyControlFeature>();
+        if (syncIOFeature != null)
+            syncIOFeature.AllowSynchronousIO = true;
+
+        return _next(context);
     }
 }

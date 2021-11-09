@@ -1,43 +1,41 @@
-﻿using System;
-using System.Net;
-using System.Net.Http;
+﻿using System.Net;
 using Exceptionless.Tests.Utility;
 
-namespace Exceptionless.Tests.Extensions {
-    public static class RequestExtensions {
-        public static AppSendBuilder StatusCodeShouldBeOk(this AppSendBuilder builder) {
-            return builder.ExpectedStatus(HttpStatusCode.OK);
-        }
+namespace Exceptionless.Tests.Extensions;
 
-        public static AppSendBuilder StatusCodeShouldBeAccepted(this AppSendBuilder builder) {
-            return builder.ExpectedStatus(HttpStatusCode.Accepted);
-        }
+public static class RequestExtensions {
+    public static AppSendBuilder StatusCodeShouldBeOk(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.OK);
+    }
 
-        public static AppSendBuilder StatusCodeShouldBeBadRequest(this AppSendBuilder builder) {
-            return builder.ExpectedStatus(HttpStatusCode.BadRequest);
-        }
+    public static AppSendBuilder StatusCodeShouldBeAccepted(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.Accepted);
+    }
 
-        public static AppSendBuilder StatusCodeShouldBeCreated(this AppSendBuilder builder) {
-            return builder.ExpectedStatus(HttpStatusCode.Created);
-        }
+    public static AppSendBuilder StatusCodeShouldBeBadRequest(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.BadRequest);
+    }
 
-        public static AppSendBuilder StatusCodeShouldBeUnauthorized(this AppSendBuilder builder) {
-            return builder.ExpectedStatus(HttpStatusCode.Unauthorized);
-        }
+    public static AppSendBuilder StatusCodeShouldBeCreated(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.Created);
+    }
 
-        public static HttpStatusCode? GetExpectedStatus(this HttpRequestMessage requestMessage) {
-            if (requestMessage == null)
-                throw new ArgumentNullException(nameof(requestMessage));
+    public static AppSendBuilder StatusCodeShouldBeUnauthorized(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.Unauthorized);
+    }
 
-            requestMessage.Options.TryGetValue(AppSendBuilder.ExpectedStatusKey, out var propertyValue);
-            return propertyValue;
-        }
+    public static HttpStatusCode? GetExpectedStatus(this HttpRequestMessage requestMessage) {
+        if (requestMessage == null)
+            throw new ArgumentNullException(nameof(requestMessage));
 
-        public static void SetExpectedStatus(this HttpRequestMessage requestMessage, HttpStatusCode statusCode) {
-            if (requestMessage == null)
-                throw new ArgumentNullException(nameof(requestMessage));
+        requestMessage.Options.TryGetValue(AppSendBuilder.ExpectedStatusKey, out var propertyValue);
+        return propertyValue;
+    }
 
-            requestMessage.Options.Set(AppSendBuilder.ExpectedStatusKey, statusCode);
-        }
+    public static void SetExpectedStatus(this HttpRequestMessage requestMessage, HttpStatusCode statusCode) {
+        if (requestMessage == null)
+            throw new ArgumentNullException(nameof(requestMessage));
+
+        requestMessage.Options.Set(AppSendBuilder.ExpectedStatusKey, statusCode);
     }
 }

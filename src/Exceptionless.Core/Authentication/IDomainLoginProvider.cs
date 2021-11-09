@@ -1,11 +1,11 @@
-﻿namespace Exceptionless.Core.Authentication {
-    public interface IDomainLoginProvider {
-        bool Login(string username, string password);
+﻿namespace Exceptionless.Core.Authentication;
 
-        string GetEmailAddressFromUsername(string username);
+public interface IDomainLoginProvider {
+    bool Login(string username, string password);
 
-        string GetUserFullName(string username);
+    string GetEmailAddressFromUsername(string username);
 
-        string GetUsernameFromEmailAddress(string email);
-    }
+    string GetUserFullName(string username);
+
+    string GetUsernameFromEmailAddress(string email);
 }

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Repositories;
@@ -9,70 +7,70 @@ using FluentRest;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Exceptionless.Tests.Controllers {
-    public sealed class TokenControllerTests : IntegrationTestsBase {
-        public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-        }
+namespace Exceptionless.Tests.Controllers;
 
-        protected override async Task ResetDataAsync() {
-            await base.ResetDataAsync();
-            var service = GetService<SampleDataService>();
-            await service.CreateDataAsync();
-        }
+public sealed class TokenControllerTests : IntegrationTestsBase {
+    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    }
 
-        [Fact]
-        public async Task CanDisableApiKey() {
-            var token = await SendRequestAsAsync<ViewToken>(r => r
-               .Post()
-               .AsGlobalAdminUser()
-               .AppendPath("tokens")
-               .Content(new NewToken {
-                   OrganizationId = SampleDataService.TEST_ORG_ID,
-                   ProjectId = SampleDataService.TEST_PROJECT_ID,
-                   Scopes = new HashSet<string> { AuthorizationRoles.Client, AuthorizationRoles.User }
-               })
-               .StatusCodeShouldBeCreated()
-            );
+    protected override async Task ResetDataAsync() {
+        await base.ResetDataAsync();
+        var service = GetService<SampleDataService>();
+        await service.CreateDataAsync();
+    }
 
-            Assert.NotNull(token.Id);
-            Assert.False(token.IsDisabled);
-            Assert.Equal(2, token.Scopes.Count);
+    [Fact]
+    public async Task CanDisableApiKey() {
+        var token = await SendRequestAsAsync<ViewToken>(r => r
+           .Post()
+           .AsGlobalAdminUser()
+           .AppendPath("tokens")
+           .Content(new NewToken {
+               OrganizationId = SampleDataService.TEST_ORG_ID,
+               ProjectId = SampleDataService.TEST_PROJECT_ID,
+               Scopes = new HashSet<string> { AuthorizationRoles.Client, AuthorizationRoles.User }
+           })
+           .StatusCodeShouldBeCreated()
+        );
 
-            var updateToken = new UpdateToken {
-                IsDisabled = true,
-                Notes = "Disabling until next release"
-            };
+        Assert.NotNull(token.Id);
+        Assert.False(token.IsDisabled);
+        Assert.Equal(2, token.Scopes.Count);
 
-            var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
-               .Patch()
-               .BearerToken(token.Id)
-               .AppendPath($"tokens/{token.Id}")
-               .Content(updateToken)
-               .StatusCodeShouldBeOk()
-            );
+        var updateToken = new UpdateToken {
+            IsDisabled = true,
+            Notes = "Disabling until next release"
+        };
 
-            Assert.True(updatedToken.IsDisabled);
-            Assert.Equal(updateToken.Notes, updatedToken.Notes);
+        var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
+           .Patch()
+           .BearerToken(token.Id)
+           .AppendPath($"tokens/{token.Id}")
+           .Content(updateToken)
+           .StatusCodeShouldBeOk()
+        );
 
-            await SendRequestAsync(r => r
-               .BearerToken(token.Id)
-               .AppendPath($"tokens/{token.Id}")
-               .StatusCodeShouldBeUnauthorized()
-            );
+        Assert.True(updatedToken.IsDisabled);
+        Assert.Equal(updateToken.Notes, updatedToken.Notes);
 
-            var repository = GetService<ITokenRepository>();
-            var actualToken = await repository.GetByIdAsync(token.Id);
-            Assert.NotNull(actualToken);
-            actualToken.IsDisabled = false;
-            await repository.SaveAsync(actualToken);
+        await SendRequestAsync(r => r
+           .BearerToken(token.Id)
+           .AppendPath($"tokens/{token.Id}")
+           .StatusCodeShouldBeUnauthorized()
+        );
 
-            token = await SendRequestAsAsync<ViewToken>(r => r
-               .BearerToken(token.Id)
-               .AppendPath($"tokens/{token.Id}")
-               .StatusCodeShouldBeOk()
-            );
+        var repository = GetService<ITokenRepository>();
+        var actualToken = await repository.GetByIdAsync(token.Id);
+        Assert.NotNull(actualToken);
+        actualToken.IsDisabled = false;
+        await repository.SaveAsync(actualToken);
 
-            Assert.False(token.IsDisabled);
-        }
+        token = await SendRequestAsAsync<ViewToken>(r => r
+           .BearerToken(token.Id)
+           .AppendPath($"tokens/{token.Id}")
+           .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(token.IsDisabled);
     }
 }

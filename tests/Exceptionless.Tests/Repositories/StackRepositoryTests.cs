@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -17,182 +13,182 @@ using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Exceptionless.Tests.Repositories {
-    public sealed class StackRepositoryTests : IntegrationTestsBase {
-        private readonly InMemoryCacheClient _cache;
-        private readonly IStackRepository _repository;
+namespace Exceptionless.Tests.Repositories;
 
-        public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-            _cache = GetService<ICacheClient>() as InMemoryCacheClient;
-            _repository = GetService<IStackRepository>();
-        }
-        
-        protected override async Task ResetDataAsync() {
-            await base.ResetDataAsync();
-            var service = GetService<SampleDataService>();
-            await service.CreateDataAsync();
-        }
-        
-        [Fact]
-        public async Task CanGetByStatus() {
-            Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
-            var organizationRepository = GetService<IOrganizationRepository>();
-            var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
-            Assert.NotNull(organization);
-            
-            await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
+public sealed class StackRepositoryTests : IntegrationTestsBase {
+    private readonly InMemoryCacheClient _cache;
+    private readonly IStackRepository _repository;
 
-            var appFilter = new AppFilter(organization);
-            var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
-            Assert.Equal(2, stackIds.Total);
-        }
+    public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+        _cache = GetService<ICacheClient>() as InMemoryCacheClient;
+        _repository = GetService<IStackRepository>();
+    }
 
-        [Fact]
-        public async Task CanGetByStackHashAsync() {
-            long count = _cache.Count;
-            long hits = _cache.Hits;
-            long misses = _cache.Misses;
+    protected override async Task ResetDataAsync() {
+        await base.ResetDataAsync();
+        var service = GetService<SampleDataService>();
+        await service.CreateDataAsync();
+    }
 
-            var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
-            Assert.NotNull(stack?.Id);
-            Assert.Equal(count + 2, _cache.Count);
-            Assert.Equal(hits, _cache.Hits);
-            Assert.Equal(misses, _cache.Misses);
+    [Fact]
+    public async Task CanGetByStatus() {
+        Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        Assert.NotNull(organization);
 
-            var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
-            Assert.Equal(stack.ToJson(), result.ToJson());
-            Assert.Equal(count + 2, _cache.Count);
-            Assert.Equal(hits + 1, _cache.Hits);
-            Assert.Equal(misses, _cache.Misses);
-        }
+        await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
 
-        [Fact]
-        public async Task CanGetByFixedAsync() {
-            var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
+        var appFilter = new AppFilter(organization);
+        var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
+        Assert.Equal(2, stackIds.Total);
+    }
 
-            var results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
-            Assert.NotNull(results);
-            Assert.Equal(0, results.Total);
+    [Fact]
+    public async Task CanGetByStackHashAsync() {
+        long count = _cache.Count;
+        long hits = _cache.Hits;
+        long misses = _cache.Misses;
 
-            results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
-            Assert.NotNull(results);
-            Assert.Equal(1, results.Total);
-            Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
-            Assert.Null(results.Documents.Single().DateFixed);
+        var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.Cache());
+        Assert.NotNull(stack?.Id);
+        Assert.Equal(count + 2, _cache.Count);
+        Assert.Equal(hits, _cache.Hits);
+        Assert.Equal(misses, _cache.Misses);
 
-            stack.MarkFixed();
-            await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
+        var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
+        Assert.Equal(stack.ToJson(), result.ToJson());
+        Assert.Equal(count + 2, _cache.Count);
+        Assert.Equal(hits + 1, _cache.Hits);
+        Assert.Equal(misses, _cache.Misses);
+    }
 
-            results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
-            Assert.NotNull(results);
-            Assert.Equal(1, results.Total);
-            Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
-            Assert.NotNull(results.Documents.Single().DateFixed);
+    [Fact]
+    public async Task CanGetByFixedAsync() {
+        var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
-            results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
-            Assert.NotNull(results);
-            Assert.Equal(0, results.Total);
-        }
+        var results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
+        Assert.NotNull(results);
+        Assert.Equal(0, results.Total);
 
-        [Fact]
-        public async Task CanMarkAsRegressedAsync() {
-            var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.ImmediateConsistency());
-            Assert.NotNull(stack);
-            Assert.False(stack.Status == Core.Models.StackStatus.Regressed);
-            Assert.NotNull(stack.DateFixed);
+        results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
+        Assert.NotNull(results);
+        Assert.Equal(1, results.Total);
+        Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
+        Assert.Null(results.Documents.Single().DateFixed);
 
-            await _repository.MarkAsRegressedAsync(stack.Id);
+        stack.MarkFixed();
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
 
-            stack = await _repository.GetByIdAsync(stack.Id);
-            Assert.NotNull(stack);
-            Assert.True(stack.Status == Core.Models.StackStatus.Regressed);
-            Assert.NotNull(stack.DateFixed);
-        }
+        results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
+        Assert.NotNull(results);
+        Assert.Equal(1, results.Total);
+        Assert.False(results.Documents.Single().Status == Core.Models.StackStatus.Regressed);
+        Assert.NotNull(results.Documents.Single().DateFixed);
 
-        [Fact]
-        public async Task CanIncrementEventCounterAsync() {
-            var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
-            Assert.NotNull(stack);
-            Assert.Equal(0, stack.TotalOccurrences);
-            Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
-            Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
-            Assert.NotEqual(DateTime.MinValue, stack.CreatedUtc);
-            Assert.NotEqual(DateTime.MinValue, stack.UpdatedUtc);
-            Assert.Equal(stack.CreatedUtc, stack.UpdatedUtc);
-            var updatedUtc = stack.UpdatedUtc;
+        results = await _repository.FindAsync(q => q.FilterExpression("fixed:false"));
+        Assert.NotNull(results);
+        Assert.Equal(0, results.Total);
+    }
 
-            var utcNow = SystemClock.UtcNow;
-            await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
+    [Fact]
+    public async Task CanMarkAsRegressedAsync() {
+        var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.ImmediateConsistency());
+        Assert.NotNull(stack);
+        Assert.False(stack.Status == Core.Models.StackStatus.Regressed);
+        Assert.NotNull(stack.DateFixed);
 
-            stack = await _repository.GetByIdAsync(stack.Id);
-            Assert.Equal(1, stack.TotalOccurrences);
-            Assert.Equal(utcNow, stack.FirstOccurrence);
-            Assert.Equal(utcNow, stack.LastOccurrence);
-            Assert.Equal(updatedUtc, stack.CreatedUtc);
-            Assert.True(updatedUtc.IsBefore(stack.UpdatedUtc), $"Previous {updatedUtc}, Current: {stack.UpdatedUtc}");
+        await _repository.MarkAsRegressedAsync(stack.Id);
 
-            await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
+        stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(stack);
+        Assert.True(stack.Status == Core.Models.StackStatus.Regressed);
+        Assert.NotNull(stack.DateFixed);
+    }
 
-            stack = await _repository.GetByIdAsync(stack.Id);
-            Assert.Equal(2, stack.TotalOccurrences);
-            Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
-            Assert.Equal(utcNow, stack.LastOccurrence);
+    [Fact]
+    public async Task CanIncrementEventCounterAsync() {
+        var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
+        Assert.NotNull(stack);
+        Assert.Equal(0, stack.TotalOccurrences);
+        Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
+        Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
+        Assert.NotEqual(DateTime.MinValue, stack.CreatedUtc);
+        Assert.NotEqual(DateTime.MinValue, stack.UpdatedUtc);
+        Assert.Equal(stack.CreatedUtc, stack.UpdatedUtc);
+        var updatedUtc = stack.UpdatedUtc;
 
-            await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.AddDays(1), utcNow.AddDays(1), 1);
+        var utcNow = SystemClock.UtcNow;
+        await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
 
-            stack = await _repository.GetByIdAsync(stack.Id);
-            Assert.Equal(3, stack.TotalOccurrences);
-            Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
-            Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
-        }
+        stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.Equal(1, stack.TotalOccurrences);
+        Assert.Equal(utcNow, stack.FirstOccurrence);
+        Assert.Equal(utcNow, stack.LastOccurrence);
+        Assert.Equal(updatedUtc, stack.CreatedUtc);
+        Assert.True(updatedUtc.IsBefore(stack.UpdatedUtc), $"Previous {updatedUtc}, Current: {stack.UpdatedUtc}");
 
-        [Fact]
-        public async Task CanFindManyAsync() {
-            await _repository.AddAsync(StackData.GenerateSampleStacks(), o => o.ImmediateConsistency());
+        await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
 
-            var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(1).PageLimit(1));
-            Assert.NotNull(stacks);
-            Assert.Equal(3, stacks.Total);
-            Assert.Equal(1, stacks.Documents.Count);
+        stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.Equal(2, stack.TotalOccurrences);
+        Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
+        Assert.Equal(utcNow, stack.LastOccurrence);
 
-            var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(2).PageLimit(1));
-            Assert.NotNull(stacks);
-            Assert.Equal(1, stacks.Documents.Count);
+        await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.AddDays(1), utcNow.AddDays(1), 1);
 
-            Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
+        stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.Equal(3, stack.TotalOccurrences);
+        Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
+        Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
+    }
 
-            stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId);
-            Assert.NotNull(stacks);
-            Assert.Equal(3, stacks.Documents.Count);
+    [Fact]
+    public async Task CanFindManyAsync() {
+        await _repository.AddAsync(StackData.GenerateSampleStacks(), o => o.ImmediateConsistency());
 
-            await _repository.RemoveAsync(stacks.Documents, o => o.ImmediateConsistency());
-            Assert.Equal(0, await _repository.CountAsync());
-        }
+        var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(1).PageLimit(1));
+        Assert.NotNull(stacks);
+        Assert.Equal(3, stacks.Total);
+        Assert.Equal(1, stacks.Documents.Count);
 
-        [Fact]
-        public async Task GetStacksForCleanupAsync() {
-            var openStack10DaysOldWithReference = StackData.GenerateStack(id: TestConstants.StackId3, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Open);
-            openStack10DaysOldWithReference.References.Add("test");
+        var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(2).PageLimit(1));
+        Assert.NotNull(stacks);
+        Assert.Equal(1, stacks.Documents.Count);
 
-            await _repository.AddAsync(new List<Stack> {
+        Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
+
+        stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId);
+        Assert.NotNull(stacks);
+        Assert.Equal(3, stacks.Documents.Count);
+
+        await _repository.RemoveAsync(stacks.Documents, o => o.ImmediateConsistency());
+        Assert.Equal(0, await _repository.CountAsync());
+    }
+
+    [Fact]
+    public async Task GetStacksForCleanupAsync() {
+        var openStack10DaysOldWithReference = StackData.GenerateStack(id: TestConstants.StackId3, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Open);
+        openStack10DaysOldWithReference.References.Add("test");
+
+        await _repository.AddAsync(new List<Stack> {
                 StackData.GenerateStack(id: TestConstants.StackId, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(5), status: StackStatus.Open),
                 StackData.GenerateStack(id: TestConstants.StackId2, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Open),
                 openStack10DaysOldWithReference,
                 StackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Fixed)
             }, o => o.ImmediateConsistency());
 
-            var stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(8));
-            Assert.NotNull(stacks);
-            Assert.Equal(1, stacks.Total);
-            Assert.Equal(1, stacks.Documents.Count);
-            Assert.Equal(TestConstants.StackId2, stacks.Documents.Single().Id);
+        var stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(8));
+        Assert.NotNull(stacks);
+        Assert.Equal(1, stacks.Total);
+        Assert.Equal(1, stacks.Documents.Count);
+        Assert.Equal(TestConstants.StackId2, stacks.Documents.Single().Id);
 
-            stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(1));
-            Assert.NotNull(stacks);
-            Assert.Equal(2, stacks.Total);
-            Assert.Equal(2, stacks.Documents.Count);
-            Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId)));
-            Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId2)));
-        }
+        stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(1));
+        Assert.NotNull(stacks);
+        Assert.Equal(2, stacks.Total);
+        Assert.Equal(2, stacks.Documents.Count);
+        Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId)));
+        Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId2)));
     }
 }

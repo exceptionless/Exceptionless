@@ -1,5 +1,5 @@
-namespace Exceptionless.Web.Models {
-    public class SignupModel : LoginModel {
-        public string Name { get; set; }
-    }
+namespace Exceptionless.Web.Models;
+
+public class SignupModel : LoginModel {
+    public string Name { get; set; }
 }

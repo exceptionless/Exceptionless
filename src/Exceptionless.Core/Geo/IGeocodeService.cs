@@ -1,8 +1,5 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿namespace Exceptionless.Core.Geo;
 
-namespace Exceptionless.Core.Geo {
-    public interface IGeocodeService {
-        Task<GeoResult> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
-    }
+public interface IGeocodeService {
+    Task<GeoResult> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
 }

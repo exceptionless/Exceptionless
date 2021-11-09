@@ -1,36 +1,33 @@
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Extensions;
 using Newtonsoft.Json.Serialization;
 
-namespace Exceptionless.Serializer {
-    public class DynamicTypeContractResolver : IContractResolver {
-        private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
-        private readonly HashSet<Type> _types = new HashSet<Type>();
+namespace Exceptionless.Serializer;
 
-        private readonly IContractResolver _defaultResolver;
-        private readonly IContractResolver _resolver;
+public class DynamicTypeContractResolver : IContractResolver {
+    private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
+    private readonly HashSet<Type> _types = new HashSet<Type>();
 
-        public DynamicTypeContractResolver(IContractResolver resolver, IContractResolver defaultResolver = null) {
-            _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
-            _defaultResolver = defaultResolver ?? new DefaultContractResolver();
-        }
+    private readonly IContractResolver _defaultResolver;
+    private readonly IContractResolver _resolver;
 
-        public void UseDefaultResolverFor(params Assembly[] assemblies) {
-            _assemblies.AddRange(assemblies);
-        }
+    public DynamicTypeContractResolver(IContractResolver resolver, IContractResolver defaultResolver = null) {
+        _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
+        _defaultResolver = defaultResolver ?? new DefaultContractResolver();
+    }
 
-        public void UseDefaultResolverFor(params Type[] types) {
-            _types.AddRange(types);
-        }
+    public void UseDefaultResolverFor(params Assembly[] assemblies) {
+        _assemblies.AddRange(assemblies);
+    }
 
-        public JsonContract ResolveContract(Type type) {
-            if (_types.Contains(type) || _assemblies.Contains(type.Assembly))
-                return _defaultResolver.ResolveContract(type);
+    public void UseDefaultResolverFor(params Type[] types) {
+        _types.AddRange(types);
+    }
 
-            return _resolver.ResolveContract(type);
-        }
+    public JsonContract ResolveContract(Type type) {
+        if (_types.Contains(type) || _assemblies.Contains(type.Assembly))
+            return _defaultResolver.ResolveContract(type);
+
+        return _resolver.ResolveContract(type);
     }
 }

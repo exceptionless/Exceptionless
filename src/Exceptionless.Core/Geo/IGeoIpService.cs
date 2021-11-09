@@ -1,8 +1,5 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿namespace Exceptionless.Core.Geo;
 
-namespace Exceptionless.Core.Geo {
-    public interface IGeoIpService {
-        Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = default);
-    }
+public interface IGeoIpService {
+    Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = default);
 }

@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -19,85 +15,85 @@ using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 
-namespace Exceptionless.Core.Repositories.Configuration {
-    public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
-        private readonly AppOptions _appOptions;
-        private readonly JsonSerializerSettings _serializerSettings;
+namespace Exceptionless.Core.Repositories.Configuration;
 
-        public ExceptionlessElasticConfiguration(
-            AppOptions appOptions, 
-            IQueue<WorkItemData> workItemQueue, 
-            JsonSerializerSettings serializerSettings,
-            ICacheClient cacheClient, 
-            IMessageBus messageBus, 
-            IServiceProvider serviceProvider,
-            ILoggerFactory loggerFactory
-        ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
-            _appOptions = appOptions;
-            _serializerSettings = serializerSettings;
+public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
+    private readonly AppOptions _appOptions;
+    private readonly JsonSerializerSettings _serializerSettings;
 
-            _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
-            AddIndex(Stacks = new StackIndex(this));
-            AddIndex(Events = new EventIndex(this, serviceProvider, appOptions));
-            AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.ElasticsearchOptions.NumberOfReplicas));
-            AddIndex(Organizations = new OrganizationIndex(this));
-            AddIndex(Projects = new ProjectIndex(this));
-            AddIndex(Tokens = new TokenIndex(this));
-            AddIndex(Users = new UserIndex(this));
-            AddIndex(WebHooks = new WebHookIndex(this));
-        }
+    public ExceptionlessElasticConfiguration(
+        AppOptions appOptions,
+        IQueue<WorkItemData> workItemQueue,
+        JsonSerializerSettings serializerSettings,
+        ICacheClient cacheClient,
+        IMessageBus messageBus,
+        IServiceProvider serviceProvider,
+        ILoggerFactory loggerFactory
+    ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+        _appOptions = appOptions;
+        _serializerSettings = serializerSettings;
 
-        public Task RunAsync(CancellationToken shutdownToken = default) {
-            if (_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
-                return Task.CompletedTask;
+        _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
+        AddIndex(Stacks = new StackIndex(this));
+        AddIndex(Events = new EventIndex(this, serviceProvider, appOptions));
+        AddIndex(Migrations = new MigrationIndex(this, _appOptions.ElasticsearchOptions.ScopePrefix + "migrations", appOptions.ElasticsearchOptions.NumberOfReplicas));
+        AddIndex(Organizations = new OrganizationIndex(this));
+        AddIndex(Projects = new ProjectIndex(this));
+        AddIndex(Tokens = new TokenIndex(this));
+        AddIndex(Users = new UserIndex(this));
+        AddIndex(WebHooks = new WebHookIndex(this));
+    }
 
-            return ConfigureIndexesAsync();
-        }
+    public Task RunAsync(CancellationToken shutdownToken = default) {
+        if (_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
+            return Task.CompletedTask;
 
-        public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
-            builder.Register(new AppFilterQueryBuilder(_appOptions));
-            builder.Register(new OrganizationQueryBuilder());
-            builder.Register(new ProjectQueryBuilder());
-            builder.Register(new StackQueryBuilder());
-        }
+        return ConfigureIndexesAsync();
+    }
 
-        public ElasticsearchOptions Options => _appOptions.ElasticsearchOptions;
-        public StackIndex Stacks { get; }
-        public EventIndex Events { get; }
-        public MigrationIndex Migrations { get; }
-        public OrganizationIndex Organizations { get; }
-        public ProjectIndex Projects { get; }
-        public TokenIndex Tokens { get; }
-        public UserIndex Users { get; }
-        public WebHookIndex WebHooks { get; }
+    public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
+        builder.Register(new AppFilterQueryBuilder(_appOptions));
+        builder.Register(new OrganizationQueryBuilder());
+        builder.Register(new ProjectQueryBuilder());
+        builder.Register(new StackQueryBuilder());
+    }
 
-        protected override IElasticClient CreateElasticClient() {
-            var connectionPool = CreateConnectionPool();
-            var settings = new ConnectionSettings(connectionPool, (serializer, values) => new ElasticJsonNetSerializer(serializer, values, _serializerSettings));
+    public ElasticsearchOptions Options => _appOptions.ElasticsearchOptions;
+    public StackIndex Stacks { get; }
+    public EventIndex Events { get; }
+    public MigrationIndex Migrations { get; }
+    public OrganizationIndex Organizations { get; }
+    public ProjectIndex Projects { get; }
+    public TokenIndex Tokens { get; }
+    public UserIndex Users { get; }
+    public WebHookIndex WebHooks { get; }
 
-            ConfigureSettings(settings);
-            foreach (var index in Indexes)
-                index.ConfigureSettings(settings);
-                
-            if (!String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.UserName) && !String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.Password))
-                settings.BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password);
-                
-            var client = new ElasticClient(settings);
-            return client;
-        }
+    protected override IElasticClient CreateElasticClient() {
+        var connectionPool = CreateConnectionPool();
+        var settings = new ConnectionSettings(connectionPool, (serializer, values) => new ElasticJsonNetSerializer(serializer, values, _serializerSettings));
 
-        protected override IConnectionPool CreateConnectionPool() {
-            var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
-            return new StaticConnectionPool(serverUris);
-        }
+        ConfigureSettings(settings);
+        foreach (var index in Indexes)
+            index.ConfigureSettings(settings);
 
-        protected override void ConfigureSettings(ConnectionSettings settings) {
-            if (_appOptions.AppMode == AppMode.Development)
-                settings.EnableDebugMode();
-            
-            settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
-                .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
-                .MaximumRetries(5);
-        }
+        if (!String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.UserName) && !String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.Password))
+            settings.BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password);
+
+        var client = new ElasticClient(settings);
+        return client;
+    }
+
+    protected override IConnectionPool CreateConnectionPool() {
+        var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
+        return new StaticConnectionPool(serverUris);
+    }
+
+    protected override void ConfigureSettings(ConnectionSettings settings) {
+        if (_appOptions.AppMode == AppMode.Development)
+            settings.EnableDebugMode();
+
+        settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
+            .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
+            .MaximumRetries(5);
     }
 }
