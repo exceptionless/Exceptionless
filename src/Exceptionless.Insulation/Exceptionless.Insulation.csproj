@@ -34,7 +34,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.0" />
-  </ItemGroup>
 </Project>

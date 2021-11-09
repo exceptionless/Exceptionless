@@ -12,8 +12,6 @@
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.2.0" />
     <PackageReference Include="Exceptionless.AspNetCore" Version="4.6.2" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="3.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.0-rc.2.21480.10" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.0-rc.2.21480.10" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.15.2" />
@@ -22,7 +20,7 @@
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
     <PackageReference Include="Serilog.Enrichers.Span" Version="1.4.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
-    
+
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.2.0-beta1" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc8" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc8" />
@@ -36,8 +34,5 @@
   <ItemGroup>
     <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
     <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.0" />
   </ItemGroup>
 </Project>
