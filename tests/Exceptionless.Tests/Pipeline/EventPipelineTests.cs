@@ -579,7 +579,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase {
 
     [Fact]
     public async Task RemoveTagsExceedingLimitsWhileKeepingKnownTags() {
-        string LargeRemovedTags = new string('x', 150);
+        string LargeRemovedTags = new('x', 150);
 
         var ev = GenerateEvent(SystemClock.UtcNow);
         ev.Tags.Add(LargeRemovedTags);
@@ -883,7 +883,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase {
     public async Task ProcessEventsAsync(string errorFilePath) {
         var pipeline = GetService<EventPipeline>();
         var parserPluginManager = GetService<EventParserPluginManager>();
-        var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
+        var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(errorFilePath), 2, "exceptionless/2.0.0.0");
         Assert.NotNull(events);
         Assert.True(events.Count > 0);
 
@@ -911,7 +911,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase {
 
         string path = Path.Combine("..", "..", "..", "Pipeline", "Data");
         foreach (string file in Directory.GetFiles(path, "*.json", SearchOption.AllDirectories)) {
-            var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
+            var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
             Assert.True(events.Count > 0);
 
@@ -1074,7 +1074,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase {
         await RefreshDataAsync();
     }
 
-    private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
+    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
         occurrenceDate ??= SystemClock.OffsetNow;
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
     }

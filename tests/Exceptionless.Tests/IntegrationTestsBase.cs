@@ -49,7 +49,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel("StartupActions", LogLevel.Warning);
         Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
-        var configuredFactory = factory.Factories.FirstOrDefault();
+        var configuredFactory = factory.Factories.Count > 0 ? factory.Factories[0] : null;
         if (configuredFactory == null) {
             configuredFactory = factory.WithWebHostBuilder(builder => {
                 builder.ConfigureTestServices(RegisterServices); // happens after normal container configure and overrides services
@@ -198,8 +198,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return await response.DeserializeAsync<T>();
     }
 
-    protected async Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure) {
-        return await SendRequestAsync(b => {
+    protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure) {
+        return SendRequestAsync(b => {
             b.AsGlobalAdminUser();
             configure(b);
         });
@@ -210,8 +210,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return await response.DeserializeAsync<T>();
     }
 
-    protected async Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response) {
-        return await response.DeserializeAsync<T>();
+    protected Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response) {
+        return response.DeserializeAsync<T>();
     }
 
     public virtual Task DisposeAsync() {
