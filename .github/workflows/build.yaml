@@ -15,7 +15,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
-        include-prerelease: true
     - name: Build Reason
       run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
     - name: Build Version
@@ -71,7 +70,7 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: azure/setup-helm@v1
       with:
-        version: v3.4.0
+        version: v3.7.1
     - name: Deploy Changes to Development Environment
       if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
       run: |

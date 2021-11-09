@@ -14,6 +14,8 @@
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.0-rc.2.21480.10" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.0-rc.2.21480.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.15.2" />
     <PackageReference Include="OAuth2" Version="0.10.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
@@ -34,5 +36,8 @@
   <ItemGroup>
     <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
     <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.0" />
   </ItemGroup>
 </Project>

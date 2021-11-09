@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Exceptionless.AspNetCore" Version="4.6.2" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.0-rc.2.21480.10" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.0" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.2.0" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.2.2" />
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
@@ -29,6 +29,10 @@
 
   <ItemGroup>
     <Compile Include="..\Exceptionless.Web\ApmExtensions.cs" Link="ApmExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.0" />
   </ItemGroup>
 
 </Project>
