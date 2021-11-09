@@ -30,9 +30,4 @@
   <ItemGroup>
     <Compile Include="..\Exceptionless.Web\ApmExtensions.cs" Link="ApmExtensions.cs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.0" />
-  </ItemGroup>
-
 </Project>
