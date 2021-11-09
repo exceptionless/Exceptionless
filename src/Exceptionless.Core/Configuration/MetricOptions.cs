@@ -1,30 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 
-namespace Exceptionless.Core.Configuration {
-    public class MetricOptions {
-        public string ConnectionString { get; internal set; }
-        public string Provider { get; internal set; }
-        public Dictionary<string, string> Data { get; internal set; }
+namespace Exceptionless.Core.Configuration;
 
-        public static MetricOptions ReadFromConfiguration(IConfiguration config) {
-            var options = new MetricOptions();
+public class MetricOptions {
+    public string ConnectionString { get; internal set; }
+    public string Provider { get; internal set; }
+    public Dictionary<string, string> Data { get; internal set; }
 
-            string cs = config.GetConnectionString("Metrics");
-            options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider));
+    public static MetricOptions ReadFromConfiguration(IConfiguration config) {
+        var options = new MetricOptions();
 
-            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-            if (!String.IsNullOrEmpty(providerConnectionString))
-                options.Data.AddRange(providerConnectionString.ParseConnectionString());
+        string cs = config.GetConnectionString("Metrics");
+        options.Data = cs.ParseConnectionString();
+        options.Provider = options.Data.GetString(nameof(options.Provider));
 
-            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+        var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
+        if (!String.IsNullOrEmpty(providerConnectionString))
+            options.Data.AddRange(providerConnectionString.ParseConnectionString());
 
-            return options;
-        }
+        options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+
+        return options;
     }
 }

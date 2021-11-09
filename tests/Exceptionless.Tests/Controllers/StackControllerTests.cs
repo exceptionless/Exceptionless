@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Jobs;
@@ -14,105 +11,104 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Xunit;
 using Xunit.Abstractions;
-using System.Collections.Generic;
 
-namespace Exceptionless.Tests.Controllers {
-    public class StackControllerTests : IntegrationTestsBase {
-        private readonly IStackRepository _stackRepository;
-        private readonly IEventRepository _eventRepository;
-        private readonly IQueue<EventPost> _eventQueue;
-        private readonly IQueue<WorkItemData> _workItemQueue;
+namespace Exceptionless.Tests.Controllers;
 
-        public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-            _stackRepository = GetService<IStackRepository>();
-            _eventRepository = GetService<IEventRepository>();
-            _eventQueue = GetService<IQueue<EventPost>>();
-            _workItemQueue = GetService<IQueue<WorkItemData>>();
-        }
+public class StackControllerTests : IntegrationTestsBase {
+    private readonly IStackRepository _stackRepository;
+    private readonly IEventRepository _eventRepository;
+    private readonly IQueue<EventPost> _eventQueue;
+    private readonly IQueue<WorkItemData> _workItemQueue;
 
-        protected override async Task ResetDataAsync() {
-            await base.ResetDataAsync();
-            await _eventQueue.DeleteQueueAsync();
-            await _workItemQueue.DeleteQueueAsync();
-            
-            var service = GetService<SampleDataService>();
-            await service.CreateDataAsync();
-        }
+    public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+        _stackRepository = GetService<IStackRepository>();
+        _eventRepository = GetService<IEventRepository>();
+        _eventQueue = GetService<IQueue<EventPost>>();
+        _workItemQueue = GetService<IQueue<WorkItemData>>();
+    }
 
-        [Fact]
-        public async Task CanSearchByNonPremiumFields() {
-            var ev = await SubmitErrorEventAsync();
-            Assert.NotNull(ev.StackId);
+    protected override async Task ResetDataAsync() {
+        await base.ResetDataAsync();
+        await _eventQueue.DeleteQueueAsync();
+        await _workItemQueue.DeleteQueueAsync();
 
-            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
-            Assert.NotNull(stack);
-            Assert.False(stack.IsFixed());
+        var service = GetService<SampleDataService>();
+        await service.CreateDataAsync();
+    }
 
-            var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
-                .AsGlobalAdminUser()
-                .AppendPath("stacks")
-                .QueryString("f", "status:fixed")
-                .StatusCodeShouldBeOk());
+    [Fact]
+    public async Task CanSearchByNonPremiumFields() {
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
 
-            Assert.NotNull(result);
-            Assert.Equal(1, result.Count);
-        }
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.False(stack.IsFixed());
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("1.0.0")]
-        [InlineData("1.0.0.0")]
-        public async Task CanMarkFixed(string version) {
-            var ev = await SubmitErrorEventAsync();
-            Assert.NotNull(ev.StackId);
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .QueryString("f", "status:fixed")
+            .StatusCodeShouldBeOk());
 
-            var stack = await _stackRepository.GetByIdAsync(ev.StackId);
-            Assert.NotNull(stack);
-            Assert.False(stack.IsFixed());
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Count);
+    }
 
-            await SendRequestAsAsync<WorkInProgressResult>(r => r
-                .Post()
-                .AsGlobalAdminUser()
-                .AppendPath($"stacks/{stack.Id}/mark-fixed")
-                .QueryStringIf(() => !String.IsNullOrEmpty(version), "version", version)
-                .StatusCodeShouldBeOk());
+    [Theory]
+    [InlineData(null)]
+    [InlineData("1.0.0")]
+    [InlineData("1.0.0.0")]
+    public async Task CanMarkFixed(string version) {
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
 
-            stack = await _stackRepository.GetByIdAsync(ev.StackId);
-            Assert.NotNull(stack);
-            Assert.True(stack.IsFixed());
-        }
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.False(stack.IsFixed());
 
-        private async Task<PersistentEvent> SubmitErrorEventAsync() {
-            const string message = "simple string";
-            await SendRequestAsync(r => r
-                .Post()
-                .AsTestOrganizationClientUser()
-                .AppendPath("events")
-                .Content(new Event {
-                    Message = message,
-                    Type = Event.KnownTypes.Error,
-                    Data = {{ Event.KnownDataKeys.SimpleError, new SimpleError {
+        await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{stack.Id}/mark-fixed")
+            .QueryStringIf(() => !String.IsNullOrEmpty(version), "version", version)
+            .StatusCodeShouldBeOk());
+
+        stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.True(stack.IsFixed());
+    }
+
+    private async Task<PersistentEvent> SubmitErrorEventAsync() {
+        const string message = "simple string";
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new Event {
+                Message = message,
+                Type = Event.KnownTypes.Error,
+                Data = {{ Event.KnownDataKeys.SimpleError, new SimpleError {
                         Message = message,
                         Type = "Error",
                         StackTrace = "test",
                     } }}
-                })
-                .StatusCodeShouldBeAccepted());
+            })
+            .StatusCodeShouldBeAccepted());
 
-            var stats = await _eventQueue.GetQueueStatsAsync();
-            Assert.Equal(1, stats.Enqueued);
-            Assert.Equal(0, stats.Completed);
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+        Assert.Equal(0, stats.Completed);
 
-            var processEventsJob = GetService<EventPostsJob>();
-            await processEventsJob.RunAsync();
-            await RefreshDataAsync();
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync();
+        await RefreshDataAsync();
 
-            stats = await _eventQueue.GetQueueStatsAsync();
-            Assert.Equal(1, stats.Completed);
+        stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Completed);
 
-            var ev = (await _eventRepository.GetAllAsync()).Documents.Single();
-            Assert.Equal(message, ev.Message);
-            return ev;
-        }
+        var ev = (await _eventRepository.GetAllAsync()).Documents.Single();
+        Assert.Equal(message, ev.Message);
+        return ev;
     }
 }

@@ -1,39 +1,37 @@
-﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 
-namespace Exceptionless.Core.Configuration {
-    public class MessageBusOptions {
-        public string ConnectionString { get; internal set; }
-        public string Provider { get; internal set; }
-        public Dictionary<string, string> Data { get; internal set; }
+namespace Exceptionless.Core.Configuration;
 
-        public string Scope { get; internal set; }
-        public string ScopePrefix { get; internal set; }
-        public string Topic { get; internal set; }
+public class MessageBusOptions {
+    public string ConnectionString { get; internal set; }
+    public string Provider { get; internal set; }
+    public Dictionary<string, string> Data { get; internal set; }
 
-        public static MessageBusOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
-            var options = new MessageBusOptions();
+    public string Scope { get; internal set; }
+    public string ScopePrefix { get; internal set; }
+    public string Topic { get; internal set; }
 
-            options.Scope = appOptions.AppScope;
-            options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
+    public static MessageBusOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+        var options = new MessageBusOptions();
 
-            options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages");
+        options.Scope = appOptions.AppScope;
+        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
 
-            string cs = config.GetConnectionString("MessageBus");
-            options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider));
+        options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages");
 
-            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-            if (!String.IsNullOrEmpty(providerConnectionString))
-                options.Data.AddRange(providerConnectionString.ParseConnectionString());
+        string cs = config.GetConnectionString("MessageBus");
+        options.Data = cs.ParseConnectionString();
+        options.Provider = options.Data.GetString(nameof(options.Provider));
 
-            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+        var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
+        if (!String.IsNullOrEmpty(providerConnectionString))
+            options.Data.AddRange(providerConnectionString.ParseConnectionString());
 
-            return options;
-        }
+        options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+
+        return options;
     }
 }

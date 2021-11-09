@@ -1,98 +1,95 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Exceptionless.Core.Pipeline;
+﻿using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 
-namespace Exceptionless.Core.Plugins.Formatting {
-    [Priority(30)]
-    public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
-        public NotFoundFormattingPlugin(AppOptions options) : base(options) { }
+namespace Exceptionless.Core.Plugins.Formatting;
 
-        private bool ShouldHandle(PersistentEvent ev) {
-            return ev.IsNotFound();
-        }
+[Priority(30)]
+public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
+    public NotFoundFormattingPlugin(AppOptions options) : base(options) { }
 
-        public override SummaryData GetStackSummaryData(Stack stack) {
-            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
-                return null;
+    private bool ShouldHandle(PersistentEvent ev) {
+        return ev.IsNotFound();
+    }
 
-            return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new Dictionary<string, object>() };
-        }
+    public override SummaryData GetStackSummaryData(Stack stack) {
+        if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
+            return null;
 
-        public override string GetStackTitle(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
+        return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new Dictionary<string, object>() };
+    }
 
-            return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Unknown)";
-        }
+    public override string GetStackTitle(PersistentEvent ev) {
+        if (!ShouldHandle(ev))
+            return null;
 
-        public override SummaryData GetEventSummaryData(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
+        return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Unknown)";
+    }
 
-            var data = new Dictionary<string, object> { { "Source", ev.Source } };
-            AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+        if (!ShouldHandle(ev))
+            return null;
 
-            var ips = ev.GetIpAddresses().ToList();
-            if (ips.Count > 0)
-                data.Add("IpAddress", ips);
+        var data = new Dictionary<string, object> { { "Source", ev.Source } };
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-            return new SummaryData { TemplateKey = "event-notfound-summary", Data = data };
-        }
+        var ips = ev.GetIpAddresses().ToList();
+        if (ips.Count > 0)
+            data.Add("IpAddress", ips);
 
-        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
-            if (!ShouldHandle(ev))
-                return null;
+        return new SummaryData { TemplateKey = "event-notfound-summary", Data = data };
+    }
 
-            string notificationType = "Occurrence 404";
-            if (isNew)
-                notificationType = "New 404";
-            else if (isRegression)
-                notificationType = "Regression 404";
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        if (!ShouldHandle(ev))
+            return null;
 
-            if (isCritical)
-                notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
+        string notificationType = "Occurrence 404";
+        if (isNew)
+            notificationType = "New 404";
+        else if (isRegression)
+            notificationType = "Regression 404";
 
-            string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
-            var requestInfo = ev.GetRequestInfo();
-            var data = new Dictionary<string, object> {
+        if (isCritical)
+            notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
+
+        string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
+        var requestInfo = ev.GetRequestInfo();
+        var data = new Dictionary<string, object> {
                 { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source.Truncate(60) }
             };
 
-            return new MailMessageData { Subject = subject, Data = data };
-        }
+        return new MailMessageData { Subject = subject, Data = data };
+    }
 
-        public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
-            if (!ShouldHandle(ev))
-                return null;
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+        if (!ShouldHandle(ev))
+            return null;
 
-            string notificationType = "occurrence 404";
-            if (isNew)
-                notificationType = "new 404";
-            else if (isRegression)
-                notificationType = "regression 404";
+        string notificationType = "occurrence 404";
+        if (isNew)
+            notificationType = "new 404";
+        else if (isRegression)
+            notificationType = "regression 404";
 
-            if (isCritical)
-                notificationType = String.Concat("critical ", notificationType);
+        if (isCritical)
+            notificationType = String.Concat("critical ", notificationType);
 
-            var requestInfo = ev.GetRequestInfo();
-            var attachment = new SlackMessage.SlackAttachment(ev) {
-                Color = "#BB423F",
-                Fields = new List<SlackMessage.SlackAttachmentFields> {
+        var requestInfo = ev.GetRequestInfo();
+        var attachment = new SlackMessage.SlackAttachment(ev) {
+            Color = "#BB423F",
+            Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
                         Title = "Url",
                         Value = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : ev.Source.Truncate(60)
                     }
                 }
-            };
+        };
 
-            AddDefaultSlackFields(ev, attachment.Fields, false);
-            string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source.Truncate(120))}*";
-            return new SlackMessage(subject) {
-                Attachments = new List<SlackMessage.SlackAttachment> { attachment }
-            };
-        }
+        AddDefaultSlackFields(ev, attachment.Fields, false);
+        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source.Truncate(120))}*";
+        return new SlackMessage(subject) {
+            Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+        };
     }
 }

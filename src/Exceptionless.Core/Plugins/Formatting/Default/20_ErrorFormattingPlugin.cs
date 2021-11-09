@@ -1,162 +1,160 @@
-﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Core.Pipeline;
+﻿using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 
-namespace Exceptionless.Core.Plugins.Formatting {
-    [Priority(20)]
-    public sealed class ErrorFormattingPlugin : FormattingPluginBase {
-        public ErrorFormattingPlugin(AppOptions options) : base(options) { }
+namespace Exceptionless.Core.Plugins.Formatting;
 
-        private bool ShouldHandle(PersistentEvent ev) {
-            return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
+[Priority(20)]
+public sealed class ErrorFormattingPlugin : FormattingPluginBase {
+    public ErrorFormattingPlugin(AppOptions options) : base(options) { }
+
+    private bool ShouldHandle(PersistentEvent ev) {
+        return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
+    }
+
+    public override string GetStackTitle(PersistentEvent ev) {
+        if (!ShouldHandle(ev))
+            return null;
+
+        var error = ev.GetError();
+        return error?.Message;
+    }
+
+    public override SummaryData GetStackSummaryData(Stack stack) {
+        if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
+            return null;
+
+        var data = new Dictionary<string, object>();
+        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value)) {
+            data.Add("Type", value.TypeName());
+            data.Add("TypeFullName", value);
         }
 
-        public override string GetStackTitle(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
-
-            var error = ev.GetError();
-            return error?.Message;
+        if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value)) {
+            string method = value.TypeName();
+            int index = method.IndexOf('(');
+            data.Add("Method", index > 0 ? method.Substring(0, index) : method);
+            data.Add("MethodFullName", value);
         }
 
-        public override SummaryData GetStackSummaryData(Stack stack) {
-            if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
-                return null;
+        if (stack.SignatureInfo.TryGetValue("Message", out value) && !String.IsNullOrEmpty(value))
+            data.Add("Message", value);
 
-            var data = new Dictionary<string, object>();
-            if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value)) {
-                data.Add("Type", value.TypeName());
-                data.Add("TypeFullName", value);
-            }
+        if (stack.SignatureInfo.TryGetValue("Path", out value) && !String.IsNullOrEmpty(value))
+            data.Add("Path", value);
 
-            if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value)) {
-                string method = value.TypeName();
-                int index = method.IndexOf('(');
-                data.Add("Method", index > 0 ? method.Substring(0, index) : method);
-                data.Add("MethodFullName", value);
-            }
+        return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
+    }
 
-            if (stack.SignatureInfo.TryGetValue("Message", out value) && !String.IsNullOrEmpty(value))
-                data.Add("Message", value);
+    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+        if (!ShouldHandle(ev))
+            return null;
 
-            if (stack.SignatureInfo.TryGetValue("Path", out value) && !String.IsNullOrEmpty(value))
-                data.Add("Path", value);
+        var stackingTarget = ev.GetStackingTarget();
+        if (stackingTarget?.Error == null)
+            return null;
 
-            return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
+        var data = new Dictionary<string, object> { { "Id", ev.Id }, { "Message", ev.Message } };
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+
+        if (!String.IsNullOrEmpty(stackingTarget.Error.Type)) {
+            data.Add("Type", stackingTarget.Error.Type.TypeName());
+            data.Add("TypeFullName", stackingTarget.Error.Type);
         }
 
-        public override SummaryData GetEventSummaryData(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
-
-            var stackingTarget = ev.GetStackingTarget();
-            if (stackingTarget?.Error == null)
-                return null;
-
-            var data = new Dictionary<string, object> { { "Id", ev.Id }, { "Message", ev.Message } };
-            AddUserIdentitySummaryData(data, ev.GetUserIdentity());
-
-            if (!String.IsNullOrEmpty(stackingTarget.Error.Type)) {
-                data.Add("Type", stackingTarget.Error.Type.TypeName());
-                data.Add("TypeFullName", stackingTarget.Error.Type);
-            }
-
-            if (stackingTarget.Method != null) {
-                data.Add("Method", stackingTarget.Method.Name);
-                data.Add("MethodFullName", stackingTarget.Method.GetFullName());
-            }
-
-            var requestInfo = ev.GetRequestInfo();
-            if (!String.IsNullOrEmpty(requestInfo?.Path))
-                data.Add("Path", requestInfo.Path);
-
-            return new SummaryData { TemplateKey = "event-error-summary", Data = data };
+        if (stackingTarget.Method != null) {
+            data.Add("Method", stackingTarget.Method.Name);
+            data.Add("MethodFullName", stackingTarget.Method.GetFullName());
         }
 
-        public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
-            if (!ShouldHandle(ev))
-                return null;
+        var requestInfo = ev.GetRequestInfo();
+        if (!String.IsNullOrEmpty(requestInfo?.Path))
+            data.Add("Path", requestInfo.Path);
 
-            var error = ev.GetError();
-            var stackingTarget = error?.GetStackingTarget();
-            if (stackingTarget?.Error == null)
-                return null;
+        return new SummaryData { TemplateKey = "event-error-summary", Data = data };
+    }
 
-            string errorTypeName = null;
-            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
-                errorTypeName = stackingTarget.Error.Type.TypeName().Truncate(60);
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        if (!ShouldHandle(ev))
+            return null;
 
-            string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "Error";
-            string notificationType = String.Concat(errorType, " occurrence");
-            if (isNew)
-                notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
-            else if (isRegression)
-                notificationType = String.Concat(errorType, " regression");
+        var error = ev.GetError();
+        var stackingTarget = error?.GetStackingTarget();
+        if (stackingTarget?.Error == null)
+            return null;
 
-            if (isCritical)
-                notificationType = String.Concat("Critical ", notificationType);
+        string errorTypeName = null;
+        if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+            errorTypeName = stackingTarget.Error.Type.TypeName().Truncate(60);
 
-            string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message).Truncate(120);
-            var data = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message.Truncate(60) } };
-            if (!String.IsNullOrEmpty(errorTypeName))
-                data.Add("Type", errorTypeName);
+        string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "Error";
+        string notificationType = String.Concat(errorType, " occurrence");
+        if (isNew)
+            notificationType = String.Concat(!isCritical ? "New " : "new ", errorType);
+        else if (isRegression)
+            notificationType = String.Concat(errorType, " regression");
 
-            if (stackingTarget.Method != null)
-                data.Add("Method", stackingTarget.Method.Name.Truncate(60));
+        if (isCritical)
+            notificationType = String.Concat("Critical ", notificationType);
 
-            var requestInfo = ev.GetRequestInfo();
-            if (requestInfo != null)
-                data.Add("Url", requestInfo.GetFullPath(true, true, true));
+        string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message).Truncate(120);
+        var data = new Dictionary<string, object> { { "Message", stackingTarget.Error.Message.Truncate(60) } };
+        if (!String.IsNullOrEmpty(errorTypeName))
+            data.Add("Type", errorTypeName);
 
-            return new MailMessageData { Subject = subject, Data = data };
-        }
+        if (stackingTarget.Method != null)
+            data.Add("Method", stackingTarget.Method.Name.Truncate(60));
 
-        public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
-            if (!ShouldHandle(ev))
-                return null;
+        var requestInfo = ev.GetRequestInfo();
+        if (requestInfo != null)
+            data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
-            var error = ev.GetError();
-            var stackingTarget = error?.GetStackingTarget();
-            if (stackingTarget?.Error == null)
-                return null;
+        return new MailMessageData { Subject = subject, Data = data };
+    }
 
-            string errorTypeName = null;
-            if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
-                errorTypeName = stackingTarget.Error.Type.TypeName().Truncate(60);
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+        if (!ShouldHandle(ev))
+            return null;
 
-            string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "error";
-            string notificationType = String.Concat(errorType, " occurrence");
-            if (isNew)
-                notificationType = String.Concat("new ", errorType);
-            else if (isRegression)
-                notificationType = String.Concat(errorType, " regression");
+        var error = ev.GetError();
+        var stackingTarget = error?.GetStackingTarget();
+        if (stackingTarget?.Error == null)
+            return null;
 
-            if (isCritical)
-                notificationType = String.Concat("critical ", notificationType);
+        string errorTypeName = null;
+        if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+            errorTypeName = stackingTarget.Error.Type.TypeName().Truncate(60);
 
-            var attachment = new SlackMessage.SlackAttachment(ev) {
-                Color = "#BB423F",
-                Fields = new List<SlackMessage.SlackAttachmentFields> {
+        string errorType = !String.IsNullOrEmpty(errorTypeName) ? errorTypeName : "error";
+        string notificationType = String.Concat(errorType, " occurrence");
+        if (isNew)
+            notificationType = String.Concat("new ", errorType);
+        else if (isRegression)
+            notificationType = String.Concat(errorType, " regression");
+
+        if (isCritical)
+            notificationType = String.Concat("critical ", notificationType);
+
+        var attachment = new SlackMessage.SlackAttachment(ev) {
+            Color = "#BB423F",
+            Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
                         Title = "Message",
                         Value = stackingTarget.Error.Message.Truncate(60)
                     }
                 }
-            };
+        };
 
-            if (!String.IsNullOrEmpty(errorTypeName))
-                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Type", Value = errorTypeName });
+        if (!String.IsNullOrEmpty(errorTypeName))
+            attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Type", Value = errorTypeName });
 
-            if (stackingTarget.Method != null)
-                attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Method", Value = stackingTarget.Method.Name.Truncate(60) });
+        if (stackingTarget.Method != null)
+            attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Method", Value = stackingTarget.Method.Name.Truncate(60) });
 
-            AddDefaultSlackFields(ev, attachment.Fields);
-            string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message.Truncate(120))}*";
-            return new SlackMessage(subject) {
-                Attachments = new List<SlackMessage.SlackAttachment> { attachment }
-            };
-        }
+        AddDefaultSlackFields(ev, attachment.Fields);
+        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message.Truncate(120))}*";
+        return new SlackMessage(subject) {
+            Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+        };
     }
 }

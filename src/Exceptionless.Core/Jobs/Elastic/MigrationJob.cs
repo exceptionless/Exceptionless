@@ -1,5 +1,3 @@
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
@@ -7,32 +5,32 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Core.Jobs.Elastic {
-    [Job(Description = "Runs any pending document migrations.", IsContinuous = false)]
-    public class MigrationJob : JobBase {
-        private readonly MigrationManager _migrationManager;
-        private readonly ExceptionlessElasticConfiguration _configuration;
+namespace Exceptionless.Core.Jobs.Elastic;
 
-        public MigrationJob(ILoggerFactory loggerFactory, MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration)
-            : base(loggerFactory) {
+[Job(Description = "Runs any pending document migrations.", IsContinuous = false)]
+public class MigrationJob : JobBase {
+    private readonly MigrationManager _migrationManager;
+    private readonly ExceptionlessElasticConfiguration _configuration;
 
-            _migrationManager = migrationManager;
-            _configuration = configuration;
-        }
+    public MigrationJob(ILoggerFactory loggerFactory, MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration)
+        : base(loggerFactory) {
 
-        protected override async Task<JobResult> RunInternalAsync(JobContext context) {
-            await _configuration.ConfigureIndexesAsync(null, false).AnyContext();
-            await _migrationManager.RunMigrationsAsync().AnyContext();
+        _migrationManager = migrationManager;
+        _configuration = configuration;
+    }
 
-            var tasks = _configuration.Indexes.OfType<VersionedIndex>().Select(ReindexIfNecessary);
-            await Task.WhenAll(tasks).AnyContext();
+    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+        await _configuration.ConfigureIndexesAsync(null, false).AnyContext();
+        await _migrationManager.RunMigrationsAsync().AnyContext();
 
-            return JobResult.Success;
-        }
+        var tasks = _configuration.Indexes.OfType<VersionedIndex>().Select(ReindexIfNecessary);
+        await Task.WhenAll(tasks).AnyContext();
 
-        private async Task ReindexIfNecessary(VersionedIndex index) {
-            if (index.Version != await index.GetCurrentVersionAsync().AnyContext())
-                await index.ReindexAsync().AnyContext();
-        }
+        return JobResult.Success;
+    }
+
+    private async Task ReindexIfNecessary(VersionedIndex index) {
+        if (index.Version != await index.GetCurrentVersionAsync().AnyContext())
+            await index.ReindexAsync().AnyContext();
     }
 }

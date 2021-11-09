@@ -1,4 +1,4 @@
-namespace Exceptionless.Core.Models {
-    public interface IOwnedByOrganizationAndProjectAndStackWithIdentity : IOwnedByOrganizationAndProjectWithIdentity, IOwnedByStack {
-    }
+namespace Exceptionless.Core.Models;
+
+public interface IOwnedByOrganizationAndProjectAndStackWithIdentity : IOwnedByOrganizationAndProjectWithIdentity, IOwnedByStack {
 }

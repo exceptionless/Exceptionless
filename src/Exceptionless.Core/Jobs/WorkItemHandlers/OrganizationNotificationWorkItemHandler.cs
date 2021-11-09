@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
@@ -16,78 +13,78 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Core.Jobs.WorkItemHandlers {
-    public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction {
-        private readonly IQueue<WorkItemData> _workItemQueue;
-        private readonly IMessageSubscriber _subscriber;
-        private readonly ILogger _logger;
+namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 
-        public EnqueueOrganizationNotificationOnPlanOverage(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, ILoggerFactory loggerFactory = null) {
-            _workItemQueue = workItemQueue;
-            _subscriber = subscriber;
-            _logger = loggerFactory.CreateLogger<EnqueueOrganizationNotificationOnPlanOverage>();
-        }
+public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction {
+    private readonly IQueue<WorkItemData> _workItemQueue;
+    private readonly IMessageSubscriber _subscriber;
+    private readonly ILogger _logger;
 
-        public Task RunAsync(CancellationToken token) {
-            return _subscriber.SubscribeAsync<PlanOverage>(overage => {
-                _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
-
-                return _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
-                    OrganizationId = overage.OrganizationId,
-                    IsOverHourlyLimit = overage.IsHourly,
-                    IsOverMonthlyLimit = !overage.IsHourly
-                });
-            }, token);
-        }
+    public EnqueueOrganizationNotificationOnPlanOverage(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, ILoggerFactory loggerFactory = null) {
+        _workItemQueue = workItemQueue;
+        _subscriber = subscriber;
+        _logger = loggerFactory.CreateLogger<EnqueueOrganizationNotificationOnPlanOverage>();
     }
 
-    public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase {
-        private readonly IOrganizationRepository _organizationRepository;
-        private readonly IUserRepository _userRepository;
-        private readonly IMailer _mailer;
-        private readonly ILockProvider _lockProvider;
+    public Task RunAsync(CancellationToken token) {
+        return _subscriber.SubscribeAsync<PlanOverage>(overage => {
+            _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
 
-        public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
-            _organizationRepository = organizationRepository;
-            _userRepository = userRepository;
-            _mailer = mailer;
-            _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
-        }
+            return _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
+                OrganizationId = overage.OrganizationId,
+                IsOverHourlyLimit = overage.IsHourly,
+                IsOverMonthlyLimit = !overage.IsHourly
+            });
+        }, token);
+    }
+}
 
-        public override Task HandleItemAsync(WorkItemContext context) {
-            var wi = context.GetData<OrganizationNotificationWorkItem>();
-            string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{wi.OrganizationId}";
-            
-            return _lockProvider.TryUsingAsync(cacheKey, async () => {
-                Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
+public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase {
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IMailer _mailer;
+    private readonly ILockProvider _lockProvider;
 
-                var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache()).AnyContext();
-                if (organization == null)
-                    return;
+    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+        _organizationRepository = organizationRepository;
+        _userRepository = userRepository;
+        _mailer = mailer;
+        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
+    }
 
-                if (wi.IsOverMonthlyLimit)
-                    await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit).AnyContext();
-            }, TimeSpan.FromMinutes(15), new CancellationToken(true));
-        }
+    public override Task HandleItemAsync(WorkItemContext context) {
+        var wi = context.GetData<OrganizationNotificationWorkItem>();
+        string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{wi.OrganizationId}";
 
-        private async Task SendOverageNotificationsAsync(Organization organization, bool isOverHourlyLimit, bool isOverMonthlyLimit) {
-            var results = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
-            foreach (var user in results.Documents) {
-                if (!user.IsEmailAddressVerified) {
-                    Log.LogInformation("User {user} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
-                    continue;
-                }
+        return _lockProvider.TryUsingAsync(cacheKey, async () => {
+            Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
 
-                if (!user.EmailNotificationsEnabled) {
-                    Log.LogInformation("User {user} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
-                    continue;
-                }
+            var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache()).AnyContext();
+            if (organization == null)
+                return;
 
-                Log.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
-                await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit).AnyContext();
+            if (wi.IsOverMonthlyLimit)
+                await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit).AnyContext();
+        }, TimeSpan.FromMinutes(15), new CancellationToken(true));
+    }
+
+    private async Task SendOverageNotificationsAsync(Organization organization, bool isOverHourlyLimit, bool isOverMonthlyLimit) {
+        var results = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
+        foreach (var user in results.Documents) {
+            if (!user.IsEmailAddressVerified) {
+                Log.LogInformation("User {user} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
+                continue;
             }
 
-            Log.LogTrace("Done sending email.");
+            if (!user.EmailNotificationsEnabled) {
+                Log.LogInformation("User {user} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
+                continue;
+            }
+
+            Log.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
+            await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit).AnyContext();
         }
+
+        Log.LogTrace("Done sending email.");
     }
 }

@@ -1,75 +1,73 @@
-﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 
-namespace Exceptionless.Core.Plugins.Formatting {
-    public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
-        public FormattingPluginBase(AppOptions options) : base(options) {}
+namespace Exceptionless.Core.Plugins.Formatting;
 
-        public virtual SummaryData GetStackSummaryData(Stack stack) {
-            return null;
-        }
+public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
+    public FormattingPluginBase(AppOptions options) : base(options) { }
 
-        public virtual SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return null;
-        }
+    public virtual SummaryData GetStackSummaryData(Stack stack) {
+        return null;
+    }
 
-        public virtual string GetStackTitle(PersistentEvent ev) {
-            return null;
-        }
+    public virtual SummaryData GetEventSummaryData(PersistentEvent ev) {
+        return null;
+    }
 
-        public virtual MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
-            return null;
-        }
+    public virtual string GetStackTitle(PersistentEvent ev) {
+        return null;
+    }
 
-        public virtual SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
-            return null;
-        }
+    public virtual MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+        return null;
+    }
 
-        protected void AddDefaultSlackFields(PersistentEvent ev, List<SlackMessage.SlackAttachmentFields> attachmentFields, bool includeUrl = true) {
-            var requestInfo = ev.GetRequestInfo();
-            if (requestInfo != null && includeUrl)
-                attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
+    public virtual SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+        return null;
+    }
 
-            if (ev.Tags.Count > 0)
-                attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Tags", Value = String.Join(", ", ev.Tags), Short = true });
+    protected void AddDefaultSlackFields(PersistentEvent ev, List<SlackMessage.SlackAttachmentFields> attachmentFields, bool includeUrl = true) {
+        var requestInfo = ev.GetRequestInfo();
+        if (requestInfo != null && includeUrl)
+            attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 
-            if (ev.Value.GetValueOrDefault() != 0)
-                attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Value", Value = ev.Value.ToString(), Short = true });
+        if (ev.Tags.Count > 0)
+            attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Tags", Value = String.Join(", ", ev.Tags), Short = true });
 
-            string version = ev.GetVersion();
-            if (!String.IsNullOrEmpty(version))
-                attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
+        if (ev.Value.GetValueOrDefault() != 0)
+            attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Value", Value = ev.Value.ToString(), Short = true });
 
-            string baseUrl = _options.BaseURL;
-            var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
-            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
-            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/ignored|Stop sending notifications for this event>");
-            actions.Add($"• <{baseUrl}/stack/{ev.StackId}/discarded|Discard future event occurrences>");
-            actions.Add($"• <{baseUrl}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
+        string version = ev.GetVersion();
+        if (!String.IsNullOrEmpty(version))
+            attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
 
-            attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
-        }
+        string baseUrl = _options.BaseURL;
+        var actions = new List<string> { $"• {GetSlackEventUrl(ev.Id, "View Event")}" };
+        actions.Add($"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>");
+        actions.Add($"• <{baseUrl}/stack/{ev.StackId}/ignored|Stop sending notifications for this event>");
+        actions.Add($"• <{baseUrl}/stack/{ev.StackId}/discarded|Discard future event occurrences>");
+        actions.Add($"• <{baseUrl}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>");
 
-        protected string GetSlackEventUrl(string eventId, string message = null) {
-            var parts = new List<string> { $"{_options.BaseURL}/event/{eventId}" };
-            if (!String.IsNullOrEmpty(message))
-                parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
+        attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
+    }
 
-            return $"<{String.Join(String.Empty, parts)}>";
-        }
+    protected string GetSlackEventUrl(string eventId, string message = null) {
+        var parts = new List<string> { $"{_options.BaseURL}/event/{eventId}" };
+        if (!String.IsNullOrEmpty(message))
+            parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
 
-        protected void AddUserIdentitySummaryData(Dictionary<string, object> data, UserInfo identity) {
-            if (identity == null)
-                return;
+        return $"<{String.Join(String.Empty, parts)}>";
+    }
 
-            if (!String.IsNullOrEmpty(identity.Identity))
-                data.Add("Identity", identity.Identity);
+    protected void AddUserIdentitySummaryData(Dictionary<string, object> data, UserInfo identity) {
+        if (identity == null)
+            return;
 
-            if (!String.IsNullOrEmpty(identity.Name))
-                data.Add("Name", identity.Name);
-        }
+        if (!String.IsNullOrEmpty(identity.Identity))
+            data.Add("Identity", identity.Identity);
+
+        if (!String.IsNullOrEmpty(identity.Name))
+            data.Add("Name", identity.Name);
     }
 }

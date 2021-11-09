@@ -1,24 +1,23 @@
-﻿using System;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Stripe;
 
-namespace Exceptionless.Core.Configuration {
-    public class StripeOptions {
-        public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
+namespace Exceptionless.Core.Configuration;
 
-        public string StripeApiKey { get; internal set; }
+public class StripeOptions {
+    public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
-        public string StripeWebHookSigningSecret { get; set; }
+    public string StripeApiKey { get; internal set; }
 
-        public static StripeOptions ReadFromConfiguration(IConfiguration config) {
-            var options = new StripeOptions();
+    public string StripeWebHookSigningSecret { get; set; }
 
-            options.StripeApiKey = config.GetValue<string>(nameof(options.StripeApiKey));
-            options.StripeWebHookSigningSecret = config.GetValue<string>(nameof(options.StripeWebHookSigningSecret));
-            if (options.EnableBilling)
-                StripeConfiguration.ApiKey = options.StripeApiKey;
+    public static StripeOptions ReadFromConfiguration(IConfiguration config) {
+        var options = new StripeOptions();
 
-            return options;
-        }
+        options.StripeApiKey = config.GetValue<string>(nameof(options.StripeApiKey));
+        options.StripeWebHookSigningSecret = config.GetValue<string>(nameof(options.StripeWebHookSigningSecret));
+        if (options.EnableBilling)
+            StripeConfiguration.ApiKey = options.StripeApiKey;
+
+        return options;
     }
 }

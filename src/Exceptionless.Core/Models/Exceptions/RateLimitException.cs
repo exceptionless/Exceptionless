@@ -1,7 +1,5 @@
-﻿using System;
+﻿namespace Exceptionless.Core.Models.Exceptions;
 
-namespace Exceptionless.Core.Models.Exceptions {
-    public class RateLimitException : Exception {
-        public DateTime RetryAfter { get; set; }
-    }
+public class RateLimitException : Exception {
+    public DateTime RetryAfter { get; set; }
 }

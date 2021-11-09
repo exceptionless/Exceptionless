@@ -1,38 +1,37 @@
-﻿using System.Collections.Generic;
-using Exceptionless.Core.Pipeline;
+﻿using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 
-namespace Exceptionless.Core.Plugins.EventParser {
-    [Priority(0)]
-    public class JsonEventParserPlugin : PluginBase, IEventParserPlugin {
-        private readonly JsonSerializerSettings _settings;
+namespace Exceptionless.Core.Plugins.EventParser;
 
-        public JsonEventParserPlugin(AppOptions options, JsonSerializerSettings settings) : base(options) {
-            _settings = settings;
-        }
+[Priority(0)]
+public class JsonEventParserPlugin : PluginBase, IEventParserPlugin {
+    private readonly JsonSerializerSettings _settings;
 
-        public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
-            if (apiVersion < 2)
-                return null;
+    public JsonEventParserPlugin(AppOptions options, JsonSerializerSettings settings) : base(options) {
+        _settings = settings;
+    }
 
-            var events = new List<PersistentEvent>();
-            switch (input.GetJsonType()) {
-                case JsonType.Object: {
+    public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
+        if (apiVersion < 2)
+            return null;
+
+        var events = new List<PersistentEvent>();
+        switch (input.GetJsonType()) {
+            case JsonType.Object: {
                     if (input.TryFromJson(out PersistentEvent ev, _settings))
                         events.Add(ev);
                     break;
                 }
-                case JsonType.Array: {
+            case JsonType.Array: {
                     if (input.TryFromJson(out PersistentEvent[] parsedEvents, _settings))
                         events.AddRange(parsedEvents);
 
                     break;
                 }
-            }
-
-            return events.Count > 0 ? events : null;
         }
+
+        return events.Count > 0 ? events : null;
     }
 }

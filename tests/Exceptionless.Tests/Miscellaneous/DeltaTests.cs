@@ -1,35 +1,35 @@
 ﻿using Exceptionless.Web.Utility;
 using Xunit;
 
-namespace Exceptionless.Tests.Miscellaneous {
-    public class DeltaTests {
-        [Fact]
-        public void CanSetUnknownProperties() {
-            dynamic delta = new Delta<SimpleMessageA>();
-            delta.Data = "Blah";
-            delta.SomeUnknown = "yes";
-            Assert.Equal(1, delta.UnknownProperties.Count);
-        }
+namespace Exceptionless.Tests.Miscellaneous;
 
-        [Fact]
-        public void CanPatchUnrelatedTypes() {
-            dynamic delta = new Delta<SimpleMessageA>();
-            delta.Data = "Blah";
+public class DeltaTests {
+    [Fact]
+    public void CanSetUnknownProperties() {
+        dynamic delta = new Delta<SimpleMessageA>();
+        delta.Data = "Blah";
+        delta.SomeUnknown = "yes";
+        Assert.Equal(1, delta.UnknownProperties.Count);
+    }
 
-            var msg = new SimpleMessageB {
-                Data = "Blah2"
-            };
-            delta.Patch(msg);
+    [Fact]
+    public void CanPatchUnrelatedTypes() {
+        dynamic delta = new Delta<SimpleMessageA>();
+        delta.Data = "Blah";
 
-            Assert.Equal(delta.Data, msg.Data);
-        }
+        var msg = new SimpleMessageB {
+            Data = "Blah2"
+        };
+        delta.Patch(msg);
 
-        public class SimpleMessageA {
-            public string Data { get; set; }
-        }
+        Assert.Equal(delta.Data, msg.Data);
+    }
 
-        public class SimpleMessageB {
-            public string Data { get; set; }
-        }
+    public class SimpleMessageA {
+        public string Data { get; set; }
+    }
+
+    public class SimpleMessageB {
+        public string Data { get; set; }
     }
 }

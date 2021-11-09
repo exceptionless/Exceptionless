@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Foundatio.Parsers.LuceneQueries.Visitors;
+﻿using Foundatio.Parsers.LuceneQueries.Visitors;
 using Exceptionless.Core.Repositories.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Core.Queries.Validation {
-    public sealed class PersistentEventQueryValidator : AppQueryValidator {
-        private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+namespace Exceptionless.Core.Queries.Validation;
+
+public sealed class PersistentEventQueryValidator : AppQueryValidator {
+    private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
             "type",
             EventIndex.Alias.ReferenceId,
@@ -21,7 +19,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "status"
         };
 
-        private static readonly HashSet<string> _freeAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+    private static readonly HashSet<string> _freeAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
             "type",
             "value",
@@ -35,7 +33,7 @@ namespace Exceptionless.Core.Queries.Validation {
             "status"
         };
 
-        private static readonly HashSet<string> _allowedAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+    private static readonly HashSet<string> _allowedAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
             "source",
             "tags",
@@ -86,42 +84,41 @@ namespace Exceptionless.Core.Queries.Validation {
             "data.@level"
         };
 
-        public PersistentEventQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Events.QueryParser, loggerFactory) {}
+    public PersistentEventQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Events.QueryParser, loggerFactory) { }
 
-        protected override QueryProcessResult ApplyQueryRules(QueryValidationInfo info) {
-            return new QueryProcessResult {
-                IsValid = info.IsValid,
-                UsesPremiumFeatures = !info.ReferencedFields.All(_freeQueryFields.Contains)
-            };
-        }
+    protected override QueryProcessResult ApplyQueryRules(QueryValidationInfo info) {
+        return new QueryProcessResult {
+            IsValid = info.IsValid,
+            UsesPremiumFeatures = !info.ReferencedFields.All(_freeQueryFields.Contains)
+        };
+    }
 
-        protected override QueryProcessResult ApplyAggregationRules(QueryValidationInfo info) {
-            if (!info.IsValid)
-                return new QueryProcessResult { Message = "Invalid aggregation" };
+    protected override QueryProcessResult ApplyAggregationRules(QueryValidationInfo info) {
+        if (!info.IsValid)
+            return new QueryProcessResult { Message = "Invalid aggregation" };
 
-            if (info.MaxNodeDepth > 6)
-                return new QueryProcessResult { Message = "Aggregation max depth exceeded" };
+        if (info.MaxNodeDepth > 6)
+            return new QueryProcessResult { Message = "Aggregation max depth exceeded" };
 
-            if (info.Operations.Values.Sum(o => o.Count) > 10)
-                return new QueryProcessResult { Message = "Aggregation count exceeded" };
+        if (info.Operations.Values.Sum(o => o.Count) > 10)
+            return new QueryProcessResult { Message = "Aggregation count exceeded" };
 
-            // Only allow fields that are numeric or have high commonality.
-            if (!info.ReferencedFields.All(_allowedAggregationFields.Contains))
-                return new QueryProcessResult { Message = "One or more aggregation fields are not allowed" };
+        // Only allow fields that are numeric or have high commonality.
+        if (!info.ReferencedFields.All(_allowedAggregationFields.Contains))
+            return new QueryProcessResult { Message = "One or more aggregation fields are not allowed" };
 
-            // Distinct queries are expensive.
-            if (info.Operations.TryGetValue(AggregationType.Cardinality, out var values) && values.Count > 3)
-                return new QueryProcessResult { Message = "Cardinality aggregation count exceeded" };
+        // Distinct queries are expensive.
+        if (info.Operations.TryGetValue(AggregationType.Cardinality, out var values) && values.Count > 3)
+            return new QueryProcessResult { Message = "Cardinality aggregation count exceeded" };
 
-            // Term queries are expensive.
-            if (info.Operations.TryGetValue(AggregationType.Terms, out values) && (values.Count > 3))
-                return new QueryProcessResult { Message = "Terms aggregation count exceeded" };
+        // Term queries are expensive.
+        if (info.Operations.TryGetValue(AggregationType.Terms, out values) && (values.Count > 3))
+            return new QueryProcessResult { Message = "Terms aggregation count exceeded" };
 
-            bool usesPremiumFeatures = !info.ReferencedFields.All(_freeAggregationFields.Contains);
-            return new QueryProcessResult {
-                IsValid = info.IsValid,
-                UsesPremiumFeatures = usesPremiumFeatures
-            };
-        }
+        bool usesPremiumFeatures = !info.ReferencedFields.All(_freeAggregationFields.Contains);
+        return new QueryProcessResult {
+            IsValid = info.IsValid,
+            UsesPremiumFeatures = usesPremiumFeatures
+        };
     }
 }

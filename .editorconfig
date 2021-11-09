@@ -15,6 +15,7 @@ indent_size = 4
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
 indent_size = 2
+dotnet_style_allow_multiple_blank_lines_experimental=false:silent
 
 # Xml config files
 [*.{props,targets,ruleset,config,nuspec,resx,vsixmanifest,vsct}]
@@ -45,10 +46,21 @@ dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_explicit_tuple_names = true:suggestion
 
+# Naming style
+dotnet_naming_rule.private_members_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_members_with_underscore.style = prefix_underscore
+dotnet_naming_rule.private_members_with_underscore.severity = suggestion
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_underscore.capitalization = camel_case
+dotnet_naming_style.prefix_underscore.required_prefix = _
+
 # CSharp code style settings:
 [*.cs]
 # Prefer "var" everywhere
-csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_for_built_in_types = false:silent
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = true:suggestion
 
@@ -68,6 +80,8 @@ csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
 csharp_style_inlined_variable_declaration = true:suggestion
 csharp_style_throw_expression = true:suggestion
 csharp_style_conditional_delegate_call = true:suggestion
+csharp_style_namespace_declarations=file_scoped:silent
+csharp_style_prefer_range_operator=false:suggestion
 
 # Newline settings
 csharp_new_line_before_open_brace = false:error
@@ -76,3 +90,10 @@ csharp_new_line_before_catch = false:error
 csharp_new_line_before_finally = false:error
 csharp_new_line_before_members_in_object_initializers = false:error
 csharp_new_line_before_members_in_anonymous_types = false:error
+
+# CS1701: Assuming assembly reference matches identity
+dotnet_diagnostic.CS1701.severity = none
+
+# CS1702: Assuming assembly reference matches identity
+dotnet_diagnostic.CS1702.severity = none
+csharp_prefer_braces=when_multiline:silent

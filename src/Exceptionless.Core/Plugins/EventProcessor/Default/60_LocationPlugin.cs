@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;
@@ -12,44 +8,44 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
 
-namespace Exceptionless.Core.Plugins.EventProcessor.Default {
-    [Priority(60)]
-    public sealed class LocationPlugin : EventProcessorPluginBase {
-        private readonly ICacheClient _cacheClient;
-        private readonly IQueue<WorkItemData> _workItemQueue;
+namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 
-        public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
-            _cacheClient = new ScopedCacheClient(cacheClient, "Geo");
-            _workItemQueue = workItemQueue;
-        }
+[Priority(60)]
+public sealed class LocationPlugin : EventProcessorPluginBase {
+    private readonly ICacheClient _cacheClient;
+    private readonly IQueue<WorkItemData> _workItemQueue;
 
-        public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-            var geoGroups = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location)).GroupBy(c => c.Event.Geo);
+    public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+        _cacheClient = new ScopedCacheClient(cacheClient, "Geo");
+        _workItemQueue = workItemQueue;
+    }
 
-            var tasks = new List<Task>();
-            foreach (var geoGroup in geoGroups)
-                tasks.Add(GetGeoLocationFromCacheAsync(geoGroup));
+    public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+        var geoGroups = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location)).GroupBy(c => c.Event.Geo);
 
-            return Task.WhenAll(tasks);
-        }
+        var tasks = new List<Task>();
+        foreach (var geoGroup in geoGroups)
+            tasks.Add(GetGeoLocationFromCacheAsync(geoGroup));
 
-        public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
-            var contextsToProcess = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location));
+        return Task.WhenAll(tasks);
+    }
 
-            var tasks = new List<Task>();
-            foreach (var ctx in contextsToProcess)
-                tasks.Add(_workItemQueue.EnqueueAsync(new SetLocationFromGeoWorkItem { EventId = ctx.Event.Id, Geo = ctx.Event.Geo }));
+    public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
+        var contextsToProcess = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location));
 
-            return Task.WhenAll(tasks);
-        }
+        var tasks = new List<Task>();
+        foreach (var ctx in contextsToProcess)
+            tasks.Add(_workItemQueue.EnqueueAsync(new SetLocationFromGeoWorkItem { EventId = ctx.Event.Id, Geo = ctx.Event.Geo }));
 
-        private async Task GetGeoLocationFromCacheAsync(IGrouping<string, EventContext> geoGroup) {
-            var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
-            if (location == null)
-                return;
+        return Task.WhenAll(tasks);
+    }
 
-            await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3)).AnyContext();
-            geoGroup.ForEach(c => c.Event.Data[Event.KnownDataKeys.Location] = location);
-        }
+    private async Task GetGeoLocationFromCacheAsync(IGrouping<string, EventContext> geoGroup) {
+        var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
+        if (location == null)
+            return;
+
+        await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3)).AnyContext();
+        geoGroup.ForEach(c => c.Event.Data[Event.KnownDataKeys.Location] = location);
     }
 }

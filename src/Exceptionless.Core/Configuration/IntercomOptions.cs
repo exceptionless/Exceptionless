@@ -1,21 +1,20 @@
-﻿using System;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 
-namespace Exceptionless.Core.Configuration {
-    public class IntercomOptions {
-        public bool EnableIntercom => !String.IsNullOrEmpty(IntercomSecret);
+namespace Exceptionless.Core.Configuration;
 
-        public string IntercomSecret { get; internal set; }
+public class IntercomOptions {
+    public bool EnableIntercom => !String.IsNullOrEmpty(IntercomSecret);
 
-        public static IntercomOptions ReadFromConfiguration(IConfiguration config) {
-            var options = new IntercomOptions();
+    public string IntercomSecret { get; internal set; }
 
-            var oAuth = config.GetConnectionString("OAuth").ParseConnectionString();
-            options.IntercomSecret = oAuth.GetString(nameof(options.IntercomSecret));
+    public static IntercomOptions ReadFromConfiguration(IConfiguration config) {
+        var options = new IntercomOptions();
 
-            return options;
-        }
+        var oAuth = config.GetConnectionString("OAuth").ParseConnectionString();
+        options.IntercomSecret = oAuth.GetString(nameof(options.IntercomSecret));
+
+        return options;
     }
 }

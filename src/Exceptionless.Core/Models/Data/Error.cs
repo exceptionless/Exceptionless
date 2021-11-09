@@ -1,39 +1,39 @@
 ﻿using Exceptionless.Core.Extensions;
 
-namespace Exceptionless.Core.Models.Data {
-    public class Error : InnerError {
-        public Error() {
-            Modules = new ModuleCollection();
-        }
+namespace Exceptionless.Core.Models.Data;
 
-        /// <summary>
-        /// Any modules that were loaded / referenced when the error occurred.
-        /// </summary>
-        public ModuleCollection Modules { get; set; }
+public class Error : InnerError {
+    public Error() {
+        Modules = new ModuleCollection();
+    }
 
-        public static class KnownDataKeys {
-            public const string ExtraProperties = "@ext";
-            public const string TargetInfo = "@target";
-        }
+    /// <summary>
+    /// Any modules that were loaded / referenced when the error occurred.
+    /// </summary>
+    public ModuleCollection Modules { get; set; }
 
-        protected bool Equals(Error other) {
-            return base.Equals(other) && Modules.CollectionEquals(other.Modules);
-        }
+    public static class KnownDataKeys {
+        public const string ExtraProperties = "@ext";
+        public const string TargetInfo = "@target";
+    }
 
-        public override bool Equals(object obj) {
-            if (obj is null)
-                return false;
-            if (ReferenceEquals(this, obj))
-                return true;
-            if (obj.GetType() != GetType())
-                return false;
-            return Equals((Error)obj);
-        }
+    protected bool Equals(Error other) {
+        return base.Equals(other) && Modules.CollectionEquals(other.Modules);
+    }
 
-        public override int GetHashCode() {
-            unchecked {
-                return (base.GetHashCode() * 397) ^ (Modules?.GetCollectionHashCode() ?? 0);
-            }
+    public override bool Equals(object obj) {
+        if (obj is null)
+            return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+        if (obj.GetType() != GetType())
+            return false;
+        return Equals((Error)obj);
+    }
+
+    public override int GetHashCode() {
+        unchecked {
+            return (base.GetHashCode() * 397) ^ (Modules?.GetCollectionHashCode() ?? 0);
         }
     }
 }

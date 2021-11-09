@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -13,40 +9,41 @@ using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
-namespace Exceptionless.Core.Repositories {
-    public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
-        private const string STACKING_VERSION = "v2";
+namespace Exceptionless.Core.Repositories;
 
-        public StackRepository(ExceptionlessElasticConfiguration configuration, IValidator<Stack> validator, AppOptions options)
-            : base(configuration.Stacks, validator, options) {
-            AddPropertyRequiredForRemove(s => s.SignatureHash);
-        }
+public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
+    private const string STACKING_VERSION = "v2";
 
-        public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
-            return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
-        }
-        
-        public Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff) {
-            return FindAsync(q => q
-                .Organization(organizationId)
-                .ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.LastOccurrence).LessThanOrEquals(cutoff)))
-                .FieldEquals(f => f.Status, StackStatus.Open)
-                .FieldEmpty(f => f.References)
-                .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
-            , o => o.SearchAfterPaging().PageLimit(500));
-        }
+    public StackRepository(ExceptionlessElasticConfiguration configuration, IValidator<Stack> validator, AppOptions options)
+        : base(configuration.Stacks, validator, options) {
+        AddPropertyRequiredForRemove(s => s.SignatureHash);
+    }
 
-        public Task<FindResults<Stack>> GetSoftDeleted() {
-            return FindAsync(
-                q => q.Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash),
-                o => o.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SearchAfterPaging().PageLimit(500)
-            );
-        }
+    public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null) {
+        return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
+    }
 
-        public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
-            // If total occurrences are zero (stack data was reset), then set first occurrence date
-            // Only update the LastOccurrence if the new date is greater then the existing date.
-            const string script = @"
+    public Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff) {
+        return FindAsync(q => q
+            .Organization(organizationId)
+            .ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.LastOccurrence).LessThanOrEquals(cutoff)))
+            .FieldEquals(f => f.Status, StackStatus.Open)
+            .FieldEmpty(f => f.References)
+            .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
+        , o => o.SearchAfterPaging().PageLimit(500));
+    }
+
+    public Task<FindResults<Stack>> GetSoftDeleted() {
+        return FindAsync(
+            q => q.Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash),
+            o => o.SoftDeleteMode(SoftDeleteQueryMode.DeletedOnly).SearchAfterPaging().PageLimit(500)
+        );
+    }
+
+    public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
+        // If total occurrences are zero (stack data was reset), then set first occurrence date
+        // Only update the LastOccurrence if the new date is greater then the existing date.
+        const string script = @"
 Instant parseDate(def dt) {
   if (dt != null) {
     try {
@@ -67,77 +64,76 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 }
 ctx._source.total_occurrences += params.count;";
 
-            var request = new UpdateRequest<Stack, Stack>(ElasticIndex.GetIndex(stackId), stackId) {
-                Script = new InlineScript(script.TrimScript()) {
-                    Params = new Dictionary<string, object>(3) {
+        var request = new UpdateRequest<Stack, Stack>(ElasticIndex.GetIndex(stackId), stackId) {
+            Script = new InlineScript(script.TrimScript()) {
+                Params = new Dictionary<string, object>(3) {
                         { "minOccurrenceDateUtc", minOccurrenceDateUtc },
                         { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
                         { "count", count },
                         { "updatedUtc", SystemClock.UtcNow }
                     }
-                }
-            };
-
-            var result = await _client.UpdateAsync(request).AnyContext();
-            if (!result.IsValid) {
-                _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
-                return result.ServerError?.Status == 404;
             }
+        };
 
-            await Cache.RemoveAsync(stackId).AnyContext();
-            if (sendNotifications)
-                await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5)).AnyContext();
-
-            return true;
+        var result = await _client.UpdateAsync(request).AnyContext();
+        if (!result.IsValid) {
+            _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
+            return result.ServerError?.Status == 404;
         }
 
-        public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
-            string key = GetStackSignatureCacheKey(projectId, signatureHash);
-            var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key)).AnyContext();
-            return hit?.Document;
-        }
+        await Cache.RemoveAsync(stackId).AnyContext();
+        if (sendNotifications)
+            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5)).AnyContext();
 
-        public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
-            return FindAsync(q => query.Configure().OnlyIds(), options);
-        }
-
-        public async Task MarkAsRegressedAsync(string stackId) {
-            var stack = await GetByIdAsync(stackId).AnyContext();
-            stack.Status = StackStatus.Regressed;
-            await SaveAsync(stack, o => o.Cache()).AnyContext();
-        }
-
-        public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException(nameof(organizationId));
-
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException(nameof(projectId));
-
-            return PatchAllAsync(
-                q => q.Organization(organizationId).Project(projectId),
-                new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow })
-            );
-        }
-
-        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options, bool isDirtyRead) {
-            await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
-
-            var cacheEntries = new Dictionary<string, FindHit<Stack>>();
-            foreach (var hit in findHits)
-                cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
-
-            if (cacheEntries.Count > 0)
-                await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
-        }
-
-        protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null) {
-            var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
-            await Cache.RemoveAllAsync(keys).AnyContext();
-            await base.InvalidateCacheAsync(documents, changeType).AnyContext();
-        }
-
-        private string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
-        private string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
+        return true;
     }
+
+    public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash) {
+        string key = GetStackSignatureCacheKey(projectId, signatureHash);
+        var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key)).AnyContext();
+        return hit?.Document;
+    }
+
+    public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null) {
+        return FindAsync(q => query.Configure().OnlyIds(), options);
+    }
+
+    public async Task MarkAsRegressedAsync(string stackId) {
+        var stack = await GetByIdAsync(stackId).AnyContext();
+        stack.Status = StackStatus.Regressed;
+        await SaveAsync(stack, o => o.Cache()).AnyContext();
+    }
+
+    public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId) {
+        if (String.IsNullOrEmpty(organizationId))
+            throw new ArgumentNullException(nameof(organizationId));
+
+        if (String.IsNullOrEmpty(projectId))
+            throw new ArgumentNullException(nameof(projectId));
+
+        return PatchAllAsync(
+            q => q.Organization(organizationId).Project(projectId),
+            new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow })
+        );
+    }
+
+    protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options, bool isDirtyRead) {
+        await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
+
+        var cacheEntries = new Dictionary<string, FindHit<Stack>>();
+        foreach (var hit in findHits)
+            cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
+
+        if (cacheEntries.Count > 0)
+            await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
+    }
+
+    protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null) {
+        var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
+        await Cache.RemoveAllAsync(keys).AnyContext();
+        await base.InvalidateCacheAsync(documents, changeType).AnyContext();
+    }
+
+    private string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
+    private string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
 }

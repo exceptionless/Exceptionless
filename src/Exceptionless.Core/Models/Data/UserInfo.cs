@@ -1,60 +1,59 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Exceptionless.Core.Extensions;
 
-namespace Exceptionless.Core.Models.Data {
-    [DebuggerDisplay("{Identity}, {Name}")]
-    public class UserInfo : IData {
-        public UserInfo() {
-            Data = new DataDictionary();
-        }
+namespace Exceptionless.Core.Models.Data;
 
-        public UserInfo(string identity) : this() {
-            if (!String.IsNullOrWhiteSpace(identity))
-                Identity = identity.Trim();
-        }
+[DebuggerDisplay("{Identity}, {Name}")]
+public class UserInfo : IData {
+    public UserInfo() {
+        Data = new DataDictionary();
+    }
 
-        public UserInfo(string identity, string name) : this(identity) {
-            if (!String.IsNullOrWhiteSpace(name))
-                Name = name.Trim();
-        }
+    public UserInfo(string identity) : this() {
+        if (!String.IsNullOrWhiteSpace(identity))
+            Identity = identity.Trim();
+    }
 
-        /// <summary>
-        /// Uniquely identifies the user.
-        /// </summary>
-        public string Identity { get; set; }
+    public UserInfo(string identity, string name) : this(identity) {
+        if (!String.IsNullOrWhiteSpace(name))
+            Name = name.Trim();
+    }
 
-        /// <summary>
-        /// The Friendly name of the user.
-        /// </summary>
-        public string Name { get; set; }
+    /// <summary>
+    /// Uniquely identifies the user.
+    /// </summary>
+    public string Identity { get; set; }
 
-        /// <summary>
-        /// Extended data entries for this user.
-        /// </summary>
-        public DataDictionary Data { get; set; }
+    /// <summary>
+    /// The Friendly name of the user.
+    /// </summary>
+    public string Name { get; set; }
 
-        protected bool Equals(UserInfo other) {
-            return String.Equals(Identity, other.Identity) && String.Equals(Name, other.Name) && Equals(Data, other.Data);
-        }
+    /// <summary>
+    /// Extended data entries for this user.
+    /// </summary>
+    public DataDictionary Data { get; set; }
 
-        public override bool Equals(object obj) {
-            if (obj is null)
-                return false;
-            if (ReferenceEquals(this, obj))
-                return true;
-            if (obj.GetType() != GetType())
-                return false;
-            return Equals((UserInfo)obj);
-        }
+    protected bool Equals(UserInfo other) {
+        return String.Equals(Identity, other.Identity) && String.Equals(Name, other.Name) && Equals(Data, other.Data);
+    }
 
-        public override int GetHashCode() {
-            unchecked {
-                int hashCode = Identity?.GetHashCode() ?? 0;
-                hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
-                hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
-                return hashCode;
-            }
+    public override bool Equals(object obj) {
+        if (obj is null)
+            return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+        if (obj.GetType() != GetType())
+            return false;
+        return Equals((UserInfo)obj);
+    }
+
+    public override int GetHashCode() {
+        unchecked {
+            int hashCode = Identity?.GetHashCode() ?? 0;
+            hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);
+            return hashCode;
         }
     }
 }
