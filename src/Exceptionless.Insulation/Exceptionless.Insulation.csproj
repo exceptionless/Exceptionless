@@ -6,7 +6,7 @@
     <PackageReference Include="App.Metrics.Reporting.Graphite" Version="4.2.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="4.2.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.2.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.2.79" />
+    <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="4.0.1" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.2.2" />

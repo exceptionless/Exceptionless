@@ -79,7 +79,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.15.0 AS exceptionless
+FROM exceptionless/elasticsearch:7.15.2 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -89,16 +89,10 @@ COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
-# install 6.0 from script until it's available in RPM
-RUN mkdir $HOME/dotnet_install && \
-    cd $HOME/dotnet_install && \
-    curl -H 'Cache-Control: no-cache' -L https://aka.ms/install-dotnet-preview -o install-dotnet-preview.sh && \
-    bash install-dotnet-preview.sh
-
 # install dotnet and supervisor
-#RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
-#    yum -y install aspnetcore-runtime-6.0 && \
-RUN yum -y install epel-release && \
+RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
+    yum -y install aspnetcore-runtime-6.0 && \
+    yum -y install epel-release && \
     yum -y install supervisor
 
 ENV discovery.type=single-node \

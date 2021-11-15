@@ -5,7 +5,7 @@ version: '3.5'
 
 services:
   elasticsearch:
-    image: exceptionless/elasticsearch:7.15.0
+    image: exceptionless/elasticsearch:7.15.2
     environment:
       discovery.type: single-node
       xpack.security.enabled: 'false'
@@ -16,12 +16,12 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.15.0
+    image: docker.elastic.co/kibana/kibana:7.15.2
     ports:
       - 5601:5601
 
   apm:
-    image: docker.elastic.co/apm/apm-server:7.15.0
+    image: docker.elastic.co/apm/apm-server:7.15.2
     depends_on:
       - elasticsearch
     ports:
