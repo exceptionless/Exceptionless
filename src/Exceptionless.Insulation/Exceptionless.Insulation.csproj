@@ -3,7 +3,7 @@
   <ItemGroup>
     <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="4.2.0" />
     <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="4.2.0" />
-    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="4.2.0" />
+    <PackageReference Include="App.Metrics.Reporting.Graphite" Version="4.3.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="4.2.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.2.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
