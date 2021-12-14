@@ -4,8 +4,8 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.15.2
-  image: exceptionless/elasticsearch:7.15.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.16.1
+  image: exceptionless/elasticsearch:7.16.1 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-dev-snapshots
   http:
@@ -58,7 +58,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.15.2
+  version: 7.16.1
   count: 1
   elasticsearchRef:
     name: ex-dev
