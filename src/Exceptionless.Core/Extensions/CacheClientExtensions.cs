@@ -16,10 +16,10 @@ public static class CacheClientExtensions {
 
         if (count.HasValue) {
             var incrementedValue = await client.IncrementAsync(key, value, timeToLive).AnyContext();
-            return incrementedValue;
-            if (incrementedValue < 0) {
-                return await client.IncrementAsync(key, Math.Abs(incrementedValue), timeToLive).AnyContext();
-            }
+            if (incrementedValue >= 0)
+                return incrementedValue;
+
+            return await client.IncrementAsync(key, Math.Abs(incrementedValue), timeToLive).AnyContext();
         }
 
         long newValue = Math.Max(0, startingValue.Value + value);
@@ -36,10 +36,10 @@ public static class CacheClientExtensions {
         var count = await client.GetAsync<long>(key).AnyContext();
         if (count.HasValue) {
             var incrementedValue = await client.IncrementAsync(key, value, timeToLive).AnyContext();
-            return incrementedValue;
-            if (incrementedValue < 0) {
-                return await client.IncrementAsync(key, Math.Abs(incrementedValue), timeToLive).AnyContext();
-            }
+            if (incrementedValue >= 0)
+                return incrementedValue;
+
+            return await client.IncrementAsync(key, Math.Abs(incrementedValue), timeToLive).AnyContext();
         }
 
         long newValue = Math.Max(0, startingValue.Value + value);

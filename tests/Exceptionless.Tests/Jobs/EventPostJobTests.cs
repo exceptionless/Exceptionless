@@ -83,16 +83,11 @@ public class EventPostJobTests : IntegrationTestsBase {
         Log.MinimumLevel = LogLevel.Debug;
 
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
-        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
         var usage = await _usageService.GetUsageAsync(organization);
         Assert.Equal(0, usage.MonthlyTotal);
 
-        // Increment usage as done by the overage middleware
-        bool overLimit = await _usageService.IncrementUsageAsync(organization, project, false);
-        Assert.False(overLimit);
-
         usage = await _usageService.GetUsageAsync(organization);
-        Assert.Equal(1, usage.MonthlyTotal);
+        Assert.Equal(0, usage.MonthlyTotal);
         Assert.Equal(0, usage.MonthlyBlocked);
 
         var ev = GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test1");
@@ -121,13 +116,6 @@ public class EventPostJobTests : IntegrationTestsBase {
         var sessionStack = await _stackRepository.GetByIdAsync(sessionEvent.StackId);
         sessionStack.Status = StackStatus.Discarded;
         await _stackRepository.SaveAsync(sessionStack, o => o.ImmediateConsistency());
-
-        // Increment usage as done by the overage middleware
-        Assert.False(await _usageService.IncrementUsageAsync(organization, project, false));
-
-        usage = await _usageService.GetUsageAsync(organization);
-        Assert.Equal(2, usage.MonthlyTotal);
-        Assert.Equal(0, usage.MonthlyBlocked);
 
         // Verify job processed discarded events.
         Assert.NotNull(await EnqueueEventPostAsync(new List<PersistentEvent> {

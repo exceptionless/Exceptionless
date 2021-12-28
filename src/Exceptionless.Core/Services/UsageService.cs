@@ -31,8 +31,29 @@ public sealed class UsageService {
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
 
-    public async Task<bool> IncrementUsageAsync(Organization organization, Project project, bool tooBig, int count = 1, bool applyHourlyLimit = true) {
-        if (organization == null || organization.MaxEventsPerMonth < 0 || project == null || count == 0 && !tooBig)
+    public Task<bool> IncrementTooBigAsync(Organization organization, Project project, bool applyHourlyLimit = true) {
+        return IncrementUsageAsync(organization, project, true, 1, applyHourlyLimit);
+    }
+
+    public async Task<bool> IsOverLimitAsync(Organization organization) {
+        if (organization == null || organization.MaxEventsPerMonth < 0)
+            return false;
+        
+        // PERF: could save two cache calls by not returning all usage stats.
+        var orgUsage = await GetUsageAsync(organization).AnyContext();
+        double totalBlocked = GetTotalBlocked(organization, 0, orgUsage, true);
+        return totalBlocked > 0;
+    }
+
+    public Task<bool> IncrementUsageAsync(Organization organization, Project project, int count = 1, bool applyHourlyLimit = true) {
+        return IncrementUsageAsync(organization, project, false, count, applyHourlyLimit);
+    }
+
+    private async Task<bool> IncrementUsageAsync(Organization organization, Project project, bool tooBig, int count = 1, bool applyHourlyLimit = true) {
+        if (count < 0)
+            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
+
+        if (organization == null || organization.MaxEventsPerMonth < 0 || project == null)
             return false;
 
         var orgUsage = await IncrementUsageAsync(organization, tooBig, count).AnyContext();
