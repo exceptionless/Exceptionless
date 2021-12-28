@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -16,8 +16,6 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-
-#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs;
 

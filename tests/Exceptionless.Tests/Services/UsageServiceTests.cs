@@ -54,28 +54,31 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(2, countdown.CurrentCount);
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+        var organizationUsage = await _usageService.GetUsageAsync(organization);
+        var projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(totalToIncrement, organizationUsage.HourlyTotal);
+        Assert.Equal(totalToIncrement, projectUsage.HourlyTotal);
+        Assert.Equal(totalToIncrement, organizationUsage.MonthlyTotal);
+        Assert.Equal(totalToIncrement, projectUsage.MonthlyTotal);
+        Assert.Equal(0, organizationUsage.HourlyBlocked);
+        Assert.Equal(0, projectUsage.HourlyBlocked);
+        Assert.Equal(0, organizationUsage.MonthlyBlocked);
+        Assert.Equal(0, projectUsage.MonthlyBlocked);
 
         Assert.True(await _usageService.IncrementUsageAsync(organization, project, false, 2));
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
-
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(1, countdown.CurrentCount);
-        Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(totalToIncrement + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(1, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(1, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(1, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(1, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        organizationUsage = await _usageService.GetUsageAsync(organization);
+        projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(totalToIncrement + 2, organizationUsage.HourlyTotal);
+        Assert.Equal(totalToIncrement + 2, projectUsage.HourlyTotal);
+        Assert.Equal(totalToIncrement + 2, organizationUsage.MonthlyTotal);
+        Assert.Equal(totalToIncrement + 2, projectUsage.MonthlyTotal);
+        Assert.Equal(1, organizationUsage.HourlyBlocked);
+        Assert.Equal(1, projectUsage.HourlyBlocked);
+        Assert.Equal(1, organizationUsage.MonthlyBlocked);
+        Assert.Equal(1, projectUsage.MonthlyBlocked);
 
         organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
         project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
@@ -86,14 +89,56 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(0, countdown.CurrentCount);
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(totalToIncrement, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(20, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(20, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(20, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(20, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        organizationUsage = await _usageService.GetUsageAsync(organization);
+        projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(totalToIncrement, organizationUsage.HourlyTotal);
+        Assert.Equal(totalToIncrement, projectUsage.HourlyTotal);
+        Assert.Equal(totalToIncrement, organizationUsage.MonthlyTotal);
+        Assert.Equal(totalToIncrement, projectUsage.MonthlyTotal);
+        Assert.Equal(20, organizationUsage.HourlyBlocked);
+        Assert.Equal(20, projectUsage.HourlyBlocked);
+        Assert.Equal(20, organizationUsage.MonthlyBlocked);
+        Assert.Equal(20, projectUsage.MonthlyBlocked);
+    }
+
+    [Fact]
+    public async Task CanHandleZeroUsage() {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
+        Assert.InRange(organization.GetHourlyEventLimit(_plans), 1, 750);
+
+        Assert.False(await _usageService.IncrementUsageAsync(organization, project, tooBig: false, 0, applyHourlyLimit: false));
+        var organizationUsage = await _usageService.GetUsageAsync(organization);
+        var projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(0, organizationUsage.HourlyTotal);
+        Assert.Equal(0, projectUsage.HourlyTotal);
+        Assert.Equal(0, organizationUsage.MonthlyTotal);
+        Assert.Equal(0, projectUsage.MonthlyTotal);
+        Assert.Equal(0, organizationUsage.HourlyBlocked);
+        Assert.Equal(0, projectUsage.HourlyBlocked);
+        Assert.Equal(0, organizationUsage.MonthlyBlocked);
+        Assert.Equal(0, projectUsage.MonthlyBlocked);
+        Assert.Equal(0, organizationUsage.HourlyTooBig);
+        Assert.Equal(0, projectUsage.HourlyTooBig);
+        Assert.Equal(0, organizationUsage.MonthlyTooBig);
+        Assert.Equal(0, projectUsage.MonthlyTooBig);
+
+        Assert.False(await _usageService.IncrementUsageAsync(organization, project, tooBig: true, 0, applyHourlyLimit: false));
+        organizationUsage = await _usageService.GetUsageAsync(organization); 
+        projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(0, organizationUsage.HourlyTotal);
+        Assert.Equal(0, projectUsage.HourlyTotal);
+        Assert.Equal(0, organizationUsage.MonthlyTotal);
+        Assert.Equal(0, projectUsage.MonthlyTotal);
+        Assert.Equal(0, organizationUsage.HourlyBlocked);
+        Assert.Equal(0, projectUsage.HourlyBlocked);
+        Assert.Equal(0, organizationUsage.MonthlyBlocked);
+        Assert.Equal(0, projectUsage.MonthlyBlocked);
+        Assert.Equal(1, organizationUsage.HourlyTooBig);
+        Assert.Equal(1, projectUsage.HourlyTooBig);
+        Assert.Equal(1, organizationUsage.MonthlyTooBig);
+        Assert.Equal(1, projectUsage.MonthlyTooBig);
     }
 
     [Fact]
@@ -103,14 +148,17 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         Assert.InRange(organization.GetHourlyEventLimit(_plans), 1, 750);
         
         Assert.False(await _usageService.IncrementUsageAsync(organization, project, false, -1));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        var organizationUsage = await _usageService.GetUsageAsync(organization);
+        var projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(0, organizationUsage.HourlyTotal);
+        Assert.Equal(0, projectUsage.HourlyTotal);
+        Assert.Equal(0, organizationUsage.MonthlyTotal);
+        Assert.Equal(0, projectUsage.MonthlyTotal);
+        Assert.Equal(0, organizationUsage.HourlyBlocked);
+        Assert.Equal(0, projectUsage.HourlyBlocked);
+        Assert.Equal(0, organizationUsage.MonthlyBlocked);
+        Assert.Equal(0, projectUsage.MonthlyBlocked);
 
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.True(organization.Usage.All(u => u.Total == 0 && u.Blocked == 0));
@@ -138,28 +186,34 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(2, countdown.CurrentCount);
-        Assert.Equal(limit, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(limit, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(limit, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(limit, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        var organizationUsage = await _usageService.GetUsageAsync(organization);
+        var projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(limit, organizationUsage.HourlyTotal);
+        Assert.Equal(limit, projectUsage.HourlyTotal);
+        Assert.Equal(limit, organizationUsage.MonthlyTotal);
+        Assert.Equal(limit, projectUsage.MonthlyTotal);
+        Assert.Equal(0, organizationUsage.HourlyBlocked);
+        Assert.Equal(0, projectUsage.HourlyBlocked);
+        Assert.Equal(0, organizationUsage.MonthlyBlocked);
+        Assert.Equal(0, projectUsage.MonthlyBlocked);
 
         Assert.True(await _usageService.IncrementUsageAsync(organization, project, false, 2));
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(1, countdown.CurrentCount);
-        Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(limit + 2, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(2, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(2, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(2, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(2, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        organizationUsage = await _usageService.GetUsageAsync(organization);
+        projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(limit + 2, organizationUsage.HourlyTotal);
+        Assert.Equal(limit + 2, projectUsage.HourlyTotal);
+        Assert.Equal(limit + 2, organizationUsage.MonthlyTotal);
+        Assert.Equal(limit + 2, projectUsage.MonthlyTotal);
+        Assert.Equal(2, organizationUsage.HourlyBlocked);
+        Assert.Equal(2, projectUsage.HourlyBlocked);
+        Assert.Equal(2, organizationUsage.MonthlyBlocked);
+        Assert.Equal(2, projectUsage.MonthlyBlocked);
     }
 
     [Fact]
@@ -178,14 +232,17 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(2, countdown.CurrentCount);
-        Assert.Equal(5, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(5, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(5, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(5, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(0, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        var organizationUsage = await _usageService.GetUsageAsync(organization);
+        var projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(5, organizationUsage.HourlyTotal);
+        Assert.Equal(5, projectUsage.HourlyTotal);
+        Assert.Equal(5, organizationUsage.MonthlyTotal);
+        Assert.Equal(5, projectUsage.MonthlyTotal);
+        Assert.Equal(0, organizationUsage.HourlyBlocked);
+        Assert.Equal(0, projectUsage.HourlyBlocked);
+        Assert.Equal(0, organizationUsage.MonthlyBlocked);
+        Assert.Equal(0, projectUsage.MonthlyBlocked);
 
         organization.IsSuspended = true;
         organization.SuspendedByUserId = TestConstants.UserId;
@@ -197,14 +254,17 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(1, countdown.CurrentCount);
-        Assert.Equal(5000, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(5000, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(5000, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(5000, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        organizationUsage = await _usageService.GetUsageAsync(organization);
+        projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(5000, organizationUsage.HourlyTotal);
+        Assert.Equal(5000, projectUsage.HourlyTotal);
+        Assert.Equal(5000, organizationUsage.MonthlyTotal);
+        Assert.Equal(5000, projectUsage.MonthlyTotal);
+        Assert.Equal(4995, organizationUsage.HourlyBlocked);
+        Assert.Equal(4995, projectUsage.HourlyBlocked);
+        Assert.Equal(4995, organizationUsage.MonthlyBlocked);
+        Assert.Equal(4995, projectUsage.MonthlyBlocked);
 
         organization.RemoveSuspension();
         organization = await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -212,14 +272,17 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         Assert.False(await _usageService.IncrementUsageAsync(organization, project, false, 1));
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(1, countdown.CurrentCount);
-        Assert.Equal(5001, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(5001, await _cache.GetAsync<long>(GetHourlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(5001, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id), 0));
-        Assert.Equal(5001, await _cache.GetAsync<long>(GetMonthlyTotalCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetHourlyBlockedCacheKey(organization.Id, project.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id), 0));
-        Assert.Equal(4995, await _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(organization.Id, project.Id), 0));
+
+        organizationUsage = await _usageService.GetUsageAsync(organization);
+        projectUsage = await _usageService.GetUsageAsync(organization, project);
+        Assert.Equal(5001, organizationUsage.HourlyTotal);
+        Assert.Equal(5001, projectUsage.HourlyTotal);
+        Assert.Equal(5001, organizationUsage.MonthlyTotal);
+        Assert.Equal(5001, projectUsage.MonthlyTotal);
+        Assert.Equal(4995, organizationUsage.HourlyBlocked);
+        Assert.Equal(4995, projectUsage.HourlyBlocked);
+        Assert.Equal(4995, organizationUsage.MonthlyBlocked);
+        Assert.Equal(4995, projectUsage.MonthlyBlocked);
     }
 
     [Fact]
@@ -234,25 +297,5 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         sw.Stop();
         _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
-    }
-
-    private string GetHourlyBlockedCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
-    }
-
-    private string GetHourlyTotalCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
-    }
-
-    private string GetMonthlyBlockedCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
-    }
-
-    private string GetMonthlyTotalCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
     }
 }
