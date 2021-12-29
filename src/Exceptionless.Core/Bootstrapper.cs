@@ -57,7 +57,7 @@ public class Bootstrapper {
             DateParseHandling = DateParseHandling.DateTimeOffset
         };
 
-        container.AddSingleton<IContractResolver>(s => GetJsonContractResolver());
+        container.AddSingleton<IContractResolver>(_ => GetJsonContractResolver());
         container.AddSingleton<JsonSerializerSettings>(s => {
             // NOTE: These settings may need to be synced in the Elastic Configuration.
             var settings = new JsonSerializerSettings {
