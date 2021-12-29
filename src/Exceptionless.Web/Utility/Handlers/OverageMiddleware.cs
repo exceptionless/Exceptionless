@@ -87,14 +87,15 @@ public sealed class OverageMiddleware {
 
         var organization = await organizationTask;
         var project = await projectTask;
-        bool overLimit = await _usageService.IncrementUsageAsync(organization, project, tooBig);
 
         // block large submissions, client should break them up or remove some of the data.
         if (tooBig) {
+            await _usageService.IncrementTooBigAsync(organization, project).AnyContext();
             context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
             return;
         }
 
+        bool overLimit = await _usageService.IsOverLimitAsync(organization).AnyContext();
         if (overLimit) {
             _metricsClient.Counter(MetricNames.PostsBlocked);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;

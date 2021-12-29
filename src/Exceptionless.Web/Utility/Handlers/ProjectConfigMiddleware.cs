@@ -9,8 +9,8 @@ public sealed class ProjectConfigMiddleware {
     private readonly IProjectRepository _projectRepository;
     private readonly ITextSerializer _serializer;
     private readonly RequestDelegate _next;
-    private static readonly PathString _v1Path = new PathString("/api/v1/project/config");
-    private static readonly PathString _v2Path = new PathString("/api/v2/projects/config");
+    private static readonly PathString _v1Path = new("/api/v1/project/config");
+    private static readonly PathString _v2Path = new("/api/v2/projects/config");
 
     public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer) {
         _next = next;

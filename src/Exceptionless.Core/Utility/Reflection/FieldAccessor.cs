@@ -1,7 +1,4 @@
 ﻿using System.Reflection;
-#if PFX_LEGACY_3_5
-using CodeSmith.Core.Threading;
-#endif
 
 namespace Exceptionless.Core.Reflection;
 
