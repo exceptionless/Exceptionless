@@ -54,7 +54,7 @@ public class StripeEventHandler {
             return;
         }
 
-        _logger.LogInformation("Stripe subscription updated. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
+        _logger.LogInformation("Stripe subscription updated. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
 
         BillingStatus? status = null;
         switch (sub.Status) {
@@ -106,7 +106,7 @@ public class StripeEventHandler {
             return;
         }
 
-        _logger.LogInformation("Stripe subscription deleted. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
+        _logger.LogInformation("Stripe subscription deleted. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
 
         org.BillingStatus = BillingStatus.Canceled;
         org.IsSuspended = true;
@@ -128,7 +128,7 @@ public class StripeEventHandler {
 
         var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
         if (user == null) {
-            _logger.LogError("Unable to find billing user: {user}", org.BillingChangedByUserId);
+            _logger.LogError("Unable to find billing user: {User}", org.BillingChangedByUserId);
             return;
         }
 
