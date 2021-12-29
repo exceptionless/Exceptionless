@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -16,8 +16,6 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-
-#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs;
 
@@ -112,7 +110,9 @@ public class EventPostsJob : QueueJobBase<EventPost> {
 
             _metrics.Gauge(MetricNames.PostsUncompressedSize, payload.LongLength);
             if (uncompressedData.Length > maxEventPostSize) {
-                await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask).AnyContext();
+                var org = await organizationTask.AnyContext();
+                await _usageService.IncrementTooBigAsync(org, project).AnyContext();
+                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow).AnyContext();
                 return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
             }
 
@@ -170,7 +170,7 @@ public class EventPostsJob : QueueJobBase<EventPost> {
 
                 // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
                 int processedEvents = contexts.Count(c => c.IsProcessed);
-                await _usageService.IncrementUsageAsync(organization, project, false, processedEvents - 1, applyHourlyLimit: false).AnyContext();
+                await _usageService.IncrementUsageAsync(organization, project, processedEvents, applyHourlyLimit: false).AnyContext();
 
                 int discardedEvents = contexts.Count(c => c.IsDiscarded);
                 _metrics.Counter(MetricNames.EventsDiscarded, discardedEvents);

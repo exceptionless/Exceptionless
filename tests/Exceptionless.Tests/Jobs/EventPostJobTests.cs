@@ -22,9 +22,11 @@ public class EventPostJobTests : IntegrationTestsBase {
     private readonly IFileStorage _storage;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IUserRepository _userRepository;
+    private readonly UsageService _usageService;
     private readonly ITextSerializer _serializer;
     private readonly EventPostService _eventPostService;
     private readonly BillingManager _billingManager;
@@ -38,8 +40,10 @@ public class EventPostJobTests : IntegrationTestsBase {
         _eventPostService = new EventPostService(_eventQueue, _storage, Log);
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
+        _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
         _userRepository = GetService<IUserRepository>();
+        _usageService = GetService<UsageService>();
         _serializer = GetService<ITextSerializer>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
@@ -72,6 +76,64 @@ public class EventPostJobTests : IntegrationTestsBase {
 
         files = await _storage.GetFileListAsync();
         Assert.Equal(0, files.Count);
+    }
+
+    [Fact]
+    public async Task CanRunJobWithDiscardedEventUsage() {
+        Log.MinimumLevel = LogLevel.Debug;
+
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        var usage = await _usageService.GetUsageAsync(organization);
+        Assert.Equal(0, usage.MonthlyTotal);
+
+        usage = await _usageService.GetUsageAsync(organization);
+        Assert.Equal(0, usage.MonthlyTotal);
+        Assert.Equal(0, usage.MonthlyBlocked);
+
+        var ev = GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test1");
+        Assert.NotNull(await EnqueueEventPostAsync(ev));
+
+        var result = await _job.RunAsync();
+        Assert.True(result.IsSuccess);
+
+        await RefreshDataAsync();
+        var events = await _eventRepository.GetAllAsync();
+        Assert.Equal(2, events.Total);
+        var logEvent = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
+        Assert.NotNull(logEvent);
+        var sessionEvent = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Session));
+        Assert.NotNull(sessionEvent);
+
+        usage = await _usageService.GetUsageAsync(organization);
+        Assert.Equal(1, usage.MonthlyTotal);
+        Assert.Equal(0, usage.MonthlyBlocked);
+
+        // Mark the stack as discarded
+        var logStack = await _stackRepository.GetByIdAsync(logEvent.StackId);
+        logStack.Status = StackStatus.Discarded;
+        await _stackRepository.SaveAsync(logStack, o => o.ImmediateConsistency());
+
+        var sessionStack = await _stackRepository.GetByIdAsync(sessionEvent.StackId);
+        sessionStack.Status = StackStatus.Discarded;
+        await _stackRepository.SaveAsync(sessionStack, o => o.ImmediateConsistency());
+
+        // Verify job processed discarded events.
+        Assert.NotNull(await EnqueueEventPostAsync(new List<PersistentEvent> {
+            GenerateEvent(type: Event.KnownTypes.Session, sessionId: "abcdefghi"),
+            GenerateEvent(type: Event.KnownTypes.Log, source: "test", sessionId: "abcdefghi"),
+            GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test3")
+        }));
+
+        result = await _job.RunAsync();
+        Assert.True(result.IsSuccess);
+
+        await RefreshDataAsync();
+        events = await _eventRepository.GetAllAsync();
+        Assert.Equal(3, events.Total);
+        
+        usage = await _usageService.GetUsageAsync(organization);
+        Assert.Equal(1, usage.MonthlyTotal);
+        Assert.Equal(0, usage.MonthlyBlocked);
     }
 
     [Fact]
@@ -148,9 +210,15 @@ public class EventPostJobTests : IntegrationTestsBase {
     }
 
     private Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
+        return EnqueueEventPostAsync(new List<PersistentEvent> { ev });
+    }
+
+    private Task<string> EnqueueEventPostAsync(List<PersistentEvent> ev) {
+        var first = ev.First();
+
         var eventPostInfo = new EventPost(_options.EnableArchive) {
-            OrganizationId = ev.OrganizationId,
-            ProjectId = ev.ProjectId,
+            OrganizationId = first.OrganizationId,
+            ProjectId = first.ProjectId,
             ApiVersion = 2,
             CharSet = "utf-8",
             ContentEncoding = "gzip",
@@ -162,8 +230,8 @@ public class EventPostJobTests : IntegrationTestsBase {
         return _eventPostService.EnqueueAsync(eventPostInfo, stream);
     }
 
-    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
+    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string source = null, string sessionId = null) {
         occurrenceDate ??= SystemClock.OffsetNow;
-        return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
+        return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
     }
 }
