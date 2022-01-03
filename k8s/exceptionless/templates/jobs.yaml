@@ -100,7 +100,7 @@ spec:
                 name: {{ template "exceptionless.fullname" . }}-config
 
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-download-geoip-database
@@ -244,7 +244,7 @@ spec:
                 name: {{ template "exceptionless.fullname" . }}-config
 
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-migration
@@ -382,7 +382,7 @@ spec:
                 name: {{ template "exceptionless.fullname" . }}-config
 
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-maintain-indexes
@@ -424,7 +424,7 @@ spec:
           restartPolicy: OnFailure
 
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-data
@@ -466,7 +466,7 @@ spec:
           restartPolicy: OnFailure
 
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ template "exceptionless.fullname" . }}-jobs-cleanup-orphaned-data
