@@ -93,7 +93,7 @@ spec:
     component: {{ template "exceptionless.fullname" . }}-collector
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ template "exceptionless.fullname" . }}-collector-ingress
@@ -116,7 +116,10 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: {{ template "exceptionless.fullname" $ }}-collector
-          servicePort: 80
+          service:
+            name: {{ template "exceptionless.fullname" $ }}-collector
+            port:
+              number: 80
   {{- end }}
