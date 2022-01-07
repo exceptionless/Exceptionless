@@ -362,7 +362,6 @@ public class EventControllerTests : IntegrationTestsBase {
             .AppendPath("events")
             .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
             .QueryString("mode", "stack_new")
-            .QueryString("time", "last 12 hours")
             .StatusCodeShouldBeOk()
         );
 
@@ -488,6 +487,7 @@ public class EventControllerTests : IntegrationTestsBase {
     [InlineData("status:open", 1)]
     [InlineData("status:regressed", 1)]
     [InlineData("status:ignored", 1)]
+    [InlineData("type:error (status:open OR status:regressed)", 1)]
     [InlineData("(status:open OR status:regressed)", 2)]
     [InlineData("is_fixed:true", 2)]
     [InlineData("status:fixed", 2)]
@@ -532,6 +532,7 @@ public class EventControllerTests : IntegrationTestsBase {
     [InlineData("status:open", 1)]
     [InlineData("status:regressed", 3)]
     [InlineData("status:ignored", 1)]
+    [InlineData("type:error (status:open OR status:regressed)", 2)]
     [InlineData("(status:open OR status:regressed)", 4)]
     [InlineData("is_fixed:true", 2)]
     [InlineData("status:fixed", 2)]
