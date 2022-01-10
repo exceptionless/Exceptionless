@@ -21,7 +21,7 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="10.1.1" />
+    <PackageReference Include="AutoMapper" Version="11.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="7.0.1" />
     <PackageReference Include="FluentValidation" Version="10.3.6" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.2.5" />
