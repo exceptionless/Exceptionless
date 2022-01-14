@@ -10,7 +10,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.jobs.closeInactiveSessions.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
@@ -61,7 +61,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.jobs.dailySummary.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
@@ -520,7 +520,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.jobs.stackEventCount.replicaCount }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
