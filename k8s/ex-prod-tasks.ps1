@@ -53,11 +53,11 @@ helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset
 
 # upgrade dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.4.0/aio/deploy/recommended.yaml
 
 # upgrade kubecost
 helm repo update
-helm upgrade kubecost kubecost/cost-analyzer --namespace kubecost --reset-values --set kubecostToken="ZXNtaXRoQHNsaWRlcm9vbS5jb20=xm343yadf98" --dry-run
+helm upgrade kubecost kubecost/cost-analyzer --namespace kubecost --reset-values --set kubecostToken="ZXJpY0Bjb2Rlc21pdGh0b29scy5jb20=xm343yadf98" --dry-run
 
 # upgrade goldilocks
 helm repo update
@@ -67,8 +67,9 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/1.8.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/1.8.0/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/1.9.1/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/1.9.1/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/1.9.1/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml

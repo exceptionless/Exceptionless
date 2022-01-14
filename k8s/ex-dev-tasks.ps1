@@ -81,7 +81,6 @@ helm upgrade ex-dev .\exceptionless --namespace ex-dev --values ex-dev-values.ya
     --set "config.EX_StripePublishableApiKey=$EX_StripePublishableApiKey" `
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" --dry-run | code-insiders -
 
-
 # stop the entire app
 kubectl scale deployment/ex-dev-app --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-api --replicas=0 --namespace ex-dev
@@ -92,17 +91,14 @@ kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=0 --namespac
 kubectl scale deployment/ex-dev-jobs-event-posts --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-mail-message --replicas=0 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-cleanup-data --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-work-item --replicas=0 --namespace ex-dev
 
-kubectl patch cronjob/ex-dev-jobs-cleanup-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
+kubectl patch cronjob/ex-dev-jobs-cleanup-data -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
 kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
-kubectl patch cronjob/ex-dev-jobs-event-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
 kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
-kubectl patch cronjob/ex-dev-jobs-organization-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
-kubectl patch cronjob/ex-dev-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
+kubectl patch cronjob/ex-dev-jobs-migration -p '{\"spec\":{\"suspend\": true}}' --namespace ex-dev
 
 # resume the app
 kubectl scale deployment/ex-dev-app --replicas=1 --namespace ex-dev
@@ -114,14 +110,10 @@ kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=1 --namespac
 kubectl scale deployment/ex-dev-jobs-event-posts --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-mail-message --replicas=1 --namespace ex-dev
-kubectl scale deployment/ex-dev-jobs-cleanup-data --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-work-item --replicas=1 --namespace ex-dev
 
-kubectl patch cronjob/ex-dev-jobs-cleanup-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
+kubectl patch cronjob/ex-dev-jobs-cleanup-data -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
 kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
-kubectl patch cronjob/ex-dev-jobs-event-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
 kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
-kubectl patch cronjob/ex-dev-jobs-organization-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
-kubectl patch cronjob/ex-dev-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-dev
