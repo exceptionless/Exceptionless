@@ -14,7 +14,7 @@ spec:
         disabled: true
   nodeSets:
   - name: main
-    count: 4
+    count: 5
     config:
       node.master: true
       node.data: true
