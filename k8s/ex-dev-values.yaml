@@ -1,21 +1,21 @@
 appMode: Staging
 appScope: dev
 api:
-  replicaCount: 1
+  replicaCount: 0
   image:
     repository: exceptionless/api-ci
   defaultDomain: dev-api.exceptionless.io
   domains:
     - dev-api.exceptionless.io
 app:
-  replicaCount: 1
+  replicaCount: 0
   image:
     repository: exceptionless/ui-ci
   defaultDomain: dev-app.exceptionless.io
   domains:
     - dev-app.exceptionless.io
 collector:
-  replicaCount: 1
+  replicaCount: 0
   defaultDomain: dev-collector.exceptionless.io
   domains:
     - dev-collector.exceptionless.io
@@ -23,17 +23,23 @@ jobs:
   image:
     repository: exceptionless/job-ci
   eventNotifications:
-    replicaCount: 1
+    replicaCount: 0
   eventPosts:
-    replicaCount: 1
+    replicaCount: 0
+  stackEventCount:
+    replicaCount: 0
   eventUserDescriptions:
-    replicaCount: 1
+    replicaCount: 0
   mailMessage:
-    replicaCount: 1
+    replicaCount: 0
   webhooks:
-    replicaCount: 1
+    replicaCount: 0
   workitem:
-    replicaCount: 1
+    replicaCount: 0
+  closeInactiveSessions:
+    replicaCount: 0
+  dailySummary:
+    replicaCount: 0
 
 config:
   EX_EnableSnapshotJobs: "false"
