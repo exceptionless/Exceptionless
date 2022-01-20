@@ -13,7 +13,6 @@ app:
     - be.exceptionless.io
     - app.exceptionless.io
     - app.exceptionless.com
-    - www.exceptionless.io
 collector:
   replicaCount: 12
   defaultDomain: collector.exceptionless.io
