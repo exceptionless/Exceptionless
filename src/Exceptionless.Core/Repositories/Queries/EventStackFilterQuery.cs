@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             long stackTotal = 0;
 
             string stackFilterValue = stackFilter.Filter;
-            bool isStackIdsNegated = stackFilter.HasStatusOpen && !altInvertRequested;
+            bool isStackIdsNegated = false; //= stackFilter.HasStatusOpen && !altInvertRequested;
             if (isStackIdsNegated)
                 stackFilterValue = stackFilter.InvertedFilter;
 
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 systemFilterQuery.FilterExpression(stackFilterValue);
                 softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
-                    
+                
                 tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
                 if (tooManyStacksCheck.HasValue) {
                     stackTotal = tooManyStacksCheck.Value;
