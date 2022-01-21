@@ -360,7 +360,7 @@ public class EventControllerTests : IntegrationTestsBase {
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
-            .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
+            .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
             .QueryString("mode", "stack_new")
             //.QueryString("time", "last 12 hours")
             .StatusCodeShouldBeOk()
