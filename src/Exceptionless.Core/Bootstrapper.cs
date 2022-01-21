@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.EquivalencyExpression;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -183,7 +182,6 @@ public class Bootstrapper {
         container.AddSingleton<IMapper>(s => {
             var profiles = s.GetServices<AutoMapper.Profile>();
             var c = new MapperConfiguration(cfg => {
-                cfg.AddCollectionMappers();
                 cfg.ConstructServicesUsing(s.GetRequiredService);
 
                 foreach (var profile in profiles)

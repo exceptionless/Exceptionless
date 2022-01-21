@@ -6,7 +6,7 @@
     <Product>Exceptionless</Product>
     <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
     <MinVerTagPrefix>v</MinVerTagPrefix>
-    <Copyright>Copyright (c) 2021 Exceptionless.  All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2022 Exceptionless.  All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
     <Authors>Exceptionless</Authors>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
