@@ -333,11 +333,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (inverted)
             sb.Append("@!");
 
-        sb.Append("first_occurrence:[");
-        sb.Append((long)timeRange.UtcStart.Subtract(DateTime.UnixEpoch).TotalMilliseconds);
-        sb.Append(" TO ");
-        sb.Append((long)timeRange.UtcEnd.Subtract(DateTime.UnixEpoch).TotalMilliseconds);
-        sb.Append(']');
+        sb.Append("first_occurrence:[\"");
+        sb.Append(timeRange.UtcStart.ToString("O"));
+        sb.Append("\" TO \"");
+        sb.Append(timeRange.UtcEnd.ToString("O"));
+        sb.Append("\"]");
 
         if (String.IsNullOrEmpty(filter))
             return sb.ToString();

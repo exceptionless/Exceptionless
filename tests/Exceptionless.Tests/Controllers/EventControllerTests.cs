@@ -362,6 +362,7 @@ public class EventControllerTests : IntegrationTestsBase {
             .AppendPath("events")
             .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
             .QueryString("mode", "stack_new")
+            //.QueryString("time", "last 12 hours")
             .StatusCodeShouldBeOk()
         );
 
