@@ -8,7 +8,7 @@
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.3.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MaxMind.GeoIP2" Version="4.1.0" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="5.1.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.3.0" />
     <PackageReference Include="Foundatio.AppMetrics" Version="10.3.1" />
     <PackageReference Include="Foundatio.AWS" Version="10.3.0" />
