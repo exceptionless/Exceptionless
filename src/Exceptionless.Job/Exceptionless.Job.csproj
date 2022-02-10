@@ -6,19 +6,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Exceptionless.AspNetCore" Version="4.6.2" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.1" />
+    <PackageReference Include="Exceptionless.AspNetCore" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.2" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.3.0" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.3.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
-    <PackageReference Include="Serilog.Enrichers.Span" Version="2.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Span" Version="2.1.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
 
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.2.0-rc1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc8" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc8" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc8" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.0.0-rc8" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.2.0-rc2" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc9" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.0.0-rc9" />
     <PackageReference Include="OpenTelemetry.Contrib.Instrumentation.ElasticsearchClient" Version="1.0.0-beta2" />
   </ItemGroup>
 
