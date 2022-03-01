@@ -1,4 +1,5 @@
-# Exceptionless
+![Exceptionless](https://raw.githubusercontent.com/exceptionless/MediaKit/master/exceptionless-dark-bg.svg#gh-dark-mode-only "Exceptionless")![Exceptionless](https://raw.githubusercontent.com/exceptionless/MediaKit/master/exceptionless.svg#gh-light-mode-only "Exceptionless")
+
 [![Build](https://github.com/exceptionless/Exceptionless/workflows/Build/badge.svg?branch=master)](https://github.com/exceptionless/Exceptionless/actions?query=branch%3Amaster)
 [![Discord](https://img.shields.io/discord/715744504891703319)](https://discord.gg/6HxgFCx)
 [![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true)
