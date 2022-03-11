@@ -4,6 +4,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Visitors;
+using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Xunit;
@@ -50,7 +51,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices {
     [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
     [InlineData("status:open", "status:open", true, false)]
     public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures) {
-        var context = new ElasticQueryVisitorContext { QueryType = QueryType.Query };
+        var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Query };
 
         IQueryNode result;
         try {
