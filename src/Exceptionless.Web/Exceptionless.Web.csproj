@@ -18,7 +18,7 @@
     <PackageReference Include="OAuth2" Version="0.10.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
-    <PackageReference Include="Serilog.Enrichers.Span" Version="2.2.0" />
+    <PackageReference Include="Serilog.Enrichers.Span" Version="2.2.0+build.276" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
 
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.2.0-rc3" />
