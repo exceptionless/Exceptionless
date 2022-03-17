@@ -79,7 +79,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.15.2 AS exceptionless
+FROM exceptionless/elasticsearch:7.17.1 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -90,10 +90,18 @@ COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
 # install dotnet and supervisor
-RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
-    yum -y install aspnetcore-runtime-6.0 && \
-    yum -y install epel-release && \
-    yum -y install supervisor
+RUN apt-get update -y && \
+    apt-get install wget -y && \
+    wget https://packages.microsoft.com/config/ubuntu/20.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    rm packages-microsoft-prod.deb && \
+    apt-get update -y && \
+    apt-get install -y apt-transport-https && \
+    apt-get update && \
+    apt-get install -y aspnetcore-runtime-6.0 && \
+    apt-get -y install supervisor && \
+    apt-get install dos2unix && \
+    dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
