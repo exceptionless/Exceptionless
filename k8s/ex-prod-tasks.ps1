@@ -53,7 +53,7 @@ helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset
 
 # upgrade dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.4.0/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.1/aio/deploy/recommended.yaml
 
 # upgrade kubecost
 helm repo update
@@ -67,9 +67,9 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/1.9.1/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/1.9.1/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/1.9.1/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/2.1.0/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.1.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.1.0/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
