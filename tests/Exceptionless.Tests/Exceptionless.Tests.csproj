@@ -5,7 +5,7 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Exceptionless.RandomData" Version="1.2.0" />
+    <PackageReference Include="Exceptionless.RandomData" Version="1.2.1" />
     <PackageReference Include="Foundatio.Xunit" Version="10.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.3" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="9.0.299" />
