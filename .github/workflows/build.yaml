@@ -17,8 +17,8 @@ jobs:
         dotnet-version: 6.0.x
     - name: Build Reason
       env:
-        GITHUB_EVENT: ${{ toJson(github.event) }}
-      run: "echo ref: ${{github.ref}} event: $GITHUB_EVENT"
+        GITHUB_EVENT: ${{ toJson(github) }}
+      run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
     - name: Build Version
       run: |
         dotnet tool install --global minver-cli --version 3.0.0
