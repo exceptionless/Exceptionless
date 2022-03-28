@@ -26,7 +26,7 @@
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.4.0" />
     <PackageReference Include="Foundatio.JsonNet" Version="10.4.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.0" />
-    <PackageReference Include="Handlebars.Net" Version="2.1.0" />
+    <PackageReference Include="Handlebars.Net" Version="2.1.1" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.3" />
