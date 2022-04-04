@@ -26,7 +26,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc10" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc10" />
     <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.0.0-rc10" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol.Logs" Version="1.0.0-rc10" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol.Logs" Version="1.0.0-rc9.1" />
     <PackageReference Include="OpenTelemetry.Contrib.Instrumentation.ElasticsearchClient" Version="1.0.0-beta2" />
   </ItemGroup>
   <ItemGroup>
