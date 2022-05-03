@@ -1,5 +1,5 @@
 # https://www.docker.elastic.co/
-FROM docker.elastic.co/elasticsearch/elasticsearch:7.17.1
+FROM docker.elastic.co/elasticsearch/elasticsearch:8.2.0
 
 RUN elasticsearch-plugin install -b mapper-size
 RUN elasticsearch-plugin install -b repository-azure
