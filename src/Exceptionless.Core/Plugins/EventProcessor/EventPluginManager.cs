@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
 public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
-    public EventPluginManager(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+    public EventPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs all of the event plugins startup method.
@@ -15,7 +15,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
         foreach (var plugin in Plugins.Values.ToList()) {
             try {
                 string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
-                await _metricsClient.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
+                await ExceptionlessDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "Error calling startup in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
@@ -35,7 +35,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
 
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
-                await _metricsClient.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
+                await ExceptionlessDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }
@@ -57,7 +57,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
 
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
-                await _metricsClient.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
+                await ExceptionlessDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }

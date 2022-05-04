@@ -182,15 +182,18 @@ public static class StringExtensions {
         return value.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries).ToArray();
     }
 
-    public static string ToLowerUnderscoredWords(this string value) {
+    public static string ToLowerUnderscoredWords(this string value, char delimiter = '_') {
+        if (value == null)
+            return null;
+
         var builder = new StringBuilder(value.Length + 10);
         for (int index = 0; index < value.Length; index++) {
             char c = value[index];
             if (Char.IsUpper(c)) {
-                if (index > 0 && value[index - 1] != '_')
-                    builder.Append('_');
+                if (index > 0 && value[index - 1] != delimiter)
+                    builder.Append(delimiter);
 
-                builder.Append(Char.ToLowerInvariant(c));
+                builder.Append(Char.ToLower(c));
             }
             else {
                 builder.Append(c);

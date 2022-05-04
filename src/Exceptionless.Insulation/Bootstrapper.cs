@@ -1,11 +1,5 @@
 using Amazon;
 using Amazon.Runtime;
-using App.Metrics;
-using App.Metrics.Infrastructure;
-using App.Metrics.Internal.Infrastructure;
-using App.Metrics.Reporting.Graphite;
-using App.Metrics.Reporting.Http;
-using App.Metrics.Reporting.InfluxDB;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -23,12 +17,10 @@ using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Serilog.Sinks.Exceptionless;
@@ -65,7 +57,6 @@ public class Bootstrapper {
 
         RegisterCache(services, appOptions.CacheOptions);
         RegisterMessageBus(services, appOptions.MessageBusOptions);
-        RegisterMetric(services, appOptions.MetricOptions);
         RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
         RegisterStorage(services, appOptions.StorageOptions);
 
@@ -141,73 +132,6 @@ public class Bootstrapper {
         // TODO: Remove this extra config parse step when sentinel bug is fixed
         var config = ConfigurationOptions.Parse(options.GetString("server"));
         return ConnectionMultiplexer.Connect(config);
-    }
-
-    private static void RegisterMetric(IServiceCollection container, MetricOptions options) {
-        if (String.Equals(options.Provider, "statsd")) {
-            container.ReplaceSingleton<IMetricsClient>(s => new StatsDMetricsClient(new StatsDMetricsClientOptions {
-                ServerName = options.Data.GetString("server", "127.0.0.1"),
-                Port = options.Data.GetValueOrDefault("port", 8125),
-                Prefix = "ex",
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
-        }
-        else {
-            var metrics = BuildAppMetrics(options);
-            if (metrics == null)
-                return;
-
-            container.ReplaceSingleton(metrics.Clock);
-            container.ReplaceSingleton(metrics.Filter);
-            container.ReplaceSingleton(metrics.DefaultOutputMetricsFormatter);
-            container.ReplaceSingleton(metrics.OutputMetricsFormatters);
-            container.ReplaceSingleton(metrics.DefaultOutputEnvFormatter);
-            container.ReplaceSingleton(metrics.OutputEnvFormatters);
-            container.TryAddSingleton<EnvironmentInfoProvider>();
-            container.ReplaceSingleton<IMetrics>(metrics);
-            container.ReplaceSingleton(metrics);
-            container.ReplaceSingleton(metrics.Options);
-            container.ReplaceSingleton(metrics.Reporters);
-            container.ReplaceSingleton(metrics.ReportRunner);
-            container.TryAddSingleton<AppMetricsMarkerService, AppMetricsMarkerService>();
-            container.ReplaceSingleton<IMetricsClient, AppMetricsClient>();
-        }
-    }
-
-    private static IMetricsRoot BuildAppMetrics(MetricOptions options) {
-        var metricsBuilder = AppMetrics.CreateDefaultBuilder();
-        switch (options.Provider) {
-            case "graphite":
-                metricsBuilder.Report.ToGraphite(new MetricsReportingGraphiteOptions {
-                    Graphite = {
-                            BaseUri = new Uri(options.Data.GetString("server"))
-                        }
-                });
-                break;
-            case "http":
-                metricsBuilder.Report.OverHttp(new MetricsReportingHttpOptions {
-                    HttpSettings = {
-                            RequestUri = new Uri(options.Data.GetString("server")),
-                            UserName = options.Data.GetString("username"),
-                            Password = options.Data.GetString("password"),
-                        }
-                });
-                break;
-            case "influxdb":
-                metricsBuilder.Report.ToInfluxDb(new MetricsReportingInfluxDbOptions {
-                    InfluxDb = {
-                            BaseUri = new Uri(options.Data.GetString("server")),
-                            UserName = options.Data.GetString("username"),
-                            Password = options.Data.GetString("password"),
-                            Database = options.Data.GetString("database", "exceptionless")
-                        }
-                });
-                break;
-            default:
-                return null;
-        }
-
-        return metricsBuilder.Build();
     }
 
     private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks) {

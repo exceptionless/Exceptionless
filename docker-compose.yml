@@ -1,47 +1,150 @@
-version: '3.5'
-
-# NOTE: This docker-compose file is for running services required to work on Exceptionless.
-# For self-hosting, look here: https://github.com/exceptionless/Exceptionless/tree/master/samples
+version: '3.6'
 
 services:
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.2.0
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+    user: "0"
+    command: >
+      bash -c '
+        if [ ! -f config/certs/ca.zip ]; then
+          echo "Creating CA";
+          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
+          unzip config/certs/ca.zip -d config/certs;
+        fi;
+        if [ ! -f config/certs/certs.zip ]; then
+          echo "Creating certs";
+          echo -ne \
+          "instances:\n"\
+          "  - name: elasticsearch\n"\
+          "    dns:\n"\
+          "      - elasticsearch\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          "  - name: apm\n"\
+          "    dns:\n"\
+          "      - apm\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          > config/certs/instances.yml;
+          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
+          unzip config/certs/certs.zip -d config/certs;
+        fi;
+        echo "Setting file permissions"
+        chown -R root:root config/certs;
+        find . -type d -exec chmod 750 \{\} \;;
+        find . -type f -exec chmod 640 \{\} \;;
+        echo "Waiting for Elasticsearch availability";
+        until curl -s --cacert config/certs/ca/ca.crt https://elasticsearch:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
+        echo "Setting kibana_system password";
+        until curl -s -X POST --cacert config/certs/ca/ca.crt -u elastic:elastic -H "Content-Type: application/json" https://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"elastic\"}" | grep -q "^{}"; do sleep 10; done;
+        echo "All done!";
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/elasticsearch/elasticsearch.crt ]"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
+
   elasticsearch:
-    image: exceptionless/elasticsearch:7.17.1
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: 'false'
-      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    depends_on:
+      setup:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.2.0
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
     ports:
       - 9200:9200
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=exceptionless
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=elastic
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.http.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.http.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.monitoring.collection.enabled=true
+      - xpack.license.self_generated.type=basic
+      - action.destructive_requires_name=false
+    mem_limit: 1073741824
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
 
   kibana:
     depends_on:
-      - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.17.1
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/kibana/kibana:8.2.0
+    volumes:
+      - certs:/usr/share/kibana/config/certs
     ports:
       - 5601:5601
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=elastic
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+    mem_limit: 1073741824
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
 
   apm:
-    image: docker.elastic.co/apm/apm-server:7.17.1
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/apm/apm-server:8.2.0
+    volumes:
+      - certs:/usr/share/apm-server/certs
     ports:
       - 8200:8200
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"]
+    cap_drop: ["ALL"]
     command: >
-       apm-server -e
-         -E apm-server.rum.enabled=true
-         -E setup.kibana.host=kibana:5601
-         -E setup.template.settings.index.number_of_replicas=0
-         -E apm-server.kibana.enabled=true
-         -E apm-server.kibana.host=kibana:5601
-         -E output.elasticsearch.hosts=["elasticsearch:9200"]
+      apm-server -e
+        -E apm-server.ssl.enabled=false
+        -E output.elasticsearch.hosts=["https://elasticsearch:9200"]
+        -E output.elasticsearch.username=elastic
+        -E output.elasticsearch.password=elastic
+        -E output.elasticsearch.ssl.certificate_authorities=["/usr/share/apm-server/certs/ca/ca.crt"]
 
   otel:
-    image: otel/opentelemetry-collector:latest
+    image: otel/opentelemetry-collector:0.50.0
     ports:
       - 4317:4317
     volumes:
       - ./otel-config.yml:/etc/otel-config.yaml:ro
-    command: [ "--config=/etc/otel-config.yaml", "--log-level=DEBUG" ]
+    command: [ "--config=/etc/otel-config.yaml" ]
 
   redis:
     image: redis:6-alpine
@@ -68,4 +171,8 @@ services:
     command: elasticsearch:9200
     depends_on:
       - elasticsearch
+
+volumes:
+  certs:
+    driver: local
 

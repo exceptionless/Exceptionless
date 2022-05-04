@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
-    public WebHookDataPluginManager(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+    public WebHookDataPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs all of the event plugins create method.
@@ -16,7 +16,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
                 object data = null;
-                await _metricsClient.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
+                await ExceptionlessDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
                 if (data == null)
                     continue;
 
@@ -39,7 +39,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
                 object data = null;
-                await _metricsClient.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
+                await ExceptionlessDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
                 if (data == null)
                     continue;
 

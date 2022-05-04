@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.EventParser;
 
 public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
-    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
@@ -18,7 +18,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
 
             try {
                 List<PersistentEvent> events = null;
-                _metricsClient.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
+                ExceptionlessDiagnostics.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
                 if (events == null)
                     continue;
 
