@@ -64,7 +64,7 @@ namespace OpenTelemetry {
                                 }
                             };
                         });
-                        b.AddSource("Foundatio");
+                        b.AddSource("Exceptionless", "Foundatio");
                         if (config.EnableRedis)
                             b.AddRedisInstrumentation(null, c => {
                                 c.SetVerboseDatabaseStatements = config.FullDetails;

@@ -1,5 +1,5 @@
 @apiUrl = http://localhost:5000/api/v2
-@email = test@test.com
+@email = test@localhost
 @password = tester
 
 ### create an account

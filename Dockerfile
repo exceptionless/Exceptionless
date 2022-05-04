@@ -89,10 +89,12 @@ COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
+USER root
+
 # install dotnet and supervisor
 RUN apt-get update -y && \
     apt-get install wget -y && \
-    wget https://packages.microsoft.com/config/ubuntu/20.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg -i packages-microsoft-prod.deb && \
     rm packages-microsoft-prod.deb && \
     apt-get update -y && \
@@ -113,6 +115,8 @@ ENV discovery.type=single-node \
     EX_Html5Mode=true
 
 RUN chmod +x /app/docker-entrypoint.sh
+
+USER elasticsearch
 
 EXPOSE 80 9200
 
