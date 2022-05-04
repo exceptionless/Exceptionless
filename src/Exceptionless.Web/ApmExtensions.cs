@@ -150,10 +150,7 @@ namespace OpenTelemetry {
             _apmConfig = config.GetSection("Apm");
             processName = processName.StartsWith("-") ? processName : "-" + processName;
 
-            ServiceName = _apmConfig.GetValue("ServiceName", "") + processName;
-            if (ServiceName.StartsWith("-"))
-                ServiceName = ServiceName.Substring(1);
-
+            ServiceName = (_apmConfig.GetValue("ServiceName", "") + processName).Trim('-');
             ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "");
             ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName);
             ServiceVersion = serviceVersion;
