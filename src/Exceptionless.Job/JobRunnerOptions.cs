@@ -68,6 +68,8 @@ public class JobRunnerOptions {
         WorkItem = args.Length == 0 || args.Contains(nameof(WorkItem), StringComparer.OrdinalIgnoreCase);
         if (WorkItem && args.Length != 0)
             JobName = nameof(WorkItem);
+
+        JobName ??= "All";
     }
 
     public string JobName { get; }
