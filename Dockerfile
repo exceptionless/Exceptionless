@@ -1,4 +1,4 @@
-ARG UI_VERSION="ui:latest"
+ARG UI_VERSION="ui:3.1.8"
 FROM exceptionless/${UI_VERSION} AS ui
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
@@ -111,10 +111,14 @@ ENV discovery.type=single-node \
     ASPNETCORE_URLS=http://+:80 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
+    EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
     EX_RunJobsInProcess=true \
     EX_Html5Mode=true
 
-RUN chmod +x /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh && \
+    chown -R elasticsearch:elasticsearch /app && \
+    mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
+    chown -R elasticsearch:elasticsearch /var/log/supervisor
 
 USER elasticsearch
 
