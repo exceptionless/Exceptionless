@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
 public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin> {
-    public EventUpgraderPluginManager(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+    public EventUpgraderPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs all of the event upgrade plugins upgrade method.
@@ -14,7 +14,7 @@ public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin
         foreach (var plugin in Plugins.Values.ToList()) {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
-                _metricsClient.Time(() => plugin.Upgrade(context), metricName);
+                ExceptionlessDiagnostics.Time(() => plugin.Upgrade(context), metricName);
             }
             catch (Exception ex) {
                 using (_logger.BeginScope(new Dictionary<string, object> { { "Context", context } }))

@@ -22,7 +22,7 @@ public class Bootstrapper {
 
         services.AddTransient<Profile, ApiMappings>();
 
-        Core.Bootstrapper.RegisterServices(services);
+        Core.Bootstrapper.RegisterServices(services, appOptions);
         Insulation.Bootstrapper.RegisterServices(services, appOptions, appOptions.RunJobsInProcess);
 
         if (appOptions.RunJobsInProcess)

@@ -1,11 +1,10 @@
 ﻿using Exceptionless.Core.Models;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {
-    public FormattingPluginManager(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+    public FormattingPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.

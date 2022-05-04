@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline;
 
 public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
-    public EventPipeline(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, metricsClient, loggerFactory) { }
+    public EventPipeline(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
     public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
         return RunAsync(new EventContext(ev, organization, project, epi));
@@ -24,7 +24,7 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
         if (contexts == null || contexts.Count == 0)
             return contexts ?? new List<EventContext>();
 
-        _metricsClient.Counter(MetricNames.EventsSubmitted, contexts.Count);
+        ExceptionlessDiagnostics.EventsSubmitted.Add(contexts.Count);
         try {
             if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                 throw new ArgumentException("All Event Ids should not be populated.");
@@ -45,23 +45,23 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
             foreach (string key in project.Data.Keys)
                 contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-            await _metricsClient.TimeAsync(() => base.RunAsync(contexts), MetricNames.EventsProcessingTime).AnyContext();
+            await ExceptionlessDiagnostics.EventsProcessingTime.TimeAsync(() => base.RunAsync(contexts)).AnyContext();
 
             int cancelled = contexts.Count(c => c.IsCancelled);
             if (cancelled > 0)
-                _metricsClient.Counter(MetricNames.EventsProcessCancelled, cancelled);
+                ExceptionlessDiagnostics.EventsProcessCancelled.Add(cancelled);
 
             int discarded = contexts.Count(c => c.IsDiscarded);
             if (discarded > 0)
-                _metricsClient.Counter(MetricNames.EventsDiscarded, discarded);
+                ExceptionlessDiagnostics.EventsDiscarded.Add(discarded);
 
             // TODO: Log the errors out to the events project id.
             int errors = contexts.Count(c => c.HasError);
             if (errors > 0)
-                _metricsClient.Counter(MetricNames.EventsProcessErrors, errors);
+                ExceptionlessDiagnostics.EventsProcessErrors.Add(errors);
         }
         catch (Exception) {
-            _metricsClient.Counter(MetricNames.EventsProcessErrors, contexts.Count);
+            ExceptionlessDiagnostics.EventsProcessErrors.Add(contexts.Count);
             throw;
         }
 

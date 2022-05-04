@@ -229,6 +229,7 @@ public class Startup {
             }
         });
 
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();

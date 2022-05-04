@@ -4,7 +4,6 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
-using Foundatio.Metrics;
 using Foundatio.Repositories;
 
 namespace Exceptionless.Web.Utility;
@@ -13,17 +12,15 @@ public sealed class OverageMiddleware {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly UsageService _usageService;
-    private readonly IMetricsClient _metricsClient;
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
 
-    public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, IMetricsClient metricsClient, AppOptions appOptions, ILogger<OverageMiddleware> logger) {
+    public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, AppOptions appOptions, ILogger<OverageMiddleware> logger) {
         _next = next;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _usageService = usageService;
-        _metricsClient = metricsClient;
         _appOptions = appOptions;
         _logger = logger;
     }
@@ -72,7 +69,7 @@ public sealed class OverageMiddleware {
 
             long size = context.Request.Headers.ContentLength.GetValueOrDefault();
             if (size > 0)
-                _metricsClient.Gauge(MetricNames.PostsSize, size);
+                ExceptionlessDiagnostics.PostsSize.Record(size);
 
             if (size > _appOptions.MaximumEventPostSize) {
                 if (_logger.IsEnabled(LogLevel.Warning)) {
@@ -80,7 +77,7 @@ public sealed class OverageMiddleware {
                         _logger.SubmissionTooLarge(size);
                 }
 
-                _metricsClient.Counter(MetricNames.PostsDiscarded);
+                ExceptionlessDiagnostics.PostsDiscarded.Add(1);
                 tooBig = true;
             }
         }
@@ -97,7 +94,7 @@ public sealed class OverageMiddleware {
 
         bool overLimit = await _usageService.IsOverLimitAsync(organization).AnyContext();
         if (overLimit) {
-            _metricsClient.Counter(MetricNames.PostsBlocked);
+            ExceptionlessDiagnostics.PostsBlocked.Add(1);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;
         }
