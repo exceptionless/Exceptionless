@@ -31,7 +31,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-    <PackageReference Include="Stripe.net" Version="39.96.0" />
+    <PackageReference Include="Stripe.net" Version="39.110.0" />
     <PackageReference Include="System.DirectoryServices" Version="6.0.0" />
     <PackageReference Include="UAParser" Version="3.1.47" />
 
