@@ -436,7 +436,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  schedule: "30 */4 * * *"
+  schedule: "0 0 * * *" # daily
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -478,7 +478,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  schedule: "45 */8 * * *"
+  schedule: "0 0 * * 0" # weekly
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

@@ -68,9 +68,7 @@ public class Program {
             .UseSerilog((ctx, sp, c) => {
                 c.ReadFrom.Configuration(config);
                 c.ReadFrom.Services(sp);
-                c.Enrich.FromLogContext();
                 c.Enrich.WithMachineName();
-                c.Enrich.WithSpan();
 
                 if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                     loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
