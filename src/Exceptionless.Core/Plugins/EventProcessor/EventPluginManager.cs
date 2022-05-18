@@ -1,5 +1,4 @@
 ﻿using Exceptionless.Core.Extensions;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;

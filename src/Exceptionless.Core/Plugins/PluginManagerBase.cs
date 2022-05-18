@@ -12,7 +12,7 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin 
 
     public PluginManagerBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) {
         var type = GetType();
-        _metricPrefix = String.Concat(type.Name.ToLower(), ".");
+        _metricPrefix = String.Concat("exceptionless.plugins.", type.Name.ToLower(), ".");
         _logger = loggerFactory?.CreateLogger(type);
         _serviceProvider = serviceProvider;
         _options = options;

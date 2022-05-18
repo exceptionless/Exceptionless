@@ -30,7 +30,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
         _options = options;
 
         var type = GetType();
-        _metricPrefix = String.Concat(type.Name.ToLower(), ".");
+        _metricPrefix = String.Concat("exceptionless.pipeline.", type.Name.ToLower(), ".");
         _logger = loggerFactory?.CreateLogger(type);
 
         _actions = LoadDefaultActions();

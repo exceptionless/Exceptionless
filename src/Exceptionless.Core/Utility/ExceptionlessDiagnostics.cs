@@ -60,36 +60,36 @@ internal static class ExceptionlessDiagnostics {
         public double Value { get; set; }
     }
 
-    internal static readonly Counter<int> EventsSubmitted = Meter.CreateCounter<int>("events.submitted", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsProcessed = Meter.CreateCounter<int>("events.processed", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> EventsProcessingTime = Meter.CreateHistogram<double>("events.processingtime", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsPaidProcessed = Meter.CreateCounter<int>("events.paid.processed", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsProcessErrors = Meter.CreateCounter<int>("events.processing.errors", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("events.discarded", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsProcessCancelled = Meter.CreateCounter<int>("events.processing.cancelled", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("events.retry.count", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("events.retry.errors", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> EventsFieldCount = Meter.CreateHistogram<double>("events.field.count", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsSubmitted = Meter.CreateCounter<int>("exceptionless.events.submitted", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsProcessed = Meter.CreateCounter<int>("exceptionless.events.processed", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> EventsProcessingTime = Meter.CreateHistogram<double>("exceptionless.events.processingtime", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsPaidProcessed = Meter.CreateCounter<int>("exceptionless.events.paid.processed", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsProcessErrors = Meter.CreateCounter<int>("exceptionless.events.processing.errors", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("exceptionless.events.discarded", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsProcessCancelled = Meter.CreateCounter<int>("exceptionless.events.processing.cancelled", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("exceptionless.events.retry.count", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("exceptionless.events.retry.errors", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> EventsFieldCount = Meter.CreateHistogram<double>("exceptionless.events.field.count", description: "Time to get event post", unit: "ms");
 
-    internal static readonly Counter<int> PostsParsed = Meter.CreateCounter<int>("posts.parsed", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsEventCount = Meter.CreateHistogram<double>("posts.eventcount", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsSize = Meter.CreateHistogram<double>("posts.size", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> PostsParseErrors = Meter.CreateCounter<int>("posts.parse.errors", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsMarkFileActiveTime = Meter.CreateHistogram<double>("posts.markfileactivetime", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsParsingTime = Meter.CreateHistogram<double>("posts.parsingtime", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsRetryTime = Meter.CreateHistogram<double>("posts.retrytime", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsAbandonTime = Meter.CreateHistogram<double>("posts.abandontime", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsCompleteTime = Meter.CreateHistogram<double>("posts.completetime", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> PostsDiscarded = Meter.CreateCounter<int>("posts.discarded", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> PostsBlocked = Meter.CreateCounter<int>("posts.blocked", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> PostsParsed = Meter.CreateCounter<int>("exceptionless.posts.parsed", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsEventCount = Meter.CreateHistogram<double>("exceptionless.posts.eventcount", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsSize = Meter.CreateHistogram<double>("exceptionless.posts.size", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> PostsParseErrors = Meter.CreateCounter<int>("exceptionless.posts.parse.errors", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsMarkFileActiveTime = Meter.CreateHistogram<double>("exceptionless.posts.markfileactivetime", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsParsingTime = Meter.CreateHistogram<double>("exceptionless.posts.parsingtime", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsRetryTime = Meter.CreateHistogram<double>("exceptionless.posts.retrytime", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsAbandonTime = Meter.CreateHistogram<double>("exceptionless.posts.abandontime", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsCompleteTime = Meter.CreateHistogram<double>("exceptionless.posts.completetime", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> PostsDiscarded = Meter.CreateCounter<int>("exceptionless.posts.discarded", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> PostsBlocked = Meter.CreateCounter<int>("exceptionless.posts.blocked", description: "Time to get event post", unit: "ms");
 
-    internal static readonly Histogram<long> PostsMessageSize = Meter.CreateHistogram<long>("posts.message.size", description: "Size of posts", unit: "bytes");
-    internal static readonly Histogram<double> PostsCompressedSize = Meter.CreateHistogram<double>("posts.compressed.size", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsUncompressedSize = Meter.CreateHistogram<double>("posts.uncompressed.size", description: "Time to get event post", unit: "ms");
-    internal static readonly Histogram<double> PostsDecompressionTime = Meter.CreateHistogram<double>("posts.decompression.time", description: "Time to get event post", unit: "ms");
-    internal static readonly Counter<int> PostsDecompressionErrors = Meter.CreateCounter<int>("posts.decompression.errors", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<long> PostsMessageSize = Meter.CreateHistogram<long>("exceptionless.posts.message.size", description: "Size of posts", unit: "bytes");
+    internal static readonly Histogram<double> PostsCompressedSize = Meter.CreateHistogram<double>("exceptionless.posts.compressed.size", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsUncompressedSize = Meter.CreateHistogram<double>("exceptionless.posts.uncompressed.size", description: "Time to get event post", unit: "ms");
+    internal static readonly Histogram<double> PostsDecompressionTime = Meter.CreateHistogram<double>("exceptionless.posts.decompression.time", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> PostsDecompressionErrors = Meter.CreateCounter<int>("exceptionless.posts.decompression.errors", description: "Time to get event post", unit: "ms");
 
-    internal static readonly Counter<int> UsageGeocodingApi = Meter.CreateCounter<int>("usage.geocoding", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> UsageGeocodingApi = Meter.CreateCounter<int>("exceptionless.usage.geocoding", description: "Time to get event post", unit: "ms");
 }
 
 public static class MetricsClientExtensions {
