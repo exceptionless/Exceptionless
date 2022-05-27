@@ -21,6 +21,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     public const string BearerScheme = "bearer";
     public const string BasicScheme = "basic";
     public const string TokenScheme = "token";
+    public readonly string[] LoggedHeaders = new[] { "Authorization" };
 
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
@@ -86,22 +87,19 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         Request.HttpContext.Items["ApiKey"] = token;
         var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
         if (tokenRecord == null) {
-            using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
-                Logger.LogWarning("Token {Token} for {Path} not found.", token, Request.Path);
+            Logger.LogWarning("Token {Token} for {Path} not found.", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.IsDisabled) {
-            using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
-                Logger.LogWarning("Token {Token} is disabled for {Path}.", token, Request.Path);
+        if (tokenRecord.IsDisabled || tokenRecord.IsSuspended) {
+            Logger.LogWarning("Token {Token} is disabled or account is suspended for {Path}.", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
 
         if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow) {
-            using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
-                Logger.LogWarning("Token {Token} for {Path} expired on {TokenExpiresUtc}.", token, Request.Path, tokenRecord.ExpiresUtc.Value);
+            Logger.LogWarning("Token {Token} for {Path} expired on {TokenExpiresUtc}.", token, Request.Path, tokenRecord.ExpiresUtc.Value);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
@@ -109,8 +107,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!String.IsNullOrEmpty(tokenRecord.UserId)) {
             var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
             if (user == null) {
-                using (Logger.BeginScope(new ExceptionlessState().Property("Headers", Request.Headers)))
-                    Logger.LogWarning("Could not find user for token {Token} with user {user} for {Path}.", token, tokenRecord.UserId, Request.Path);
+                Logger.LogWarning("Could not find user for token {Token} with user {user} for {Path}.", token, tokenRecord.UserId, Request.Path);
 
                 return AuthenticateResult.Fail("Token is not valid");
             }
