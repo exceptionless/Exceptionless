@@ -41,7 +41,7 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase {
             try {
                 result = await _geocodeService.ReverseGeocodeAsync(result.Latitude.GetValueOrDefault(), result.Longitude.GetValueOrDefault()).AnyContext();
                 location = result.ToLocation();
-                ExceptionlessDiagnostics.UsageGeocodingApi.Add(1);
+                AppDiagnostics.UsageGeocodingApi.Add(1);
             }
             catch (Exception ex) {
                 Log.LogError(ex, "Error occurred looking up reverse geocode: {Geo}", workItem.Geo);

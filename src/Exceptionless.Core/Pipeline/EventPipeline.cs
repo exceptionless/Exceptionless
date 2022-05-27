@@ -24,7 +24,7 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
         if (contexts == null || contexts.Count == 0)
             return contexts ?? new List<EventContext>();
 
-        ExceptionlessDiagnostics.EventsSubmitted.Add(contexts.Count);
+        AppDiagnostics.EventsSubmitted.Add(contexts.Count);
         try {
             if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                 throw new ArgumentException("All Event Ids should not be populated.");
@@ -45,23 +45,23 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
             foreach (string key in project.Data.Keys)
                 contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-            await ExceptionlessDiagnostics.EventsProcessingTime.TimeAsync(() => base.RunAsync(contexts)).AnyContext();
+            await AppDiagnostics.EventsProcessingTime.TimeAsync(() => base.RunAsync(contexts)).AnyContext();
 
             int cancelled = contexts.Count(c => c.IsCancelled);
             if (cancelled > 0)
-                ExceptionlessDiagnostics.EventsProcessCancelled.Add(cancelled);
+                AppDiagnostics.EventsProcessCancelled.Add(cancelled);
 
             int discarded = contexts.Count(c => c.IsDiscarded);
             if (discarded > 0)
-                ExceptionlessDiagnostics.EventsDiscarded.Add(discarded);
+                AppDiagnostics.EventsDiscarded.Add(discarded);
 
             // TODO: Log the errors out to the events project id.
             int errors = contexts.Count(c => c.HasError);
             if (errors > 0)
-                ExceptionlessDiagnostics.EventsProcessErrors.Add(errors);
+                AppDiagnostics.EventsProcessErrors.Add(errors);
         }
         catch (Exception) {
-            ExceptionlessDiagnostics.EventsProcessErrors.Add(contexts.Count);
+            AppDiagnostics.EventsProcessErrors.Add(contexts.Count);
             throw;
         }
 

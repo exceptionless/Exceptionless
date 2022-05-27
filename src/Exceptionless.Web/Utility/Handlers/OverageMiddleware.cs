@@ -69,7 +69,7 @@ public sealed class OverageMiddleware {
 
             long size = context.Request.Headers.ContentLength.GetValueOrDefault();
             if (size > 0)
-                ExceptionlessDiagnostics.PostsSize.Record(size);
+                AppDiagnostics.PostsSize.Record(size);
 
             if (size > _appOptions.MaximumEventPostSize) {
                 if (_logger.IsEnabled(LogLevel.Warning)) {
@@ -77,7 +77,7 @@ public sealed class OverageMiddleware {
                         _logger.SubmissionTooLarge(size);
                 }
 
-                ExceptionlessDiagnostics.PostsDiscarded.Add(1);
+                AppDiagnostics.PostsDiscarded.Add(1);
                 tooBig = true;
             }
         }
@@ -94,7 +94,7 @@ public sealed class OverageMiddleware {
 
         bool overLimit = await _usageService.IsOverLimitAsync(organization).AnyContext();
         if (overLimit) {
-            ExceptionlessDiagnostics.PostsBlocked.Add(1);
+            AppDiagnostics.PostsBlocked.Add(1);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;
         }

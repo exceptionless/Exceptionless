@@ -15,7 +15,7 @@ public class CopySimpleDataToIdxAction : EventPipelineActionBase {
         // TODO: Do we need a pipeline action to trim keys and remove null values that may be sent by other native clients.
         ctx.Event.CopyDataToIndex(Array.Empty<string>());
         int fieldCount = ctx.Event.Idx.Count;
-        ExceptionlessDiagnostics.EventsFieldCount.Record(fieldCount);
+        AppDiagnostics.EventsFieldCount.Record(fieldCount);
         if (fieldCount > 20 && _logger.IsEnabled(LogLevel.Warning)) {
             var ev = ctx.Event;
             using (_logger.BeginScope(new ExceptionlessState().Organization(ctx.Organization.Id).Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags, ev.Idx })))

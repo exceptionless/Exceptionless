@@ -16,10 +16,10 @@ public class IncrementCountersAction : EventPipelineActionBase {
 
     public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
         try {
-            ExceptionlessDiagnostics.EventsProcessed.Add(contexts.Count);
+            AppDiagnostics.EventsProcessed.Add(contexts.Count);
 
             if (contexts.First().Organization.PlanId != _plans.FreePlan.Id)
-                ExceptionlessDiagnostics.EventsPaidProcessed.Add(contexts.Count);
+                AppDiagnostics.EventsPaidProcessed.Add(contexts.Count);
         }
         catch (Exception ex) {
             foreach (var context in contexts) {
