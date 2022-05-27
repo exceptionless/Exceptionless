@@ -18,7 +18,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
 
             try {
                 List<PersistentEvent> events = null;
-                ExceptionlessDiagnostics.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
+                AppDiagnostics.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
                 if (events == null)
                     continue;
 

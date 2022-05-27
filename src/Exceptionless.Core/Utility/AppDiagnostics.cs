@@ -6,9 +6,9 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless;
 
-internal static class ExceptionlessDiagnostics {
-    internal static readonly AssemblyName AssemblyName = typeof(ExceptionlessDiagnostics).Assembly.GetName();
-    internal static readonly string AssemblyVersion = typeof(ExceptionlessDiagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? AssemblyName.Version.ToString();
+public static class AppDiagnostics {
+    internal static readonly AssemblyName AssemblyName = typeof(AppDiagnostics).Assembly.GetName();
+    internal static readonly string AssemblyVersion = typeof(AppDiagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? AssemblyName.Version.ToString();
     internal static readonly ActivitySource ActivitySource = new(AssemblyName.Name, AssemblyVersion);
     internal static readonly Meter Meter = new("Exceptionless", AssemblyVersion);
 
@@ -16,37 +16,37 @@ internal static class ExceptionlessDiagnostics {
     private static readonly ConcurrentDictionary<string, GaugeInfo> _gauges = new();
     private static readonly ConcurrentDictionary<string, Histogram<double>> _timers = new();
 
-    internal static void Counter(string name, int value = 1) {
+    public static void Counter(string name, int value = 1) {
         var counter = _counters.GetOrAdd(name, Meter.CreateCounter<int>(name));
         counter.Add(value);
     }
 
-    internal static void Gauge(string name, double value) {
+    public static void Gauge(string name, double value) {
         var gauge = _gauges.GetOrAdd(name, new GaugeInfo(Meter, name));
         gauge.Value = value;
     }
 
-    internal static void Timer(string name, int milliseconds) {
+    public static void Timer(string name, int milliseconds) {
         var timer = _timers.GetOrAdd(name, Meter.CreateHistogram<double>(name, "ms"));
         timer.Record(milliseconds);
     }
 
-    internal static IDisposable StartTimer(string name) {
+    public static IDisposable StartTimer(string name) {
         var timer = _timers.GetOrAdd(name, Meter.CreateHistogram<double>(name, "ms"));
         return timer.StartTimer();
     }
 
-    internal static async Task TimeAsync(Func<Task> action, string name) {
+    public static async Task TimeAsync(Func<Task> action, string name) {
         using (StartTimer(name))
             await action().AnyContext();
     }
 
-    internal static void Time(Action action, string name) {
+    public static void Time(Action action, string name) {
         using (StartTimer(name))
             action();
     }
 
-    internal static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name) {
+    public static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name) {
         using (StartTimer(name))
             return await func().AnyContext();
     }

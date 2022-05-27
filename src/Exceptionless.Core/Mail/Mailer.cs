@@ -276,7 +276,7 @@ public class Mailer : IMailer {
 
     private Task QueueMessageAsync(MailMessage message, string metricsName) {
         CleanAddresses(message);
-        ExceptionlessDiagnostics.Counter($"exceptionless.mailer.{metricsName}");
+        AppDiagnostics.Counter($"exceptionless.mailer.{metricsName}");
         return _queue.EnqueueAsync(message);
     }
 

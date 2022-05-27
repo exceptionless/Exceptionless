@@ -56,7 +56,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
         foreach (var action in _actions) {
             string metricName = String.Concat(metricPrefix, action.Name.ToLower());
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
-            await ExceptionlessDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
+            await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
             if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                 break;
         }

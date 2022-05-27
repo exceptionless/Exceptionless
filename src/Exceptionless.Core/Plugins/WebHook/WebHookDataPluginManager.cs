@@ -16,7 +16,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
                 object data = null;
-                await ExceptionlessDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
                 if (data == null)
                     continue;
 
@@ -39,7 +39,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
                 object data = null;
-                await ExceptionlessDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
                 if (data == null)
                     continue;
 

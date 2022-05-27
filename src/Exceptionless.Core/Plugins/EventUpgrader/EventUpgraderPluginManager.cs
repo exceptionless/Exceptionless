@@ -14,7 +14,7 @@ public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin
         foreach (var plugin in Plugins.Values.ToList()) {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
-                ExceptionlessDiagnostics.Time(() => plugin.Upgrade(context), metricName);
+                AppDiagnostics.Time(() => plugin.Upgrade(context), metricName);
             }
             catch (Exception ex) {
                 using (_logger.BeginScope(new Dictionary<string, object> { { "Context", context } }))

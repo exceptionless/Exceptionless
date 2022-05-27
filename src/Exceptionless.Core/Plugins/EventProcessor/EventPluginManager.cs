@@ -14,7 +14,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
         foreach (var plugin in Plugins.Values.ToList()) {
             try {
                 string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
-                await ExceptionlessDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "Error calling startup in plugin {PluginName}: {Message}", plugin.Name, ex.Message);
@@ -34,7 +34,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
 
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
-                await ExceptionlessDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }
@@ -56,7 +56,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
 
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try {
-                await ExceptionlessDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }
