@@ -26,6 +26,7 @@ public sealed class TokenIndex : VersionedIndex<Models.Token> {
                 .Keyword(f => f.Name(e => e.Refresh))
                 .Keyword(f => f.Name(e => e.Scopes))
                 .Boolean(f => f.Name(e => e.IsDisabled))
+                .Boolean(f => f.Name(e => e.IsSuspended))
                 .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
     }
 

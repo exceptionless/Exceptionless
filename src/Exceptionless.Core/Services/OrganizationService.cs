@@ -2,13 +2,15 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 using Stripe;
 
 namespace Exceptionless.Core.Services;
 
-public class OrganizationService {
+public class OrganizationService : IStartupAction {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
@@ -23,6 +25,21 @@ public class OrganizationService {
         _webHookRepository = webHookRepository;
         _stripeOptions = stripeOptions;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
+
+    }
+
+    public Task RunAsync(CancellationToken shutdownToken = default) {
+        _organizationRepository.DocumentsChanged.AddHandler(OrgChanged);
+        return Task.CompletedTask;
+    }
+
+    private async Task OrgChanged(object source, DocumentsChangeEventArgs<Organization> args) {
+        foreach (var document in args.Documents) {
+            if (document.Value.IsSuspended)
+                await _tokenRepository.PatchAllAsync(q => q.Organization(document.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
+            else
+                await _tokenRepository.PatchAllAsync(q => q.Organization(document.Value.Id).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }));
+        }
     }
 
     public async Task CancelSubscriptionsAsync(Organization organization) {

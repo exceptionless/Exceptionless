@@ -163,6 +163,7 @@ public class Bootstrapper {
         services.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
         services.AddSingleton<OrganizationService>();
+        services.AddStartupAction<OrganizationService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
