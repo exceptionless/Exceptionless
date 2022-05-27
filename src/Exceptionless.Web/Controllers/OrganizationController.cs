@@ -580,7 +580,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         organization.SuspendedByUserId = CurrentUser.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
-        await _repository.SaveAsync(organization, o => o.Cache());
+        await _repository.SaveAsync(organization, o => o.Cache().Originals());
 
         return Ok();
     }
@@ -599,7 +599,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         organization.SuspendedByUserId = null;
         organization.SuspensionCode = null;
         organization.SuspensionNotes = null;
-        await _repository.SaveAsync(organization, o => o.Cache());
+        await _repository.SaveAsync(organization, o => o.Cache().Originals());
 
         return Ok();
     }

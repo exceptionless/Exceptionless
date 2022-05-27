@@ -8,6 +8,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -63,6 +64,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck {
     protected override async Task<JobResult> RunInternalAsync(JobContext context) {
         _lastRun = SystemClock.UtcNow;
 
+        await MarkTokensSuspended(context).AnyContext();
         await CleanupSoftDeletedOrganizationsAsync(context).AnyContext();
         await CleanupSoftDeletedProjectsAsync(context).AnyContext();
         await CleanupSoftDeletedStacksAsync(context).AnyContext();
@@ -72,6 +74,17 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck {
         _logger.CleanupFinished();
 
         return JobResult.Success;
+    }
+
+    private async Task MarkTokensSuspended(JobContext context) {
+        var suspendedOrgs = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.IsSuspended, true).OnlyIds(), o => o.SearchAfterPaging().PageLimit(1000));
+        _logger.LogInformation("Found {SuspendedOrgCount} suspended orgs", suspendedOrgs.Total);
+
+        do {
+            var updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrgs.Hits.Select(o => o.Id)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
+            if (updatedCount > 0)
+                _logger.LogInformation("Marking {SuspendedTokenCount} tokens as suspended", updatedCount);
+        } while (!context.CancellationToken.IsCancellationRequested && await suspendedOrgs.NextPageAsync());
     }
 
     private async Task CleanupSoftDeletedOrganizationsAsync(JobContext context) {

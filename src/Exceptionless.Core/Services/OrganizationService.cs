@@ -29,16 +29,18 @@ public class OrganizationService : IStartupAction {
     }
 
     public Task RunAsync(CancellationToken shutdownToken = default) {
-        _organizationRepository.DocumentsChanged.AddHandler(OrgChanged);
+        _organizationRepository.DocumentsSaved.AddHandler(OrgChanged);
         return Task.CompletedTask;
     }
 
-    private async Task OrgChanged(object source, DocumentsChangeEventArgs<Organization> args) {
-        foreach (var document in args.Documents) {
-            if (document.Value.IsSuspended)
-                await _tokenRepository.PatchAllAsync(q => q.Organization(document.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
-            else
-                await _tokenRepository.PatchAllAsync(q => q.Organization(document.Value.Id).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }));
+    private async Task OrgChanged(object source, ModifiedDocumentsEventArgs<Organization> args) {
+        foreach (var doc in args.Documents) {
+            if (doc.Original != null) {
+                if (doc.Original.IsSuspended == false && doc.Value.IsSuspended == true)
+                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());
+                else if (doc.Original.IsSuspended == true && doc.Value.IsSuspended == false)
+                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }), o => o.ImmediateConsistency());
+            }
         }
     }
 

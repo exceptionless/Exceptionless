@@ -6,12 +6,13 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Xunit;
 using Xunit.Abstractions;
+using Exceptionless.Core.Models;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Tests.Controllers;
 
 public sealed class TokenControllerTests : IntegrationTestsBase {
-    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-    }
+    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {}
 
     protected override async Task ResetDataAsync() {
         await base.ResetDataAsync();
@@ -72,5 +73,37 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
         );
 
         Assert.False(token.IsDisabled);
+    }
+
+    [Fact]
+    public async Task SuspendingOrganizationWillDisableApiKey() {
+        var token = await SendRequestAsAsync<ViewToken>(r => r
+           .Post()
+           .AsGlobalAdminUser()
+           .AppendPath("tokens")
+           .Content(new NewToken {
+               OrganizationId = SampleDataService.TEST_ORG_ID,
+               ProjectId = SampleDataService.TEST_PROJECT_ID,
+               Scopes = new HashSet<string> { AuthorizationRoles.Client }
+           })
+           .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(token.Id);
+        Assert.False(token.IsDisabled);
+        Assert.Single(token.Scopes);
+
+        await SendRequestAsync(r => r
+           .Post()
+           .AsGlobalAdminUser()
+           .AppendPath($"organizations", SampleDataService.TEST_ORG_ID, "suspend")
+           .QueryString("code", SuspensionCode.Billing)
+           .StatusCodeShouldBeOk()
+        );
+        
+        var repository = GetService<ITokenRepository>();
+        var actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache(false));
+        Assert.NotNull(actualToken);
+        Assert.True(actualToken.IsSuspended);
     }
 }
