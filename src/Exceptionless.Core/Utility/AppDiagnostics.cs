@@ -11,28 +11,29 @@ public static class AppDiagnostics {
     internal static readonly string AssemblyVersion = typeof(AppDiagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? AssemblyName.Version.ToString();
     internal static readonly ActivitySource ActivitySource = new(AssemblyName.Name, AssemblyVersion);
     internal static readonly Meter Meter = new("Exceptionless", AssemblyVersion);
+    private static string _metricsPrefix = "exceptionless.";
 
     private static readonly ConcurrentDictionary<string, Counter<int>> _counters = new();
     private static readonly ConcurrentDictionary<string, GaugeInfo> _gauges = new();
     private static readonly ConcurrentDictionary<string, Histogram<double>> _timers = new();
 
     public static void Counter(string name, int value = 1) {
-        var counter = _counters.GetOrAdd(name, Meter.CreateCounter<int>(name));
+        var counter = _counters.GetOrAdd(_metricsPrefix + name, Meter.CreateCounter<int>(name));
         counter.Add(value);
     }
 
     public static void Gauge(string name, double value) {
-        var gauge = _gauges.GetOrAdd(name, new GaugeInfo(Meter, name));
+        var gauge = _gauges.GetOrAdd(_metricsPrefix + name, new GaugeInfo(Meter, name));
         gauge.Value = value;
     }
 
     public static void Timer(string name, int milliseconds) {
-        var timer = _timers.GetOrAdd(name, Meter.CreateHistogram<double>(name, "ms"));
+        var timer = _timers.GetOrAdd(_metricsPrefix + name, Meter.CreateHistogram<double>(name, "ms"));
         timer.Record(milliseconds);
     }
 
     public static IDisposable StartTimer(string name) {
-        var timer = _timers.GetOrAdd(name, Meter.CreateHistogram<double>(name, "ms"));
+        var timer = _timers.GetOrAdd(_metricsPrefix + name, Meter.CreateHistogram<double>(name, "ms"));
         return timer.StartTimer();
     }
 
