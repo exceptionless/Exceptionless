@@ -22,7 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="11.0.1" />
-    <PackageReference Include="FluentValidation" Version="10.3.6" />
+    <PackageReference Include="FluentValidation" Version="11.0.2" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="10.4.0" />
     <PackageReference Include="Foundatio.JsonNet" Version="10.4.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.0" />
