@@ -25,24 +25,8 @@ public sealed class OverageMiddleware {
         _logger = logger;
     }
 
-    private bool IsEventPost(HttpContext context) {
-        string method = context.Request.Method;
-        if (String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
-            return context.Request.Path.Value.Contains("/events/submit");
-
-        if (!String.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        string absolutePath = context.Request.Path.Value;
-        if (absolutePath.EndsWith("/"))
-            absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
-
-        return absolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase)
-            || String.Equals(absolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
-    }
-
     public async Task Invoke(HttpContext context) {
-        if (!IsEventPost(context)) {
+        if (!context.Request.IsEventPost()) {
             await _next(context);
             return;
         }

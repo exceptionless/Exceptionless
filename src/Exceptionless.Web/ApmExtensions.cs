@@ -15,7 +15,7 @@ namespace OpenTelemetry {
 
             if (config.Enabled)
                 Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} FullDetails={FullDetails} EnableLogs={EnableLogs} EnableRedis={EnableRedis} SampleRate={SampleRate}",
-                    config.Endpoint, apiKey, config.FullDetails, config.EnableLogs, config.EnableRedis, config.SampleRate);
+                config.Endpoint, apiKey, config.FullDetails, config.EnableLogs, config.EnableRedis, config.SampleRate);
 
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
@@ -32,45 +32,34 @@ namespace OpenTelemetry {
                     services.AddOpenTelemetryTracing(b => {
                         b.SetResourceBuilder(resourceBuilder);
 
-                        b.AddAspNetCoreInstrumentation();
+                        b.AddAspNetCoreInstrumentation(o => {
+                            o.Filter = context => {
+                                return !context.Request.Headers.UserAgent.ToString().Contains("HealthChecker");
+                            };
+                        });
+
                         b.AddElasticsearchClientInstrumentation(c => {
                             c.SuppressDownstreamInstrumentation = true;
                             c.ParseAndFormatRequest = config.FullDetails;
                             c.Enrich = (activity, source, data) => {
+                                // truncate statements to 4096 length
+                                var dbStatement = activity.GetTagItem("db.statement") as string;
+                                if (dbStatement != null && dbStatement.Length > 4096)
+                                    activity.SetTag("db.statement", dbStatement.Substring(0, 4096));
+
                                 // 404s should not be error
                                 var httpStatus = activity.GetTagItem("http.status_code") as int?;
                                 if (httpStatus.HasValue && httpStatus.Value == 404)
                                     activity.SetStatus(Status.Unset);
+                            };
+                        });
 
-                                activity.SetTag("service.name", "Elasticsearch");
-                                if (activity.DisplayName.StartsWith("Elasticsearch "))
-                                    activity.DisplayName = activity.DisplayName.Substring(14);
-                            };
-                        });
-                        b.AddHttpClientInstrumentation(o => {
-                            o.Enrich = (activity, source, data) => {
-                                if (data is HttpRequestMessage request) {
-                                    if (request.RequestUri.Host.EndsWith("amazonaws.com")) {
-                                        if (request.RequestUri.Host.StartsWith("sqs"))
-                                            activity.SetTag("service.name", "AWS SQS");
-                                        else if (request.RequestUri.Host.Contains("s3"))
-                                            activity.SetTag("service.name", "AWS S3");
-                                        else
-                                            activity.SetTag("service.name", "AWS");
-                                    }
-                                    else {
-                                        activity.SetTag("service.name", "External HTTP");
-                                    }
-                                }
-                            };
-                        });
+                        b.AddHttpClientInstrumentation();
                         b.AddSource("Exceptionless", "Foundatio");
+
                         if (config.EnableRedis)
                             b.AddRedisInstrumentation(null, c => {
                                 c.SetVerboseDatabaseStatements = config.FullDetails;
-                                c.Enrich = (activity, command) => {
-                                    activity.SetTag("service.name", "Redis");
-                                };
                             });
 
                         b.SetSampler(new TraceIdRatioBasedSampler(config.SampleRate));
@@ -80,7 +69,6 @@ namespace OpenTelemetry {
                             if (!String.IsNullOrEmpty(config.ApiKey))
                                 c.Headers = $"api-key={config.ApiKey}";
                         });
-
                     });
 
                 services.AddOpenTelemetryMetrics(b => {
@@ -111,12 +99,6 @@ namespace OpenTelemetry {
                                 c.Headers = $"api-key={config.ApiKey}";
                         });
                 });
-
-                //services.Configure<AspNetCoreInstrumentationOptions>(options => {
-                //    options.Filter = (req) => {
-                //        return req.Request.Host != null;
-                //    };
-                //});
 
                 if (config.Enabled && config.EnableLogs) {
                     services.AddSingleton<ILoggerProvider, OpenTelemetryLoggerProvider>();
@@ -150,7 +132,10 @@ namespace OpenTelemetry {
             _apmConfig = config.GetSection("Apm");
             processName = processName.StartsWith("-") ? processName : "-" + processName;
 
-            ServiceName = (_apmConfig.GetValue("ServiceName", "") + processName).Trim('-');
+            ServiceName = _apmConfig.GetValue("ServiceName", "") + processName;
+            if (ServiceName.StartsWith("-"))
+                ServiceName = ServiceName.Substring(1);
+
             ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "");
             ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName);
             ServiceVersion = serviceVersion;
