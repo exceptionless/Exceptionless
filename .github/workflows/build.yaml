@@ -30,7 +30,7 @@ jobs:
     - name: Start Services
       run: docker-compose up -d elasticsearch && docker-compose up ready
     - name: Run Tests
-      run: dotnet test --configuration Release --no-build
+      run: dotnet test --configuration Release --no-build --logger GitHubActions
     - name: Build Docker Images
       if: github.event_name != 'pull_request'
       run: |

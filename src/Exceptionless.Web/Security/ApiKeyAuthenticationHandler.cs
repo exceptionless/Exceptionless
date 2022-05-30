@@ -92,7 +92,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.IsDisabled || tokenRecord.IsSuspended) {
+        if (tokenRecord.IsDisabled || (Request.IsEventPost() && tokenRecord.IsSuspended)) {
             Logger.LogWarning("Token {Token} is disabled or account is suspended for {Path}.", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");

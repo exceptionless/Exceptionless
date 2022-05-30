@@ -137,6 +137,22 @@ public static class HttpExtensions {
     private static bool IsSet(IPAddress address) {
         return address != null && address.ToString() != NullIpAddress;
     }
+
+    public static bool IsEventPost(this HttpRequest request) {
+        string method = request.Method;
+        if (String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
+            return request.Path.Value.Contains("/events/submit");
+
+        if (!String.Equals(method, "POST", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        string absolutePath = request.Path.Value;
+        if (absolutePath.EndsWith("/"))
+            absolutePath = absolutePath.Substring(0, absolutePath.Length - 1);
+
+        return absolutePath.EndsWith("/events", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(absolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 public class AuthInfo {

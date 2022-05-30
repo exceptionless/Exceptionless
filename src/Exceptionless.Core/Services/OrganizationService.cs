@@ -25,7 +25,6 @@ public class OrganizationService : IStartupAction {
         _webHookRepository = webHookRepository;
         _stripeOptions = stripeOptions;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
-
     }
 
     public Task RunAsync(CancellationToken shutdownToken = default) {
