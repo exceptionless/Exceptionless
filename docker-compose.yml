@@ -139,7 +139,7 @@ services:
         -E output.elasticsearch.ssl.certificate_authorities=["/usr/share/apm-server/certs/ca/ca.crt"]
 
   otel:
-    image: otel/opentelemetry-collector:0.50.0
+    image: otel/opentelemetry-collector:0.52.0
     ports:
       - 4317:4317
     volumes:

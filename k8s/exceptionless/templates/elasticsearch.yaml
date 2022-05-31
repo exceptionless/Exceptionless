@@ -26,14 +26,11 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
       initContainers:
-        - name: init-sysctl
-          image: busybox:1.27.2
-          command:
-            - sysctl
-            - -w
-            - vm.max_map_count=262144
+        - name: sysctl
           securityContext:
             privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
       containers:
         - name: {{ template "exceptionless.name" . }}-elasticsearch
           image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"
