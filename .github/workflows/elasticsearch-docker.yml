@@ -13,13 +13,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build custom Elasticsearch docker image
-      working-directory: build/docker/elasticsearch
+      working-directory: docker/elasticsearch/8.x
       run: |
         VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
-        docker build . --tag exceptionless/elasticsearch:$VERSION
-        echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
-        docker push exceptionless/elasticsearch:$VERSION
-        docker build . --tag docker.pkg.github.com/exceptionless/exceptionless/elasticsearch:$VERSION
-        echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
-        docker push docker.pkg.github.com/exceptionless/exceptionless/elasticsearch:$VERSION
+        docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
