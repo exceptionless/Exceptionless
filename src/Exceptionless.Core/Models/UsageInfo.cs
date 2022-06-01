@@ -1,6 +1,5 @@
 namespace Exceptionless.Core.Models;
 
-public class UsageInfo {
 public record UsageInfo {
     public DateTime Date { get; set; }
     public int Total { get; set; }
