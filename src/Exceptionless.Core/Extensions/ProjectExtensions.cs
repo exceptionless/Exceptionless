@@ -47,39 +47,49 @@ public static class ProjectExtensions {
         return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object value) ? value as SlackToken : null;
     }
 
+    public static UsageInfo GetCurrentHourlyUsage(this Project project) {
+        return project.GetHourlyUsage(SystemClock.UtcNow.Floor(TimeSpan.FromHours(1)));
+    }
+
+    public static UsageInfo GetHourlyUsage(this Project project, DateTime date) {
+        return project.OverageHours.FirstOrDefault(o => o.Date == date);
+    }
+
     public static int GetCurrentHourlyTotal(this Project project) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = project.OverageHours.FirstOrDefault(o => o.Date == date);
+        var usageInfo = project.GetCurrentHourlyUsage();
         return usageInfo?.Total ?? 0;
     }
 
     public static int GetCurrentHourlyBlocked(this Project project) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = project.OverageHours.FirstOrDefault(o => o.Date == date);
+        var usageInfo = project.GetCurrentHourlyUsage();
         return usageInfo?.Blocked ?? 0;
     }
 
     public static int GetCurrentHourlyTooBig(this Project project) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = project.OverageHours.FirstOrDefault(o => o.Date == date);
+        var usageInfo = project.GetCurrentHourlyUsage();
         return usageInfo?.TooBig ?? 0;
     }
 
+    public static UsageInfo GetCurrentMonthlyUsage(this Project project) {
+        return project.GetMonthlyUsage(new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    public static UsageInfo GetMonthlyUsage(this Project project, DateTime date) {
+        return project.Usage.FirstOrDefault(o => o.Date == date);
+    }
+
     public static int GetCurrentMonthlyTotal(this Project project) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = project.Usage.FirstOrDefault(o => o.Date == date);
+        var usageInfo = project.GetCurrentMonthlyUsage();
         return usageInfo?.Total ?? 0;
     }
 
     public static int GetCurrentMonthlyBlocked(this Project project) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = project.Usage.FirstOrDefault(o => o.Date == date);
+        var usageInfo = project.GetCurrentMonthlyUsage();
         return usageInfo?.Blocked ?? 0;
     }
 
     public static int GetCurrentMonthlyTooBig(this Project project) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = project.Usage.FirstOrDefault(o => o.Date == date);
+        var usageInfo = project.GetCurrentMonthlyUsage();
         return usageInfo?.TooBig ?? 0;
     }
 
