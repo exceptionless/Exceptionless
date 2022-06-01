@@ -138,21 +138,29 @@ public class EventPostsJob : QueueJobBase<EventPost> {
                 return JobResult.Success;
             }
 
+            // Don't process all the events if it will put the account over its limits.
+            int eventsToProcess = await _usageService.GetRemainingEventLimitAsync(organization).AnyContext();
+            if (eventsToProcess < 1) {
+                if (!isInternalProject)
+                    _logger.LogDebug("Unable to process EventPost {FilePath}: Over plan limits", payloadPath);
+
+                AppDiagnostics.EventsDiscarded.Add(events.Count);
+                await _usageService.IncrementBlockedAsync(organization, project, events.Count);
+
+                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow).AnyContext();
+                return JobResult.Success;
+            }
+
+            // Keep track of the original event payload size, we can save some processing for retries in the case it was a massive batch.
             bool isSingleEvent = events.Count == 1;
-            if (!isSingleEvent) {
-                // Don't process all the events if it will put the account over its limits.
-                int eventsToProcess = await _usageService.GetRemainingEventLimitAsync(organization).AnyContext();
+            
+            // Discard any events over the plan limit.
+            if (eventsToProcess < events.Count) {
+                int discarded = events.Count - eventsToProcess;
+                events = events.Take(eventsToProcess).ToList();
+                AppDiagnostics.EventsDiscarded.Add(discarded);
 
-                // Add 1 because we already counted 1 against their limit when we received the event post.
-                if (eventsToProcess < Int32.MaxValue)
-                    eventsToProcess += 1;
-
-                // Discard any events over the plan limit.
-                if (eventsToProcess < events.Count) {
-                    int discarded = events.Count - eventsToProcess;
-                    events = events.Take(eventsToProcess).ToList();
-                    AppDiagnostics.EventsDiscarded.Add(discarded);
-                }
+                await _usageService.IncrementBlockedAsync(organization, project, discarded);
             }
 
             int errorCount = 0;
@@ -166,7 +174,7 @@ public class EventPostsJob : QueueJobBase<EventPost> {
 
                 // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
                 int processedEvents = contexts.Count(c => c.IsProcessed);
-                await _usageService.IncrementUsageAsync(organization, project, processedEvents, applyHourlyLimit: false).AnyContext();
+                await _usageService.IncrementTotalAsync(organization, project, processedEvents).AnyContext();
 
                 int discardedEvents = contexts.Count(c => c.IsDiscarded);
                 AppDiagnostics.EventsDiscarded.Add(discardedEvents);

@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Billing;
-using Exceptionless.DateTimeExtensions;
+﻿using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Utility;
@@ -45,15 +44,15 @@ public static class OrganizationExtensions {
         organization.SuspendedByUserId = null;
     }
 
-    public static int GetHourlyEventLimit(this Organization organization, BillingPlans plans) {
+    public static int GetHourlyEventLimit(this Organization organization, int currentMonthlyTotal, int currentMonthlyBlocked, string freePlanId) {
         if (organization.MaxEventsPerMonth <= 0)
             return Int32.MaxValue;
-
-        int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - (organization.GetCurrentMonthlyTotal() - organization.GetCurrentMonthlyBlocked());
+ 
+        int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - (currentMonthlyTotal - currentMonthlyBlocked);
         if (eventsLeftInMonth < 0)
             return 0;
 
-        if (organization.PlanId == plans.FreePlan.Id)
+        if (organization.PlanId == freePlanId)
             return eventsLeftInMonth;
 
         var utcNow = SystemClock.UtcNow;
@@ -90,55 +89,64 @@ public static class OrganizationExtensions {
         return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.GetMaxEventsPerMonthWithBonus();
     }
 
-    public static bool IsOverHourlyLimit(this Organization organization, BillingPlans plans) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-        return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit(plans);
+    public static UsageInfo GetCurrentHourlyUsage(this Organization organization) {
+        return organization.GetHourlyUsage(SystemClock.UtcNow.Floor(TimeSpan.FromHours(1)));
+    }
+
+    public static UsageInfo GetHourlyUsage(this Organization organization, DateTime date) {
+        return organization.OverageHours.FirstOrDefault(o => o.Date == date);
+    }
+
+    public static bool IsOverHourlyLimit(this Organization organization, int limit) {
+        var usageInfo = organization.GetCurrentHourlyUsage();
+        return usageInfo != null && usageInfo.Total > limit;
     }
 
     public static int GetCurrentHourlyTotal(this Organization organization) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+        var usageInfo = organization.GetCurrentHourlyUsage();
         return usageInfo?.Total ?? 0;
     }
 
     public static int GetCurrentHourlyBlocked(this Organization organization) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+        var usageInfo = organization.GetCurrentHourlyUsage();
         return usageInfo?.Blocked ?? 0;
     }
 
     public static int GetCurrentHourlyTooBig(this Organization organization) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+        var usageInfo = organization.GetCurrentHourlyUsage();
         return usageInfo?.TooBig ?? 0;
     }
 
+    public static UsageInfo GetCurrentMonthlyUsage(this Organization organization) {
+        return organization.GetMonthlyUsage(new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    public static UsageInfo GetMonthlyUsage(this Organization organization, DateTime date) {
+        return organization.Usage.FirstOrDefault(o => o.Date == date);
+    }
+
     public static int GetCurrentMonthlyTotal(this Organization organization) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+        var usageInfo = organization.GetCurrentMonthlyUsage();
         return usageInfo?.Total ?? 0;
     }
 
     public static int GetCurrentMonthlyBlocked(this Organization organization) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+        var usageInfo = organization.GetCurrentMonthlyUsage();
         return usageInfo?.Blocked ?? 0;
     }
 
     public static int GetCurrentMonthlyTooBig(this Organization organization) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+        var usageInfo = organization.GetCurrentMonthlyUsage();
         return usageInfo?.TooBig ?? 0;
     }
 
-    public static void SetHourlyOverage(this Organization organization, double total, double blocked, double tooBig, BillingPlans plans) {
+    public static void SetHourlyOverage(this Organization organization, int total, int blocked, int tooBig, int limit) {
         var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(plans), TimeSpan.FromDays(3));
+        organization.OverageHours.SetUsage(date, total, blocked, tooBig, limit, TimeSpan.FromDays(3));
     }
 
-    public static void SetMonthlyUsage(this Organization organization, double total, double blocked, double tooBig) {
+    public static void SetMonthlyUsage(this Organization organization, int total, int blocked, int tooBig) {
         var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        organization.Usage.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
+        organization.Usage.SetUsage(date, total, blocked, tooBig, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
     }
 }

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -31,40 +30,76 @@ public sealed class UsageService {
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
 
-    public Task<bool> IncrementTooBigAsync(Organization organization, Project project, bool applyHourlyLimit = true) {
-        return IncrementUsageAsync(organization, project, true, 1, applyHourlyLimit);
-    }
-
     public async Task<bool> IsOverLimitAsync(Organization organization) {
-        if (organization == null || organization.MaxEventsPerMonth < 0)
+        if (organization is null || organization.MaxEventsPerMonth < 0)
             return false;
+
+        if (organization.IsSuspended)
+            return true;
+
+        // TODO: Simplify this by removing blocked count from total.. We also need a migration for this.
+        int monthlyTotal = await _cache.GetAsync(GetMonthlyTotalCacheKey(organization.Id), organization.GetCurrentMonthlyTotal());
+        int monthlyBlocked = await _cache.GetAsync(GetMonthlyBlockedCacheKey(organization.Id), organization.GetCurrentMonthlyBlocked());
+
+        int hourlyEventLimit = organization.GetHourlyEventLimit(monthlyTotal, monthlyBlocked, _plans.FreePlan.Id);
+        int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
+        double originalAllowedMonthlyEventTotal = monthlyTotal - monthlyBlocked;
+
+        // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
+        if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
+            return originalAllowedMonthlyEventTotal < monthlyEventLimit && Math.Max(monthlyTotal - monthlyBlocked - monthlyEventLimit, 0) > 0;
+
+        int hourlyTotal = await _cache.GetAsync(GetHourlyTotalCacheKey(organization.Id), organization.GetCurrentHourlyTotal());
+        int hourlyBlocked = await _cache.GetAsync(GetHourlyBlockedCacheKey(organization.Id), organization.GetCurrentHourlyBlocked());
+
+        double originalAllowedHourlyEventTotal = hourlyTotal - hourlyBlocked;
+        if ((hourlyTotal - hourlyBlocked) > hourlyEventLimit)
+            return originalAllowedHourlyEventTotal < hourlyEventLimit && Math.Max(hourlyTotal - hourlyBlocked - hourlyEventLimit, 0) > 0;
+
+        if ((monthlyTotal - monthlyBlocked) > monthlyEventLimit)
+            return originalAllowedMonthlyEventTotal < monthlyEventLimit && Math.Max(monthlyTotal - monthlyBlocked - monthlyEventLimit, 0) > 0;
+
+        return false;
+    }
+
+    public Task IncrementTotalAsync(Organization organization, Project project, int count = 1) {
+        if (count < 1)
+            throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
+
+        return Task.WhenAll(
+            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id), count, TimeSpan.FromMinutes(61), organization.GetCurrentHourlyTotal()),
+            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id, project.Id), count, TimeSpan.FromMinutes(61), project.GetCurrentHourlyTotal()),
+            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id), count, TimeSpan.FromDays(32), organization.GetCurrentMonthlyTotal()),
+            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id, project.Id), count, TimeSpan.FromDays(32), project.GetCurrentMonthlyTotal())
+        );
+    }
+
+    public Task IncrementBlockedAsync(Organization organization, Project project, int count = 1) {
+        if (count < 1)
+            throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
+
+        return Task.WhenAll(
+            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id), count, TimeSpan.FromMinutes(61), organization.GetCurrentHourlyBlocked()),
+            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id, project.Id), count, TimeSpan.FromMinutes(61), project.GetCurrentHourlyBlocked()),
+            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), count, TimeSpan.FromDays(32), organization.GetCurrentMonthlyBlocked()),
+            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id, project.Id), count, TimeSpan.FromDays(32), project.GetCurrentMonthlyBlocked())
+        );
+    }
+
+    public Task IncrementTooBigAsync(Organization organization, Project project, int count = 1) {
+        if (count < 1)
+            throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
         
-        // PERF: could save two cache calls by not returning all usage stats.
-        var orgUsage = await GetUsageAsync(organization).AnyContext();
-        double totalBlocked = GetTotalBlocked(organization, 0, orgUsage, true);
-        return totalBlocked > 0;
+        return Task.WhenAll(
+            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id), count, TimeSpan.FromMinutes(61), organization.GetCurrentHourlyTooBig()),
+            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id, project.Id), count, TimeSpan.FromMinutes(61), project.GetCurrentHourlyTooBig()),
+            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id), count, TimeSpan.FromDays(32), organization.GetCurrentMonthlyTooBig()),
+            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id, project.Id), count, TimeSpan.FromDays(32), project.GetCurrentMonthlyTooBig())
+        );
     }
 
-    public Task<bool> IncrementUsageAsync(Organization organization, Project project, int count = 1, bool applyHourlyLimit = true) {
-        return IncrementUsageAsync(organization, project, false, count, applyHourlyLimit);
-    }
-
-    private async Task<bool> IncrementUsageAsync(Organization organization, Project project, bool tooBig, int count = 1, bool applyHourlyLimit = true) {
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
-
-        if (organization == null || organization.MaxEventsPerMonth < 0 || project == null)
-            return false;
-
-        var orgUsage = await IncrementUsageAsync(organization, tooBig, count).AnyContext();
-        double totalBlocked = GetTotalBlocked(organization, count, orgUsage, applyHourlyLimit);
-        bool overLimit = totalBlocked > 0;
-        if (overLimit) {
-            orgUsage.HourlyBlocked = await _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id), (int)totalBlocked, TimeSpan.FromMinutes(61), (long)orgUsage.HourlyBlocked).AnyContext();
-            orgUsage.MonthlyBlocked = await _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), (int)totalBlocked, TimeSpan.FromDays(32), (long)orgUsage.MonthlyBlocked).AnyContext();
-        }
-
-        bool justWentOverHourly = orgUsage.HourlyTotal > organization.GetHourlyEventLimit(_plans) && orgUsage.HourlyTotal <= organization.GetHourlyEventLimit(_plans) + count;
+    public async Task<bool> IncrementUsageAsync(Organization organization, Project project, int count = 1, bool applyHourlyLimit = true) {
+        bool justWentOverHourly = orgUsage.HourlyTotal > organization.GetHourlyEventLimit(orgUsage.MonthlyTotal, orgUsage.MonthlyBlocked, _plans.FreePlan.Id) && orgUsage.HourlyTotal <= organization.GetHourlyEventLimit(orgUsage.MonthlyTotal, orgUsage.MonthlyBlocked, _plans.FreePlan.Id) + count;
         bool justWentOverMonthly = orgUsage.MonthlyTotal > organization.GetMaxEventsPerMonthWithBonus() && orgUsage.MonthlyTotal <= organization.GetMaxEventsPerMonthWithBonus() + count;
         var projectUsage = await IncrementUsageAsync(organization, project, tooBig, count, overLimit, (int)totalBlocked).AnyContext();
 
@@ -82,53 +117,16 @@ public sealed class UsageService {
         return overLimit;
     }
 
-    private async Task<Usage> IncrementUsageAsync(Organization org, bool tooBig, int count) {
-        int tooBigCount = !tooBig || count != 0 ? count : 1;
-        var hourlyTotal = _cache.IncrementIfAsync(GetHourlyTotalCacheKey(org.Id), count, TimeSpan.FromMinutes(61), count != 0, org.GetCurrentHourlyTotal());
-        var monthlyTotal = _cache.IncrementIfAsync(GetMonthlyTotalCacheKey(org.Id), count, TimeSpan.FromDays(32), count != 0, org.GetCurrentMonthlyTotal());
-        var hourlyTooBig = _cache.IncrementIfAsync(GetHourlyTooBigCacheKey(org.Id), tooBigCount, TimeSpan.FromMinutes(61), tooBig, org.GetCurrentHourlyTooBig());
-        var monthlyTooBig = _cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(org.Id), tooBigCount, TimeSpan.FromDays(32), tooBig, org.GetCurrentMonthlyTooBig());
-        var hourlyBlocked = _cache.GetAsync<long>(GetHourlyBlockedCacheKey(org.Id), org.GetCurrentHourlyBlocked());
-        var monthlyBlocked = _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(org.Id), org.GetCurrentMonthlyBlocked());
-        await Task.WhenAll(hourlyTotal, monthlyTotal, hourlyTooBig, monthlyTooBig, hourlyBlocked, monthlyBlocked).AnyContext();
-
-        return new Usage {
-            HourlyTotal = hourlyTotal.Result,
-            MonthlyTotal = monthlyTotal.Result,
-            HourlyTooBig = hourlyTooBig.Result,
-            MonthlyTooBig = monthlyTooBig.Result,
-            HourlyBlocked = hourlyBlocked.Result,
-            MonthlyBlocked = monthlyBlocked.Result,
-        };
-    }
-
-    private async Task<Usage> IncrementUsageAsync(Organization org, Project project, bool tooBig, int count, bool overLimit, int totalBlocked) {
-        int tooBigCount = !tooBig || count != 0 ? count : 1;
-        var hourlyTotal = _cache.IncrementIfAsync(GetHourlyTotalCacheKey(org.Id, project.Id), count, TimeSpan.FromMinutes(61), count != 0, project.GetCurrentHourlyTotal());
-        var monthlyTotal = _cache.IncrementIfAsync(GetMonthlyTotalCacheKey(org.Id, project.Id), count, TimeSpan.FromDays(32), count != 0, project.GetCurrentMonthlyTotal());
-        var hourlyTooBig = _cache.IncrementIfAsync(GetHourlyTooBigCacheKey(org.Id, project.Id), tooBigCount, TimeSpan.FromMinutes(61), tooBig, project.GetCurrentHourlyTooBig());
-        var monthlyTooBig = _cache.IncrementIfAsync(GetMonthlyTooBigCacheKey(org.Id, project.Id), tooBigCount, TimeSpan.FromDays(32), tooBig, project.GetCurrentMonthlyTooBig());
-        var hourlyBlocked = _cache.IncrementIfAsync(GetHourlyBlockedCacheKey(org.Id, project.Id), totalBlocked, TimeSpan.FromMinutes(61), overLimit, project.GetCurrentHourlyBlocked());
-        var monthlyBlocked = _cache.IncrementIfAsync(GetMonthlyBlockedCacheKey(org.Id, project.Id), totalBlocked, TimeSpan.FromDays(32), overLimit, project.GetCurrentMonthlyBlocked());
-        await Task.WhenAll(hourlyTotal, monthlyTotal, hourlyTooBig, monthlyTooBig, hourlyBlocked, monthlyBlocked).AnyContext();
-
-        return new Usage {
-            HourlyTotal = hourlyTotal.Result,
-            MonthlyTotal = monthlyTotal.Result,
-            HourlyTooBig = hourlyTooBig.Result,
-            MonthlyTooBig = monthlyTooBig.Result,
-            HourlyBlocked = hourlyBlocked.Result,
-            MonthlyBlocked = monthlyBlocked.Result,
-        };
-    }
-
     public async Task<Usage> GetUsageAsync(Organization org) {
-        var hourlyTotal = _cache.GetAsync<long>(GetHourlyTotalCacheKey(org.Id), org.GetCurrentHourlyTotal());
-        var monthlyTotal = _cache.GetAsync<long>(GetMonthlyTotalCacheKey(org.Id), org.GetCurrentMonthlyTotal());
-        var hourlyTooBig = _cache.GetAsync<long>(GetHourlyTooBigCacheKey(org.Id), org.GetCurrentHourlyTooBig());
-        var monthlyTooBig = _cache.GetAsync<long>(GetMonthlyTooBigCacheKey(org.Id), org.GetCurrentMonthlyTooBig());
-        var hourlyBlocked = _cache.GetAsync<long>(GetHourlyBlockedCacheKey(org.Id), org.GetCurrentHourlyBlocked());
-        var monthlyBlocked = _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(org.Id), org.GetCurrentMonthlyBlocked());
+        var hourlyUsage = org.GetCurrentHourlyUsage();
+        var monthlyUsage = org.GetCurrentMonthlyUsage();
+
+        var hourlyTotal = _cache.GetAsync(GetHourlyTotalCacheKey(org.Id), hourlyUsage.Total);
+        var monthlyTotal = _cache.GetAsync(GetMonthlyTotalCacheKey(org.Id), monthlyUsage.Total);
+        var hourlyTooBig = _cache.GetAsync(GetHourlyTooBigCacheKey(org.Id), hourlyUsage.TooBig);
+        var monthlyTooBig = _cache.GetAsync(GetMonthlyTooBigCacheKey(org.Id), monthlyUsage.TooBig);
+        var hourlyBlocked = _cache.GetAsync(GetHourlyBlockedCacheKey(org.Id), hourlyUsage.Blocked);
+        var monthlyBlocked = _cache.GetAsync(GetMonthlyBlockedCacheKey(org.Id), monthlyUsage.Blocked);
         await Task.WhenAll(hourlyTotal, monthlyTotal, hourlyTooBig, monthlyTooBig, hourlyBlocked, monthlyBlocked).AnyContext();
 
         return new Usage {
@@ -142,12 +140,15 @@ public sealed class UsageService {
     }
 
     public async Task<Usage> GetUsageAsync(Organization org, Project project) {
-        var hourlyTotal = _cache.GetAsync<long>(GetHourlyTotalCacheKey(org.Id, project.Id), project.GetCurrentHourlyTotal());
-        var monthlyTotal = _cache.GetAsync<long>(GetMonthlyTotalCacheKey(org.Id, project.Id), project.GetCurrentMonthlyTotal());
-        var hourlyTooBig = _cache.GetAsync<long>(GetHourlyTooBigCacheKey(org.Id, project.Id), project.GetCurrentHourlyTooBig());
-        var monthlyTooBig = _cache.GetAsync<long>(GetMonthlyTooBigCacheKey(org.Id, project.Id), project.GetCurrentMonthlyTooBig());
-        var hourlyBlocked = _cache.GetAsync<long>(GetHourlyBlockedCacheKey(org.Id, project.Id), project.GetCurrentHourlyBlocked());
-        var monthlyBlocked = _cache.GetAsync<long>(GetMonthlyBlockedCacheKey(org.Id, project.Id), project.GetCurrentMonthlyBlocked());
+        var hourlyUsage = project.GetCurrentHourlyUsage();
+        var monthlyUsage = project.GetCurrentMonthlyUsage();
+
+        var hourlyTotal = _cache.GetAsync(GetHourlyTotalCacheKey(org.Id, project.Id), hourlyUsage.Total);
+        var monthlyTotal = _cache.GetAsync(GetMonthlyTotalCacheKey(org.Id, project.Id), monthlyUsage.Total);
+        var hourlyTooBig = _cache.GetAsync(GetHourlyTooBigCacheKey(org.Id, project.Id), hourlyUsage.TooBig);
+        var monthlyTooBig = _cache.GetAsync(GetMonthlyTooBigCacheKey(org.Id, project.Id), monthlyUsage.TooBig);
+        var hourlyBlocked = _cache.GetAsync(GetHourlyBlockedCacheKey(org.Id, project.Id), hourlyUsage.Blocked);
+        var monthlyBlocked = _cache.GetAsync(GetMonthlyBlockedCacheKey(org.Id, project.Id), monthlyUsage.Blocked);
         await Task.WhenAll(hourlyTotal, monthlyTotal, hourlyTooBig, monthlyTooBig, hourlyBlocked, monthlyBlocked).AnyContext();
 
         return new Usage {
@@ -174,8 +175,9 @@ public sealed class UsageService {
             org.LastEventDateUtc = SystemClock.UtcNow;
             org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig);
             if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
-                org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, _plans);
+                org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(usage.MonthlyTotal, usage.MonthlyBlocked, _plans.FreePlan.Id));
 
+            _logger.LogInformation("Saving organization {OrganizationName} usage", org.Name);
             await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
             await _cache.SetAsync(GetUsageSavedCacheKey(orgId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
         }
@@ -201,8 +203,9 @@ public sealed class UsageService {
             project.LastEventDateUtc = SystemClock.UtcNow;
             project.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig, org.GetMaxEventsPerMonthWithBonus());
             if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
-                project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(_plans));
+                project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(usage.MonthlyTotal, usage.MonthlyBlocked, _plans.FreePlan.Id));
 
+            _logger.LogInformation("Saving project {ProjectName} usage", project.Name);
             await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
             await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, projectId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
         }
@@ -238,15 +241,15 @@ public sealed class UsageService {
             return Int32.MaxValue;
 
         string monthlyCacheKey = GetMonthlyTotalCacheKey(organization.Id);
-        long monthlyEventCount = await _cache.GetAsync<long>(monthlyCacheKey, 0).AnyContext();
-        return Math.Max(0, organization.GetMaxEventsPerMonthWithBonus() - (int)monthlyEventCount);
+        int monthlyEventCount = await _cache.GetAsync(monthlyCacheKey, 0).AnyContext();
+        return Math.Max(0, organization.GetMaxEventsPerMonthWithBonus() - monthlyEventCount);
     }
 
     private double GetTotalBlocked(Organization organization, int count, Usage usage, bool applyHourlyLimit) {
         if (organization.IsSuspended)
             return count;
 
-        int hourlyEventLimit = organization.GetHourlyEventLimit(_plans);
+        int hourlyEventLimit = organization.GetHourlyEventLimit(usage.MonthlyTotal, usage.MonthlyBlocked, _plans.FreePlan.Id);
         int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
         double originalAllowedMonthlyEventTotal = usage.MonthlyTotal - usage.MonthlyBlocked - count;
 
@@ -299,13 +302,12 @@ public sealed class UsageService {
         return projectId == null ? key : String.Concat(key, ":", projectId);
     }
 
-    [DebuggerDisplay("MonthlyTotal: {MonthlyTotal}, HourlyTotal: {HourlyTotal}, MonthlyBlocked: {MonthlyBlocked}, HourlyBlocked: {HourlyBlocked}, MonthlyTooBig: {MonthlyTooBig}, HourlyTooBig: {HourlyTooBig}")]
-    public struct Usage {
-        public double MonthlyTotal { get; set; }
-        public double HourlyTotal { get; set; }
-        public double MonthlyBlocked { get; set; }
-        public double HourlyBlocked { get; set; }
-        public double MonthlyTooBig { get; set; }
-        public double HourlyTooBig { get; set; }
+    public record struct Usage {
+        public int MonthlyTotal { get; set; }
+        public int HourlyTotal { get; set; }
+        public int MonthlyBlocked { get; set; }
+        public int HourlyBlocked { get; set; }
+        public int MonthlyTooBig { get; set; }
+        public int HourlyTooBig { get; set; }
     }
 }

@@ -50,7 +50,7 @@ public class Bootstrapper {
 
             CreateMap<NewOrganization, Organization>();
             CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                vo.IsOverHourlyLimit = o.IsOverHourlyLimit(plans);
+                vo.IsOverHourlyLimit = o.IsOverHourlyLimit(o.GetHourlyEventLimit(o.GetCurrentMonthlyTotal(), o.GetCurrentMonthlyBlocked(), plans.FreePlan.Id));
                 vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
             });
 

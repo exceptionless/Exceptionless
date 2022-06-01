@@ -46,11 +46,15 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-        Assert.InRange(organization.GetHourlyEventLimit(_plans), 1, 750);
+        Assert.InRange(organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id), 1, 750);
+        Assert.Empty(organization.Usage);
+        Assert.Empty(organization.OverageHours);
 
-        int totalToIncrement = organization.GetHourlyEventLimit(_plans) - 1;
+        int totalToIncrement = organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id) - 1;
         Assert.False(await _usageService.IncrementUsageAsync(organization, project, totalToIncrement));
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.Empty(organization.Usage);
+        Assert.Empty(organization.OverageHours);
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(2, countdown.CurrentCount);
@@ -80,11 +84,17 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         Assert.Equal(1, organizationUsage.MonthlyBlocked);
         Assert.Equal(1, projectUsage.MonthlyBlocked);
 
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        var organizationPersistedUsage = organization.Usage.Single();
+        Assert.Single(organization.OverageHours);
+        Assert.Equal(totalToIncrement + 2, organizationPersistedUsage.Total);
+        Assert.Equal(1, organizationPersistedUsage.Blocked);
+
         organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
         project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
 
         await _cache.RemoveAllAsync();
-        totalToIncrement = organization.GetHourlyEventLimit(_plans) + 20;
+        totalToIncrement = organization.GetHourlyEventLimit(organizationPersistedUsage.Total, organizationPersistedUsage.Blocked, _plans.FreePlan.Id) + 20;
         Assert.True(await _usageService.IncrementUsageAsync(organization, project, totalToIncrement));
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
@@ -106,7 +116,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     public async Task CanHandleZeroUsage() {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-        Assert.InRange(organization.GetHourlyEventLimit(_plans), 1, 750);
+        Assert.InRange(organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id), 1, 750);
 
         Assert.False(await _usageService.IncrementUsageAsync(organization, project, 0, applyHourlyLimit: false));
         var organizationUsage = await _usageService.GetUsageAsync(organization);
@@ -129,7 +139,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     public async Task CanIncrementUsageWithDiscardedValuesAsync() {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-        Assert.InRange(organization.GetHourlyEventLimit(_plans), 1, 750);
+        Assert.InRange(organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id), 1, 750);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await _usageService.IncrementUsageAsync(organization, project, -1));
 
@@ -165,7 +175,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         const int limit = 750;
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = limit, PlanId = _plans.FreePlan.Id }, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-        Assert.Equal(limit, organization.GetHourlyEventLimit(_plans));
+        Assert.Equal(limit, organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id));
 
         Assert.False(await _usageService.IncrementUsageAsync(organization, project, limit));
         organization = await _organizationRepository.GetByIdAsync(organization.Id);

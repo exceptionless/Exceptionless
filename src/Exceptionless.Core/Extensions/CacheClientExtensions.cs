@@ -7,7 +7,7 @@ public static class CacheClientExtensions {
     /// <summary>
     /// Increment a value if condition is true.
     /// </summary>
-    public static async Task<double> IncrementIfAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
+    public static async Task<long> IncrementIfAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
         startingValue ??= 0;
 
         var count = await client.GetAsync<long>(key).AnyContext();
@@ -25,7 +25,7 @@ public static class CacheClientExtensions {
     /// <summary>
     /// Increment a value if condition is true.
     /// </summary>
-    public static async Task<double> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null) {
+    public static async Task<long> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null) {
         startingValue ??= 0;
 
         var count = await client.GetAsync<long>(key).AnyContext();
