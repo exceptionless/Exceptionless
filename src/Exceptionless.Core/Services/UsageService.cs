@@ -62,15 +62,20 @@ public sealed class UsageService {
         return false;
     }
 
+    private readonly TimeSpan _hourlyUsageBucketTimeToLive = TimeSpan.FromMinutes(61);
+    private readonly TimeSpan _monthlyUsageBucketTimeToLive = TimeSpan.FromDays(32);
+
     public Task IncrementTotalAsync(Organization organization, Project project, int count = 1) {
         if (count < 1)
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
 
+        var bucket = SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15));
         return Task.WhenAll(
-            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id), count, TimeSpan.FromMinutes(61), organization.GetCurrentHourlyTotal()),
-            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id, project.Id), count, TimeSpan.FromMinutes(61), project.GetCurrentHourlyTotal()),
-            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id), count, TimeSpan.FromDays(32), organization.GetCurrentMonthlyTotal()),
-            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id, project.Id), count, TimeSpan.FromDays(32), project.GetCurrentMonthlyTotal())
+            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id), count, _hourlyUsageBucketTimeToLive, organization.GetCurrentHourlyTotal()),
+            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id, project.Id), count, _hourlyUsageBucketTimeToLive, project.GetCurrentHourlyTotal()),
+            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id), count, _monthlyUsageBucketTimeToLive, organization.GetCurrentMonthlyTotal()),
+            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id, project.Id), count, _monthlyUsageBucketTimeToLive, project.GetCurrentMonthlyTotal()),
+            QueueSaveUsageAsync(organization, project, bucket.AddMinutes(15))
         );
     }
 
@@ -78,24 +83,35 @@ public sealed class UsageService {
         if (count < 1)
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
 
+        var bucket = SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15));
         return Task.WhenAll(
-            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id), count, TimeSpan.FromMinutes(61), organization.GetCurrentHourlyBlocked()),
-            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id, project.Id), count, TimeSpan.FromMinutes(61), project.GetCurrentHourlyBlocked()),
-            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), count, TimeSpan.FromDays(32), organization.GetCurrentMonthlyBlocked()),
-            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id, project.Id), count, TimeSpan.FromDays(32), project.GetCurrentMonthlyBlocked())
+            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id), count, _hourlyUsageBucketTimeToLive, organization.GetCurrentHourlyBlocked()),
+            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id, project.Id), count, _hourlyUsageBucketTimeToLive, project.GetCurrentHourlyBlocked()),
+            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), count, _monthlyUsageBucketTimeToLive, organization.GetCurrentMonthlyBlocked()),
+            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id, project.Id), count, _monthlyUsageBucketTimeToLive, project.GetCurrentMonthlyBlocked()),
+            QueueSaveUsageAsync(organization, project, bucket.AddMinutes(15))
         );
     }
 
     public Task IncrementTooBigAsync(Organization organization, Project project, int count = 1) {
         if (count < 1)
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
-        
+
+        var bucket = SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15));
         return Task.WhenAll(
-            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id), count, TimeSpan.FromMinutes(61), organization.GetCurrentHourlyTooBig()),
-            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id, project.Id), count, TimeSpan.FromMinutes(61), project.GetCurrentHourlyTooBig()),
-            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id), count, TimeSpan.FromDays(32), organization.GetCurrentMonthlyTooBig()),
-            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id, project.Id), count, TimeSpan.FromDays(32), project.GetCurrentMonthlyTooBig())
+            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id), count, _hourlyUsageBucketTimeToLive, organization.GetCurrentHourlyTooBig()),
+            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id, project.Id), count, _hourlyUsageBucketTimeToLive, project.GetCurrentHourlyTooBig()),
+            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id), count, _monthlyUsageBucketTimeToLive, organization.GetCurrentMonthlyTooBig()),
+            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id, project.Id), count, _monthlyUsageBucketTimeToLive, project.GetCurrentMonthlyTooBig()),
+            QueueSaveUsageAsync(organization, project, bucket.AddMinutes(15))
         );
+    }
+
+    private Task<long> QueueSaveUsageAsync(Organization organization, Project project, DateTime nextSaveUtc) {
+        return _cache.ListAddAsync("usage:save", new[] {
+            new SaveUsage { OrganizationId = organization.Id, NextSaveUtc = nextSaveUtc },
+            new SaveUsage { OrganizationId = organization.Id, ProjectId = project.Id, NextSaveUtc = nextSaveUtc }
+        }, _hourlyUsageBucketTimeToLive);
     }
 
     public async Task<bool> IncrementUsageAsync(Organization organization, Project project, int count = 1, bool applyHourlyLimit = true) {
@@ -245,28 +261,6 @@ public sealed class UsageService {
         return Math.Max(0, organization.GetMaxEventsPerMonthWithBonus() - monthlyEventCount);
     }
 
-    private double GetTotalBlocked(Organization organization, int count, Usage usage, bool applyHourlyLimit) {
-        if (organization.IsSuspended)
-            return count;
-
-        int hourlyEventLimit = organization.GetHourlyEventLimit(usage.MonthlyTotal, usage.MonthlyBlocked, _plans.FreePlan.Id);
-        int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
-        double originalAllowedMonthlyEventTotal = usage.MonthlyTotal - usage.MonthlyBlocked - count;
-
-        // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
-        if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
-            return originalAllowedMonthlyEventTotal < monthlyEventLimit ? Math.Max(usage.MonthlyTotal - usage.MonthlyBlocked - monthlyEventLimit, 0) : count;
-
-        double originalAllowedHourlyEventTotal = usage.HourlyTotal - usage.HourlyBlocked - count;
-        if (applyHourlyLimit && (usage.HourlyTotal - usage.HourlyBlocked) > hourlyEventLimit)
-            return originalAllowedHourlyEventTotal < hourlyEventLimit ? Math.Max(usage.HourlyTotal - usage.HourlyBlocked - hourlyEventLimit, 0) : count;
-
-        if ((usage.MonthlyTotal - usage.MonthlyBlocked) > monthlyEventLimit)
-            return originalAllowedMonthlyEventTotal < monthlyEventLimit ? Math.Max(usage.MonthlyTotal - usage.MonthlyBlocked - monthlyEventLimit, 0) : count;
-
-        return 0;
-    }
-
     private string GetHourlyBlockedCacheKey(string organizationId, string projectId = null) {
         string key = String.Concat("usage:blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
         return projectId == null ? key : String.Concat(key, ":", projectId);
@@ -309,5 +303,11 @@ public sealed class UsageService {
         public int HourlyBlocked { get; set; }
         public int MonthlyTooBig { get; set; }
         public int HourlyTooBig { get; set; }
+    }
+
+    public record SaveUsage {
+        public string OrganizationId { get; set; }
+        public string ProjectId { get; set; }
+        public DateTime NextSaveUtc { get; set; }
     }
 }
