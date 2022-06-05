@@ -30,4 +30,31 @@ public static class UsageExtensions {
         foreach (var usage in usages.Where(u => u.Date < SystemClock.UtcNow.Subtract(maxUsageAge.Value)).ToList())
             usages.Remove(usage);
     }
+
+    public static void IncrementUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null) {
+        var usageInfo = usages.FirstOrDefault(o => o.Date == dateUtc);
+        if (usageInfo == null) {
+            usageInfo = new UsageInfo {
+                Date = dateUtc,
+                Total = total,
+                Blocked = blocked,
+                Limit = limit,
+                TooBig = tooBig
+            };
+            usages.Add(usageInfo);
+        }
+        else {
+            usageInfo.Limit = limit;
+            usageInfo.Total = total;
+            usageInfo.Blocked = blocked;
+            usageInfo.TooBig = tooBig;
+        }
+
+        if (!maxUsageAge.HasValue)
+            return;
+
+        // remove old usage entries
+        foreach (var usage in usages.Where(u => u.Date < SystemClock.UtcNow.Subtract(maxUsageAge.Value)).ToList())
+            usages.Remove(usage);
+    }
 }
