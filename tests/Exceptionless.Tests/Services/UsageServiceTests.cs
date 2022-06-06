@@ -22,13 +22,13 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     private readonly ICacheClient _cache;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
-    private readonly UsageService _usageService;
+    private readonly UsageService2 _usageService;
     private readonly BillingPlans _plans;
 
     public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
         _cache = GetService<ICacheClient>();
-        _usageService = GetService<UsageService>();
+        _usageService = GetService<UsageService2>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _plans = GetService<BillingPlans>();
@@ -38,80 +38,58 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     public async Task CanIncrementUsageAsync() {
         var messageBus = GetService<IMessageBus>();
 
-        var countdown = new AsyncCountdownEvent(2);
+        var countdown = new AsyncCountdownEvent(1);
         await messageBus.SubscribeAsync<PlanOverage>(po => {
             _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsBucket);
             countdown.Signal();
         });
 
-        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-        Assert.InRange(organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id), 1, 750);
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        Assert.InRange(eventsLeftInBucket, 1, 750);
         Assert.Empty(organization.Usage);
         Assert.Empty(organization.Overage);
 
-        int totalToIncrement = organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id) - 1;
-        Assert.False(await _usageService.IncrementUsageAsync(organization, project, totalToIncrement));
+        int totalToIncrement = eventsLeftInBucket - 1;
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id, totalToIncrement);
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.Empty(organization.Usage);
         Assert.Empty(organization.Overage);
 
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-        Assert.Equal(2, countdown.CurrentCount);
-        var organizationUsage = await _usageService.GetUsageAsync(organization);
-        var projectUsage = await _usageService.GetUsageAsync(organization, project);
-        Assert.Equal(totalToIncrement, organizationUsage.HourlyTotal);
-        Assert.Equal(totalToIncrement, projectUsage.HourlyTotal);
-        Assert.Equal(totalToIncrement, organizationUsage.MonthlyTotal);
-        Assert.Equal(totalToIncrement, projectUsage.MonthlyTotal);
-        Assert.Equal(0, organizationUsage.HourlyBlocked);
-        Assert.Equal(0, projectUsage.HourlyBlocked);
-        Assert.Equal(0, organizationUsage.MonthlyBlocked);
-        Assert.Equal(0, projectUsage.MonthlyBlocked);
-
-        Assert.True(await _usageService.IncrementUsageAsync(organization, project, 2));
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(1, countdown.CurrentCount);
 
-        organizationUsage = await _usageService.GetUsageAsync(organization);
-        projectUsage = await _usageService.GetUsageAsync(organization, project);
-        Assert.Equal(totalToIncrement + 2, organizationUsage.HourlyTotal);
-        Assert.Equal(totalToIncrement + 2, projectUsage.HourlyTotal);
-        Assert.Equal(totalToIncrement + 2, organizationUsage.MonthlyTotal);
-        Assert.Equal(totalToIncrement + 2, projectUsage.MonthlyTotal);
-        Assert.Equal(1, organizationUsage.HourlyBlocked);
-        Assert.Equal(1, projectUsage.HourlyBlocked);
-        Assert.Equal(1, organizationUsage.MonthlyBlocked);
-        Assert.Equal(1, projectUsage.MonthlyBlocked);
+        int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
+        Assert.Equal(1, eventsLeft);
 
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
-        var organizationPersistedUsage = organization.Usage.Single();
-        Assert.Single(organization.Overage);
-        Assert.Equal(totalToIncrement + 2, organizationPersistedUsage.Total);
-        Assert.Equal(1, organizationPersistedUsage.Blocked);
-
-        organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
-        project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-
-        await _cache.RemoveAllAsync();
-        totalToIncrement = organization.GetHourlyEventLimit(organizationPersistedUsage.Total, organizationPersistedUsage.Blocked, _plans.FreePlan.Id) + 20;
-        Assert.True(await _usageService.IncrementUsageAsync(organization, project, totalToIncrement));
-
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeft);
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(0, countdown.CurrentCount);
+        
+        eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
+        Assert.Equal(0, eventsLeft);
 
-        organizationUsage = await _usageService.GetUsageAsync(organization);
-        projectUsage = await _usageService.GetUsageAsync(organization, project);
-        Assert.Equal(totalToIncrement, organizationUsage.HourlyTotal);
-        Assert.Equal(totalToIncrement, projectUsage.HourlyTotal);
-        Assert.Equal(totalToIncrement, organizationUsage.MonthlyTotal);
-        Assert.Equal(totalToIncrement, projectUsage.MonthlyTotal);
-        Assert.Equal(20, organizationUsage.HourlyBlocked);
-        Assert.Equal(20, projectUsage.HourlyBlocked);
-        Assert.Equal(20, organizationUsage.MonthlyBlocked);
-        Assert.Equal(20, projectUsage.MonthlyBlocked);
+        await _usageService.SavePendingOrganizationUsageInfo();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.Empty(organization.Overage);
+        var usage = organization.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(eventsLeftInBucket, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+
+        await _usageService.SavePendingProjectUsageInfo();
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.Empty(project.Overage);
+        usage = project.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(eventsLeftInBucket, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
     }
 
+    /*
     [Fact]
     public async Task CanHandleZeroUsage() {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
@@ -294,4 +272,5 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         sw.Stop();
         _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
     }
+    */
 }
