@@ -28,12 +28,12 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction {
 
     public Task RunAsync(CancellationToken token) {
         return _subscriber.SubscribeAsync<PlanOverage>(overage => {
-            _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsBucket, !overage.IsBucket);
+            _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsThrottled, !overage.IsThrottled);
 
             return _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem {
                 OrganizationId = overage.OrganizationId,
-                IsOverHourlyLimit = overage.IsBucket,
-                IsOverMonthlyLimit = !overage.IsBucket
+                IsOverHourlyLimit = overage.IsThrottled,
+                IsOverMonthlyLimit = !overage.IsThrottled
             });
         }, token);
     }
