@@ -31,8 +31,14 @@ public class UsageService2 {
     public async Task SavePendingOrganizationUsageInfo() {
         var utcNow = SystemClock.UtcNow;
 
-        // last usage save is the last time we processed usage, defaults to checking the 5 previous buckets
-        var lastUsageSave = await _cache.GetAsync("usage:last-organization-save", utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize));
+        // default to checking the 5 previous buckets
+        var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
+
+        // last usage save is the last time we processed usage
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-organization-save");
+        if (lastUsageSaveCache.HasValue)
+            lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
 
@@ -62,20 +68,32 @@ public class UsageService2 {
                 await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
 
                 await _organizationRepository.SaveAsync(organization);
+
+                await _cache.RemoveAllAsync(new[] {
+                    GetBucketTotalCacheKey(bucketUtc, organizationId),
+                    GetBucketDiscardedCacheKey(bucketUtc, organizationId),
+                    GetBucketTooBigCacheKey(bucketUtc, organizationId)
+                });
             }
+
+            await _cache.SetAsync("usage:last-organization-save", bucketUtc);
 
             bucketUtc = bucketUtc.Add(_bucketSize);
             organizationIdsValue = await _cache.GetListAsync<string>(GetOrganizationSetKey(bucketUtc));
-
-            await _cache.SetAsync("usage:last-organization-save", bucketUtc);
         }
     }
 
     public async Task SavePendingProjectUsageInfo() {
         var utcNow = SystemClock.UtcNow;
 
-        // last usage save is the last time we processed usage, defaults to checking the 5 previous buckets
-        var lastUsageSave = await _cache.GetAsync("usage:last-project-save", utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize));
+        // default to checking the 5 previous buckets
+        var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
+
+        // last usage save is the last time we processed usage
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-project-save");
+        if (lastUsageSaveCache.HasValue)
+            lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
 
@@ -105,12 +123,18 @@ public class UsageService2 {
                 await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total);
 
                 await _projectRepository.SaveAsync(project);
+
+                await _cache.RemoveAllAsync(new[] {
+                    GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
+                    GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId),
+                    GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
+                });
             }
+
+            await _cache.SetAsync("usage:last-project-save", bucketUtc);
 
             bucketUtc = bucketUtc.Add(_bucketSize);
             projectIdsValue = await _cache.GetListAsync<string>(GetProjectSetKey(bucketUtc));
-
-            await _cache.SetAsync("usage:last-project-save", bucketUtc);
         }
     }
 
