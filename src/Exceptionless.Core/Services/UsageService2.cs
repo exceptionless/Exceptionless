@@ -47,33 +47,37 @@ public class UsageService2 {
 
         // do not process current bucket, should only be processing buckets whose window of time are complete
         while (bucketUtc < currentBucketUtc) {
-            await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
+            if (organizationIdsValue.HasValue) {
+                // Should we wait to remove this in case there is a failure? We should just remove the organization id once processed.
+                await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
 
-            foreach (var organizationId in organizationIdsValue.Value) {
-                var organization = await _organizationRepository.GetByIdAsync(organizationId);
-                if (organization == null)
-                    continue;
+                foreach (var organizationId in organizationIdsValue.Value) {
+                    var organization = await _organizationRepository.GetByIdAsync(organizationId);
+                    if (organization == null)
+                        continue;
 
-                var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
-                var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
-                var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
+                    var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
+                    var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
+                    var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
 
-                organization.LastEventDateUtc = SystemClock.UtcNow;
+                    organization.LastEventDateUtc = SystemClock.UtcNow;
 
-                var usage = organization.GetCurrentMonthlyUsage();
-                usage.Total += bucketTotal?.Value ?? 0;
-                usage.Blocked += bucketDiscarded?.Value ?? 0;
-                usage.TooBig += bucketTooBig?.Value ?? 0;
+                    // TODO: This needs to use the bucket date for usage.
+                    var usage = organization.GetCurrentMonthlyUsage();
+                    usage.Total += bucketTotal?.Value ?? 0;
+                    usage.Blocked += bucketDiscarded?.Value ?? 0;
+                    usage.TooBig += bucketTooBig?.Value ?? 0;
 
-                await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
+                    await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
 
-                await _organizationRepository.SaveAsync(organization);
+                    await _organizationRepository.SaveAsync(organization);
 
-                await _cache.RemoveAllAsync(new[] {
-                    GetBucketTotalCacheKey(bucketUtc, organizationId),
-                    GetBucketDiscardedCacheKey(bucketUtc, organizationId),
-                    GetBucketTooBigCacheKey(bucketUtc, organizationId)
-                });
+                    await _cache.RemoveAllAsync(new[] {
+                        GetBucketTotalCacheKey(bucketUtc, organizationId),
+                        GetBucketDiscardedCacheKey(bucketUtc, organizationId),
+                        GetBucketTooBigCacheKey(bucketUtc, organizationId)
+                    });
+                }
             }
 
             await _cache.SetAsync("usage:last-organization-save", bucketUtc);
@@ -176,7 +180,7 @@ public class UsageService2 {
         if (currentTotalCache.HasValue) {
             currentTotal = currentTotalCache.Value;
         } else {
-            if (context.Organization == null)
+            if (context.Organization is null)
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
             currentTotal = context.Organization.GetCurrentMonthlyTotal();
