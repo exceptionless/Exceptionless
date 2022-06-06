@@ -82,6 +82,7 @@ public static class AppDiagnostics {
     internal static readonly Histogram<double> PostsAbandonTime = Meter.CreateHistogram<double>("exceptionless.posts.abandontime", description: "Time to get event post", unit: "ms");
     internal static readonly Histogram<double> PostsCompleteTime = Meter.CreateHistogram<double>("exceptionless.posts.completetime", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> PostsDiscarded = Meter.CreateCounter<int>("exceptionless.posts.discarded", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> PostTooBig = Meter.CreateCounter<int>("exceptionless.posts.toobig", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> PostsBlocked = Meter.CreateCounter<int>("exceptionless.posts.blocked", description: "Time to get event post", unit: "ms");
 
     internal static readonly Histogram<long> PostsMessageSize = Meter.CreateHistogram<long>("exceptionless.posts.message.size", description: "Size of posts", unit: "bytes");

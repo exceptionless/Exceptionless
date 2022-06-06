@@ -2,6 +2,7 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -15,14 +16,16 @@ public class OrganizationService : IStartupAction {
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IWebHookRepository _webHookRepository;
+    private readonly ICacheClient _cache;
     private readonly StripeOptions _stripeOptions;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, StripeOptions stripeOptions, ILoggerFactory loggerFactory = null) {
+    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, StripeOptions stripeOptions, ILoggerFactory loggerFactory = null) {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
+        _cache = cache;
         _stripeOptions = stripeOptions;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
     }
@@ -35,6 +38,8 @@ public class OrganizationService : IStartupAction {
     private async Task OrgChanged(object source, ModifiedDocumentsEventArgs<Organization> args) {
         foreach (var doc in args.Documents) {
             if (doc.Original != null) {
+                await _cache.SetAsync($"usage:limits:{doc.Value.Id}", doc.Value.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(1));
+
                 if (doc.Original.IsSuspended == false && doc.Value.IsSuspended == true)
                     await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());
                 else if (doc.Original.IsSuspended == true && doc.Value.IsSuspended == false)

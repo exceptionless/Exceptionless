@@ -44,23 +44,13 @@ public static class OrganizationExtensions {
         organization.SuspendedByUserId = null;
     }
 
-    public static int GetHourlyEventLimit(this Organization organization, int currentMonthlyTotal, int currentMonthlyBlocked, string freePlanId) {
-        if (organization.MaxEventsPerMonth <= 0)
-            return Int32.MaxValue;
- 
-        int eventsLeftInMonth = organization.GetMaxEventsPerMonthWithBonus() - (currentMonthlyTotal - currentMonthlyBlocked);
-        if (eventsLeftInMonth < 0)
-            return 0;
+    public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
+        if (apiThrottleLimit == Int32.MaxValue)
+            return false;
 
-        if (organization.PlanId == freePlanId)
-            return eventsLeftInMonth;
-
-        var utcNow = SystemClock.UtcNow;
-        double hoursLeftInMonth = (utcNow.EndOfMonth() - utcNow).TotalHours;
-        if (hoursLeftInMonth < 10.0)
-            return eventsLeftInMonth;
-
-        return (int)Math.Ceiling(eventsLeftInMonth / hoursLeftInMonth * 10d);
+        string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
+        var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
+        return limit.HasValue && limit.Value >= apiThrottleLimit;
     }
 
     public static int GetMaxEventsPerMonthWithBonus(this Organization organization) {
@@ -71,58 +61,38 @@ public static class OrganizationExtensions {
         return organization.MaxEventsPerMonth + bonusEvents;
     }
 
-    public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
-        if (apiThrottleLimit == Int32.MaxValue)
-            return false;
-
-        string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
-        var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
-        return limit.HasValue && limit.Value >= apiThrottleLimit;
-    }
-
     public static bool IsOverMonthlyLimit(this Organization organization) {
         if (organization.MaxEventsPerMonth < 0)
             return false;
 
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-        return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.GetMaxEventsPerMonthWithBonus();
+        return organization.GetCurrentMonthlyTotal() >= organization.GetMaxEventsPerMonthWithBonus();
     }
 
-    public static UsageInfo GetCurrentHourlyUsage(this Organization organization) {
-        return organization.GetHourlyUsage(SystemClock.UtcNow.Floor(TimeSpan.FromHours(1)));
+    public static UsageInfo GetLatestOverage(this Organization organization) {
+        return organization.Overage.OrderByDescending(o => o.Date).FirstOrDefault();
     }
 
-    public static UsageInfo GetHourlyUsage(this Organization organization, DateTime date) {
-        return organization.OverageHours.FirstOrDefault(o => o.Date == date);
-    }
-
-    public static bool IsOverHourlyLimit(this Organization organization, int limit) {
-        var usageInfo = organization.GetCurrentHourlyUsage();
+    public static bool IsOverCurrentBucketLimit(this Organization organization, int limit) {
+        var usageInfo = organization.GetLatestOverage();
         return usageInfo != null && usageInfo.Total > limit;
     }
 
-    public static int GetCurrentHourlyTotal(this Organization organization) {
-        var usageInfo = organization.GetCurrentHourlyUsage();
-        return usageInfo?.Total ?? 0;
-    }
-
-    public static int GetCurrentHourlyBlocked(this Organization organization) {
-        var usageInfo = organization.GetCurrentHourlyUsage();
-        return usageInfo?.Blocked ?? 0;
-    }
-
-    public static int GetCurrentHourlyTooBig(this Organization organization) {
-        var usageInfo = organization.GetCurrentHourlyUsage();
-        return usageInfo?.TooBig ?? 0;
-    }
-
     public static UsageInfo GetCurrentMonthlyUsage(this Organization organization) {
-        return organization.GetMonthlyUsage(new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc));
+        return organization.GetMonthlyUsage(SystemClock.UtcNow);
     }
 
     public static UsageInfo GetMonthlyUsage(this Organization organization, DateTime date) {
-        return organization.Usage.FirstOrDefault(o => o.Date == date);
+        var usage = organization.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
+        if (usage != null)
+            return usage;
+
+        usage = new UsageInfo {
+            Date = date.StartOfMonth(),
+            Limit = organization.GetMaxEventsPerMonthWithBonus()
+        };
+        organization.Usage.Add(usage);
+
+        return usage;
     }
 
     public static int GetCurrentMonthlyTotal(this Organization organization) {
@@ -142,7 +112,7 @@ public static class OrganizationExtensions {
 
     public static void SetHourlyOverage(this Organization organization, int total, int blocked, int tooBig, int limit) {
         var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        organization.OverageHours.SetUsage(date, total, blocked, tooBig, limit, TimeSpan.FromDays(3));
+        organization.Overage.SetUsage(date, total, blocked, tooBig, limit, TimeSpan.FromDays(3));
     }
 
     public static void SetMonthlyUsage(this Organization organization, int total, int blocked, int tooBig) {

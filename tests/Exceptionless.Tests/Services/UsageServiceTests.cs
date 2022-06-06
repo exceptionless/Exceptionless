@@ -40,7 +40,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po => {
-            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
+            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsBucket);
             countdown.Signal();
         });
 
@@ -48,13 +48,13 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
         Assert.InRange(organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id), 1, 750);
         Assert.Empty(organization.Usage);
-        Assert.Empty(organization.OverageHours);
+        Assert.Empty(organization.Overage);
 
         int totalToIncrement = organization.GetHourlyEventLimit(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), _plans.FreePlan.Id) - 1;
         Assert.False(await _usageService.IncrementUsageAsync(organization, project, totalToIncrement));
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.Empty(organization.Usage);
-        Assert.Empty(organization.OverageHours);
+        Assert.Empty(organization.Overage);
 
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(2, countdown.CurrentCount);
@@ -86,7 +86,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         var organizationPersistedUsage = organization.Usage.Single();
-        Assert.Single(organization.OverageHours);
+        Assert.Single(organization.Overage);
         Assert.Equal(totalToIncrement + 2, organizationPersistedUsage.Total);
         Assert.Equal(1, organizationPersistedUsage.Blocked);
 
@@ -168,7 +168,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po => {
-            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
+            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsBucket);
             countdown.Signal();
         });
 
@@ -218,7 +218,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po => {
-            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
+            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsBucket);
             countdown.Signal();
         });
 

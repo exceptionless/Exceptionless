@@ -450,7 +450,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
 
             _billingManager.ApplyBillingPlan(organization, plan, CurrentUser);
-            await _repository.SaveAsync(organization, o => o.Cache());
+            await _repository.SaveAsync(organization, o => o.Cache().Originals());
             await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
         }
         catch (Exception ex) {
