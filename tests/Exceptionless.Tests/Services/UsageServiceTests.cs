@@ -53,10 +53,6 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         int totalToIncrement = eventsLeftInBucket - 1;
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, totalToIncrement);
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
-        Assert.Empty(organization.Usage);
-        Assert.Empty(organization.Overage);
-
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(1, countdown.CurrentCount);
 
@@ -87,6 +83,112 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         Assert.Equal(eventsLeftInBucket, usage.Total);
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+    }
+
+    [Fact]
+    public async Task CanIncrementOverageUsageAsync() {
+        var messageBus = GetService<IMessageBus>();
+
+        var countdown = new AsyncCountdownEvent(1);
+        await messageBus.SubscribeAsync<PlanOverage>(po => {
+            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsBucket);
+            countdown.Signal();
+        });
+
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        Assert.InRange(eventsLeftInBucket, 1, 750);
+        Assert.Empty(organization.Usage);
+        Assert.Empty(organization.Overage);
+        
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket + 1);
+        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+        Assert.Equal(1, countdown.CurrentCount);
+
+        int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
+        Assert.Equal(0, eventsLeft);
+        
+        await _usageService.SavePendingOrganizationUsageInfo();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        var overage = organization.Overage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, overage.Limit);
+        Assert.Equal(eventsLeftInBucket, overage.Total);
+        Assert.Equal(0, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
+
+        var usage = organization.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(eventsLeftInBucket, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+
+        await _usageService.SavePendingProjectUsageInfo();
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        overage = project.Overage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, overage.Limit);
+        Assert.Equal(eventsLeftInBucket, overage.Total);
+        Assert.Equal(0, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
+
+        usage = project.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(eventsLeftInBucket, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+    }
+
+    [Fact]
+    public async Task CanIncrementDiscardedAsync() {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
+        
+        await _usageService.IncrementDiscardedAsync(organization.Id, project.Id);
+
+        await _usageService.SavePendingOrganizationUsageInfo();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.Empty(organization.Usage);
+        var usage = organization.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(1, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+
+        await _usageService.SavePendingProjectUsageInfo();
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.Empty(project.Usage);
+
+        usage = project.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(1, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+    }
+
+    [Fact]
+    public async Task CanIncrementTooBigAsync() {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        await _usageService.IncrementTooBigAsync(organization.Id, project.Id);
+
+        await _usageService.SavePendingOrganizationUsageInfo();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.Empty(organization.Usage);
+        var usage = organization.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(1, usage.TooBig);
+
+        await _usageService.SavePendingProjectUsageInfo();
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.Empty(project.Usage);
+        usage = project.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(1, usage.TooBig);
     }
 
     /*

@@ -219,6 +219,7 @@ public class UsageService2 {
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
 
         if (bucketTotal >= bucketLimit) {
+            // TODO: Shouldn't this check to see if we are over the org maxEventsPerMonth for the IsBucket limit? Kinda wish this didn't say IsBucket
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsBucket = true });
             // set cache key that says the org is being throttled due to being over the bucket event limit
         }
