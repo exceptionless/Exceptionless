@@ -92,7 +92,7 @@ public class AdminController : ExceptionlessApiController {
         organization.RemoveSuspension();
         _billingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
 
-        await _organizationRepository.SaveAsync(organization, o => o.Cache());
+        await _organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
         await _messagePublisher.PublishAsync(new PlanChanged {
             OrganizationId = organization.Id
         });
@@ -111,7 +111,7 @@ public class AdminController : ExceptionlessApiController {
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
         _billingManager.ApplyBonus(organization, bonusEvents, expires);
-        await _organizationRepository.SaveAsync(organization, o => o.Cache());
+        await _organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
 
         return Ok(new { Success = true });
     }

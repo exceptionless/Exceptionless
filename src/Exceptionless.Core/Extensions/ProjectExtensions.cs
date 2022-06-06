@@ -52,7 +52,7 @@ public static class ProjectExtensions {
     }
 
     public static UsageInfo GetHourlyUsage(this Project project, DateTime date) {
-        return project.OverageHours.FirstOrDefault(o => o.Date == date);
+        return project.Overage.FirstOrDefault(o => o.Date == date);
     }
 
     public static int GetCurrentHourlyTotal(this Project project) {
@@ -71,11 +71,20 @@ public static class ProjectExtensions {
     }
 
     public static UsageInfo GetCurrentMonthlyUsage(this Project project) {
-        return project.GetMonthlyUsage(new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc));
+        return project.GetMonthlyUsage(SystemClock.UtcNow);
     }
 
     public static UsageInfo GetMonthlyUsage(this Project project, DateTime date) {
-        return project.Usage.FirstOrDefault(o => o.Date == date);
+        var usage = project.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
+        if (usage != null)
+            return usage;
+
+        usage = new UsageInfo {
+            Date = date.StartOfMonth(),
+        };
+        project.Usage.Add(usage);
+
+        return usage;
     }
 
     public static int GetCurrentMonthlyTotal(this Project project) {
@@ -95,7 +104,7 @@ public static class ProjectExtensions {
 
     public static void SetHourlyOverage(this Project project, double total, double blocked, double tooBig, int hourlyLimit) {
         var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        project.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, hourlyLimit, TimeSpan.FromDays(3));
+        project.Overage.SetUsage(date, (int)total, (int)blocked, (int)tooBig, hourlyLimit, TimeSpan.FromDays(3));
     }
 
     public static void SetMonthlyUsage(this Project project, double total, double blocked, double tooBig, int monthlyLimit) {

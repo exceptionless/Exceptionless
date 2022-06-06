@@ -28,7 +28,4 @@ jobs:
       working-directory: docker/elasticsearch/8.x
       run: |
         VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
-        docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION --tag exceptionless/elasticsearch:latest

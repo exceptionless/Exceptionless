@@ -53,7 +53,7 @@ internal static class OrganizationIndexExtensions {
                 .Number(fu => fu.Name(i => i.Blocked))
                 .Number(fu => fu.Name(i => i.Limit))
                 .Number(fu => fu.Name(i => i.TooBig))))
-            .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).Properties(p => p
+            .Object<UsageInfo>(ui => ui.Name(o => o.Overage.First()).Properties(p => p
                 .Date(fu => fu.Name(i => i.Date))
                 .Number(fu => fu.Name(i => i.Total))
                 .Number(fu => fu.Name(i => i.Blocked))

@@ -12,7 +12,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
         PromotedTabs = new HashSet<string>();
         DeleteBotDataEnabled = false;
         Usage = new Collection<UsageInfo>();
-        OverageHours = new Collection<UsageInfo>();
+        Overage = new Collection<UsageInfo>();
         Data = new DataDictionary();
     }
 
@@ -35,12 +35,12 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     public Dictionary<string, NotificationSettings> NotificationSettings { get; set; }
 
     /// <summary>
-    /// Hours over event limit.
+    /// Time buckets when project was throttled for being over time bucket event limit.
     /// </summary>
-    public ICollection<UsageInfo> OverageHours { get; set; }
+    public ICollection<UsageInfo> Overage { get; set; }
 
     /// <summary>
-    /// Account event usage information.
+    /// Project event usage information.
     /// </summary>
     public ICollection<UsageInfo> Usage { get; set; }
     public DateTime? LastEventDateUtc { get; set; }

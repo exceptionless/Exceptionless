@@ -127,14 +127,14 @@ public sealed class UsageService {
         if (justWentOverMonthly)
             tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id }));
         else if (justWentOverHourly)
-            tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id, IsHourly = true }));
+            tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id, IsBucket = true }));
 
         await Task.WhenAll(tasks).AnyContext();
         return overLimit;
     }
 
     public async Task<Usage> GetUsageAsync(Organization org) {
-        var hourlyUsage = org.GetCurrentHourlyUsage();
+        var hourlyUsage = org.GetLatestOverage();
         var monthlyUsage = org.GetCurrentMonthlyUsage();
 
         var hourlyTotal = _cache.GetAsync(GetHourlyTotalCacheKey(org.Id), hourlyUsage.Total);
