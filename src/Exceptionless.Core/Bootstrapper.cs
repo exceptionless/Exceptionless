@@ -165,7 +165,6 @@ public class Bootstrapper {
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddSingleton<UsageService>();
-        services.AddSingleton<UsageService2>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
 

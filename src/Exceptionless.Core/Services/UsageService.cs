@@ -1,10 +1,9 @@
-using Exceptionless.Core.Billing;
+﻿using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Extensions;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
@@ -13,301 +12,331 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
 
-public sealed class UsageService {
+public class UsageService {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
     private readonly IMessagePublisher _messagePublisher;
-    private readonly BillingPlans _plans;
     private readonly ILogger<UsageService> _logger;
+    private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
     public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, BillingPlans plans, ILoggerFactory loggerFactory = null) {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _cache = cache;
         _messagePublisher = messagePublisher;
-        _plans = plans;
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
 
-    public async Task<bool> IsOverLimitAsync(Organization organization) {
-        if (organization is null || organization.MaxEventsPerMonth < 0)
-            return false;
+    public async Task SavePendingOrganizationUsageInfo() {
+        var utcNow = SystemClock.UtcNow;
 
-        if (organization.IsSuspended)
-            return true;
+        // default to checking the 5 previous buckets
+        var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
 
-        // TODO: Simplify this by removing blocked count from total.. We also need a migration for this.
-        int monthlyTotal = await _cache.GetAsync(GetMonthlyTotalCacheKey(organization.Id), organization.GetCurrentMonthlyTotal());
-        int monthlyBlocked = await _cache.GetAsync(GetMonthlyBlockedCacheKey(organization.Id), organization.GetCurrentMonthlyBlocked());
+        // last usage save is the last time we processed usage
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-organization-save");
+        if (lastUsageSaveCache.HasValue)
+            lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
 
-        int hourlyEventLimit = organization.GetHourlyEventLimit(monthlyTotal, monthlyBlocked, _plans.FreePlan.Id);
-        int monthlyEventLimit = organization.GetMaxEventsPerMonthWithBonus();
-        double originalAllowedMonthlyEventTotal = monthlyTotal - monthlyBlocked;
+        var bucketUtc = lastUsageSave;
+        var currentBucketUtc = utcNow.Floor(_bucketSize);
 
-        // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
-        if (originalAllowedMonthlyEventTotal < monthlyEventLimit && (originalAllowedMonthlyEventTotal + hourlyEventLimit) >= monthlyEventLimit)
-            return originalAllowedMonthlyEventTotal < monthlyEventLimit && Math.Max(monthlyTotal - monthlyBlocked - monthlyEventLimit, 0) > 0;
+        // ideally, we would be popping a single org id off this list at a time in case something happens while we are processing these
+        var organizationIdsValue = await _cache.GetListAsync<string>(GetOrganizationSetKey(bucketUtc));
 
-        int hourlyTotal = await _cache.GetAsync(GetHourlyTotalCacheKey(organization.Id), organization.GetCurrentHourlyTotal());
-        int hourlyBlocked = await _cache.GetAsync(GetHourlyBlockedCacheKey(organization.Id), organization.GetCurrentHourlyBlocked());
+        // do not process current bucket, should only be processing buckets whose window of time are complete
+        while (bucketUtc < currentBucketUtc) {
+            if (organizationIdsValue.HasValue) {
+                // Should we wait to remove this in case there is a failure? We should just remove the organization id once processed.
+                await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
 
-        double originalAllowedHourlyEventTotal = hourlyTotal - hourlyBlocked;
-        if ((hourlyTotal - hourlyBlocked) > hourlyEventLimit)
-            return originalAllowedHourlyEventTotal < hourlyEventLimit && Math.Max(hourlyTotal - hourlyBlocked - hourlyEventLimit, 0) > 0;
+                foreach (var organizationId in organizationIdsValue.Value) {
+                    var organization = await _organizationRepository.GetByIdAsync(organizationId);
+                    if (organization == null)
+                        continue;
 
-        if ((monthlyTotal - monthlyBlocked) > monthlyEventLimit)
-            return originalAllowedMonthlyEventTotal < monthlyEventLimit && Math.Max(monthlyTotal - monthlyBlocked - monthlyEventLimit, 0) > 0;
+                    var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
+                    var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
+                    var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
 
-        return false;
+                    organization.LastEventDateUtc = SystemClock.UtcNow;
+
+                    var usage = organization.GetMonthlyUsage(bucketUtc);
+                    usage.Total += bucketTotal?.Value ?? 0;
+                    usage.Blocked += bucketDiscarded?.Value ?? 0;
+                    usage.TooBig += bucketTooBig?.Value ?? 0;
+
+                    await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
+
+                    await _organizationRepository.SaveAsync(organization);
+
+                    await _cache.RemoveAllAsync(new[] {
+                        GetBucketTotalCacheKey(bucketUtc, organizationId),
+                        GetBucketDiscardedCacheKey(bucketUtc, organizationId),
+                        GetBucketTooBigCacheKey(bucketUtc, organizationId)
+                    });
+                }
+            }
+
+            await _cache.SetAsync("usage:last-organization-save", bucketUtc);
+
+            bucketUtc = bucketUtc.Add(_bucketSize);
+            organizationIdsValue = await _cache.GetListAsync<string>(GetOrganizationSetKey(bucketUtc));
+        }
     }
 
-    private readonly TimeSpan _hourlyUsageBucketTimeToLive = TimeSpan.FromMinutes(61);
-    private readonly TimeSpan _monthlyUsageBucketTimeToLive = TimeSpan.FromDays(32);
+    public async Task SavePendingProjectUsageInfo() {
+        var utcNow = SystemClock.UtcNow;
 
-    public Task IncrementTotalAsync(Organization organization, Project project, int count = 1) {
-        if (count < 1)
-            throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
+        // default to checking the 5 previous buckets
+        var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
 
-        var bucket = SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15));
-        return Task.WhenAll(
-            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id), count, _hourlyUsageBucketTimeToLive, organization.GetCurrentHourlyTotal()),
-            _cache.IncrementAsync(GetHourlyTotalCacheKey(organization.Id, project.Id), count, _hourlyUsageBucketTimeToLive, project.GetCurrentHourlyTotal()),
-            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id), count, _monthlyUsageBucketTimeToLive, organization.GetCurrentMonthlyTotal()),
-            _cache.IncrementAsync(GetMonthlyTotalCacheKey(organization.Id, project.Id), count, _monthlyUsageBucketTimeToLive, project.GetCurrentMonthlyTotal()),
-            QueueSaveUsageAsync(organization, project, bucket.AddMinutes(15))
-        );
+        // last usage save is the last time we processed usage
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-project-save");
+        if (lastUsageSaveCache.HasValue)
+            lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+
+        var bucketUtc = lastUsageSave;
+        var currentBucketUtc = utcNow.Floor(_bucketSize);
+
+        // ideally, we would be popping a single org id off this list at a time in case something happens while we are processing these
+        var projectIdsValue = await _cache.GetListAsync<string>(GetProjectSetKey(bucketUtc));
+
+        // do not process current bucket, should only be processing buckets whose window of time are complete
+        while (bucketUtc < currentBucketUtc) {
+            if (projectIdsValue.HasValue) {
+                await _cache.RemoveAsync(GetProjectSetKey(bucketUtc));
+
+                foreach (var projectId in projectIdsValue.Value) {
+                    var project = await _projectRepository.GetByIdAsync(projectId);
+                    if (project == null)
+                        continue;
+
+                    var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId));
+                    var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId));
+                    var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId));
+
+                    project.LastEventDateUtc = SystemClock.UtcNow;
+
+                    var usage = project.GetMonthlyUsage(bucketUtc);
+                    usage.Total += bucketTotal?.Value ?? 0;
+                    usage.Blocked += bucketDiscarded?.Value ?? 0;
+                    usage.TooBig += bucketTooBig?.Value ?? 0;
+
+                    await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total);
+
+                    await _projectRepository.SaveAsync(project);
+
+                    await _cache.RemoveAllAsync(new[] {
+                    GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
+                    GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId),
+                    GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
+                });
+                }
+            }
+
+            await _cache.SetAsync("usage:last-project-save", bucketUtc);
+
+            bucketUtc = bucketUtc.Add(_bucketSize);
+            projectIdsValue = await _cache.GetListAsync<string>(GetProjectSetKey(bucketUtc));
+        }
     }
 
-    public Task IncrementBlockedAsync(Organization organization, Project project, int count = 1) {
-        if (count < 1)
-            throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
-
-        var bucket = SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15));
-        return Task.WhenAll(
-            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id), count, _hourlyUsageBucketTimeToLive, organization.GetCurrentHourlyBlocked()),
-            _cache.IncrementAsync(GetHourlyBlockedCacheKey(organization.Id, project.Id), count, _hourlyUsageBucketTimeToLive, project.GetCurrentHourlyBlocked()),
-            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id), count, _monthlyUsageBucketTimeToLive, organization.GetCurrentMonthlyBlocked()),
-            _cache.IncrementAsync(GetMonthlyBlockedCacheKey(organization.Id, project.Id), count, _monthlyUsageBucketTimeToLive, project.GetCurrentMonthlyBlocked()),
-            QueueSaveUsageAsync(organization, project, bucket.AddMinutes(15))
-        );
+    public ValueTask<int> GetMaxEventsPerMonthAsync(string organizationId) {
+        return GetMaxEventsPerMonthAsync((organizationId, null));
     }
 
-    public Task IncrementTooBigAsync(Organization organization, Project project, int count = 1) {
-        if (count < 1)
-            throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive number");
+    private async ValueTask<int> GetMaxEventsPerMonthAsync((string OrganizationId, Organization Organization) context) {
+        // maybe use an in memory cache for this
+        int maxEventsPerMonth = 0;
+        var maxEventsPerMonthCache = await _cache.GetAsync<int>($"usage:limits:{context.OrganizationId}");
+        if (maxEventsPerMonthCache.HasValue) {
+            maxEventsPerMonth = maxEventsPerMonthCache.Value;
+        } else {
+            if (context.Organization == null)
+                context.Organization = await _organizationRepository.GetByIdAsync(context.OrganizationId, o => o.Cache());
 
-        var bucket = SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15));
-        return Task.WhenAll(
-            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id), count, _hourlyUsageBucketTimeToLive, organization.GetCurrentHourlyTooBig()),
-            _cache.IncrementAsync(GetHourlyTooBigCacheKey(organization.Id, project.Id), count, _hourlyUsageBucketTimeToLive, project.GetCurrentHourlyTooBig()),
-            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id), count, _monthlyUsageBucketTimeToLive, organization.GetCurrentMonthlyTooBig()),
-            _cache.IncrementAsync(GetMonthlyTooBigCacheKey(organization.Id, project.Id), count, _monthlyUsageBucketTimeToLive, project.GetCurrentMonthlyTooBig()),
-            QueueSaveUsageAsync(organization, project, bucket.AddMinutes(15))
-        );
+            if (context.Organization != null) {
+                maxEventsPerMonth = context.Organization.GetMaxEventsPerMonthWithBonus();
+                await _cache.SetAsync($"usage:limits:{context.OrganizationId}", maxEventsPerMonth, TimeSpan.FromDays(1));
+            }
+        }
+
+        return maxEventsPerMonth;
     }
 
-    private Task<long> QueueSaveUsageAsync(Organization organization, Project project, DateTime nextSaveUtc) {
-        return _cache.ListAddAsync("usage:save", new[] {
-            new SaveUsage { OrganizationId = organization.Id, NextSaveUtc = nextSaveUtc },
-            new SaveUsage { OrganizationId = organization.Id, ProjectId = project.Id, NextSaveUtc = nextSaveUtc }
-        }, _hourlyUsageBucketTimeToLive);
-    }
+    public async Task<UsageInfo> GetUsageAsync(string organizationId) {
+        var utcNow = SystemClock.UtcNow;
 
-    public async Task<bool> IncrementUsageAsync(Organization organization, Project project, int count = 1, bool applyHourlyLimit = true) {
-        bool justWentOverHourly = orgUsage.HourlyTotal > organization.GetHourlyEventLimit(orgUsage.MonthlyTotal, orgUsage.MonthlyBlocked, _plans.FreePlan.Id) && orgUsage.HourlyTotal <= organization.GetHourlyEventLimit(orgUsage.MonthlyTotal, orgUsage.MonthlyBlocked, _plans.FreePlan.Id) + count;
-        bool justWentOverMonthly = orgUsage.MonthlyTotal > organization.GetMaxEventsPerMonthWithBonus() && orgUsage.MonthlyTotal <= organization.GetMaxEventsPerMonthWithBonus() + count;
-        var projectUsage = await IncrementUsageAsync(organization, project, tooBig, count, overLimit, (int)totalBlocked).AnyContext();
+        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
-        var tasks = new List<Task>(3) {
-            SaveUsageAsync(organization, justWentOverHourly, justWentOverMonthly, orgUsage),
-            SaveUsageAsync(organization, project, justWentOverHourly, justWentOverMonthly, projectUsage)
+        // get current bucket counters
+        var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, organizationId));
+        var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(utcNow, organizationId));
+        var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(utcNow, organizationId));
+
+        var currentUsage = organization.GetCurrentMonthlyUsage();
+        return new UsageInfo {
+            Date = currentUsage.Date,
+            Limit = currentUsage.Limit,
+            Total = currentUsage.Total + bucketTotal?.Value ?? 0,
+            Blocked = currentUsage.Blocked + bucketDiscarded?.Value ?? 0,
+            TooBig = currentUsage.TooBig + bucketTooBig?.Value ?? 0,
         };
-
-        if (justWentOverMonthly)
-            tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id }));
-        else if (justWentOverHourly)
-            tasks.Add(_messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organization.Id, IsBucket = true }));
-
-        await Task.WhenAll(tasks).AnyContext();
-        return overLimit;
     }
 
-    public async Task<Usage> GetUsageAsync(Organization org) {
-        var hourlyUsage = org.GetLatestOverage();
-        var monthlyUsage = org.GetCurrentMonthlyUsage();
+    public async Task<int> GetEventsLeftAsync(string organizationId) {
+        var utcNow = SystemClock.UtcNow;
 
-        var hourlyTotal = _cache.GetAsync(GetHourlyTotalCacheKey(org.Id), hourlyUsage.Total);
-        var monthlyTotal = _cache.GetAsync(GetMonthlyTotalCacheKey(org.Id), monthlyUsage.Total);
-        var hourlyTooBig = _cache.GetAsync(GetHourlyTooBigCacheKey(org.Id), hourlyUsage.TooBig);
-        var monthlyTooBig = _cache.GetAsync(GetMonthlyTooBigCacheKey(org.Id), monthlyUsage.TooBig);
-        var hourlyBlocked = _cache.GetAsync(GetHourlyBlockedCacheKey(org.Id), hourlyUsage.Blocked);
-        var monthlyBlocked = _cache.GetAsync(GetMonthlyBlockedCacheKey(org.Id), monthlyUsage.Blocked);
-        await Task.WhenAll(hourlyTotal, monthlyTotal, hourlyTooBig, monthlyTooBig, hourlyBlocked, monthlyBlocked).AnyContext();
+        var context = (OrganizationId: organizationId, Organization: (Organization)null);
+        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
 
-        return new Usage {
-            HourlyTotal = hourlyTotal.Result,
-            MonthlyTotal = monthlyTotal.Result,
-            HourlyTooBig = hourlyTooBig.Result,
-            MonthlyTooBig = monthlyTooBig.Result,
-            HourlyBlocked = hourlyBlocked.Result,
-            MonthlyBlocked = monthlyBlocked.Result,
-        };
-    }
-
-    public async Task<Usage> GetUsageAsync(Organization org, Project project) {
-        var hourlyUsage = project.GetCurrentHourlyUsage();
-        var monthlyUsage = project.GetCurrentMonthlyUsage();
-
-        var hourlyTotal = _cache.GetAsync(GetHourlyTotalCacheKey(org.Id, project.Id), hourlyUsage.Total);
-        var monthlyTotal = _cache.GetAsync(GetMonthlyTotalCacheKey(org.Id, project.Id), monthlyUsage.Total);
-        var hourlyTooBig = _cache.GetAsync(GetHourlyTooBigCacheKey(org.Id, project.Id), hourlyUsage.TooBig);
-        var monthlyTooBig = _cache.GetAsync(GetMonthlyTooBigCacheKey(org.Id, project.Id), monthlyUsage.TooBig);
-        var hourlyBlocked = _cache.GetAsync(GetHourlyBlockedCacheKey(org.Id, project.Id), hourlyUsage.Blocked);
-        var monthlyBlocked = _cache.GetAsync(GetMonthlyBlockedCacheKey(org.Id, project.Id), monthlyUsage.Blocked);
-        await Task.WhenAll(hourlyTotal, monthlyTotal, hourlyTooBig, monthlyTooBig, hourlyBlocked, monthlyBlocked).AnyContext();
-
-        return new Usage {
-            HourlyTotal = hourlyTotal.Result,
-            MonthlyTotal = monthlyTotal.Result,
-            HourlyTooBig = hourlyTooBig.Result,
-            MonthlyTooBig = monthlyTooBig.Result,
-            HourlyBlocked = hourlyBlocked.Result,
-            MonthlyBlocked = monthlyBlocked.Result,
-        };
-    }
-
-    private async Task SaveUsageAsync(Organization org, bool justWentOverHourly, bool justWentOverMonthly, Usage usage) {
-        bool shouldSaveUsage = await ShouldSaveUsageAsync(org, null, justWentOverHourly, justWentOverMonthly).AnyContext();
-        if (!shouldSaveUsage)
-            return;
-
-        string orgId = org.Id;
-        try {
-            org = await _organizationRepository.GetByIdAsync(orgId).AnyContext();
-            if (org == null)
-                return;
-
-            org.LastEventDateUtc = SystemClock.UtcNow;
-            org.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig);
-            if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
-                org.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(usage.MonthlyTotal, usage.MonthlyBlocked, _plans.FreePlan.Id));
-
-            _logger.LogInformation("Saving organization {OrganizationName} usage", org.Name);
-            await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
-            await _cache.SetAsync(GetUsageSavedCacheKey(orgId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
-        }
-        catch (Exception ex) {
-            _logger.LogError(ex, "Error while saving organization {OrganizationId} usage data.", orgId);
-
-            // Set the next document save for 5 seconds in the future.
-            await _cache.SetAsync(GetUsageSavedCacheKey(orgId), SystemClock.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
-        }
-    }
-
-    private async Task SaveUsageAsync(Organization org, Project project, bool justWentOverHourly, bool justWentOverMonthly, Usage usage) {
-        bool shouldSaveUsage = await ShouldSaveUsageAsync(org, project, justWentOverHourly, justWentOverMonthly).AnyContext();
-        if (!shouldSaveUsage)
-            return;
-
-        string projectId = project.Id;
-        try {
-            project = await _projectRepository.GetByIdAsync(projectId).AnyContext();
-            if (project == null)
-                return;
-
-            project.LastEventDateUtc = SystemClock.UtcNow;
-            project.SetMonthlyUsage(usage.MonthlyTotal, usage.MonthlyBlocked, usage.MonthlyTooBig, org.GetMaxEventsPerMonthWithBonus());
-            if (usage.HourlyBlocked > 0 || usage.HourlyTooBig > 0)
-                project.SetHourlyOverage(usage.HourlyTotal, usage.HourlyBlocked, usage.HourlyTooBig, org.GetHourlyEventLimit(usage.MonthlyTotal, usage.MonthlyBlocked, _plans.FreePlan.Id));
-
-            _logger.LogInformation("Saving project {ProjectName} usage", project.Name);
-            await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
-            await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, projectId), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
-        }
-        catch (Exception ex) {
-            _logger.LogError(ex, "Error while saving project {ProjectId} usage data.", projectId);
-
-            // Set the next document save for 5 seconds in the future.
-            await _cache.SetAsync(GetUsageSavedCacheKey(org.Id, projectId), SystemClock.UtcNow.SubtractMinutes(4).SubtractSeconds(55), TimeSpan.FromDays(32)).AnyContext();
-        }
-    }
-
-    private async Task<bool> ShouldSaveUsageAsync(Organization organization, Project project, bool justWentOverHourly, bool justWentOverMonthly) {
-        // save usages if we just went over one of the limits
-        bool shouldSaveUsage = justWentOverHourly || justWentOverMonthly;
-        if (shouldSaveUsage)
-            return true;
-
-        var lastCounterSavedDate = await _cache.GetAsync<DateTime>(GetUsageSavedCacheKey(organization.Id, project?.Id)).AnyContext();
-        // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
-        if (!lastCounterSavedDate.HasValue)
-            await _cache.SetAsync(GetUsageSavedCacheKey(organization.Id, project?.Id), SystemClock.UtcNow, TimeSpan.FromDays(32)).AnyContext();
-
-        // TODO: If the save period is in the next hour we will lose all data in the past five minutes.
-        // save usages if the last time we saved them is more than 5 minutes ago
-        if (lastCounterSavedDate.HasValue && SystemClock.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= 5)
-            shouldSaveUsage = true;
-
-        return shouldSaveUsage;
-    }
-
-    public async Task<int> GetRemainingEventLimitAsync(Organization organization) {
-        if (organization == null || organization.MaxEventsPerMonth < 0)
+        // check for unlimited (-1) events
+        if (maxEventsPerMonth < 0)
             return Int32.MaxValue;
 
-        string monthlyCacheKey = GetMonthlyTotalCacheKey(organization.Id);
-        int monthlyEventCount = await _cache.GetAsync(monthlyCacheKey, 0).AnyContext();
-        return Math.Max(0, organization.GetMaxEventsPerMonthWithBonus() - monthlyEventCount);
+        int currentTotal;
+        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
+        if (currentTotalCache.HasValue) {
+            currentTotal = currentTotalCache.Value;
+        } else {
+            if (context.Organization is null)
+                context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+
+            currentTotal = context.Organization.GetCurrentMonthlyTotal();
+        }
+
+        // if already over limit, return
+        if (currentTotal >= maxEventsPerMonth)
+            return 0;
+
+        // get current bucket counter and add it to total
+        var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, organizationId));
+        if (bucketTotal.HasValue)
+            currentTotal += bucketTotal.Value;
+
+        // check to see if adding this bucket puts the org over the limit
+        if (currentTotal >= maxEventsPerMonth)
+            return 0;
+
+        // get a bucket level limit to help spread the events out more evenly (allows bursting)
+        int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
+        int eventsLeftInBucket = bucketLimit - (bucketTotal?.Value ?? 0);
+
+        return eventsLeftInBucket;
     }
 
-    private string GetHourlyBlockedCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:blocked", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1) {
+        var utcNow = SystemClock.UtcNow;
+
+        var bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromDays(1));
+        await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromDays(1));
+
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId);
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId);
+
+        var maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
+        int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
+
+        if (bucketTotal >= bucketLimit) {
+            // org will be throttled during the current bucket of time
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsThrottled = true });
+            // set cache key that says the org is being throttled due to being over the bucket event limit
+        }
+
+        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
+        if (currentTotalCache.HasValue && currentTotalCache.Value + bucketTotal >= maxEventsPerMonth) {
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
+            // don't need to set cache key here, in org controller just check current month total is more than max event limit
+        }
     }
 
-    private string GetHourlyTotalCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:total", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    public async Task IncrementDiscardedAsync(string organizationId, string projectId, int eventCount = 1) {
+        var utcNow = SystemClock.UtcNow;
+
+        await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromDays(1));
+        await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromDays(1));
+
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId);
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId);
+
+        AppDiagnostics.EventsDiscarded.Add(eventCount);
     }
 
-    private string GetHourlyTooBigCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:toobig", ":", SystemClock.UtcNow.ToString("MMddHH"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    public async Task IncrementTooBigAsync(string organizationId, string projectId) {
+        var utcNow = SystemClock.UtcNow;
+
+        await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId), 1, TimeSpan.FromDays(1));
+        await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId, projectId), 1, TimeSpan.FromDays(1));
+
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId);
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId);
+        
+        AppDiagnostics.PostTooBig.Add(1);
     }
 
-    private string GetMonthlyBlockedCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:blocked", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    private int GetBucketEventLimit(int maxEventsPerMonth) {
+        if (maxEventsPerMonth < 5000)
+            return maxEventsPerMonth;
+
+        var utcNow = SystemClock.UtcNow;
+        var timeLeftInMonth = utcNow.EndOfMonth() - utcNow;
+        if (timeLeftInMonth < TimeSpan.FromDays(1))
+            return maxEventsPerMonth;
+
+        var bucketsLeftInMonth = timeLeftInMonth / _bucketSize;
+
+        // allow boosting to 10x the max / bucket if the events were divided evenly
+        return (int)Math.Ceiling((maxEventsPerMonth / bucketsLeftInMonth) * 10);
     }
 
-    private string GetMonthlyTotalCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:total", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    private string GetTotalCacheKey(DateTime utcTime, string organizationId, string projectId = null) {
+        int bucket = GetTotalBucket(utcTime);
+
+        if (String.IsNullOrEmpty(projectId))
+            return $"usage:total:{bucket}:{organizationId}:total";
+
+        return $"usage:total:{bucket}:{organizationId}:{projectId}:total";
     }
 
-    private string GetMonthlyTooBigCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:toobig", ":", SystemClock.UtcNow.Date.ToString("MM"), ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    private string GetBucketTotalCacheKey(DateTime utcTime, string organizationId, string projectId = null) {
+        int bucket = GetCurrentBucket(utcTime);
+
+        if (String.IsNullOrEmpty(projectId))
+            return $"usage:{bucket}:{organizationId}:total";
+
+        return $"usage:{bucket}:{organizationId}:{projectId}:total";
     }
 
-    private string GetUsageSavedCacheKey(string organizationId, string projectId = null) {
-        string key = String.Concat("usage:saved", ":", organizationId);
-        return projectId == null ? key : String.Concat(key, ":", projectId);
+    private string GetBucketDiscardedCacheKey(DateTime utcTime, string organizationId, string projectId = null) {
+        int bucket = GetCurrentBucket(utcTime);
+
+        if (String.IsNullOrEmpty(projectId))
+            return $"usage:{bucket}:{organizationId}:discarded";
+
+        return $"usage:{bucket}:{organizationId}:{projectId}:discarded";
     }
 
-    public record struct Usage {
-        public int MonthlyTotal { get; set; }
-        public int HourlyTotal { get; set; }
-        public int MonthlyBlocked { get; set; }
-        public int HourlyBlocked { get; set; }
-        public int MonthlyTooBig { get; set; }
-        public int HourlyTooBig { get; set; }
+    private string GetBucketTooBigCacheKey(DateTime utcTime, string organizationId, string projectId = null) {
+        int bucket = GetCurrentBucket(utcTime);
+
+        if (String.IsNullOrEmpty(projectId))
+            return $"usage:{bucket}:{organizationId}:toobig";
+
+        return $"usage:{bucket}:{organizationId}:{projectId}:toobig";
     }
 
-    public record SaveUsage {
-        public string OrganizationId { get; set; }
-        public string ProjectId { get; set; }
-        public DateTime NextSaveUtc { get; set; }
+    private string GetOrganizationSetKey(DateTime utcTime) {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:organizations";
     }
+
+    private string GetProjectSetKey(DateTime utcTime) {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:projects";
+    }
+
+    private int GetCurrentBucket(DateTime utcTime) => utcTime.Floor(_bucketSize).ToEpoch();
+    private int GetTotalBucket(DateTime utcTime) => utcTime.StartOfMonth().ToEpoch();
 }

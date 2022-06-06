@@ -83,12 +83,12 @@ public class EventPostJobTests : IntegrationTestsBase {
         Log.MinimumLevel = LogLevel.Debug;
 
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
-        var usage = await _usageService.GetUsageAsync(organization);
-        Assert.Equal(0, usage.MonthlyTotal);
+        var usage = await _usageService.GetUsageAsync(organization.Id);
+        Assert.Equal(0, usage.Total);
 
-        usage = await _usageService.GetUsageAsync(organization);
-        Assert.Equal(0, usage.MonthlyTotal);
-        Assert.Equal(0, usage.MonthlyBlocked);
+        usage = await _usageService.GetUsageAsync(organization.Id);
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.Blocked);
 
         var ev = GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test1");
         Assert.NotNull(await EnqueueEventPostAsync(ev));
@@ -104,9 +104,9 @@ public class EventPostJobTests : IntegrationTestsBase {
         var sessionEvent = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Session));
         Assert.NotNull(sessionEvent);
 
-        usage = await _usageService.GetUsageAsync(organization);
-        Assert.Equal(1, usage.MonthlyTotal);
-        Assert.Equal(0, usage.MonthlyBlocked);
+        usage = await _usageService.GetUsageAsync(organization.Id);
+        Assert.Equal(1, usage.Total);
+        Assert.Equal(0, usage.Blocked);
 
         // Mark the stack as discarded
         var logStack = await _stackRepository.GetByIdAsync(logEvent.StackId);
@@ -131,9 +131,9 @@ public class EventPostJobTests : IntegrationTestsBase {
         events = await _eventRepository.GetAllAsync();
         Assert.Equal(3, events.Total);
         
-        usage = await _usageService.GetUsageAsync(organization);
-        Assert.Equal(1, usage.MonthlyTotal);
-        Assert.Equal(0, usage.MonthlyBlocked);
+        usage = await _usageService.GetUsageAsync(organization.Id);
+        Assert.Equal(1, usage.Total);
+        Assert.Equal(0, usage.Blocked);
     }
 
     [Fact]

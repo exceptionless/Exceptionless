@@ -50,7 +50,8 @@ public class Bootstrapper {
 
             CreateMap<NewOrganization, Organization>();
             CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                vo.IsOverHourlyLimit = o.IsOverHourlyLimit(o.GetHourlyEventLimit(o.GetCurrentMonthlyTotal(), o.GetCurrentMonthlyBlocked(), plans.FreePlan.Id));
+                // TODO Change this to a flag that just says if the account is currently being throttled
+                //vo.IsOverHourlyLimit = o.IsOverHourlyLimit(o.GetHourlyEventLimit(o.GetCurrentMonthlyTotal(), o.GetCurrentMonthlyBlocked(), plans.FreePlan.Id));
                 vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
             });
 
