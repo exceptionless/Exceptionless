@@ -69,7 +69,7 @@ public static class OrganizationExtensions {
     }
 
     public static UsageInfo GetLatestOverage(this Organization organization) {
-        return organization.Overage.OrderByDescending(o => o.Date).FirstOrDefault();
+        return organization.Overage.MaxBy(o => o.Date);
     }
 
     public static bool IsOverCurrentBucketLimit(this Organization organization, int limit) {

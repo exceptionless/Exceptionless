@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -17,10 +16,10 @@ public class UsageService {
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
     private readonly IMessagePublisher _messagePublisher;
-    private readonly ILogger<UsageService> _logger;
+    private readonly ILogger _logger;
     private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
-    public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, BillingPlans plans, ILoggerFactory loggerFactory = null) {
+    public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher, ILoggerFactory loggerFactory) {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _cache = cache;
@@ -228,6 +227,9 @@ public class UsageService {
     }
 
     public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1) {
+        if (eventCount <= 0)
+            return;
+
         var utcNow = SystemClock.UtcNow;
 
         var bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromDays(1));
@@ -253,6 +255,9 @@ public class UsageService {
     }
 
     public async Task IncrementDiscardedAsync(string organizationId, string projectId, int eventCount = 1) {
+        if (eventCount <= 0)
+            return;
+
         var utcNow = SystemClock.UtcNow;
 
         await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromDays(1));

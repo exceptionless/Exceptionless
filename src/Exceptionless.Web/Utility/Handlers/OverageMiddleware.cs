@@ -36,18 +36,11 @@ public sealed class OverageMiddleware {
             return;
         }
 
-        string organizationId = context.Request.GetDefaultOrganizationId();
-        var organizationTask = _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-
-        string projectId = context.Request.GetDefaultProjectId();
-        var projectTask = _projectRepository.GetByIdAsync(projectId, o => o.Cache());
-
         bool tooBig = false;
         if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers != null) {
             if (context.Request.Headers.ContentLength.HasValue && context.Request.Headers.ContentLength.Value <= 0) {
-                //_metricsClient.Counter(MetricNames.PostsBlocked);
+                AppDiagnostics.PostsBlocked.Add(1);
                 context.Response.StatusCode = StatusCodes.Status411LengthRequired;
-                await Task.WhenAll(organizationTask, projectTask);
                 return;
             }
 
@@ -66,25 +59,23 @@ public sealed class OverageMiddleware {
             }
         }
 
-        var organization = await organizationTask;
-        var project = await projectTask;
+        string organizationId = context.Request.GetDefaultOrganizationId();
 
         // block large submissions, client should break them up or remove some of the data.
         if (tooBig) {
-            await _usageService.IncrementTooBigAsync(organization.Id, project.Id).AnyContext();
+            string projectId = context.Request.GetDefaultProjectId();
+            await _usageService.IncrementTooBigAsync(organizationId, projectId).AnyContext();
             context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
             return;
         }
 
-        int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id).AnyContext();
+        int eventsLeft = await _usageService.GetEventsLeftAsync(organizationId).AnyContext();
         if (eventsLeft <= 0) {
             AppDiagnostics.PostsBlocked.Add(1);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;
         }
 
-        context.Request.SetOrganization(organization);
-        context.Request.SetProject(project);
         await _next(context);
     }
 }
