@@ -1,25 +1,18 @@
 ﻿using Exceptionless.Web.Extensions;
 using Exceptionless.Core;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
-using Foundatio.Repositories;
 
 namespace Exceptionless.Web.Utility;
 
 public sealed class OverageMiddleware {
-    private readonly IOrganizationRepository _organizationRepository;
-    private readonly IProjectRepository _projectRepository;
     private readonly UsageService _usageService;
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
 
-    public OverageMiddleware(RequestDelegate next, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, UsageService usageService, AppOptions appOptions, ILogger<OverageMiddleware> logger) {
+    public OverageMiddleware(RequestDelegate next, UsageService usageService, AppOptions appOptions, ILogger<OverageMiddleware> logger) {
         _next = next;
-        _organizationRepository = organizationRepository;
-        _projectRepository = projectRepository;
         _usageService = usageService;
         _appOptions = appOptions;
         _logger = logger;
@@ -72,6 +65,8 @@ public sealed class OverageMiddleware {
         int eventsLeft = await _usageService.GetEventsLeftAsync(organizationId).AnyContext();
         if (eventsLeft <= 0) {
             AppDiagnostics.PostsBlocked.Add(1);
+            string projectId = context.Request.GetDefaultProjectId();
+            await _usageService.IncrementDiscardedAsync(organizationId, projectId);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;
         }

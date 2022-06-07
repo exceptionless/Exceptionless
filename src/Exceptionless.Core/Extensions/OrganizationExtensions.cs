@@ -65,23 +65,32 @@ public static class OrganizationExtensions {
         if (organization.MaxEventsPerMonth < 0)
             return false;
 
-        return organization.GetCurrentMonthlyTotal() >= organization.GetMaxEventsPerMonthWithBonus();
+        return organization.GetCurrentUsage().Total >= organization.GetMaxEventsPerMonthWithBonus();
     }
 
-    public static UsageInfo GetLatestOverage(this Organization organization) {
-        return organization.Overage.MaxBy(o => o.Date);
+    public static bool HasOverage(this Organization organization, DateTime date) {
+        return organization.Overage.Any(o => o.Date == date.StartOfHour());
     }
 
-    public static bool IsOverCurrentBucketLimit(this Organization organization, int limit) {
-        var usageInfo = organization.GetLatestOverage();
-        return usageInfo != null && usageInfo.Total > limit;
+    public static UsageInfo GetOverage(this Organization organization, DateTime date) {
+        var usage = organization.Overage.FirstOrDefault(o => o.Date == date.StartOfHour());
+        if (usage != null)
+            return usage;
+
+        usage = new UsageInfo {
+            Date = date.StartOfHour(),
+            Limit = organization.GetMaxEventsPerMonthWithBonus()
+        };
+        organization.Overage.Add(usage);
+
+        return usage;
     }
 
-    public static UsageInfo GetCurrentMonthlyUsage(this Organization organization) {
-        return organization.GetMonthlyUsage(SystemClock.UtcNow);
+    public static UsageInfo GetCurrentUsage(this Organization organization) {
+        return organization.GetUsage(SystemClock.UtcNow);
     }
 
-    public static UsageInfo GetMonthlyUsage(this Organization organization, DateTime date) {
+    public static UsageInfo GetUsage(this Organization organization, DateTime date) {
         var usage = organization.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
         if (usage != null)
             return usage;
@@ -93,30 +102,5 @@ public static class OrganizationExtensions {
         organization.Usage.Add(usage);
 
         return usage;
-    }
-
-    public static int GetCurrentMonthlyTotal(this Organization organization) {
-        var usageInfo = organization.GetCurrentMonthlyUsage();
-        return usageInfo?.Total ?? 0;
-    }
-
-    public static int GetCurrentMonthlyBlocked(this Organization organization) {
-        var usageInfo = organization.GetCurrentMonthlyUsage();
-        return usageInfo?.Blocked ?? 0;
-    }
-
-    public static int GetCurrentMonthlyTooBig(this Organization organization) {
-        var usageInfo = organization.GetCurrentMonthlyUsage();
-        return usageInfo?.TooBig ?? 0;
-    }
-
-    public static void SetHourlyOverage(this Organization organization, int total, int blocked, int tooBig, int limit) {
-        var date = SystemClock.UtcNow.Floor(TimeSpan.FromHours(1));
-        organization.Overage.SetUsage(date, total, blocked, tooBig, limit, TimeSpan.FromDays(3));
-    }
-
-    public static void SetMonthlyUsage(this Organization organization, int total, int blocked, int tooBig) {
-        var date = new DateTime(SystemClock.UtcNow.Year, SystemClock.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        organization.Usage.SetUsage(date, total, blocked, tooBig, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
     }
 }

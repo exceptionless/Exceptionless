@@ -61,10 +61,25 @@ public class UsageService {
 
                     organization.LastEventDateUtc = SystemClock.UtcNow;
 
-                    var usage = organization.GetMonthlyUsage(bucketUtc);
+                    var usage = organization.GetUsage(bucketUtc);
+                    int discarded = bucketDiscarded?.Value ?? 0;
                     usage.Total += bucketTotal?.Value ?? 0;
-                    usage.Blocked += bucketDiscarded?.Value ?? 0;
+                    usage.Blocked += discarded;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
+
+                    if (organization.HasOverage(bucketUtc)) {
+                        // if we already have an overage for this time period, then increment
+                        var overage = organization.GetOverage(bucketUtc);
+                        overage.Total += bucketTotal?.Value ?? 0;
+                        overage.Blocked += discarded;
+                        overage.TooBig += bucketTooBig?.Value ?? 0;
+                    } else if (discarded > 0) {
+                        // start a new overage when we see discarded events and there isn't an existing overage
+                        var overage = organization.GetOverage(bucketUtc);
+                        overage.Total = usage.Total;
+                        overage.Blocked = usage.Blocked;
+                        overage.TooBig = usage.TooBig;
+                    }
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
 
@@ -118,10 +133,25 @@ public class UsageService {
 
                     project.LastEventDateUtc = SystemClock.UtcNow;
 
-                    var usage = project.GetMonthlyUsage(bucketUtc);
+                    var usage = project.GetUsage(bucketUtc);
+                    int discarded = bucketDiscarded?.Value ?? 0;
                     usage.Total += bucketTotal?.Value ?? 0;
-                    usage.Blocked += bucketDiscarded?.Value ?? 0;
+                    usage.Blocked += discarded;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
+
+                    if (project.HasOverage(bucketUtc)) {
+                        // if we already have an overage for this time period, then increment
+                        var overage = project.GetOverage(bucketUtc);
+                        overage.Total += bucketTotal?.Value ?? 0;
+                        overage.Blocked += discarded;
+                        overage.TooBig += bucketTooBig?.Value ?? 0;
+                    } else if (discarded > 0) {
+                        // start a new overage when we see discarded events and there isn't an existing overage
+                        var overage = project.GetOverage(bucketUtc);
+                        overage.Total = usage.Total;
+                        overage.Blocked = usage.Blocked;
+                        overage.TooBig = usage.TooBig;
+                    }
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total);
 
@@ -175,7 +205,7 @@ public class UsageService {
         var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(utcNow, organizationId));
         var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(utcNow, organizationId));
 
-        var currentUsage = organization.GetCurrentMonthlyUsage();
+        var currentUsage = organization.GetCurrentUsage();
         return new UsageInfo {
             Date = currentUsage.Date,
             Limit = currentUsage.Limit,
@@ -203,7 +233,8 @@ public class UsageService {
             if (context.Organization is null)
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
-            currentTotal = context.Organization.GetCurrentMonthlyTotal();
+            currentTotal = context.Organization.GetCurrentUsage().Total;
+            await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal);
         }
 
         // if already over limit, return
@@ -241,16 +272,15 @@ public class UsageService {
         var maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
 
-        if (bucketTotal >= bucketLimit) {
+        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
+        if (currentTotalCache.HasValue) {
+            long monthTotal = currentTotalCache.Value + bucketTotal;
+            if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
+                await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
+        } else if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount) {
             // org will be throttled during the current bucket of time
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsThrottled = true });
             // set cache key that says the org is being throttled due to being over the bucket event limit
-        }
-
-        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
-        if (currentTotalCache.HasValue && currentTotalCache.Value + bucketTotal >= maxEventsPerMonth) {
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
-            // don't need to set cache key here, in org controller just check current month total is more than max event limit
         }
     }
 

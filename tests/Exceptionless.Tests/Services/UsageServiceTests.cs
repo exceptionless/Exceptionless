@@ -108,6 +108,8 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         await countdown.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(0, countdown.CurrentCount);
 
+        await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, 1);
+
         int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
         Assert.Equal(0, eventsLeft);
 
@@ -118,28 +120,57 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         var overage = organization.Overage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, overage.Limit);
-        Assert.Equal(eventsLeftInBucket, overage.Total);
-        Assert.Equal(0, overage.Blocked);
+        Assert.Equal(eventsLeftInBucket + 1, overage.Total);
+        Assert.Equal(1, overage.Blocked);
         Assert.Equal(0, overage.TooBig);
 
         var usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
-        Assert.Equal(eventsLeftInBucket, usage.Total);
-        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(eventsLeftInBucket + 1, usage.Total);
+        Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
         await _usageService.SavePendingProjectUsageInfo();
         project = await _projectRepository.GetByIdAsync(project.Id);
         overage = project.Overage.Single();
-        Assert.Equal(organization.MaxEventsPerMonth, overage.Limit);
-        Assert.Equal(eventsLeftInBucket, overage.Total);
-        Assert.Equal(0, overage.Blocked);
+        Assert.Equal(eventsLeftInBucket + 1, overage.Total);
+        Assert.Equal(1, overage.Blocked);
         Assert.Equal(0, overage.TooBig);
 
         usage = project.Usage.Single();
+        Assert.Equal(eventsLeftInBucket + 1, usage.Total);
+        Assert.Equal(1, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+
+        await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, 1000);
+
+        // move clock forward so that pending usages are saved
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingOrganizationUsageInfo();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        overage = organization.Overage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, overage.Limit);
+        Assert.Equal(eventsLeftInBucket + 1, overage.Total);
+        Assert.Equal(1001, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
+
+        usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
-        Assert.Equal(eventsLeftInBucket, usage.Total);
-        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(eventsLeftInBucket + 1, usage.Total);
+        Assert.Equal(1001, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+
+        await _usageService.SavePendingProjectUsageInfo();
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        overage = project.Overage.Single();
+        Assert.Equal(eventsLeftInBucket + 1, overage.Total);
+        Assert.Equal(1001, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
+
+        usage = project.Usage.Single();
+        Assert.Equal(eventsLeftInBucket + 1, usage.Total);
+        Assert.Equal(1001, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
     }
 
@@ -155,21 +186,30 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
 
         await _usageService.SavePendingOrganizationUsageInfo();
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
-        Assert.Empty(organization.Overage);
+        Assert.Single(organization.Overage);
         var usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
         Assert.Equal(0, usage.Total);
         Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+        var overage = organization.Overage.Single();
+        Assert.Equal(0, overage.Total);
+        Assert.Equal(1, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
 
         await _usageService.SavePendingProjectUsageInfo();
         project = await _projectRepository.GetByIdAsync(project.Id);
-        Assert.Empty(project.Overage);
+        Assert.Single(project.Overage);
 
         usage = project.Usage.Single();
-         Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.Total);
         Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+
+        overage = project.Overage.Single();
+        Assert.Equal(0, overage.Total);
+        Assert.Equal(1, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
     }
 
     [Fact]
@@ -201,63 +241,16 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementSuspendedOrganizationUsageAsync() {
-        var messageBus = GetService<IMessageBus>();
-
-        var countdown = new AsyncCountdownEvent(2);
-        await messageBus.SubscribeAsync<PlanOverage>(po => {
-            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsThrottled);
-            countdown.Signal();
-        });
-
-        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
-        await _usageService.IncrementTotalAsync(organization.Id, project.Id, 5);
-
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-        Assert.Equal(2, countdown.CurrentCount);
-
-        var usage = await _usageService.GetUsageAsync(organization.Id);
-        Assert.Equal(5, usage.Total);
-        Assert.Equal(0, usage.Blocked);
-        Assert.Equal(0, usage.TooBig);
-        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
-
-        int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
-        Assert.Equal(organization.MaxEventsPerMonth - usage.Total, eventsLeft);
-
-        organization.IsSuspended = true;
-        organization.SuspendedByUserId = TestConstants.UserId;
-        organization.SuspensionDate = SystemClock.UtcNow;
-        organization.SuspensionCode = SuspensionCode.Billing;
-        organization = await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
-
-        // No events are left due to suspension
-        eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
-        Assert.Equal(0, eventsLeft);
-
-        // We used to prevent total going over the limit, for the sake of performance this is a real time guess and one could go slightly over.
-        await _usageService.IncrementTotalAsync(organization.Id, project.Id, organization.MaxEventsPerMonth);
-
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-        Assert.Equal(1, countdown.CurrentCount);
-
-        usage = await _usageService.GetUsageAsync(organization.Id);
-        Assert.Equal(organization.MaxEventsPerMonth + 5, usage.Total);
-        Assert.Equal(0, usage.Blocked);
-        Assert.Equal(0, usage.TooBig);
-        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
-    }
-
-    [Fact]
     public async Task RunBenchmarkAsync() {
         const int iterations = 10000;
-        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1000000, PlanId = _plans.ExtraLargePlan.Id }, o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = iterations - 10, PlanId = _plans.ExtraLargePlan.Id }, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
 
         var sw = Stopwatch.StartNew();
-        for (int i = 0; i < iterations; i++)
+        for (int i = 0; i < iterations; i++) {
+            var eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
             await _usageService.IncrementTotalAsync(organization.Id, project.Id);
+        }
 
         sw.Stop();
         _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
