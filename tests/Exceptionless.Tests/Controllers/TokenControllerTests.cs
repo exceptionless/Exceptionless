@@ -93,6 +93,14 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
         Assert.False(token.IsDisabled);
         Assert.Single(token.Scopes);
 
+        var repository = GetService<ITokenRepository>();
+        var tokenRecord = await repository.GetByIdAsync(token.Id, o => o.Cache());
+
+        Assert.NotNull(tokenRecord.Id);
+        Assert.False(tokenRecord.IsDisabled);
+        Assert.False(tokenRecord.IsSuspended);
+        Assert.Single(tokenRecord.Scopes);
+
         await SendRequestAsync(r => r
            .Post()
            .AsGlobalAdminUser()
@@ -101,9 +109,19 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
            .StatusCodeShouldBeOk()
         );
         
-        var repository = GetService<ITokenRepository>();
-        var actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache(false));
+        var actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
         Assert.NotNull(actualToken);
         Assert.True(actualToken.IsSuspended);
+
+        await SendRequestAsync(r => r
+           .Delete()
+           .AsGlobalAdminUser()
+           .AppendPath($"organizations", SampleDataService.TEST_ORG_ID, "suspend")
+           .StatusCodeShouldBeOk()
+        );
+
+        actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
+        Assert.NotNull(actualToken);
+        Assert.False(actualToken.IsSuspended);
     }
 }
