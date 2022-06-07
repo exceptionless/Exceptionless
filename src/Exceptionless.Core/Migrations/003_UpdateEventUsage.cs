@@ -38,8 +38,7 @@ public sealed class UpdateEventUsage : MigrationBase {
         _cache = cache;
         _config = configuration;
 
-        MigrationType = MigrationType.VersionedAndResumable;
-        Version = 3;
+        MigrationType = MigrationType.Repeatable;
     }
 
     public override async Task RunAsync(MigrationContext context) {
@@ -49,7 +48,6 @@ public sealed class UpdateEventUsage : MigrationBase {
         
         await UpdateOrganizationsUsageAsync(context);
     }
-
 
     private async Task UpdateOrganizationsUsageAsync(MigrationContext context) {
         var organizationResults = await _organizationRepository.GetAllAsync(o => o.SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(5)).AnyContext();
@@ -80,7 +78,6 @@ public sealed class UpdateEventUsage : MigrationBase {
                 }
             }
 
-            _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
             // Sleep so we are not hammering the backend.
             await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
             if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync().AnyContext())

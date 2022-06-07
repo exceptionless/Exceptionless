@@ -27,9 +27,14 @@ public class UsageService {
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
 
-    public async Task SavePendingOrganizationUsageInfo() {
+    public async Task SavePendingUsageAsync() {
         var utcNow = SystemClock.UtcNow;
 
+        await SavePendingOrganizationUsageAsync(utcNow);
+        await SavePendingProjectUsageAsync(utcNow);
+    }
+
+    private async Task SavePendingOrganizationUsageAsync(DateTime utcNow) {
         // default to checking the 5 previous buckets
         var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
 
@@ -40,6 +45,9 @@ public class UsageService {
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
+
+        if (bucketUtc == currentBucketUtc)
+            return;
 
         // ideally, we would be popping a single org id off this list at a time in case something happens while we are processing these
         var organizationIdsValue = await _cache.GetListAsync<string>(GetOrganizationSetKey(bucketUtc));
@@ -81,14 +89,14 @@ public class UsageService {
                         overage.TooBig = usage.TooBig;
                     }
 
-                    await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
-                    await _organizationRepository.SaveAsync(organization);
-
                     await _cache.RemoveAllAsync(new[] {
                         GetBucketTotalCacheKey(bucketUtc, organizationId),
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
                         GetBucketTooBigCacheKey(bucketUtc, organizationId)
                     });
+
+                    await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
+                    await _organizationRepository.SaveAsync(organization);
                 }
             }
 
@@ -99,9 +107,7 @@ public class UsageService {
         }
     }
 
-    public async Task SavePendingProjectUsageInfo() {
-        var utcNow = SystemClock.UtcNow;
-
+    private async Task SavePendingProjectUsageAsync(DateTime utcNow) {
         // default to checking the 5 previous buckets
         var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
 
@@ -112,6 +118,9 @@ public class UsageService {
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
+
+        if (bucketUtc == currentBucketUtc)
+            return;
 
         // ideally, we would be popping a single org id off this list at a time in case something happens while we are processing these
         var projectIdsValue = await _cache.GetListAsync<string>(GetProjectSetKey(bucketUtc));
@@ -152,15 +161,15 @@ public class UsageService {
                         overage.TooBig = usage.TooBig;
                     }
 
+                    await _cache.RemoveAllAsync(new[] {
+                        GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
+                        GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId),
+                        GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
+                    });
+
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total);
 
                     await _projectRepository.SaveAsync(project);
-
-                    await _cache.RemoveAllAsync(new[] {
-                    GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
-                    GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId),
-                    GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
-                });
                 }
             }
 
@@ -244,6 +253,11 @@ public class UsageService {
         var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, organizationId));
         if (bucketTotal.HasValue)
             currentTotal += bucketTotal.Value;
+
+        // get previous bucket counter and add it to total since it might not be saved yet
+        var previousBucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId));
+        if (previousBucketTotal.HasValue)
+            currentTotal += previousBucketTotal.Value;
 
         // check to see if adding this bucket puts the org over the limit
         if (currentTotal >= maxEventsPerMonth)

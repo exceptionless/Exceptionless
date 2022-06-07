@@ -5,6 +5,7 @@ using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Logs;
 using Serilog;
+using System.Net;
 
 namespace OpenTelemetry {
     public static class ApmExtensions {
@@ -17,14 +18,17 @@ namespace OpenTelemetry {
                 Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} FullDetails={FullDetails} EnableLogs={EnableLogs} EnableRedis={EnableRedis} SampleRate={SampleRate}",
                 config.Endpoint, apiKey, config.FullDetails, config.EnableLogs, config.EnableRedis, config.SampleRate);
 
-            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            if (config.Insecure) {
+                ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, errors) => true;
+                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            }
 
             var resourceBuilder = ResourceBuilder.CreateDefault().AddService(config.ServiceName).AddAttributes(new[] {
                 new KeyValuePair<string, object>("service.namespace", config.ServiceNamespace),
                 new KeyValuePair<string, object>("service.environment", config.ServiceEnvironment),
                 new KeyValuePair<string, object>("service.version", config.ServiceVersion)
             });
-
+            
             builder.ConfigureServices(services => {
                 services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
@@ -143,6 +147,7 @@ namespace OpenTelemetry {
         }
 
         public bool Enabled => _apmConfig.GetValue("Enabled", false);
+        public bool Insecure { get; set; }
         public string ServiceName { get; }
         public string ServiceEnvironment { get; }
         public string ServiceNamespace { get; }
