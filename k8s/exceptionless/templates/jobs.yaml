@@ -142,6 +142,48 @@ spec:
           restartPolicy: OnFailure
 
 ---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-event-usage
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-event-usage
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-event-usage
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 80
+                initialDelaySeconds: 10
+                periodSeconds: 10
+              resources:
+                requests:
+                  memory: 100Mi
+                  cpu: 100m
+                limits:
+                  memory: 200Mi
+                  cpu: 200m
+              args: [EventUsage]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+          restartPolicy: OnFailure
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

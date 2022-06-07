@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using App.Metrics;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -138,6 +138,8 @@ public class Program {
             services.AddJob<EventNotificationsJob>(true);
         if (options.EventPosts)
             services.AddJob<EventPostsJob>(true);
+        if (options.EventUsage)
+            services.AddJob<EventUsageJob>(true);
         if (options.EventUserDescriptions)
             services.AddJob<EventUserDescriptionsJob>(true);
         if (options.MailMessage)
