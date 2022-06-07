@@ -248,11 +248,11 @@ public class Bootstrapper {
         services.AddJob<StackEventCountJob>(true);
         services.AddJob<WebHooksJob>(true);
         services.AddJob<WorkItemJob>(true);
+        services.AddJob<EventUsageJob>(true);
 
         services.AddCronJob<CleanupDataJob>("30 */4 * * *");
         services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
-        services.AddCronJob<EventUsageJob>("*/5 * * * *");
         services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
