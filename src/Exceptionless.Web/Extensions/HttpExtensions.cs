@@ -20,15 +20,6 @@ public static class HttpExtensions {
             request.HttpContext.Items["User"] = user;
     }
 
-    public static Organization GetOrganization(this HttpRequest request) {
-        return request?.HttpContext.Items.TryGetAndReturn("Organization") as Organization;
-    }
-
-    public static void SetOrganization(this HttpRequest request, Organization organization) {
-        if (organization != null)
-            request.HttpContext.Items["Organization"] = organization;
-    }
-
     public static Project GetProject(this HttpRequest request) {
         return request?.HttpContext.Items.TryGetAndReturn("Project") as Project;
     }
