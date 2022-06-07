@@ -82,7 +82,6 @@ public class UsageService {
                     }
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
-
                     await _organizationRepository.SaveAsync(organization);
 
                     await _cache.RemoveAllAsync(new[] {

@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Billing;
+﻿using Exceptionless.Core.Billing;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
 

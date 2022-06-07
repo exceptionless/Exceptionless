@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;

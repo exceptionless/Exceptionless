@@ -1,11 +1,9 @@
 ﻿using System.Diagnostics;
-using App.Metrics;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using OpenTelemetry;
 using Serilog;
-using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 

@@ -1,10 +1,8 @@
-﻿using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Queues.Models;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;

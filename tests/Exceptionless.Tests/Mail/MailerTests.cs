@@ -9,7 +9,6 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using Xunit;

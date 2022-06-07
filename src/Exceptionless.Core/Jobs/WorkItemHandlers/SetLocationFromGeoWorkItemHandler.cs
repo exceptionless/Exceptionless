@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;

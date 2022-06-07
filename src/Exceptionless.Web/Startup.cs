@@ -17,7 +17,6 @@ using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.Hosting.Server.Features;
-using Serilog.Extensions.Hosting;
 using System.Diagnostics;
 
 namespace Exceptionless.Web;

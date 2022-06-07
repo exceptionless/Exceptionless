@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using App.Metrics;
+﻿using System.Diagnostics;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -11,7 +10,6 @@ using Foundatio.Jobs;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using OpenTelemetry;
 using Serilog;
-using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 

@@ -5,7 +5,6 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Services;
-using Exceptionless.Tests.Utility;
 using Foundatio.AsyncEx;
 using Foundatio.Caching;
 using Foundatio.Messaging;

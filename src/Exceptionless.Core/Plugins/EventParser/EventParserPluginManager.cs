@@ -1,5 +1,4 @@
 ﻿using Exceptionless.Core.Models;
-using Foundatio.Metrics;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
