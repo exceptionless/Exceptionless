@@ -20,7 +20,7 @@ public class OrganizationService : IStartupAction {
     private readonly StripeOptions _stripeOptions;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, StripeOptions stripeOptions, ILoggerFactory loggerFactory = null) {
+    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, StripeOptions stripeOptions, ILoggerFactory loggerFactory) {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
