@@ -29,12 +29,12 @@ jobs:
         version=$(minver --tag-prefix v)
         echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
         echo "VERSION=$version" >> $GITHUB_ENV
-    - name: Build
-      run: dotnet build --configuration Release /clp:NoSummary
-    - name: Start Services
-      run: docker-compose up -d elasticsearch && docker-compose up ready
-    - name: Run Tests
-      run: dotnet test --configuration Release --no-build --logger GitHubActions
+    #- name: Build
+    #  run: dotnet build --configuration Release /clp:NoSummary
+    #- name: Start Services
+    #  run: docker-compose up -d elasticsearch && docker-compose up ready
+    #- name: Run Tests
+    #  run: dotnet test --configuration Release --no-build --logger GitHubActions
     - name: Set up QEMU
       id: qemu
       uses: docker/setup-qemu-action@v2
