@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -11,6 +11,7 @@ using Exceptionless.Web.Models;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Foundatio.Utility;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web;
@@ -50,8 +51,8 @@ public class Bootstrapper {
 
             CreateMap<NewOrganization, Organization>();
             CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                // TODO Change this to a flag that just says if the account is currently being throttled
-                //vo.IsOverHourlyLimit = o.IsOverHourlyLimit(o.GetHourlyEventLimit(o.GetCurrentMonthlyTotal(), o.GetCurrentMonthlyBlocked(), plans.FreePlan.Id));
+                // TODO: Change this to a flag that just says if the account is currently being throttled
+                vo.IsOverHourlyLimit = o.HasOverage(SystemClock.UtcNow);
                 vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
             });
 
