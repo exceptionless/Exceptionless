@@ -29,12 +29,12 @@ jobs:
         version=$(minver --tag-prefix v)
         echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
         echo "VERSION=$version" >> $GITHUB_ENV
-    #- name: Build
-    #  run: dotnet build --configuration Release /clp:NoSummary
-    #- name: Start Services
-    #  run: docker-compose up -d elasticsearch && docker-compose up ready
-    #- name: Run Tests
-    #  run: dotnet test --configuration Release --no-build --logger GitHubActions
+    - name: Build
+     run: dotnet build --configuration Release /clp:NoSummary
+    - name: Start Services
+     run: docker-compose up -d elasticsearch && docker-compose up ready
+    - name: Run Tests
+     run: dotnet test --configuration Release --no-build --logger GitHubActions
     - name: Set up QEMU
       id: qemu
       uses: docker/setup-qemu-action@v2
@@ -52,7 +52,7 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Docker API CI Packages
+    - name: Docker API CI Image
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -67,7 +67,7 @@ jobs:
           ghcr.io/exceptionless/exceptionless/api:latest
         cache-from: type=gha, scope=${{ github.workflow }}
         cache-to: type=gha, scope=${{ github.workflow }}
-    - name: Docker Job CI Packages
+    - name: Docker Job CI Image
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -82,7 +82,7 @@ jobs:
           ghcr.io/exceptionless/exceptionless/job:latest
         cache-from: type=gha, scope=${{ github.workflow }}
         cache-to: type=gha, scope=${{ github.workflow }}
-    - name: Docker App CI Packages
+    - name: Docker App CI Image
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -97,7 +97,7 @@ jobs:
           ghcr.io/exceptionless/exceptionless/app:latest
         cache-from: type=gha, scope=${{ github.workflow }}
         cache-to: type=gha, scope=${{ github.workflow }}
-    - name: Docker Exceptionless CI Packages
+    - name: Docker Exceptionless CI Image
       uses: docker/build-push-action@v2
       with:
         context: .
