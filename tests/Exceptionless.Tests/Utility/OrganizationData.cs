@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models.Billing;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 
@@ -26,13 +27,24 @@ internal static class OrganizationData {
         return GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail);
     }
 
-    public static Organization GenerateOrganization(BillingManager billingManager, BillingPlans plans, bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false) {
+    public static Organization GenerateSampleOrganizationWithPlan(BillingManager billingManager, BillingPlans plans, BillingPlan plan) {
+        return GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail, plan: plan);
+    }
+
+    public static Organization GenerateOrganization(BillingManager billingManager, BillingPlans plans, bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false, BillingPlan plan = null) {
         var organization = new Organization {
             Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
             Name = name ?? $"Organization{id}"
         };
 
-        billingManager.ApplyBillingPlan(organization, plans.UnlimitedPlan);
+        billingManager.ApplyBillingPlan(organization, plan ?? plans.UnlimitedPlan);
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
 
         if (!String.IsNullOrEmpty(inviteEmail)) {
             organization.Invites.Add(new Invite {

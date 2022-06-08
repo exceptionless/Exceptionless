@@ -6,7 +6,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Services;
 using Foundatio.AsyncEx;
-using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Utility;
@@ -17,7 +16,6 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Exceptionless.Tests.Services;
 
 public sealed class UsageServiceTests : IntegrationTestsBase {
-    private readonly ICacheClient _cache;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly UsageService _usageService;
@@ -26,7 +24,6 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
         TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
-        _cache = GetService<ICacheClient>();
         _usageService = GetService<UsageService>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();

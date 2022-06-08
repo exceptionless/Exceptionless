@@ -3,8 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Services;
-using Foundatio.Caching;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
@@ -18,24 +17,18 @@ public sealed class UpdateEventUsage : MigrationBase {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IEventRepository _eventRepository;
-    private readonly UsageService _usageService;
-    private readonly ICacheClient _cache;
     private readonly ExceptionlessElasticConfiguration _config;
 
     public UpdateEventUsage(
         IOrganizationRepository organizationRepository,
         IProjectRepository projectRepository,
         IEventRepository eventRepository,
-        UsageService usageService,
-        ICacheClient cache,
         ExceptionlessElasticConfiguration configuration, 
         ILoggerFactory loggerFactory) : base(loggerFactory) 
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _eventRepository = eventRepository;
-        _usageService = usageService;
-        _cache = cache;
         _config = configuration;
 
         MigrationType = MigrationType.Repeatable;
@@ -45,7 +38,7 @@ public sealed class UpdateEventUsage : MigrationBase {
         _logger.LogInformation("Begin refreshing all indices");
         await _config.Client.Indices.RefreshAsync(Indices.All);
         _logger.LogInformation("Done refreshing all indices");
-        
+
         await UpdateOrganizationsUsageAsync(context);
     }
 
@@ -54,28 +47,44 @@ public sealed class UpdateEventUsage : MigrationBase {
         _logger.LogInformation("Updating usage for {OrganizationTotal} organization(s)", organizationResults.Total);
 
         var sw = Stopwatch.StartNew();
+        long total = organizationResults.Total;
+        int processed = 0;
+        int error = 0;
+        var lastStatus = SystemClock.Now;
+
         while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
             foreach (var organization in organizationResults.Documents) {
+                if (organization.MaxEventsPerMonth <= 0) {
+                    processed++;
+                    continue;
+                }
+
                 using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
                 try {
-                    var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).AggregationsExpression("date:createdUtc~1M"));
-                    var dateAggs = result.Aggregations.DateHistogram("date_createdUtc");
+                    var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).AggregationsExpression("date:date~1M"));
+                    var dateAggs = result.Aggregations.DateHistogram("date_date");
                     foreach (var dateHistogramBucket in dateAggs.Buckets) {
                         var usage = organization.GetUsage(dateHistogramBucket.Date);
-                        var total = dateHistogramBucket.Total.GetValueOrDefault();
-                        if (total > usage.Total) {
-                            _logger.LogInformation("Updating {OrganizationName} {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", organization.Name, usage.Total, total);
-                            usage.Total = (int)total;
+                        var eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
+                        if (eventTotal > usage.Total) {
+                            _logger.LogInformation("Updating {OrganizationName} {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", organization.Name, usage.Date, usage.Total, eventTotal);
+                            usage.Total = (int)eventTotal;
                         }
                     }
 
                     await _organizationRepository.SaveAsync(organization);
                     await UpdateProjectsUsageAsync(context, organization);
+                    processed++;
                     await context.Lock.RenewAsync();
-
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Error updating organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                    error++;
                 }
+            }
+
+            if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
+                lastStatus = SystemClock.UtcNow;
+                _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount} Duration={Duration}", processed, total, error, sw.Elapsed.ToWords());
             }
 
             // Sleep so we are not hammering the backend.
@@ -94,19 +103,21 @@ public sealed class UpdateEventUsage : MigrationBase {
             foreach (var project in projectResults.Documents) {
                 using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Project(project.Id));
                 try {
-                    var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).Project(project.Id).AggregationsExpression("date:createdUtc~1M"));
-                    var dateAggs = result.Aggregations.DateHistogram("date_createdUtc");
+                    var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).Project(project.Id).AggregationsExpression("date:date~1M"));
+                    var dateAggs = result.Aggregations.DateHistogram("date_date");
                     foreach (var dateHistogramBucket in dateAggs.Buckets) {
                         var usage = project.GetUsage(dateHistogramBucket.Date);
-                        var total = dateHistogramBucket.Total.GetValueOrDefault();
-                        if (total > usage.Total) {
-                            _logger.LogInformation("Updating {ProjectName} ({ProjectId}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Total, total);
-                            usage.Total = (int)total;
+                        var eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
+                        if (eventTotal > usage.Total) {
+                            _logger.LogInformation("Updating {ProjectName} ({ProjectId}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Total, eventTotal);
+                            usage.Total = (int)eventTotal;
                         }
+
+                        if (usage.Limit == 0)
+                            usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
                     }
 
                     await _projectRepository.SaveAsync(project);
-
                 } catch (Exception ex) {
                     _logger.LogError(ex, "Error updating project {ProjectId}: {Message}", project.Id, ex.Message);
                 }
