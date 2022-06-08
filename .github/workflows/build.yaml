@@ -71,7 +71,7 @@ jobs:
         done
     - name: Install Helm
       if: github.event_name != 'pull_request'
-      uses: azure/setup-helm@v2
+      uses: azure/setup-helm@v2.1
       with:
         version: v3.9.0
     - name: Deploy Changes to Development Environment
