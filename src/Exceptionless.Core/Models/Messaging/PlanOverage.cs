@@ -2,5 +2,5 @@
 
 public class PlanOverage {
     public string OrganizationId { get; set; }
-    public bool IsThrottled { get; set; }
+    public bool IsHourly { get; set; }
 }
