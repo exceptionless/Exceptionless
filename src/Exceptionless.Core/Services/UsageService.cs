@@ -292,7 +292,7 @@ public class UsageService {
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
         } else if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount) {
             // org will be throttled during the current bucket of time
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsThrottled = true });
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
             // set cache key that says the org is being throttled due to being over the bucket event limit
         }
     }

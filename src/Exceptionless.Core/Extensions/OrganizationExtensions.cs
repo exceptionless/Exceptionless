@@ -69,11 +69,11 @@ public static class OrganizationExtensions {
     }
 
     public static bool HasOverage(this Organization organization, DateTime date) {
-        return organization.Overage.Any(o => o.Date == date.StartOfHour());
+        return organization.OverageHours.Any(o => o.Date == date.StartOfHour());
     }
 
     public static UsageInfo GetOverage(this Organization organization, DateTime date) {
-        var usage = organization.Overage.FirstOrDefault(o => o.Date == date.StartOfHour());
+        var usage = organization.OverageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
         if (usage != null)
             return usage;
 
@@ -81,7 +81,7 @@ public static class OrganizationExtensions {
             Date = date.StartOfHour(),
             Limit = organization.GetMaxEventsPerMonthWithBonus()
         };
-        organization.Overage.Add(usage);
+        organization.OverageHours.Add(usage);
 
         return usage;
     }

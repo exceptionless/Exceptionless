@@ -40,8 +40,8 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase {
                     project.Configuration.IncrementVersion();
 
                 if (workItem.RemoveOldUsageStats) {
-                    foreach (var usage in project.Overage.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
-                        project.Overage.Remove(usage);
+                    foreach (var usage in project.OverageHours.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
+                        project.OverageHours.Remove(usage);
 
                     foreach (var usage in project.Usage.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(366))).ToList())
                         project.Usage.Remove(usage);
