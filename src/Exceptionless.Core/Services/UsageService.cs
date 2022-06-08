@@ -144,10 +144,12 @@ public class UsageService {
 
                     project.LastEventDateUtc = SystemClock.UtcNow;
 
+                    var context = (OrganizationId: project.OrganizationId, Organization: (Organization)null);
+                    int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
+
                     var usage = project.GetUsage(bucketUtc);
                     int discarded = bucketDiscarded?.Value ?? 0;
-                    // TODO: Set limit here to the org bucket limit as get usage can't populate the limit.
-                    //usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
+                    usage.Limit = maxEventsPerMonth;
                     usage.Total += bucketTotal?.Value ?? 0;
                     usage.Blocked += discarded;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
@@ -155,14 +157,14 @@ public class UsageService {
                     if (project.HasOverage(bucketUtc)) {
                         // if we already have an overage for this time period, then increment
                         var overage = project.GetOverage(bucketUtc);
-                        //overage.Limit = GetBucketEventLimit(usage.Limit);
+                        overage.Limit = GetBucketEventLimit(usage.Limit);
                         overage.Total += bucketTotal?.Value ?? 0;
                         overage.Blocked += discarded;
                         overage.TooBig += bucketTooBig?.Value ?? 0;
                     } else if (discarded > 0) {
                         // start a new overage when we see discarded events and there isn't an existing overage
                         var overage = project.GetOverage(bucketUtc);
-                        //overage.Limit = GetBucketEventLimit(usage.Limit);
+                        overage.Limit = GetBucketEventLimit(usage.Limit);
                         overage.Total = usage.Total;
                         overage.Blocked = usage.Blocked;
                         overage.TooBig = usage.TooBig;
