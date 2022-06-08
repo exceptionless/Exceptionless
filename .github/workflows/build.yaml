@@ -1,18 +1,22 @@
 name: Build
 on: [ push, pull_request ]
 env:
-  DOTNET_NOLOGO: true
+    TERM: xterm
+    DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+    DOTNET_NOLOGO: true
+    DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
     - name: Build Reason
@@ -26,51 +30,48 @@ jobs:
         echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
         echo "VERSION=$version" >> $GITHUB_ENV
     - name: Build
-      run: dotnet build --configuration Release
+      run: dotnet build --configuration Release /clp:NoSummary
     - name: Start Services
       run: docker-compose up -d elasticsearch && docker-compose up ready
     - name: Run Tests
       run: dotnet test --configuration Release --no-build --logger GitHubActions
-    - name: Build Docker Images
-      if: github.event_name != 'pull_request'
-      run: |
-        for image in {"api","job","app","exceptionless"}; do
-          docker build --target $image -t ex-$image .
-        done
-    - name: Log in to GitHub Packages
-      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
-    - name: Log in to Docker Hub
-      if: github.event_name != 'pull_request'
-      run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to GitHub Packages
+      uses: docker/login-action@v1
+      with:
+        registry: docker.pkg.github.com
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Push CI Packages
       if: github.event_name != 'pull_request'
       run: |
         # tag and push docker image
         for image in {"api","job","app","exceptionless"}; do
-          for tag in {${VERSION},latest}; do
-            docker tag ex-$image docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
-            docker push docker.pkg.github.com/exceptionless/exceptionless/$image:$tag
-          done
+          docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag docker.pkg.github.com/exceptionless/exceptionless/$image:$VERSION --tag docker.pkg.github.com/exceptionless/exceptionless/$image:latest
         done
         for image in {"api","job","app","exceptionless"}; do
-          for tag in {${VERSION},latest}; do
-            docker tag ex-$image exceptionless/$image-ci:$tag
-            docker push exceptionless/$image-ci:$tag
-          done
+          docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image-ci:$VERSION --tag exceptionless/$image-ci:latest
         done
     - name: Publish Release Packages
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # tag and push docker image
         for image in {"api","job","app","exceptionless"}; do
-          for tag in {${VERSION},latest}; do
-            docker tag ex-$image exceptionless/$image:$tag
-            docker push exceptionless/$image:$tag
-          done
+          docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
         done
     - name: Install Helm
       if: github.event_name != 'pull_request'
-      uses: azure/setup-helm@v1
+      uses: azure/setup-helm@v2
       with:
         version: v3.9.0
     - name: Deploy Changes to Development Environment
