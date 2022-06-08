@@ -53,33 +53,33 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Docker App CI Packages
-        uses: docker/build-push-action@v2
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          platforms: linux/amd64,linux/arm64
-          target: api
-          tags:  |
-            exceptionless/app-ci:${{ env.VERSION }}
-            exceptionless/app-ci:latest
-            ghcr.io/exceptionless/exceptionless/app:${{ env.VERSION }}
-            ghcr.io/exceptionless/exceptionless/app:latest
-          cache-from: type=gha, scope=${{ github.workflow }}
-          cache-to: type=gha, scope=${{ github.workflow }}
+      uses: docker/build-push-action@v2
+      with:
+        builder: ${{ steps.buildx.outputs.name }}
+        push: true
+        platforms: linux/amd64,linux/arm64
+        target: api
+        tags:  |
+          exceptionless/app-ci:${{ env.VERSION }}
+          exceptionless/app-ci:latest
+          ghcr.io/exceptionless/exceptionless/app:${{ env.VERSION }}
+          ghcr.io/exceptionless/exceptionless/app:latest
+        cache-from: type=gha, scope=${{ github.workflow }}
+        cache-to: type=gha, scope=${{ github.workflow }}
     - name: Docker Job CI Packages
-        uses: docker/build-push-action@v2
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          platforms: linux/amd64,linux/arm64
-          target: job
-          tags:  |
-            exceptionless/job-ci:${{ env.VERSION }}
-            exceptionless/job-ci:latest
-            ghcr.io/exceptionless/exceptionless/job:${{ env.VERSION }}
-            ghcr.io/exceptionless/exceptionless/job:latest
-          cache-from: type=gha, scope=${{ github.workflow }}
-          cache-to: type=gha, scope=${{ github.workflow }}
+      uses: docker/build-push-action@v2
+      with:
+        builder: ${{ steps.buildx.outputs.name }}
+        push: true
+        platforms: linux/amd64,linux/arm64
+        target: job
+        tags:  |
+          exceptionless/job-ci:${{ env.VERSION }}
+          exceptionless/job-ci:latest
+          ghcr.io/exceptionless/exceptionless/job:${{ env.VERSION }}
+          ghcr.io/exceptionless/exceptionless/job:latest
+        cache-from: type=gha, scope=${{ github.workflow }}
+        cache-to: type=gha, scope=${{ github.workflow }}
     - name: Push CI Packages
       if: github.event_name != 'pull_request'
       run: |
