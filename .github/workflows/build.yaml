@@ -41,10 +41,10 @@ jobs:
     - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@v2
-    - name: Login to GitHub Packages
+    - name: Login to GitHub Container Registry
       uses: docker/login-action@v2
       with:
-        registry: docker.pkg.github.com
+        registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Login to DockerHub
@@ -52,6 +52,34 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Docker App CI Packages
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          target: api
+          tags:  |
+            exceptionless/app-ci:${{ env.VERSION }}
+            exceptionless/app-ci:latest
+            ghcr.io/exceptionless/exceptionless/app:${{ env.VERSION }}
+            ghcr.io/exceptionless/exceptionless/app:latest
+          cache-from: type=gha, scope=${{ github.workflow }}
+          cache-to: type=gha, scope=${{ github.workflow }}
+    - name: Docker Job CI Packages
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          target: job
+          tags:  |
+            exceptionless/job-ci:${{ env.VERSION }}
+            exceptionless/job-ci:latest
+            ghcr.io/exceptionless/exceptionless/job:${{ env.VERSION }}
+            ghcr.io/exceptionless/exceptionless/job:latest
+          cache-from: type=gha, scope=${{ github.workflow }}
+          cache-to: type=gha, scope=${{ github.workflow }}
     - name: Push CI Packages
       if: github.event_name != 'pull_request'
       run: |
@@ -60,7 +88,7 @@ jobs:
           docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image-ci:$VERSION --tag exceptionless/$image-ci:latest
         done
         for image in {"api","job","app","exceptionless"}; do
-          docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag docker.pkg.github.com/exceptionless/exceptionless/$image:$VERSION --tag docker.pkg.github.com/exceptionless/exceptionless/$image:latest
+          docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag ghcr.io/exceptionless/exceptionless/$image:$VERSION --tag ghcr.io/exceptionless/exceptionless/$image:latest
         done
     - name: Publish Release Packages
       if: startsWith(github.ref, 'refs/tags/v')
