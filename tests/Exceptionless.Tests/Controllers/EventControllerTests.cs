@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using Exceptionless.Core.Billing;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
@@ -24,16 +25,20 @@ using Foundatio.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
+using Exceptionless.Web.Models;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Tests.Controllers;
 
 public class EventControllerTests : IntegrationTestsBase {
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
 
     public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-        Log.MinimumLevel = LogLevel.Warning;
+        _organizationRepository = GetService<IOrganizationRepository>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -746,6 +751,159 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(2, total);
         Assert.Equal(1, newTotal);
         Assert.Equal(2, uniqueTotal);
+    }
+
+
+    [Fact]
+    public async Task ShouldRespectEventUsageLimits() {
+        TestSystemClock.SetTime(SystemClock.UtcNow.StartOfMonth());
+
+        // Update plan limits
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+
+        string organizationId = TestConstants.OrganizationId;
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        var usageService = GetService<UsageService>();
+        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        Assert.Single(viewOrganization.Usage);
+        Assert.Empty(viewOrganization.OverageHours);
+
+        // Submit bach of events one over limit (all posts will go through until job runs to increment usage)
+        int total = eventsLeftInBucket;
+        int blocked = 1;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(total + blocked))
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Verify organization isn't yet throttled as job hasn't ran to process events.
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        Assert.Single(viewOrganization.Usage);
+        Assert.Empty(viewOrganization.OverageHours);
+
+        // Run the job and verify usage
+        var processEventsJob = GetService<EventPostsJob>();
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+        await RefreshDataAsync();
+
+        var usageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.Limit);
+        Assert.Equal(total, usageInfo.Total);
+        Assert.Equal(blocked, usageInfo.Blocked);
+        Assert.Equal(0, usageInfo.TooBig);
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.Equal(0, eventsLeftInBucket);
+
+        // Verify organization is over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.True(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        var organizationUsage = viewOrganization.Usage.Single();
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, organizationUsage.Limit);
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+
+        var organizationOverageHoursUsage = viewOrganization.OverageHours.Single(); // One would expect if I'm over this is populated.
+        Assert.Equal(total, organizationOverageHoursUsage.Limit);
+        Assert.Equal(total, organizationOverageHoursUsage.Total);
+        Assert.Equal(blocked, organizationOverageHoursUsage.Blocked);
+        Assert.Equal(0, organizationOverageHoursUsage.TooBig);
+
+        // Submit one event to verify submission is rejected
+        blocked++;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBePaymentRequired()
+        );
+        
+        // Increment blocked count due to submission failure.
+        usageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(total, usageInfo.Total);
+        Assert.Equal(blocked, usageInfo.Blocked);
+        Assert.Equal(0, usageInfo.TooBig);
+
+        // Increment the time to next usage bucket, verify usage behavior
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(5));
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        // Submit event to check usage.
+        total++;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Verify organization is over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        organizationUsage = viewOrganization.Usage.Single();
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+
+        // Run the job and verify usage
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+        await RefreshDataAsync();
+
+        var secondBucketUsageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(total, secondBucketUsageInfo.Total);
+        Assert.Equal(blocked, secondBucketUsageInfo.Blocked);
+        Assert.Equal(0, secondBucketUsageInfo.TooBig);
+
+        // NOTE: I didn't run the event usage service because it's likely it may not have ran in this period or could be down.
     }
 
     private async Task CreateStacksAndEventsAsync() {

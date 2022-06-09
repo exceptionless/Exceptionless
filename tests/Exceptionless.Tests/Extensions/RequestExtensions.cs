@@ -12,6 +12,10 @@ public static class RequestExtensions {
         return builder.ExpectedStatus(HttpStatusCode.Accepted);
     }
 
+    public static AppSendBuilder StatusCodeShouldBePaymentRequired(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.PaymentRequired);
+    }
+
     public static AppSendBuilder StatusCodeShouldBeBadRequest(this AppSendBuilder builder) {
         return builder.ExpectedStatus(HttpStatusCode.BadRequest);
     }
