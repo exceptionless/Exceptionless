@@ -3,6 +3,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -80,8 +81,6 @@ public class EventPostJobTests : IntegrationTestsBase {
 
     [Fact]
     public async Task CanRunJobWithDiscardedEventUsage() {
-        Log.MinimumLevel = LogLevel.Debug;
-
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         var usage = await _usageService.GetUsageAsync(organization.Id);
         Assert.Equal(0, usage.Total);
@@ -174,16 +173,22 @@ public class EventPostJobTests : IntegrationTestsBase {
         Assert.Equal(1, stats.Abandoned);
     }
 
-    private async Task CreateDataAsync() {
+    private async Task CreateDataAsync(BillingPlan plan = null) {
         foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans)) {
-            if (organization.Id == TestConstants.OrganizationId3)
+            if (plan is not null)
+                _billingManager.ApplyBillingPlan(organization, plan, UserData.GenerateSampleUser());
+            else if (organization.Id == TestConstants.OrganizationId3)
                 _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, UserData.GenerateSampleUser());
             else
                 _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
 
-            organization.StripeCustomerId = Guid.NewGuid().ToString("N");
-            organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
+            if (organization.BillingPrice > 0) {
+                organization.StripeCustomerId = "stripe_customer_id";
+                organization.CardLast4 = "1234";
+                organization.SubscribeDate = SystemClock.UtcNow;
+                organization.BillingChangeDate = SystemClock.UtcNow;
+                organization.BillingChangedByUserId = TestConstants.UserId;
+            }
 
             if (organization.IsSuspended) {
                 organization.SuspendedByUserId = TestConstants.UserId;
