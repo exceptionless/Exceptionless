@@ -34,7 +34,6 @@ public class EventControllerTests : IntegrationTestsBase {
 
     public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
         Log.MinimumLevel = LogLevel.Warning;
-
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -350,7 +349,6 @@ public class EventControllerTests : IntegrationTestsBase {
 
     [Fact]
     public async Task CanGetNewStackMode() {
-        Log.MinimumLevel = LogLevel.Warning;
         await CreateStacksAndEventsAsync();
 
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
@@ -601,7 +599,6 @@ public class EventControllerTests : IntegrationTestsBase {
                 .Version("3.2.1-beta1");
         });
 
-        Log.MinimumLevel = LogLevel.Trace;
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -801,9 +798,7 @@ public class EventControllerTests : IntegrationTestsBase {
             d.Event().FreeProject();
         });
 
-        Log.MinimumLevel = LogLevel.Warning;
         await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
         await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
-        Log.MinimumLevel = LogLevel.Trace;
     }
 }

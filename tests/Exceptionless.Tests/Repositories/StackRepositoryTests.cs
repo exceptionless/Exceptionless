@@ -32,7 +32,6 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
 
     [Fact]
     public async Task CanGetByStatus() {
-        Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
         var organizationRepository = GetService<IOrganizationRepository>();
         var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         Assert.NotNull(organization);
