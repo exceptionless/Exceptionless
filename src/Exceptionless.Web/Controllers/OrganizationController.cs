@@ -39,6 +39,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly BillingManager _billingManager;
+    private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
     private readonly IMailer _mailer;
     private readonly IMessagePublisher _messagePublisher;
@@ -52,6 +53,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IUserRepository userRepository,
         IProjectRepository projectRepository,
         BillingManager billingManager,
+        UsageService usageService,
         IMailer mailer,
         IMessagePublisher messagePublisher,
         IMapper mapper,
@@ -65,6 +67,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _userRepository = userRepository;
         _projectRepository = projectRepository;
         _billingManager = billingManager;
+        _usageService = usageService;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
         _options = options;
@@ -727,6 +730,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
             viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
             viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
+            viewOrganization.IsOverHourlyLimit = await _usageService.GetEventsLeftAsync(viewOrganization.Id) == 0;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
         }
     }
@@ -747,6 +751,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             .SystemFilter(systemFilter)
             .AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)")
             .EnforceEventStackFilter(false));
+
         foreach (var organization in viewOrganizations) {
             var organizationStats = result.Aggregations.Terms<string>("terms_organization_id")?.Buckets.FirstOrDefault(t => t.Key == organization.Id);
             organization.EventCount = organizationStats?.Total ?? 0;
