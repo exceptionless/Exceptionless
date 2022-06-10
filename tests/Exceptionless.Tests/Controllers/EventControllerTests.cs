@@ -788,7 +788,7 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.False(viewOrganization.IsOverHourlyLimit);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
-        Assert.Empty(viewOrganization.OverageHours);
+        Assert.Null(viewOrganization.OverageHours);
 
         // Submit bach of events one over limit (all posts will go through until job runs to increment usage)
         int total = eventsLeftInBucket;
@@ -811,7 +811,7 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.False(viewOrganization.IsOverHourlyLimit);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
-        Assert.Empty(viewOrganization.OverageHours);
+        Assert.Null(viewOrganization.OverageHours);
 
         // Run the job and verify usage
         var processEventsJob = GetService<EventPostsJob>();
