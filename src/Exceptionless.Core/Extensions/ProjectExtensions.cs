@@ -51,12 +51,12 @@ public static class ProjectExtensions {
         return project.OverageHours.Any(o => o.Date == date.StartOfHour());
     }
 
-    public static UsageInfo GetOverage(this Project project, DateTime date) {
+    public static OverageInfo GetOverage(this Project project, DateTime date) {
         var usage = project.OverageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
         if (usage != null)
             return usage;
 
-        usage = new UsageInfo {
+        usage = new OverageInfo {
             Date = date.StartOfHour()
         };
         project.OverageHours.Add(usage);
