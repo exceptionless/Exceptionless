@@ -79,14 +79,12 @@ public class UsageService {
                     if (organization.HasOverage(bucketUtc)) {
                         // if we already have an overage for this time period, then increment
                         var overage = organization.GetOverage(bucketUtc);
-                        overage.Limit = GetBucketEventLimit(usage.Limit);
                         overage.Total += bucketTotal?.Value ?? 0;
                         overage.Blocked += discarded;
                         overage.TooBig += bucketTooBig?.Value ?? 0;
                     } else if (discarded > 0) {
                         // start a new overage when we see discarded events and there isn't an existing overage
                         var overage = organization.GetOverage(bucketUtc);
-                        overage.Limit = GetBucketEventLimit(usage.Limit);
                         overage.Total = usage.Total;
                         overage.Blocked = usage.Blocked;
                         overage.TooBig = usage.TooBig;
@@ -157,14 +155,12 @@ public class UsageService {
                     if (project.HasOverage(bucketUtc)) {
                         // if we already have an overage for this time period, then increment
                         var overage = project.GetOverage(bucketUtc);
-                        overage.Limit = GetBucketEventLimit(usage.Limit);
                         overage.Total += bucketTotal?.Value ?? 0;
                         overage.Blocked += discarded;
                         overage.TooBig += bucketTooBig?.Value ?? 0;
                     } else if (discarded > 0) {
                         // start a new overage when we see discarded events and there isn't an existing overage
                         var overage = project.GetOverage(bucketUtc);
-                        overage.Limit = GetBucketEventLimit(usage.Limit);
                         overage.Total = usage.Total;
                         overage.Blocked = usage.Blocked;
                         overage.TooBig = usage.TooBig;
@@ -212,7 +208,7 @@ public class UsageService {
         return maxEventsPerMonth;
     }
 
-    public async Task<UsageInfo> GetUsageAsync(string organizationId) {
+    public async Task<UsageInfoResponse> GetUsageAsync(string organizationId) {
         var utcNow = SystemClock.UtcNow;
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
@@ -222,14 +218,28 @@ public class UsageService {
         var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(utcNow, organizationId));
         var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(utcNow, organizationId));
 
+        var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(utcNow, organizationId));
+
         var currentUsage = organization.GetCurrentUsage();
-        return new UsageInfo {
+        var usage = new UsageInfoResponse {
             Date = currentUsage.Date,
             Limit = currentUsage.Limit,
+            IsThrottled = isThrottled?.Value ?? false,
             Total = currentUsage.Total + bucketTotal?.Value ?? 0,
             Blocked = currentUsage.Blocked + bucketDiscarded?.Value ?? 0,
-            TooBig = currentUsage.TooBig + bucketTooBig?.Value ?? 0,
+            TooBig = currentUsage.TooBig + bucketTooBig?.Value ?? 0
         };
+
+        if ((bucketDiscarded?.Value ?? 0) > 0) {
+            usage.Overage = new OverageInfo {
+                Date = utcNow.Floor(_bucketSize),
+                Total = bucketTotal?.Value ?? 0,
+                Blocked = bucketDiscarded?.Value ?? 0,
+                TooBig = bucketTooBig?.Value ?? 0
+            };
+        }
+
+        return usage;
     }
 
     public async Task<int> GetEventsLeftAsync(string organizationId) {
@@ -299,10 +309,12 @@ public class UsageService {
             long monthTotal = currentTotalCache.Value + bucketTotal;
             if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
-        } else if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount) {
+        }
+        
+        if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount) {
             // org will be throttled during the current bucket of time
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
-            // set cache key that says the org is being throttled due to being over the bucket event limit
+            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true);
         }
     }
 
@@ -387,6 +399,11 @@ public class UsageService {
     private string GetOrganizationSetKey(DateTime utcTime) {
         int bucket = GetCurrentBucket(utcTime);
         return $"usage:{bucket}:organizations";
+    }
+
+    private string GetThrottledKey(DateTime utcTime, string organizationId) {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:throttled";
     }
 
     private string GetProjectSetKey(DateTime utcTime) {

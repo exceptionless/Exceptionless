@@ -727,10 +727,38 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         var viewOrganizations = models.OfType<ViewOrganization>().ToList();
         foreach (var viewOrganization in viewOrganizations) {
+            var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
+
             var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
             viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
-            viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
-            viewOrganization.IsOverHourlyLimit = await _usageService.GetEventsLeftAsync(viewOrganization.Id) == 0;
+            var currentUsage = viewOrganization.Usage.FirstOrDefault(u => u.Date == realTimeUsage.Date);
+            if (currentUsage == null) {
+                currentUsage = new UsageInfo {
+                    Date = realTimeUsage.Date
+                };
+                viewOrganization.Usage.Add(currentUsage);
+            }
+            currentUsage.Limit = realTimeUsage.Limit;
+            currentUsage.Total = realTimeUsage.Total;
+            currentUsage.Blocked = realTimeUsage.Blocked;
+            currentUsage.TooBig = realTimeUsage.TooBig;
+
+            var overageRetention = SystemClock.UtcNow.SubtractDays(30).StartOfMonth();
+            viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > overageRetention).ToList();
+            if (realTimeUsage.Overage != null) {
+                var currentOverage = viewOrganization.OverageHours.FirstOrDefault(u => u.Date == realTimeUsage.Overage.Date);
+                if (currentOverage == null) {
+                    currentOverage = new OverageInfo {
+                        Date = realTimeUsage.Overage.Date
+                    };
+                    viewOrganization.OverageHours.Add(currentOverage);
+                }
+                currentOverage.Total = realTimeUsage.Total;
+                currentOverage.Blocked = realTimeUsage.Blocked;
+                currentOverage.TooBig = realTimeUsage.TooBig;
+            }
+            
+            viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
         }
     }

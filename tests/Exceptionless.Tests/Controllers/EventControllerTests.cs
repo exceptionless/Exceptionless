@@ -753,12 +753,9 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(2, uniqueTotal);
     }
 
-
     [Fact]
     public async Task ShouldRespectEventUsageLimits() {
-        TestSystemClock.SetTime(SystemClock.UtcNow.StartOfMonth());
-
-        // Update plan limits
+        // update plan limits
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
 
@@ -785,12 +782,12 @@ public class EventControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        Assert.False(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
         Assert.Null(viewOrganization.OverageHours);
 
-        // Submit bach of events one over limit (all posts will go through until job runs to increment usage)
+        // submit bach of events one over limit
         int total = eventsLeftInBucket;
         int blocked = 1;
         await SendRequestAsync(r => r
@@ -801,19 +798,19 @@ public class EventControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeAccepted()
         );
 
-        // Verify organization isn't yet throttled as job hasn't ran to process events.
+        // verify organization isn't yet throttled
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .AppendPath("organizations").AppendPath(organizationId)
             .StatusCodeShouldBeOk()
         );
 
-        Assert.False(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
         Assert.Null(viewOrganization.OverageHours);
 
-        // Run the job and verify usage
+        // process events
         var processEventsJob = GetService<EventPostsJob>();
         Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
         await RefreshDataAsync();
@@ -827,6 +824,8 @@ public class EventControllerTests : IntegrationTestsBase {
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.Equal(0, eventsLeftInBucket);
 
+        //await usageService.SavePendingUsageAsync();
+
         // Verify organization is over hourly limit
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
@@ -834,7 +833,7 @@ public class EventControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        Assert.True(viewOrganization.IsOverHourlyLimit);
+        Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         var organizationUsage = viewOrganization.Usage.Single();
         Assert.Equal(viewOrganization.MaxEventsPerMonth, organizationUsage.Limit);
@@ -842,8 +841,7 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
 
-        var organizationOverageHoursUsage = viewOrganization.OverageHours.Single(); // One would expect if I'm over this is populated.
-        Assert.Equal(total, organizationOverageHoursUsage.Limit);
+        var organizationOverageHoursUsage = viewOrganization.OverageHours.Single();
         Assert.Equal(total, organizationOverageHoursUsage.Total);
         Assert.Equal(blocked, organizationOverageHoursUsage.Blocked);
         Assert.Equal(0, organizationOverageHoursUsage.TooBig);
@@ -863,9 +861,6 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(total, usageInfo.Total);
         Assert.Equal(blocked, usageInfo.Blocked);
         Assert.Equal(0, usageInfo.TooBig);
-
-        // Increment the time to next usage bucket, verify usage behavior
-        TestSystemClock.AddTime(TimeSpan.FromMinutes(5));
 
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.True(eventsLeftInBucket > 0);
@@ -887,7 +882,7 @@ public class EventControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        Assert.False(viewOrganization.IsOverHourlyLimit);
+        Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         organizationUsage = viewOrganization.Usage.Single();
         Assert.Equal(total, organizationUsage.Total);

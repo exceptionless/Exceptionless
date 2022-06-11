@@ -31,11 +31,11 @@ public class ViewOrganization : IIdentity, IData, IHaveCreatedDate {
     public long StackCount { get; set; }
     public long EventCount { get; set; }
     public ICollection<Invite> Invites { get; set; }
-    public ICollection<UsageInfo> OverageHours { get; set; }
+    public ICollection<OverageInfo> OverageHours { get; set; }
     public ICollection<UsageInfo> Usage { get; set; }
     public DataDictionary Data { get; set; }
 
-    public bool IsOverHourlyLimit { get; set; }
+    public bool IsThrottled { get; set; }
     public bool IsOverMonthlyLimit { get; set; }
     public bool IsOverRequestLimit { get; set; }
 }
