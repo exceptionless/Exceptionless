@@ -93,15 +93,16 @@ public class UsageService {
                     await _cache.RemoveAllAsync(new[] {
                         GetBucketTotalCacheKey(bucketUtc, organizationId),
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
-                        GetBucketTooBigCacheKey(bucketUtc, organizationId)
+                        GetBucketTooBigCacheKey(bucketUtc, organizationId),
+                        GetThrottledKey(bucketUtc, organizationId)
                     });
 
-                    await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total);
+                    await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total, TimeSpan.FromHours(8));
                     await _organizationRepository.SaveAsync(organization);
                 }
             }
 
-            await _cache.SetAsync("usage:last-organization-save", bucketUtc);
+            await _cache.SetAsync("usage:last-organization-save", bucketUtc, TimeSpan.FromHours(8));
 
             bucketUtc = bucketUtc.Add(_bucketSize);
             organizationIdsValue = await _cache.GetListAsync<string>(GetOrganizationSetKey(bucketUtc));
@@ -172,13 +173,13 @@ public class UsageService {
                         GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
                     });
 
-                    await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total);
+                    await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total, TimeSpan.FromHours(8));
 
                     await _projectRepository.SaveAsync(project);
                 }
             }
 
-            await _cache.SetAsync("usage:last-project-save", bucketUtc);
+            await _cache.SetAsync("usage:last-project-save", bucketUtc, TimeSpan.FromHours(8));
 
             bucketUtc = bucketUtc.Add(_bucketSize);
             projectIdsValue = await _cache.GetListAsync<string>(GetProjectSetKey(bucketUtc));
@@ -261,7 +262,7 @@ public class UsageService {
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
             currentTotal = context.Organization.GetCurrentUsage().Total;
-            await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal);
+            await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal, TimeSpan.FromHours(8));
         }
 
         // if already over limit, return
@@ -295,11 +296,11 @@ public class UsageService {
 
         var utcNow = SystemClock.UtcNow;
 
-        var bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromDays(1));
-        await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromDays(1));
+        var bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
+        await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
 
-        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId);
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId);
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
         var maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
@@ -314,7 +315,7 @@ public class UsageService {
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount) {
             // org will be throttled during the current bucket of time
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
-            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true);
+            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
         }
     }
 
@@ -324,11 +325,11 @@ public class UsageService {
 
         var utcNow = SystemClock.UtcNow;
 
-        await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromDays(1));
-        await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromDays(1));
+        await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
+        await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
 
-        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId);
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId);
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
         AppDiagnostics.EventsDiscarded.Add(eventCount);
     }
@@ -336,11 +337,11 @@ public class UsageService {
     public async Task IncrementTooBigAsync(string organizationId, string projectId) {
         var utcNow = SystemClock.UtcNow;
 
-        await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId), 1, TimeSpan.FromDays(1));
-        await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId, projectId), 1, TimeSpan.FromDays(1));
+        await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId), 1, TimeSpan.FromHours(8));
+        await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId, projectId), 1, TimeSpan.FromHours(8));
 
-        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId);
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId);
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
         
         AppDiagnostics.PostTooBig.Add(1);
     }
