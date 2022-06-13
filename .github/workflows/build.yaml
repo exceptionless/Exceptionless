@@ -32,7 +32,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release /clp:NoSummary
     - name: Start Services
-      run: docker-compose up -d elasticsearch && docker-compose up ready
+      run: docker compose up --wait elasticsearch
     - name: Run Tests
       run: dotnet test --configuration Release --no-build --logger GitHubActions
     - name: Set up QEMU

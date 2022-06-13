@@ -119,6 +119,33 @@ services:
       timeout: 10s
       retries: 120
 
+  apm:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/apm/apm-server:8.2.2
+    volumes:
+      - certs:/usr/share/apm-server/certs
+    ports:
+      - 8200:8200
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"]
+    cap_drop: ["ALL"]
+    command: >
+      apm-server -e
+        -E apm-server.ssl.enabled=false
+        -E output.elasticsearch.hosts=["https://elasticsearch:9200"]
+        -E output.elasticsearch.username=elastic
+        -E output.elasticsearch.password=elastic
+        -E output.elasticsearch.ssl.certificate_authorities=["/usr/share/apm-server/certs/ca/ca.crt"]
+
+  otel:
+    image: otel/opentelemetry-collector:0.52.0
+    ports:
+      - 4317:4317
+    volumes:
+      - ./otel-config.yml:/etc/otel-config.yaml:ro
+    command: [ "--config=/etc/otel-config.yaml" ]
+
   redis:
     image: redis:6-alpine
     ports:

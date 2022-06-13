@@ -1,7 +1,7 @@
 ---
 ConnectionStrings:
 #  Redis: server="localhost,abortConnect=false"
-#  Elasticsearch: server=http://localhost:9200
+#  Elasticsearch: server=https://localhost:9200
 #  Cache: provider=redis;
 #  MessageBus: provider=redis;
 #  Queue: provider=redis;
@@ -25,6 +25,10 @@ Serilog:
 
 Apm:
   Enabled: false
+  ServiceName: exceptionless
+  ServiceEnvironment: local
+  Endpoint: https://localhost:8200
   FullDetails: true
   SampleRate: 1.0
-  Debug: false
+  EnableLogs: true
+  Debug: true

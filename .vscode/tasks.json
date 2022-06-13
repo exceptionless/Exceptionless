@@ -39,9 +39,10 @@
     },
     {
       "label": "Start Elasticsearch",
-      "command": "docker-compose",
+      "command": "docker",
       "type": "shell",
       "args": [
+        "compose",
         "up",
         "elasticsearch"
       ],
@@ -50,9 +51,10 @@
     },
     {
       "label": "Start Exceptionless UI",
-      "command": "docker-compose",
+      "command": "docker",
       "type": "shell",
       "args": [
+        "compose",
         "up",
         "ui"
       ],
