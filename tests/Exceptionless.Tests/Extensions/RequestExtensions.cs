@@ -28,6 +28,10 @@ public static class RequestExtensions {
         return builder.ExpectedStatus(HttpStatusCode.Unauthorized);
     }
 
+    public static AppSendBuilder StatusCodeShouldBeUpgradeRequired(this AppSendBuilder builder) {
+        return builder.ExpectedStatus(HttpStatusCode.UpgradeRequired);
+    }
+
     public static HttpStatusCode? GetExpectedStatus(this HttpRequestMessage requestMessage) {
         if (requestMessage == null)
             throw new ArgumentNullException(nameof(requestMessage));
