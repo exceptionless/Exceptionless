@@ -109,6 +109,16 @@ public class UsageService {
         }
     }
 
+    public async Task HandleOrganizationChange(Organization modified, Organization original) {
+        var utcNow = SystemClock.UtcNow;
+
+        await _cache.RemoveAsync($"usage:limits:{modified.Id}");
+
+        // remove is throttled flag
+        if (modified.GetMaxEventsPerMonthWithBonus() > original.GetMaxEventsPerMonthWithBonus())
+            await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
+    }
+
     private async Task SavePendingProjectUsageAsync(DateTime utcNow) {
         // default to checking the 5 previous buckets
         var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);

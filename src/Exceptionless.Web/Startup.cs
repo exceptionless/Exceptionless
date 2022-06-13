@@ -267,7 +267,28 @@ public class Startup {
 
         app.UseEndpoints(endpoints => {
             endpoints.MapControllers();
-            endpoints.MapFallbackToFile("{**slug:nonfile}", "index.html");
+            endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
+    }
+
+    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath) {
+        var app = endpoints.CreateApplicationBuilder();
+        app.Use(next => context => {
+            var apiPathSegment = new PathString("/api");
+            var docsPathSegment = new PathString("/docs");
+            bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
+            bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
+
+            if (!isApiRequest && !isDocsRequest)
+                context.Request.Path = "/" + filePath;
+            
+            // Set endpoint to null so the static files middleware will handle the request.
+            context.SetEndpoint(null);
+
+            return next(context);
+        });
+
+        app.UseStaticFiles();
+        return app.Build();
     }
 }

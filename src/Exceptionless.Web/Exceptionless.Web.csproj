@@ -30,7 +30,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9.4" />
     <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.0.0-rc9.5" />
     <PackageReference Include="OpenTelemetry.Instrumentation.ElasticsearchClient" Version="1.0.0-beta.3" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="0.1.0-alpha.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="0.2.0-alpha.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
