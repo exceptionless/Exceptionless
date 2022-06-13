@@ -34,7 +34,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     public async Task CanIncrementUsageAsync() {
         var messageBus = GetService<IMessageBus>();
 
-        var countdown = new AsyncCountdownEvent(1);
+        var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po => {
             _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
@@ -50,7 +50,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         int totalToIncrement = eventsLeftInBucket - 1;
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, totalToIncrement);
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
-        Assert.Equal(1, countdown.CurrentCount);
+        Assert.Equal(2, countdown.CurrentCount);
 
         int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
         Assert.Equal(1, eventsLeft);
@@ -107,7 +107,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     public async Task CanIncrementOverageUsageAsync() {
         var messageBus = GetService<IMessageBus>();
 
-        var countdown = new AsyncCountdownEvent(1);
+        var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po => {
             _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();

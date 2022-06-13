@@ -58,6 +58,7 @@ services:
       - certs:/usr/share/elasticsearch/config/certs
     ports:
       - 9200:9200 # username / password = elastic / elastic
+      - esdata:/usr/share/elasticsearch/data
     environment:
       - node.name=elasticsearch
       - cluster.name=exceptionless
@@ -139,7 +140,7 @@ services:
         -E output.elasticsearch.ssl.certificate_authorities=["/usr/share/apm-server/certs/ca/ca.crt"]
 
   otel:
-    image: otel/opentelemetry-collector:0.52.0
+    image: otel/opentelemetry-collector:0.53.0
     ports:
       - 4317:4317
     volumes:
@@ -169,4 +170,5 @@ services:
 volumes:
   certs:
     driver: local
-
+  esdata:
+    driver: local

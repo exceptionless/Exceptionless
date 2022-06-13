@@ -212,32 +212,51 @@ public class UsageService {
     public async Task<UsageInfoResponse> GetUsageAsync(string organizationId) {
         var utcNow = SystemClock.UtcNow;
 
+        // default to checking just the previous bucket
+        var lastUsageSave = utcNow.Subtract(_bucketSize).Floor(_bucketSize);
+
+        // last usage save is the last time we processed usage
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-project-save");
+        if (lastUsageSaveCache.HasValue)
+            lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+
+        var bucketUtc = lastUsageSave;
+        var currentBucketUtc = utcNow.Floor(_bucketSize);
+
         var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
-        // get current bucket counters
-        var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, organizationId));
-        var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(utcNow, organizationId));
-        var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(utcNow, organizationId));
-
-        var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(utcNow, organizationId));
-
+        var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(currentBucketUtc, organizationId));
         var currentUsage = organization.GetCurrentUsage();
         var usage = new UsageInfoResponse {
             Date = currentUsage.Date,
             Limit = currentUsage.Limit,
             IsThrottled = isThrottled?.Value ?? false,
-            Total = currentUsage.Total + bucketTotal?.Value ?? 0,
-            Blocked = currentUsage.Blocked + bucketDiscarded?.Value ?? 0,
-            TooBig = currentUsage.TooBig + bucketTooBig?.Value ?? 0
+            Total = currentUsage.Total,
+            Blocked = currentUsage.Blocked,
+            TooBig = currentUsage.TooBig
         };
 
-        if ((bucketDiscarded?.Value ?? 0) > 0) {
-            usage.Overage = new OverageInfo {
-                Date = utcNow.Floor(_bucketSize),
-                Total = bucketTotal?.Value ?? 0,
-                Blocked = bucketDiscarded?.Value ?? 0,
-                TooBig = bucketTooBig?.Value ?? 0
-            };
+        while (bucketUtc <= currentBucketUtc) {
+            // get current bucket counters
+            var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
+            usage.Total += bucketTotal?.Value ?? 0;
+
+            var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
+            usage.Blocked += bucketDiscarded?.Value ?? 0;
+
+            var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
+            usage.TooBig += bucketTooBig?.Value ?? 0;
+
+            if (bucketUtc == currentBucketUtc && (bucketDiscarded?.Value ?? 0) > 0) {
+                usage.Overage = new OverageInfo {
+                    Date = utcNow.Floor(_bucketSize),
+                    Total = bucketTotal?.Value ?? 0,
+                    Blocked = bucketDiscarded?.Value ?? 0,
+                    TooBig = bucketTooBig?.Value ?? 0
+                };
+            }
+
+            bucketUtc = bucketUtc.Add(_bucketSize);
         }
 
         return usage;

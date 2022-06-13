@@ -173,14 +173,15 @@ public class EventControllerTests : IntegrationTestsBase {
         byte[] data = Encoding.UTF8.GetBytes(message);
         var ms = new MemoryStream();
         await using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
-            await gzip.WriteAsync(data, CancellationToken.None);
+        await gzip.WriteAsync(data, CancellationToken.None);
         ms.Position = 0;
 
         var content = new StreamContent(ms);
         content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         content.Headers.ContentEncoding.Add("gzip");
-        _httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
-        var response = await _httpClient.PostAsync("events", content);
+        var client = CreateHttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
+        var response = await client.PostAsync("events", content);
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.True(response.Headers.Contains(Headers.ConfigurationVersion));
 
@@ -755,6 +756,8 @@ public class EventControllerTests : IntegrationTestsBase {
 
     [Fact]
     public async Task ShouldRespectEventUsageLimits() {
+        TestSystemClock.SetFrozenTime(DateTime.UtcNow.Floor(TimeSpan.FromMinutes(5)));
+
         // update plan limits
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
@@ -813,7 +816,6 @@ public class EventControllerTests : IntegrationTestsBase {
         // process events
         var processEventsJob = GetService<EventPostsJob>();
         Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
-        await RefreshDataAsync();
 
         var usageInfo = await usageService.GetUsageAsync(organizationId);
         Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.Limit);
@@ -823,8 +825,6 @@ public class EventControllerTests : IntegrationTestsBase {
 
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.Equal(0, eventsLeftInBucket);
-
-        //await usageService.SavePendingUsageAsync();
 
         // Verify organization is over hourly limit
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
@@ -862,6 +862,8 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(blocked, usageInfo.Blocked);
         Assert.Equal(0, usageInfo.TooBig);
 
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.True(eventsLeftInBucket > 0);
 
@@ -872,10 +874,12 @@ public class EventControllerTests : IntegrationTestsBase {
             .AsTestOrganizationClientUser()
             .AppendPath("events")
             .Content(new RandomEventGenerator().Generate(1))
-            .StatusCodeShouldBeOk()
+            .StatusCodeShouldBeAccepted()
         );
 
-        // Verify organization is over hourly limit
+        // Run the job and verify usage
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .AppendPath("organizations").AppendPath(organizationId)
@@ -889,15 +893,26 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
 
-        // Run the job and verify usage
-        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
-        await RefreshDataAsync();
-
         var secondBucketUsageInfo = await usageService.GetUsageAsync(organizationId);
         Assert.Equal(total, secondBucketUsageInfo.Total);
         Assert.Equal(blocked, secondBucketUsageInfo.Blocked);
         Assert.Equal(0, secondBucketUsageInfo.TooBig);
 
+        // move forward again and run process usage job
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+
+        var processUsageJob = GetService<EventUsageJob>();
+        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
+
+        organization = await _organizationRepository.GetByIdAsync(organizationId);
+
+        organizationUsage = organization.Usage.Single();
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+
+        // TODO: Try suspending org and making sure it is immediately rejected
+        // TODO: Try changing org plan and making sure limits are immediately affected
         // NOTE: I didn't run the event usage service because it's likely it may not have ran in this period or could be down.
     }
 
