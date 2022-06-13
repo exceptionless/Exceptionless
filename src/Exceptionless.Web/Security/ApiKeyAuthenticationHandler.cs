@@ -21,7 +21,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     public const string BearerScheme = "bearer";
     public const string BasicScheme = "basic";
     public const string TokenScheme = "token";
-    public readonly string[] LoggedHeaders = new[] { "Authorization" };
 
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;

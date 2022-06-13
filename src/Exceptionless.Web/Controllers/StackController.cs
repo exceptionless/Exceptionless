@@ -19,6 +19,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -160,7 +161,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc) {
-        if (snoozeUntilUtc < DateTime.UtcNow.AddMinutes(5))
+        if (snoozeUntilUtc < SystemClock.UtcNow.AddMinutes(5))
             return BadRequest("Must snooze for at least 5 minutes.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -329,7 +330,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             foreach (var stack in stacks) {
                 stack.Status = status;
                 if (status == StackStatus.Fixed) {
-                    stack.DateFixed = DateTime.UtcNow;
+                    stack.DateFixed = SystemClock.UtcNow;
                 }
                 else {
                     stack.DateFixed = null;

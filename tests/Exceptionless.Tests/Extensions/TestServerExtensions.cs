@@ -16,7 +16,7 @@ public static class TestServerExtensions {
         _alreadyWaited = true;
 
         var client = server.CreateClient();
-        var startTime = DateTime.Now;
+        var startTime = DateTime.UtcNow;
         do {
             if (startupContext != null && startupContext.IsStartupComplete && startupContext.Result.Success == false)
                 throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed");
@@ -25,7 +25,7 @@ public static class TestServerExtensions {
             if (response.IsSuccessStatusCode)
                 break;
 
-            if (DateTime.Now.Subtract(startTime) > maxWaitTime)
+            if (DateTime.UtcNow.Subtract(startTime) > maxWaitTime)
                 throw new TimeoutException("Failed waiting for server to be ready.");
 
             await Task.Delay(TimeSpan.FromMilliseconds(100));
