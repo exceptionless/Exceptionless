@@ -18,15 +18,17 @@ public class OrganizationService : IStartupAction {
     private readonly IWebHookRepository _webHookRepository;
     private readonly ICacheClient _cache;
     private readonly StripeOptions _stripeOptions;
+    private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, StripeOptions stripeOptions, ILoggerFactory loggerFactory) {
+    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, StripeOptions stripeOptions, UsageService usageService, ILoggerFactory loggerFactory) {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
         _cache = cache;
         _stripeOptions = stripeOptions;
+        _usageService = usageService;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
     }
 
@@ -38,7 +40,7 @@ public class OrganizationService : IStartupAction {
     private async Task OrgChanged(object source, ModifiedDocumentsEventArgs<Organization> args) {
         foreach (var doc in args.Documents) {
             if (doc.Original != null) {
-                await _cache.SetAsync($"usage:limits:{doc.Value.Id}", doc.Value.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(1));
+                await _usageService.HandleOrganizationChange(doc.Value, doc.Original);
 
                 if (doc.Original.IsSuspended == false && doc.Value.IsSuspended == true)
                     await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());

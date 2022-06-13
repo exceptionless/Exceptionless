@@ -946,13 +946,11 @@ public class EventControllerTests : IntegrationTestsBase {
         );
 
         await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
+            .AsGlobalAdminUser()
+            .Post()
             .AppendPath("organizations", organizationId, "suspend")
             .StatusCodeShouldBeOk()
         );
-
-        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
-        Assert.Equal(0, eventsLeftInBucket);
 
         // Verify event submission is blocked
         await SendRequestAsync(r => r
@@ -968,32 +966,32 @@ public class EventControllerTests : IntegrationTestsBase {
             .AsTestOrganizationUser()
             .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events")
             .Content(new RandomEventGenerator().Generate(1))
-            .StatusCodeShouldBeUpgradeRequired() // We do payment required if no events left otherwise we do plan limit reached (upgrade required)
+            .StatusCodeShouldBePaymentRequired() // We do payment required if no events left otherwise we do plan limit reached (upgrade required)
         );
-
-        // process events
-        var processEventsJob = GetService<EventPostsJob>();
-        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
-
-        var usageInfo = await usageService.GetUsageAsync(organizationId);
-        Assert.Equal(0, usageInfo.Total);
-        Assert.Equal(1, usageInfo.Blocked);
-        Assert.Equal(0, usageInfo.TooBig);
-        
-        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
-            .AsTestOrganizationUser()
-            .AppendPath("organizations").AppendPath(organizationId)
-            .StatusCodeShouldBeOk()
-        );
-
-        Assert.False(viewOrganization.IsThrottled);
-        Assert.False(viewOrganization.IsOverMonthlyLimit);
-        var usage = viewOrganization.Usage.Single();
-        Assert.Equal(0, usage.Total);
-        Assert.Equal(1, usage.Blocked);
-        Assert.Equal(0, usage.TooBig);
     }
 
+    [Fact]
+    public async Task SpaFallbackWorks() {
+        var response = await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath("blah")
+            .StatusCodeShouldBeOk()
+        );
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("exceptionless", content);
+
+        await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath("api", "blah")
+            .StatusCodeShouldBeNotFound()
+        );
+
+        await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath("docs", "blah")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
 
     [Fact]
     public async Task PlanChangeShouldAllowEventSubmission() {

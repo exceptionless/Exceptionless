@@ -2,18 +2,22 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Repositories;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Web.Utility;
 
 public sealed class OverageMiddleware {
     private readonly UsageService _usageService;
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
 
-    public OverageMiddleware(RequestDelegate next, UsageService usageService, AppOptions appOptions, ILogger<OverageMiddleware> logger) {
+    public OverageMiddleware(RequestDelegate next, UsageService usageService, IOrganizationRepository organizationRepository, AppOptions appOptions, ILogger<OverageMiddleware> logger) {
         _next = next;
         _usageService = usageService;
+        _organizationRepository = organizationRepository;
         _appOptions = appOptions;
         _logger = logger;
     }
@@ -69,6 +73,16 @@ public sealed class OverageMiddleware {
             await _usageService.IncrementDiscardedAsync(organizationId, projectId);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;
+        }
+
+        // if user auth, check to see if the org is suspended
+        // api tokens are marked as suspended immediately
+        if (context.Request.GetAuthType() == AuthType.User) {
+            var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            if (organization.IsSuspended) {
+                context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
+                return;
+            }
         }
 
         await _next(context);
