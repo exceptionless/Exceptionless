@@ -1,11 +1,11 @@
 ---
 ConnectionStrings:
 #  Redis: server="localhost,abortConnect=false"
-#  Elasticsearch: server=http://localhost:9200
+#  Elasticsearch: server=https://localhost:9200
 #  Cache: provider=redis;
 #  MessageBus: provider=redis;
 #  Queue: provider=redis;
-  Storage: provider=folder;path=..\..\..\..\Exceptionless.Web\storage
+  Storage: provider=folder;path=..\Exceptionless.Web\storage
   Email: smtp://localhost:1025
 
 # Base url for the ui used to build links in emails and other places.
@@ -17,6 +17,10 @@ Serilog:
 
 Apm:
   Enabled: false
+  ServiceName: exceptionless
+  ServiceEnvironment: local
+  Endpoint: https://localhost:8200
   FullDetails: true
   SampleRate: 1.0
-  Debug: false
+  EnableLogs: true
+  Debug: true

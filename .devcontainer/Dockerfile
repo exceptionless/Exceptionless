@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0
+FROM mcr.microsoft.com/dotnet/sdk:6.0
 
 # https://github.com/microsoft/vscode-dev-containers/tree/master/containers/dotnetcore
 # try using this as base: mcr.microsoft.com/vscode/devcontainers/dotnetcore
@@ -24,10 +24,6 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
   add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
   apt-get update && \
   apt-get install -y docker-ce docker-ce-cli containerd.io
-
-# Install docker-compose
-RUN curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-  chmod +x /usr/local/bin/docker-compose
 
 # Install kubectl
 RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
