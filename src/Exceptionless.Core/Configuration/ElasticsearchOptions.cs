@@ -63,8 +63,8 @@ public class ElasticsearchOptions {
 
         options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", appMode != AppMode.Development);
 
-        options.UserName = pairs.GetString("username");
-        options.Password = pairs.GetString("password");
+        options.UserName = pairs.GetString("username", "elastic");
+        options.Password = pairs.GetString("password", "elastic");
 
         string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
         if (!String.IsNullOrEmpty(scope))
