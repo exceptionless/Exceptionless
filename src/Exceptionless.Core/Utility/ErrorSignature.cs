@@ -166,10 +166,10 @@ public class ErrorSignature {
             return;
         }
 
-        if (extraProperties.TryGetValue("Number", out object value))
+        if (extraProperties.TryGetValue("Number", out object value) && value is not null)
             SignatureInfo.Add("Number", value.ToString());
 
-        if (extraProperties.TryGetValue("ErrorCode", out value))
+        if (extraProperties.TryGetValue("ErrorCode", out value) && value is not null)
             SignatureInfo.Add("ErrorCode", value.ToString());
     }
 }
