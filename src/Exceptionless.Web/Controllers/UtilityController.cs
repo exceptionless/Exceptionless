@@ -26,12 +26,19 @@ public class UtilityController : ExceptionlessApiController {
     /// <param name="query">The query you wish to validate.</param>
     [HttpGet("search/validate")]
     public async Task<ActionResult<AppQueryValidator.QueryProcessResult>> ValidateAsync(string query) {
-        var eventResults = await _eventQueryValidator.ValidateQueryAsync(query);
-        var stackResults = await _stackQueryValidator.ValidateQueryAsync(query);
-        return Ok(new AppQueryValidator.QueryProcessResult {
-            IsValid = eventResults.IsValid || stackResults.IsValid,
-            UsesPremiumFeatures = eventResults.UsesPremiumFeatures && stackResults.UsesPremiumFeatures,
-            Message = eventResults.Message ?? stackResults.Message
-        });
+        try {
+            var eventResults = await _eventQueryValidator.ValidateQueryAsync(query);
+            var stackResults = await _stackQueryValidator.ValidateQueryAsync(query);
+            return Ok(new AppQueryValidator.QueryProcessResult {
+                IsValid = eventResults.IsValid || stackResults.IsValid,
+                UsesPremiumFeatures = eventResults.UsesPremiumFeatures && stackResults.UsesPremiumFeatures,
+                Message = eventResults.Message ?? stackResults.Message
+            });
+        } catch (Exception) {
+            return Ok(new AppQueryValidator.QueryProcessResult {
+                IsValid = false,
+                Message = $"Error parsing query: \"{query}\""
+            });
+        }
     }
 }
