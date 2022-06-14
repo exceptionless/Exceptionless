@@ -121,7 +121,7 @@ ctx._source.total_occurrences += params.count;";
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
 
         var cacheEntries = new Dictionary<string, FindHit<Stack>>();
-        foreach (var hit in findHits)
+        foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.SignatureHash)))
             cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
 
         if (cacheEntries.Count > 0)

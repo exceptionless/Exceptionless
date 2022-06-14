@@ -31,6 +31,23 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
+    public async Task CanGetSoftDeletedStack() {
+        var stack = StackData.GenerateSampleStack();
+        stack.IsDeleted = true;
+
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        var actual = _repository.GetByIdAsync(stack.Id, o => o.Cache("test"));
+        Assert.NotNull(actual);
+    }
+
+    [Fact]
+    public async Task CanGetNonExistentStack() {
+        var stack = await _repository.GetByIdAsync(TestConstants.StackId, o => o.Cache("test"));
+        Assert.Null(stack);
+    }
+
+    [Fact]
     public async Task CanGetByStatus() {
         var organizationRepository = GetService<IOrganizationRepository>();
         var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
