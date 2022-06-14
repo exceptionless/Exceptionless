@@ -43,9 +43,9 @@ public class OrganizationService : IStartupAction {
                 await _usageService.HandleOrganizationChange(doc.Value, doc.Original);
 
                 if (doc.Original.IsSuspended == false && doc.Value.IsSuspended == true)
-                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.Type, TokenType.Access).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());
+                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());
                 else if (doc.Original.IsSuspended == true && doc.Value.IsSuspended == false)
-                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.Type, TokenType.Access).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }), o => o.ImmediateConsistency());
+                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }), o => o.ImmediateConsistency());
             }
         }
     }
