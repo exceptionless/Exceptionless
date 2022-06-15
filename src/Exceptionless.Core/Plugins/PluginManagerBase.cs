@@ -42,8 +42,7 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin 
 
             try {
                 AddPlugin(type);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogError(ex, "Unable to instantiate plugin of type {TypeFullName}: {Message}", type.FullName, ex.Message);
                 throw;
             }

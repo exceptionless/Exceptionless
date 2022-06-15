@@ -3,6 +3,8 @@ using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
+using Exceptionless.Core.Repositories;
+using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -65,13 +67,23 @@ public sealed class WebHookDataTests : TestWithServices {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
 
+        var hook = new WebHook {
+            Id = TestConstants.WebHookId,
+            OrganizationId = TestConstants.OrganizationId, 
+            ProjectId = TestConstants.ProjectId,
+            Url = "http://localhost:40000/test",
+            EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, 
+            Version = version,
+            CreatedUtc = SystemClock.UtcNow
+        };
+
         var ev = JsonConvert.DeserializeObject<PersistentEvent>(json, settings);
         ev.OrganizationId = TestConstants.OrganizationId;
         ev.ProjectId = TestConstants.ProjectId;
         ev.StackId = TestConstants.StackId;
         ev.Id = TestConstants.EventId;
 
-        var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject()) {
+        var context = new WebHookDataContext(hook, ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject()) {
             Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc")
         };
         context.Stack.Tags = new TagSet { "Test" };

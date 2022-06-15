@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(20)]
-public sealed class VersionTwo : WebHookDataPluginBase {
-    public VersionTwo(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+public sealed class VersionTwoPlugin : WebHookDataPluginBase {
+    public VersionTwoPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
     public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
-        if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version2))
+        if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version2))
             return Task.FromResult<object>(null);
 
         return Task.FromResult<object>(new WebHookEvent(_options.BaseURL) {
@@ -37,7 +37,7 @@ public sealed class VersionTwo : WebHookDataPluginBase {
     }
 
     public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
-        if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version2))
+        if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version2))
             return Task.FromResult<object>(null);
 
         return Task.FromResult<object>(new WebHookStack(_options.BaseURL) {
