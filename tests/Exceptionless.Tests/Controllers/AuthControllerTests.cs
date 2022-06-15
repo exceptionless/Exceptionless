@@ -294,7 +294,7 @@ public class AuthControllerTests : IntegrationTestsBase {
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
         Assert.Equal(user.Id, token.UserId);
-        Assert.Equal(TokenType.Access, token.Type);
+        Assert.Equal(TokenType.Authentication, token.Type);
 
         var mailQueue = GetService<IQueue<MailMessage>>() as InMemoryQueue<MailMessage>;
         Assert.Equal(0, (await mailQueue.GetQueueStatsAsync()).Enqueued);
