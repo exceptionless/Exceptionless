@@ -16,10 +16,13 @@ public sealed class SlackPlugin : WebHookDataPluginBase {
             return Task.FromResult<object>(null);
 
         var error = ctx.Event.GetError();
-        if (error is null)
+        if (error is null) {
+            ctx.IsCancelled = true;
             return Task.FromResult<object>(null);
+        }
 
         var message = _pluginManager.GetSlackEventNotificationMessage(ctx.Event, ctx.Project, ctx.Event.IsCritical(), ctx.IsNew, ctx.IsRegression);
+        ctx.IsCancelled = message is null;
         return Task.FromResult<object>(message);
     }
 
