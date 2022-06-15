@@ -577,9 +577,9 @@ public class AuthController : ExceptionlessApiController {
     }
 
     private async Task<ActionResult<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
-        using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Property("Auth Info", authInfo).SetHttpContext(HttpContext))) {
+        using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(HttpContext))) {
             if (String.IsNullOrEmpty(authInfo?.Code)) {
-                _logger.LogError("External login failed: Unable to get auth info.");
+                _logger.LogError("External login failed: Unable to get auth info with invalid code");
                 return NotFound();
             }
 
@@ -595,21 +595,18 @@ public class AuthController : ExceptionlessApiController {
             UserInfo userInfo;
             try {
                 userInfo = await client.GetUserInfoAsync(authInfo.Code, authInfo.RedirectUri);
-            }
-            catch (Exception ex) {
-                _logger.LogCritical(ex, "External login failed: {Message}", ex.Message);
+            } catch (Exception ex) {
+                _logger.LogCritical(ex, "External login failed Code={AuthCode} RedirectUri={AuthRedirectUri}: {Message}", authInfo.Code, authInfo.RedirectUri, ex.Message);
                 return BadRequest("Unable to get user info.");
             }
 
             User user;
             try {
                 user = await FromExternalLoginAsync(userInfo);
-            }
-            catch (ApplicationException ex) {
+            } catch (ApplicationException ex) {
                 _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
                 return BadRequest("Account Creation is currently disabled.");
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
                 return BadRequest("An error occurred while processing user info.");
             }
