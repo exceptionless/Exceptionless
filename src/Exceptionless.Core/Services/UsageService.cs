@@ -226,7 +226,7 @@ public class UsageService {
         var lastUsageSave = utcNow.Subtract(_bucketSize).Floor(_bucketSize);
 
         // last usage save is the last time we processed usage
-        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-project-save");
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-organization-save");
         if (lastUsageSaveCache.HasValue)
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
 
