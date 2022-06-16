@@ -102,8 +102,7 @@ public class AuthController : ExceptionlessApiController {
             User user;
             try {
                 user = await _userRepository.GetByEmailAddressAsync(email);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
                 return Unauthorized();
             }
