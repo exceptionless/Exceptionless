@@ -4,30 +4,30 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Exceptionless.Core.Billing;
-using Exceptionless.Tests.Extensions;
-using Exceptionless.Web.Utility;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
-using Foundatio.Utility;
-using Exceptionless.DateTimeExtensions;
-using Foundatio.Repositories.Models;
-using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Core.Services;
-using Exceptionless.Web.Models;
-using Foundatio.Repositories;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -1114,7 +1114,33 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
-        
+
+        // Downgrade Plan and verify throttled
+        organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.Equal(0, eventsLeftInBucket);
+
+        // Verify organization is over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.True(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+
         // move forward again and run process usage job
         TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
 
