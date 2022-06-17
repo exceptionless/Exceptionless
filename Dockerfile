@@ -132,3 +132,6 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
 EXPOSE 80 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# build locally
+# docker buildx build --target exceptionless --platform linux/amd64,linux/arm64 --load --tag exceptionless .
