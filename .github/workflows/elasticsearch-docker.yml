@@ -25,7 +25,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build custom Elasticsearch docker image
-      working-directory: docker/elasticsearch/8.x
+      working-directory: build/docker/elasticsearch
       run: |
         VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
         docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION --tag exceptionless/elasticsearch:latest
