@@ -4,6 +4,7 @@ on:
   push:
     paths:
     - 'build/docker/elasticsearch/**'
+    - '.github/workflows/elasticsearch-docker.yml'
 
 jobs:
 
