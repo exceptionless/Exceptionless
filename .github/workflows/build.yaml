@@ -29,6 +29,7 @@ jobs:
         version=$(minver --tag-prefix v)
         echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
         echo "VERSION=$version" >> $GITHUB_ENV
+        echo '### Build Version: $version' >> $GITHUB_STEP_SUMMARY
     - name: Build
       run: dotnet build --configuration Release /clp:NoSummary
     - name: Start Services
