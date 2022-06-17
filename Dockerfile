@@ -93,10 +93,23 @@ USER root
 
 # install dotnet and supervisor
 RUN apt-get update -y && \
-    apt-get install wget apt-transport-https supervisor dos2unix -y && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        apt-transport-https \
+        supervisor \
+        dos2unix \
+        libc6 \
+        libgcc1 \
+        libgssapi-krb5-2 \
+        libicu66 \
+        libssl1.1 \
+        libstdc++6 \
+        zlib1g && \
     wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh  && \
     ./dotnet-install.sh -c 6.0 --runtime aspnetcore && \
+    export DOTNET_ROOT=$HOME/.dotnet && \
+    export PATH="$PATH:$HOME/.dotnet" && \
     rm dotnet-install.sh && \
     dos2unix /app/docker-entrypoint.sh
 
