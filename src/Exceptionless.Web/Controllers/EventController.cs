@@ -35,7 +35,7 @@ namespace Exceptionless.Web.Controllers;
 [Route(API_PREFIX + "/events")]
 [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
 public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
-    private static readonly HashSet<string> _ignoredKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "access_token", "api_key", "apikey" };
+    private static readonly HashSet<string> _ignoredKeys = new(StringComparer.OrdinalIgnoreCase) { "access_token", "api_key", "apikey" };
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;

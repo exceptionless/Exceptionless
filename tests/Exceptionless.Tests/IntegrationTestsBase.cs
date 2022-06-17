@@ -36,8 +36,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     private readonly IDisposable _testSystemClock = TestSystemClock.Install();
     private readonly ExceptionlessElasticConfiguration _configuration;
     protected readonly TestServer _server;
-    protected readonly FluentClient _client;
-    protected readonly HttpClient _httpClient;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
     public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
@@ -58,16 +56,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
         _disposables.Add(_testSystemClock);
 
-        _httpClient = configuredFactory.CreateClient();
         _server = configuredFactory.Server;
-        _httpClient.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
+        _server.PreserveExecutionContext = true;
 
         var testScope = configuredFactory.Services.CreateScope();
         _disposables.Add(testScope);
         ServiceProvider = testScope.ServiceProvider;
 
-        var settings = GetService<JsonSerializerSettings>();
-        _client = new FluentClient(_httpClient, new NewtonsoftJsonSerializer(settings));
         _configuration = GetService<ExceptionlessElasticConfiguration>();
     }
 
@@ -174,12 +169,24 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         _logger.LogRequest(response);
     }
 
+    protected HttpClient CreateHttpClient() {
+        var client = _server.CreateClient();
+        client.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
+        return client;
+    }
+
+    protected FluentClient CreateFluentClient() {
+        var settings = GetService<JsonSerializerSettings>();
+        return new FluentClient(CreateHttpClient(), new NewtonsoftJsonSerializer(settings));
+    }
+
     protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {
-        var request = new HttpRequestMessage(HttpMethod.Get, _client.HttpClient.BaseAddress);
+        var client = CreateFluentClient();
+        var request = new HttpRequestMessage(HttpMethod.Get, client.HttpClient.BaseAddress);
         var builder = new AppSendBuilder(request);
         configure(builder);
 
-        var response = await _client.SendAsync(request);
+        var response = await client.SendAsync(request);
 
         var expectedStatus = request.GetExpectedStatus();
         if (expectedStatus.HasValue && expectedStatus.Value != response.StatusCode) {

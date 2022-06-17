@@ -1,10 +1,5 @@
 ﻿using System.Diagnostics;
-using App.Metrics;
-using App.Metrics.AspNetCore;
-using App.Metrics.Formatters;
-using App.Metrics.Formatters.Prometheus;
 using Exceptionless.Core;
-using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
@@ -15,7 +10,6 @@ using Foundatio.Jobs;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using OpenTelemetry;
 using Serilog;
-using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
 
@@ -59,22 +53,24 @@ public class Program {
             .Build();
 
         var options = AppOptions.ReadFromConfiguration(config);
+        var apmConfig = new ApmConfig(config, "job-" + jobOptions.JobName.ToLowerUnderscoredWords('-'), options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-        var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config)
-            .Enrich.FromLogContext()
-            .Enrich.WithMachineName()
-            .Enrich.WithSpan();
-
-        if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
-            loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
-
+        var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
         Log.Logger = loggerConfig.CreateLogger();
         var configDictionary = config.ToDictionary("Serilog");
         Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 
         var builder = Host.CreateDefaultBuilder()
             .UseEnvironment(environment)
-            .UseSerilog()
+            .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
+            .UseSerilog((ctx, sp, c) => {
+                c.ReadFrom.Configuration(config);
+                c.ReadFrom.Services(sp);
+                c.Enrich.WithMachineName();
+
+                if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
+                    loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
+            }, writeToProviders: true)
             .ConfigureWebHostDefaults(webBuilder => {
                 webBuilder
                     .UseConfiguration(config)
@@ -88,13 +84,13 @@ public class Program {
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
                             };
                         });
-                    })
-                    .Configure(app => {
+
                         Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetService<ILogger<Program>>());
 
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                             app.UseExceptionless(ExceptionlessClient.Default);
 
+                        app.UseOpenTelemetryPrometheusScrapingEndpoint();
                         app.UseHealthChecks("/health", new HealthCheckOptions {
                             Predicate = hcr => !String.IsNullOrEmpty(jobOptions.JobName) ? hcr.Tags.Contains(jobOptions.JobName) : hcr.Tags.Contains("AllJobs")
                         });
@@ -113,14 +109,10 @@ public class Program {
                 AddJobs(services, jobOptions);
                 services.AddAppOptions(options);
 
-                Bootstrapper.RegisterServices(services);
+                Bootstrapper.RegisterServices(services, options);
                 Insulation.Bootstrapper.RegisterServices(services, options, true);
-
-                services.AddApm(new ApmConfig(config, "Exceptionless.Job", "Exceptionless", options.InformationalVersion, options.CacheOptions.Provider == "redis"));
-            });
-
-        if (!String.IsNullOrEmpty(options.MetricOptions.Provider))
-            ConfigureMetricsReporting(builder, options.MetricOptions);
+            })
+            .AddApm(apmConfig);
 
         return builder;
     }
@@ -144,6 +136,8 @@ public class Program {
             services.AddJob<EventNotificationsJob>(true);
         if (options.EventPosts)
             services.AddJob<EventPostsJob>(true);
+        if (options.EventUsage)
+            services.AddJob<EventUsageJob>(true);
         if (options.EventUserDescriptions)
             services.AddJob<EventUserDescriptionsJob>(true);
         if (options.MailMessage)
@@ -160,23 +154,5 @@ public class Program {
             services.AddJob<WebHooksJob>(true);
         if (options.WorkItem)
             services.AddJob<WorkItemJob>(true);
-    }
-
-    private static void ConfigureMetricsReporting(IHostBuilder builder, MetricOptions options) {
-        if (String.Equals(options.Provider, "prometheus")) {
-            var metrics = AppMetrics.CreateDefaultBuilder()
-                .OutputMetrics.AsPrometheusPlainText()
-                .OutputMetrics.AsPrometheusProtobuf()
-                .Build();
-            builder.ConfigureMetrics(metrics).UseMetrics(o => {
-                o.EndpointOptions = endpointsOptions => {
-                    endpointsOptions.MetricsTextEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusTextOutputFormatter>();
-                    endpointsOptions.MetricsEndpointOutputFormatter = metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
-                };
-            });
-        }
-        else if (!String.Equals(options.Provider, "statsd")) {
-            builder.UseMetrics();
-        }
     }
 }

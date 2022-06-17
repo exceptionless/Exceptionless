@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
@@ -23,16 +22,14 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     private readonly AppOptions _options;
     private readonly IList<IPipelineAction<TContext>> _actions;
     protected readonly string _metricPrefix;
-    protected readonly IMetricsClient _metricsClient;
     protected readonly ILogger _logger;
 
-    public PipelineBase(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
+    public PipelineBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) {
         _serviceProvider = serviceProvider;
         _options = options;
 
         var type = GetType();
-        _metricPrefix = String.Concat(type.Name.ToLower(), ".");
-        _metricsClient = metricsClient ?? new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory });
+        _metricPrefix = String.Concat("pipeline.", type.Name.ToLower(), ".");
         _logger = loggerFactory?.CreateLogger(type);
 
         _actions = LoadDefaultActions();
@@ -58,7 +55,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
         foreach (var action in _actions) {
             string metricName = String.Concat(metricPrefix, action.Name.ToLower());
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
-            await _metricsClient.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
+            await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
             if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                 break;
         }

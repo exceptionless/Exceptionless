@@ -39,6 +39,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly BillingManager _billingManager;
+    private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
     private readonly IMailer _mailer;
     private readonly IMessagePublisher _messagePublisher;
@@ -52,6 +53,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IUserRepository userRepository,
         IProjectRepository projectRepository,
         BillingManager billingManager,
+        UsageService usageService,
         IMailer mailer,
         IMessagePublisher messagePublisher,
         IMapper mapper,
@@ -65,6 +67,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _userRepository = userRepository;
         _projectRepository = projectRepository;
         _billingManager = billingManager;
+        _usageService = usageService;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
         _options = options;
@@ -450,7 +453,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
 
             _billingManager.ApplyBillingPlan(organization, plan, CurrentUser);
-            await _repository.SaveAsync(organization, o => o.Cache());
+            await _repository.SaveAsync(organization, o => o.Cache().Originals());
             await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
         }
         catch (Exception ex) {
@@ -580,7 +583,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         organization.SuspendedByUserId = CurrentUser.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
-        await _repository.SaveAsync(organization, o => o.Cache());
+        await _repository.SaveAsync(organization, o => o.Cache().Originals());
 
         return Ok();
     }
@@ -599,7 +602,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         organization.SuspendedByUserId = null;
         organization.SuspensionCode = null;
         organization.SuspensionNotes = null;
-        await _repository.SaveAsync(organization, o => o.Cache());
+        await _repository.SaveAsync(organization, o => o.Cache().Originals());
 
         return Ok();
     }
@@ -724,9 +727,38 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         var viewOrganizations = models.OfType<ViewOrganization>().ToList();
         foreach (var viewOrganization in viewOrganizations) {
+            var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
+
             var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
             viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
-            viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > usageRetention).ToList();
+            var currentUsage = viewOrganization.Usage.FirstOrDefault(u => u.Date == realTimeUsage.Date);
+            if (currentUsage == null) {
+                currentUsage = new UsageInfo {
+                    Date = realTimeUsage.Date
+                };
+                viewOrganization.Usage.Add(currentUsage);
+            }
+            currentUsage.Limit = realTimeUsage.Limit;
+            currentUsage.Total = realTimeUsage.Total;
+            currentUsage.Blocked = realTimeUsage.Blocked;
+            currentUsage.TooBig = realTimeUsage.TooBig;
+
+            var overageRetention = SystemClock.UtcNow.SubtractDays(30).StartOfMonth();
+            viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > overageRetention).ToList();
+            if (realTimeUsage.Overage != null) {
+                var currentOverage = viewOrganization.OverageHours.FirstOrDefault(u => u.Date == realTimeUsage.Overage.Date);
+                if (currentOverage == null) {
+                    currentOverage = new OverageInfo {
+                        Date = realTimeUsage.Overage.Date
+                    };
+                    viewOrganization.OverageHours.Add(currentOverage);
+                }
+                currentOverage.Total = realTimeUsage.Total;
+                currentOverage.Blocked = realTimeUsage.Blocked;
+                currentOverage.TooBig = realTimeUsage.TooBig;
+            }
+            
+            viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
         }
     }
@@ -747,6 +779,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             .SystemFilter(systemFilter)
             .AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)")
             .EnforceEventStackFilter(false));
+
         foreach (var organization in viewOrganizations) {
             var organizationStats = result.Aggregations.Terms<string>("terms_organization_id")?.Buckets.FirstOrDefault(t => t.Key == organization.Id);
             organization.EventCount = organizationStats?.Total ?? 0;

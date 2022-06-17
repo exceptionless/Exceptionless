@@ -96,7 +96,7 @@ public class StripeEventHandler {
             org.RemoveSuspension();
         }
 
-        await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
+        await _organizationRepository.SaveAsync(org, o => o.Cache().Originals()).AnyContext();
     }
 
     private async Task SubscriptionDeletedAsync(Subscription sub) {
@@ -116,7 +116,7 @@ public class StripeEventHandler {
         org.SuspendedByUserId = "Stripe";
 
         org.BillingChangeDate = SystemClock.UtcNow;
-        await _organizationRepository.SaveAsync(org, o => o.Cache()).AnyContext();
+        await _organizationRepository.SaveAsync(org, o => o.Cache().Originals()).AnyContext();
     }
 
     private async Task InvoicePaymentSucceededAsync(Invoice inv) {

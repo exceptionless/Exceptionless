@@ -19,6 +19,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -160,7 +161,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc) {
-        if (snoozeUntilUtc < DateTime.UtcNow.AddMinutes(5))
+        if (snoozeUntilUtc < SystemClock.UtcNow.AddMinutes(5))
             return BadRequest("Must snooze for at least 5 minutes.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -329,7 +330,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             foreach (var stack in stacks) {
                 stack.Status = status;
                 if (status == StackStatus.Fixed) {
-                    stack.DateFixed = DateTime.UtcNow;
+                    stack.DateFixed = SystemClock.UtcNow;
                 }
                 else {
                     stack.DateFixed = null;
@@ -370,15 +371,34 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (!promotedProjectHooks.Any())
             return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
+        using var _ = _logger.BeginScope(new ExceptionlessState()
+            .Organization(stack.OrganizationId)
+            .Project(stack.ProjectId)
+            .Tag("Promote")
+            .Identity(CurrentUser.EmailAddress)
+            .Property("User", CurrentUser)
+            .SetHttpContext(HttpContext));
+        
         foreach (var hook in promotedProjectHooks) {
-            var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.Status == StackStatus.Regressed);
+            if (!hook.IsEnabled) {
+                _logger.LogWarning("Unable to promote to disabled WebHook Id={WebHookId}, Url={WebHookUrl}", hook.Id, hook.Url);
+                continue;
+            }
+
+            var context = new WebHookDataContext(hook, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.Status == StackStatus.Regressed);
+            var data = await _webHookDataPluginManager.CreateFromStackAsync(context);
+            if (data is null) {
+                _logger.LogWarning("Unable to promote to WebHook with null payload Id={WebHookId}, Url={WebHookUrl}", hook.Id, hook.Url);
+                continue;
+            }
+
             await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                 OrganizationId = stack.OrganizationId,
                 ProjectId = stack.ProjectId,
                 WebHookId = hook.Id,
                 Url = hook.Url,
                 Type = WebHookType.General,
-                Data = await _webHookDataPluginManager.CreateFromStackAsync(context)
+                Data = data
             });
         }
 

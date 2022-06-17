@@ -8,7 +8,6 @@ public static class ConfigurationExtensions {
         services.AddSingleton(appOptions);
         services.AddSingleton(appOptions.CacheOptions);
         services.AddSingleton(appOptions.MessageBusOptions);
-        services.AddSingleton(appOptions.MetricOptions);
         services.AddSingleton(appOptions.QueueOptions);
         services.AddSingleton(appOptions.StorageOptions);
         services.AddSingleton(appOptions.EmailOptions);

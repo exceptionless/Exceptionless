@@ -102,8 +102,7 @@ public class AuthController : ExceptionlessApiController {
             User user;
             try {
                 user = await _userRepository.GetByEmailAddressAsync(email);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
                 return Unauthorized();
             }
@@ -148,7 +147,7 @@ public class AuthController : ExceptionlessApiController {
             await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
 
             _logger.UserLoggedIn(user.EmailAddress);
-            return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
+            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
         }
     }
 
@@ -268,7 +267,7 @@ public class AuthController : ExceptionlessApiController {
                 await _mailer.SendUserEmailVerifyAsync(user);
 
             _logger.UserSignedUp(user.EmailAddress);
-            return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
+            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
         }
     }
 
@@ -366,7 +365,7 @@ public class AuthController : ExceptionlessApiController {
             await ResetUserTokensAsync(CurrentUser, nameof(RemoveExternalLoginAsync));
 
             _logger.UserRemovedExternalLogin(CurrentUser.EmailAddress, providerName);
-            return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
+            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(CurrentUser) });
         }
     }
 
@@ -416,7 +415,7 @@ public class AuthController : ExceptionlessApiController {
                 await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
             _logger.UserChangedPassword(CurrentUser.EmailAddress);
-            return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(CurrentUser) });
+            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(CurrentUser) });
         }
     }
 
@@ -577,9 +576,9 @@ public class AuthController : ExceptionlessApiController {
     }
 
     private async Task<ActionResult<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
-        using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Property("Auth Info", authInfo).SetHttpContext(HttpContext))) {
+        using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(HttpContext))) {
             if (String.IsNullOrEmpty(authInfo?.Code)) {
-                _logger.LogError("External login failed: Unable to get auth info.");
+                _logger.LogError("External login failed: Unable to get auth info with invalid code");
                 return NotFound();
             }
 
@@ -595,21 +594,18 @@ public class AuthController : ExceptionlessApiController {
             UserInfo userInfo;
             try {
                 userInfo = await client.GetUserInfoAsync(authInfo.Code, authInfo.RedirectUri);
-            }
-            catch (Exception ex) {
-                _logger.LogCritical(ex, "External login failed: {Message}", ex.Message);
+            } catch (Exception ex) {
+                _logger.LogCritical(ex, "External login failed Code={AuthCode} RedirectUri={AuthRedirectUri}: {Message}", authInfo.Code, authInfo.RedirectUri, ex.Message);
                 return BadRequest("Unable to get user info.");
             }
 
             User user;
             try {
                 user = await FromExternalLoginAsync(userInfo);
-            }
-            catch (ApplicationException ex) {
+            } catch (ApplicationException ex) {
                 _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
                 return BadRequest("Account Creation is currently disabled.");
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
                 return BadRequest("An error occurred while processing user info.");
             }
@@ -623,7 +619,7 @@ public class AuthController : ExceptionlessApiController {
                 await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user);
 
             _logger.UserLoggedIn(user.EmailAddress);
-            return Ok(new TokenResult { Token = await GetOrCreateAccessTokenAsync(user) });
+            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
         }
     }
 
@@ -760,8 +756,8 @@ public class AuthController : ExceptionlessApiController {
         }
     }
 
-    private async Task<string> GetOrCreateAccessTokenAsync(User user) {
-        var userTokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Access, user.Id);
+    private async Task<string> GetOrCreateAuthenticationTokenAsync(User user) {
+        var userTokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id);
         var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > SystemClock.UtcNow));
         if (validAccessToken != null)
             return validAccessToken.Id;
@@ -773,7 +769,7 @@ public class AuthController : ExceptionlessApiController {
             UpdatedUtc = SystemClock.UtcNow,
             ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
             CreatedBy = user.Id,
-            Type = TokenType.Access
+            Type = TokenType.Authentication
         }, o => o.ImmediateConsistency(true).Cache());
 
         return token.Id;

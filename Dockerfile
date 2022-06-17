@@ -1,4 +1,4 @@
-ARG UI_VERSION="ui:latest"
+ARG UI_VERSION="ui:3.1.9"
 FROM exceptionless/${UI_VERSION} AS ui
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
@@ -79,7 +79,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:7.17.1 AS exceptionless
+FROM exceptionless/elasticsearch:8.2.2 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -89,10 +89,12 @@ COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
+USER root
+
 # install dotnet and supervisor
 RUN apt-get update -y && \
     apt-get install wget -y && \
-    wget https://packages.microsoft.com/config/ubuntu/20.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg -i packages-microsoft-prod.deb && \
     rm packages-microsoft-prod.deb && \
     apt-get update -y && \
@@ -109,10 +111,16 @@ ENV discovery.type=single-node \
     ASPNETCORE_URLS=http://+:80 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
+    EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
     EX_RunJobsInProcess=true \
     EX_Html5Mode=true
 
-RUN chmod +x /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh && \
+    chown -R elasticsearch:elasticsearch /app && \
+    mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
+    chown -R elasticsearch:elasticsearch /var/log/supervisor
+
+USER elasticsearch
 
 EXPOSE 80 9200
 

@@ -6,12 +6,12 @@ using Foundatio.Repositories;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(0)]
-public sealed class LoadDefaults : WebHookDataPluginBase {
+public sealed class LoadDefaultsPlugin : WebHookDataPluginBase {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
 
-    public LoadDefaults(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, AppOptions options) : base(options) {
+    public LoadDefaultsPlugin(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, AppOptions options) : base(options) {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
@@ -27,7 +27,7 @@ public sealed class LoadDefaults : WebHookDataPluginBase {
         if (ctx.Project == null)
             throw new ArgumentException("Project not found.");
 
-        if (ctx.Organization == null)
+        if (ctx.Organization == null) 
             ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, o => o.Cache()).AnyContext();
 
         if (ctx.Organization == null)

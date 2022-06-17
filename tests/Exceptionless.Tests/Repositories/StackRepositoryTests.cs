@@ -31,8 +31,24 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
+    public async Task CanGetSoftDeletedStack() {
+        var stack = StackData.GenerateSampleStack();
+        stack.IsDeleted = true;
+
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        var actual = _repository.GetByIdAsync(stack.Id, o => o.Cache("test"));
+        Assert.NotNull(actual);
+    }
+
+    [Fact]
+    public async Task CanGetNonExistentStack() {
+        var stack = await _repository.GetByIdAsync(TestConstants.StackId, o => o.Cache("test"));
+        Assert.Null(stack);
+    }
+
+    [Fact]
     public async Task CanGetByStatus() {
-        Log.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
         var organizationRepository = GetService<IOrganizationRepository>();
         var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         Assert.NotNull(organization);
@@ -40,7 +56,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
         await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>(), true);
 
         var appFilter = new AppFilter(organization);
-        var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
+        var stackIds = await _repository.GetIdsByQueryAsync(q => q.AppFilter(appFilter).FilterExpression("status:open OR status:regressed").DateRange(SystemClock.UtcNow.AddDays(-5), SystemClock.UtcNow), o => o.PageLimit(o.GetMaxLimit()));
         Assert.Equal(2, stackIds.Total);
     }
 

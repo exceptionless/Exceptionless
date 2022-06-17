@@ -4,8 +4,8 @@ using Exceptionless.Core.Models;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 public class WebHookDataContext : ExtensibleObject {
-    public WebHookDataContext(string version, PersistentEvent ev, Organization organization = null, Project project = null, Stack stack = null, bool isNew = false, bool isRegression = false) {
-        Version = version ?? throw new ArgumentException("Version cannot be null.", nameof(version));
+    public WebHookDataContext(Models.WebHook webHook, PersistentEvent ev, Organization organization = null, Project project = null, Stack stack = null, bool isNew = false, bool isRegression = false) {
+        WebHook = webHook ?? throw new ArgumentException("WebHook cannot be null.", nameof(webHook));
         Organization = organization;
         Project = project;
         Stack = stack;
@@ -14,8 +14,8 @@ public class WebHookDataContext : ExtensibleObject {
         IsRegression = isRegression;
     }
 
-    public WebHookDataContext(string version, Stack stack, Organization organization = null, Project project = null, bool isNew = false, bool isRegression = false) {
-        Version = version ?? throw new ArgumentException("Version cannot be null.", nameof(version));
+    public WebHookDataContext(Models.WebHook webHook, Stack stack, Organization organization = null, Project project = null, bool isNew = false, bool isRegression = false) {
+        WebHook = webHook ?? throw new ArgumentException("WebHook cannot be null.", nameof(webHook));
         Organization = organization;
         Project = project;
         Stack = stack ?? throw new ArgumentException("Stack cannot be null.", nameof(stack));
@@ -23,12 +23,14 @@ public class WebHookDataContext : ExtensibleObject {
         IsRegression = isRegression;
     }
 
+    public Models.WebHook WebHook { get; set; }
     public PersistentEvent Event { get; set; }
     public Stack Stack { get; set; }
     public Organization Organization { get; set; }
     public Project Project { get; set; }
 
-    public string Version { get; set; }
     public bool IsNew { get; set; }
     public bool IsRegression { get; set; }
+
+    public bool IsCancelled { get; set; }
 }

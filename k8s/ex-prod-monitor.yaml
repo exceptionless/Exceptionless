@@ -1,25 +1,14 @@
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
-  name: ex-prod
+  name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 7.17.4
-  image: exceptionless/elasticsearch:7.17.4 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
-  secureSettings:
-    - secretName: ex-prod-snapshots
-  http:
-    tls:
-      selfSignedCertificate:
-        disabled: true
+  version: 8.2.2
   nodeSets:
-  - name: main
-    count: 5
+  - name: default
+    count: 1
     config:
-      node.master: true
-      node.data: true
-      node.ingest: true
-      action.destructive_requires_name: true
       # if not setting max_map_count in an init container, then use this setting
       #node.store.allow_mmap: false
     podTemplate:
@@ -28,13 +17,13 @@ spec:
         - name: elasticsearch
           env:
           - name: ES_JAVA_OPTS
-            value: -Xms9g -Xmx9g
+            value: -Xms4g -Xmx4g
           resources:
             requests:
-              memory: 18Gi
-              cpu: 4
+              memory: 8Gi
+              cpu: 2
             limits:
-              memory: 18Gi
+              memory: 8Gi
         # related to "node.store.allow_mmap: false" setting above
         initContainers:
         - name: sysctl
@@ -57,28 +46,27 @@ spec:
 apiVersion: kibana.k8s.elastic.co/v1
 kind: Kibana
 metadata:
-  name: ex-prod
+  name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 7.17.4
+  version: 8.2.2
   count: 1
   elasticsearchRef:
-    name: ex-prod
+    name: ex-prod-monitor
   config:
-    xpack.monitoring.enabled: true
-  http:
-    tls:
-      selfSignedCertificate:
-        disabled: true
-  podTemplate:
-    spec:
-      containers:
-      - name: kibana
-        resources:
-          requests:
-            memory: 500Mi
-            cpu: 100m
-          limits:
-            memory: 1Gi
-            cpu: 800m
+    xpack.fleet.packages:
+    - name: apm
+      version: latest
 
+---
+apiVersion: apm.k8s.elastic.co/v1
+kind: ApmServer
+metadata:
+  name: ex-prod-monitor
+spec:
+  version: 8.2.2
+  count: 1
+  elasticsearchRef:
+    name: ex-prod-monitor
+  kibanaRef:
+    name: ex-prod-monitor

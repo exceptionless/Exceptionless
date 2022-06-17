@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;
@@ -8,7 +7,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -17,14 +15,12 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase {
     private readonly ICacheClient _cache;
     private readonly IEventRepository _eventRepository;
     private readonly IGeocodeService _geocodeService;
-    private readonly IMetricsClient _metricsClient;
     private readonly ILockProvider _lockProvider;
 
-    public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMetricsClient metricsClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
         _cache = new ScopedCacheClient(cacheClient, "Geo");
         _eventRepository = eventRepository;
         _geocodeService = geocodeService;
-        _metricsClient = metricsClient;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -44,7 +40,7 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase {
             try {
                 result = await _geocodeService.ReverseGeocodeAsync(result.Latitude.GetValueOrDefault(), result.Longitude.GetValueOrDefault()).AnyContext();
                 location = result.ToLocation();
-                _metricsClient.Counter(MetricNames.UsageGeocodingApi);
+                AppDiagnostics.UsageGeocodingApi.Add(1);
             }
             catch (Exception ex) {
                 Log.LogError(ex, "Error occurred looking up reverse geocode: {Geo}", workItem.Geo);

@@ -69,7 +69,6 @@ public class AppOptions {
 
     public CacheOptions CacheOptions { get; internal set; }
     public MessageBusOptions MessageBusOptions { get; internal set; }
-    public MetricOptions MetricOptions { get; internal set; }
     public QueueOptions QueueOptions { get; internal set; }
     public StorageOptions StorageOptions { get; internal set; }
     public EmailOptions EmailOptions { get; internal set; }
@@ -118,7 +117,6 @@ public class AppOptions {
 
         options.CacheOptions = CacheOptions.ReadFromConfiguration(config, options);
         options.MessageBusOptions = MessageBusOptions.ReadFromConfiguration(config, options);
-        options.MetricOptions = MetricOptions.ReadFromConfiguration(config);
         options.QueueOptions = QueueOptions.ReadFromConfiguration(config, options);
         options.StorageOptions = StorageOptions.ReadFromConfiguration(config, options);
         options.EmailOptions = EmailOptions.ReadFromConfiguration(config, options);

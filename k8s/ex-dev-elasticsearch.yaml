@@ -4,8 +4,8 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.16.2
-  image: exceptionless/elasticsearch:7.16.2 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
+  version: 7.17.4
+  image: exceptionless/elasticsearch:7.17.4 # https://github.com/exceptionless/Exceptionless/tree/master/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-dev-snapshots
   http:
@@ -39,6 +39,7 @@ spec:
         - name: sysctl
           securityContext:
             privileged: true
+            runAsUser: 0
           command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
     volumeClaimTemplates:
     - metadata:
@@ -58,7 +59,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.16.2
+  version: 7.17.4
   count: 1
   elasticsearchRef:
     name: ex-dev

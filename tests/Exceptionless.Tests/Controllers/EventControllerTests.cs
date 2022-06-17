@@ -3,38 +3,42 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Exceptionless.Tests.Extensions;
-using Exceptionless.Web.Utility;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using Run = Exceptionless.Tests.Utility.Run;
-using Foundatio.Utility;
-using Exceptionless.DateTimeExtensions;
-using Foundatio.Repositories.Models;
-using Exceptionless.Core.Repositories.Queries;
 
 namespace Exceptionless.Tests.Controllers;
 
 public class EventControllerTests : IntegrationTestsBase {
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
 
     public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-        Log.MinimumLevel = LogLevel.Warning;
-
+        _organizationRepository = GetService<IOrganizationRepository>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
@@ -169,14 +173,15 @@ public class EventControllerTests : IntegrationTestsBase {
         byte[] data = Encoding.UTF8.GetBytes(message);
         var ms = new MemoryStream();
         await using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
-            await gzip.WriteAsync(data, CancellationToken.None);
+        await gzip.WriteAsync(data, CancellationToken.None);
         ms.Position = 0;
 
         var content = new StreamContent(ms);
         content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         content.Headers.ContentEncoding.Add("gzip");
-        _httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
-        var response = await _httpClient.PostAsync("events", content);
+        var client = CreateHttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
+        var response = await client.PostAsync("events", content);
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.True(response.Headers.Contains(Headers.ConfigurationVersion));
 
@@ -350,7 +355,6 @@ public class EventControllerTests : IntegrationTestsBase {
 
     [Fact]
     public async Task CanGetNewStackMode() {
-        Log.MinimumLevel = LogLevel.Warning;
         await CreateStacksAndEventsAsync();
 
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
@@ -601,7 +605,6 @@ public class EventControllerTests : IntegrationTestsBase {
                 .Version("3.2.1-beta1");
         });
 
-        Log.MinimumLevel = LogLevel.Trace;
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
@@ -751,6 +754,407 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(2, uniqueTotal);
     }
 
+    [Fact]
+    public async Task ShouldRespectEventUsageLimits() {
+        TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
+
+        // update plan limits
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+
+        string organizationId = TestConstants.OrganizationId;
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        var usageService = GetService<UsageService>();
+        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        Assert.Single(viewOrganization.Usage);
+        Assert.Null(viewOrganization.OverageHours);
+
+        // submit bach of events one over limit
+        int total = eventsLeftInBucket;
+        int blocked = 1;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(total + blocked))
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // verify organization isn't yet throttled
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        Assert.Single(viewOrganization.Usage);
+        Assert.Null(viewOrganization.OverageHours);
+
+        // process events
+        var processEventsJob = GetService<EventPostsJob>();
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+
+        var usageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.Limit);
+        Assert.Equal(total, usageInfo.Total);
+        Assert.Equal(blocked, usageInfo.Blocked);
+        Assert.Equal(0, usageInfo.TooBig);
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.Equal(0, eventsLeftInBucket);
+
+        // Verify organization is over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.True(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        var organizationUsage = viewOrganization.Usage.Single();
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, organizationUsage.Limit);
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+
+        var organizationOverageHoursUsage = viewOrganization.OverageHours.Single();
+        Assert.Equal(total, organizationOverageHoursUsage.Total);
+        Assert.Equal(blocked, organizationOverageHoursUsage.Blocked);
+        Assert.Equal(0, organizationOverageHoursUsage.TooBig);
+
+        // Submit one event to verify submission is rejected
+        blocked++;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBePaymentRequired()
+        );
+        
+        // Increment blocked count due to submission failure.
+        usageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(total, usageInfo.Total);
+        Assert.Equal(blocked, usageInfo.Blocked);
+        Assert.Equal(0, usageInfo.TooBig);
+
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        // Submit event to check usage.
+        total++;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Run the job and verify usage
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations", organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        organizationUsage = viewOrganization.Usage.Single();
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+
+        var secondBucketUsageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(total, secondBucketUsageInfo.Total);
+        Assert.Equal(blocked, secondBucketUsageInfo.Blocked);
+        Assert.Equal(0, secondBucketUsageInfo.TooBig);
+
+        // move forward again and run process usage job
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+
+        var processUsageJob = GetService<EventUsageJob>();
+        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
+
+        organization = await _organizationRepository.GetByIdAsync(organizationId);
+
+        organizationUsage = organization.Usage.Single();
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+    }
+
+    [Fact]
+    public async Task ShouldDiscardEventsForSuspendedOrganization() {
+        TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
+
+        // update plan limits
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+
+        string organizationId = TestConstants.OrganizationId;
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        var usageService = GetService<UsageService>();
+        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPath("organizations", organizationId, "suspend")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Verify event submission is blocked
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBeUnauthorized()
+        );
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBePaymentRequired() // We do payment required if no events left otherwise we do plan limit reached (upgrade required)
+        );
+    }
+
+    [Fact]
+    public async Task SpaFallbackWorks() {
+        var response = await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath("blah")
+            .StatusCodeShouldBeOk()
+        );
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("exceptionless", content);
+
+        await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath("api", "blah")
+            .StatusCodeShouldBeNotFound()
+        );
+
+        await SendRequestAsync(r => r
+            .BaseUri(_server.BaseAddress)
+            .AppendPath("docs", "blah")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task PlanChangeShouldAllowEventSubmission() {
+        TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
+
+        // update plan limits
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+
+        string organizationId = TestConstants.OrganizationId;
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        var usageService = GetService<UsageService>();
+        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        Assert.Single(viewOrganization.Usage);
+        Assert.Null(viewOrganization.OverageHours);
+
+        // submit bach of events one over limit
+        int total = eventsLeftInBucket;
+        int blocked = 1;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(total + blocked))
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // process events
+        var processEventsJob = GetService<EventPostsJob>();
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+
+        var usageInfo = await usageService.GetUsageAsync(organizationId);
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.Limit);
+        Assert.Equal(total, usageInfo.Total);
+        Assert.Equal(blocked, usageInfo.Blocked);
+        Assert.Equal(0, usageInfo.TooBig);
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.Equal(0, eventsLeftInBucket);
+
+        // Verify organization is over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.True(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+
+        // Upgrade Plan
+        organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.MediumPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.True(eventsLeftInBucket > 0);
+
+        // Verify organization is not over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+
+        // Submit one event to verify submission is accepted
+        total++;
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new RandomEventGenerator().Generate(1))
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Run the job and verify usage
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations", organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.False(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+        var organizationUsage = viewOrganization.Usage.Single();
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+
+        // Downgrade Plan and verify throttled
+        organization = await _organizationRepository.GetByIdAsync(organizationId);
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        if (organization.BillingPrice > 0) {
+            organization.StripeCustomerId = "stripe_customer_id";
+            organization.CardLast4 = "1234";
+            organization.SubscribeDate = SystemClock.UtcNow;
+            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.BillingChangedByUserId = TestConstants.UserId;
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
+
+        eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        Assert.Equal(0, eventsLeftInBucket);
+
+        // Verify organization is over hourly limit
+        viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations").AppendPath(organizationId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.True(viewOrganization.IsThrottled);
+        Assert.False(viewOrganization.IsOverMonthlyLimit);
+
+        // move forward again and run process usage job
+        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+
+        var processUsageJob = GetService<EventUsageJob>();
+        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
+
+        organization = await _organizationRepository.GetByIdAsync(organizationId);
+
+        organizationUsage = organization.Usage.Single();
+        Assert.Equal(total, organizationUsage.Total);
+        Assert.Equal(blocked, organizationUsage.Blocked);
+        Assert.Equal(0, organizationUsage.TooBig);
+    }
+
     private async Task CreateStacksAndEventsAsync() {
         var utcNow = SystemClock.UtcNow;
 
@@ -801,9 +1205,7 @@ public class EventControllerTests : IntegrationTestsBase {
             d.Event().FreeProject();
         });
 
-        Log.MinimumLevel = LogLevel.Warning;
         await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
         await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
-        Log.MinimumLevel = LogLevel.Trace;
     }
 }
