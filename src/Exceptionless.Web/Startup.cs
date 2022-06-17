@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using System.Diagnostics;
 
 namespace Exceptionless.Web;
 
@@ -137,16 +138,6 @@ public class Startup {
         var options = app.ApplicationServices.GetRequiredService<AppOptions>();
         Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
-        app.UseSerilogRequestLogging(o => {
-            o.MessageTemplate = "traceID={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-            o.GetLevel = (context, duration, ex) => {
-                if (ex != null || context.Response.StatusCode > 499)
-                    return LogEventLevel.Error;
-
-                return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
-            };
-        });
-
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
         app.UseHealthChecks("/health", new HealthCheckOptions {
@@ -209,18 +200,25 @@ public class Startup {
         if (options.AppMode != AppMode.Development && serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://")))
             app.UseHttpsRedirection();
 
-        app.UseSerilogRequestLogging(o => o.GetLevel = (context, duration, ex) => {
-            if (ex != null || context.Response.StatusCode > 499)
-                return LogEventLevel.Error;
+        app.UseSerilogRequestLogging(o => {
+            o.EnrichDiagnosticContext = (context, httpContext) => {
+                context.Set("ActivityId", Activity.Current.Id);
+            };
+            o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+            o.GetLevel = (context, duration, ex) => {
+                if (ex != null || context.Response.StatusCode > 499)
+                    return LogEventLevel.Error;
 
-            if (context.Response.StatusCode > 399)
+                if (context.Response.StatusCode > 399)
+                    return LogEventLevel.Information;
+
+                if (duration < 1000 || context.Request.Path.StartsWithSegments("/api/v2/push"))
+                    return LogEventLevel.Debug;
+
                 return LogEventLevel.Information;
-
-            if (duration < 1000 || context.Request.Path.StartsWithSegments("/api/v2/push"))
-                return LogEventLevel.Debug;
-
-            return LogEventLevel.Information;
+            };
         });
+
         app.UseStaticFiles(new StaticFileOptions {
             ContentTypeProvider = new FileExtensionContentTypeProvider {
                 Mappings = {
@@ -229,6 +227,7 @@ public class Startup {
             }
         });
 
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
@@ -268,7 +267,28 @@ public class Startup {
 
         app.UseEndpoints(endpoints => {
             endpoints.MapControllers();
-            endpoints.MapFallbackToFile("{**slug:nonfile}", "index.html");
+            endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
+    }
+
+    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath) {
+        var app = endpoints.CreateApplicationBuilder();
+        app.Use(next => context => {
+            var apiPathSegment = new PathString("/api");
+            var docsPathSegment = new PathString("/docs");
+            bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
+            bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
+
+            if (!isApiRequest && !isDocsRequest)
+                context.Request.Path = "/" + filePath;
+            
+            // Set endpoint to null so the static files middleware will handle the request.
+            context.SetEndpoint(null);
+
+            return next(context);
+        });
+
+        app.UseStaticFiles();
+        return app.Build();
     }
 }

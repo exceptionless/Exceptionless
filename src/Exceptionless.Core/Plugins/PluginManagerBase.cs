@@ -1,6 +1,5 @@
 ﻿using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Helpers;
-using Foundatio.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins;
@@ -9,13 +8,11 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin 
     protected readonly IServiceProvider _serviceProvider;
     private readonly AppOptions _options;
     protected readonly string _metricPrefix;
-    protected readonly IMetricsClient _metricsClient;
     protected readonly ILogger _logger;
 
-    public PluginManagerBase(IServiceProvider serviceProvider, AppOptions options, IMetricsClient metricsClient = null, ILoggerFactory loggerFactory = null) {
+    public PluginManagerBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) {
         var type = GetType();
-        _metricPrefix = String.Concat(type.Name.ToLower(), ".");
-        _metricsClient = metricsClient ?? new InMemoryMetricsClient(new InMemoryMetricsClientOptions { LoggerFactory = loggerFactory });
+        _metricPrefix = String.Concat("plugins.", type.Name.ToLower(), ".");
         _logger = loggerFactory?.CreateLogger(type);
         _serviceProvider = serviceProvider;
         _options = options;
@@ -45,8 +42,7 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin 
 
             try {
                 AddPlugin(type);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogError(ex, "Unable to instantiate plugin of type {TypeFullName}: {Message}", type.FullName, ex.Message);
                 throw;
             }

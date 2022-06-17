@@ -60,10 +60,10 @@ public sealed class EventIndex : DailyIndex<PersistentEvent> {
                 .Keyword(f => f.Name(e => e.ReferenceId))
                     .FieldAlias(a => a.Name(Alias.ReferenceId).Path(f => f.ReferenceId))
                 .Text(f => f.Name(e => e.Type).Analyzer(LOWER_KEYWORD_ANALYZER).AddKeywordField())
-                .Text(f => f.Name(e => e.Source).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
+                .Text(f => f.Name(e => e.Source).Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
                 .Date(f => f.Name(e => e.Date))
                 .Text(f => f.Name(e => e.Message))
-                .Text(f => f.Name(e => e.Tags).Analyzer(LOWER_KEYWORD_ANALYZER).Boost(1.2).AddKeywordField())
+                .Text(f => f.Name(e => e.Tags).Analyzer(LOWER_KEYWORD_ANALYZER).AddKeywordField())
                     .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
                 .GeoPoint(f => f.Name(e => e.Geo))
                 .Scalar(f => f.Value)
@@ -310,11 +310,11 @@ internal static class EventIndexExtensions {
             .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
             .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
             .Object<object>(f => f.Name("error").Properties(p1 => p1
-                .Keyword(f3 => f3.Name("code").IgnoreAbove(1024).Boost(1.1))
+                .Keyword(f3 => f3.Name("code").IgnoreAbove(1024))
                 .Text(f3 => f3.Name("message").AddKeywordField())
-                .Text(f3 => f3.Name("type").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.1).AddKeywordField())
-                .Text(f6 => f6.Name("targettype").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())
-                .Text(f6 => f6.Name("targetmethod").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.2).AddKeywordField())));
+                .Text(f3 => f3.Name("type").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
+                .Text(f6 => f6.Name("targettype").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
+                .Text(f6 => f6.Name("targetmethod").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())));
     }
 
     public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryAliases(this PropertiesDescriptor<PersistentEvent> descriptor) {
@@ -402,7 +402,7 @@ internal static class EventIndexExtensions {
     public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
         return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Field(EventIndex.Alias.IpAddress)))
-            .Text(f3 => f3.Name(r => r.MachineName).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField().Boost(1.1))
+            .Text(f3 => f3.Name(r => r.MachineName).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
             .Text(f3 => f3.Name(r => r.OSName).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField().CopyTo(fd => fd.Field(EventIndex.Alias.OperatingSystem)))
             .Keyword(f3 => f3.Name(r => r.CommandLine).IgnoreAbove(1024))
             .Keyword(f3 => f3.Name(r => r.Architecture).IgnoreAbove(1024))));
@@ -411,12 +411,12 @@ internal static class EventIndexExtensions {
     public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
         return descriptor.Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.Description))
-            .Text(f3 => f3.Name(r => r.EmailAddress).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").Boost(1.1).AddKeywordField().CopyTo(f4 => f4.Field($"data.{Event.KnownDataKeys.UserInfo}.identity")))));
+            .Text(f3 => f3.Name(r => r.EmailAddress).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").AddKeywordField().CopyTo(f4 => f4.Field($"data.{Event.KnownDataKeys.UserInfo}.identity")))));
     }
 
     public static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
         return descriptor.Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
-            .Text(f3 => f3.Name(r => r.Identity).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).Boost(1.1).AddKeywordField())
+            .Text(f3 => f3.Name(r => r.Identity).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
             .Text(f3 => f3.Name(r => r.Name).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())));
     }
 }

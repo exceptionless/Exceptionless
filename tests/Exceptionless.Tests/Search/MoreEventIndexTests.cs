@@ -49,8 +49,6 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("source:System.Text", 1)]
     [InlineData("source:System.Text.StringBuilder,System.Text", 1)]
     public async Task GetBySourceAsync(string search, int count) {
-        Log.MinimumLevel = LogLevel.Trace;
-
         await CreateDataAsync(d => {
             d.Event().Source("Exceptionless.Web.GET.Print.SomeClass");
             d.Event().Source("some/web/path");

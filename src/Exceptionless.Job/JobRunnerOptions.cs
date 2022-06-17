@@ -37,6 +37,10 @@ public class JobRunnerOptions {
         if (EventPosts && args.Length != 0)
             JobName = nameof(EventPosts);
 
+        EventUsage = args.Length == 0 || args.Contains(nameof(EventUsage), StringComparer.OrdinalIgnoreCase);
+        if (EventUsage && args.Length != 0)
+            JobName = nameof(EventUsage);
+
         EventUserDescriptions = args.Length == 0 || args.Contains(nameof(EventUserDescriptions), StringComparer.OrdinalIgnoreCase);
         if (EventUserDescriptions && args.Length != 0)
             JobName = nameof(EventUserDescriptions);
@@ -68,6 +72,8 @@ public class JobRunnerOptions {
         WorkItem = args.Length == 0 || args.Contains(nameof(WorkItem), StringComparer.OrdinalIgnoreCase);
         if (WorkItem && args.Length != 0)
             JobName = nameof(WorkItem);
+
+        JobName ??= "All";
     }
 
     public string JobName { get; }
@@ -79,6 +85,7 @@ public class JobRunnerOptions {
     public bool DownloadGeoIPDatabase { get; }
     public bool EventNotifications { get; }
     public bool EventPosts { get; }
+    public bool EventUsage { get; }
     public bool EventUserDescriptions { get; }
     public bool MailMessage { get; }
     public bool MaintainIndexes { get; }

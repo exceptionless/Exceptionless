@@ -27,7 +27,6 @@ public class StatusControllerTests : IntegrationTestsBase {
     [InlineData("New Release!!", false)]
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string message, bool critical, bool sendMessageAsContentIfEmpty = true) {
-        Log.MinimumLevel = LogLevel.Trace;
         var utcNow = SystemClock.UtcNow;
 
         ReleaseNotification notification;

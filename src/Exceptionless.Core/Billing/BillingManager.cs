@@ -102,12 +102,12 @@ public class BillingManager {
         organization.MaxEventsPerMonth = plan.MaxEventsPerMonth;
         organization.HasPremiumFeatures = plan.HasPremiumFeatures;
 
-        organization.SetMonthlyUsage(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), organization.GetCurrentMonthlyTooBig());
+        organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
     }
 
     public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null) {
         organization.BonusEventsPerMonth = bonusEvents;
         organization.BonusExpiration = expires;
-        organization.SetMonthlyUsage(organization.GetCurrentMonthlyTotal(), organization.GetCurrentMonthlyBlocked(), organization.GetCurrentMonthlyTooBig());
+        organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
     }
 }

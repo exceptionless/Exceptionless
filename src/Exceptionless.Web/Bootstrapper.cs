@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -11,6 +11,7 @@ using Exceptionless.Web.Models;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Foundatio.Utility;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web;
@@ -22,7 +23,7 @@ public class Bootstrapper {
 
         services.AddTransient<Profile, ApiMappings>();
 
-        Core.Bootstrapper.RegisterServices(services);
+        Core.Bootstrapper.RegisterServices(services, appOptions);
         Insulation.Bootstrapper.RegisterServices(services, appOptions, appOptions.RunJobsInProcess);
 
         if (appOptions.RunJobsInProcess)
@@ -50,7 +51,6 @@ public class Bootstrapper {
 
             CreateMap<NewOrganization, Organization>();
             CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
-                vo.IsOverHourlyLimit = o.IsOverHourlyLimit(plans);
                 vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
             });
 

@@ -8,6 +8,7 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -1037,16 +1038,22 @@ public sealed class EventPipelineTests : IntegrationTestsBase {
         }
     }
 
-    private async Task CreateProjectDataAsync() {
+    private async Task CreateProjectDataAsync(BillingPlan plan = null) {
         foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans)) {
-            if (organization.Id == TestConstants.OrganizationId3)
+            if (plan is not null)
+                _billingManager.ApplyBillingPlan(organization, plan, UserData.GenerateSampleUser());
+            else if (organization.Id == TestConstants.OrganizationId3)
                 _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, UserData.GenerateSampleUser());
             else
                 _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
 
-            organization.StripeCustomerId = Guid.NewGuid().ToString("N");
-            organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
+            if (organization.BillingPrice > 0) {
+                organization.StripeCustomerId = "stripe_customer_id";
+                organization.CardLast4 = "1234";
+                organization.SubscribeDate = SystemClock.UtcNow;
+                organization.BillingChangeDate = SystemClock.UtcNow;
+                organization.BillingChangedByUserId = TestConstants.UserId;
+            }
 
             if (organization.IsSuspended) {
                 organization.SuspendedByUserId = TestConstants.UserId;

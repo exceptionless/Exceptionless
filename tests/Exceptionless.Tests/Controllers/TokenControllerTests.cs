@@ -6,12 +6,13 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Xunit;
 using Xunit.Abstractions;
+using Exceptionless.Core.Models;
+using Foundatio.Repositories;
 
 namespace Exceptionless.Tests.Controllers;
 
 public sealed class TokenControllerTests : IntegrationTestsBase {
-    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
-    }
+    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {}
 
     protected override async Task ResetDataAsync() {
         await base.ResetDataAsync();
@@ -72,5 +73,55 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
         );
 
         Assert.False(token.IsDisabled);
+    }
+
+    [Fact]
+    public async Task SuspendingOrganizationWillDisableApiKey() {
+        var token = await SendRequestAsAsync<ViewToken>(r => r
+           .Post()
+           .AsGlobalAdminUser()
+           .AppendPath("tokens")
+           .Content(new NewToken {
+               OrganizationId = SampleDataService.TEST_ORG_ID,
+               ProjectId = SampleDataService.TEST_PROJECT_ID,
+               Scopes = new HashSet<string> { AuthorizationRoles.Client }
+           })
+           .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(token.Id);
+        Assert.False(token.IsDisabled);
+        Assert.Single(token.Scopes);
+
+        var repository = GetService<ITokenRepository>();
+        var tokenRecord = await repository.GetByIdAsync(token.Id, o => o.Cache());
+
+        Assert.NotNull(tokenRecord.Id);
+        Assert.False(tokenRecord.IsDisabled);
+        Assert.False(tokenRecord.IsSuspended);
+        Assert.Single(tokenRecord.Scopes);
+
+        await SendRequestAsync(r => r
+           .Post()
+           .AsGlobalAdminUser()
+           .AppendPath($"organizations", SampleDataService.TEST_ORG_ID, "suspend")
+           .QueryString("code", SuspensionCode.Billing)
+           .StatusCodeShouldBeOk()
+        );
+        
+        var actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
+        Assert.NotNull(actualToken);
+        Assert.True(actualToken.IsSuspended);
+
+        await SendRequestAsync(r => r
+           .Delete()
+           .AsGlobalAdminUser()
+           .AppendPath($"organizations", SampleDataService.TEST_ORG_ID, "suspend")
+           .StatusCodeShouldBeOk()
+        );
+
+        actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
+        Assert.NotNull(actualToken);
+        Assert.False(actualToken.IsSuspended);
     }
 }

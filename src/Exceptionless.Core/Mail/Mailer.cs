@@ -4,7 +4,6 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Utility;
 using HandlebarsDotNet;
@@ -17,14 +16,12 @@ public class Mailer : IMailer {
     private readonly IQueue<MailMessage> _queue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
-    private readonly IMetricsClient _metrics;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, IMetricsClient metrics, ILogger<Mailer> logger) {
+    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, ILogger<Mailer> logger) {
         _queue = queue;
         _pluginManager = pluginManager;
         _appOptions = appOptions;
-        _metrics = metrics;
         _logger = logger;
     }
 
@@ -279,7 +276,7 @@ public class Mailer : IMailer {
 
     private Task QueueMessageAsync(MailMessage message, string metricsName) {
         CleanAddresses(message);
-        _metrics.Counter($"mailer.{metricsName}");
+        AppDiagnostics.Counter($"mailer.{metricsName}");
         return _queue.EnqueueAsync(message);
     }
 

@@ -5,11 +5,11 @@ using Exceptionless.Core.Pipeline;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(10)]
-public sealed class VersionOne : WebHookDataPluginBase {
-    public VersionOne(AppOptions options) : base(options) { }
+public sealed class VersionOnePlugin : WebHookDataPluginBase {
+    public VersionOnePlugin(AppOptions options) : base(options) { }
 
     public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
-        if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version1))
+        if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object>(null);
 
         var error = ctx.Event.GetError();
@@ -49,7 +49,7 @@ public sealed class VersionOne : WebHookDataPluginBase {
     }
 
     public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
-        if (!String.Equals(ctx.Version, Models.WebHook.KnownVersions.Version1))
+        if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object>(null);
 
         return Task.FromResult<object>(new VersionOneWebHookStack(_options.BaseURL) {
