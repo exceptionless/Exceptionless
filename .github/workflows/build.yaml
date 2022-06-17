@@ -54,6 +54,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Publish CI Packages
       run: |
+        echo "::remove-matcher owner=csc::"
         # tag and push docker image
         for image in {"api","job","app","exceptionless"}; do
           docker buildx build --target $image --platform linux/amd64,linux/arm64 --output "type=image,push=true" . --tag exceptionless-ci/$image:$VERSION --tag exceptionless-ci/$image:latest --tag ghcr.io/exceptionless/exceptionless/$image:$VERSION --tag ghcr.io/exceptionless/exceptionless/$image:latest
