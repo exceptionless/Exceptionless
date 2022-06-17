@@ -14,8 +14,8 @@ namespace OpenTelemetry {
             if (!String.IsNullOrEmpty(apiKey) && apiKey.Length > 6)
                 apiKey = String.Concat(apiKey.AsSpan(0, 6), "***");
 
-            Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} FullDetails={FullDetails} EnableLogs={EnableLogs} EnableRedis={EnableRedis} SampleRate={SampleRate}",
-                config.Endpoint, apiKey, config.FullDetails, config.EnableLogs, config.EnableRedis, config.SampleRate);
+            Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} Enabled={Enabled} FullDetails={FullDetails} EnableLogs={EnableLogs} EnableRedis={EnableRedis} SampleRate={SampleRate}",
+                config.Endpoint, apiKey, config.Enabled, config.FullDetails, config.EnableLogs, config.EnableRedis, config.SampleRate);
 
             if (config.Insecure) {
                 ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, errors) => true;

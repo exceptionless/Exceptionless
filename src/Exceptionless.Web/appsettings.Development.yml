@@ -31,4 +31,4 @@ Apm:
   FullDetails: true
   SampleRate: 1.0
   EnableLogs: true
-  Debug: true
+  Debug: false
