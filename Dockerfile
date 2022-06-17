@@ -105,12 +105,6 @@ RUN apt-get update -y && \
         libssl1.1 \
         libstdc++6 \
         zlib1g && \
-    wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
-    chmod +x dotnet-install.sh  && \
-    ./dotnet-install.sh -c 6.0 --runtime aspnetcore && \
-    export DOTNET_ROOT=$HOME/.dotnet && \
-    export PATH="$PATH:$HOME/.dotnet" && \
-    rm dotnet-install.sh && \
     dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
@@ -129,6 +123,11 @@ RUN chmod +x /app/docker-entrypoint.sh && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
 
 USER elasticsearch
+
+RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+    chmod +x dotnet-install.sh  && \
+    ./dotnet-install.sh -c 6.0 --runtime aspnetcore && \
+    rm dotnet-install.sh
 
 EXPOSE 80 9200
 
