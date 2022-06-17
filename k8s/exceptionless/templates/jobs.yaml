@@ -10,7 +10,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.closeInactiveSessions.replicaCount }}
+  replicas: {{ ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
@@ -61,7 +61,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.dailySummary.replicaCount }}
+  replicas: {{ ( .Values.jobs.dailySummary | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
@@ -154,7 +154,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.eventNotifications.replicaCount }}
+  replicas: {{ ( .Values.jobs.eventNotifications | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
@@ -205,7 +205,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.eventPosts.replicaCount }}
+  replicas: {{ ( .Values.jobs.eventPosts | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
@@ -292,7 +292,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.eventUserDescriptions.replicaCount }}
+  replicas: {{ ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
@@ -343,7 +343,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.mailMessage.replicaCount }}
+  replicas: {{ ( .Values.jobs.mailMessage | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
@@ -520,7 +520,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.stackEventCount.replicaCount }}
+  replicas: {{ ( .Values.jobs.stackEventCount | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
@@ -571,7 +571,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.webhooks.replicaCount }}
+  replicas: {{ ( .Values.jobs.webhooks | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
@@ -622,7 +622,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.jobs.workitem.replicaCount }}
+  replicas: {{ ( .Values.jobs.workitem | default dict ).replicaCount | default 1 }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-work-item
