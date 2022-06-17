@@ -261,7 +261,7 @@ public class Bootstrapper {
 
     public static DynamicTypeContractResolver GetJsonContractResolver() {
         var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
-        resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOne.VersionOneWebHookStack), typeof(VersionOne.VersionOneWebHookEvent));
+        resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOnePlugin.VersionOneWebHookStack), typeof(VersionOnePlugin.VersionOneWebHookEvent));
         return resolver;
     }
 

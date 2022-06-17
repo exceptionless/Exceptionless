@@ -45,7 +45,7 @@ public class QueueNotificationAction : EventPipelineActionBase {
             if (!ShouldCallWebHook(hook, ctx))
                 continue;
 
-            var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
+            var context = new WebHookDataContext(hook, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
             var notification = new WebHookNotification {
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,

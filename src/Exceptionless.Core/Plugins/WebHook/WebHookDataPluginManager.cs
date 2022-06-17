@@ -16,6 +16,9 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
             try {
                 object data = null;
                 await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
+                if (context.IsCancelled)
+                    break;
+
                 if (data == null)
                     continue;
 
@@ -39,6 +42,9 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin> {
             try {
                 object data = null;
                 await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
+                if (context.IsCancelled)
+                    break;
+
                 if (data == null)
                     continue;
 

@@ -44,6 +44,8 @@ public static class TestConstants {
     public const string SuspendedApiKey = "5ccd0826e447ad1e78877ab4";
     public const string InvalidApiKey = "1dddddd6e447ad1e78877ab1";
 
+    public const string WebHookId = "1ecd0826e447a44e78877cb2";
+
     public static readonly List<string> ExceptionTypes = new List<string> {
             "System.NullReferenceException",
             "System.ApplicationException",
