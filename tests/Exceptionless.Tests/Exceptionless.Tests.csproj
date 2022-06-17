@@ -7,12 +7,12 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.1" />
     <PackageReference Include="Foundatio.Xunit" Version="$(FoundatioVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.6" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="9.0.320" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.0.1" PrivateAssets="All" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5"  PrivateAssets="All" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Exceptionless.Web\Exceptionless.Web.csproj" />
