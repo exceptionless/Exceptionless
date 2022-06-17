@@ -1,11 +1,10 @@
 name: Build
 on: [ push, pull_request ]
 env:
-    TERM: xterm
+    #TERM: xterm
     DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
     DOTNET_NOLOGO: true
-    DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   build:
@@ -32,10 +31,14 @@ jobs:
         echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
     - name: Build
       run: dotnet build --configuration Release /clp:NoSummary
+      env:
+          TERM: xterm
     - name: Start Services
       run: docker compose up --wait elasticsearch
     - name: Run Tests
       run: dotnet test --configuration Release --no-build --logger GitHubActions
+      env:
+          TERM: xterm
     - name: Set up QEMU
       id: qemu
       uses: docker/setup-qemu-action@v2
