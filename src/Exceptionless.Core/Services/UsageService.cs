@@ -109,16 +109,6 @@ public class UsageService {
         }
     }
 
-    public async Task HandleOrganizationChange(Organization modified, Organization original) {
-        var utcNow = SystemClock.UtcNow;
-
-        await _cache.RemoveAsync($"usage:limits:{modified.Id}");
-
-        // remove is throttled flag
-        if (modified.GetMaxEventsPerMonthWithBonus() > original.GetMaxEventsPerMonthWithBonus())
-            await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
-    }
-
     private async Task SavePendingProjectUsageAsync(DateTime utcNow) {
         // default to checking the 5 previous buckets
         var lastUsageSave = utcNow.Subtract(_bucketSize * 5).Floor(_bucketSize);
@@ -193,6 +183,38 @@ public class UsageService {
 
             bucketUtc = bucketUtc.Add(_bucketSize);
             projectIdsValue = await _cache.GetListAsync<string>(GetProjectSetKey(bucketUtc));
+        }
+    }
+
+    public async Task HandleOrganizationChange(Organization modified, Organization original) {
+        var utcNow = SystemClock.UtcNow;
+
+        await _cache.RemoveAsync($"usage:limits:{modified.Id}");
+
+        int modifiedMaxEvents = modified.GetMaxEventsPerMonthWithBonus();
+        int originalMaxEvents = original.GetMaxEventsPerMonthWithBonus();
+
+        if (modifiedMaxEvents == originalMaxEvents)
+            return;
+
+        if (modifiedMaxEvents > originalMaxEvents) {
+            // remove is throttled flag
+            await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
+        } else {
+            var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, modified.Id));
+            if (!bucketTotal.HasValue)
+                return;
+
+            int bucketLimit = GetBucketEventLimit(modifiedMaxEvents);
+
+            // unlimited
+            if (bucketLimit < 0)
+                return;
+
+            if (bucketTotal.Value >= bucketLimit) {
+                await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
+                await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
+            }
         }
     }
 
@@ -316,7 +338,7 @@ public class UsageService {
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
         int eventsLeftInBucket = bucketLimit - (bucketTotal?.Value ?? 0);
 
-        return eventsLeftInBucket;
+        return Math.Max(eventsLeftInBucket, 0);
     }
 
     public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1) {
