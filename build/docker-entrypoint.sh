@@ -2,6 +2,8 @@
 
 # ensure the correct owner for the Elasticsearch data directory
 chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/data
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$HOME/.dotnet"
 
 if [ "$#" -ne 0 ]; then
     echo "Running Exceptionless Job $@"
