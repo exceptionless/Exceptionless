@@ -1,10 +1,9 @@
 # get elasticsearch password
 $ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+$ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # connect to kibana
-
-kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601
-open "http://kibana-ex-prod.localtest.me:5660"
+open "http://kibana-ex-prod.localtest.me:5660" && kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601
 
 # port forward elasticsearch
 $ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200 &
