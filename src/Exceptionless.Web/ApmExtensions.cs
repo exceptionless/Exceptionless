@@ -14,8 +14,8 @@ namespace OpenTelemetry {
             if (!String.IsNullOrEmpty(apiKey) && apiKey.Length > 6)
                 apiKey = String.Concat(apiKey.AsSpan(0, 6), "***");
 
-            Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} EnableTracing={Enabled} EnableLogs={EnableLogs} FullDetails={FullDetails} EnableRedis={EnableRedis} SampleRate={SampleRate}",
-                config.Endpoint, apiKey, config.EnableTracing, config.EnableLogs, config.FullDetails, config.EnableRedis, config.SampleRate);
+            Log.Information("Configuring APM: Endpoint={Endpoint} Insecure={Insecure} ApiKey={ApiKey} EnableTracing={Enabled} EnableLogs={EnableLogs} FullDetails={FullDetails} EnableRedis={EnableRedis} SampleRate={SampleRate}",
+                config.Endpoint, config.Insecure, apiKey, config.EnableTracing, config.EnableLogs, config.FullDetails, config.EnableRedis, config.SampleRate);
 
             if (config.Insecure) {
                 ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, errors) => true;
@@ -67,15 +67,17 @@ namespace OpenTelemetry {
 
                         b.SetSampler(new TraceIdRatioBasedSampler(config.SampleRate));
 
-                        if (config.Debug)
+                        if (config.Console)
                             b.AddConsoleExporter();
 
-                        b.AddOtlpExporter(c => {
-                            if (!String.IsNullOrEmpty(config.Endpoint))
-                                c.Endpoint = new Uri(config.Endpoint);
-                            if (!String.IsNullOrEmpty(config.ApiKey))
-                                c.Headers = $"api-key={config.ApiKey}";
-                        });
+                        if (!String.IsNullOrEmpty(config.Endpoint)) {
+                            b.AddOtlpExporter(c => {
+                                if (!String.IsNullOrEmpty(config.Endpoint))
+                                    c.Endpoint = new Uri(config.Endpoint);
+                                if (!String.IsNullOrEmpty(config.ApiKey))
+                                    c.Headers = $"api-key={config.ApiKey}";
+                            });
+                        }
                     });
 
                 services.AddOpenTelemetryMetrics(b => {
@@ -86,7 +88,7 @@ namespace OpenTelemetry {
                     b.AddMeter("Exceptionless", "Foundatio");
                     b.AddRuntimeMetrics();
 
-                    if (config.Debug)
+                    if (config.Console)
                         b.AddConsoleExporter((exporterOptions, metricReaderOptions) => {
                             // The ConsoleMetricExporter defaults to a manual collect cycle.
                             // This configuration causes metrics to be exported to stdout on a 10s interval.
@@ -115,7 +117,7 @@ namespace OpenTelemetry {
                         o.ParseStateValues = true;
                         o.IncludeFormattedMessage = true;
 
-                        if (config.Debug)
+                        if (config.Console)
                             o.AddConsoleExporter();
 
                         if (!String.IsNullOrEmpty(config.Endpoint)) {
@@ -151,7 +153,7 @@ namespace OpenTelemetry {
             EnableRedis = enableRedis;
         }
 
-        public bool EnableTracing => _apmConfig.GetValue("Enabled", false);
+        public bool EnableTracing => _apmConfig.GetValue("EnableTracing", false);
         public bool Insecure { get; set; }
         public string ServiceName { get; }
         public string ServiceEnvironment { get; }
@@ -164,5 +166,6 @@ namespace OpenTelemetry {
         public double SampleRate => _apmConfig.GetValue("SampleRate", 1.0);
         public bool EnableRedis { get; }
         public bool Debug => _apmConfig.GetValue("Debug", false);
+        public bool Console => _apmConfig.GetValue("Console", false);
     }
 }

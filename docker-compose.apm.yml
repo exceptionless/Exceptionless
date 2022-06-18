@@ -56,9 +56,9 @@ services:
     image: exceptionless/elasticsearch:8.2.3
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
+      - esdata:/usr/share/elasticsearch/data
     ports:
       - 9200:9200 # username / password = elastic / elastic
-      - esdata:/usr/share/elasticsearch/data
     environment:
       - node.name=elasticsearch
       - cluster.name=exceptionless
@@ -138,14 +138,6 @@ services:
         -E output.elasticsearch.username=elastic
         -E output.elasticsearch.password=elastic
         -E output.elasticsearch.ssl.certificate_authorities=["/usr/share/apm-server/certs/ca/ca.crt"]
-
-  otel:
-    image: otel/opentelemetry-collector:0.53.0
-    ports:
-      - 4317:4317
-    volumes:
-      - ./otel-config.yml:/etc/otel-config.yaml:ro
-    command: [ "--config=/etc/otel-config.yaml" ]
 
   redis:
     image: redis:6-alpine
