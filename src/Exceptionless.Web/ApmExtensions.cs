@@ -14,8 +14,8 @@ namespace OpenTelemetry {
             if (!String.IsNullOrEmpty(apiKey) && apiKey.Length > 6)
                 apiKey = String.Concat(apiKey.AsSpan(0, 6), "***");
 
-            Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} Enabled={Enabled} FullDetails={FullDetails} EnableLogs={EnableLogs} EnableRedis={EnableRedis} SampleRate={SampleRate}",
-                config.Endpoint, apiKey, config.Enabled, config.FullDetails, config.EnableLogs, config.EnableRedis, config.SampleRate);
+            Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} EnableTracing={Enabled} EnableLogs={EnableLogs} FullDetails={FullDetails} EnableRedis={EnableRedis} SampleRate={SampleRate}",
+                config.Endpoint, apiKey, config.EnableTracing, config.EnableLogs, config.FullDetails, config.EnableRedis, config.SampleRate);
 
             if (config.Insecure) {
                 ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, errors) => true;
@@ -31,7 +31,7 @@ namespace OpenTelemetry {
             builder.ConfigureServices(services => {
                 services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
-                if (config.Enabled)
+                if (config.EnableTracing)
                     services.AddOpenTelemetryTracing(b => {
                         b.SetResourceBuilder(resourceBuilder);
 
@@ -66,6 +66,10 @@ namespace OpenTelemetry {
                             });
 
                         b.SetSampler(new TraceIdRatioBasedSampler(config.SampleRate));
+
+                        if (config.Debug)
+                            b.AddConsoleExporter();
+
                         b.AddOtlpExporter(c => {
                             if (!String.IsNullOrEmpty(config.Endpoint))
                                 c.Endpoint = new Uri(config.Endpoint);
@@ -91,7 +95,7 @@ namespace OpenTelemetry {
 
                     b.AddPrometheusExporter();
 
-                    if (config.Enabled)
+                    if (!String.IsNullOrEmpty(config.Endpoint))
                         b.AddOtlpExporter((c, o) => {
                             // needed for newrelic compatibility until they support cumulative
                             o.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
@@ -103,7 +107,7 @@ namespace OpenTelemetry {
                         });
                 });
 
-                if (config.Enabled && config.EnableLogs) {
+                if (config.EnableLogs) {
                     services.AddSingleton<ILoggerProvider, OpenTelemetryLoggerProvider>();
                     services.Configure<OpenTelemetryLoggerOptions>(o => {
                         o.SetResourceBuilder(resourceBuilder);
@@ -114,12 +118,14 @@ namespace OpenTelemetry {
                         if (config.Debug)
                             o.AddConsoleExporter();
 
-                        o.AddOtlpExporter(c => {
-                            if (!String.IsNullOrEmpty(config.Endpoint))
-                                c.Endpoint = new Uri(config.Endpoint);
-                            if (!String.IsNullOrEmpty(config.ApiKey))
-                                c.Headers = $"api-key={config.ApiKey}";
-                        });
+                        if (!String.IsNullOrEmpty(config.Endpoint)) {
+                            o.AddOtlpExporter(c => {
+                                if (!String.IsNullOrEmpty(config.Endpoint))
+                                    c.Endpoint = new Uri(config.Endpoint);
+                                if (!String.IsNullOrEmpty(config.ApiKey))
+                                    c.Headers = $"api-key={config.ApiKey}";
+                            });
+                        }
                     });
                 }
             });
@@ -145,7 +151,7 @@ namespace OpenTelemetry {
             EnableRedis = enableRedis;
         }
 
-        public bool Enabled => _apmConfig.GetValue("Enabled", false);
+        public bool EnableTracing => _apmConfig.GetValue("Enabled", false);
         public bool Insecure { get; set; }
         public string ServiceName { get; }
         public string ServiceEnvironment { get; }
