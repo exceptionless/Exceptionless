@@ -15,7 +15,7 @@ internal static class TokenData {
     }
 
     public static Token GenerateToken(bool generateId = false, string id = null, string userId = null, string organizationId = null, string projectId = null, TokenType type = TokenType.Access, string notes = null) {
-        ; var token = new Token {
+        var token = new Token {
             Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.ApiKey : id,
             UserId = userId,
             OrganizationId = organizationId,

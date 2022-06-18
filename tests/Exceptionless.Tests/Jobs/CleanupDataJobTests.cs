@@ -18,6 +18,7 @@ public class CleanupDataJobTests : IntegrationTestsBase {
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly ITokenRepository _tokenRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
@@ -27,8 +28,29 @@ public class CleanupDataJobTests : IntegrationTestsBase {
         _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
+        _tokenRepository = GetService<ITokenRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
+    }
+
+    [Fact]
+    public async Task CanCleanupSuspendedTokens() {
+        var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+        organization.IsSuspended = true;
+        organization.SuspensionDate = SystemClock.UtcNow;
+        organization.SuspendedByUserId = "1";
+        organization.SuspensionCode = Core.Models.SuspensionCode.Billing;
+        organization.SuspensionNotes = "blah";
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+
+        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject());
+        var token = await _tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency());
+        Assert.False(token.IsSuspended);
+
+        await _job.RunAsync();
+
+        token = await _tokenRepository.GetByIdAsync(token.Id);
+        Assert.True(token.IsSuspended);
     }
 
     [Fact]
