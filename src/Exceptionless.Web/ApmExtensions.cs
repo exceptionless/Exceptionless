@@ -154,7 +154,7 @@ namespace OpenTelemetry {
         }
 
         public bool EnableTracing => _apmConfig.GetValue("EnableTracing", false);
-        public bool Insecure { get; set; }
+        public bool Insecure => _apmConfig.GetValue("Insecure", false);
         public string ServiceName { get; }
         public string ServiceEnvironment { get; }
         public string ServiceNamespace { get; }
