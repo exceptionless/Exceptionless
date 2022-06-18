@@ -26,3 +26,6 @@ Serilog:
   - Name: Console
     Args: 
       theme: "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console"
+
+Apm:
+  ServiceEnvironment: prod

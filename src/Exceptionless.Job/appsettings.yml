@@ -23,3 +23,11 @@ Serilog:
   - FromLogContext
   - WithMachineName
   - WithThreadId
+
+Apm:
+  ServiceName: exceptionless
+  EnableLogs: false
+  EnableTracing: false
+  SampleRate: 1.0
+  FullDetails: true
+  Debug: false

@@ -24,11 +24,8 @@ Serilog:
     Default: Debug
 
 Apm:
-  Enabled: false
-  ServiceName: exceptionless
-  ServiceEnvironment: local
   Endpoint: https://localhost:8200
+  EnableLogs: false
+  EnableTracing: false
   FullDetails: true
-  SampleRate: 1.0
-  EnableLogs: true
   Debug: false
