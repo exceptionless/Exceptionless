@@ -11,7 +11,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin> {
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
     /// </summary>
     public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
-        string metricPrefix = String.Concat(_metricPrefix, nameof(ParseEvents).ToLower(), ".");
+        string metricPrefix = String.Concat("events.parse.");
         foreach (var plugin in Plugins.Values.ToList()) {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
 
