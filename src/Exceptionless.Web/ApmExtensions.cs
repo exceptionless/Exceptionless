@@ -5,7 +5,6 @@ using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Logs;
 using Serilog;
-using System.Net;
 
 namespace OpenTelemetry {
     public static class ApmExtensions {
@@ -17,11 +16,6 @@ namespace OpenTelemetry {
             Log.Information("Configuring APM: Endpoint={Endpoint} Insecure={Insecure} ApiKey={ApiKey} EnableTracing={Enabled} EnableLogs={EnableLogs} FullDetails={FullDetails} EnableRedis={EnableRedis} SampleRate={SampleRate}",
                 config.Endpoint, config.Insecure, apiKey, config.EnableTracing, config.EnableLogs, config.FullDetails, config.EnableRedis, config.SampleRate);
 
-            if (config.Insecure) {
-                ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, errors) => true;
-                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-            }
-
             var resourceBuilder = ResourceBuilder.CreateDefault().AddService(config.ServiceName).AddAttributes(new[] {
                 new KeyValuePair<string, object>("service.namespace", config.ServiceNamespace),
                 new KeyValuePair<string, object>("service.environment", config.ServiceEnvironment),
@@ -29,6 +23,21 @@ namespace OpenTelemetry {
             });
             
             builder.ConfigureServices(services => {
+                if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint)) {
+                    var certificateCallback = config.Insecure ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator : (message, cert, chain, errors) => {
+                        if (cert.Thumbprint == config.SslThumbprint)
+                            return true;
+
+                        Log.Warning("OTLP metrics SSL thumbprint {SslThumbprint} is not accepted", cert.Thumbprint);
+
+                        return false;
+                    };
+
+                    services.AddHttpClient("OtlpMetricExporter").ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler { ServerCertificateCustomValidationCallback = certificateCallback });
+                    services.AddHttpClient("OtlpTraceExporter").ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler { ServerCertificateCustomValidationCallback = certificateCallback });
+                    services.AddHttpClient("OtlpLogExporter").ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler { ServerCertificateCustomValidationCallback = certificateCallback });
+                }
+
                 services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
                 if (config.EnableTracing)
@@ -72,6 +81,9 @@ namespace OpenTelemetry {
 
                         if (!String.IsNullOrEmpty(config.Endpoint)) {
                             b.AddOtlpExporter(c => {
+                                if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
+                                    c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+
                                 if (!String.IsNullOrEmpty(config.Endpoint))
                                     c.Endpoint = new Uri(config.Endpoint);
                                 if (!String.IsNullOrEmpty(config.ApiKey))
@@ -99,6 +111,9 @@ namespace OpenTelemetry {
 
                     if (!String.IsNullOrEmpty(config.Endpoint))
                         b.AddOtlpExporter((c, o) => {
+                            if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
+                                c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+
                             // needed for newrelic compatibility until they support cumulative
                             o.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
 
@@ -122,6 +137,9 @@ namespace OpenTelemetry {
 
                         if (!String.IsNullOrEmpty(config.Endpoint)) {
                             o.AddOtlpExporter(c => {
+                                if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
+                                    c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+
                                 if (!String.IsNullOrEmpty(config.Endpoint))
                                     c.Endpoint = new Uri(config.Endpoint);
                                 if (!String.IsNullOrEmpty(config.ApiKey))
@@ -155,6 +173,7 @@ namespace OpenTelemetry {
 
         public bool EnableTracing => _apmConfig.GetValue("EnableTracing", false);
         public bool Insecure => _apmConfig.GetValue("Insecure", false);
+        public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty);
         public string ServiceName { get; }
         public string ServiceEnvironment { get; }
         public string ServiceNamespace { get; }

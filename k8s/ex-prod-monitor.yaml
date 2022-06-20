@@ -72,6 +72,8 @@ spec:
     name: ex-prod-monitor
   kibanaRef:
     name: ex-prod-monitor
+  config:
+    apm-server.ssl.enabled: false
 
 ---
 apiVersion: networking.k8s.io/v1

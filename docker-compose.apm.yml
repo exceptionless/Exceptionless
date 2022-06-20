@@ -134,6 +134,15 @@ services:
     command: >
       apm-server -e
         -E apm-server.ssl.enabled=false
+        -E apm-server.ssl.certificate=/usr/share/apm-server/certs/apm/apm.crt
+        -E apm-server.ssl.key=/usr/share/apm-server/certs/apm/apm.key
+        -E apm-server.api_key.enabled=true
+        -E apm-server.api_key.elasticsearch.hosts=["https://elasticsearch:9200"]
+        -E apm-server.api_key.elasticsearch.username=elastic
+        -E apm-server.api_key.elasticsearch.password=elastic
+        -E apm-server.api_key.elasticsearch.ssl.enabled=true
+        -E apm-server.api_key.elasticsearch.ssl.certificate_authorities=["/usr/share/apm-server/certs/ca/ca.crt"]
+        -E apm-server.rum.enabled=true
         -E output.elasticsearch.hosts=["https://elasticsearch:9200"]
         -E output.elasticsearch.username=elastic
         -E output.elasticsearch.password=elastic
