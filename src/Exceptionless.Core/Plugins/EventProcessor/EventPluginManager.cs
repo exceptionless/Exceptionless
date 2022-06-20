@@ -10,7 +10,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
     /// Runs all of the event plugins startup method.
     /// </summary>
     public async Task StartupAsync() {
-        string metricPrefix = String.Concat(_metricPrefix, nameof(StartupAsync).ToLower(), ".");
+        string metricPrefix = String.Concat("events.startup.");
         foreach (var plugin in Plugins.Values.ToList()) {
             try {
                 string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
@@ -26,7 +26,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
     /// Runs all of the event plugins event processing method.
     /// </summary>
     public async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
-        string metricPrefix = String.Concat(_metricPrefix, nameof(EventBatchProcessingAsync).ToLower(), ".");
+        string metricPrefix = String.Concat(_metricPrefix, "events.processing.");
         foreach (var plugin in Plugins.Values) {
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             if (contextsToProcess.Count == 0)
@@ -48,7 +48,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
     /// Runs all of the event plugins event processed method.
     /// </summary>
     public async Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
-        string metricPrefix = String.Concat(_metricPrefix, nameof(EventBatchProcessedAsync).ToLower(), ".");
+        string metricPrefix = String.Concat("events.processed.");
         foreach (var plugin in Plugins.Values) {
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             if (contextsToProcess.Count == 0)
