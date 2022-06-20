@@ -76,7 +76,7 @@ public class Program {
                     .UseConfiguration(config)
                     .Configure(app => {
                         app.UseSerilogRequestLogging(o => {
-                            o.MessageTemplate = "traceID={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+                            o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
                             o.GetLevel = (context, duration, ex) => {
                                 if (ex != null || context.Response.StatusCode > 499)
                                     return LogEventLevel.Error;
