@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Utility;
+using McSherry.SemanticVersioning;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -26,7 +27,7 @@ public class SemanticVersionTests : TestWithServices {
     [InlineData("1.2.3.*", "1.2.3")]
     [InlineData("1.2.3.0", "1.2.3-0")]
     [InlineData("1.2.3.0*", "1.2.3-0")]
-    [InlineData("1.2.3*.0", "1.2.3-0")]
+    [InlineData("1.2.3*.0", "1.2.3")]
     [InlineData("1.2.*.0", "1.2.0")]
     [InlineData("1.2.*", "1.2.0")]
     [InlineData("1.2.3.4", "1.2.3-4")]
@@ -52,5 +53,19 @@ public class SemanticVersionTests : TestWithServices {
         var parsedOldVersion = _parser.Parse(oldVersion);
         var parsedNewVersion = _parser.Parse(newVersion);
         Assert.True(parsedOldVersion < parsedNewVersion);
+    }
+
+    [Fact]
+    public void CanUseVersionCache() {
+        var nonCached1 = _parser.Parse("4.1.0034");
+        var nonCached2 = _parser.Parse("4.1.0034");
+
+        Assert.NotSame(nonCached1, nonCached2);
+
+        var versionCache = new Dictionary<string, SemanticVersion>();
+        var cached1 = _parser.Parse("4.1.0034", versionCache);
+        var cached2 = _parser.Parse("4.1.0034", versionCache);
+
+        Assert.Same(cached1, cached2);
     }
 }

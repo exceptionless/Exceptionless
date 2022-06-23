@@ -1,6 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Foundatio.Caching;
-using McSherry.SemanticVersioning;
+﻿using McSherry.SemanticVersioning;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility;
@@ -15,26 +13,34 @@ public class SemanticVersionParser {
 
     public SemanticVersion Default { get; } = new SemanticVersion(0, 0);
 
-    public SemanticVersion Parse(string version) {
-        version = version?.Trim();
-        if (String.IsNullOrEmpty(version))
+    public SemanticVersion Parse(string version, IDictionary<string, SemanticVersion> versionCache = null) {
+        if (version == null || version.Length == 0)
             return null;
 
-        int spaceIndex = version.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
-        if (spaceIndex > 0)
-            version = version.Substring(0, spaceIndex).Trim();
+        if (versionCache != null && versionCache.TryGetValue(version, out var cachedVersion))
+            return cachedVersion;
 
-        int wildCardIndex = version.IndexOf("*", StringComparison.OrdinalIgnoreCase);
+        int wildCardIndex = version.IndexOf('*');
         if (wildCardIndex > 0)
-            version = version.Replace(".*", String.Empty).Replace("*", String.Empty);
+            version = version.Substring(0, wildCardIndex).TrimEnd('.');
 
-        SemanticVersion semanticVersion = null;
-        if (version.Length >= 5 && SemanticVersion.TryParse(version, ParseMode.Lenient, out semanticVersion))
-            return semanticVersion;
+        if (version.Length >= 5 && SemanticVersion.TryParse(version, out var semanticVersion)) {
+            if (versionCache != null)
+                versionCache[version] = semanticVersion;
 
-        string[] versionParts = version.Split(new char[] { '+', ' ', '$', '-', '#', '=', '[', '@', '|', '/', '\\' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (versionParts.Length > 1 && SemanticVersion.TryParse(versionParts[0], ParseMode.Lenient, out semanticVersion))
             return semanticVersion;
+        }
+
+        string[] versionParts = version.Split(new char[] { '+', ' ', '$', '-', '#', '=', '[', ']', '(', ')', '@', '|', '/', '\\', '*' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (versionParts.Length > 1)
+            version = versionParts[0];
+
+        if (SemanticVersion.TryParse(version, ParseMode.Lenient, out semanticVersion)) {
+            if (versionCache != null)
+                versionCache[version] = semanticVersion;
+
+            return semanticVersion;
+        }
 
         if (version.Length >= 3 && Version.TryParse(version, out var v))
             semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : EmptyIdentifiers);
@@ -42,6 +48,9 @@ public class SemanticVersionParser {
             semanticVersion = new SemanticVersion(major, 0);
         else
             _logger.LogInformation("Unable to parse version: {Version}", version);
+        
+        if (versionCache != null)
+            versionCache[version] = semanticVersion;
 
         return semanticVersion;
     }
