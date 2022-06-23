@@ -11,7 +11,6 @@ using Exceptionless.Web.Models;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Foundatio.Utility;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web;

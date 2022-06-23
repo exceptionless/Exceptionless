@@ -3,8 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Foundatio.Jobs;
-using Foundatio.Queues;
 using McSherry.SemanticVersioning;
 using Microsoft.Extensions.Logging;
 
@@ -13,12 +11,10 @@ namespace Exceptionless.Core.Pipeline;
 [Priority(30)]
 public class CheckForRegressionAction : EventPipelineActionBase {
     private readonly IStackRepository _stackRepository;
-    private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly SemanticVersionParser _semanticVersionParser;
 
-    public CheckForRegressionAction(IStackRepository stackRepository, IQueue<WorkItemData> workItemQueue, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public CheckForRegressionAction(IStackRepository stackRepository, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
         _stackRepository = stackRepository;
-        _workItemQueue = workItemQueue;
         _semanticVersionParser = semanticVersionParser;
         ContinueOnError = true;
     }
