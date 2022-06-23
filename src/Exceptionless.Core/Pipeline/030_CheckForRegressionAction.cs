@@ -31,10 +31,10 @@ public class CheckForRegressionAction : EventPipelineActionBase {
                     regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
                 }
                 else {
-                    var fixedInVersion = await _semanticVersionParser.ParseAsync(stack.FixedInVersion).AnyContext();
+                    var fixedInVersion = _semanticVersionParser.Parse(stack.FixedInVersion);
                     var versions = stackGroup.GroupBy(c => c.Event.GetVersion());
                     foreach (var versionGroup in versions) {
-                        var version = await _semanticVersionParser.ParseAsync(versionGroup.Key).AnyContext() ?? _semanticVersionParser.Default;
+                        var version = _semanticVersionParser.Parse(versionGroup.Key) ?? _semanticVersionParser.Default;
                         if (version < fixedInVersion)
                             continue;
 

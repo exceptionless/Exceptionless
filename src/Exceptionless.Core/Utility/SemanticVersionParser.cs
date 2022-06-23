@@ -7,24 +7,18 @@ namespace Exceptionless.Core.Utility;
 
 public class SemanticVersionParser {
     private static readonly IReadOnlyCollection<string> EmptyIdentifiers = new List<string>(0).AsReadOnly();
-    private readonly InMemoryCacheClient _localCache;
     private readonly ILogger _logger;
 
     public SemanticVersionParser(ILoggerFactory loggerFactory) {
-        _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory, MaxItems = 250, CloneValues = true });
         _logger = loggerFactory.CreateLogger<SemanticVersionParser>();
     }
 
     public SemanticVersion Default { get; } = new SemanticVersion(0, 0);
 
-    public async Task<SemanticVersion> ParseAsync(string version) {
+    public SemanticVersion Parse(string version) {
         version = version?.Trim();
         if (String.IsNullOrEmpty(version))
             return null;
-
-        var cacheValue = await _localCache.GetAsync<SemanticVersion>(version).AnyContext();
-        if (cacheValue.HasValue)
-            return cacheValue.Value;
 
         int spaceIndex = version.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
         if (spaceIndex > 0)
@@ -35,10 +29,12 @@ public class SemanticVersionParser {
             version = version.Replace(".*", String.Empty).Replace("*", String.Empty);
 
         SemanticVersion semanticVersion = null;
-        if (version.Length >= 5 && SemanticVersion.TryParse(version, out semanticVersion)) {
-            await _localCache.SetAsync(version, semanticVersion).AnyContext();
+        if (version.Length >= 5 && SemanticVersion.TryParse(version, ParseMode.Lenient, out semanticVersion))
             return semanticVersion;
-        }
+
+        string[] versionParts = version.Split(new char[] { '+', ' ', '$', '-', '#', '=', '[', '@', '|', '/', '\\' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (versionParts.Length > 1 && SemanticVersion.TryParse(versionParts[0], ParseMode.Lenient, out semanticVersion))
+            return semanticVersion;
 
         if (version.Length >= 3 && Version.TryParse(version, out var v))
             semanticVersion = new SemanticVersion(v.Major > 0 ? v.Major : 0, v.Minor > 0 ? v.Minor : 0, v.Build > 0 ? v.Build : 0, v.Revision >= 0 ? new[] { v.Revision.ToString() } : EmptyIdentifiers);
@@ -47,7 +43,6 @@ public class SemanticVersionParser {
         else
             _logger.LogInformation("Unable to parse version: {Version}", version);
 
-        await _localCache.SetAsync(version, semanticVersion).AnyContext();
         return semanticVersion;
     }
 }

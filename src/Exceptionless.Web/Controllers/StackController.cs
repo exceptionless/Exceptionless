@@ -107,7 +107,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         SemanticVersion semanticVersion = null;
 
         if (!String.IsNullOrEmpty(version)) {
-            semanticVersion = await _semanticVersionParser.ParseAsync(version);
+            semanticVersion = _semanticVersionParser.Parse(version);
             if (semanticVersion == null)
                 return BadRequest("Invalid semantic version");
         }

@@ -32,24 +32,25 @@ public class SemanticVersionTests : TestWithServices {
     [InlineData("1.2.3.4", "1.2.3-4")]
     [InlineData("1.2.3.4 7ab3b4da18", "1.2.3-4")]
     [InlineData("4.1.0034", "4.1.34")]
-    public async Task CanParseSemanticVersion(string input, string expected) {
-        var actual = await _parser.ParseAsync(input);
+    [InlineData("21.0.717+build20220623120110+commit32432423423", "21.0.717")]
+    public void CanParseSemanticVersion(string input, string expected) {
+        var actual = _parser.Parse(input);
         Assert.Equal(expected, actual?.ToString());
     }
 
     [Theory]
     [InlineData("4.1.0034", "4.1.34")]
-    public async Task VerifySameSemanticVersion(string version1, string version2) {
-        var parsedVersion1 = await _parser.ParseAsync(version1);
-        var parsedVersion2 = await _parser.ParseAsync(version2);
+    public void VerifySameSemanticVersion(string version1, string version2) {
+        var parsedVersion1 = _parser.Parse(version1);
+        var parsedVersion2 = _parser.Parse(version2);
         Assert.Equal(parsedVersion1, parsedVersion2);
     }
 
     [Theory]
     [InlineData("4.1.0034", "4.1.35")]
-    public async Task VerifySemanticVersionIsNewer(string oldVersion, string newVersion) {
-        var parsedOldVersion = await _parser.ParseAsync(oldVersion);
-        var parsedNewVersion = await _parser.ParseAsync(newVersion);
+    public void VerifySemanticVersionIsNewer(string oldVersion, string newVersion) {
+        var parsedOldVersion = _parser.Parse(oldVersion);
+        var parsedNewVersion = _parser.Parse(newVersion);
         Assert.True(parsedOldVersion < parsedNewVersion);
     }
 }
