@@ -109,7 +109,7 @@ public sealed class UpdateEventUsage : MigrationBase {
                         var usage = project.GetUsage(dateHistogramBucket.Date);
                         var eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
                         if (eventTotal > usage.Total) {
-                            _logger.LogInformation("Updating {ProjectName} ({ProjectId}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Total, eventTotal);
+                            _logger.LogInformation("Updating {ProjectName} ({ProjectId}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Date, usage.Total, eventTotal);
                             usage.Total = (int)eventTotal;
                         }
 
