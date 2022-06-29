@@ -87,9 +87,9 @@ public class UsageService {
                     } else if (discarded > 0) {
                         // start a new overage when we see discarded events and there isn't an existing overage
                         var overage = organization.GetOverage(bucketUtc);
-                        overage.Total = usage.Total;
-                        overage.Blocked = usage.Blocked;
-                        overage.TooBig = usage.TooBig;
+                        overage.Total = bucketTotal?.Value ?? 0;
+                        overage.Blocked = discarded;
+                        overage.TooBig = bucketTooBig?.Value ?? 0;
                     }
 
                     await _cache.RemoveAllAsync(new[] {
@@ -166,9 +166,9 @@ public class UsageService {
                     } else if (discarded > 0) {
                         // start a new overage when we see discarded events and there isn't an existing overage
                         var overage = project.GetOverage(bucketUtc);
-                        overage.Total = usage.Total;
-                        overage.Blocked = usage.Blocked;
-                        overage.TooBig = usage.TooBig;
+                        overage.Total = bucketTotal?.Value ?? 0;
+                        overage.Blocked = discarded;
+                        overage.TooBig = bucketTooBig?.Value ?? 0;
                     }
 
                     await _cache.RemoveAllAsync(new[] {
