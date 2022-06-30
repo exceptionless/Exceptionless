@@ -672,26 +672,16 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
             var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
 
-            var currentUsage = viewProject.Usage.FirstOrDefault(u => u.Date == realTimeUsage.CurrentUsage.Date);
-            if (currentUsage == null) {
-                currentUsage = new UsageInfo {
-                    Date = realTimeUsage.CurrentUsage.Date
-                };
-                viewProject.Usage.Add(currentUsage);
-            }
+            viewProject.EnsureUsage();
+
+            var currentUsage = viewProject.GetCurrentUsage();
             currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
             currentUsage.Total = realTimeUsage.CurrentUsage.Total;
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
 
-            var currentHourUsage = viewProject.UsageHours.FirstOrDefault(u => u.Date == realTimeUsage.CurrentHourUsage.Date);
-            if (currentHourUsage == null) {
-                currentHourUsage = new UsageHourInfo {
-                    Date = realTimeUsage.CurrentHourUsage.Date
-                };
-                viewProject.UsageHours.Add(currentHourUsage);
-            }
+            var currentHourUsage = viewProject.GetCurrentHourlyUsage();
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
