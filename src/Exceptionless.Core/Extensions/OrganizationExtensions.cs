@@ -70,16 +70,16 @@ public static class OrganizationExtensions {
     }
 
     public static bool HasHourlyUsage(this Organization organization, DateTime date) {
-        return organization.UsageHours.Any(o => o.Date == date.StartOfHour());
+        return organization.UsageHours.Any(o => o.Date == date.ToUniversalTime().StartOfHour());
     }
 
     public static UsageHourInfo GetHourlyUsage(this Organization organization, DateTime date) {
-        var overage = organization.UsageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
+        var overage = organization.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
         if (overage != null)
             return overage;
 
         overage = new UsageHourInfo {
-            Date = date.StartOfHour()
+            Date = date.ToUniversalTime().StartOfHour()
         };
         organization.UsageHours.Add(overage);
 
@@ -107,12 +107,13 @@ public static class OrganizationExtensions {
     }
 
     public static UsageInfo GetUsage(this Organization organization, DateTime date) {
-        var usage = organization.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
+        var startOfMonth = date.ToUniversalTime().StartOfMonth();
+        var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
         if (usage != null)
             return usage;
 
         usage = new UsageInfo {
-            Date = date.StartOfMonth(),
+            Date = startOfMonth,
             Limit = organization.GetMaxEventsPerMonthWithBonus()
         };
         organization.Usage.Add(usage);

@@ -787,7 +787,7 @@ public class EventControllerTests : IntegrationTestsBase {
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Single(viewOrganization.Usage);
+        Assert.Equal(12, viewOrganization.Usage.Count);
         Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
@@ -810,7 +810,7 @@ public class EventControllerTests : IntegrationTestsBase {
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Single(viewOrganization.Usage);
+        Assert.Equal(12, viewOrganization.Usage.Count);
         Assert.Single(viewOrganization.UsageHours);
 
         // process events
@@ -835,7 +835,7 @@ public class EventControllerTests : IntegrationTestsBase {
 
         Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        var organizationUsage = viewOrganization.Usage.Single();
+        var organizationUsage = viewOrganization.GetCurrentUsage();
         Assert.Equal(viewOrganization.MaxEventsPerMonth, organizationUsage.Limit);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
@@ -888,7 +888,7 @@ public class EventControllerTests : IntegrationTestsBase {
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        organizationUsage = viewOrganization.Usage.Single();
+        organizationUsage = viewOrganization.GetCurrentUsage();
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
@@ -1026,7 +1026,7 @@ public class EventControllerTests : IntegrationTestsBase {
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Single(viewOrganization.Usage);
+        Assert.Equal(12, viewOrganization.Usage.Count);
         Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
@@ -1110,7 +1110,7 @@ public class EventControllerTests : IntegrationTestsBase {
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        var organizationUsage = viewOrganization.Usage.Single();
+        var organizationUsage = viewOrganization.GetCurrentUsage();
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);

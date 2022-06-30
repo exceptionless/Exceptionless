@@ -48,16 +48,16 @@ public static class ProjectExtensions {
     }
 
     public static bool HasHourlyUsage(this Project project, DateTime date) {
-        return project.UsageHours.Any(o => o.Date == date.StartOfHour());
+        return project.UsageHours.Any(o => o.Date == date.ToUniversalTime().StartOfHour());
     }
 
     public static UsageHourInfo GetHourlyUsage(this Project project, DateTime date) {
-        var usage = project.UsageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
+        var usage = project.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
         if (usage != null)
             return usage;
 
         usage = new UsageHourInfo {
-            Date = date.StartOfHour()
+            Date = date.ToUniversalTime().StartOfHour()
         };
         project.UsageHours.Add(usage);
 
@@ -85,12 +85,12 @@ public static class ProjectExtensions {
     }
 
     public static UsageInfo GetUsage(this Project project, DateTime date) {
-        var usage = project.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
+        var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
         if (usage != null)
             return usage;
 
         usage = new UsageInfo {
-            Date = date.StartOfMonth(),
+            Date = date.ToUniversalTime().StartOfMonth(),
         };
         project.Usage.Add(usage);
 
