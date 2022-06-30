@@ -25,12 +25,12 @@ public class ViewProject : IIdentity, IData, IHaveCreatedDate {
 
 public static class ViewProjectExtensions {
     public static UsageHourInfo GetHourlyUsage(this ViewProject project, DateTime date) {
-        var overage = project.UsageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
+        var overage = project.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
         if (overage != null)
             return overage;
 
         overage = new UsageHourInfo {
-            Date = date.StartOfHour()
+            Date = date.ToUniversalTime().StartOfHour()
         };
         project.UsageHours.Add(overage);
 
@@ -55,12 +55,12 @@ public static class ViewProjectExtensions {
     }
 
     public static UsageInfo GetUsage(this ViewProject project, DateTime date) {
-        var usage = project.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
+        var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
         if (usage != null)
             return usage;
 
         usage = new UsageInfo {
-            Date = date.StartOfMonth(),
+            Date = date.ToUniversalTime().StartOfMonth(),
         };
         project.Usage.Add(usage);
 

@@ -44,12 +44,13 @@ public class ViewOrganization : IIdentity, IData, IHaveCreatedDate {
 
 public static class ViewOrganizationExtensions {
     public static UsageHourInfo GetHourlyUsage(this ViewOrganization organization, DateTime date) {
-        var overage = organization.UsageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
+        var startOfHour = date.ToUniversalTime().StartOfMonth();
+        var overage = organization.UsageHours.FirstOrDefault(o => o.Date.Equals(startOfHour));
         if (overage != null)
             return overage;
 
         overage = new UsageHourInfo {
-            Date = date.StartOfHour()
+            Date = startOfHour
         };
         organization.UsageHours.Add(overage);
 
@@ -61,9 +62,9 @@ public static class ViewOrganizationExtensions {
     }
 
     public static void EnsureUsage(this ViewOrganization organization) {
-        var startDate = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
+        var startDate = SystemClock.UtcNow.SubtractMonths(11).StartOfMonth();
 
-        while (startDate < SystemClock.UtcNow.StartOfMonth()) {
+        while (startDate <= SystemClock.UtcNow.StartOfMonth()) {
             organization.GetUsage(startDate);
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
@@ -74,12 +75,13 @@ public static class ViewOrganizationExtensions {
     }
 
     public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date) {
-        var usage = organization.Usage.FirstOrDefault(o => o.Date == date.StartOfMonth());
+        var startOfMonth = date.ToUniversalTime().StartOfMonth();
+        var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
         if (usage != null)
             return usage;
 
         usage = new UsageInfo {
-            Date = date.StartOfMonth(),
+            Date = startOfMonth,
             Limit = organization.GetMaxEventsPerMonthWithBonus()
         };
         organization.Usage.Add(usage);
