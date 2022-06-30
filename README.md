@@ -1,7 +1,7 @@
-[![Exceptionless](https://raw.githubusercontent.com/exceptionless/MediaKit/master/exceptionless-dark-bg.svg#gh-dark-mode-only "Exceptionless")](https://exceptionless.com#gh-dark-mode-only)
-[![Exceptionless](https://raw.githubusercontent.com/exceptionless/MediaKit/master/exceptionless.svg#gh-light-mode-only "Exceptionless")](https://exceptionless.com#gh-light-mode-only)
+[![Exceptionless](https://raw.githubusercontent.com/exceptionless/MediaKit/main/exceptionless-dark-bg.svg#gh-dark-mode-only "Exceptionless")](https://exceptionless.com#gh-dark-mode-only)
+[![Exceptionless](https://raw.githubusercontent.com/exceptionless/MediaKit/main/exceptionless.svg#gh-light-mode-only "Exceptionless")](https://exceptionless.com#gh-light-mode-only)
 
-[![Build](https://github.com/exceptionless/Exceptionless/workflows/Build/badge.svg?branch=master)](https://github.com/exceptionless/Exceptionless/actions?query=branch%3Amaster)
+[![Build](https://github.com/exceptionless/Exceptionless/workflows/Build/badge.svg?branch=main)](https://github.com/exceptionless/Exceptionless/actions?query=branch%3Amain)
 [![Discord](https://img.shields.io/discord/715744504891703319)](https://discord.gg/6HxgFCx)
 [![Donate](https://img.shields.io/badge/donorbox-donate-blue.svg)](https://donorbox.org/exceptionless?recurring=true)
 
@@ -20,7 +20,7 @@ Exceptionless can be run locally as simply as `docker run --rm -it -p 5000:80 ex
 ## Contributing
 _In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan._
 
-- Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
+- Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md).
 - Please follow the steps below to start configuring your Exceptionless development environment.
   - Make sure you have [Visual Studio Code](https://code.visualstudio.com) installed. You can also use Visual Studio or JetBrains Rider, but these steps assume you are using Visual Studio Code.
   - Make sure you have [Docker](https://www.docker.com/get-docker) installed.
