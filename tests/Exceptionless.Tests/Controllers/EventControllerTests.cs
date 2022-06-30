@@ -788,7 +788,7 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
-        Assert.Null(viewOrganization.OverageHours);
+        Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
         int total = eventsLeftInBucket;
@@ -811,17 +811,17 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
-        Assert.Null(viewOrganization.OverageHours);
+        Assert.Single(viewOrganization.UsageHours);
 
         // process events
         var processEventsJob = GetService<EventPostsJob>();
         Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
 
         var usageInfo = await usageService.GetUsageAsync(organizationId);
-        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.Limit);
-        Assert.Equal(total, usageInfo.Total);
-        Assert.Equal(blocked, usageInfo.Blocked);
-        Assert.Equal(0, usageInfo.TooBig);
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.CurrentUsage.Limit);
+        Assert.Equal(total, usageInfo.CurrentUsage.Total);
+        Assert.Equal(blocked, usageInfo.CurrentUsage.Blocked);
+        Assert.Equal(0, usageInfo.CurrentUsage.TooBig);
 
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.Equal(0, eventsLeftInBucket);
@@ -841,7 +841,7 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
 
-        var organizationOverageHoursUsage = viewOrganization.OverageHours.Single();
+        var organizationOverageHoursUsage = viewOrganization.UsageHours.Single();
         Assert.Equal(total, organizationOverageHoursUsage.Total);
         Assert.Equal(blocked, organizationOverageHoursUsage.Blocked);
         Assert.Equal(0, organizationOverageHoursUsage.TooBig);
@@ -858,9 +858,9 @@ public class EventControllerTests : IntegrationTestsBase {
         
         // Increment blocked count due to submission failure.
         usageInfo = await usageService.GetUsageAsync(organizationId);
-        Assert.Equal(total, usageInfo.Total);
-        Assert.Equal(blocked, usageInfo.Blocked);
-        Assert.Equal(0, usageInfo.TooBig);
+        Assert.Equal(total, usageInfo.CurrentUsage.Total);
+        Assert.Equal(blocked, usageInfo.CurrentUsage.Blocked);
+        Assert.Equal(0, usageInfo.CurrentUsage.TooBig);
 
         TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
 
@@ -894,9 +894,9 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(0, organizationUsage.TooBig);
 
         var secondBucketUsageInfo = await usageService.GetUsageAsync(organizationId);
-        Assert.Equal(total, secondBucketUsageInfo.Total);
-        Assert.Equal(blocked, secondBucketUsageInfo.Blocked);
-        Assert.Equal(0, secondBucketUsageInfo.TooBig);
+        Assert.Equal(total, secondBucketUsageInfo.CurrentUsage.Total);
+        Assert.Equal(blocked, secondBucketUsageInfo.CurrentUsage.Blocked);
+        Assert.Equal(0, secondBucketUsageInfo.CurrentUsage.TooBig);
 
         // move forward again and run process usage job
         TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
@@ -1027,7 +1027,7 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Single(viewOrganization.Usage);
-        Assert.Null(viewOrganization.OverageHours);
+        Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
         int total = eventsLeftInBucket;
@@ -1045,10 +1045,10 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
 
         var usageInfo = await usageService.GetUsageAsync(organizationId);
-        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.Limit);
-        Assert.Equal(total, usageInfo.Total);
-        Assert.Equal(blocked, usageInfo.Blocked);
-        Assert.Equal(0, usageInfo.TooBig);
+        Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.CurrentUsage.Limit);
+        Assert.Equal(total, usageInfo.CurrentUsage.Total);
+        Assert.Equal(blocked, usageInfo.CurrentUsage.Blocked);
+        Assert.Equal(0, usageInfo.CurrentUsage.TooBig);
 
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.Equal(0, eventsLeftInBucket);

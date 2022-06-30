@@ -9,7 +9,7 @@ public sealed class ProjectIndex : VersionedIndex<Project> {
     internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public ProjectIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "projects", 1) {
+    public ProjectIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "projects", 2) {
         _configuration = configuration;
     }
 
@@ -43,12 +43,14 @@ internal static class ProjectIndexExtensions {
                 .Date(fu => fu.Name(i => i.Date))
                 .Number(fu => fu.Name(i => i.Total))
                 .Number(fu => fu.Name(i => i.Blocked))
+                .Number(fu => fu.Name(i => i.Discarded))
                 .Number(fu => fu.Name(i => i.Limit))
                 .Number(fu => fu.Name(i => i.TooBig))))
-            .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).Properties(p => p
+            .Object<UsageInfo>(ui => ui.Name(o => o.UsageHours.First()).Properties(p => p
                 .Date(fu => fu.Name(i => i.Date))
                 .Number(fu => fu.Name(i => i.Total))
                 .Number(fu => fu.Name(i => i.Blocked))
+                .Number(fu => fu.Name(i => i.Discarded))
                 .Number(fu => fu.Name(i => i.Limit))
                 .Number(fu => fu.Name(i => i.TooBig))));
     }

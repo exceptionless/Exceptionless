@@ -145,7 +145,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
         double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
         var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
-        var usages = project.OverageHours.Where(u => range.Contains(u.Date)).ToList();
+        var usages = project.UsageHours.Where(u => range.Contains(u.Date)).ToList();
         int blockedTotal = usages.Sum(u => u.Blocked);
         int tooBigTotal = usages.Sum(u => u.TooBig);
 

@@ -66,34 +66,40 @@ public class UsageService {
                     _logger.LogInformation("Saving org ({OrganizationId}-{OrganizationName}) event usage for time bucket: {BucketUtc}...", organizationId, organization.Name, bucketUtc);
 
                     var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
+                    var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId));
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
 
                     organization.LastEventDateUtc = SystemClock.UtcNow;
 
                     var usage = organization.GetUsage(bucketUtc);
-                    int discarded = bucketDiscarded?.Value ?? 0;
                     usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
                     usage.Total += bucketTotal?.Value ?? 0;
-                    usage.Blocked += discarded;
+                    usage.Blocked += bucketBlocked?.Value ?? 0;
+                    usage.Discarded += bucketDiscarded?.Value ?? 0;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
 
-                    if (organization.HasOverage(bucketUtc)) {
-                        // if we already have an overage for this time period, then increment
-                        var overage = organization.GetOverage(bucketUtc);
-                        overage.Total += bucketTotal?.Value ?? 0;
-                        overage.Blocked += discarded;
-                        overage.TooBig += bucketTooBig?.Value ?? 0;
-                    } else if (discarded > 0) {
-                        // start a new overage when we see discarded events and there isn't an existing overage
-                        var overage = organization.GetOverage(bucketUtc);
-                        overage.Total = bucketTotal?.Value ?? 0;
-                        overage.Blocked = discarded;
-                        overage.TooBig = bucketTooBig?.Value ?? 0;
+                    if (organization.HasHourlyUsage(bucketUtc)) {
+                        // if we already have an hourly usage for this time period, then increment
+                        var hourlyUsage = organization.GetHourlyUsage(bucketUtc);
+                        hourlyUsage.Total += bucketTotal?.Value ?? 0;
+                        hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
+                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                        hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
+                    } else {
+                        // start a new hourly usage
+                        var hourlyUsage = organization.GetHourlyUsage(bucketUtc);
+                        hourlyUsage.Total = bucketTotal?.Value ?? 0;
+                        hourlyUsage.Blocked = bucketBlocked?.Value ?? 0;
+                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                        hourlyUsage.TooBig = bucketTooBig?.Value ?? 0;
                     }
+
+                    organization.TrimUsage();
 
                     await _cache.RemoveAllAsync(new[] {
                         GetBucketTotalCacheKey(bucketUtc, organizationId),
+                        GetBucketBlockedCacheKey(bucketUtc, organizationId),
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
                         GetBucketTooBigCacheKey(bucketUtc, organizationId),
                         GetThrottledKey(bucketUtc, organizationId)
@@ -142,6 +148,7 @@ public class UsageService {
                     _logger.LogInformation("Saving project ({ProjectId}-{ProjectName}) event usage for time bucket: {BucketUtc}...", projectId, project.Name, bucketUtc);
 
                     var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId));
+                    var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId));
 
@@ -151,29 +158,34 @@ public class UsageService {
                     int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
 
                     var usage = project.GetUsage(bucketUtc);
-                    int discarded = bucketDiscarded?.Value ?? 0;
                     usage.Limit = maxEventsPerMonth;
                     usage.Total += bucketTotal?.Value ?? 0;
-                    usage.Blocked += discarded;
+                    usage.Blocked += bucketBlocked?.Value ?? 0;
+                    usage.Discarded += bucketDiscarded?.Value ?? 0;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
 
-                    if (project.HasOverage(bucketUtc)) {
-                        // if we already have an overage for this time period, then increment
-                        var overage = project.GetOverage(bucketUtc);
-                        overage.Total += bucketTotal?.Value ?? 0;
-                        overage.Blocked += discarded;
-                        overage.TooBig += bucketTooBig?.Value ?? 0;
-                    } else if (discarded > 0) {
-                        // start a new overage when we see discarded events and there isn't an existing overage
-                        var overage = project.GetOverage(bucketUtc);
-                        overage.Total = bucketTotal?.Value ?? 0;
-                        overage.Blocked = discarded;
-                        overage.TooBig = bucketTooBig?.Value ?? 0;
+                    if (project.HasHourlyUsage(bucketUtc)) {
+                        // if we already have an hourly usage for this time period, then increment
+                        var hourlyUsage = project.GetHourlyUsage(bucketUtc);
+                        hourlyUsage.Total += bucketTotal?.Value ?? 0;
+                        hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
+                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                        hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
+                    } else {
+                        // start a new hourly usage
+                        var hourlyUsage = project.GetHourlyUsage(bucketUtc);
+                        hourlyUsage.Total = bucketTotal?.Value ?? 0;
+                        hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
+                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                        hourlyUsage.TooBig = bucketTooBig?.Value ?? 0;
                     }
+
+                    project.TrimUsage();
 
                     await _cache.RemoveAllAsync(new[] {
                         GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
                         GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId),
+                        GetBucketBlockedCacheKey(bucketUtc, project.OrganizationId, projectId),
                         GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
                     });
 
@@ -264,33 +276,28 @@ public class UsageService {
         var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(currentBucketUtc, organizationId));
         var currentUsage = organization.GetCurrentUsage();
         var usage = new UsageInfoResponse {
-            Date = currentUsage.Date,
-            Limit = currentUsage.Limit,
             IsThrottled = isThrottled?.Value ?? false,
-            Total = currentUsage.Total,
-            Blocked = currentUsage.Blocked,
-            TooBig = currentUsage.TooBig
+            CurrentUsage = organization.GetCurrentUsage(),
+            CurrentHourUsage = organization.GetCurrentHourlyUsage()
         };
 
         while (bucketUtc <= currentBucketUtc) {
             // get current bucket counters
             var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
-            usage.Total += bucketTotal?.Value ?? 0;
+            usage.CurrentUsage.Total += bucketTotal?.Value ?? 0;
+            usage.CurrentHourUsage.Total += bucketTotal?.Value ?? 0;
+
+            var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId));
+            usage.CurrentUsage.Blocked += bucketBlocked?.Value ?? 0;
+            usage.CurrentHourUsage.Blocked += bucketBlocked?.Value ?? 0;
 
             var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
-            usage.Blocked += bucketDiscarded?.Value ?? 0;
+            usage.CurrentUsage.Discarded += bucketDiscarded?.Value ?? 0;
+            usage.CurrentHourUsage.Discarded += bucketDiscarded?.Value ?? 0;
 
             var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
-            usage.TooBig += bucketTooBig?.Value ?? 0;
-
-            if (bucketUtc == currentBucketUtc && (bucketDiscarded?.Value ?? 0) > 0) {
-                usage.Overage = new OverageInfo {
-                    Date = utcNow.Floor(_bucketSize),
-                    Total = bucketTotal?.Value ?? 0,
-                    Blocked = bucketDiscarded?.Value ?? 0,
-                    TooBig = bucketTooBig?.Value ?? 0
-                };
-            }
+            usage.CurrentUsage.TooBig += bucketTooBig?.Value ?? 0;
+            usage.CurrentHourUsage.TooBig += bucketTooBig?.Value ?? 0;
 
             bucketUtc = bucketUtc.Add(_bucketSize);
         }
@@ -374,6 +381,21 @@ public class UsageService {
         }
     }
 
+    public async Task IncrementBlockedAsync(string organizationId, string projectId, int eventCount = 1) {
+        if (eventCount <= 0)
+            return;
+
+        var utcNow = SystemClock.UtcNow;
+
+        await _cache.IncrementAsync(GetBucketBlockedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
+        await _cache.IncrementAsync(GetBucketBlockedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
+
+        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
+        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+
+        AppDiagnostics.EventsBlocked.Add(eventCount);
+    }
+
     public async Task IncrementDiscardedAsync(string organizationId, string projectId, int eventCount = 1) {
         if (eventCount <= 0)
             return;
@@ -432,6 +454,15 @@ public class UsageService {
             return $"usage:{bucket}:{organizationId}:total";
 
         return $"usage:{bucket}:{organizationId}:{projectId}:total";
+    }
+
+    private string GetBucketBlockedCacheKey(DateTime utcTime, string organizationId, string projectId = null) {
+        int bucket = GetCurrentBucket(utcTime);
+
+        if (String.IsNullOrEmpty(projectId))
+            return $"usage:{bucket}:{organizationId}:blocked";
+
+        return $"usage:{bucket}:{organizationId}:{projectId}:blocked";
     }
 
     private string GetBucketDiscardedCacheKey(DateTime utcTime, string organizationId, string projectId = null) {

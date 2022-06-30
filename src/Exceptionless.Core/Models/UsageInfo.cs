@@ -6,17 +6,20 @@ public record UsageInfo {
 
     public int Total { get; set; }
     public int Blocked { get; set; }
+    public int Discarded { get; set; }
     public int TooBig { get; set; }
 }
 
-public record OverageInfo {
+public record UsageHourInfo {
     public DateTime Date { get; set; }
     public int Total { get; set; }
     public int Blocked { get; set; }
+    public int Discarded { get; set; }
     public int TooBig { get; set; }
 }
 
-public record UsageInfoResponse : UsageInfo {
+public record UsageInfoResponse {
     public bool IsThrottled { get; set; }
-    public OverageInfo Overage { get; set; }
+    public UsageInfo CurrentUsage { get; set; }
+    public UsageHourInfo CurrentHourUsage { get; set; }
 }

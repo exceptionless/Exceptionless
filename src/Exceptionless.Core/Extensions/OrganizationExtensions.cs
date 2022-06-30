@@ -2,6 +2,7 @@
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Utility;
+using System.Linq;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -68,21 +69,37 @@ public static class OrganizationExtensions {
         return organization.GetCurrentUsage().Total >= organization.GetMaxEventsPerMonthWithBonus();
     }
 
-    public static bool HasOverage(this Organization organization, DateTime date) {
-        return organization.OverageHours.Any(o => o.Date == date.StartOfHour());
+    public static bool HasHourlyUsage(this Organization organization, DateTime date) {
+        return organization.UsageHours.Any(o => o.Date == date.StartOfHour());
     }
 
-    public static OverageInfo GetOverage(this Organization organization, DateTime date) {
-        var overage = organization.OverageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
+    public static UsageHourInfo GetHourlyUsage(this Organization organization, DateTime date) {
+        var overage = organization.UsageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
         if (overage != null)
             return overage;
 
-        overage = new OverageInfo {
+        overage = new UsageHourInfo {
             Date = date.StartOfHour()
         };
-        organization.OverageHours.Add(overage);
+        organization.UsageHours.Add(overage);
 
         return overage;
+    }
+
+    public static UsageHourInfo GetCurrentHourlyUsage(this Organization organization) {
+        return organization.GetHourlyUsage(SystemClock.UtcNow);
+    }
+
+    public static void TrimUsage(this Organization organization) {
+        // keep 1 year of usage
+        organization.Usage = organization.Usage.Except(organization.Usage
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .ToList();
+
+        // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
+        organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .ToList();
     }
 
     public static UsageInfo GetCurrentUsage(this Organization organization) {

@@ -70,7 +70,7 @@ public sealed class OverageMiddleware {
         if (eventsLeft <= 0) {
             AppDiagnostics.PostsBlocked.Add(1);
             string projectId = context.Request.GetDefaultProjectId();
-            await _usageService.IncrementDiscardedAsync(organizationId, projectId);
+            await _usageService.IncrementBlockedAsync(organizationId, projectId);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;
         }

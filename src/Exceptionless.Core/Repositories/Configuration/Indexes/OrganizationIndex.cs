@@ -9,7 +9,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization> {
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 1) {
+    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 2) {
         _configuration = configuration;
     }
 
@@ -51,12 +51,14 @@ internal static class OrganizationIndexExtensions {
                 .Date(fu => fu.Name(i => i.Date))
                 .Number(fu => fu.Name(i => i.Total))
                 .Number(fu => fu.Name(i => i.Blocked))
+                .Number(fu => fu.Name(i => i.Discarded))
                 .Number(fu => fu.Name(i => i.Limit))
                 .Number(fu => fu.Name(i => i.TooBig))))
-            .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).Properties(p => p
+            .Object<UsageInfo>(ui => ui.Name(o => o.UsageHours.First()).Properties(p => p
                 .Date(fu => fu.Name(i => i.Date))
                 .Number(fu => fu.Name(i => i.Total))
                 .Number(fu => fu.Name(i => i.Blocked))
+                .Number(fu => fu.Name(i => i.Discarded))
                 .Number(fu => fu.Name(i => i.Limit))
                 .Number(fu => fu.Name(i => i.TooBig))));
     }
