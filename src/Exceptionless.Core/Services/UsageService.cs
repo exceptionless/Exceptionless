@@ -79,21 +79,11 @@ public class UsageService {
                     usage.Discarded += bucketDiscarded?.Value ?? 0;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
 
-                    if (organization.HasHourlyUsage(bucketUtc)) {
-                        // if we already have an hourly usage for this time period, then increment
-                        var hourlyUsage = organization.GetHourlyUsage(bucketUtc);
-                        hourlyUsage.Total += bucketTotal?.Value ?? 0;
-                        hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
-                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
-                        hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
-                    } else {
-                        // start a new hourly usage
-                        var hourlyUsage = organization.GetHourlyUsage(bucketUtc);
-                        hourlyUsage.Total = bucketTotal?.Value ?? 0;
-                        hourlyUsage.Blocked = bucketBlocked?.Value ?? 0;
-                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
-                        hourlyUsage.TooBig = bucketTooBig?.Value ?? 0;
-                    }
+                    var hourlyUsage = organization.GetHourlyUsage(bucketUtc);
+                    hourlyUsage.Total += bucketTotal?.Value ?? 0;
+                    hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
+                    hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                    hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
 
                     organization.TrimUsage();
 
@@ -164,21 +154,11 @@ public class UsageService {
                     usage.Discarded += bucketDiscarded?.Value ?? 0;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
 
-                    if (project.HasHourlyUsage(bucketUtc)) {
-                        // if we already have an hourly usage for this time period, then increment
-                        var hourlyUsage = project.GetHourlyUsage(bucketUtc);
-                        hourlyUsage.Total += bucketTotal?.Value ?? 0;
-                        hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
-                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
-                        hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
-                    } else {
-                        // start a new hourly usage
-                        var hourlyUsage = project.GetHourlyUsage(bucketUtc);
-                        hourlyUsage.Total = bucketTotal?.Value ?? 0;
-                        hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
-                        hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
-                        hourlyUsage.TooBig = bucketTooBig?.Value ?? 0;
-                    }
+                    var hourlyUsage = project.GetHourlyUsage(bucketUtc);
+                    hourlyUsage.Total += bucketTotal?.Value ?? 0;
+                    hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
+                    hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                    hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
 
                     project.TrimUsage();
 
