@@ -41,6 +41,6 @@ config:
   EX_TestEmailAddress: "test@exceptionless.io"
   EX_EnableArchive: "false"
   EX_Apm__Endpoint: http://ex-prod-monitor-apm-http:8200
-  EX_Apm__EnableTracing: "false"
+  EX_Apm__EnableTracing: "true"
   EX_Apm__EnableLogs: "true"
   EX_Apm__Insecure: "false"
