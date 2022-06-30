@@ -40,8 +40,8 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase {
                     UpgradePlan(organization);
 
                 if (wi.RemoveOldUsageStats) {
-                    foreach (var usage in organization.OverageHours.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
-                        organization.OverageHours.Remove(usage);
+                    foreach (var usage in organization.UsageHours.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
+                        organization.UsageHours.Remove(usage);
 
                     foreach (var usage in organization.Usage.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(366))).ToList())
                         organization.Usage.Remove(usage);

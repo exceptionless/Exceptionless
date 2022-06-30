@@ -17,6 +17,6 @@ public class ViewProject : IIdentity, IData, IHaveCreatedDate {
     public long EventCount { get; set; }
     public bool HasPremiumFeatures { get; set; }
     public bool HasSlackIntegration { get; set; }
-    public ICollection<OverageInfo> OverageHours { get; set; }
+    public ICollection<UsageHourInfo> UsageHours { get; set; }
     public ICollection<UsageInfo> Usage { get; set; }
 }

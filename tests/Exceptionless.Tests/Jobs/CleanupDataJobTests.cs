@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core;
+﻿using System.Text.Json;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;

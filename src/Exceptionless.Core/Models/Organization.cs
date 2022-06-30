@@ -10,7 +10,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
         Invites = new Collection<Invite>();
         BillingStatus = BillingStatus.Trialing;
         Usage = new Collection<UsageInfo>();
-        OverageHours = new Collection<OverageInfo>();
+        UsageHours = new Collection<UsageHourInfo>();
         Data = new DataDictionary();
     }
 
@@ -140,9 +140,9 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public ICollection<Invite> Invites { get; set; }
 
     /// <summary>
-    /// Hours over event limit.
+    /// Hourly account event usage information.
     /// </summary>
-    public ICollection<OverageInfo> OverageHours { get; set; }
+    public ICollection<UsageHourInfo> UsageHours { get; set; }
 
     /// <summary>
     /// Account event usage information.

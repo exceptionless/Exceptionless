@@ -729,35 +729,31 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         foreach (var viewOrganization in viewOrganizations) {
             var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
 
-            var usageRetention = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
-            viewOrganization.Usage = viewOrganization.Usage.Where(u => u.Date > usageRetention).ToList();
-            var currentUsage = viewOrganization.Usage.FirstOrDefault(u => u.Date == realTimeUsage.Date);
+            var currentUsage = viewOrganization.Usage.FirstOrDefault(u => u.Date == realTimeUsage.CurrentUsage.Date);
             if (currentUsage == null) {
                 currentUsage = new UsageInfo {
-                    Date = realTimeUsage.Date
+                    Date = realTimeUsage.CurrentUsage.Date
                 };
                 viewOrganization.Usage.Add(currentUsage);
             }
-            currentUsage.Limit = realTimeUsage.Limit;
-            currentUsage.Total = realTimeUsage.Total;
-            currentUsage.Blocked = realTimeUsage.Blocked;
-            currentUsage.TooBig = realTimeUsage.TooBig;
+            currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
+            currentUsage.Total = realTimeUsage.CurrentUsage.Total;
+            currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
+            currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
+            currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
 
-            var overageRetention = SystemClock.UtcNow.SubtractDays(30).StartOfMonth();
-            viewOrganization.OverageHours = viewOrganization.OverageHours.Where(u => u.Date > overageRetention).ToList();
-            if (realTimeUsage.Overage != null) {
-                var currentOverage = viewOrganization.OverageHours.FirstOrDefault(u => u.Date == realTimeUsage.Overage.Date);
-                if (currentOverage == null) {
-                    currentOverage = new OverageInfo {
-                        Date = realTimeUsage.Overage.Date
-                    };
-                    viewOrganization.OverageHours.Add(currentOverage);
-                }
-                currentOverage.Total = realTimeUsage.Total;
-                currentOverage.Blocked = realTimeUsage.Blocked;
-                currentOverage.TooBig = realTimeUsage.TooBig;
+            var currentHourUsage = viewOrganization.UsageHours.FirstOrDefault(u => u.Date == realTimeUsage.CurrentHourUsage.Date);
+            if (currentHourUsage == null) {
+                currentHourUsage = new UsageHourInfo {
+                    Date = realTimeUsage.CurrentHourUsage.Date
+                };
+                viewOrganization.UsageHours.Add(currentHourUsage);
             }
-            
+            currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
+            currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
+            currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
+            currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
+
             viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
         }

@@ -47,21 +47,37 @@ public static class ProjectExtensions {
         return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object value) ? value as SlackToken : null;
     }
 
-    public static bool HasOverage(this Project project, DateTime date) {
-        return project.OverageHours.Any(o => o.Date == date.StartOfHour());
+    public static bool HasHourlyUsage(this Project project, DateTime date) {
+        return project.UsageHours.Any(o => o.Date == date.StartOfHour());
     }
 
-    public static OverageInfo GetOverage(this Project project, DateTime date) {
-        var usage = project.OverageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
+    public static UsageHourInfo GetHourlyUsage(this Project project, DateTime date) {
+        var usage = project.UsageHours.FirstOrDefault(o => o.Date == date.StartOfHour());
         if (usage != null)
             return usage;
 
-        usage = new OverageInfo {
+        usage = new UsageHourInfo {
             Date = date.StartOfHour()
         };
-        project.OverageHours.Add(usage);
+        project.UsageHours.Add(usage);
 
         return usage;
+    }
+
+    public static UsageHourInfo GetCurrentHourlyUsage(this Project project) {
+        return project.GetHourlyUsage(SystemClock.UtcNow);
+    }
+
+    public static void TrimUsage(this Project project) {
+        // keep 1 year of usage
+        project.Usage = project.Usage.Except(project.Usage
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .ToList();
+
+        // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
+        project.UsageHours = project.UsageHours.Except(project.UsageHours
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .ToList();
     }
 
     public static UsageInfo GetCurrentUsage(this Project project) {

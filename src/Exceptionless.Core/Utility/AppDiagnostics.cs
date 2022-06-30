@@ -67,6 +67,7 @@ public static class AppDiagnostics {
     internal static readonly Counter<int> EventsPaidProcessed = Meter.CreateCounter<int>("exceptionless.events.paid.processed", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> EventsProcessErrors = Meter.CreateCounter<int>("exceptionless.events.processing.errors", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("exceptionless.events.discarded", description: "Time to get event post", unit: "ms");
+    internal static readonly Counter<int> EventsBlocked = Meter.CreateCounter<int>("exceptionless.events.blocked", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> EventsProcessCancelled = Meter.CreateCounter<int>("exceptionless.events.processing.cancelled", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("exceptionless.events.retry.count", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("exceptionless.events.retry.errors", description: "Time to get event post", unit: "ms");

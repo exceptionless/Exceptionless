@@ -144,8 +144,7 @@ public class EventPostsJob : QueueJobBase<EventPost> {
                 if (!isInternalProject)
                     _logger.LogDebug("Unable to process EventPost {FilePath}: Over plan limits", payloadPath);
 
-                AppDiagnostics.EventsDiscarded.Add(events.Count);
-                await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, events.Count);
+                await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
 
                 await CompleteEntryAsync(entry, ep, SystemClock.UtcNow).AnyContext();
                 return JobResult.Success;
@@ -158,9 +157,8 @@ public class EventPostsJob : QueueJobBase<EventPost> {
             if (eventsToProcess < events.Count) {
                 int discarded = events.Count - eventsToProcess;
                 events = events.Take(eventsToProcess).ToList();
-                AppDiagnostics.EventsDiscarded.Add(discarded);
 
-                await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discarded);
+                await _usageService.IncrementBlockedAsync(organization.Id, project.Id, discarded);
             }
 
             int errorCount = 0;
@@ -177,7 +175,7 @@ public class EventPostsJob : QueueJobBase<EventPost> {
                 await _usageService.IncrementTotalAsync(organization.Id, project.Id, processedEvents).AnyContext();
 
                 int discardedEvents = contexts.Count(c => c.IsDiscarded);
-                AppDiagnostics.EventsDiscarded.Add(discardedEvents);
+                await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents).AnyContext();
 
                 foreach (var ctx in contexts) {
                     if (ctx.IsCancelled)

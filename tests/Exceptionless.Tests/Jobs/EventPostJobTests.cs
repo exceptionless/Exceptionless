@@ -83,11 +83,11 @@ public class EventPostJobTests : IntegrationTestsBase {
     public async Task CanRunJobWithDiscardedEventUsage() {
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         var usage = await _usageService.GetUsageAsync(organization.Id);
-        Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.CurrentUsage.Total);
 
         usage = await _usageService.GetUsageAsync(organization.Id);
-        Assert.Equal(0, usage.Total);
-        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.CurrentUsage.Total);
+        Assert.Equal(0, usage.CurrentUsage.Blocked);
 
         var ev = GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test1");
         Assert.NotNull(await EnqueueEventPostAsync(ev));
@@ -104,8 +104,8 @@ public class EventPostJobTests : IntegrationTestsBase {
         Assert.NotNull(sessionEvent);
 
         usage = await _usageService.GetUsageAsync(organization.Id);
-        Assert.Equal(1, usage.Total);
-        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(1, usage.CurrentUsage.Total);
+        Assert.Equal(0, usage.CurrentUsage.Blocked);
 
         // Mark the stack as discarded
         var logStack = await _stackRepository.GetByIdAsync(logEvent.StackId);
@@ -131,8 +131,8 @@ public class EventPostJobTests : IntegrationTestsBase {
         Assert.Equal(3, events.Total);
         
         usage = await _usageService.GetUsageAsync(organization.Id);
-        Assert.Equal(1, usage.Total);
-        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(1, usage.CurrentUsage.Total);
+        Assert.Equal(0, usage.CurrentUsage.Blocked);
     }
 
     [Fact]

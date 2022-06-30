@@ -25,7 +25,7 @@ jobs:
   eventNotifications:
     replicaCount: 2
   eventPosts:
-    replicaCount: 6
+    replicaCount: 20
   eventUserDescriptions:
     replicaCount: 2
   mailMessage:
