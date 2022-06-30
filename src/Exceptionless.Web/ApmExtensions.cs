@@ -71,6 +71,7 @@ namespace OpenTelemetry {
 
                         if (config.EnableRedis)
                             b.AddRedisInstrumentation(null, c => {
+                                c.EnrichActivityWithTimingEvents = false;
                                 c.SetVerboseDatabaseStatements = config.FullDetails;
                             });
 
@@ -98,7 +99,7 @@ namespace OpenTelemetry {
                     b.AddHttpClientInstrumentation();
                     b.AddAspNetCoreInstrumentation();
                     b.AddMeter("Exceptionless", "Foundatio");
-                    b.AddRuntimeMetrics();
+                    b.AddRuntimeInstrumentation();
 
                     if (config.Console)
                         b.AddConsoleExporter((exporterOptions, metricReaderOptions) => {
