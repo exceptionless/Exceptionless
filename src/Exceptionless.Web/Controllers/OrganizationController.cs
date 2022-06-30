@@ -729,26 +729,17 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         foreach (var viewOrganization in viewOrganizations) {
             var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
 
-            var currentUsage = viewOrganization.Usage.FirstOrDefault(u => u.Date == realTimeUsage.CurrentUsage.Date);
-            if (currentUsage == null) {
-                currentUsage = new UsageInfo {
-                    Date = realTimeUsage.CurrentUsage.Date
-                };
-                viewOrganization.Usage.Add(currentUsage);
-            }
+            // ensure 12 months of usage
+            viewOrganization.EnsureUsage();
+
+            var currentUsage = viewOrganization.GetCurrentUsage();
             currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
             currentUsage.Total = realTimeUsage.CurrentUsage.Total;
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
 
-            var currentHourUsage = viewOrganization.UsageHours.FirstOrDefault(u => u.Date == realTimeUsage.CurrentHourUsage.Date);
-            if (currentHourUsage == null) {
-                currentHourUsage = new UsageHourInfo {
-                    Date = realTimeUsage.CurrentHourUsage.Date
-                };
-                viewOrganization.UsageHours.Add(currentHourUsage);
-            }
+            var currentHourUsage = viewOrganization.GetCurrentHourlyUsage();
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
