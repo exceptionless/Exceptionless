@@ -237,45 +237,55 @@ public class UsageService {
         return maxEventsPerMonth;
     }
 
-    public async Task<UsageInfoResponse> GetUsageAsync(string organizationId) {
+    public async Task<UsageInfoResponse> GetUsageAsync(string organizationId, string projectId = null) {
         var utcNow = SystemClock.UtcNow;
 
         // default to checking just the previous bucket
         var lastUsageSave = utcNow.Subtract(_bucketSize).Floor(_bucketSize);
 
         // last usage save is the last time we processed usage
-        var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-organization-save");
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>(projectId == null ? "usage:last-organization-save" : "usage:last-project-save");
         if (lastUsageSaveCache.HasValue)
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
-
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-
         var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(currentBucketUtc, organizationId));
-        var currentUsage = organization.GetCurrentUsage();
-        var usage = new UsageInfoResponse {
-            IsThrottled = isThrottled?.Value ?? false,
-            CurrentUsage = organization.GetCurrentUsage(),
-            CurrentHourUsage = organization.GetCurrentHourlyUsage()
-        };
+
+        UsageInfoResponse usage;
+        if (projectId == null) {
+            var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+
+            usage = new UsageInfoResponse {
+                IsThrottled = isThrottled?.Value ?? false,
+                CurrentUsage = organization.GetCurrentUsage(),
+                CurrentHourUsage = organization.GetCurrentHourlyUsage()
+            };
+        } else {
+            var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+
+            usage = new UsageInfoResponse {
+                IsThrottled = isThrottled?.Value ?? false,
+                CurrentUsage = project.GetCurrentUsage(),
+                CurrentHourUsage = project.GetCurrentHourlyUsage()
+            };
+        }
 
         while (bucketUtc <= currentBucketUtc) {
             // get current bucket counters
-            var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
+            var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId, projectId));
             usage.CurrentUsage.Total += bucketTotal?.Value ?? 0;
             usage.CurrentHourUsage.Total += bucketTotal?.Value ?? 0;
 
-            var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId));
+            var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId, projectId));
             usage.CurrentUsage.Blocked += bucketBlocked?.Value ?? 0;
             usage.CurrentHourUsage.Blocked += bucketBlocked?.Value ?? 0;
 
-            var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
+            var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId, projectId));
             usage.CurrentUsage.Discarded += bucketDiscarded?.Value ?? 0;
             usage.CurrentHourUsage.Discarded += bucketDiscarded?.Value ?? 0;
 
-            var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
+            var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId, projectId));
             usage.CurrentUsage.TooBig += bucketTooBig?.Value ?? 0;
             usage.CurrentHourUsage.TooBig += bucketTooBig?.Value ?? 0;
 

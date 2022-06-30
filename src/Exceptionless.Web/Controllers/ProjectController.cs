@@ -34,6 +34,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     private readonly BillingManager _billingManager;
     private readonly SlackService _slackService;
     private readonly AppOptions _options;
+    private readonly UsageService _usageService;
 
     public ProjectController(
         IOrganizationRepository organizationRepository,
@@ -47,6 +48,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IMapper mapper,
         IAppQueryValidator validator,
         AppOptions options,
+        UsageService usageService,
         ILoggerFactory loggerFactory
     ) : base(projectRepository, mapper, validator, loggerFactory) {
         _organizationRepository = organizationRepository;
@@ -58,6 +60,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _billingManager = billingManager;
         _slackService = slackService;
         _options = options;
+        _usageService = usageService;
     }
 
     #region CRUD
@@ -666,6 +669,33 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
                     ProjectId = viewProject.Id
                 });
             }
+
+            var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
+
+            var currentUsage = viewProject.Usage.FirstOrDefault(u => u.Date == realTimeUsage.CurrentUsage.Date);
+            if (currentUsage == null) {
+                currentUsage = new UsageInfo {
+                    Date = realTimeUsage.CurrentUsage.Date
+                };
+                viewProject.Usage.Add(currentUsage);
+            }
+            currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
+            currentUsage.Total = realTimeUsage.CurrentUsage.Total;
+            currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
+            currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
+            currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
+
+            var currentHourUsage = viewProject.UsageHours.FirstOrDefault(u => u.Date == realTimeUsage.CurrentHourUsage.Date);
+            if (currentHourUsage == null) {
+                currentHourUsage = new UsageHourInfo {
+                    Date = realTimeUsage.CurrentHourUsage.Date
+                };
+                viewProject.UsageHours.Add(currentHourUsage);
+            }
+            currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
+            currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
+            currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
+            currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
         }
     }
 
