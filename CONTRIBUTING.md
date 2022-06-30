@@ -6,7 +6,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 ## Reporting Bugs
 
-1. Always update to the most recent master release; the bug may already be resolved.
+1. Always update to the most recent main release; the bug may already be resolved.
 
 2. Search for similar [issues](https://github.com/exceptionless/Exceptionless/issues?q=is%3Aopen+is%3Aissue+label%3Abug); it may already be an identified problem. Also, feel free to ask us questions [on Discord](https://discord.gg/6HxgFCx).
 
