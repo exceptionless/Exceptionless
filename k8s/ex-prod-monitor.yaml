@@ -4,7 +4,7 @@ metadata:
   name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 8.2.3
+  version: 8.3.1
   nodeSets:
   - name: default
     count: 1
@@ -49,7 +49,7 @@ metadata:
   name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 8.2.3
+  version: 8.3.1
   count: 1
   elasticsearchRef:
     name: ex-prod-monitor
@@ -66,14 +66,25 @@ metadata:
   name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 8.2.3
+  version: 8.3.1
   count: 1
   elasticsearchRef:
     name: ex-prod-monitor
   kibanaRef:
     name: ex-prod-monitor
-  config:
-    apm-server.ssl.enabled: false
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  podTemplate:
+    spec:
+      containers:
+      - name: apm-server
+        resources:
+          requests:
+            memory: 1Gi
+          limits:
+            memory: 2Gi
 
 ---
 apiVersion: networking.k8s.io/v1
