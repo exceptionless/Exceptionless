@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -11,8 +10,8 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
         NotificationSettings = new Dictionary<string, NotificationSettings>();
         PromotedTabs = new HashSet<string>();
         DeleteBotDataEnabled = false;
-        Usage = new Collection<UsageInfo>();
-        UsageHours = new Collection<UsageHourInfo>();
+        Usage = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
+        UsageHours = new SortedSet<UsageHourInfo>(Comparer<UsageHourInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
         Data = new DataDictionary();
     }
 
