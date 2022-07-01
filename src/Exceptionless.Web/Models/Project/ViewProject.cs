@@ -41,26 +41,27 @@ public static class ViewProjectExtensions {
         return project.GetHourlyUsage(SystemClock.UtcNow);
     }
 
-    public static void EnsureUsage(this ViewProject project) {
+    public static void EnsureUsage(this ViewProject project, int limit) {
         var startDate = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
 
         while (startDate < SystemClock.UtcNow.StartOfMonth()) {
-            project.GetUsage(startDate);
+            project.GetUsage(startDate, limit);
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
     }
 
-    public static UsageInfo GetCurrentUsage(this ViewProject project) {
-        return project.GetUsage(SystemClock.UtcNow);
+    public static UsageInfo GetCurrentUsage(this ViewProject project, int limit) {
+        return project.GetUsage(SystemClock.UtcNow, limit);
     }
 
-    public static UsageInfo GetUsage(this ViewProject project, DateTime date) {
+    public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit) {
         var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
         if (usage != null)
             return usage;
 
         usage = new UsageInfo {
             Date = date.ToUniversalTime().StartOfMonth(),
+            Limit = limit
         };
         project.Usage.Add(usage);
 
