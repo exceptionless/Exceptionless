@@ -9,8 +9,8 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public Organization() {
         Invites = new Collection<Invite>();
         BillingStatus = BillingStatus.Trialing;
-        Usage = new Collection<UsageInfo>();
-        UsageHours = new Collection<UsageHourInfo>();
+        Usage = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
+        UsageHours = new SortedSet<UsageHourInfo>(Comparer<UsageHourInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
         Data = new DataDictionary();
     }
 
