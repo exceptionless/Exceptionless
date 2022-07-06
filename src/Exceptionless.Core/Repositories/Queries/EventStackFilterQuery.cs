@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
             const int stackIdLimit = 65536;
-            string[] stackIds = Array.Empty<string>();
+            var stackIds = new List<string>();
             long stackTotal = 0;
 
             string stackFilterValue = stackFilter.Filter;
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (tooManyStacksCheck.HasValue) {
                 stackTotal = tooManyStacksCheck.Value;
             } else {
-                results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
+                results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SoftDeleteMode(softDeleteMode)).AnyContext();
                 stackTotal = results.Total;
             }
                 
@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 if (tooManyStacksCheck.HasValue) {
                     stackTotal = tooManyStacksCheck.Value;
                 } else {
-                    results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(stackIdLimit).SoftDeleteMode(softDeleteMode)).AnyContext();
+                    results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SoftDeleteMode(softDeleteMode)).AnyContext();
                     stackTotal = results.Total;
                 }
             }
@@ -136,18 +136,21 @@ namespace Exceptionless.Core.Repositories.Queries {
                 throw new DocumentLimitExceededException($"Event filter resulted in too many matching stacks ({stackTotal} of {stackIdLimit} max). Please limit your search criteria (possibly by reducing number of days being searched).");
             }
 
-            if (results?.Hits != null)
-                stackIds = results.Hits.Select(h => h.Id).ToArray();
+            if (results?.Hits != null) {
+                do {
+                    stackIds.AddRange(results.Hits.Select(h => h.Id));
+                } while (await results.NextPageAsync());
+            }
 
-            _logger.LogTrace("Setting stack filter with {IdCount} ids", stackIds?.Length ?? 0);
+            _logger.LogTrace("Setting stack filter with {IdCount} ids", stackIds.Count);
 
             if (!isStackIdsNegated) {
-                if (stackIds.Length > 0)
+                if (stackIds.Count > 0)
                     ctx.Source.Stack(stackIds);
                 else
                     ctx.Source.Stack("none");
             } else {
-                if (stackIds.Length > 0)
+                if (stackIds.Count > 0)
                     ctx.Source.ExcludeStack(stackIds);
             }
 
