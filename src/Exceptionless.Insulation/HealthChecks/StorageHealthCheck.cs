@@ -19,12 +19,10 @@ public class StorageHealthCheck : IHealthCheck {
         var sw = Stopwatch.StartNew();
 
         try {
-            await _storage.GetPagedFileListAsync(1, cancellationToken: cancellationToken).AnyContext();
-        }
-        catch (Exception ex) {
+            await _storage.GetFileListAsync(null, 1, cancellationToken: cancellationToken).AnyContext();
+        } catch (Exception ex) {
             return HealthCheckResult.Unhealthy("Storage Not Working.", ex);
-        }
-        finally {
+        } finally {
             sw.Stop();
             _logger.LogTrace("Checking storage took {Duration:g}", sw.Elapsed);
         }

@@ -76,7 +76,7 @@ public class Bootstrapper {
 
             .AddAutoNamedCheck<ElasticsearchHealthCheck>("Critical")
             .AddAutoNamedCheck<CacheHealthCheck>("Critical")
-            .AddAutoNamedCheck<StorageHealthCheck>("EventPosts", "AllJobs")
+            //.AddAutoNamedCheck<StorageHealthCheck>("EventPosts", "AllJobs")
 
             .AddAutoNamedCheck<QueueHealthCheck<EventPost>>("EventPosts", "AllJobs")
             .AddAutoNamedCheck<QueueHealthCheck<EventUserDescription>>("EventUserDescriptions", "AllJobs")
