@@ -35,9 +35,6 @@ jobs:
       run: docker compose up --wait elasticsearch
     - name: Run Tests
       run: dotnet test --configuration Release --no-build --logger GitHubActions
-    - name: Set up QEMU
-      id: qemu
-      uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@v2

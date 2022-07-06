@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
-            const int stackIdLimit = 10000;
+            const int stackIdLimit = 65536;
             string[] stackIds = Array.Empty<string>();
             long stackTotal = 0;
 
@@ -133,7 +133,7 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (stackTotal > stackIdLimit) {
                 if (!tooManyStacksCheck.HasValue)
                     await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
-                throw new DocumentLimitExceededException("Please limit your search criteria.");
+                throw new DocumentLimitExceededException($"Event filter resulted in too many matching stacks ({stackTotal} of {stackIdLimit} max). Please limit your search criteria (possibly by reducing number of days being searched).");
             }
 
             if (results?.Hits != null)
