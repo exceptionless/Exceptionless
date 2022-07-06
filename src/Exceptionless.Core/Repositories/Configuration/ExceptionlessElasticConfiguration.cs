@@ -92,12 +92,11 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         if (_appOptions.AppMode == AppMode.Development)
             settings.EnableDebugMode();
 
-        settings.ServerCertificateValidationCallback((o, certificate, chain, errors) => true);
         settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
         settings.EnableApiVersioningHeader();
-
-        settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2))
-            .DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords())
-            .MaximumRetries(5);
+        settings.DisableDirectStreaming();
+        settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2));
+        settings.DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords());
+        settings.MaximumRetries(5);
     }
 }
