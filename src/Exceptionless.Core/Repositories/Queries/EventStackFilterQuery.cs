@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             var stackFilter = await _eventStackFilter.GetStackFilterAsync(filter, ctx);
 
-            const int stackIdLimit = 65536;
+            const int stackIdLimit = 20000;
             var stackIds = new List<string>();
             long stackTotal = 0;
 
