@@ -5,6 +5,7 @@ using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Logs;
 using Serilog;
+using System.Text.RegularExpressions;
 
 namespace OpenTelemetry {
     public static class ApmExtensions {
@@ -54,10 +55,15 @@ namespace OpenTelemetry {
                             c.SuppressDownstreamInstrumentation = true;
                             c.ParseAndFormatRequest = config.FullDetails;
                             c.Enrich = (activity, source, data) => {
-                                // truncate statements to 4096 length
+                                // truncate statements to 10000 length
                                 var dbStatement = activity.GetTagItem("db.statement") as string;
-                                if (dbStatement != null && dbStatement.Length > 4096)
-                                    activity.SetTag("db.statement", dbStatement.Substring(0, 4096));
+                                if (dbStatement != null && dbStatement.Length > 10000) {
+                                    dbStatement = _stackIdListShortener.Replace(dbStatement, "$1...]");
+                                    if (dbStatement.Length > 10000)
+                                        dbStatement = dbStatement.Substring(0, 10000);
+
+                                    activity.SetTag("db.statement", dbStatement);
+                                }
 
                                 // 404s should not be error
                                 var httpStatus = activity.GetTagItem("http.status_code") as int?;
@@ -153,6 +159,8 @@ namespace OpenTelemetry {
 
             return builder;
         }
+        
+        private static readonly Regex _stackIdListShortener = new("(\"stack_id\": \\[)([^\\]]*)\\]", RegexOptions.Compiled);
     }
 
     public class ApmConfig {
