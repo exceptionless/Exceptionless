@@ -22,23 +22,25 @@ collector:
 jobs:
   image:
     repository: exceptionless/job-ci
+  closeInactiveSessions:
+    replicaCount: 0
+  dailySummary:
+    replicaCount: 0
   eventNotifications:
     replicaCount: 0
   eventPosts:
-    replicaCount: 0
-  stackEventCount:
     replicaCount: 0
   eventUserDescriptions:
     replicaCount: 0
   mailMessage:
     replicaCount: 0
+  stackEventCount:
+    replicaCount: 0
   webhooks:
     replicaCount: 0
   workitem:
     replicaCount: 0
-  closeInactiveSessions:
-    replicaCount: 0
-  dailySummary:
+  eventUsage:
     replicaCount: 0
 
 config:
