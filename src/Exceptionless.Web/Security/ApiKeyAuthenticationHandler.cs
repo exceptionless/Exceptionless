@@ -92,6 +92,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         }
 
         if (tokenRecord.IsDisabled || (Request.IsEventPost() && tokenRecord.IsSuspended)) {
+            AppDiagnostics.PostsBlocked.Add(1);
             Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}.", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");

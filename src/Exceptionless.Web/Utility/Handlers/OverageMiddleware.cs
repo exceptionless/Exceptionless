@@ -51,7 +51,6 @@ public sealed class OverageMiddleware {
                         _logger.SubmissionTooLarge(size);
                 }
 
-                AppDiagnostics.PostsDiscarded.Add(1);
                 tooBig = true;
             }
         }
@@ -68,7 +67,6 @@ public sealed class OverageMiddleware {
 
         int eventsLeft = await _usageService.GetEventsLeftAsync(organizationId).AnyContext();
         if (eventsLeft <= 0) {
-            AppDiagnostics.PostsBlocked.Add(1);
             string projectId = context.Request.GetDefaultProjectId();
             await _usageService.IncrementBlockedAsync(organizationId, projectId);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
@@ -78,6 +76,7 @@ public sealed class OverageMiddleware {
         // if user auth, check to see if the org is suspended
         // api tokens are marked as suspended immediately
         if (context.Request.GetAuthType() == AuthType.User) {
+            AppDiagnostics.PostsBlocked.Add(1);
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
             if (organization.IsSuspended) {
                 context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
