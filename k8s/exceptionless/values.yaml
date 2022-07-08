@@ -26,6 +26,10 @@ jobs:
     repository: exceptionless/job
     tag: latest
     pullPolicy: IfNotPresent
+  closeInactiveSessions:
+    replicaCount: 1
+  dailySummary:
+    replicaCount: 1
   eventNotifications:
     replicaCount: 1
   eventPosts:
@@ -34,9 +38,13 @@ jobs:
     replicaCount: 1
   mailMessage:
     replicaCount: 1
+  stackEventCount:
+    replicaCount: 1
   webhooks:
     replicaCount: 1
   workitem:
+    replicaCount: 1
+  eventUsage:
     replicaCount: 1
 
 statsd:
