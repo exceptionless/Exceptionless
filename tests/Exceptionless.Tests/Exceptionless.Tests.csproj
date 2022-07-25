@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.1" />
     <PackageReference Include="Foundatio.Xunit" Version="$(FoundatioVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.7" />
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="9.0.320" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
