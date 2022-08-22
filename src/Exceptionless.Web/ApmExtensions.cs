@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Diagnostics.Tracing;
@@ -37,6 +37,7 @@ namespace OpenTelemetry {
             });
 
             builder.ConfigureServices(services => {
+                services.AddSingleton(config);
                 services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
                 if (config.EnableTracing)
@@ -85,19 +86,30 @@ namespace OpenTelemetry {
                             b.AddConsoleExporter();
 
                         if (!String.IsNullOrEmpty(config.Endpoint)) {
-                            b.AddFilteredOtlpExporter(c => {
-                                if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                    c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
-
-                                if (!String.IsNullOrEmpty(config.Endpoint))
-                                    c.Endpoint = new Uri(config.Endpoint);
-                                if (!String.IsNullOrEmpty(config.ApiKey))
-                                    c.Headers = $"api-key={config.ApiKey}";
-
+                            if (config.MinDurationMs > 0) {
                                 // filter out insignificant activities
-                                if (config.MinDurationMs > 0)
-                                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs);
-                            });
+                                b.AddFilteredOtlpExporter(c => {
+                                    if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
+                                        c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+
+                                    if (!String.IsNullOrEmpty(config.Endpoint))
+                                        c.Endpoint = new Uri(config.Endpoint);
+                                    if (!String.IsNullOrEmpty(config.ApiKey))
+                                        c.Headers = $"api-key={config.ApiKey}";
+
+                                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") != null;
+                                });
+                            } else {
+                                b.AddOtlpExporter(c => {
+                                    if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
+                                        c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+
+                                    if (!String.IsNullOrEmpty(config.Endpoint))
+                                        c.Endpoint = new Uri(config.Endpoint);
+                                    if (!String.IsNullOrEmpty(config.ApiKey))
+                                        c.Headers = $"api-key={config.ApiKey}";
+                                });
+                            }
                         }
                     });
 
@@ -182,7 +194,8 @@ namespace OpenTelemetry {
             EnableRedis = enableRedis;
         }
 
-        public bool EnableTracing => _apmConfig.GetValue("EnableTracing", false);
+        public bool EnableTracing => _apmConfig.GetValue("EnableTracing", _apmConfig.GetValue("Enabled", false));
+        public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
         public bool Insecure => _apmConfig.GetValue("Insecure", false);
         public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty);
         public string ServiceName { get; }
@@ -192,7 +205,6 @@ namespace OpenTelemetry {
         public string Endpoint => _apmConfig.GetValue("Endpoint", String.Empty);
         public string ApiKey => _apmConfig.GetValue("ApiKey", String.Empty);
         public bool FullDetails => _apmConfig.GetValue("FullDetails", false);
-        public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
         public double SampleRate => _apmConfig.GetValue("SampleRate", 1.0);
         public int MinDurationMs => _apmConfig.GetValue<int>("MinDurationMs", -1);
         public bool EnableRedis { get; }
@@ -204,11 +216,11 @@ namespace OpenTelemetry {
         private readonly Func<Activity, bool> _filter;
 
         public CustomFilterProcessor(BaseProcessor<Activity> processor, Func<Activity, bool> filter) : base(new[] { processor }) {
-            _filter = filter ?? throw new ArgumentNullException(nameof(filter));
+            _filter = filter;
         }
 
         public override void OnEnd(Activity activity) {
-            if (_filter(activity))
+            if (_filter == null || _filter(activity))
                 base.OnEnd(activity);
         }
     }
