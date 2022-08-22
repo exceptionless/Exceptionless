@@ -140,6 +140,8 @@ public class Startup {
 
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+
         app.UseHealthChecks("/health", new HealthCheckOptions {
             Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
         });
@@ -227,7 +229,6 @@ public class Startup {
             }
         });
 
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
