@@ -48,7 +48,7 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwr
 
 # install dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.1/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
 
 # create admin user to login to the dashboard
 kubectl apply -f admin-service-account.yaml
@@ -59,8 +59,8 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl create -f https://download.elastic.co/downloads/eck/2.2.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.2.0/operator.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.4.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.4.0/operator.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
@@ -109,7 +109,7 @@ az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
 # https://github.com/jetstack/cert-manager/releases
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.crds.yaml
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.9.1/cert-manager.crds.yaml
 helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
 kubectl apply -f cluster-issuer.yaml
 
@@ -118,7 +118,7 @@ kubectl apply -f cluster-issuer.yaml
 kubectl create namespace kubecost
 helm repo add kubecost https://kubecost.github.io/cost-analyzer/
 $KUBECOST_KEY=""
-helm install kubecost kubecost/cost-analyzer --namespace kubecost --set kubecostToken=$KUBECOST_KEY
+helm install kubecost kubecost/cost-analyzer --namespace kubecost --set kubecostToken="ZXJpY0Bjb2Rlc21pdGh0b29scy5jb20=xm343yadf98"
 
 # install goldilocks
 helm repo add fairwinds-stable https://charts.fairwinds.com/stable
