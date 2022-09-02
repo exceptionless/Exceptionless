@@ -236,7 +236,7 @@ spec:
               memory: 250Mi
               cpu: 100m
             limits:
-              memory: 1200Mi
+              memory: 2500Mi
               cpu: 1000m
           args: [EventPosts]
           envFrom:
