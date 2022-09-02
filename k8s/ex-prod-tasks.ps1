@@ -152,3 +152,23 @@ kubectl patch cronjob/ex-prod-jobs-event-snapshot -p '{\"spec\":{\"suspend\": fa
 kubectl patch cronjob/ex-prod-jobs-maintain-indexes -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
 kubectl patch cronjob/ex-prod-jobs-organization-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
 kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
+
+# get memory dump for running pod (https://pgroene.wordpress.com/2021/02/17/memory-dump-net-core-linux-container-aks/)
+
+kubectl get pods
+
+kubectl exec -it ex-prod-jobs-event-posts-7c846477dd-472lr --namespace ex-prod -- /bin/bash
+
+apt update
+apt install wget
+wget -O sdk_install.sh https://dot.net/v1/dotnet-install.sh
+chmod 777 sdk_install.sh
+./sdk_install.sh -c 6.0
+cd /root/.dotnet
+./dotnet tool install --global dotnet-gcdump
+cd tools
+./dotnet-gcdump ps
+./dotnet-gcdump collect -p 1
+exit
+
+kubectl cp example-pod:/root/.dotnet/tools/20220902_200358_1.gcdump ./20220902_200358_1.gcdump
