@@ -6,8 +6,17 @@ $ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-moni
 open "http://kibana-ex-prod.localtest.me:5660" && kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601
 
 # port forward elasticsearch
-$ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9200 &
+$ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9260:9200 &
 Remove-Job $ELASTIC_JOB
+curl -k https://elastic:$ELASTIC_PASSWORD@localhost:9260/_cluster/health?pretty
+
+# port forward monitoring elasticsearch
+$ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-monitor-es-http 9280:9200 &
+Remove-Job $ELASTIC_JOB
+
+curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
+curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*traces*?v=true&s=index"
+curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.08.19-000081"
 
 # connect to redis
 $REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis-ha -o go-template='{{index .data \"redis-password\" | base64decode }}')

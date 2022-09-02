@@ -1,4 +1,4 @@
-@apiUrl = http://elastic:{{elasticPassword}}@elastic-ex-dev.localtest.me:9250/
+@apiUrl = http://elastic:{{elasticPassword}}@elastic-ex-dev.localtest.me:9200/
 
 GET {{apiUrl}}_cat/indices/dev-*?v
 
@@ -40,8 +40,3 @@ Content-Type: application/json
         "number_of_replicas" : 0
     }
 }
-
-###
-
-GET {{apiUrl}}_tasks/hCqJFzl1QZWFkO5o1pWSSQ:128803
-
