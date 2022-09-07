@@ -1,6 +1,5 @@
 # get elasticsearch password
 $ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
-$ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # connect to kibana
 open "http://kibana-ex-prod.localtest.me:5660" && kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601
@@ -11,12 +10,13 @@ Remove-Job $ELASTIC_JOB
 curl -k https://elastic:$ELASTIC_PASSWORD@localhost:9260/_cluster/health?pretty
 
 # port forward monitoring elasticsearch
+$ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 $ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-monitor-es-http 9280:9200 &
 Remove-Job $ELASTIC_JOB
 
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
 curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*traces*?v=true&s=index"
-curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.08.19-000081"
+curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.09.01-000108"
 
 # connect to redis
 $REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis-ha -o go-template='{{index .data \"redis-password\" | base64decode }}')
@@ -157,7 +157,7 @@ kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": fa
 
 kubectl get pods
 
-kubectl exec -it ex-prod-jobs-event-posts-7c846477dd-472lr --namespace ex-prod -- /bin/bash
+kubectl exec -it ex-prod-jobs-event-posts-7dc899875f-pdzvd --namespace ex-prod -- /bin/bash
 
 apt update
 apt install wget
@@ -166,9 +166,12 @@ chmod 777 sdk_install.sh
 ./sdk_install.sh -c 6.0
 cd /root/.dotnet
 ./dotnet tool install --global dotnet-gcdump
+./dotnet tool install --global dotnet-stack
 cd tools
 ./dotnet-gcdump ps
 ./dotnet-gcdump collect -p 1
+./dotnet-stack ps
+./dotnet-stack report -p 1
 exit
 
-kubectl cp example-pod:/root/.dotnet/tools/20220902_200358_1.gcdump ./20220902_200358_1.gcdump
+kubectl cp ex-prod-jobs-event-posts-7dc899875f-pdzvd:/root/.dotnet/tools/20220907_144855_1.gcdump ./20220907_144855_1.gcdump
