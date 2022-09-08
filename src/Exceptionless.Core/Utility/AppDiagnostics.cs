@@ -18,22 +18,30 @@ public static class AppDiagnostics {
     private static readonly ConcurrentDictionary<string, Histogram<double>> _timers = new();
 
     public static void Counter(string name, int value = 1) {
-        var counter = _counters.GetOrAdd(_metricsPrefix + name, Meter.CreateCounter<int>(name));
+        if (!_counters.TryGetValue(_metricsPrefix + name, out var counter))
+            counter = _counters.GetOrAdd(_metricsPrefix + name, key => Meter.CreateCounter<int>(key));
+
         counter.Add(value);
     }
 
     public static void Gauge(string name, double value) {
-        var gauge = _gauges.GetOrAdd(_metricsPrefix + name, new GaugeInfo(Meter, name));
+        if (!_gauges.TryGetValue(_metricsPrefix + name, out var gauge))
+            gauge = _gauges.GetOrAdd(_metricsPrefix + name, key => new GaugeInfo(Meter, key));
+
         gauge.Value = value;
     }
 
     public static void Timer(string name, int milliseconds) {
-        var timer = _timers.GetOrAdd(_metricsPrefix + name, Meter.CreateHistogram<double>(name, "ms"));
+        if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
+            timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
+
         timer.Record(milliseconds);
     }
 
     public static IDisposable StartTimer(string name) {
-        var timer = _timers.GetOrAdd(_metricsPrefix + name, Meter.CreateHistogram<double>(name, "ms"));
+        if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
+            timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
+
         return timer.StartTimer();
     }
 
