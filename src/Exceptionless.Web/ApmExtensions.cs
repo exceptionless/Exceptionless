@@ -23,6 +23,12 @@ using System.Text.RegularExpressions;
 namespace OpenTelemetry {
     public static class ApmExtensions {
         public static IHostBuilder AddApm(this IHostBuilder builder, ApmConfig config) {
+            // check if everything is disabled
+            if (!config.IsEnabled) {
+                Log.Information("APM is disabled");
+                return builder;
+            }
+
             string apiKey = config.ApiKey;
             if (!String.IsNullOrEmpty(apiKey) && apiKey.Length > 6)
                 apiKey = String.Concat(apiKey.AsSpan(0, 6), "***");
@@ -194,8 +200,11 @@ namespace OpenTelemetry {
             EnableRedis = enableRedis;
         }
 
-        public bool EnableTracing => _apmConfig.GetValue("EnableTracing", _apmConfig.GetValue("Enabled", false));
+        public bool IsEnabled => EnableLogs || EnableMetrics || EnableTracing;
+
         public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
+        public bool EnableMetrics => _apmConfig.GetValue("EnableMetrics", true);
+        public bool EnableTracing => _apmConfig.GetValue("EnableTracing", _apmConfig.GetValue("Enabled", false));
         public bool Insecure => _apmConfig.GetValue("Insecure", false);
         public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty);
         public string ServiceName { get; }
