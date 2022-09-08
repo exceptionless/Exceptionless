@@ -157,7 +157,7 @@ kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": fa
 
 kubectl get pods
 
-kubectl exec -it ex-prod-jobs-event-posts-7dc899875f-pdzvd --namespace ex-prod -- /bin/bash
+kubectl exec -it ex-prod-jobs-event-posts-6f69556577-fc52v --namespace ex-prod -- /bin/bash
 
 apt update
 apt install wget
@@ -174,4 +174,4 @@ cd tools
 ./dotnet-stack report -p 1
 exit
 
-kubectl cp ex-prod-jobs-event-posts-7dc899875f-pdzvd:/root/.dotnet/tools/20220907_144855_1.gcdump ./20220907_144855_1.gcdump
+kubectl cp ex-prod-jobs-event-posts-6f69556577-fc52v:/root/.dotnet/tools/20220908_191124_1.gcdump ./20220908_191124_1.gcdump --retries=50
