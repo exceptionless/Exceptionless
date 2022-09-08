@@ -80,6 +80,7 @@ public class Program {
             })
             .ConfigureServices((ctx, services) => {
                 services.AddSingleton(config);
+                services.AddSingleton(apmConfig);
                 services.AddAppOptions(options);
                 services.AddHttpContextAccessor();
             })
