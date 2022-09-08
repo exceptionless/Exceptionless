@@ -18,6 +18,7 @@ using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using System.Diagnostics;
+using OpenTelemetry;
 
 namespace Exceptionless.Web;
 
@@ -140,7 +141,9 @@ public class Startup {
 
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+        var apmConfig = app.ApplicationServices.GetRequiredService<ApmConfig>();
+        if (apmConfig.EnableMetrics)
+            app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         app.UseHealthChecks("/health", new HealthCheckOptions {
             Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
