@@ -90,7 +90,9 @@ public class Program {
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                             app.UseExceptionless(ExceptionlessClient.Default);
 
-                        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+                        if (apmConfig.EnableMetrics)
+                            app.UseOpenTelemetryPrometheusScrapingEndpoint();
+
                         app.UseHealthChecks("/health", new HealthCheckOptions {
                             Predicate = hcr => !String.IsNullOrEmpty(jobOptions.JobName) ? hcr.Tags.Contains(jobOptions.JobName) : hcr.Tags.Contains("AllJobs")
                         });
