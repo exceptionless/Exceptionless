@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
   - ReadWriteMany
-  storageClassName: managed-premium
+  storageClassName: managed-csi-premium
   resources:
     requests:
       storage: 5Gi

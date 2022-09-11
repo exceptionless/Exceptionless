@@ -40,7 +40,7 @@ spec:
         resources:
           requests:
             storage: 500Gi
-        storageClassName: managed-premium
+        storageClassName: managed-csi-premium
 
 ---
 apiVersion: kibana.k8s.elastic.co/v1

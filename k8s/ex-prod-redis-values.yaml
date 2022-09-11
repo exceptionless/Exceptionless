@@ -6,7 +6,7 @@ global:
 #   imageRegistry: myRegistryName
 #   imagePullSecrets:
 #     - myRegistryKeySecretName
-  storageClass: managed-premium
+  storageClass: managed-csi-premium
   redis: {}
 
 ## Bitnami Redis image version
