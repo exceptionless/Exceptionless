@@ -1,7 +1,7 @@
 appMode: Production
 appScope: prod
 api:
-  replicaCount: 5
+  replicaCount: 3
   defaultDomain: api.exceptionless.io
   domains:
     - api.exceptionless.io
@@ -14,7 +14,7 @@ app:
     - app.exceptionless.io
     - app.exceptionless.com
 collector:
-  replicaCount: 12
+  replicaCount: 5
   defaultDomain: collector.exceptionless.io
   domains:
     - collector.exceptionless.io
@@ -25,15 +25,15 @@ jobs:
   eventNotifications:
     replicaCount: 2
   eventPosts:
-    replicaCount: 20
+    replicaCount: 10
   eventUserDescriptions:
     replicaCount: 2
   mailMessage:
-    replicaCount: 4
+    replicaCount: 2
   webhooks:
-    replicaCount: 4
+    replicaCount: 2
   workitem:
-    replicaCount: 6
+    replicaCount: 4
 
 config:
   EX_EnableSnapshotJobs: "true"
