@@ -6,7 +6,7 @@ metadata:
 spec:
   version: 8.4.1
   nodeSets:
-  - name: default
+  - name: main
     count: 1
     config:
       # if not setting max_map_count in an init container, then use this setting
@@ -24,6 +24,7 @@ spec:
               cpu: 2
             limits:
               memory: 8Gi
+              cpu: 2
         # related to "node.store.allow_mmap: false" setting above
         initContainers:
         - name: sysctl
