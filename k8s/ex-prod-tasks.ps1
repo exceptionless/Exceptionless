@@ -82,6 +82,9 @@ kubectl apply -f https://download.elastic.co/downloads/eck/2.4.0/operator.yaml
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
+# upgrade monitor elasticsearch
+kubectl apply --namespace ex-prod -f ex-prod-monitor.yaml
+
 # upgrade exceptionless app to a new docker image tag
 $API_TAG="7.0.7"
 helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-prod --namespace ex-prod .\exceptionless
