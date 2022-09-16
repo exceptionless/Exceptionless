@@ -125,8 +125,8 @@ RUN chmod +x /app/docker-entrypoint.sh && \
 USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
-    chmod +x dotnet-install.sh  && \
-    ./dotnet-install.sh -c 7.0 --runtime aspnetcore && \
+    chmod +x dotnet-install.sh && \
+    ./dotnet-install.sh -c 7.0 --quality preview --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 80 9200
