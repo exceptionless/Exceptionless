@@ -69,9 +69,9 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             // TODO: Handle search expressions as well
             string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
-            bool altInvertRequested = false;
+            //bool altInvertRequested = false;
             if (filter.StartsWith("@!")) {
-                altInvertRequested = true;
+                //altInvertRequested = true;
                 filter = filter.Substring(2);
                 ctx.Source.FilterExpression(filter);
             }
