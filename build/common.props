@@ -10,7 +10,7 @@
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
     <Authors>Exceptionless</Authors>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <WarningsAsErrors>true</WarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>

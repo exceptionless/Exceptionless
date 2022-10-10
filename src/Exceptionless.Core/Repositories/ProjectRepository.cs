@@ -15,6 +15,23 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         : base(configuration.Projects, validator, options) {
     }
 
+    public async Task<Project> GetConfigAsync(string projectId) {
+        if (String.IsNullOrEmpty(projectId))
+            return null;
+
+        var configCacheValue = await Cache.GetAsync<Project>($"config:{projectId}");
+        if (configCacheValue.HasValue)
+            return configCacheValue.Value;
+
+        var project = await FindOneAsync(q => q.Id(projectId).Include(p => p.Configuration, p => p.OrganizationId));
+        if (project?.Document == null)
+            return null;
+
+        await Cache.AddAsync($"config:{projectId}", project.Document);
+
+        return project.Document;
+    }
+
     public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId) {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
@@ -58,8 +75,13 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         await InvalidateCacheAsync(projects).AnyContext();
     }
 
-    protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents, ChangeType? changeType = null) {
+    protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents, ChangeType? changeType = null) {
         var organizations = documents.Select(d => d.Value.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-        return Task.WhenAll(Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}")), base.InvalidateCacheAsync(documents, changeType));
+        await Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}"));
+
+        var configCacheKeys = documents.Select(d => $"config:{d.Value.Id}");
+        await Cache.RemoveAllAsync(configCacheKeys);
+
+        await base.InvalidateCacheAsync(documents, changeType);
     }
 }

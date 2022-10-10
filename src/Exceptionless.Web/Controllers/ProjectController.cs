@@ -229,8 +229,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (String.IsNullOrEmpty(id))
             id = User.GetProjectId();
 
-        var project = await GetModelAsync(id);
+        var project = await _repository.GetConfigAsync(id);
         if (project == null)
+            return NotFound();
+
+        if (_isOwnedByOrganization && !CanAccessOrganization(project.OrganizationId))
             return NotFound();
 
         if (v.HasValue && v == project.Configuration.Version)
