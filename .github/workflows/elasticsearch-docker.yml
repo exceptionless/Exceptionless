@@ -14,6 +14,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 7.0.*
+        include-prerelease: true
+    - name: Build Reason
+      env:
+        GITHUB_EVENT: ${{ toJson(github) }}
+      run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
+    - name: Build Version
+      run: |
+        dotnet tool install --global minver-cli --version 4.1.0
+        version=$(minver --tag-prefix v)
+        echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
+        echo "VERSION=$version" >> $GITHUB_ENV
+        echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
     - name: Set up QEMU
       id: qemu
       uses: docker/setup-qemu-action@v1
