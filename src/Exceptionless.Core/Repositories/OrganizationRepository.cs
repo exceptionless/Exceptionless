@@ -16,6 +16,12 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingPlans plans, AppOptions options)
         : base(configuration.Organizations, validator, options) {
         _plans = plans;
+        DocumentsChanging.AddSyncHandler(OnDocumentsChanging);
+    }
+
+    private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Organization> args) {
+        foreach (var organization in args.Documents)
+            organization.Value.TrimUsage();
     }
 
     public async Task<Organization> GetByInviteTokenAsync(string token) {
