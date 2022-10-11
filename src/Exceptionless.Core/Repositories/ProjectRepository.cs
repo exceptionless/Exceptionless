@@ -13,6 +13,12 @@ namespace Exceptionless.Core.Repositories;
 public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository {
     public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, AppOptions options)
         : base(configuration.Projects, validator, options) {
+        DocumentsChanging.AddSyncHandler(OnDocumentsChanging);
+    }
+
+    private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Project> args) {
+        foreach (var project in args.Documents)
+            project.Value.TrimUsage();
     }
 
     public async Task<Project> GetConfigAsync(string projectId) {
