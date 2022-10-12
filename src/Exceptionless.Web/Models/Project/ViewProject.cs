@@ -67,4 +67,16 @@ public static class ViewProjectExtensions {
 
         return usage;
     }
+
+    public static void TrimUsage(this ViewProject project) {
+        // keep 1 year of usage
+        project.Usage = project.Usage.Except(project.Usage
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .ToList();
+
+        // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
+        project.UsageHours = project.UsageHours.Except(project.UsageHours
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .ToList();
+    }
 }

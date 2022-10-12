@@ -676,6 +676,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
 
             viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus());
+            viewProject.TrimUsage();
 
             var currentUsage = viewProject.GetCurrentUsage(organization.GetMaxEventsPerMonthWithBonus());
             currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;

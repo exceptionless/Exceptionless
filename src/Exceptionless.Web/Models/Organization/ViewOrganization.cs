@@ -96,4 +96,16 @@ public static class ViewOrganizationExtensions {
         int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > SystemClock.UtcNow ? organization.BonusEventsPerMonth : 0;
         return organization.MaxEventsPerMonth + bonusEvents;
     }
+
+    public static void TrimUsage(this ViewOrganization organization) {
+        // keep 1 year of usage
+        organization.Usage = organization.Usage.Except(organization.Usage
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .ToList();
+
+        // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
+        organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
+            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .ToList();
+    }
 }
