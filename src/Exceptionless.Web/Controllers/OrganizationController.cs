@@ -731,6 +731,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
             // ensure 12 months of usage
             viewOrganization.EnsureUsage();
+            viewOrganization.TrimUsage();
 
             var currentUsage = viewOrganization.GetCurrentUsage();
             currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;

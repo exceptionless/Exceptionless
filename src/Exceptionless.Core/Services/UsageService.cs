@@ -255,6 +255,7 @@ public class UsageService {
         UsageInfoResponse usage;
         if (projectId == null) {
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            organization.TrimUsage();
 
             usage = new UsageInfoResponse {
                 IsThrottled = isThrottled?.Value ?? false,
@@ -263,6 +264,7 @@ public class UsageService {
             };
         } else {
             var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+            project.TrimUsage();
 
             usage = new UsageInfoResponse {
                 IsThrottled = isThrottled?.Value ?? false,
