@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="7.0.0-rc.2.22472.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0-rc.2.22472.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0-rc.2.22472.3" />
-    <PackageReference Include="MailKit" Version="3.4.1" />
+    <PackageReference Include="MailKit" Version="3.4.2" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />

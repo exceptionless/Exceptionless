@@ -13,7 +13,7 @@
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="4.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.0-rc.2.22476.2" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.0-rc.2.22476.2" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.4" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
     <PackageReference Include="OAuth2" Version="0.10.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
