@@ -12,6 +12,7 @@ public class ViewToken : IIdentity, IHaveDates {
     public DateTime? ExpiresUtc { get; set; }
     public string Notes { get; set; }
     public bool IsDisabled { get; set; }
+    public bool IsSuspended { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
 }
