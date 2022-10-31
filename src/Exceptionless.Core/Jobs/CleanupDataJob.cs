@@ -79,6 +79,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck {
     private async Task MarkTokensSuspended(JobContext context) {
         var suspendedOrgs = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.IsSuspended, true).OnlyIds(), o => o.SearchAfterPaging().PageLimit(1000));
         _logger.LogInformation("Found {SuspendedOrgCount} suspended orgs", suspendedOrgs.Total);
+        if (suspendedOrgs.Total == 0)
+            return;
 
         do {
             var updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrgs.Hits.Select(o => o.Id)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
