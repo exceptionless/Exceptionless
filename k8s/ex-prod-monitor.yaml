@@ -4,7 +4,7 @@ metadata:
   name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 8.4.3
+  version: 8.5.0
   nodeSets:
   - name: main
     count: 1
@@ -50,7 +50,7 @@ metadata:
   name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 8.4.3
+  version: 8.5.0
   count: 1
   elasticsearchRef:
     name: ex-prod-monitor
@@ -67,7 +67,7 @@ metadata:
   name: ex-prod-monitor
   namespace: ex-prod
 spec:
-  version: 8.4.3
+  version: 8.5.0
   count: 1
   elasticsearchRef:
     name: ex-prod-monitor
