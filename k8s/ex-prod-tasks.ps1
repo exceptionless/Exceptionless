@@ -15,6 +15,7 @@ $ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-monitor-
 Remove-Job $ELASTIC_JOB
 
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
+curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/allocation/explain?pretty
 curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*traces*?v=true&s=index"
 curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.09.01-000108"
 
@@ -61,7 +62,7 @@ helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset
 
 # upgrade dashboard
 # https://github.com/kubernetes/dashboard/releases
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
 
 # upgrade kubecost
 helm repo update
@@ -75,9 +76,9 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/2.4.0/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/2.4.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.4.0/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/2.5.0/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.5.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.5.0/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
