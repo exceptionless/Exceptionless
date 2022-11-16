@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0.0-rc.1
+FROM mcr.microsoft.com/dotnet/sdk:7.0.100
 
 # https://github.com/microsoft/vscode-dev-containers/tree/master/containers/dotnetcore
 # try using this as base: mcr.microsoft.com/vscode/devcontainers/dotnetcore
