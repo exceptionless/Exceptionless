@@ -13,14 +13,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CONTRIBUTING.md = CONTRIBUTING.md
 		docker-compose.yml = docker-compose.yml
 		Dockerfile = Dockerfile
-		build\docker\elasticsearch\Dockerfile = build\docker\elasticsearch\Dockerfile
-		.github\workflows\elasticsearch-docker.yml = .github\workflows\elasticsearch-docker.yml
 		exceptionless.http = exceptionless.http
 		global.json = global.json
 		LICENSE.txt = LICENSE.txt
 		.github\workflows\multi-arch-docker.yaml = .github\workflows\multi-arch-docker.yaml
 		NuGet.Config = NuGet.Config
-		otel-config.yml = otel-config.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
