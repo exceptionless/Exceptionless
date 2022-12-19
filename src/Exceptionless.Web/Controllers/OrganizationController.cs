@@ -12,7 +12,6 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
@@ -25,8 +24,6 @@ using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using InvoiceLineItem = Exceptionless.Web.Models.InvoiceLineItem;
-
-#pragma warning disable 1998
 
 namespace Exceptionless.Web.Controllers;
 
@@ -230,10 +227,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         };
 
 
-        var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         foreach (var line in stripeInvoice.Lines.Data) {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m };
-
+            
             if (line.Plan != null) {
                 string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name;
                 item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
@@ -242,8 +238,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 item.Description = line.Description;
             }
 
-            var periodStart = line.Period.Start >= 0 ? unixEpoch.AddSeconds(line.Period.Start) : stripeInvoice.PeriodStart;
-            var periodEnd = line.Period.End >= 0 ? unixEpoch.AddSeconds(line.Period.End) : stripeInvoice.PeriodEnd;
+            var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
+            var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
             item.Date = $"{periodStart.ToShortDateString()} - {periodEnd.ToShortDateString()}";
             invoice.Items.Add(item);
         }
@@ -252,7 +248,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (coupon != null) {
             if (coupon.AmountOff.HasValue) {
                 decimal discountAmount = coupon.AmountOff.GetValueOrDefault() / 100.0m;
-                string description = $"{coupon.Id} ({discountAmount.ToString("C")} off)";
+                string description = $"{coupon.Id} ({discountAmount:C} off)";
                 invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
             }
             else {
