@@ -21,7 +21,7 @@ using Microsoft.Extensions.Options;
 using System.Text.RegularExpressions;
 
 namespace OpenTelemetry {
-    public static class ApmExtensions {
+    public static partial class ApmExtensions {
         public static IHostBuilder AddApm(this IHostBuilder builder, ApmConfig config) {
             // check if everything is disabled
             if (!config.IsEnabled) {
@@ -47,7 +47,7 @@ namespace OpenTelemetry {
                 services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
                 if (config.EnableTracing)
-                    services.AddOpenTelemetryTracing(b => {
+                    services.AddOpenTelemetry().WithTracing(b => {
                         b.SetResourceBuilder(resourceBuilder);
 
                         b.AddAspNetCoreInstrumentation(o => {
@@ -61,8 +61,7 @@ namespace OpenTelemetry {
                             c.ParseAndFormatRequest = config.FullDetails;
                             c.Enrich = (activity, source, data) => {
                                 // truncate statements
-                                var dbStatement = activity.GetTagItem("db.statement") as string;
-                                if (dbStatement != null && dbStatement.Length > 10000) {
+                                if (activity.GetTagItem("db.statement") is string dbStatement && dbStatement.Length > 10000) {
                                     dbStatement = _stackIdListShortener.Replace(dbStatement, "$1...]");
                                     if (dbStatement.Length > 10000)
                                         dbStatement = dbStatement.Substring(0, 10000);
@@ -96,7 +95,7 @@ namespace OpenTelemetry {
                                 // filter out insignificant activities
                                 b.AddFilteredOtlpExporter(c => {
                                     if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                        c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+                                        c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
                                     if (!String.IsNullOrEmpty(config.Endpoint))
                                         c.Endpoint = new Uri(config.Endpoint);
@@ -108,7 +107,7 @@ namespace OpenTelemetry {
                             } else {
                                 b.AddOtlpExporter(c => {
                                     if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                        c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+                                        c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
                                     if (!String.IsNullOrEmpty(config.Endpoint))
                                         c.Endpoint = new Uri(config.Endpoint);
@@ -119,7 +118,7 @@ namespace OpenTelemetry {
                         }
                     });
 
-                services.AddOpenTelemetryMetrics(b => {
+                services.AddOpenTelemetry().WithMetrics(b => {
                     b.SetResourceBuilder(resourceBuilder);
 
                     b.AddHttpClientInstrumentation();
@@ -139,7 +138,7 @@ namespace OpenTelemetry {
                     if (!String.IsNullOrEmpty(config.Endpoint))
                         b.AddOtlpExporter((c, o) => {
                             if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+                                c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
                             // needed for newrelic compatibility until they support cumulative
                             o.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
@@ -165,7 +164,7 @@ namespace OpenTelemetry {
                         if (!String.IsNullOrEmpty(config.Endpoint)) {
                             o.AddOtlpExporter(c => {
                                 if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                    c.Protocol = Exporter.OtlpExportProtocol.HttpProtobuf;
+                                    c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
                                 if (!String.IsNullOrEmpty(config.Endpoint))
                                     c.Endpoint = new Uri(config.Endpoint);
@@ -180,7 +179,10 @@ namespace OpenTelemetry {
             return builder;
         }
 
-        private static readonly Regex _stackIdListShortener = new("(\"stack_id\": \\[)([^\\]]*)\\]", RegexOptions.Compiled);
+        private static readonly Regex _stackIdListShortener = StackIdListShortenerRegex();
+
+        [GeneratedRegex("(\"stack_id\": \\[)([^\\]]*)\\]", RegexOptions.Compiled)]
+        private static partial Regex StackIdListShortenerRegex();
     }
 
     public class ApmConfig {
