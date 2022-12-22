@@ -2,7 +2,7 @@ version: '2.2'
 
 services:
   elasticsearch:
-    image: exceptionless/elasticsearch:7.17.7
+    image: exceptionless/elasticsearch:7.17.8
     environment:
       discovery.type: single-node
       xpack.security.enabled: 'false'
@@ -16,7 +16,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.17.7
+    image: docker.elastic.co/kibana/kibana:7.17.8
     ports:
       - 5601:5601
 
