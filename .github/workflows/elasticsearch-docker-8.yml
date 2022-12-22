@@ -18,7 +18,7 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.0.*
-        include-prerelease: true
+        #dotnet-quality: preview
     - name: Build Reason
       env:
         GITHUB_EVENT: ${{ toJson(github) }}
