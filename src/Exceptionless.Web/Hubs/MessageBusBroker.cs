@@ -5,6 +5,7 @@ using Exceptionless.Core.Utility;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
+using Foundatio.Utility;
 
 namespace Exceptionless.Web.Hubs;
 
