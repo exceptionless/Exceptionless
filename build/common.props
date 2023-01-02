@@ -15,7 +15,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
-    <FoundatioVersion>10.5.0</FoundatioVersion>
+    <FoundatioVersion>10.6.0</FoundatioVersion>
   </PropertyGroup>
 
   <ItemGroup>
