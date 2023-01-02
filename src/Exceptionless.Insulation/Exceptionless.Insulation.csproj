@@ -3,7 +3,7 @@
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.1.0" />
-    <PackageReference Include="Foundatio.Aliyun" Version="10.5.0" />
+    <PackageReference Include="Foundatio.Aliyun" Version="10.6.0" />
     <PackageReference Include="Foundatio.AWS" Version="10.5.0" />
     <PackageReference Include="Foundatio.AzureStorage" Version="10.5.0" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="$(FoundatioVersion)" />
