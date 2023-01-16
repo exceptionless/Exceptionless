@@ -2,7 +2,7 @@ version: '2.2'
 
 services:
   setup:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
     user: "0"
@@ -53,7 +53,7 @@ services:
     depends_on:
       setup:
         condition: service_healthy
-    image: exceptionless/elasticsearch:8.5.3
+    image: exceptionless/elasticsearch:8.6.0
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
       - esdata:/usr/share/elasticsearch/data
@@ -98,7 +98,7 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-    image: docker.elastic.co/kibana/kibana:8.5.3
+    image: docker.elastic.co/kibana/kibana:8.6.0
     volumes:
       - certs:/usr/share/kibana/config/certs
     ports:
