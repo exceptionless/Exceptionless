@@ -19,7 +19,7 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.0.*
-        include-prerelease: false
+        dotnet-quality: ga
     - name: Build Reason
       env:
         GITHUB_EVENT: ${{ toJson(github) }}
@@ -77,7 +77,7 @@ jobs:
       if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
       uses: azure/setup-helm@v3
       with:
-        version: v3.9.0
+        version: v3.10.3
     - name: Deploy Changes to Development Environment
       if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
       run: |
