@@ -1,8 +1,8 @@
 ---
 ConnectionStrings:
-#  Redis: server="localhost,abortConnect=false"
+  Redis: server="localhost,abortConnect=false"
 #  Elasticsearch: server=https://elastic:elastic@localhost:9200
-#  Cache: provider=redis;
+  Cache: provider=redis;
 #  MessageBus: provider=redis;
 #  Queue: provider=redis;
   Storage: provider=folder;path=.\storage
@@ -24,8 +24,9 @@ Serilog:
     Default: Debug
 
 Apm:
-  #Endpoint: http://host.docker.internal:8200
+  Endpoint: http://localhost:4317
   Insecure: true
+  #SslThumbprint: CB16E1B3DFE42DF751F93A8575942DA89E10BC98
   EnableLogs: true
   EnableTracing: true
   FullDetails: true

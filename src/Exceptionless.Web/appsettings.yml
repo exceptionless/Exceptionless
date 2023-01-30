@@ -26,8 +26,8 @@ Serilog:
 
 Apm:
   ServiceName: exceptionless
-  EnableLogs: false
-  EnableTracing: false
+  EnableLogs: true
+  EnableTracing: true
   SampleRate: 1.0
   FullDetails: true
   Debug: false
