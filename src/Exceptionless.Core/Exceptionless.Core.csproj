@@ -32,7 +32,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Stripe.net" Version="41.6.0" />
-    <PackageReference Include="System.DirectoryServices" Version="7.0.0" />
+    <PackageReference Include="System.DirectoryServices" Version="7.0.1" />
     <PackageReference Include="UAParser" Version="3.1.47" />
 
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.17.3" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
