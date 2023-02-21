@@ -79,7 +79,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.6.1 AS exceptionless
+FROM exceptionless/elasticsearch:8.6.2 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -126,7 +126,63 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --version 7.0.2 --runtime aspnetcore && \
+    ./dotnet-install.sh --version 7.0.3 --runtime aspnetcore && \
+    rm dotnet-install.sh
+
+EXPOSE 80 9200
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# completely self-contained 7.x
+
+FROM exceptionless/elasticsearch:7.17.9 AS exceptionless7
+
+WORKDIR /app
+COPY --from=job-publish /app/src/Exceptionless.Job/out ./
+COPY --from=api-publish /app/src/Exceptionless.Web/out ./
+COPY --from=ui /app ./wwwroot
+COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
+COPY ./build/docker-entrypoint.sh ./
+COPY ./build/supervisord.conf /etc/
+
+USER root
+
+# install dotnet and supervisor
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        apt-transport-https \
+        supervisor \
+        dos2unix \
+        libc6 \
+        libgcc1 \
+        libgssapi-krb5-2 \
+        libicu66 \
+        libssl1.1 \
+        libstdc++6 \
+        zlib1g && \
+    dos2unix /app/docker-entrypoint.sh
+
+ENV discovery.type=single-node \
+    xpack.security.enabled=false \
+    ES_JAVA_OPTS="-Xms1g -Xmx1g" \
+    ASPNETCORE_URLS=http://+:80 \
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
+    EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
+    EX_RunJobsInProcess=true \
+    EX_Html5Mode=true
+
+RUN chmod +x /app/docker-entrypoint.sh && \
+    chown -R elasticsearch:elasticsearch /app && \
+    mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
+    chown -R elasticsearch:elasticsearch /var/log/supervisor
+
+USER elasticsearch
+
+RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+    chmod +x dotnet-install.sh && \
+    ./dotnet-install.sh --version 7.0.3 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 80 9200
