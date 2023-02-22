@@ -48,7 +48,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        var project = projects.Single();
+        Assert.Equal(2, projects.Count);
+        var project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         Assert.Equal(0, project.StackCount);
         Assert.Equal(0, project.EventCount);
 
@@ -63,7 +64,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        project = projects.Single();
+        project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         Assert.Equal(stacks.Count, project.StackCount);
         Assert.Equal(events.Count, project.EventCount);
 
@@ -86,7 +87,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        project = projects.Single();
+        project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         // Stacks and event counts include soft deleted (performance reasons)
         Assert.Equal(stacks.Count, project.StackCount);
         Assert.Equal(events.Count, project.EventCount);
@@ -101,7 +102,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase {
             .StatusCodeShouldBeOk()
         );
 
-        project = projects.Single();
+        project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         Assert.Equal(0, project.StackCount);
         Assert.Equal(0, project.EventCount);
     }

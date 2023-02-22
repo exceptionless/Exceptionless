@@ -296,6 +296,44 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
+    public async Task CanPostProjectEventAsync() {
+        var ev = new RandomEventGenerator().GeneratePersistent(false);
+        if (String.IsNullOrEmpty(ev.Message))
+            ev.Message = "Generated message.";
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events")
+            .Content(ev)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+        Assert.Equal(0, stats.Completed);
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync();
+        await RefreshDataAsync();
+
+        stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Completed);
+
+        var actual = await _eventRepository.GetAllAsync();
+        Assert.Single(actual.Documents);
+        Assert.Equal(ev.Message, actual.Documents.Single().Message);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("projects", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, "events")
+            .Content(ev)
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
     public async Task CanGetMostFrequentStackMode() {
         await CreateStacksAndEventsAsync();
 
