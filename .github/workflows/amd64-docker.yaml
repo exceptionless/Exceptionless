@@ -35,6 +35,8 @@ jobs:
     - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@v2
+      with:
+        platforms: linux/amd64
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v2
       with:
@@ -46,14 +48,6 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Publish CI Packages
-      run: |
-        echo "::remove-matcher owner=csc::"
-        # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
-          docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image-ci:$VERSION --tag exceptionless/$image-ci:latest --tag ghcr.io/exceptionless/exceptionless/$image:$VERSION --tag ghcr.io/exceptionless/exceptionless/$image:latest
-        done
-        docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless-ci:$VERSION-elasticsearch7 --tag exceptionless/exceptionless-ci:latest-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:$VERSION-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:latest-elasticsearch7
     - name: Publish Release Packages
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
