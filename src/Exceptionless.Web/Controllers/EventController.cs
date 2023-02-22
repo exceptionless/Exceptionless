@@ -679,13 +679,19 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
+        string claimProjectId = Request.GetProjectId();
+        if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId)) {
+            _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
+            return NotFound();
+        }
+
         if (String.IsNullOrEmpty(referenceId))
             return NotFound();
 
         if (description == null)
             return BadRequest("Description must be specified.");
 
-        projectId ??= Request.GetDefaultProjectId();
+        projectId ??= claimProjectId ?? Request.GetDefaultProjectId();
 
         // must have a project id
         if (String.IsNullOrEmpty(projectId))
@@ -887,11 +893,17 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     }
 
     private async Task<ActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, string userAgent = null, IQueryCollection parameters = null) {
+        string claimProjectId = Request.GetProjectId();
+        if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId)) {
+            _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
+            return NotFound();
+        }
+
         var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
         if (filteredParameters == null || filteredParameters.Count == 0)
             return Ok();
 
-        projectId ??= Request.GetDefaultProjectId();
+        projectId ??= claimProjectId ?? Request.GetDefaultProjectId();
 
         // must have a project id
         if (String.IsNullOrEmpty(projectId))
@@ -1133,10 +1145,16 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     }
 
     private async Task<IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string userAgent = null) {
+        string claimProjectId = Request.GetProjectId();
+        if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId)) {
+            _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
+            return NotFound();
+        }
+
         if (Request.ContentLength is <= 0)
             return StatusCode(StatusCodes.Status202Accepted);
 
-        projectId ??= Request.GetDefaultProjectId();
+        projectId ??= claimProjectId ?? Request.GetDefaultProjectId();
 
         // must have a project id
         if (String.IsNullOrEmpty(projectId))
