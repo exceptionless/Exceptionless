@@ -7,7 +7,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    #if: startsWith(github.ref, 'refs/tags/v')
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -47,9 +47,9 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Publish Release Packages
-      if: startsWith(github.ref, 'refs/tags/v')
+      #if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # tag and push docker image
         for image in {"api","job","app"}; do
-          docker buildx build --target $image --platform linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
+          docker buildx build --target $image --platform linux/arm64 --output "type=image,push=false" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
         done
