@@ -1,8 +1,9 @@
 name: Build release arm64 docker images
 on:
   push:
-    tags:        
-      - 'v*'
+
+env:
+  DOTNET_EnableWriteXorExecute: 0
 
 jobs:
   build:
