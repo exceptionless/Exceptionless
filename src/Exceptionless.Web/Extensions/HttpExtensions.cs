@@ -71,6 +71,11 @@ public static class HttpExtensions {
         return request?.GetAssociatedOrganizationIds().FirstOrDefault();
     }
 
+    public static string GetProjectId(this HttpRequest request) {
+        var principal = request.GetClaimsPrincipal();
+        return principal?.GetProjectId();
+    }
+
     public static string GetDefaultProjectId(this HttpRequest request) {
         // TODO: Use project id from url. E.G., /api/v{apiVersion:int=2}/projects/{projectId:objectid}/events
         //var path = request.Path.Value;

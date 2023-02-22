@@ -22,7 +22,9 @@ public class SampleDataService {
     public const string TEST_USER_PASSWORD = "tester";
     public const string TEST_ORG_ID = "537650f3b77efe23a47914f3";
     public const string TEST_PROJECT_ID = "537650f3b77efe23a47914f4";
+    public const string TEST_ROCKET_SHIP_PROJECT_ID = "537650f3b77efe23a47914f7";
     public const string TEST_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271nTest";
+    public const string TEST_ROCKET_SHIP_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271oTest";
     public const string TEST_USER_API_KEY = "5f8aT5j0M1SdWCMOiJKCrlDNHMI38LjCH4LTTest";
     public const string TEST_ORG_USER_EMAIL = "org@localhost";
     public const string TEST_ORG_USER_PASSWORD = "tester";
@@ -108,27 +110,46 @@ public class SampleDataService {
         _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
         organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache()).AnyContext();
 
-        var project = new Project {
+        var disintegratingPistolProject = new Project {
             Id = TEST_PROJECT_ID,
             Name = "Disintegrating Pistol",
             OrganizationId = organization.Id,
             NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
         };
-        project.Configuration.Settings.Add("IncludeConditionalData", "true");
-        project.AddDefaultNotificationSettings(user.Id);
-        project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache()).AnyContext();
+        disintegratingPistolProject.Configuration.Settings.Add("IncludeConditionalData", "true");
+        disintegratingPistolProject.AddDefaultNotificationSettings(user.Id);
+        
+        var rocketShipProject = new Project {
+            Id = TEST_ROCKET_SHIP_PROJECT_ID,
+            Name = "Rocket Ship",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+        };
+        
+        await _projectRepository.AddAsync(new List<Project> {
+            disintegratingPistolProject,
+            rocketShipProject
+        }, o => o.ImmediateConsistency().Cache()).AnyContext();
 
         await _tokenRepository.AddAsync(new List<Token>()
         {
                 new Token {
                     Id = TEST_API_KEY,
                     OrganizationId = organization.Id,
-                    ProjectId = project.Id,
+                    ProjectId = disintegratingPistolProject.Id,
                     CreatedUtc = SystemClock.UtcNow,
                     UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
-                    new Token {
+                new Token {
+                    Id = TEST_ROCKET_SHIP_API_KEY,
+                    OrganizationId = organization.Id,
+                    ProjectId = rocketShipProject.Id,
+                    CreatedUtc = SystemClock.UtcNow,
+                    UpdatedUtc = SystemClock.UtcNow,
+                    Type = TokenType.Access
+                },
+                new Token {
                     Id = TEST_USER_API_KEY,
                     UserId = user.Id,
                     CreatedUtc = SystemClock.UtcNow,
@@ -139,7 +160,7 @@ public class SampleDataService {
 
         user.OrganizationIds.Add(organization.Id);
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache()).AnyContext();
-        _logger.LogDebug("Created Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
+        _logger.LogDebug("Created Organization {OrganizationName} and Projects {DisintegratingPistolProjectName}, {RocketShipProjectName}", organization.Name, disintegratingPistolProject.Name, rocketShipProject.Name);
     }
 
     public async Task CreateFreeOrganizationAndProjectAsync() {
