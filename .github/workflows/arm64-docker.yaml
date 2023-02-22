@@ -50,6 +50,6 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
+        for image in {"api","job","app"}; do
           docker buildx build --target $image --platform linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
         done

@@ -1,4 +1,4 @@
-name: Build amd64 docker images
+name: Build release amd64 docker images
 on:
   push:
     tags:        
