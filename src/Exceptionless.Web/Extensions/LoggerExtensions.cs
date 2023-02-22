@@ -3,13 +3,6 @@
 namespace Exceptionless.Web.Extensions;
 
 internal static class LoggerExtensions {
-
-    private static readonly Action<ILogger, string?, string, Exception?> _projectRouteDoesNotMatch =
-        LoggerMessage.Define<string?, string>(
-            LogLevel.Information,
-            new EventId(0, nameof(ProjectRouteDoesNotMatch)),
-            "Project {RequestProjectId} from request doesn't match project route id {RouteProjectId}");
-
     private static readonly Action<ILogger, int, string, Exception?> _removingZapierUrls =
         LoggerMessage.Define<int, string>(
             LogLevel.Information,
@@ -111,9 +104,6 @@ internal static class LoggerExtensions {
             LogLevel.Information,
             new EventId(17, nameof(RemovedUserTokens)),
             "Removed user {TokenCount} tokens for {EmailAddress}");
-
-    public static void ProjectRouteDoesNotMatch(this ILogger logger, string? requestProjectId, string targetUrl)
-        => _projectRouteDoesNotMatch(logger, requestProjectId, targetUrl, null);
 
     public static void RemovingZapierUrls(this ILogger logger, int count, string targetUrl)
         => _removingZapierUrls(logger, count, targetUrl, null);

@@ -138,11 +138,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null) {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(project.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -413,11 +413,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(project.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -501,11 +501,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(project.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -561,11 +561,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(project.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -649,11 +649,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null) {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(project.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -685,19 +685,18 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (description == null)
             return BadRequest("Description must be specified.");
 
-        if (projectId == null)
-            projectId = Request.GetDefaultProjectId();
+        projectId ??= Request.GetDefaultProjectId();
 
         // must have a project id
         if (String.IsNullOrEmpty(projectId))
-            return BadRequest("No project id specified and no default project was found.");
+            return BadRequest("No project id specified and no default project was found");
 
         var result = await _userDescriptionValidator.ValidateAsync(description);
         if (!result.IsValid)
             return BadRequest(result.Errors.ToErrorMessage());
 
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         // Set the project for the configuration response filter.
@@ -892,25 +891,18 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (filteredParameters == null || filteredParameters.Count == 0)
             return Ok();
 
-        if (projectId == null)
-            projectId = Request.GetDefaultProjectId();
+        projectId ??= Request.GetDefaultProjectId();
 
         // must have a project id
         if (String.IsNullOrEmpty(projectId))
-            return BadRequest("No project id specified and no default project was found.");
-
-        var project = Request.GetProject();
-        if (!String.Equals(project?.Id, projectId)) {
-            _logger.ProjectRouteDoesNotMatch(project?.Id, projectId);
-
-            project = await GetProjectAsync(projectId);
-
-            // Set the project for the configuration response filter.
-            Request.SetProject(project);
-        }
-
-        if (project == null)
+            return BadRequest("No project id specified and no default project was found");
+        
+        var project = await GetProjectAsync(projectId);
+        if (project is null)
             return NotFound();
+
+        // Set the project for the configuration response filter.
+        Request.SetProject(project);
 
         string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
         var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
@@ -1141,28 +1133,21 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     }
 
     private async Task<IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string userAgent = null) {
-        if (Request.ContentLength.HasValue && Request.ContentLength.Value <= 0)
+        if (Request.ContentLength is <= 0)
             return StatusCode(StatusCodes.Status202Accepted);
 
-        if (projectId == null)
-            projectId = Request.GetDefaultProjectId();
+        projectId ??= Request.GetDefaultProjectId();
 
         // must have a project id
         if (String.IsNullOrEmpty(projectId))
-            return BadRequest("No project id specified and no default project was found.");
+            return BadRequest("No project id specified and no default project was found");
 
-        var project = Request.GetProject();
-        if (!String.Equals(project?.Id, projectId)) {
-            _logger.ProjectRouteDoesNotMatch(project?.Id, projectId);
-
-            project = await GetProjectAsync(projectId);
-
-            // Set the project for the configuration response filter.
-            Request.SetProject(project);
-        }
-
-        if (project == null)
+        var project = await GetProjectAsync(projectId);
+        if (project is null)
             return NotFound();
+
+        // Set the project for the configuration response filter.
+        Request.SetProject(project);
 
         try {
             string mediaType = String.Empty;
