@@ -1,14 +1,12 @@
 name: Build release arm64 docker images
 on:
-  workflow_run:
-    workflows: [ Build ]
-    types:
-    - completed
+  push:
+    tags:        
+      - 'v*'
 
 jobs:
   build:
     runs-on: buildjet-2vcpu-ubuntu-2204-arm
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} # && startsWith(github.event.workflow_run.head_branch, 'v') }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -50,16 +48,4 @@ jobs:
         # tag and push docker image
         for image in {"api","job","app","exceptionless"}; do
           docker buildx build --target $image --platform linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION-arm64 --tag exceptionless/$image:latest-arm64
-        done
-    - name: Create multi-arch docker images
-      run: |
-        # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
-          docker pull exceptionless/$image:$VERSION
-          docker manifest create exceptionless/$image:$VERSION \
-            --amend exceptionless/$image:$VERSION \
-            --amend exceptionless/$image:$VERSION-arm64
-
-          docker manifest push exceptionless/$image:$VERSION
-          docker manifest push --purge exceptionless/$image:latest
         done
