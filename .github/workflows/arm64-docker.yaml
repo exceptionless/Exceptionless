@@ -1,6 +1,5 @@
 name: Build release arm64 docker images
-on:
-  push:
+on: [ push ]
 
 env:
   DOTNET_EnableWriteXorExecute: 0
