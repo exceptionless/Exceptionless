@@ -24,11 +24,12 @@ Serilog:
     Default: Debug
 
 Apm:
-  Endpoint: http://localhost:4317
+  #Endpoint: http://localhost:4317
   Insecure: true
   #SslThumbprint: CB16E1B3DFE42DF751F93A8575942DA89E10BC98
-  EnableLogs: true
-  EnableTracing: true
+  EnableLogs: false
+  EnableTracing: false
+  EnableMetrics: true
   FullDetails: true
-  Debug: true
+  Debug: false
   Console: false
