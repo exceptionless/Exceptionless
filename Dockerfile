@@ -55,7 +55,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
-COPY ./build/update-config.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
@@ -76,7 +76,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS app
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
-COPY ./build/update-config.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
