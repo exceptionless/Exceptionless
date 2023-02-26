@@ -1,6 +1,3 @@
-ARG UI_VERSION="ui:3.1.10"
-FROM exceptionless/${UI_VERSION} AS ui
-
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /app
 
@@ -47,6 +44,9 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
+RUN apt-get update -yq
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -yq nodejs && npm install -g bower
+
 RUN dotnet publish -c Release -o out
 
 # api
@@ -54,7 +54,20 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
+COPY ./build/app-docker-entrypoint.sh ./
+COPY ./build/update-config.sh ./
+
+ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
+    EX_RunJobsInProcess=true \
+    ASPNETCORE_URLS=http://+:80 \
+    EX_Html5Mode=true
+
+RUN chmod +x /app/app-docker-entrypoint.sh
+RUN chmod +x /app/update-config.sh
+
+EXPOSE 80
+
+ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # app
 
@@ -62,9 +75,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS app
 
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/app-docker-entrypoint.sh ./
+COPY ./build/update-config.sh ./
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
@@ -84,8 +96,6 @@ FROM exceptionless/elasticsearch:8.6.2 AS exceptionless
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 
@@ -140,8 +150,6 @@ FROM exceptionless/elasticsearch:7.17.9 AS exceptionless7
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/supervisord.conf /etc/
 

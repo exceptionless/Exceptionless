@@ -1,13 +1,13 @@
 ---
 ConnectionStrings:
-  Redis: server="localhost,abortConnect=false"
+#  Redis: server="localhost,abortConnect=false"
 #  Elasticsearch: server=https://elastic:elastic@localhost:9200
-  Cache: provider=redis;
+#  Cache: provider=redis;
 #  MessageBus: provider=redis;
 #  Queue: provider=redis;
   Storage: provider=folder;path=.\storage
 #  LDAP: ''
-  Email: smtp://localhost:1025
+#  Email: smtp://localhost:1025
 
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'

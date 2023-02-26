@@ -1,0 +1,41 @@
+<form name="vm.projectForm" role="form" class="form-validation">
+  <div class="form-group">
+    <label for="name">{{::'Project Name' | translate}}</label>
+    <div ng-class="{'input-group': !!vm.projectForm.$pending }">
+      <input id="name" name="name" type="text" class="form-control" placeholder="{{::'Project Name' | translate}}"
+             ng-model="vm.project.name"
+             ng-model-options="{ debounce: 500 }"
+             ng-change="vm.save(vm.projectForm.$valid)"
+             project-name-available-validator
+             organization-id="vm.project.organization_id"
+             ng-required="true"
+             autofocus />
+
+        <span class="input-group-addon" ng-if="vm.projectForm.$pending">
+          <i class="fa fa-fw fa-spinner fa-spin"></i>
+        </span>
+    </div>
+
+    <div class="error" ng-messages="vm.projectForm.name.$error" ng-if="vm.projectForm.$submitted || vm.projectForm.name.$touched">
+      <small ng-message="required">{{::'Project Name is required.' | translate}}</small>
+      <small ng-message="unique">{{::'A project with this name already exists.' | translate}}</small>
+    </div>
+  </div>
+
+  <div class="form-group m-b-none">
+    <label>{{::'Organization Name' | translate}}</label>
+    <input type="text" class="form-control" placeholder="{{::'Organization Name' | translate}}" ng-model="vm.project.organization_name" readonly />
+  </div>
+
+  <div ng-show="vm.hasMonthlyUsage">
+    <h4 style="margin-top: 20px;">{{::'Monthly Usage' | translate}}</h4>
+    <p>
+      You are currently on the <a ng-if="vm.canChangePlan" ng-click="vm.changePlan()"><strong>{{vm.organization.plan_name}}</strong> plan</a> with
+      <b ng-class="{'text-warning': vm.remainingEventLimit === 0}">{{vm.remainingEventLimit | number}}</b> events remaining until this billing period's limit is reset on <b>{{vm.next_billing_date | date: 'longDate'}}</b> (<timeago date="vm.next_billing_date"></timeago>).
+      <a ng-if="vm.canChangePlan" ng-click="vm.changePlan()">{{::'Click here to change your plan or billing information.' | translate}}</a>
+    </p>
+    <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
+    <br class="clearfix" />
+    <h6><em>{{::'The usage data above is refreshed periodically and may not reflect current totals.' | translate}}</em></h6>
+  </div>
+</form>

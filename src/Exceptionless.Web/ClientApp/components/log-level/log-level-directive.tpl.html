@@ -1,0 +1,23 @@
+<div class="btn-toolbar hidden-print" style="margin-right: 10px" role="toolbar" aria-label="Log Level" refresh-on="ProjectChanged" refresh-action="vm.get()" refresh-if="vm.canRefresh(data)" refresh-throttle="10000">
+  <div class="btn-group btn-group-sm" role="group">
+    <button type="button" role="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+      <span>{{::'Log Level' | translate}}:
+        <span ng-if="vm.loading">{{'Loading...' | translate}}</span>
+        <span ng-if="!vm.loading">{{(vm.level || vm.defaultLevel) | translate}}</span>
+      </span>
+      <span ng-if="!vm.level && !vm.loading">({{::'Default' | translate}})</span>
+      <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-right" role="menu">
+      <li ng-class="{'active': vm.level == 'trace'}"><a ng-click="vm.setLogLevel('trace')">{{::'trace' | translate}}</a></li>
+      <li ng-class="{'active': vm.level == 'debug'}"><a ng-click="vm.setLogLevel('debug')">{{::'debug' | translate}}</a></li>
+      <li ng-class="{'active': vm.level == 'info'}"><a ng-click="vm.setLogLevel('info')">{{::'info' | translate}}</a></li>
+      <li ng-class="{'active': vm.level == 'warn'}"><a ng-click="vm.setLogLevel('warn')">{{::'warn' | translate}}</a></li>
+      <li ng-class="{'active': vm.level == 'error'}"><a ng-click="vm.setLogLevel('error')">{{::'error' | translate}}</a></li>
+      <li ng-class="{'active': vm.level == 'fatal'}"><a ng-click="vm.setLogLevel('fatal')">{{::'fatal' | translate}}</a></li>
+      <li ng-class="{'active': vm.level == 'off'}"><a ng-click="vm.setLogLevel('off')">{{::'off' | translate}}</a></li>
+      <li ng-if="vm.level && vm.source != '*' && !vm.loading" role="separator" class="divider"></li>
+      <li ng-if="vm.level && vm.source != '*' && !vm.loading"><a ng-click="vm.setDefaultLogLevel()">{{::'Default' | translate}} ({{vm.defaultLevel | translate}})</a></li>
+    </ul>
+  </div>
+</div>
