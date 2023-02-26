@@ -1,0 +1,21 @@
+<form name="addDateRangeForm" role="form" class="form-validation">
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title">{{::'Select Date Range' | translate}}</h4>
+  </div>
+
+  <div class="modal-body">
+    <date-range-picker range="vm.range"
+                       min-date="vm.minDate"
+                       max-date="vm.maxDate"
+                       time-picker="true"
+                       time-picker-seconds="true"
+                       time-picker12-hour="true">
+    </date-range-picker>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
+    <input type="submit" role="button" class="btn btn-primary" ng-click="vm.save()" value="{{::'Apply' | translate}}" />
+  </div>
+</form>

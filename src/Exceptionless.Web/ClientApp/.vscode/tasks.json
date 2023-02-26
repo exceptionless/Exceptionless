@@ -1,0 +1,67 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build",
+            "dependsOn": [
+                "npm install",
+                "bower install"
+            ],
+            "command": "npx",
+            "args": [
+                "grunt",
+                "build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$lessCompile",
+                "$jshint"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "test",
+            "dependsOn": "build",
+            "command": "npx",
+            "args": [
+                "grunt",
+                "test"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "serve",
+            "command": "npx",
+            "args": [
+                "grunt",
+                "serve"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "label": "npm install",
+            "script": "install",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "bower install",
+            "dependsOn": "npm install",
+            "command": "npx",
+            "args": [
+                "bower",
+                "install"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

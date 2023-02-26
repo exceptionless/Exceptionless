@@ -1,0 +1,7 @@
+<div>
+  <div refresh-on="UserChanged" refresh-action="vm.getUser(true)" refresh-debounce="10000" refresh-stopping="vm.shutdown()"></div>
+  <div refresh-on="OrganizationChanged" refresh-action="vm.getOrganizations(true)" refresh-debounce="10000"></div>
+  <div refresh-on="ProjectChanged" refresh-action="vm.getProjects(true)" refresh-debounce="10000"></div>
+  <div refresh-on="filterChanged" refresh-action="vm.updateIntercom(true)" refresh-debounce="10000"></div>
+  <div refresh-on="$stateChangeSuccess" refresh-action="vm.hide()" refresh-debounce="1000"></div>
+</div>

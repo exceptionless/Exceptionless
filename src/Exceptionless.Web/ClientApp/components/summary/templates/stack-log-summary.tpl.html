@@ -1,0 +1,10 @@
+<span ng-if="showBadge" class="label label-default {{badgeClass}}">{{::source.status | translate}}</span>
+
+<span ng-if="showType">
+  <strong>{{::'Log source' | translate}}</strong>:&nbsp;
+</span>
+
+<a ui-sref="app.stack({ id: source.id })" truncate lines="2">
+  <abbr ng-if="source.data.Source" title="{{::source.data.Source}}">{{::source.data.SourceShortName}}</abbr>
+  <span ng-if="!source.data.Source">{{::source.title}}</span>
+</a>

@@ -1,0 +1,66 @@
+<h3 class="visible-print">{{::'Request' | translate}}</h3>
+<table class="table table-striped table-bordered table-fixed table-key-value b-t">
+  <tr>
+    <th>{{::'Occurred On' | translate}}</th>
+    <td>{{::'DateTime' | translate:vm.event}} (<timeago date="vm.event.date"></timeago>)</td>
+  </tr>
+  <tr ng-if="vm.request.http_method">
+    <th>{{::'HTTP Method' | translate}}</th>
+    <td>{{::vm.request.http_method}}</td>
+  </tr>
+  <tr ng-if="vm.requestUrl">
+    <th>{{::'URL' | translate}}</th>
+    <td><a ng-href="{{::vm.requestUrl}}" target="_blank" truncate>{{::vm.requestUrl}}</a></td>
+  </tr>
+  <tr>
+    <th>{{::'Referrer' | translate}}</th>
+    <td>
+      <span ng-if="vm.request.referrer">
+          <a ng-href="{{::vm.request.referrer}}" target="_blank" truncate>{{::vm.request.referrer}}</a>
+      </span>
+      <em ng-if="!vm.request.referrer">None</em>
+    </td>
+  </tr>
+  <tr ng-if="vm.request.client_ip_address">
+    <th>{{::'Client IP' | translate}}</th>
+    <td>{{::vm.request.client_ip_address}}</td>
+  </tr>
+  <tr ng-if="vm.request.user_agent">
+    <th>{{::'User Agent' | translate}}</th>
+    <td><span truncate lines="2">{{::vm.request.user_agent}}</span></td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.request.data['@device']">
+    <th>{{::'Device' | translate}}</th>
+    <td>{{::vm.request.data['@device']}}</td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.request.data['@browser']">
+    <th>{{::'Browser' | translate}}</th>
+    <td>{{::vm.request.data['@browser']}} <abbr ng-if="vm.request.data['@browser_major_version']" title="{{::vm.request.data['@browser_version']}}">{{::vm.request.data['@browser_major_version']}}</abbr></td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.request.data['@os']">
+    <th>{{::'Browser OS' | translate}}</th>
+    <td>{{::vm.request.data['@os']}} <abbr ng-if="vm.request.data['@os_major_version']" title="{{::vm.request.data['@os_version']}}">{{::vm.request.data['@os_major_version']}}</abbr></td>
+  </tr>
+</table>
+
+<extended-data-item can-promote="false" title="'Post Data'" data="vm.request.post_data"></extended-data-item>
+
+<div ng-if="vm.hasCookies">
+  <h4>{{::'Cookie Values' | translate}}</h4>
+  <table class="table table-striped table-bordered table-fixed table-key-value b-t">
+    <thead>
+    <tr>
+      <th>{{::'Name' | translate}}</th>
+      <th>{{::'Value' | translate}}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="(key, value) in vm.request.cookies track by key">
+      <td>{{::key}}</td>
+      <td><span truncate lines="3">{{::value}}</span></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<extended-data-item can-promote="false" title="'Additional Data'" data="vm.request.data" excluded-keys="vm.excludedAdditionalData"></extended-data-item>

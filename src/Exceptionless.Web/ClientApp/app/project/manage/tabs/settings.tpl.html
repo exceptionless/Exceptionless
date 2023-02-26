@@ -1,0 +1,56 @@
+<h4>{{::'Default' | translate}} {{::'Log Level' | translate}}</h4>
+<p ng-bind-html="'Notice_Default_Log_Level' | translate"></p>
+<log-level project-id="vm.project.id" source="'*'"></log-level>
+
+<h4>{{::'Data Exclusions' | translate}}</h4>
+<p ng-bind-html="'Notice_Data_Exclusions' | translate"></p>
+<input type="text" class="form-control" placeholder="{{::'Example:' | translate}} *Password*, CreditCard*, SSN"
+       ng-model="vm.data_exclusions"
+       ng-model-options="{ debounce: 500 }"
+       ng-change="vm.saveDataExclusion()"/>
+
+<div class="checkbox">
+  <label class="checks">
+    <input type="checkbox"
+           ng-model="vm.exclude_private_information"
+           ng-model-options="{ debounce: 500 }"
+           ng-change="vm.saveIncludePrivateInformation()">
+    <i></i>
+    {{::'Automatically remove user identifiable information from events (e.g., Machine Name, User Information, IP Addresses and more...).' | translate}}
+  </label>
+</div>
+
+<h4>{{::'Error Stacking' | translate}}</h4>
+<h5>{{::'User Namespaces' | translate}}</h5>
+<p ng-bind-html="'Notice_Error_Stacking' | translate">
+</p>
+<input type="text" class="form-control" placeholder="{{::'Example:' | translate}} Contoso"
+       ng-model="vm.user_namespaces"
+       ng-model-options="{ debounce: 500 }"
+       ng-change="vm.saveUserNamespaces()"/>
+
+<h5>{{::'Common Methods' | translate}}</h5>
+<p ng-bind-html="'Notice_Common_Methods' | translate">
+</p>
+<input type="text" class="form-control" placeholder="{{::'Example:' | translate}} Assert, Writeline"
+       ng-model="vm.common_methods"
+       ng-model-options="{ debounce: 500 }"
+       ng-change="vm.saveCommonMethods()"/>
+
+<h4>{{::'Spam Detection' | translate}}</h4>
+<p ng-bind-html="'Notice_Spam_Detection' | translate"></p>
+<input type="text" class="form-control" placeholder="{{::'Example:' | translate}} SpamBot"
+       ng-model="vm.user_agents"
+       ng-model-options="{ debounce: 500 }"
+       ng-change="vm.saveUserAgents()"/>
+
+<div class="checkbox">
+  <label class="checks">
+    <input type="checkbox"
+           ng-model="vm.project.delete_bot_data_enabled"
+           ng-model-options="{ debounce: 500 }"
+           ng-change="vm.saveDeleteBotDataEnabled()">
+    <i></i>
+    {{::'Reduce noise by automatically hiding high volumes of events coming from a single client IP address.' | translate}}
+  </label>
+</div>

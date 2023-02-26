@@ -1,0 +1,84 @@
+@import "../bower_components/bootstrap/less/variables.less";
+
+/* Variables */
+
+@brand-primary:         #5E9A00;
+@brand-info:            #6EBC1A;
+@brand-success:         #6EBC1A;
+@brand-warning:         #FA810B;
+@brand-danger:          #BB423F;
+@brand-light:           #f7f7f7;
+@brand-dark:            #545454;
+@brand-black:           #2c2c2c;
+
+@body-bg:               lighten(@brand-light, 1%);
+@text-color: #2f2f2f;
+@text-muted:            lighten(@text-color, 25%);
+
+@font-family-sans-serif:  "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+@font-family-serif:       Georgia, "Times New Roman", Times, serif;
+@font-family-base:        @font-family-sans-serif;
+
+@font-size-base:          14px;
+@font-size-lg:            ceil(@font-size-base * 1.23); // ~20px
+@font-size-md:            ceil(@font-size-base * 1.14); // ~16px
+@font-size-sm:            ceil(@font-size-base * 0.92); // ~13px
+@font-size-xs:            ceil(@font-size-base * 0.85); // ~12px
+
+@link-color:              darken(@text-color, 15%);
+@link-hover-color:        #578f01;
+
+@border-radius-base:      5px;
+@border-color:		  	    #d5d5d5;
+
+@line-height-base:        1.42857143; // 20/14
+@line-height-computed:    floor(@font-size-base * @line-height-base); // ~20px
+@icon-css-prefix:         i;
+
+@btn-default-color:              #999999;
+@btn-border-radius:              @border-radius-base;
+
+@input-border:                   darken(@border-color, 5%);
+@input-border-focus:             @brand-primary;
+@input-border-radius:            @border-radius-base;
+
+@panel-bg:                    	 #fff;
+@panel-border:                	 @border-color;
+@panel-heading-border:           lighten(@border-color, 5%);
+@panel-list-group-border:        lighten(@border-color, 5%);
+@panel-border-radius:         	 @border-radius-base;
+@panel-heading-bg:            	 #F0F0F0;
+@panel-footer-bg:                @panel-heading-bg;
+
+@nav-bg:                         lighten(@brand-light, 3%);
+@badge-bg:                       darken(@brand-light, 10%);
+
+@list-group-item-border:         lighten(@border-color, 3%);
+@list-group-item-hover:          lighten(@brand-light, 3%);
+@list-group-select-color:        lighten(@brand-light, 2%);
+@list-group-active-color:        @brand-primary;
+
+@table-border-color:             lighten(@border-color, 4%);
+@table-striped-color:            #f9f9f9;
+
+@arrow-width:         			 8px;
+@arrow-color:         			 #fff;
+@arrow-outer-width:   			 (@arrow-width + 1);
+@arrow-outer-color:   			 rgba(0,0,0,.1);
+
+@switch-width:                   35px;
+@switch-height:                  20px;
+@switch-md-width:                40px;
+@switch-md-height:               24px;
+@switch-lg-width:                50px;
+@switch-lg-height:               30px;
+
+@app-aside-width:                200px;
+@app-aside-nav-height:           40px;
+@app-aside-folded-width:         60px;
+@app-aside-folded-nav-height:    50px;
+
+@app-header-height:              50px;
+@app-header-md-height:		    	 60px;
+
+@scroll-bar-width:               17px;

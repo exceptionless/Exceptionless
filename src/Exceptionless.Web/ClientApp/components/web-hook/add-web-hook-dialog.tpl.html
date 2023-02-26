@@ -1,0 +1,44 @@
+<form name="vm.addWebHookForm" role="form" class="form-validation" autocomplete="on">
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title"><i class="fa fa-flash fa-fw"></i> {{::'Create New Web Hook' | translate}}</h4>
+  </div>
+
+  <div class="modal-body">
+    <div class="form-group">
+      <label for="url">{{::'URL' | translate}}</label>
+      <input id="url" name="url" type="url" class="form-control input-lg" placeholder="{{::'Enter the URL to call' | translate}}"
+             ng-model="vm.data.url"
+             ng-required="true"
+             autofocus />
+
+      <div class="error" ng-messages="vm.addWebHookForm.url.$error" ng-if="vm.addWebHookForm.$submitted || vm.addWebHookForm.url.$touched">
+        <small ng-message="required">{{::'URL is required.' | translate}}</small>
+        <small ng-message="url">{{::'URL is required.' | translate}}</small>
+      </div>
+    </div>
+
+    <p>{{::'Control when the web hook is called by choosing the event types below.' | translate}}</p>
+
+    <div class="form-group">
+      <div class="checkbox checkbox-inline" ng-repeat="type in vm.eventTypes">
+        <label class="checks">
+          <input name="types" type="checkbox"
+                 checklist-model="vm.data.event_types"
+                 checklist-value="type.key"
+                 ng-required="!vm.hasEventTypeSelection()" />
+          <i></i>
+          <abbr title="{{::type.description}}">{{::type.name}}</abbr>
+        </label>
+      </div>
+      <div class="error" ng-messages="vm.addWebHookForm.types.$error" ng-if="vm.addWebHookForm.$submitted || vm.addWebHookForm.types.$touched">
+        <small ng-message="required">{{::'Please choose one or more event types.' | translate}}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
+    <input type="submit" role="button" class="btn btn-primary" ng-click="vm.save(vm.addWebHookForm.$valid)" value="{{::'Create Web Hook' | translate}}" />
+  </div>
+</form>

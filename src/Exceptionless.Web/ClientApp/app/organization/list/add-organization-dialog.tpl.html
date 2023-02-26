@@ -1,0 +1,34 @@
+<form name="vm.addOrganizationForm" role="form" class="form-validation">
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title">{{::'New Organization' | translate}}</h4>
+  </div>
+
+  <div class="modal-body">
+    <div class="form-group">
+      <label for="name">{{::'Organization Name' | translate}}</label>
+      <div ng-class="{'input-group': !!vm.addOrganizationForm.$pending }">
+        <input id="name" name="name" type="text" class="form-control input-lg" placeholder="{{::'Organization Name' | translate}}"
+               ng-model="vm.data.name"
+               ng-model-options="{ debounce: 500 }"
+               organization-name-available-validator
+               ng-required="true"
+               autofocus />
+
+        <span class="input-group-addon" ng-if="vm.addOrganizationForm.$pending">
+          <i class="fa fa-fw fa-spinner fa-spin"></i>
+        </span>
+      </div>
+
+      <div class="error" ng-messages="vm.addOrganizationForm.name.$error" ng-if="vm.addOrganizationForm.$submitted || vm.addOrganizationForm.name.$touched">
+        <small ng-message="required">{{::'Organization Name is required.' | translate}}</small>
+        <small ng-message="unique">{{::'A organizations with this name already exists.' | translate}}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
+    <input type="submit" role="button" class="btn btn-primary" ng-click="vm.save()" value="{{::'Save' | translate}}" />
+  </div>
+</form>
