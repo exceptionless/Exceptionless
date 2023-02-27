@@ -63,7 +63,7 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_Html5Mode=true
 
 RUN chmod +x /app/app-docker-entrypoint.sh
-RUN chmod +x /app/update-config.sh
+RUN chmod +x /usr/local/bin/update-config
 
 EXPOSE 80
 
@@ -84,6 +84,7 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_Html5Mode=true
 
 RUN chmod +x /app/app-docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/update-config
 
 EXPOSE 80
 
