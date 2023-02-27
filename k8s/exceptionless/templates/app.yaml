@@ -30,13 +30,25 @@ spec:
         - name: {{ template "exceptionless.name" . }}-app
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
           resources:
             requests:
-              memory: 50Mi
-              cpu: 50m
-            limits:
-              memory: 100Mi
+              memory: 500Mi
               cpu: 100m
+            limits:
+              memory: 1200Mi
+              cpu: 500m
           ports:
             - name: http
               containerPort: 80
@@ -44,6 +56,18 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ template "exceptionless.fullname" . }}-config
+          env:
+            - name: RunJobsInProcess
+              value: 'false'
+{{- if (empty .Values.storage.connectionString) }}
+          volumeMounts:
+            - mountPath: "/app/storage"
+              name: storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
 
 ---
 apiVersion: v1
@@ -79,6 +103,8 @@ metadata:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,If-Modified-Since,Cache-Control,Content-Type,Authorization,ETag,Link,v,X-Requested-With,X-Exceptionless-Client,X-Result-Count,X-RateLimit-Limit,X-RateLimit-Remaining,X-Exceptionless-ConfigVersion"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
 spec:
   tls:
   - hosts:
