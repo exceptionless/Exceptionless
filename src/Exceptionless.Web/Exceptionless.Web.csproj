@@ -6,6 +6,7 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**;$(SpaRoot)bower_components\**</DefaultItemExcludes>
     <SpaProxyServerUrl>https://localhost:5100</SpaProxyServerUrl>
     <SpaProxyLaunchCommand>npm run serve</SpaProxyLaunchCommand>
+    <SkipSpaPublish>false</SkipSpaPublish>
   </PropertyGroup>
 
   <ItemGroup>
@@ -65,7 +66,7 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="npx bower --allow-root install" />
   </Target>
 
-  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish">
+  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaPublish)' != 'true'">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npx bower --allow-root install" />
