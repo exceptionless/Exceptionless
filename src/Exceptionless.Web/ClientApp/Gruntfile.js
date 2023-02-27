@@ -4,11 +4,11 @@
 //Using exclusion patterns slows down Grunt significantly
 //instead of creating a set of patterns like '**/*.js' and '!**/node_modules/**'
 //this method is used to create a set of inclusive patterns for all subdirectories
-//skipping node_modules, bower_components, dist, and any .dirs
+//skipping node_modules, dist, and any .dirs
 //This enables users to create any directory structure they desire.
 var createFolderGlobs = function (fileTypePatterns) {
   fileTypePatterns = Array.isArray(fileTypePatterns) ? fileTypePatterns : [fileTypePatterns];
-  var ignore = ['node_modules', 'bower_components', 'dist', 'temp', 'grunt'];
+  var ignore = ['node_modules', 'dist', 'temp', 'grunt'];
   var fs = require('fs');
   return fs.readdirSync(process.cwd())
     .map(function (file) {

@@ -50,7 +50,6 @@
         <div class="app" id="app" ui-view autoscroll="true"></div>
         <toaster-container toaster-options="{'position-class': 'toast-bottom-right'}"></toaster-container>
 
-        <!--[if lte IE 9]><script src="https://cdn.jsdelivr.net/npm/Base64@1.0.2/base64.min.js" data-concat="false" data-remove="false"></script><![endif]-->
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js" data-concat="false" data-remove="false"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" data-concat="false" data-remove="false"></script>
         <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js" data-concat="false" data-remove="false"></script>
@@ -58,59 +57,57 @@
         <!-- Livereload script for development only (stripped during dist build) -->
         <script src="http://localhost:35729/livereload.js" data-concat="false"></script>
 
-        <!-- JS from Bower Components -->
-        <script src="bower_components/es5-shim/es5-shim.js"></script>
-        <script src="bower_components/es6-shim/es6-shim.js"></script>
-        <script src="bower_components/exceptionless/dist/exceptionless.js"></script>
+        <!-- JS from npm Components -->
+        <script src="node_modules/es5-shim/es5-shim.js"></script>
+        <script src="node_modules/es6-shim/es6-shim.js"></script>
+        <script src="node_modules/exceptionless/dist/exceptionless.js"></script>
         <script type="application/javascript" data-concat="false" data-remove="true">
           exceptionless.ExceptionlessClient.default.config.useDebugLogger();
         </script>
-        <script src="bower_components/less.js/dist/less.js" data-concat="false"></script>
-        <script src="bower_components/moment/moment.js"></script>
-        <script src="bower_components/moment/locale/zh-cn.js"></script>
-        <script src="bower_components/bootstrap-daterangepicker/daterangepicker.js"></script>
-        <script src="bower_components/twix/dist/twix.js"></script>
-        <script src="bower_components/objectid.js/src/main/javascript/Objectid.js"></script>
-        <script src="bower_components/handlebars/handlebars.js"></script>
-        <script src="bower_components/trunk8/trunk8.js"></script>
+        <script src="node_modules/less/dist/less.js" data-concat="false"></script>
+        <script src="node_modules/moment/moment.js"></script>
+        <script src="node_modules/moment/locale/zh-cn.js"></script>
+        <script src="node_modules/bootstrap-daterangepicker/daterangepicker.js"></script>
+        <script src="node_modules/twix/dist/twix.js"></script>
+        <script src="node_modules/handlebars/dist/handlebars.js"></script>
+        <script src="node_modules/trunk8/trunk8.js"></script>
 
-        <script src="bower_components/angular/angular.js"></script>
-        <script src="bower_components/exceptionless/dist/integrations/angular.js"></script>
-        <script src="bower_components/angular-animate/angular-animate.js"></script>
-        <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
-        <script src="bower_components/angular-clipboard/angular-clipboard.js"></script>
-        <script src="bower_components/angular-dialog-service/dist/dialogs.js"></script>
-        <script src="bower_components/angular-filter/dist/angular-filter.js"></script>
-        <script src="bower_components/angular-gravatar/build/angular-gravatar.js"></script>
-        <script src="bower_components/angular-hotkeys/src/hotkeys.js"></script>
-        <script src="bower_components/angular-input-match/dist/angular-input-match.js"></script>
-        <script src="bower_components/angular-intercom/angular-intercom.js"></script>
-        <script src="bower_components/angular-loading-bar/src/loading-bar.js"></script>
-        <script src="bower_components/angular-locker/src/angular-locker.js"></script>
-        <script src="bower_components/angular-messages/angular-messages.js"></script>
-        <script src="bower_components/angular-payments/lib/angular-payments.js"></script>
-        <script src="bower_components/angular-resource/angular-resource.js"></script>
-        <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
-        <script src="bower_components/angular-stripe/release/angular-stripe.js"></script>
-        <script src="bower_components/angular-translate/angular-translate.js"></script>
-        <script src="bower_components/angular-translate-loader-static-files/angular-translate-loader-static-files.js"></script>
-        <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
-        <script src="bower_components/angular-xeditable/dist/js/xeditable.js"></script>
-        <script src="bower_components/angularjs-toaster/toaster.js"></script>
-        <script src="bower_components/angulartics/src/angulartics.js"></script>
-        <script src="bower_components/angulartics/src/angulartics-gtm.js"></script>
-        <script src="bower_components/checklist-model/checklist-model.js"></script>
-        <script src="bower_components/mousetrap-js/mousetrap.js"></script>
-        <script src="bower_components/ng-debounce/angular-debounce.js"></script>
-        <script src="bower_components/ng-filters/dist/ng-filters.js"></script>
-        <script src="bower_components/restangular/dist/restangular.js"></script>
+        <script src="node_modules/angular/angular.js"></script>
+        <script src="node_modules/exceptionless/dist/integrations/angular.js"></script>
+        <script src="node_modules/angular-animate/angular-animate.js"></script>
+        <script src="node_modules/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
+        <script src="node_modules/angular-clipboard/angular-clipboard.js"></script>
+        <script src="node_modules/angular-dialog-service/dist/dialogs.js"></script>
+        <script src="node_modules/angular-filter/dist/angular-filter.js"></script>
+        <script src="node_modules/angular-gravatar/build/angular-gravatar.js"></script>
+        <script src="node_modules/angular-hotkeys/src/hotkeys.js"></script>
+        <script src="node_modules/angular-input-match/dist/angular-input-match.js"></script>
+        <script src="node_modules/angular-intercom/angular-intercom.js"></script>
+        <script src="node_modules/angular-loading-bar/src/loading-bar.js"></script>
+        <script src="node_modules/angular-locker/src/angular-locker.js"></script>
+        <script src="node_modules/angular-messages/angular-messages.js"></script>
+        <script src="node_modules/angular-payments/lib/angular-payments.js"></script>
+        <script src="node_modules/angular-resource/angular-resource.js"></script>
+        <script src="node_modules/angular-sanitize/angular-sanitize.js"></script>
+        <script src="node_modules/angular-translate/dist/angular-translate.js"></script>
+        <script src="node_modules/angular-translate-loader-static-files/angular-translate-loader-static-files.js"></script>
+        <script src="node_modules/angular-ui-router/release/angular-ui-router.js"></script>
+        <script src="node_modules/angular-xeditable/dist/js/xeditable.js"></script>
+        <script src="node_modules/angularjs-toaster/toaster.js"></script>
+        <script src="node_modules/angulartics/src/angulartics.js"></script>
+        <script src="node_modules/angulartics/src/angulartics-gtm.js"></script>
+        <script src="node_modules/checklist-model/checklist-model.js"></script>
+        <script src="node_modules/mousetrap/mousetrap.js"></script>
+        <script src="node_modules/ng-debounce/dist/ng-debounce.js"></script>
+        <script src="node_modules/ng-filters/dist/ng-filters.js"></script>
+        <script src="node_modules/restangular/dist/restangular.js"></script>
         <script src="components/satellizer/satellizer.js"></script>
 
-        <script src="bower_components/d3/d3.js"></script>
-        <script src="bower_components/rickshaw/rickshaw.js"></script>
+        <script src="node_modules/d3/d3.js"></script>
+        <script src="node_modules/rickshaw/rickshaw.js"></script>
 
-        <script src="bower_components/li/lib/index.js"></script>
-        <!-- Add New Bower Component JS Above -->
+        <script src="node_modules/li/lib/index.js"></script>
+        <!-- Add New npm Component JS Above -->
 
         <!-- Main App JS -->
         <script src="app.js"></script>
@@ -121,6 +118,8 @@
         <script src="components/auth/auth-service.js"></script>
         <script src="components/auto-active/auto-active-directive.js"></script>
         <script src="components/autofocus/autofocus-directive.js"></script>
+
+        <script src="components/billing/angular-stripe.js"></script>
         <script src="components/billing/billing.js"></script>
         <script src="components/billing/billing-service.js"></script>
         <script src="components/billing/change-plan-controller.js"></script>
@@ -152,6 +151,7 @@
         <script src="components/object-dump/object-dump.js"></script>
         <script src="components/object-dump/object-dump-directive.js"></script>
         <script src="components/object-dump/handlebars-service.js"></script>
+        <script src="components/objectid/objectid.js"></script>
         <script src="components/objectid/objectid-service.js"></script>
         <script src="components/organization/organization-service.js"></script>
         <script src="components/organization-notifications/organization-notifications-directive.js"></script>

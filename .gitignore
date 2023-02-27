@@ -123,7 +123,6 @@ k8s/ex-prod\.yaml
 *secrets*
 k8s/ex-*-snapshots.yaml
 node_modules
-bower_components
 src/Exceptionless\.Web/ClientApp/dist/
 
 *.DotSettings
