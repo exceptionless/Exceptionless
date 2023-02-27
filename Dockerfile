@@ -77,7 +77,7 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS app
 
 WORKDIR /app
-COPY --from=web-publish /app/src/Exceptionless.Web/out ./
+COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
 
