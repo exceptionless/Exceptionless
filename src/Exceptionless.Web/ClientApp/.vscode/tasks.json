@@ -5,8 +5,7 @@
             "type": "shell",
             "label": "build",
             "dependsOn": [
-                "npm install",
-                "bower install"
+                "npm install"
             ],
             "command": "npx",
             "args": [
@@ -50,17 +49,6 @@
             "type": "npm",
             "label": "npm install",
             "script": "install",
-            "problemMatcher": []
-        },
-        {
-            "type": "shell",
-            "label": "bower install",
-            "dependsOn": "npm install",
-            "command": "npx",
-            "args": [
-                "bower",
-                "install"
-            ],
             "problemMatcher": []
         }
     ]
