@@ -98,6 +98,7 @@ WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -129,6 +130,7 @@ ENV discovery.type=single-node \
     EX_Html5Mode=true
 
 RUN chmod +x /app/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/update-config && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
@@ -152,6 +154,7 @@ WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -183,6 +186,7 @@ ENV discovery.type=single-node \
     EX_Html5Mode=true
 
 RUN chmod +x /app/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/update-config && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
