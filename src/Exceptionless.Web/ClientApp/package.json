@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "build": "npx grunt build",
-    "serve": "npx grunt serve"
+    "serve": "npx grunt serve",
+    "prod-serve": "cross-env ASPNETCORE_URLS=https://api.exceptionless.io npx grunt serve"
   },
   "devDependencies": {
     "grunt": "^1.6.1",
@@ -26,7 +27,8 @@
     "grunt-ng-annotate": "^4.0.0",
     "grunt-replace": "^2.0.2",
     "jshint-stylish": "^2.2.1",
-    "load-grunt-config": "^4.0.1"
+    "load-grunt-config": "^4.0.1",
+    "cross-env": "^7.0.3"
   },
   "dependencies": {
     "angular": "1.7.9",

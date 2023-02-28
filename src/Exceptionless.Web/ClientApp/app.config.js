@@ -2,7 +2,7 @@
   'use strict';
 
   angular.module('app.config', [])
-    .constant('BASE_URL', 'https://localhost:5001')
+    .constant('BASE_URL', '')
     .constant('EXCEPTIONLESS_API_KEY')
     .constant('EXCEPTIONLESS_SERVER_URL')
     .constant('FACEBOOK_APPID')

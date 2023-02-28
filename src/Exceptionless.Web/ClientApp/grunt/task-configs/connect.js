@@ -14,17 +14,23 @@ module.exports = function () {
         key: certs.key,
         cert: certs.cert,
         middleware: function (connect, options, middlewares) {
-          console.log('middleware');
           middlewares.unshift(require('grunt-connect-proxy2/lib/utils').proxyRequest);
           return middlewares;
         }
       },
       proxies: [
         {
-          context: '/api',
+          context: '/api/v2/push',
           host: target.host,
           port: target.port,
           ws: true,
+          secure: false,
+          https: target.ssl
+        },
+        {
+          context: '/api',
+          host: target.host,
+          port: target.port,
           secure: false,
           https: target.ssl
         },
@@ -59,7 +65,7 @@ function getTarget() {
   var host = "localhost";
   var ssl = true;
 
-	if (process.env.ASPNETCORE_HTTPS_PORT) {
+  if (process.env.ASPNETCORE_HTTPS_PORT) {
     port = process.env.ASPNETCORE_HTTPS_PORT;
   } else if (process.env.ASPNETCORE_URLS) {
     var url = process.env.ASPNETCORE_URLS.split(';')[0];
@@ -67,9 +73,11 @@ function getTarget() {
     if (url.startsWith('http://'))
       ssl = false;
     if (parts.length >= 2)
-      host = parts[1];
+      host = parts[1].substring(2);
     if (parts.length >= 3)
       port = parts[2];
+    else
+      port = ssl ? 443 : 80
   }
 
   return {
