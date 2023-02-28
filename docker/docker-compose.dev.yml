@@ -19,13 +19,13 @@ services:
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       #ASPNETCORE_URLS: http://+;https://+
-      #ASPNETCORE_HTTPS_PORT: 5001
+      #ASPNETCORE_HTTPS_PORT: 5201
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
       #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
       EX_RunJobsInProcess: 'false'
     ports:
-      - 5000:80
-      - 5001:443
+      - 5200:80
+      - 5201:443
     volumes:
       - appdata:/app/storage
       - ssldata:/https
@@ -39,7 +39,7 @@ services:
       target: job
     environment:
       EX_AppMode: Production
-      EX_BaseURL: http://localhost:5000
+      EX_BaseURL: http://localhost:5200
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       EX_ConnectionStrings__Email: smtp://localhost:1025

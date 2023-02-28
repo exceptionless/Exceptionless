@@ -1,8 +1,8 @@
 {
   "dockerFile": "Dockerfile",
   "forwardPorts": [
-    5000,
-    5001,
+    5200,
+    5201,
     5100,
     9200,
     5601
