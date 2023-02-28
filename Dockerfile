@@ -4,6 +4,7 @@ WORKDIR /app
 COPY ./*.sln ./NuGet.Config ./
 COPY ./build/*.props ./build/
 COPY ./packages/* ./packages/
+COPY ./docker/docker-compose.dcproj ./docker/
 
 # Copy the main source project files
 COPY src/*/*.csproj ./
