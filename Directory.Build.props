@@ -1,5 +1,4 @@
 <Project>
-
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,6 +15,7 @@
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
     <FoundatioVersion>10.6.0</FoundatioVersion>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +23,4 @@
     <PackageReference Include="AsyncFixer" Version="1.6.0" PrivateAssets="All" />
     <PackageReference Include="MinVer" Version="4.3.0" PrivateAssets="All" />
   </ItemGroup>
-
 </Project>
