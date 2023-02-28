@@ -4,12 +4,12 @@ services:
   exceptionless:
     image: exceptionless/exceptionless:latest
     ports:
-      - 5000:80
+      - 5200:80
       - 9200:9200
     environment:
       EX_AppMode: Production
       #ASPNETCORE_URLS: http://+;https://+
-      #ASPNETCORE_HTTPS_PORT: 5001
+      #ASPNETCORE_HTTPS_PORT: 5201
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
       #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
     volumes:
