@@ -54,6 +54,20 @@
       "problemMatcher": []
     },
     {
+      "label": "Stop Elasticsearch",
+      "command": "docker",
+      "type": "shell",
+      "args": [
+        "compose",
+        "down"
+      ],
+      "options": {
+        "cwd": "docker"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
       "label": "build",
       "command": "dotnet",
       "type": "process",

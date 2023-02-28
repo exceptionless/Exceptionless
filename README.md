@@ -27,7 +27,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
   - [Node 18+](https://nodejs.org/)
 - Visual Studio Code
   - Open Visual Studio Code and then open the Exceptionless root folder
-  - Go to the `Terminal` menu and select `Run Task...` and then select `Start Elasticsearch`
+  - Go to the `Terminal` menu and select `Run Task...` and then select `Start Elasticsearch` (you can stop the service when you are done using the `Stop Elasticsearch` task)
   - Go to the `Debug` menu and select the `Web` launch configuration then click the `Start Debugging` button
   - A browser window should be automatically opened to `https://localhost:5100/`
   - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
