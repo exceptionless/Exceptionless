@@ -44,8 +44,12 @@
       "args": [
         "compose",
         "up",
-        "elasticsearch"
+        "elasticsearch",
+        "kibana"
       ],
+      "options": {
+        "cwd": "docker"
+      },
       "isBackground": true,
       "problemMatcher": []
     },
