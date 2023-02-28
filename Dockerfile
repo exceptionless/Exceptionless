@@ -2,7 +2,8 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /app
 
 COPY ./*.sln ./NuGet.Config ./
-COPY ./build/*.props ./build/
+COPY ./src/*.props ./src/
+COPY ./tests/*.props ./tests/
 COPY ./packages/* ./packages/
 COPY ./docker/docker-compose.dcproj ./docker/
 
