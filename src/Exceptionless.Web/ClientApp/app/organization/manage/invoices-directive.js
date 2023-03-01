@@ -22,9 +22,7 @@
               vm.previous = links['previous'];
               vm.next = links['next'];
 
-              vm.pageSummary = paginationService.getCurrentPageSummary(response.data, vm.currentOptions.page, vm.currentOptions.limit);
-
-              if (vm.invoices.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
+              if (vm.invoices.length === 0 && (vm.previous || vm.next)) {
                 return get(null, useCache);
               }
 
