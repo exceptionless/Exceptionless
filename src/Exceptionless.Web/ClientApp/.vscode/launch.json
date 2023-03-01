@@ -10,7 +10,15 @@
       "port": 5100,
       "webRoot": "${workspaceFolder}",
       "name": "grunt:serve",
-      "preLaunchTask": "serve",
+      "preLaunchTask": "npm run serve",
+    },
+    {
+      "type": "chrome",
+      "request": "attach",
+      "port": 5100,
+      "webRoot": "${workspaceFolder}",
+      "name": "grunt:serve (use exceptionless api)",
+      "preLaunchTask": "npm run serve (use exceptionless api)",
     }
   ]
 }
