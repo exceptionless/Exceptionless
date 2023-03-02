@@ -1,0 +1,11 @@
+<span ng-if="showType">
+  <strong>
+    <span ng-if="source.data.Type === 'sessionend'">{{::'Session End' | translate}}</span>
+    <span ng-if="source.data.Type === 'heartbeat'">{{::'Session Heartbeat' | translate}}</span>
+    <span ng-if="source.data.Type !== 'sessionend' && source.data.Type !== 'heartbeat'">{{::'Session' | translate}}</span>
+  </strong>:&nbsp;
+</span>
+<a ui-sref="app.event({ id: source.id })" truncate lines="2">
+  {{::(source.data.Name || source.data.Identity || source.data.SessionId)}}
+  <span ng-if="source.data.Name && source.data.Identity" class="text-muted"> ({{::source.data.Identity}})</span>
+</a>

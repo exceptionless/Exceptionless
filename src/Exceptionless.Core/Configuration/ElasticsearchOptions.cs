@@ -50,7 +50,7 @@ public class ElasticsearchOptions {
     private static void ParseConnectionString(string connectionString, ElasticsearchOptions options, AppMode appMode) {
         var pairs = connectionString.ParseConnectionString();
 
-        options.ServerUrl = pairs.GetString("server", "https://localhost:9200");
+        options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
 
         int shards = pairs.GetValueOrDefault<int>("shards", 1);
         options.NumberOfShards = shards > 0 ? shards : 1;
@@ -63,8 +63,8 @@ public class ElasticsearchOptions {
 
         options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", appMode != AppMode.Development);
 
-        options.UserName = pairs.GetString("username", "elastic");
-        options.Password = pairs.GetString("password", "elastic");
+        options.UserName = pairs.GetString("username");
+        options.Password = pairs.GetString("password");
 
         string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
         if (!String.IsNullOrEmpty(scope))

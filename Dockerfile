@@ -1,12 +1,11 @@
-ARG UI_VERSION="ui:3.1.10"
-FROM exceptionless/${UI_VERSION} AS ui
-
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /app
 
 COPY ./*.sln ./NuGet.Config ./
-COPY ./build/*.props ./build/
+COPY ./src/*.props ./src/
+COPY ./tests/*.props ./tests/
 COPY ./packages/* ./packages/
+COPY ./docker/docker-compose.dcproj ./docker/
 
 # Copy the main source project files
 COPY src/*/*.csproj ./
@@ -40,6 +39,9 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
+
+EXPOSE 80 443
+
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 
 # api-publish
@@ -47,24 +49,39 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
-RUN dotnet publish -c Release -o out
+RUN apt-get update -yq
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -yq nodejs
+
+RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
 # api
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
+
+EXPOSE 80 443
+
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
+
+# app-publish
+
+FROM build AS app-publish
+WORKDIR /app/src/Exceptionless.Web
+
+RUN apt-get update -yq
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -yq nodejs
+
+RUN dotnet publish -c Release -o out
 
 # app
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS app
 
 WORKDIR /app
-COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
+COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
@@ -72,8 +89,9 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_Html5Mode=true
 
 RUN chmod +x /app/app-docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/update-config
 
-EXPOSE 80
+EXPOSE 80 443
 
 ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
@@ -83,10 +101,9 @@ FROM exceptionless/elasticsearch:8.6.2 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
-COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
+COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -118,6 +135,7 @@ ENV discovery.type=single-node \
     EX_Html5Mode=true
 
 RUN chmod +x /app/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/update-config && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
@@ -129,7 +147,7 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     ./dotnet-install.sh --version 7.0.3 --runtime aspnetcore && \
     rm dotnet-install.sh
 
-EXPOSE 80 9200
+EXPOSE 80 443 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
@@ -139,10 +157,9 @@ FROM exceptionless/elasticsearch:7.17.9 AS exceptionless7
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
-COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY --from=ui /app ./wwwroot
-COPY --from=ui /usr/local/bin/update-config /usr/local/bin/update-config
+COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
+COPY ./build/update-config.sh /usr/local/bin/update-config
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -174,6 +191,7 @@ ENV discovery.type=single-node \
     EX_Html5Mode=true
 
 RUN chmod +x /app/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/update-config && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
@@ -185,7 +203,7 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     ./dotnet-install.sh --version 7.0.3 --runtime aspnetcore && \
     rm dotnet-install.sh
 
-EXPOSE 80 9200
+EXPOSE 80 443 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 

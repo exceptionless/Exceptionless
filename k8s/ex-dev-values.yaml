@@ -1,12 +1,5 @@
 appMode: Staging
 appScope: dev
-api:
-  replicaCount: 0
-  image:
-    repository: exceptionless/api-ci
-  defaultDomain: dev-api.exceptionless.io
-  domains:
-    - dev-api.exceptionless.io
 app:
   replicaCount: 0
   image:

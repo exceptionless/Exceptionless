@@ -1,0 +1,8 @@
+<span>
+  <span ng-if="running">
+    <span class="fa fa-spinner fa-spin" ng-class="promiseButtonBusySpinnerClass"></span>
+    <span ng-if="promiseButtonBusyText">{{promiseButtonBusyText}}</span>
+    <span ng-if="!promiseButtonBusyText" ng-transclude></span>
+  </span>
+  <span ng-if="!running" ng-transclude></span>
+</span>

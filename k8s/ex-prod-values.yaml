@@ -1,13 +1,7 @@
 appMode: Production
 appScope: prod
-api:
-  replicaCount: 3
-  defaultDomain: api.exceptionless.io
-  domains:
-    - api.exceptionless.io
-    - api.exceptionless.com
 app:
-  replicaCount: 2
+  replicaCount: 3
   defaultDomain: be.exceptionless.io
   domains:
     - be.exceptionless.io
@@ -19,6 +13,8 @@ collector:
   domains:
     - collector.exceptionless.io
     - collector.exceptionless.com
+    - api.exceptionless.io
+    - api.exceptionless.com
     - config.exceptionless.io
     - heartbeat.exceptionless.io
 jobs:

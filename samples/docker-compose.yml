@@ -16,13 +16,13 @@ services:
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
       ASPNETCORE_URLS: http://+;https://+
-      ASPNETCORE_HTTPS_PORT: 5001
+      ASPNETCORE_HTTPS_PORT: 5201
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
       #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
       EX_RunJobsInProcess: 'false'
     ports:
-      - 5000:80
-      - 5001:443
+      - 5200:80
+      - 5201:443
     volumes:
       - ex_appdata:/app/storage
       - ex_ssldata:/https

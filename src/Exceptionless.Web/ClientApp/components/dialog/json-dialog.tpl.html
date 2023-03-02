@@ -1,0 +1,18 @@
+<div class="modal-header dialog-header-json">
+  <button type="button" role="button" class="close" ng-click="vm.close()">&times;</button>
+  <h4 class="modal-title">
+    <span class="fa fa-code"></span>
+    {{::vm.header}}
+  </h4>
+</div>
+
+<div class="modal-body">
+  <pre class="json-content" ng-bind="vm.json"></pre>
+</div>
+
+<div class="modal-footer">
+  <button type="button" role="button" class="btn btn-default" ng-click="vm.close()">{{::'DIALOGS_CLOSE' | translate}}</button>
+  <button type="button" role="button" class="btn btn-primary btn-dialog-copy" ng-click="vm.copy()" autofocus ng-show="vm.showCopyButton">
+    {{vm.copyButtonText}}
+  </button>
+</div>
