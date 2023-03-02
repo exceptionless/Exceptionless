@@ -1,0 +1,8 @@
+<h3 class="visible-print">{{::'Extended Data' | translate}}</h3>
+<table class="table table-striped table-bordered table-fixed table-key-value b-t">
+  <tr>
+    <th>{{::'Occurred On' | translate}}</th>
+    <td>{{::'DateTime' | translate:vm.event}} (<timeago date="vm.event.date"></timeago>)</td>
+  </tr>
+</table>
+<extended-data-item title="item.title" data="item.data" promote-tab="vm.promoteTab(tabName)" demote-tab="vm.demoteTab(tabName)" ng-repeat="item in tab.data | orderBy: 'title'"></extended-data-item>

@@ -1,0 +1,17 @@
+<div>
+  <strong ng-if="source.data.Type">
+    <abbr title="{{::source.data.TypeFullName}}">{{::source.data.Type}}</abbr>
+    <span ng-if="!source.data.Method">:</span>
+  </strong>
+
+    <span ng-if="source.data.Method"> in
+        <strong>
+          <abbr title="{{::source.data.MethodFullName}}">{{::source.data.Method}}</abbr>
+        </strong>
+    </span>
+
+  <a ui-sref="app.event({ id: source.id })" truncate lines="2">{{::source.data.Message}}</a>
+</div>
+
+<div class="hidden-xs error-path" ng-if="source.data.Path"><i class="fa fa-caret-right"></i> <span truncate>{{::source.data.Path}}</span>
+</div>

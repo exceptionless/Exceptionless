@@ -1,1 +1,1 @@
-wrk -t 12 -c 400 -d 30s -H "Authorization: Bearer LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw" http://localhost:50000/api/v2/events/session/heartbeat?id=test
+wrk -t 12 -c 400 -d 30s -H "Authorization: Bearer LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw" http://localhost:5200/api/v2/events/session/heartbeat?id=test

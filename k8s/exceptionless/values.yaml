@@ -1,4 +1,4 @@
-api:
+collector:
   replicaCount: 1
   defaultDomain:
   domains: []
@@ -7,17 +7,12 @@ api:
     tag: latest
     pullPolicy: IfNotPresent
 
-collector:
-  replicaCount: 1
-  defaultDomain:
-  domains: []
-
 app:
   replicaCount: 1
   defaultDomain:
   domains: []
   image:
-    repository: exceptionless/ui
+    repository: exceptionless/app
     tag: latest
     pullPolicy: IfNotPresent
 

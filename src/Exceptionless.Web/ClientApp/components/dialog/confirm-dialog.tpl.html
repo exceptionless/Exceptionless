@@ -1,0 +1,16 @@
+<div class="modal-header dialog-header-confirm">
+  <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+  <h4 class="modal-title">
+    <span class="glyphicon glyphicon-check"></span>
+    {{::vm.header}}
+  </h4>
+</div>
+
+<div class="modal-body" ng-bind-html="vm.message"></div>
+
+<div class="modal-footer">
+  <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()" autofocus>{{::'Cancel' | translate}}</button>
+  <button type="button" role="button" class="btn btn-primary btn-dialog-confirm" ng-class="{'btn-danger': !!vm.danger}" ng-click="vm.confirm()">
+    {{vm.confirmButtonText}}
+  </button>
+</div>

@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "label": "npm run build",
+            "script": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$lessCompile",
+                "$jshint"
+            ]
+        },
+        {
+            "type": "npm",
+            "label": "npm run serve",
+            "script": "serve",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "label": "npm run serve (use exceptionless api)",
+            "script": "prod-serve",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "label": "npm install",
+            "script": "install",
+            "problemMatcher": []
+        }
+    ]
+}

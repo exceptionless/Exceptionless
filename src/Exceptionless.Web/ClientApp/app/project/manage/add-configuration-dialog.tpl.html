@@ -1,0 +1,28 @@
+<form name="addConfigurationForm" role="form" class="form-validation">
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title">{{::'Please enter a configuration setting' | translate}}</h4>
+  </div>
+
+  <div class="modal-body">
+    <div class="form-group">
+      <label for="key">{{::'Key' | translate}}</label>
+      <input id="key" name="key" type="text" class="form-control" placeholder="{{::'Configuration Key' | translate}}" ng-model="vm.data.key" ng-required="true" autofocus />
+      <div class="error" ng-messages="addConfigurationForm.key.$error" ng-if="addConfigurationForm.$submitted || addConfigurationForm.key.$touched">
+        <small ng-message="required">{{::'Please enter a valid key.' | translate}}</small>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="value">{{::'Value' | translate}}</label>
+      <input id="value" name="value" type="text" class="form-control" placeholder="{{::'Configuration Value' | translate}}" ng-model="vm.data.value" ng-required="true" />
+      <div class="error" ng-messages="addConfigurationForm.value.$error" ng-if="addConfigurationForm.$submitted || addConfigurationForm.value.$touched">
+        <small ng-message="required">{{::'Please enter a valid value.' | translate}}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
+    <input type="submit" role="button" class="btn btn-primary" ng-click="vm.save(addConfigurationForm.$valid)" value="{{::'Save' | translate}}" />
+  </div>
+</form>

@@ -8,7 +8,7 @@ ConnectionStrings:
   Storage: provider=folder;path=..\..\..\..\..\src\Exceptionless.Web\storage
 
 # Base url for the ui used to build links in emails and other places.
-BaseURL: 'http://localhost:5000'
+BaseURL: 'http://localhost:5200'
 
 Scope: dev
 AppMode: Development

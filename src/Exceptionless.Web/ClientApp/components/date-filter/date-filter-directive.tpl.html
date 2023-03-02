@@ -1,0 +1,14 @@
+<li class="dropdown" refresh-on="filterChanged" refresh-action="vm.updateFilterDisplayName()">
+  <a class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" refresh-on="filterChanged" refresh-action="vm.updateFilterDisplayName()">
+    {{vm.filteredDisplayName | translate}} <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu">
+    <li ng-class="{ active: vm.isActive('last hour')}"><a ng-click="vm.setFilter('last hour')">{{::'Last Hour' | translate}}</a></li>
+    <li ng-class="{ active: vm.isActive('last 24 hours')}"><a ng-click="vm.setFilter('last 24 hours')">{{::'Last 24 Hours' | translate}}</a></li>
+    <li ng-class="{ active: vm.isActive('last week')}"><a ng-click="vm.setFilter('last week')">{{::'Last Week' | translate}}</a></li>
+    <li ng-class="{ active: vm.isActive('last 30 days')}"><a ng-click="vm.setFilter('last 30 days')">{{::'Last 30 Days' | translate}}</a></li>
+    <li ng-class="{ active: vm.isActive('all')}"><a ng-click="vm.setFilter('all')">{{::'All Time' | translate}}</a></li>
+    <li role="separator" class="divider hidden-xs"></li>
+    <li ng-class="{ active: vm.isActive('Custom')}" class="hidden-xs"><a ng-click="vm.setCustomFilter()">{{::'Custom' | translate}}</a></li>
+  </ul>
+</li>

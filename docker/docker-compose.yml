@@ -1,0 +1,42 @@
+version: '2.2'
+
+services:
+  elasticsearch:
+    image: exceptionless/elasticsearch:8.6.2
+    environment:
+      node.name: elasticsearch
+      cluster.name: exceptionless
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      action.destructive_requires_name: false
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    ports:
+      - 9200:9200
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    depends_on:
+      - elasticsearch
+    image: docker.elastic.co/kibana/kibana:8.6.2
+    environment:
+        xpack.security.enabled: 'false'
+    ports:
+      - 5601:5601
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - 6379:6379
+
+  mail:
+    image: mailhog/mailhog:latest
+    ports:
+      - 8025:8025
+      - 1025:1025
+
+volumes:
+  certs:
+    driver: local
+  esdata:
+    driver: local

@@ -44,22 +44,64 @@
       "args": [
         "compose",
         "up",
-        "elasticsearch"
+        "elasticsearch",
+        "kibana"
       ],
+      "options": {
+        "cwd": "docker"
+      },
       "isBackground": true,
       "problemMatcher": []
     },
     {
-      "label": "Start Exceptionless UI",
+      "label": "Stop Elasticsearch",
       "command": "docker",
       "type": "shell",
       "args": [
         "compose",
-        "up",
-        "ui"
+        "down"
       ],
+      "options": {
+        "cwd": "docker"
+      },
       "isBackground": true,
       "problemMatcher": []
+    },
+    {
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/Exceptionless.Web/Exceptionless.Web.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "publish",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "publish",
+        "${workspaceFolder}/src/Exceptionless.Web/Exceptionless.Web.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "watch",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "watch",
+        "run",
+        "--project",
+        "${workspaceFolder}/src/Exceptionless.Web/Exceptionless.Web.csproj"
+      ],
+      "problemMatcher": "$msCompile"
     }
   ]
 }

@@ -35,6 +35,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release /clp:NoSummary
     - name: Start Services
+      working-directory: docker
       run: docker compose up --wait elasticsearch
     - name: Run Tests
       run: dotnet test --configuration Release --no-build --logger GitHubActions
