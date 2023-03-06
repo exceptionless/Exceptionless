@@ -15,8 +15,9 @@ services:
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
-      ASPNETCORE_URLS: http://+;https://+
-      ASPNETCORE_HTTPS_PORT: 5201
+      #ASPNETCORE_HTTPS_PORT: 5201
+      #ASPNETCORE_URLS: http://+
+      #ASPNETCORE_URLS: http://+;https://+
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
       #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
       EX_RunJobsInProcess: 'false'
@@ -33,7 +34,7 @@ services:
     image: exceptionless/job:latest
     environment:
       EX_AppMode: Production
-      EX_BaseURL: http://localhost:5100
+      EX_BaseURL: http://localhost:5200
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
@@ -46,7 +47,7 @@ services:
       - ex_appdata:/app/storage
 
   elasticsearch:
-    image: exceptionless/elasticsearch:7.17.9
+    image: exceptionless/elasticsearch:8.6.2
     environment:
       discovery.type: single-node
       xpack.security.enabled: 'false'
@@ -60,7 +61,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:7.17.9
+    image: docker.elastic.co/kibana/kibana:8.6.2
     ports:
       - 5601:5601
 
