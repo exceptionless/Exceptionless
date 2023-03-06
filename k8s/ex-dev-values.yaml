@@ -3,12 +3,14 @@ appScope: dev
 app:
   replicaCount: 0
   image:
-    repository: exceptionless/ui-ci
+    repository: exceptionless/app-ci
   defaultDomain: dev-app.exceptionless.io
   domains:
     - dev-app.exceptionless.io
-collector:
+api:
   replicaCount: 0
+  image:
+    repository: exceptionless/api-ci
   defaultDomain: dev-collector.exceptionless.io
   domains:
     - dev-collector.exceptionless.io

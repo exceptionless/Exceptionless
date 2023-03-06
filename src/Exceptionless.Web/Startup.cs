@@ -158,36 +158,6 @@ public class Startup {
         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
             app.UseExceptionless(ExceptionlessClient.Default);
 
-        app.UseCsp(csp => {
-            csp.ByDefaultAllow.FromSelf()
-                .From("https://js.stripe.com")
-                .From("http://js.stripe.com");
-            csp.AllowFonts.FromSelf()
-                .From("https://fonts.gstatic.com")
-                .From("http://fonts.gstatic.com")
-                .From("https://cdn.jsdelivr.net")
-                .From("http://cdn.jsdelivr.net");
-            csp.AllowImages.FromSelf()
-                .From("data:")
-                .From("https://q.stripe.com")
-                .From("http://q.stripe.com")
-                .From("https://www.gravatar.com")
-                .From("http://www.gravatar.com");
-            csp.AllowScripts.FromSelf()
-                .AllowUnsafeInline()
-                .AllowUnsafeEval()
-                .From("https://js.stripe.com")
-                .From("http://js.stripe.com")
-                .From("https://cdn.jsdelivr.net")
-                .From("http://cdn.jsdelivr.net");
-            csp.AllowStyles.FromSelf()
-                .AllowUnsafeInline()
-                .From("https://fonts.googleapis.com")
-                .From("http://fonts.googleapis.com")
-                .From("https://cdn.jsdelivr.net")
-                .From("http://cdn.jsdelivr.net");
-        });
-
         app.Use(async (context, next) => {
             if (options.AppMode != AppMode.Development && context.Request.IsLocal() == false)
                 context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
@@ -202,8 +172,50 @@ public class Startup {
         });
 
         var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-        if (options.AppMode != AppMode.Development && serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://")))
+        bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
+
+        if (ssl)
             app.UseHttpsRedirection();
+
+        app.UseCsp(csp => {
+            csp.AllowFonts.FromSelf()
+                .From("https://fonts.gstatic.com")
+                .From("https://www.gravatar.com")
+                .From("https://fonts.intercomcdn.com")
+                .From("https://cdn.jsdelivr.net");
+            csp.AllowImages.FromSelf()
+                .From("data:")
+                .From("https://q.stripe.com")
+                .From("https://js.intercomcdn.com")
+                .From("https://downloads.intercomcdn.com")
+                .From("https://uploads.intercomcdn.com")
+                .From("https://static.intercomassets.com")
+                .From("https://user-images.githubusercontent.com")
+                .From("https://www.gravatar.com");
+            csp.AllowScripts.FromSelf()
+                .AllowUnsafeInline()
+                .AllowUnsafeEval()
+                .From("https://js.stripe.com")
+                .From("https://widget.intercom.io")
+                .From("https://js.intercomcdn.com")
+                .From("https://cdn.jsdelivr.net");
+            csp.AllowStyles.FromSelf()
+                .AllowUnsafeInline()
+                .From("https://fonts.googleapis.com")
+                .From("https://cdn.jsdelivr.net");
+            csp.AllowConnections.ToSelf()
+                .To("https://collector.exceptionless.io")
+                .To("https://api-iam.intercom.io/")
+                .To("wss://nexus-websocket-a.intercom.io");
+            
+            csp.SetReportOnly();
+            
+            csp.OnSendingHeader = context =>
+            {
+                context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
+                return Task.CompletedTask;
+            };
+        });
 
         app.UseSerilogRequestLogging(o => {
             o.EnrichDiagnosticContext = (context, httpContext) => {

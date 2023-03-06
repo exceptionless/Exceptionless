@@ -1,11 +1,4 @@
-collector:
-  replicaCount: 1
-  defaultDomain:
-  domains: []
-  image:
-    repository: exceptionless/api
-    tag: latest
-    pullPolicy: IfNotPresent
+version: latest
 
 app:
   replicaCount: 1
@@ -13,13 +6,19 @@ app:
   domains: []
   image:
     repository: exceptionless/app
-    tag: latest
+    pullPolicy: IfNotPresent
+
+api:
+  replicaCount: 1
+  defaultDomain:
+  domains: []
+  image:
+    repository: exceptionless/api
     pullPolicy: IfNotPresent
 
 jobs:
   image:
     repository: exceptionless/job
-    tag: latest
     pullPolicy: IfNotPresent
   closeInactiveSessions:
     replicaCount: 1
@@ -56,7 +55,7 @@ elasticsearch:
   connectionString: 
   image:
     repository: exceptionless/elasticsearch
-    tag: 98
+    tag: 8.6.2
     pullPolicy: IfNotPresent
 
 redis:

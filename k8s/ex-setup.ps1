@@ -138,12 +138,9 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
 # install exceptionless app
-$APP_TAG="2.8.1-alpha.0.45"
-$API_TAG="6.1.1-alpha.0.81"
+$VERSION="8.0.0"
 helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml `
-    --set "app.image.tag=$APP_TAG" `
-    --set "api.image.tag=$API_TAG" `
-    --set "jobs.image.tag=$API_TAG" `
+    --set "version=$VERSION" `
     --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" `
     --set "email.connectionString=$EMAIL_CONNECTIONSTRING" `
     --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" `

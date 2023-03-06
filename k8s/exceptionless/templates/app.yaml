@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-app
-          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          image: "{{ .Values.app.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           livenessProbe:
             httpGet:

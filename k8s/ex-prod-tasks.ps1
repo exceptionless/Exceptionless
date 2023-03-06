@@ -87,8 +87,8 @@ kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 kubectl apply --namespace ex-prod -f ex-prod-monitor.yaml
 
 # upgrade exceptionless app to a new docker image tag
-$API_TAG="7.0.7"
-helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-prod --namespace ex-prod .\exceptionless
+$VERSION="8.0.0"
+helm upgrade --set "version=$VERSION" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 helm upgrade --reuse-values ex-prod --namespace ex-prod .\exceptionless
 # see what an upgrade will do
 helm diff upgrade --reuse-values ex-prod --namespace ex-prod .\exceptionless
@@ -114,8 +114,8 @@ helm upgrade `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app
+kubectl scale deployment/ex-prod-app --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-api --replicas=0 --namespace ex-prod
-kubectl scale deployment/ex-prod-collector --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-close-inactive-sessions --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-daily-summary --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-notifications --replicas=0 --namespace ex-prod
@@ -136,8 +136,8 @@ kubectl patch cronjob/ex-prod-jobs-organization-snapshot -p '{\"spec\":{\"suspen
 kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
 
 # resume the app
+kubectl scale deployment/ex-prod-app --replicas=5 --namespace ex-prod
 kubectl scale deployment/ex-prod-api --replicas=5 --namespace ex-prod
-kubectl scale deployment/ex-prod-collector --replicas=5 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-close-inactive-sessions --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-daily-summary --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-notifications --replicas=2 --namespace ex-prod

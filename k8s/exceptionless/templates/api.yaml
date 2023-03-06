@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-collector
+  name: {{ template "exceptionless.fullname" . }}-api
   labels:
     app: {{ template "exceptionless.name" . }}
-    component: {{ template "exceptionless.fullname" . }}-collector
+    component: {{ template "exceptionless.fullname" . }}-api
     tier: {{ template "exceptionless.fullname" . }}-api
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.collector.replicaCount }}
+  replicas: {{ .Values.api.replicaCount }}
   selector:
     matchLabels:
-      component: {{ template "exceptionless.fullname" . }}-collector
+      component: {{ template "exceptionless.fullname" . }}-api
   template:
     metadata:
       labels:
         app: {{ template "exceptionless.name" . }}
-        component: {{ template "exceptionless.fullname" . }}-collector
+        component: {{ template "exceptionless.fullname" . }}-api
         tier: {{ template "exceptionless.fullname" . }}-api
         chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
@@ -27,8 +27,8 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
       containers:
-        - name: {{ template "exceptionless.name" . }}-collector
-          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+        - name: {{ template "exceptionless.name" . }}-api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -75,10 +75,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-collector
+  name: {{ template "exceptionless.fullname" . }}-api
   labels:
     app: {{ template "exceptionless.name" . }}
-    component: {{ template "exceptionless.fullname" . }}-collector
+    component: {{ template "exceptionless.fullname" . }}-api
     chart: {{ template "exceptionless.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -90,13 +90,13 @@ spec:
       protocol: TCP
       name: http
   selector:
-    component: {{ template "exceptionless.fullname" . }}-collector
+    component: {{ template "exceptionless.fullname" . }}-api
 
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-collector-ingress
+  name: {{ template "exceptionless.fullname" . }}-api-ingress
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -106,12 +106,12 @@ metadata:
 spec:
   tls:
   - hosts:
-    {{- range .Values.collector.domains }}
+    {{- range .Values.api.domains }}
     - {{ . }}
     {{- end }}
-    secretName: {{ template "exceptionless.fullname" . }}-collector-tls
+    secretName: {{ template "exceptionless.fullname" . }}-api-tls
   rules:
-  {{- range .Values.collector.domains }}
+  {{- range .Values.api.domains }}
   - host: {{ . }}
     http:
       paths:
@@ -119,7 +119,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: {{ template "exceptionless.fullname" $ }}-collector
+            name: {{ template "exceptionless.fullname" $ }}-api
             port:
               number: 80
   {{- end }}
