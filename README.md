@@ -45,7 +45,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 
 ## UI Only Development
 
-The UI is a SPA application that runs against the Exceptionless API. The source is located in the `src/Exceptionless.Web/ClientApp` folder. The UI will automatically be started when running the whole project, but if you want to work on just the API, then open Visual Studio Code to the `src/Exceptionless.Web/ClientApp` folder and run the `npm run serve (use exceptionless api)` task to start the UI pointing at the official Exceptionless API. You will need to login to your actual Exceptionless account.
+The UI is a SPA application that runs against the Exceptionless API. The source is located in the `src/Exceptionless.Web/ClientApp` folder. The UI will automatically be started when running the whole project, but if you want to work on just the UI, then open Visual Studio Code to the `src/Exceptionless.Web/ClientApp` folder and run the `npm run serve (use exceptionless api)` task to start the UI pointing at the official Exceptionless API. You will need to login to your actual Exceptionless account.
 
 ## API Only Development
 
