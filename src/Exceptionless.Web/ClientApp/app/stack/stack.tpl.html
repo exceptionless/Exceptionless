@@ -45,29 +45,29 @@
               <div class="details">
                 <span class="title">{{::'First' | translate}}</span>
                 <span class="sub visible-md visible-lg">
-                  <abbr title="{{::'In Date Range' | translate}}">
+                  <abbr title="{{::'First In Date Range' | translate}}">
                     <timeago date="vm.stats.first_occurrence"></timeago>
                   </abbr>
                   <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'shortDate' }}</abbr>&nbsp
+                    <abbr title="{{::'First Ever' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'shortDate' }}</abbr>&nbsp
                   </span>
                 </span>
                 <span class="sub visible-sm">
-                  <abbr title="{{::'In Date Range' | translate}}">
+                  <abbr title="{{::'First In Date Range' | translate}}">
                     <span ng-if="vm.isValidDate(vm.stats.first_occurrence)">{{vm.stats.first_occurrence | date:'shortDate' }}</span>
                     <span ng-if="!vm.isValidDate(vm.stats.first_occurrence)">never</span>
                   </abbr>
                   <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'shortDate' }}</abbr>&nbsp
+                    <abbr title="{{::'First Ever' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'shortDate' }}</abbr>&nbsp
                   </span>
                 </span>
                 <span class="sub visible-xs">
-                  <abbr title="{{::'In Date Range' | translate}}">
+                  <abbr title="{{::'First In Date Range' | translate}}">
                     <span ng-if="vm.isValidDate(vm.stats.first_occurrence)">{{vm.stats.first_occurrence | date:'M/d' }}</span>
                     <span ng-if="!vm.isValidDate(vm.stats.first_occurrence)">NA</span>
                   </abbr>
                   <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'M/d/yy' }}</abbr>&nbsp
+                    <abbr title="{{::'First Ever' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'M/d/yy' }}</abbr>&nbsp
                   </span>
                 </span>
               </div>
@@ -81,29 +81,29 @@
               <div class="details">
                 <span class="title">{{::'Last' | translate}}</span>
                 <span class="sub visible-md visible-lg">
-                  <abbr title="{{::'In Date Range' | translate}}">
+                  <abbr title="{{::'Last In Date Range' | translate}}">
                     <timeago date="vm.stats.last_occurrence"></timeago>
                   </abbr>
                   <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'shortDate' }}</abbr>&nbsp
+                    <abbr title="{{::'Last Ever' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'shortDate' }}</abbr>&nbsp
                   </span>
                 </span>
                 <span class="sub visible-sm">
-                  <abbr title="{{::'In Date Range' | translate}}">
+                  <abbr title="{{::'Last In Date Range' | translate}}">
                     <span ng-if="vm.isValidDate(vm.stats.last_occurrence)">{{vm.stats.last_occurrence | date:'shortDate' }}</span>
                     <span ng-if="!vm.isValidDate(vm.stats.last_occurrence)">never</span>
                   </abbr>
                   <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'shortDate' }}</abbr>&nbsp
+                    <abbr title="{{::'Last Ever' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'shortDate' }}</abbr>&nbsp
                   </span>
                 </span>
                 <span class="sub visible-xs">
-                  <abbr title="{{::'In Date Range' | translate}}">
+                  <abbr title="{{::'Last In Date Range' | translate}}">
                     <span ng-if="vm.isValidDate(vm.stats.last_occurrence)">{{vm.stats.last_occurrence | date:'M/d' }}</span>
                     <span ng-if="!vm.isValidDate(vm.stats.last_occurrence)">NA</span>
                   </abbr>
                   <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'M/d/yy' }}</abbr>&nbsp
+                    <abbr title="{{::'Last Ever' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'M/d/yy' }}</abbr>&nbsp
                   </span>
                 </span>
               </div>

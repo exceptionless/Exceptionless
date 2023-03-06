@@ -284,7 +284,10 @@
   "All Time": "All Time",
   "Custom": "Custom",
   "Select Date Range": "Select Date Range",
-  "In Date Range": "In Date Range",
+  "First In Date Range": "First In Date Range",
+  "First Ever": "First Ever",
+  "Last In Date Range": "Last In Date Range",
+  "Last Ever": "Last Ever",
 
   "DayFormat":"D",
   "DateFormat":"ddd, MMM D, YYYY",

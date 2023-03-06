@@ -284,7 +284,10 @@
     "All Time": "全部时间",
     "Custom": "自定义",
     "Select Date Range": "选择日期范围",
-    "In Date Range": "在日期范围内",
+    "First In Date Range": "在日期范围内",
+    "First Ever": "史无前例的",
+    "Last In Date Range": "最后一个日期范围",
+    "Last Ever": "最后一次",
 
     "DayFormat":"D日",
     "DateFormat": "YYYY年M月D日",
