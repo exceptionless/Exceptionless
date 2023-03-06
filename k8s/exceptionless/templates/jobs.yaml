@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -79,7 +79,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -120,7 +120,7 @@ spec:
         spec:
           containers:
             - name: {{ template "exceptionless.name" . }}-jobs-download-geoip-database
-              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
               livenessProbe:
                 httpGet:
@@ -172,7 +172,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -223,7 +223,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-posts
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -264,7 +264,7 @@ spec:
         spec:
           containers:
             - name: {{ template "exceptionless.name" . }}-jobs-migration
-              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
               resources:
                 requests:
@@ -310,7 +310,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -361,7 +361,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-mail-message
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -402,7 +402,7 @@ spec:
         spec:
           containers:
             - name: {{ template "exceptionless.name" . }}-jobs-maintain-indexes
-              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
               livenessProbe:
                 httpGet:
@@ -444,7 +444,7 @@ spec:
         spec:
           containers:
             - name: {{ template "exceptionless.name" . }}-jobs-cleanup-data
-              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
               livenessProbe:
                 httpGet:
@@ -486,7 +486,7 @@ spec:
         spec:
           containers:
             - name: {{ template "exceptionless.name" . }}-jobs-cleanup-orphaned-data
-              image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
               imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
               livenessProbe:
                 httpGet:
@@ -538,7 +538,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -589,7 +589,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -640,7 +640,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-work-item
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:
@@ -700,7 +700,7 @@ spec:
     spec:
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-usage
-          image: "{{ .Values.jobs.image.repository }}:{{ .Values.jobs.image.tag }}"
+          image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
           livenessProbe:
             httpGet:

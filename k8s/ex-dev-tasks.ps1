@@ -48,9 +48,8 @@ helm repo update
 helm upgrade ex-dev-redis bitnami/redis --values ex-dev-redis-values.yaml --namespace ex-dev
 
 # upgrade exceptionless app to a new docker image tag
-$APP_TAG="2.8.1502-pre"
-$API_TAG="6.0.3534-pre"
-helm upgrade --set "api.image.tag=$API_TAG" --set "jobs.image.tag=$API_TAG" --reuse-values ex-dev .\exceptionless
+$VERSION="8.0.0"
+helm upgrade --set "version=$VERSION" --reuse-values ex-dev .\exceptionless
 
 # upgrade exceptionless app to set a new env variable
 helm upgrade `
@@ -66,12 +65,9 @@ helm upgrade `
 
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-dev --namespace ex-dev .\exceptionless
 helm upgrade --reuse-values ex-dev --namespace ex-dev .\exceptionless --dry-run | code-insiders -
-$APP_TAG="2.9.3-alpha.0.1"
-$API_TAG="6.1.4-alpha.0.11"
+$VERSION="8.0.0"
 helm upgrade ex-dev .\exceptionless --namespace ex-dev --values ex-dev-values.yaml `
-    --set "app.image.tag=$APP_TAG" `
-    --set "api.image.tag=$API_TAG" `
-    --set "jobs.image.tag=$API_TAG" `
+    --set "version=$VERSION" `
     --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" `
     --set "email.connectionString=$EMAIL_CONNECTIONSTRING" `
     --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" `
@@ -84,7 +80,6 @@ helm upgrade ex-dev .\exceptionless --namespace ex-dev --values ex-dev-values.ya
 # stop the entire app
 kubectl scale deployment/ex-dev-app --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-api --replicas=0 --namespace ex-dev
-kubectl scale deployment/ex-dev-collector --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=0 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=0 --namespace ex-dev
@@ -103,7 +98,6 @@ kubectl patch cronjob/ex-dev-jobs-migration -p '{\"spec\":{\"suspend\": true}}' 
 # resume the app
 kubectl scale deployment/ex-dev-app --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-api --replicas=1 --namespace ex-dev
-kubectl scale deployment/ex-dev-collector --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=1 --namespace ex-dev
 kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=1 --namespace ex-dev

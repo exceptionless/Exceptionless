@@ -7,7 +7,7 @@ app:
     - be.exceptionless.io
     - app.exceptionless.io
     - app.exceptionless.com
-collector:
+api:
   replicaCount: 5
   defaultDomain: collector.exceptionless.io
   domains:

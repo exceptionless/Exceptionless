@@ -7,9 +7,8 @@ data:
     {{- if .Values.appScope }}
     EX_AppScope: {{ .Values.appScope }}
     {{- end }}
-    EX_ApiUrl: https://{{.Values.api.defaultDomain}}
     EX_BaseUrl: https://{{.Values.app.defaultDomain}}
-    EX_ExceptionlessServerUrl: https://{{.Values.collector.defaultDomain}}
+    EX_ExceptionlessServerUrl: https://{{.Values.api.defaultDomain}}
     EX_DisabledPlugins: GeoPlugin,LocationPlugin
     EX_EnableSsl: "true"
     EX_Html5Mode: "true"
