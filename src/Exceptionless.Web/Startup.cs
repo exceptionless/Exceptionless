@@ -208,8 +208,6 @@ public class Startup {
                 .To("https://api-iam.intercom.io/")
                 .To("wss://nexus-websocket-a.intercom.io");
             
-            csp.SetReportOnly();
-            
             csp.OnSendingHeader = context =>
             {
                 context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
