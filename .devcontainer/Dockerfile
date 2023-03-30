@@ -1,43 +1,13 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0
+FROM mcr.microsoft.com/devcontainers/dotnet:0-7.0
 
-# https://github.com/microsoft/vscode-dev-containers/tree/master/containers/dotnetcore
-# try using this as base: mcr.microsoft.com/vscode/devcontainers/dotnetcore
+RUN apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/library-scripts
 
-# Update and install some utilities
-RUN apt-get update && \
-  apt-get install -y curl git gnupg2 jq sudo zsh htop gnupg gnupg-agent software-properties-common apt-transport-https ca-certificates nano
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends libnss3-tools htop nano curl jq
 
-# Install 3.1 sdk as it's needed by some of the vscode tooling
-RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
-  dpkg -i packages-microsoft-prod.deb && \
-  apt-get update && \
-  apt-get install -y dotnet-sdk-3.1
-
-# Enable local HTTPS
-RUN dotnet dev-certs https --trust
-
-# Install nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-
-# Install Docker CLI
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
-  add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
-  apt-get update && \
-  apt-get install -y docker-ce docker-ce-cli containerd.io
-
-# Install kubectl
-RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-  echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && \
-  apt-get update && \
-  apt-get install -y kubectl
-
-# Install helm
-RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 && \
-  chmod 700 get_helm.sh && \
-  ./get_helm.sh
-
-# Update to the latest PowerShell
-RUN curl -sSL https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh | bash
+RUN sudo dotnet dev-certs https \
+    && sudo -E dotnet dev-certs https -ep /usr/local/share/ca-certificates/aspnet/https.crt --format PEM \
+    && sudo update-ca-certificates
 
 # install k6 load testing tool
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 && \

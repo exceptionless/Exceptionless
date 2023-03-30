@@ -1,20 +1,40 @@
 {
-  "dockerFile": "Dockerfile",
-  "forwardPorts": [
+	"name": "C#, Elasticsearch, Kibana, Redis",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-dotnettools.csharp",
+				"tintoy.msbuild-project-tools",
+				"streetsidesoftware.code-spell-checker",
+        "humao.rest-client"
+      ]
+		}
+	},
+	"forwardPorts": [
+		5003,
+		5100,
     5200,
-    5201,
-    5100,
+		5201,
     9200,
-    5601
-  ],
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ],
-  "extensions": [
-    "ms-dotnettools.csharp",
-    "streetsidesoftware.code-spell-checker",
-    "tintoy.msbuild-project-tools",
-    "humao.rest-client",
-    "ms-kubernetes-tools.vscode-kubernetes-tools"
-  ]
+    5601	],
+	"portsAttributes": {
+		"7049": {
+			"protocol": "https"
+		},
+		"5100": {
+			"protocol": "https"
+		}
+	},
+	"postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
+	"features": {
+    "ghcr.io/devcontainers/features/powershell": {},
+		"ghcr.io/devcontainers/features/dotnet:1": {},
+		"ghcr.io/devcontainers/features/node:1": {
+			"nodeGypDependencies": true,
+			"version": "lts"
+		}
+	}
 }

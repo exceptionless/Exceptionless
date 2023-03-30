@@ -6,6 +6,10 @@ on:
 
 jobs:
   build:
+    cancel-timeout-minutes: 30
+    concurrency:
+      cancel-in-progress: true
+      group: arm64
     runs-on: buildjet-2vcpu-ubuntu-2204-arm
     steps:
     - name: Checkout
