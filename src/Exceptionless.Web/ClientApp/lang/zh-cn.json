@@ -193,6 +193,7 @@
     "Copy Event JSON to Clipboard":"将事件以JSON格式复制到剪贴板",
     "Copy to Clipboard":"复制到剪贴板",
     "Cookie Values":"Cookie值",
+    "Headers": "标头",
     "No events were found with the current filter.":"未找到满足当前筛选条件的日志。",
     "No events were found.":"尚未发现任何日志。",
     "An error occurred promoting tab.":"提升标签的过程中发生了错误。",

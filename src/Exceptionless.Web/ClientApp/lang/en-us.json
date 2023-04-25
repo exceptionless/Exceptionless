@@ -193,6 +193,7 @@
   "Copy Event JSON to Clipboard":"Copy Event JSON to Clipboard",
   "Copy to Clipboard":"Copy to Clipboard",
   "Cookie Values":"Cookie Values",
+  "Headers": "Headers",
   "No events were found with the current filter.":"No events were found with the current filter.",
   "No events were found.":"No events were found.",
   "An error occurred promoting tab.":"An error occurred promoting tab.",

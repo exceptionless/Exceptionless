@@ -330,6 +330,7 @@
 
           vm.request = vm.event.data && vm.event.data['@request'];
           vm.hasCookies = vm.request && !!vm.request.cookies && Object.keys(vm.request.cookies).length > 0;
+          vm.hasHeaders = vm.request && !!vm.request.headers && Object.keys(vm.request.headers).length > 0;
           vm.requestUrl = vm.request && urlService.buildUrl(vm.request.is_secure, vm.request.host, vm.request.port, vm.request.path, vm.request.query_string);
 
           vm.user = vm.event.data && vm.event.data['@user'];
@@ -452,6 +453,19 @@
         vm.isAccordionVisible = $window.innerWidth < 768;
       }
 
+      function sortedHeaders() {
+        var headers = {};
+
+        Object.keys(vm.request.headers || {})
+          .sort()
+          .forEach(function (key) {
+            headers[key] = vm.request.headers[key].join(',');
+          }
+        );
+
+        return headers;
+      }
+
       this.$onInit = function $onInit() {
         updateIsAccordionVisible();
         var window = angular.element($window);
@@ -493,6 +507,7 @@
         vm.request = {};
         vm.requestUrl = '';
         vm.hasCookies = false;
+        vm.hasHeaders = false;
         vm.hasError = false;
         vm.user = {};
         vm.userIdentity = '';
@@ -555,6 +570,7 @@
           hideSessionStartTime: true
         };
         vm.sessionEventsTabActivated = false;
+        vm.sortedHeaders = sortedHeaders;
         vm.viewJSON = viewJSON;
         vm.tabs = [];
 
