@@ -5,6 +5,7 @@ namespace Exceptionless.Core.Models.Data;
 public class RequestInfo : IData {
     public RequestInfo() {
         Data = new DataDictionary();
+        Headers = new Dictionary<string, string[]>();
         Cookies = new Dictionary<string, string>();
         QueryString = new Dictionary<string, string>();
     }
@@ -48,6 +49,11 @@ public class RequestInfo : IData {
     /// The client's IP address when the error occurred.
     /// </summary>
     public string ClientIpAddress { get; set; }
+
+    /// <summary>
+    /// The header values from the request.
+    /// </summary>
+    public Dictionary<string, string[]> Headers { get; set; }
 
     /// <summary>
     /// The request cookies.
