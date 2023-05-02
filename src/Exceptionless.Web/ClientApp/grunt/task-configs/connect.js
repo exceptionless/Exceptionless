@@ -117,7 +117,7 @@ function generateCerts() {
         'dev-certs',
         'https',
         '--export-path',
-        certFilePath,
+        '"' + certFilePath + '"',
         '--format',
         'Pem',
         '--no-password'
