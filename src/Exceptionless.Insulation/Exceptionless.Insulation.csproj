@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.1.0" />
@@ -20,7 +20,7 @@
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
-    <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="3.1.5" />
+    <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="4.0.0" />
     <PackageReference Include="YamlDotNet" Version="13.0.1" />
   </ItemGroup>
   <ItemGroup>
