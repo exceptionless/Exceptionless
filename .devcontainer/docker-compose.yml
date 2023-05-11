@@ -2,7 +2,7 @@ version: '3'
 
 services:
   app:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
 
@@ -18,11 +18,11 @@ services:
     # Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
     # user: root
 
-    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
   elasticsearch:
-    image: exceptionless/elasticsearch:8.7.0
+    image: exceptionless/elasticsearch:8.7.1
     environment:
       node.name: elasticsearch
       cluster.name: exceptionless
@@ -38,7 +38,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:8.7.0
+    image: docker.elastic.co/kibana/kibana:8.7.1
     environment:
         xpack.security.enabled: 'false'
     ports:
