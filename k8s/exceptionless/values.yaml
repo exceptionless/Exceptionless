@@ -52,33 +52,33 @@ service:
   type: ClusterIP
 
 elasticsearch:
-  connectionString: 
+  connectionString:
   image:
     repository: exceptionless/elasticsearch
-    tag: 8.7.0
+    tag: 8.7.1
     pullPolicy: IfNotPresent
 
 redis:
-  connectionString: 
+  connectionString:
   image:
     repository: redis
     tag: latest
     pullPolicy: IfNotPresent
 
 storage:
-  connectionString: 
+  connectionString:
 
 cache:
-  connectionString: 
+  connectionString:
 
 metrics:
-  connectionString: 
+  connectionString:
 
 queue:
-  connectionString: 
+  connectionString:
 
 email:
-  connectionString: 
+  connectionString:
 
 messagebus:
-  connectionString: 
+  connectionString:
