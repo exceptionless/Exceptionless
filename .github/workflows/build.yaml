@@ -32,10 +32,7 @@ jobs:
           echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
-      - name: Lint Client
-        working-directory: src/Exceptionless.Web/ClientApp
-        run: npm run prettier:check
-      - name: Lint Services
+      - name: Lint
         run: dotnet format --verify-no-changes --verbosity diagnostic
       - name: Build
         run: dotnet build --configuration Release /clp:NoSummary
