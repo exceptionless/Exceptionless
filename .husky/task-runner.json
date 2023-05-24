@@ -1,0 +1,17 @@
+{
+  "tasks": [
+    {
+      "name": "dotnet format",
+      "command": "dotnet",
+      "args": ["format", "--include", "${staged}"],
+      "include": ["**/*.cs"]
+    },
+    {
+      "name": "prettier",
+      "cwd": "src/Exceptionless.Web/ClientApp",
+      "command": "npm",
+      "args": ["run", "prettier:staged", "--", "${staged}"],
+      "pathMode": "absolute"
+    }
+  ]
+}
