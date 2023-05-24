@@ -1,8 +1,8 @@
 name: Build
-on: [ push, pull_request ]
+on: [push, pull_request]
 env:
-    TERM: xterm
-    DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
+  TERM: xterm
+  DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_NOLOGO: true
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
