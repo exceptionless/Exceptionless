@@ -4,9 +4,13 @@
   "scripts": {
     "build": "npx grunt build",
     "serve": "npx grunt serve",
-    "prod-serve": "cross-env ASPNETCORE_URLS=https://api.exceptionless.io npx grunt serve"
+    "prod-serve": "cross-env ASPNETCORE_URLS=https://api.exceptionless.io npx grunt serve",
+    "prettier": "prettier --config .prettierrc **/* --write --ignore-unknown",
+    "prettier:check": "prettier --config .prettierrc **/* --check --ignore-unknown",
+    "prettier:staged": "prettier --config .prettierrc --write --ignore-unknown"
   },
   "devDependencies": {
+    "cross-env": "7.0.3",
     "grunt": "1.6.1",
     "grunt-angular-templates": "1.2.0",
     "grunt-browser-output": "1.0.3",
@@ -28,7 +32,7 @@
     "grunt-replace": "2.0.2",
     "jshint-stylish": "2.2.1",
     "load-grunt-config": "4.0.1",
-    "cross-env": "7.0.3"
+    "prettier": "2.8.8"
   },
   "dependencies": {
     "angular": "1.8.3",
