@@ -3,93 +3,98 @@ on: [ push, pull_request ]
 env:
     TERM: xterm
     DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
-    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-    DOTNET_NOLOGO: true
-    DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 7.0.*
-        dotnet-quality: ga
-    - name: Build Reason
-      env:
-        GITHUB_EVENT: ${{ toJson(github) }}
-      run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
-    - name: Build Version
-      run: |
-        dotnet tool install --global minver-cli --version 4.3.0
-        version=$(minver --tag-prefix v)
-        echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
-        echo "VERSION=$version" >> $GITHUB_ENV
-        echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
-    - name: Build
-      run: dotnet build --configuration Release /clp:NoSummary
-    - name: Start Services
-      working-directory: docker
-      run: docker compose up --wait elasticsearch
-    - name: Run Tests
-      run: dotnet test --configuration Release --no-build --logger GitHubActions
-    - name: Set up Docker Buildx
-      if: "${{ env.DOCKER_USERNAME != '' }}"
-      uses: docker/setup-buildx-action@v2
-      with:
-        platforms: linux/amd64
-    - name: Login to GitHub Container Registry
-      if: "${{ env.DOCKER_USERNAME != '' }}"
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Login to DockerHub
-      if: "${{ env.DOCKER_USERNAME != '' }}"
-      uses: docker/login-action@v2
-      with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Publish CI Packages
-      if: "${{ env.DOCKER_USERNAME != '' }}"
-      run: |
-        echo "::remove-matcher owner=csc::"
-        # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
-          docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image-ci:$VERSION --tag exceptionless/$image-ci:latest --tag ghcr.io/exceptionless/exceptionless/$image:$VERSION --tag ghcr.io/exceptionless/exceptionless/$image:latest
-        done
-        #docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless-ci:$VERSION-elasticsearch7 --tag exceptionless/exceptionless-ci:latest-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:$VERSION-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:latest-elasticsearch7
-    - name: Publish Release Packages
-      if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
-      run: |
-        # tag and push docker image
-        for image in {"api","job","app","exceptionless"}; do
-          docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
-        done
-        docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
-    - name: Install Helm
-      if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
-      uses: azure/setup-helm@v3
-      with:
-        version: v3.11.1
-    - name: Deploy Changes to Development Environment
-      if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
-      run: |
-        az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
-        az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-        helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
-    - name: Deploy Changes to Production Environment
-      if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
-      run: |
-        az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
-        az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
-        sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-        helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.*
+          dotnet-quality: ga
+      - name: Build Reason
+        env:
+          GITHUB_EVENT: ${{ toJson(github) }}
+        run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
+      - name: Build Version
+        run: |
+          dotnet tool install --global minver-cli --version 4.3.0
+          version=$(minver --tag-prefix v)
+          echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
+      - name: Lint Client
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npm run prettier:check
+      - name: Lint Services
+        run: dotnet format --verify-no-changes --verbosity diagnostic
+      - name: Build
+        run: dotnet build --configuration Release /clp:NoSummary
+      - name: Start Services
+        working-directory: docker
+        run: docker compose up --wait elasticsearch
+      - name: Run Tests
+        run: dotnet test --configuration Release --no-build --logger GitHubActions
+      - name: Set up Docker Buildx
+        if: "${{ env.DOCKER_USERNAME != '' }}"
+        uses: docker/setup-buildx-action@v2
+        with:
+          platforms: linux/amd64
+      - name: Login to GitHub Container Registry
+        if: "${{ env.DOCKER_USERNAME != '' }}"
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to DockerHub
+        if: "${{ env.DOCKER_USERNAME != '' }}"
+        uses: docker/login-action@v2
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish CI Packages
+        if: "${{ env.DOCKER_USERNAME != '' }}"
+        run: |
+          echo "::remove-matcher owner=csc::"
+          # tag and push docker image
+          for image in {"api","job","app","exceptionless"}; do
+            docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image-ci:$VERSION --tag exceptionless/$image-ci:latest --tag ghcr.io/exceptionless/exceptionless/$image:$VERSION --tag ghcr.io/exceptionless/exceptionless/$image:latest
+          done
+          #docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless-ci:$VERSION-elasticsearch7 --tag exceptionless/exceptionless-ci:latest-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:$VERSION-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:latest-elasticsearch7
+      - name: Publish Release Packages
+        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        run: |
+          # tag and push docker image
+          for image in {"api","job","app","exceptionless"}; do
+            docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
+          done
+          docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
+      - name: Install Helm
+        if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.11.1
+      - name: Deploy Changes to Development Environment
+        if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
+        run: |
+          az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
+          az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
+          sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
+      - name: Deploy Changes to Production Environment
+        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        run: |
+          az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
+          az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
+          sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
