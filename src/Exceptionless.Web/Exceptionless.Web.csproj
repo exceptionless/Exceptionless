@@ -66,6 +66,7 @@
   <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaPublish)' != 'true'">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run prettier:check" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
 
     <!-- Include the newly-built files in the publish output -->
