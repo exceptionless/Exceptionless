@@ -1,0 +1,51 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": ["airbnb-base"],
+  "globals": {
+    "$": "readonly",
+    "_": "readonly",
+    "angular": "readonly",
+    "define": "readonly",
+    "moment": "readonly",
+    "require": "readonly"
+  },
+  "overrides": [],
+  "parserOptions": {
+    "ecmaVersion": 2015
+  },
+  "rules": {
+    "comma-dangle": "off",
+    "consistent-return": "off",
+    "func-names": "off",
+    "global-require": "off",
+    "guard-for-in": "off",
+    "max-len": "off",
+    "no-cond-assign": "off",
+    "no-continue": "off",
+    "no-extra-boolean-cast": "off",
+    "no-multi-assign": "off",
+    "no-param-reassign": "off",
+    "no-plusplus": "off",
+    "no-prototype-builtins": "off",
+    "no-underscore-dangle": "off",
+    "no-restricted-globals": "off",
+    "no-unused-vars": "off",
+    "no-restricted-syntax": "off",
+    "no-use-before-define": "off",
+    "no-shadow": "off",
+    "no-var": "off",
+    "no-void": "off",
+    "object-shorthand": "off",
+    "operator-linebreak": "off",
+    "prefer-arrow-callback": "off",
+    "prefer-destructuring": "off",
+    "prefer-regex-literals": "off",
+    "prefer-template": "off",
+    "quotes": ["error", "double"],
+    "strict": "off",
+    "vars-on-top": "off"
+  }
+}
