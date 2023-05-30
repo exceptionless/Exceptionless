@@ -1,0 +1,118 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@clientToken = LhhP1C9gijpSKCslHHCvwdSIz298twx271nTest
+@organizationId = 537650f3b77efe23a47914f3
+@projectId = 537650f3b77efe23a47914f4
+@referenceId = ref123456
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### All
+# @name allEvents
+GET {{apiUrl}}/events?limit=1
+Authorization: Bearer {{token}}
+
+###
+@eventId = {{allEvents.response.body.$[0].id}}
+@stackId = {{allEvents.response.body.$[0].stack_id}}
+
+### By Id
+GET {{apiUrl}}/events/{{eventId}}
+Authorization: Bearer {{token}}
+
+### By Organization
+GET {{apiUrl}}/events?organization={{organizationId}}
+Authorization: Bearer {{token}}
+
+### By Stack
+GET {{apiUrl}}/stacks/{{stackId}}/events
+Authorization: Bearer {{token}}
+
+### By Project
+GET {{apiUrl}}/projects/{{projectId}}/events
+Authorization: Bearer {{token}}
+
+### Count
+GET {{apiUrl}}/events/count?aggregations=date:(date~month+cardinality:stack+sum:count~1)+cardinality:stack+terms:(first+@include:true)+sum:count~1&filter=(status:open+OR+status:regressed)
+Authorization: Bearer {{token}}
+
+### Simple Strings
+POST {{apiUrl}}/events?access_token={{clientToken}}
+Content-Type: application/json
+
+Event 1
+Event 2
+Event 3
+Event 4
+
+### Post With ReferenceId
+POST {{apiUrl}}/events?access_token={{clientToken}}
+Content-Type: application/json
+
+{
+  "message": "Test with reference id",
+  "reference_id": "{{referenceId}}"
+}
+
+### Post User Description
+POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
+Content-Type: application/json
+
+{
+  "description": "Test Description"
+}
+
+### Update Event By ReferenceId
+POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
+Content-Type: application/json
+
+{
+  "email_address": "{{email}}",
+  "description": "testing reference id"
+}
+
+### Post Custom Event
+POST {{apiUrl}}/events?access_token={{clientToken}}
+Content-Type: application/json
+
+{
+  "type": "404",
+  "source": "GET /Print",
+  "message": null,
+  "geo": "40,-70",
+  "value": 1,
+  "reference_id": "12345678",
+  "session_id": "12345",
+  "data": {
+    "@user": {
+    "identity": "My-User-Identity"
+    },
+    "@user_description": {
+    "email_address": "{{email}}",
+    "description": "my custom description"
+    }
+  }
+}
+
+### GET Submit Random Parameters
+GET {{apiUrl}}/events/submit?access_token={{clientToken}}&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
+
+### Raygun Post
+POST {{apiUrl}}/events?access_token={{clientToken}}
+Content-Type: application/json
+X-ApiKey: {{clientToken}}
+
+Event 1

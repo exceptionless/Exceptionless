@@ -1,0 +1,67 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+@projectId = 537650f3b77efe23a47914f4
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### Get By Organization Id
+# @name organizationClientTokens
+GET {{apiUrl}}/organizations/{{organizationId}}/tokens
+Authorization: Bearer {{token}}
+
+###
+@clientToken = {{organizationClientTokens.response.body.$[0].id}}
+
+
+### Get By Project Id
+# @name projectClientTokens
+GET {{apiUrl}}/projects/{{projectId}}/tokens
+Authorization: Bearer {{token}}
+
+###
+@clientToken = {{projectClientTokens.response.body.$[0].id}}
+
+### Get By Id
+GET {{apiUrl}}/tokens/{{clientToken}}
+Authorization: Bearer {{token}}
+
+### Post
+# @name newClientToken
+POST {{apiUrl}}/tokens
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "organization_id": "{{organizationId}}",
+    "project_id": "{{projectId}}",
+	"notes": "This is a sample api key"
+}
+
+###
+@clientToken = {{newClientToken.response.body.$.id}}
+
+### Patch
+PATCH {{apiUrl}}/tokens/{{clientToken}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "notes": "updated token" }
+
+### Delete
+DELETE {{apiUrl}}/tokens/{{clientToken}}
+Authorization: Bearer {{token}}
+
