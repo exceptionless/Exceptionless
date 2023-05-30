@@ -122,12 +122,12 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
     [Consumes("application/json")]
-    public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken token) {
+    public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken token = null) {
         var project = await GetProjectAsync(projectId);
         if (project == null)
             return NotFound();
 
-        if (token == null)
+        if (token is null)
             token = new NewToken();
 
         token.OrganizationId = project.OrganizationId;
@@ -148,8 +148,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
     [Consumes("application/json")]
-    public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken token) {
-        if (token == null)
+    public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken token = null) {
+        if (token is null)
             token = new NewToken();
 
         if (!IsInOrganization(organizationId))
