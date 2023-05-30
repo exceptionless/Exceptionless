@@ -1,3 +1,5 @@
+# Additonal http collections can be found in the tests/http folder.
+
 @apiUrl = http://localhost:5200/api/v2
 @email = test@localhost
 @password = tester

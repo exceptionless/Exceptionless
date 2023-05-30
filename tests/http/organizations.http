@@ -1,0 +1,89 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### All
+GET {{apiUrl}}/organizations
+Authorization: Bearer {{token}}
+
+### By Id
+GET {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+
+### Invoices
+GET {{apiUrl}}/organizations/{{organizationId}}/invoices
+Authorization: Bearer {{token}}
+
+### Check Name
+GET {{apiUrl}}/organizations/check-name/My New Organization
+Authorization: Bearer {{token}}
+
+### Create
+# @name newOrganization
+POST {{apiUrl}}/organizations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "My new organization" }
+
+###
+@organizationId = {{newOrganization.response.body.$.id}}
+
+### Change Plan
+POST {{apiUrl}}/organizations/{{organizationId}}/change-plan?planId=EX_FREE
+Authorization: Bearer {{token}}
+
+### Add User
+POST {{apiUrl}}/organizations/{{organizationId}}/users/test2@localhost
+Authorization: Bearer {{token}}
+
+### Update
+PATCH {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "My updated organization" }
+
+### Delete
+DELETE {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+
+### Remove User
+DELETE {{apiUrl}}/organizations/{{organizationId}}/users/test2@localhost
+Authorization: Bearer {{token}}
+
+### Add Data
+POST {{apiUrl}}/organizations/{{organizationId}}/data/my-test-key
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "My updated organization" }
+
+### Remove Data
+DELETE {{apiUrl}}/organizations/{{organizationId}}/data/my-test-key
+Authorization: Bearer {{token}}
+
+### Suspend
+POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1&notes=suspended-for-being-awesome
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Unsuspend
+DELETE {{apiUrl}}/organizations/{{organizationId}}/suspend
+Authorization: Bearer {{token}}
+Content-Type: application/json

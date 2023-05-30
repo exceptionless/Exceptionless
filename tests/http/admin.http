@@ -1,0 +1,82 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### Get Current User
+# @name currentUser
+GET {{apiUrl}}/users/me
+Authorization: Bearer {{token}}
+
+###
+@userId = {{currentUser.response.body.$.id}}
+
+### All Organizations
+GET {{apiUrl}}/admin/organizations
+Authorization: Bearer {{token}}
+
+### Organizations By Criteria
+GET {{apiUrl}}/admin/organizations?criteria=acme
+Authorization: Bearer {{token}}
+
+### Paid Organizations
+GET {{apiUrl}}/admin/organizations?paid=true
+Authorization: Bearer {{token}}
+
+### Suspended Organizations
+GET {{apiUrl}}/admin/organizations?suspended=true
+Authorization: Bearer {{token}}
+
+### Plan Stats
+GET {{apiUrl}}/admin/organizations/stats
+Authorization: Bearer {{token}}
+
+### Suspend
+POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Unsuspend
+DELETE {{apiUrl}}/organizations/{{organizationId}}/suspend
+Authorization: Bearer {{token}}
+
+### Add Admin Role
+POST {{apiUrl}}/users/{{userId}}/admin-role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Delete Admin Role
+DELETE {{apiUrl}}/users/{{userId}}/admin-role
+Authorization: Bearer {{token}}
+
+### Requeue
+GET {{apiUrl}}/admin/requeue?archive=true
+Authorization: Bearer {{token}}
+
+### Set Bonus
+POST {{apiUrl}}/admin/set-bonus?organizationId={{organizationId}}&bonusEvents=1500&expires=12-31-2023
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Update Organization Plans
+GET {{apiUrl}}/admin/maintenance/update-organization-plans
+Authorization: Bearer {{token}}
+
+### Update Project Default Bot Lists
+GET {{apiUrl}}/admin/maintenance/update-project-default-bot-lists
+Authorization: Bearer {{token}}
+

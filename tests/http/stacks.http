@@ -1,0 +1,77 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+@projectId = 537650f3b77efe23a47914f4
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+
+### All
+# @name allStacks
+GET {{apiUrl}}/stacks?limit=1
+Authorization: Bearer {{token}}
+
+###
+@stackId = {{allStacks.response.body.$[0].id}}
+
+### Get By Organization Id
+GET {{apiUrl}}/stacks?organization={{organizationId}}
+Authorization: Bearer {{token}}
+
+### Get By Id
+GET {{apiUrl}}/stacks/{{stackId}}
+Authorization: Bearer {{token}}
+
+### Change Status (open, fixed, ignored, discarded)
+POST {{apiUrl}}/stacks/{{stackId}}/change-status?status=open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Mark Fixed
+POST {{apiUrl}}/stacks/{{stackId}}/mark-fixed
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Mark Snoozed
+POST {{apiUrl}}/stacks/{{stackId}}/mark-snoozed?snoozeUntilUtc=12-31-2030
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Mark Critical
+POST {{apiUrl}}/stacks/{{stackId}}/mark-critical
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Mark Not Critical
+DELETE {{apiUrl}}/stacks/{{stackId}}/mark-critical
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Promote
+POST {{apiUrl}}/stacks/{{stackId}}/promote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### AddLink
+POST {{apiUrl}}/stacks/{{stackId}}/add-link
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "https://localhost" }
+
+### Delete
+DELETE {{apiUrl}}/stacks/{{stackId}}
+Authorization: Bearer {{token}}

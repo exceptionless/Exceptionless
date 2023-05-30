@@ -1,0 +1,32 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+
+### Login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Signup
+POST {{apiUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "name":"test"
+}
+
+### Signup with token
+POST {{apiUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "name":"test"
+}
