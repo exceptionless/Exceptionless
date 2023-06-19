@@ -1,0 +1,54 @@
+@url = http://localhost:5200
+@apiUrl = {{url}}/api/v2
+@email = test@localhost
+@password = tester
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### Health
+GET {{url}}/health
+
+### Readiness
+GET {{url}}/ready
+
+### About
+GET {{apiUrl}}/about
+Authorization: Bearer {{token}}
+
+### Queue Stats
+GET {{apiUrl}}/queue-stats
+Authorization: Bearer {{token}}
+
+### System Notification
+GET {{apiUrl}}/notifications/system
+Authorization: Bearer {{token}}
+
+### System Notification
+POST {{apiUrl}}/notifications/system
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "<b>System is currently unavailable</b>" }
+
+### System Notification
+DELETE {{apiUrl}}/notifications/system
+Authorization: Bearer {{token}}
+
+### Release Notification
+POST {{apiUrl}}/notifications/release?critical=true
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "We just released a new release!! Check it out <a href=\"blah\">here</a>" }

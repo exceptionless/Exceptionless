@@ -15,13 +15,13 @@
       </div>
       <div class="panel-body">
         <uib-tabset class="tab-container hidden-xs" active="vm.activeTabIndex">
-          <uib-tab ng-repeat="tab in vm.tabs" heading="{{::tab.title | toSpacedWords | translate}}" ng-click="vm.activateTab(tab.title)">
+          <uib-tab ng-repeat="tab in vm.tabs" heading="{{::tab.title | translate}}" ng-click="vm.activateTab(tab.title)">
             <div ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'" ng-if="!vm.isAccordionVisible"></div>
           </uib-tab>
         </uib-tabset>
 
         <uib-accordion class="visible-xs">
-          <div uib-accordion-group class="panel-default" ng-repeat="tab in vm.tabs" heading="{{::tab.title | toSpacedWords}}" is-open="tab.active" ng-click="vm.activateTab(tab.title)">
+          <div uib-accordion-group class="panel-default" ng-repeat="tab in vm.tabs" heading="{{::tab.title}}" is-open="tab.active" ng-click="vm.activateTab(tab.title)">
             <div ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'" ng-if="vm.isAccordionVisible"></div>
           </div>
         </uib-accordion>

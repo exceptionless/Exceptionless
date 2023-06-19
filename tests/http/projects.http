@@ -1,0 +1,143 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+@projectId = 537650f3b77efe23a47914f4
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### Get Current User
+# @name currentUser
+GET {{apiUrl}}/users/me
+Authorization: Bearer {{token}}
+
+###
+@userId = {{currentUser.response.body.$.id}}
+
+### Get By Organization Id
+GET {{apiUrl}}/projects?organizationId={{organizationId}}
+Authorization: Bearer {{token}}
+
+### Get By Id
+GET {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
+### Get Default Api Key
+GET {{apiUrl}}/projects/{{projectId}}/tokens/default
+Authorization: Bearer {{token}}
+
+### Check Name
+GET {{apiUrl}}/projects/check-name/My New Project
+Authorization: Bearer {{token}}
+
+### Post
+# @name newProject
+POST {{apiUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "OrganizationId": "{{organizationId}}",
+  "Name": "Exceptionless Is Amazing"
+}
+
+###
+@projectId = {{newProject.response.body.$.id}}
+
+### Get Config
+GET {{apiUrl}}/projects/{{projectId}}/config
+Authorization: Bearer {{token}}
+
+### Set Config
+POST {{apiUrl}}/projects/{{projectId}}/config?key=my-test-key
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "Custom Configuration" }
+
+### Delete Config
+DELETE {{apiUrl}}/projects/{{projectId}}/config?key=my-test-key
+Authorization: Bearer {{token}}
+
+### New Api Key
+# @name newApiKey
+POST {{apiUrl}}/projects/{{projectId}}/tokens
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+@projectApiKey = {{newApiKey.response.body.$.id}}
+
+### Delete Api Key
+DELETE {{apiUrl}}/tokens/{{projectApiKey}}
+Authorization: Bearer {{token}}
+
+### Reset Data
+GET {{apiUrl}}/projects/{{projectId}}/reset-data
+Authorization: Bearer {{token}}
+
+### Get Notification Settings
+GET {{apiUrl}}/projects/{{projectId}}/notifications
+Authorization: Bearer {{token}}
+
+### Set Notification Settings
+POST {{apiUrl}}/users/{{userId}}/projects/{{projectId}}/notifications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "send_daily_summary": true,
+  "report_new_errors": false,
+  "report_critical_errors": true,
+  "report_event_regressions": true,
+  "report_new_events": false,
+  "report_critical_events": false
+}
+
+### Delete Notification Settings
+DELETE {{apiUrl}}/users/{{userId}}/projects/{{projectId}}/notifications
+Authorization: Bearer {{token}}
+
+### Promote Tab
+POST {{apiUrl}}/projects/{{projectId}}/promotedtabs?name=my-tab-name
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### DemoteTab
+DELETE {{apiUrl}}/projects/{{projectId}}/promotedtabs?name=my-tab-name
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Post Data
+POST {{apiUrl}}/projects/{{projectId}}/data?key=my-test-key
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "Super Secret Key" }
+
+### Delete Data
+DELETE {{apiUrl}}/projects/{{projectId}}/data?key=my-test-key
+Authorization: Bearer {{token}}
+
+### Patch
+PATCH {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "Name": "My Updated Project" }
+
+### Delete
+DELETE {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
