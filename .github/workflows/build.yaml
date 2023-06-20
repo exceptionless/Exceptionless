@@ -33,7 +33,7 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
       - name: Lint .NET
-        run: dotnet format --verify-no-changes --verbosity diagnostic
+        run: dotnet format --verify-no-changes --no-restore --verbosity diagnostic
       - name: Build
         run: dotnet build --configuration Release /clp:NoSummary
       - name: Start Services
@@ -49,6 +49,7 @@ jobs:
         working-directory: src/Exceptionless.Web/ClientApp
         run: npm ci
       - name: Lint Client
+        working-directory: src/Exceptionless.Web/ClientApp
         run: |
           npm run lint
           npm run prettier:check
