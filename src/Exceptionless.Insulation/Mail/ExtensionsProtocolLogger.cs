@@ -4,7 +4,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Insulation.Mail;
 
-public class ExtensionsProtocolLogger : IProtocolLogger {
+public class ExtensionsProtocolLogger : IProtocolLogger
+{
     private const string CLIENT_PREFIX = "Client: ";
     private const string SERVER_PREFIX = "Server: ";
 
@@ -12,23 +13,28 @@ public class ExtensionsProtocolLogger : IProtocolLogger {
 
     public IAuthenticationSecretDetector AuthenticationSecretDetector { get; set; }
 
-    public ExtensionsProtocolLogger(ILogger logger) {
+    public ExtensionsProtocolLogger(ILogger logger)
+    {
         _logger = logger;
     }
 
-    public void LogConnect(Uri uri) {
+    public void LogConnect(Uri uri)
+    {
         _logger.LogTrace("Connected to {URI}", uri);
     }
 
-    public void LogClient(byte[] buffer, int offset, int count) {
+    public void LogClient(byte[] buffer, int offset, int count)
+    {
         LogMessage(CLIENT_PREFIX, buffer, offset, count);
     }
 
-    public void LogServer(byte[] buffer, int offset, int count) {
+    public void LogServer(byte[] buffer, int offset, int count)
+    {
         LogMessage(SERVER_PREFIX, buffer, offset, count);
     }
 
-    private void LogMessage(string prefix, byte[] buffer, int offset, int count) {
+    private void LogMessage(string prefix, byte[] buffer, int offset, int count)
+    {
         if (!_logger.IsEnabled(LogLevel.Trace))
             return;
 
@@ -44,13 +50,16 @@ public class ExtensionsProtocolLogger : IProtocolLogger {
         int endIndex = offset + count;
         int index = offset;
 
-        while (index < endIndex) {
+        while (index < endIndex)
+        {
             int start = index;
-            while (index < endIndex && buffer[index] != (byte)'\n') {
+            while (index < endIndex && buffer[index] != (byte)'\n')
+            {
                 index++;
             }
 
-            if (index < endIndex && buffer[index] == (byte)'\n') {
+            if (index < endIndex && buffer[index] == (byte)'\n')
+            {
                 index++;
             }
 

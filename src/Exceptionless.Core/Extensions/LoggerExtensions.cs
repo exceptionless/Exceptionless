@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
-internal static class LoggerExtensions {
+internal static class LoggerExtensions
+{
 
     private static readonly Action<ILogger, string, string, string, Exception?> _recordWebHook =
         LoggerMessage.Define<string, string, string>(

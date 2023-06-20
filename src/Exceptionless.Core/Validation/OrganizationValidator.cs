@@ -5,8 +5,10 @@ using FluentValidation;
 
 namespace Exceptionless.Core.Validation;
 
-public class OrganizationValidator : AbstractValidator<Organization> {
-    public OrganizationValidator(BillingPlans plans) {
+public class OrganizationValidator : AbstractValidator<Organization>
+{
+    public OrganizationValidator(BillingPlans plans)
+    {
         RuleFor(o => o.Name).NotEmpty().WithMessage("Please specify a valid name.");
         RuleFor(o => o.PlanId).NotEmpty().WithMessage("Please specify a valid plan id.");
         RuleFor(o => o.HasPremiumFeatures).Equal(false).When(o => o.PlanId == plans.FreePlan.Id).WithMessage("Premium features cannot be enabled on the free plan.");

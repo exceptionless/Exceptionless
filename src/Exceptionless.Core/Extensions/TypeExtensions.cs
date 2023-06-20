@@ -3,19 +3,24 @@ using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class TypeExtensions {
-    public static IList<Type> SortByPriority(this IEnumerable<Type> types) {
-        return types.OrderBy(t => {
+public static class TypeExtensions
+{
+    public static IList<Type> SortByPriority(this IEnumerable<Type> types)
+    {
+        return types.OrderBy(t =>
+        {
             var priorityAttribute = t.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
             return priorityAttribute?.Priority ?? 0;
         }).ToList();
     }
 
-    public static bool IsNumeric(this Type type) {
+    public static bool IsNumeric(this Type type)
+    {
         if (type.IsArray)
             return false;
 
-        switch (Type.GetTypeCode(type)) {
+        switch (Type.GetTypeCode(type))
+        {
             case TypeCode.Byte:
             case TypeCode.Decimal:
             case TypeCode.Double:
@@ -33,7 +38,8 @@ public static class TypeExtensions {
         return false;
     }
 
-    public static T ToType<T>(this object value) {
+    public static T ToType<T>(this object value)
+    {
         if (value == null)
             throw new ArgumentNullException(nameof(value));
 
@@ -44,9 +50,11 @@ public static class TypeExtensions {
         if (targetType.IsAssignableFrom(valueType))
             return (T)value;
 
-        if ((valueType.IsEnum || value is string) && targetType.IsEnum) {
+        if ((valueType.IsEnum || value is string) && targetType.IsEnum)
+        {
             // attempt to match enum by name.
-            if (EnumHelper.TryEnumIsDefined(targetType, value.ToString())) {
+            if (EnumHelper.TryEnumIsDefined(targetType, value.ToString()))
+            {
                 object parsedValue = Enum.Parse(targetType, value.ToString(), false);
                 return (T)parsedValue;
             }
@@ -58,17 +66,21 @@ public static class TypeExtensions {
         if (valueType.IsNumeric() && targetType.IsEnum)
             return (T)Enum.ToObject(targetType, value);
 
-        if (converter != null && converter.CanConvertFrom(valueType)) {
+        if (converter != null && converter.CanConvertFrom(valueType))
+        {
             object convertedValue = converter.ConvertFrom(value);
             return (T)convertedValue;
         }
 
-        if (value is IConvertible) {
-            try {
+        if (value is IConvertible)
+        {
+            try
+            {
                 object convertedValue = Convert.ChangeType(value, targetType);
                 return (T)convertedValue;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value), e);
             }
         }

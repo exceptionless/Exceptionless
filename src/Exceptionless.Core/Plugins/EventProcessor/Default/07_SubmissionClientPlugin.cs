@@ -7,10 +7,12 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 
 [Priority(7)]
-public sealed class SubmissionClientPlugin : EventProcessorPluginBase {
+public sealed class SubmissionClientPlugin : EventProcessorPluginBase
+{
     public SubmissionClientPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
-    public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+    public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
+    {
         contexts.ForEach(c => c.Event.Data.Remove(Event.KnownDataKeys.SubmissionClient));
 
         var firstContext = contexts.FirstOrDefault();
@@ -27,13 +29,16 @@ public sealed class SubmissionClientPlugin : EventProcessorPluginBase {
         if (hasIpAddress)
             submissionClient.IpAddress = !epi.IpAddress.IsLocalHost() ? epi.IpAddress.Trim() : "127.0.0.1";
 
-        if (hasUserAgent) {
+        if (hasUserAgent)
+        {
             string[] parts = epi.UserAgent.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2 && Version.TryParse(parts[1], out var version)) {
+            if (parts.Length == 2 && Version.TryParse(parts[1], out var version))
+            {
                 submissionClient.UserAgent = parts[0].Trim().ToLowerInvariant();
                 submissionClient.Version = version.ToString();
             }
-            else {
+            else
+            {
                 submissionClient.UserAgent = epi.UserAgent.Trim().ToLowerInvariant();
             }
         }

@@ -3,8 +3,10 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public class User : IIdentity, IHaveDates {
-    public User() {
+public class User : IIdentity, IHaveDates
+{
+    public User()
+    {
         IsActive = true;
         OAuthAccounts = new Collection<OAuthAccount>();
         Roles = new Collection<string>();

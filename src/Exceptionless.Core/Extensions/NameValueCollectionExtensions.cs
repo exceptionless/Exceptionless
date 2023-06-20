@@ -2,12 +2,15 @@
 
 namespace Exceptionless.Core.Extensions;
 
-public static class NameValueCollectionExtensions {
-    public static string GetValue(this NameValueCollection collection, string name, string defaultValue = null) {
+public static class NameValueCollectionExtensions
+{
+    public static string GetValue(this NameValueCollection collection, string name, string defaultValue = null)
+    {
         return collection[name] ?? defaultValue;
     }
 
-    public static int? GetInt(this NameValueCollection collection, string name) {
+    public static int? GetInt(this NameValueCollection collection, string name)
+    {
         string value = collection[name];
         if (value == null)
             return null;
@@ -18,15 +21,18 @@ public static class NameValueCollectionExtensions {
         return null;
     }
 
-    public static int GetInt(this NameValueCollection collection, string name, int defaultValue) {
+    public static int GetInt(this NameValueCollection collection, string name, int defaultValue)
+    {
         return GetInt(collection, name) ?? defaultValue;
     }
 
-    public static long GetInt64(this NameValueCollection collection, string name, long defaultValue) {
+    public static long GetInt64(this NameValueCollection collection, string name, long defaultValue)
+    {
         return GetInt64(collection, name) ?? defaultValue;
     }
 
-    public static long? GetInt64(this NameValueCollection collection, string name) {
+    public static long? GetInt64(this NameValueCollection collection, string name)
+    {
         string value = collection[name];
         if (value == null)
             return null;
@@ -37,7 +43,8 @@ public static class NameValueCollectionExtensions {
         return null;
     }
 
-    public static bool? GetBool(this NameValueCollection collection, string name) {
+    public static bool? GetBool(this NameValueCollection collection, string name)
+    {
         string value = collection[name];
         if (value == null)
             return null;
@@ -48,23 +55,28 @@ public static class NameValueCollectionExtensions {
         return null;
     }
 
-    public static bool GetBool(this NameValueCollection collection, string name, bool defaultValue) {
+    public static bool GetBool(this NameValueCollection collection, string name, bool defaultValue)
+    {
         return GetBool(collection, name) ?? defaultValue;
     }
 
-    public static T GetEnum<T>(this NameValueCollection collection, string name, T? defaultValue = null) where T : struct {
+    public static T GetEnum<T>(this NameValueCollection collection, string name, T? defaultValue = null) where T : struct
+    {
         string value = GetValue(collection, name);
-        if (value == null) {
+        if (value == null)
+        {
             if (defaultValue.HasValue && defaultValue is T)
                 return (T)defaultValue;
 
             throw new Exception($"The configuration key '{name}' was not found and no default value was specified.");
         }
 
-        try {
+        try
+        {
             return (T)Enum.Parse(typeof(T), value, true);
         }
-        catch (ArgumentException ex) {
+        catch (ArgumentException ex)
+        {
             if (defaultValue.HasValue && defaultValue is T)
                 return (T)defaultValue;
 
@@ -73,7 +85,8 @@ public static class NameValueCollectionExtensions {
         }
     }
 
-    public static List<string> GetStringList(this NameValueCollection collection, string name, string defaultValues = null, char[] separators = null) {
+    public static List<string> GetStringList(this NameValueCollection collection, string name, string defaultValues = null, char[] separators = null)
+    {
         string value = collection[name];
         if (value == null && defaultValues == null)
             return null;

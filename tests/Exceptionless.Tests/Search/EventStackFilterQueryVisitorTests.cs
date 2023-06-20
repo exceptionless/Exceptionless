@@ -5,12 +5,14 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search;
 
-public class EventStackFilterQueryVisitorTests : TestWithServices {
+public class EventStackFilterQueryVisitorTests : TestWithServices
+{
     public EventStackFilterQueryVisitorTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
     [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
-    public async Task CanBuildStackFilter(FilterScenario scenario) {
+    public async Task CanBuildStackFilter(FilterScenario scenario)
+    {
         Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
@@ -20,7 +22,8 @@ public class EventStackFilterQueryVisitorTests : TestWithServices {
 
     [Theory]
     [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
-    public async Task CanBuildInvertedStackFilter(FilterScenario scenario) {
+    public async Task CanBuildInvertedStackFilter(FilterScenario scenario)
+    {
         Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
@@ -30,7 +33,8 @@ public class EventStackFilterQueryVisitorTests : TestWithServices {
 
     [Theory]
     [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
-    public async Task CanBuildEventFilter(FilterScenario scenario) {
+    public async Task CanBuildEventFilter(FilterScenario scenario)
+    {
         Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
@@ -39,8 +43,10 @@ public class EventStackFilterQueryVisitorTests : TestWithServices {
     }
 }
 
-public class FilterData {
-    public static IEnumerable<object[]> TestCases() {
+public class FilterData
+{
+    public static IEnumerable<object[]> TestCases()
+    {
         yield return new object[] { new FilterScenario {
                 Source = "blah",
                 Stack = "",
@@ -128,17 +134,20 @@ public class FilterData {
     }
 }
 
-public class FilterScenario : IXunitSerializable {
+public class FilterScenario : IXunitSerializable
+{
     public string Source { get; set; } = String.Empty;
     public string Stack { get; set; } = String.Empty;
     public string InvertedStack { get; set; } = String.Empty;
     public string Event { get; set; } = String.Empty;
 
-    public override string ToString() {
+    public override string ToString()
+    {
         return $"Source: \"{Source}\" Stack: \"{Stack}\" InvertedStack: \"{InvertedStack}\" Event: \"{Event}\"";
     }
 
-    public void Deserialize(IXunitSerializationInfo info) {
+    public void Deserialize(IXunitSerializationInfo info)
+    {
         var value = JsonConvert.DeserializeObject<FilterScenario>(info.GetValue<string>("objValue"));
         Source = value.Source;
         Stack = value.Stack;
@@ -146,7 +155,8 @@ public class FilterScenario : IXunitSerializable {
         Event = value.Event;
     }
 
-    public void Serialize(IXunitSerializationInfo info) {
+    public void Serialize(IXunitSerializationInfo info)
+    {
         var json = JsonConvert.SerializeObject(this);
         info.AddValue("objValue", json);
     }

@@ -15,23 +15,27 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class StackRepositoryTests : IntegrationTestsBase {
+public sealed class StackRepositoryTests : IntegrationTestsBase
+{
     private readonly InMemoryCacheClient _cache;
     private readonly IStackRepository _repository;
 
-    public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _cache = GetService<ICacheClient>() as InMemoryCacheClient;
         _repository = GetService<IStackRepository>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
 
     [Fact]
-    public async Task CanGetSoftDeletedStack() {
+    public async Task CanGetSoftDeletedStack()
+    {
         var stack = StackData.GenerateSampleStack();
         stack.IsDeleted = true;
 
@@ -42,13 +46,15 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetNonExistentStack() {
+    public async Task CanGetNonExistentStack()
+    {
         var stack = await _repository.GetByIdAsync(TestConstants.StackId, o => o.Cache("test"));
         Assert.Null(stack);
     }
 
     [Fact]
-    public async Task CanGetByStatus() {
+    public async Task CanGetByStatus()
+    {
         var organizationRepository = GetService<IOrganizationRepository>();
         var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         Assert.NotNull(organization);
@@ -61,7 +67,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetByStackHashAsync() {
+    public async Task CanGetByStackHashAsync()
+    {
         long count = _cache.Count;
         long hits = _cache.Hits;
         long misses = _cache.Misses;
@@ -80,7 +87,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetByFixedAsync() {
+    public async Task CanGetByFixedAsync()
+    {
         var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
         var results = await _repository.FindAsync(q => q.FilterExpression("fixed:true"));
@@ -108,7 +116,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanMarkAsRegressedAsync() {
+    public async Task CanMarkAsRegressedAsync()
+    {
         var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: SystemClock.UtcNow.SubtractMonths(1)), o => o.ImmediateConsistency());
         Assert.NotNull(stack);
         Assert.False(stack.Status == Core.Models.StackStatus.Regressed);
@@ -123,7 +132,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementEventCounterAsync() {
+    public async Task CanIncrementEventCounterAsync()
+    {
         var stack = await _repository.AddAsync(StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
         Assert.NotNull(stack);
         Assert.Equal(0, stack.TotalOccurrences);
@@ -160,7 +170,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanFindManyAsync() {
+    public async Task CanFindManyAsync()
+    {
         await _repository.AddAsync(StackData.GenerateSampleStacks(), o => o.ImmediateConsistency());
 
         var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(1).PageLimit(1));
@@ -183,7 +194,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetStacksForCleanupAsync() {
+    public async Task GetStacksForCleanupAsync()
+    {
         var openStack10DaysOldWithReference = StackData.GenerateStack(id: TestConstants.StackId3, utcLastOccurrence: SystemClock.UtcNow.SubtractDays(10), status: StackStatus.Open);
         openStack10DaysOldWithReference.References.Add("test");
 

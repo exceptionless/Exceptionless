@@ -12,35 +12,42 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Downloads Geo IP database.", IsContinuous = false)]
-public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
+public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
+{
     public const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
     private readonly AppOptions _options;
     private readonly IFileStorage _storage;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _options = options;
         _storage = storage;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    {
         return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), new CancellationToken(true));
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         _lastRun = SystemClock.UtcNow;
 
         string licenseKey = _options.MaxMindGeoIpKey;
-        if (String.IsNullOrEmpty(licenseKey)) {
+        if (String.IsNullOrEmpty(licenseKey))
+        {
             _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpKey));
             return JobResult.Success;
         }
 
-        try {
+        try
+        {
             var fi = await _storage.GetFileInfoAsync(GEO_IP_DATABASE_PATH).AnyContext();
-            if (fi != null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay())) {
+            if (fi != null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay()))
+            {
                 _logger.LogInformation("The GeoIP database is already up-to-date.");
                 return JobResult.Success;
             }
@@ -56,7 +63,8 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
             using (var decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
                 await _storage.SaveFileAsync(GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex, "An error occurred while downloading the GeoIP database.");
             return JobResult.FromException(ex);
         }
@@ -65,7 +73,8 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck {
         return JobResult.Success;
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Authentication;
 
-public interface IDomainLoginProvider {
+public interface IDomainLoginProvider
+{
     bool Login(string username, string password);
 
     string GetEmailAddressFromUsername(string username);

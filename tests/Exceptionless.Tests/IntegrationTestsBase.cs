@@ -1,36 +1,37 @@
 ﻿using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Tests.Utility;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Authentication;
-using FluentRest;
-using Xunit.Abstractions;
-using Microsoft.AspNetCore.TestHost;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
+using Exceptionless.Tests.Utility;
+using FluentRest;
 using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using Foundatio.Xunit;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Storage;
 using Foundatio.Utility;
+using Foundatio.Xunit;
+using Microsoft.AspNetCore.TestHost;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
-using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models;
-using Foundatio.Repositories;
-using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Tests;
 
-public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory> {
+public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory>
+{
     private static bool _indexesHaveBeenConfigured = false;
     private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     private readonly IDisposable _testSystemClock = TestSystemClock.Install();
@@ -38,7 +39,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     protected readonly TestServer _server;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
-    public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output) {
+    public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
+    {
         Log.MinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
@@ -48,8 +50,10 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
         var configuredFactory = factory.Factories.Count > 0 ? factory.Factories[0] : null;
-        if (configuredFactory == null) {
-            configuredFactory = factory.WithWebHostBuilder(builder => {
+        if (configuredFactory == null)
+        {
+            configuredFactory = factory.WithWebHostBuilder(builder =>
+            {
                 builder.ConfigureTestServices(RegisterServices); // happens after normal container configure and overrides services
             });
         }
@@ -66,7 +70,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         _configuration = GetService<ExceptionlessElasticConfiguration>();
     }
 
-    public virtual async Task InitializeAsync() {
+    public virtual async Task InitializeAsync()
+    {
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Warning);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.None);
         await _server.WaitForReadyAsync();
@@ -78,11 +83,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     private IServiceProvider ServiceProvider { get; }
 
-    protected TService GetService<TService>() {
+    protected TService GetService<TService>()
+    {
         return ServiceProvider.GetRequiredService<TService>();
     }
 
-    protected virtual void RegisterServices(IServiceCollection services) {
+    protected virtual void RegisterServices(IServiceCollection services)
+    {
         // use xunit test logger
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
@@ -95,7 +102,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         services.ReplaceSingleton(s => _server.CreateHandler());
     }
 
-    public async Task<(List<Stack> Stacks, List<PersistentEvent> Events)> CreateDataAsync(Action<DataBuilder> dataBuilderFunc) {
+    public async Task<(List<Stack> Stacks, List<PersistentEvent> Events)> CreateDataAsync(Action<DataBuilder> dataBuilderFunc)
+    {
         var eventBuilders = new List<EventDataBuilder>();
 
         var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider);
@@ -107,7 +115,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         var events = new HashSet<PersistentEvent>();
         var stacks = new HashSet<Stack>();
 
-        foreach (var builder in eventBuilders) {
+        foreach (var builder in eventBuilders)
+        {
             var data = builder.Build();
             events.AddRange(data.Events);
             stacks.Add(data.Stack);
@@ -121,21 +130,26 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return (stacks.ToList(), events.ToList());
     }
 
-    protected virtual async Task ResetDataAsync() {
+    protected virtual async Task ResetDataAsync()
+    {
         await _semaphoreSlim.WaitAsync();
-        try {
+        try
+        {
             var oldLoggingLevel = Log.MinimumLevel;
             Log.MinimumLevel = LogLevel.Warning;
 
             await RefreshDataAsync();
-            if (!_indexesHaveBeenConfigured) {
+            if (!_indexesHaveBeenConfigured)
+            {
                 await _configuration.DeleteIndexesAsync();
                 await _configuration.ConfigureIndexesAsync();
                 _indexesHaveBeenConfigured = true;
             }
-            else {
+            else
+            {
                 string indexes = String.Join(',', _configuration.Indexes.Select(i => i.Name));
-                await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexes) {
+                await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexes)
+                {
                     Query = new MatchAllQuery(),
                     IgnoreUnavailable = true,
                     Refresh = true
@@ -157,30 +171,35 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
             Log.MinimumLevel = oldLoggingLevel;
         }
-        finally {
+        finally
+        {
             _semaphoreSlim.Release();
             _logger.LogDebug("Reset Data");
         }
     }
 
-    protected async Task RefreshDataAsync(Indices indices = null) {
+    protected async Task RefreshDataAsync(Indices indices = null)
+    {
         var configuration = GetService<ExceptionlessElasticConfiguration>();
         var response = await configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);
         _logger.LogRequest(response);
     }
 
-    protected HttpClient CreateHttpClient() {
+    protected HttpClient CreateHttpClient()
+    {
         var client = _server.CreateClient();
         client.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
         return client;
     }
 
-    protected FluentClient CreateFluentClient() {
+    protected FluentClient CreateFluentClient()
+    {
         var settings = GetService<JsonSerializerSettings>();
         return new FluentClient(CreateHttpClient(), new NewtonsoftJsonSerializer(settings));
     }
 
-    protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure) {
+    protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure)
+    {
         var client = CreateFluentClient();
         var request = new HttpRequestMessage(HttpMethod.Get, client.HttpClient.BaseAddress);
         var builder = new AppSendBuilder(request);
@@ -189,7 +208,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         var response = await client.SendAsync(request);
 
         var expectedStatus = request.GetExpectedStatus();
-        if (expectedStatus.HasValue && expectedStatus.Value != response.StatusCode) {
+        if (expectedStatus.HasValue && expectedStatus.Value != response.StatusCode)
+        {
             string content = await response.Content.ReadAsStringAsync();
             if (content.Length > 1000)
                 content = content.Substring(0, 1000);
@@ -200,33 +220,42 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return response;
     }
 
-    protected async Task<T> SendRequestAsAsync<T>(Action<AppSendBuilder> configure) {
+    protected async Task<T> SendRequestAsAsync<T>(Action<AppSendBuilder> configure)
+    {
         var response = await SendRequestAsync(configure);
         return await response.DeserializeAsync<T>();
     }
 
-    protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure) {
-        return SendRequestAsync(b => {
+    protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure)
+    {
+        return SendRequestAsync(b =>
+        {
             b.AsGlobalAdminUser();
             configure(b);
         });
     }
 
-    protected async Task<T> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure) {
+    protected async Task<T> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure)
+    {
         var response = await SendGlobalAdminRequestAsync(configure);
         return await response.DeserializeAsync<T>();
     }
 
-    protected Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response) {
+    protected Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response)
+    {
         return response.DeserializeAsync<T>();
     }
 
-    public virtual Task DisposeAsync() {
-        foreach (var disposable in _disposables) {
-            try {
+    public virtual Task DisposeAsync()
+    {
+        foreach (var disposable in _disposables)
+        {
+            try
+            {
                 disposable.Dispose();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger?.LogError(ex, "Error disposing resource.");
             }
         }

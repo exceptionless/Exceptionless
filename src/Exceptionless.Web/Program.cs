@@ -9,17 +9,22 @@ using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Web;
 
-public class Program {
-    public static async Task<int> Main(string[] args) {
-        try {
+public class Program
+{
+    public static async Task<int> Main(string[] args)
+    {
+        try
+        {
             await CreateHostBuilder(args).Build().RunAsync();
             return 0;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             Log.Fatal(ex, "Job host terminated unexpectedly");
             return 1;
         }
-        finally {
+        finally
+        {
             Log.CloseAndFlush();
             await ExceptionlessClient.Default.ProcessQueueAsync();
 
@@ -28,7 +33,8 @@ public class Program {
         }
     }
 
-    public static IHostBuilder CreateHostBuilder(string[] args) {
+    public static IHostBuilder CreateHostBuilder(string[] args)
+    {
         string environment = Environment.GetEnvironmentVariable("EX_AppMode");
         if (String.IsNullOrWhiteSpace(environment))
             environment = "Production";
@@ -45,7 +51,8 @@ public class Program {
         return CreateHostBuilder(config, environment);
     }
 
-    public static IHostBuilder CreateHostBuilder(IConfigurationRoot config, string environment) {
+    public static IHostBuilder CreateHostBuilder(IConfigurationRoot config, string environment)
+    {
         Console.Title = "Exceptionless Web";
 
         var options = AppOptions.ReadFromConfiguration(config);
@@ -59,7 +66,8 @@ public class Program {
         var builder = Host.CreateDefaultBuilder()
             .UseEnvironment(environment)
             .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
-            .UseSerilog((ctx, sp, c) => {
+            .UseSerilog((ctx, sp, c) =>
+            {
                 c.ReadFrom.Configuration(config);
                 c.ReadFrom.Services(sp);
                 c.Enrich.WithMachineName();
@@ -67,10 +75,12 @@ public class Program {
                 if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                     loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
             }, writeToProviders: true)
-            .ConfigureWebHostDefaults(webBuilder => {
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
                 webBuilder
                     .UseConfiguration(config)
-                    .ConfigureKestrel(c => {
+                    .ConfigureKestrel(c =>
+                    {
                         c.AddServerHeader = false;
 
                         if (options.MaximumEventPostSize > 0)
@@ -78,7 +88,8 @@ public class Program {
                     })
                     .UseStartup<Startup>();
             })
-            .ConfigureServices((ctx, services) => {
+            .ConfigureServices((ctx, services) =>
+            {
                 services.AddSingleton(config);
                 services.AddSingleton(apmConfig);
                 services.AddAppOptions(options);

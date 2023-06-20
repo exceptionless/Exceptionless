@@ -5,15 +5,18 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class OrganizationIndex : VersionedIndex<Organization> {
+public sealed class OrganizationIndex : VersionedIndex<Organization>
+{
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 2) {
+    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 2)
+    {
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<Organization> ConfigureIndexMapping(TypeMappingDescriptor<Organization> map) {
+    public override TypeMappingDescriptor<Organization> ConfigureIndexMapping(TypeMappingDescriptor<Organization> map)
+    {
         return map
             .Dynamic(false)
             .Properties(p => p
@@ -35,7 +38,8 @@ public sealed class OrganizationIndex : VersionedIndex<Organization> {
                 .AddUsageMappings());
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    {
         return base.ConfigureIndex(idx.Settings(s => s
             .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
@@ -44,8 +48,10 @@ public sealed class OrganizationIndex : VersionedIndex<Organization> {
     }
 }
 
-internal static class OrganizationIndexExtensions {
-    public static PropertiesDescriptor<Organization> AddUsageMappings(this PropertiesDescriptor<Organization> descriptor) {
+internal static class OrganizationIndexExtensions
+{
+    public static PropertiesDescriptor<Organization> AddUsageMappings(this PropertiesDescriptor<Organization> descriptor)
+    {
         return descriptor
             .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(p => p
                 .Date(fu => fu.Name(i => i.Date))

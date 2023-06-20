@@ -2,6 +2,7 @@
 
 namespace Exceptionless.Web.Utility;
 
-public class ObjectIdRouteConstraint : RegexRouteConstraint {
+public class ObjectIdRouteConstraint : RegexRouteConstraint
+{
     public ObjectIdRouteConstraint() : base(@"^[a-zA-Z\d]{24,36}$") { }
 }

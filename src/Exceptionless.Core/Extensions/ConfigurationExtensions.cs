@@ -3,8 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class ConfigurationExtensions {
-    public static IServiceCollection AddAppOptions(this IServiceCollection services, AppOptions appOptions) {
+public static class ConfigurationExtensions
+{
+    public static IServiceCollection AddAppOptions(this IServiceCollection services, AppOptions appOptions)
+    {
         services.AddSingleton(appOptions);
         services.AddSingleton(appOptions.CacheOptions);
         services.AddSingleton(appOptions.MessageBusOptions);
@@ -20,8 +22,10 @@ public static class ConfigurationExtensions {
         return services;
     }
 
-    public static string ToScope(this AppMode mode) {
-        switch (mode) {
+    public static string ToScope(this AppMode mode)
+    {
+        switch (mode)
+        {
             case AppMode.Development:
                 return "dev";
             case AppMode.Staging:
@@ -33,7 +37,8 @@ public static class ConfigurationExtensions {
         return String.Empty;
     }
 
-    public static List<string> GetValueList(this IConfiguration config, string key, char[] separators = null) {
+    public static List<string> GetValueList(this IConfiguration config, string key, char[] separators = null)
+    {
         string value = config.GetValue<string>(key);
         if (String.IsNullOrEmpty(value))
             return new List<string>();
@@ -44,12 +49,14 @@ public static class ConfigurationExtensions {
         return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
     }
 
-    public static Dictionary<string, object> ToDictionary(this IConfiguration section, params string[] sectionsToSkip) {
+    public static Dictionary<string, object> ToDictionary(this IConfiguration section, params string[] sectionsToSkip)
+    {
         if (sectionsToSkip == null)
             sectionsToSkip = new string[0];
 
         var dict = new Dictionary<string, object>();
-        foreach (var value in section.GetChildren()) {
+        foreach (var value in section.GetChildren())
+        {
             // kubernetes service variables
             if (value.Key.StartsWith("DEV_", StringComparison.Ordinal))
                 continue;

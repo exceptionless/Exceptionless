@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Web.Models;
 
-public class ViewToken : IIdentity, IHaveDates {
+public class ViewToken : IIdentity, IHaveDates
+{
     public string Id { get; set; }
     public string OrganizationId { get; set; }
     public string ProjectId { get; set; }

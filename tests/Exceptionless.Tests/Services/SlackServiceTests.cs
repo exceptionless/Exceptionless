@@ -9,25 +9,31 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class SlackServiceTests : TestWithServices {
+public sealed class SlackServiceTests : TestWithServices
+{
     private readonly Project _project;
     private readonly SlackService _slackService;
 
-    public SlackServiceTests(ITestOutputHelper output) : base(output) {
+    public SlackServiceTests(ITestOutputHelper output) : base(output)
+    {
         _slackService = GetService<SlackService>();
         _project = ProjectData.GenerateSampleProject();
-        _project.Data[Project.KnownDataKeys.SlackToken] = new SlackToken {
+        _project.Data[Project.KnownDataKeys.SlackToken] = new SlackToken
+        {
             AccessToken = "MY KEY",
-            IncomingWebhook = new SlackToken.IncomingWebHook {
+            IncomingWebhook = new SlackToken.IncomingWebHook
+            {
                 Url = "MY Url"
             }
         };
     }
 
     [Fact]
-    public Task SendEventNoticeSimpleErrorAsync() {
+    public Task SendEventNoticeSimpleErrorAsync()
+    {
         var ex = GetException();
-        return SendEventNoticeAsync(new PersistentEvent {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
                     {
@@ -42,8 +48,10 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeErrorAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeErrorAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
                     { Event.KnownDataKeys.Error, EventData.GenerateError() }
@@ -53,8 +61,10 @@ public sealed class SlackServiceTests : TestWithServices {
 
 
     [Fact]
-    public Task SendEventNoticeErrorWithDetailsAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeErrorWithDetailsAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Type = Event.KnownTypes.Error,
             Geo = "44.5241,-87.9056",
             ReferenceId = "ex_blake_dreams_of_cookies",
@@ -71,16 +81,20 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeNotFoundAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeNotFoundAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "[GET] /not-found?page=20",
             Type = Event.KnownTypes.NotFound
         });
     }
 
     [Fact]
-    public Task SendEventNoticeFeatureAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeFeatureAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "My Feature Usage",
             Value = 1,
             Type = Event.KnownTypes.FeatureUsage
@@ -88,40 +102,50 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeEmptyLogEventAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeEmptyLogEventAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Value = 1,
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogMessageAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogMessageAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "Only Message",
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogSourceAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogSourceAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "Only Source",
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogReallyLongSourceAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogReallyLongSourceAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "Soooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooorce",
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogTraceMessageSourceLevelAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogTraceMessageSourceLevelAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "My Trace Message",
             Source = "My Source",
             Type = Event.KnownTypes.Log,
@@ -132,8 +156,10 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeLogInfoMessageSourceLevelAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogInfoMessageSourceLevelAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "My Info Message",
             Source = "My Source",
             Type = Event.KnownTypes.Log,
@@ -144,8 +170,10 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeLogWarnMessageSourceLevelAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogWarnMessageSourceLevelAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "My Warn Message",
             Source = "My Source",
             Type = Event.KnownTypes.Log,
@@ -156,8 +184,10 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeLogErrorMessageSourceLevelAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogErrorMessageSourceLevelAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "My Error Message",
             Source = "My Source",
             Type = Event.KnownTypes.Log,
@@ -168,14 +198,17 @@ public sealed class SlackServiceTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeDefaultAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeDefaultAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "Default Test Message",
             Source = "Default Test Source"
         });
     }
 
-    private async Task SendEventNoticeAsync(PersistentEvent ev) {
+    private async Task SendEventNoticeAsync(PersistentEvent ev)
+    {
         ev.Id = TestConstants.EventId;
         ev.OrganizationId = TestConstants.OrganizationId;
         ev.ProjectId = TestConstants.ProjectId;
@@ -186,7 +219,8 @@ public sealed class SlackServiceTests : TestWithServices {
         await RunWebHookJobAsync();
     }
 
-    private Task RunWebHookJobAsync() {
+    private Task RunWebHookJobAsync()
+    {
         //if (!Settings.Current.EnableSlack)
         //    return Task.CompletedTask;
 
@@ -194,19 +228,24 @@ public sealed class SlackServiceTests : TestWithServices {
         return job.RunAsync();
     }
 
-    private Exception GetException() {
-        void TestInner() {
-            void TestInnerInner() {
+    private Exception GetException()
+    {
+        void TestInner()
+        {
+            void TestInnerInner()
+            {
                 throw new ApplicationException("Random Test Exception");
             }
 
             TestInnerInner();
         }
 
-        try {
+        try
+        {
             TestInner();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             return ex;
         }
 

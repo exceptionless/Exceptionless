@@ -5,12 +5,14 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline;
 
 [Priority(6)]
-public class TruncateFieldsAction : EventPipelineActionBase {
+public class TruncateFieldsAction : EventPipelineActionBase
+{
     public TruncateFieldsAction(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
     protected override bool IsCritical => true;
 
-    public override Task ProcessAsync(EventContext ctx) {
+    public override Task ProcessAsync(EventContext ctx)
+    {
         ctx.Event.Tags?.RemoveExcessTags();
 
         if (ctx.Event.Message != null && ctx.Event.Message.Length > 2000)
@@ -23,7 +25,8 @@ public class TruncateFieldsAction : EventPipelineActionBase {
         else if (String.IsNullOrEmpty(ctx.Event.Source))
             ctx.Event.Source = null;
 
-        if (!ctx.Event.HasValidReferenceId()) {
+        if (!ctx.Event.HasValidReferenceId())
+        {
             ctx.Event.Data["InvalidReferenceId"] = ctx.Event.ReferenceId;
             ctx.Event.ReferenceId = "invalid-reference-id";
         }

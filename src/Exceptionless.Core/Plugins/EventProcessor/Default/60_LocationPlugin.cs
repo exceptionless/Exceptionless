@@ -11,16 +11,19 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 
 [Priority(60)]
-public sealed class LocationPlugin : EventProcessorPluginBase {
+public sealed class LocationPlugin : EventProcessorPluginBase
+{
     private readonly ICacheClient _cacheClient;
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    {
         _cacheClient = new ScopedCacheClient(cacheClient, "Geo");
         _workItemQueue = workItemQueue;
     }
 
-    public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+    public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
+    {
         var geoGroups = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location)).GroupBy(c => c.Event.Geo);
 
         var tasks = new List<Task>();
@@ -30,7 +33,8 @@ public sealed class LocationPlugin : EventProcessorPluginBase {
         return Task.WhenAll(tasks);
     }
 
-    public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts) {
+    public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts)
+    {
         var contextsToProcess = contexts.Where(c => c.Organization.HasPremiumFeatures && !String.IsNullOrEmpty(c.Event.Geo) && !c.Event.Data.ContainsKey(Event.KnownDataKeys.Location));
 
         var tasks = new List<Task>();
@@ -40,7 +44,8 @@ public sealed class LocationPlugin : EventProcessorPluginBase {
         return Task.WhenAll(tasks);
     }
 
-    private async Task GetGeoLocationFromCacheAsync(IGrouping<string, EventContext> geoGroup) {
+    private async Task GetGeoLocationFromCacheAsync(IGrouping<string, EventContext> geoGroup)
+    {
         var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
         if (location == null)
             return;

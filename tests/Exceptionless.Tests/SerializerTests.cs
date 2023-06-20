@@ -12,11 +12,13 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests;
 
-public class SerializerTests : TestWithServices {
+public class SerializerTests : TestWithServices
+{
     public SerializerTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
-    public void CanDeserializeEventWithUnknownNamesAndProperties() {
+    public void CanDeserializeEventWithUnknownNamesAndProperties()
+    {
         const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}"",""UnknownSerializedProp"":""{\""Blah\"":\""SomeVal\""}""}";
         var settings = new JsonSerializerSettings();
         var knownDataTypes = new Dictionary<string, Type> {
@@ -54,7 +56,8 @@ public class SerializerTests : TestWithServices {
     }
 
     [Fact]
-    public void CanDeserializeEventWithInvalidKnownDataTypes() {
+    public void CanDeserializeEventWithInvalidKnownDataTypes()
+    {
         const string json = @"{""Message"":""Hello"",""Some"":""{\""Blah\"":\""SomeVal\""}"",""@Some"":""{\""Blah\"":\""SomeVal\""}""}";
         const string jsonWithInvalidDataType = @"{""Message"":""Hello"",""@Some"":""Testing"",""@string"":""Testing""}";
 
@@ -83,7 +86,8 @@ public class SerializerTests : TestWithServices {
     }
 
     [Fact]
-    public void CanDeserializeEventWithData() {
+    public void CanDeserializeEventWithData()
+    {
         const string json = @"{""Message"":""Hello"",""Data"":{""Blah"":""SomeVal""}}";
         var settings = new JsonSerializerSettings();
         settings.Converters.Add(new DataObjectConverter<Event>(_logger));
@@ -95,8 +99,10 @@ public class SerializerTests : TestWithServices {
     }
 
     [Fact]
-    public void CanDeserializeWebHook() {
-        var hook = new WebHook {
+    public void CanDeserializeWebHook()
+    {
+        var hook = new WebHook
+        {
             Id = "test",
             EventTypes = new[] { "NewError" },
             Version = WebHook.KnownVersions.Version2
@@ -113,7 +119,8 @@ public class SerializerTests : TestWithServices {
     }
 
     [Fact]
-    public void CanDeserializeProject() {
+    public void CanDeserializeProject()
+    {
         string json = "{\"last_event_date_utc\":\"2020-10-18T20:54:04.3457274+01:00\", \"created_utc\":\"0001-01-01T00:00:00\",\"updated_utc\":\"2020-09-21T04:41:32.7458321Z\"}";
 
         var serializer = GetService<ITextSerializer>();
@@ -125,6 +132,7 @@ public class SerializerTests : TestWithServices {
     }
 }
 
-public class SomeModel {
+public class SomeModel
+{
     public string Blah { get; set; }
 }

@@ -4,7 +4,8 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Miscellaneous;
 
-public class EfficientPagingTests : TestWithServices {
+public class EfficientPagingTests : TestWithServices
+{
     public EfficientPagingTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
@@ -14,7 +15,8 @@ public class EfficientPagingTests : TestWithServices {
     [InlineData("http://localhost?after=1", true, true, true)]
     [InlineData("http://localhost?before=11", false, false, true)]
     [InlineData("http://localhost?before=11", true, true, true)]
-    public void CanBeforeAndAfterLinks(string url, bool hasMore, bool expectPrevious, bool expectNext) {
+    public void CanBeforeAndAfterLinks(string url, bool hasMore, bool expectPrevious, bool expectNext)
+    {
         var data = new List<string> { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" };
 
         var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), data, false, hasMore, s => s);
@@ -39,7 +41,8 @@ public class EfficientPagingTests : TestWithServices {
     [InlineData("http://localhost", 1, false, false, false)]
     [InlineData("http://localhost", 2, false, true, false)]
     [InlineData("http://localhost", 2, true, true, true)]
-    public void CanPageLinks(string url, int pageNumber, bool hasMore, bool expectPrevious, bool expectNext) {
+    public void CanPageLinks(string url, int pageNumber, bool hasMore, bool expectPrevious, bool expectNext)
+    {
         var links = OkWithResourceLinks<string>.GetPagedLinks(new Uri(url), pageNumber, hasMore);
 
         int expectedLinkCount = 0;

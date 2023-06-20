@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using FluentValidation;
@@ -21,14 +21,16 @@ namespace Exceptionless.Web.Controllers;
 
 [Route(API_PREFIX + "/users")]
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, ViewUser, UpdateUser> {
+public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, ViewUser, UpdateUser>
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly ICacheClient _cache;
     private readonly IMailer _mailer;
     private readonly IntercomOptions _intercomOptions;
 
-    public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory) {
+    public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory)
+    {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
         _cache = new ScopedCacheClient(cacheClient, "User");
@@ -41,7 +43,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// </summary>
     /// <response code="404">The current user could not be found.</response>
     [HttpGet("me")]
-    public async Task<ActionResult<ViewUser>> GetCurrentUserAsync() {
+    public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
+    {
         var currentUser = await GetModelAsync(CurrentUser.Id);
         if (currentUser == null)
             return NotFound();
@@ -55,7 +58,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <param name="id">The identifier of the user.</param>
     /// <response code="404">The user could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetUserById")]
-    public Task<ActionResult<ViewUser>> GetAsync(string id) {
+    public Task<ActionResult<ViewUser>> GetAsync(string id)
+    {
         return GetByIdImplAsync(id);
     }
 
@@ -67,7 +71,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewUser>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<ViewUser>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10)
+    {
         if (!CanAccessOrganization(organizationId))
             return NotFound();
 
@@ -86,8 +91,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (!Request.IsGlobalAdmin())
             users.ForEach(u => u.Roles.Remove(AuthorizationRoles.GlobalAdmin));
 
-        if (organization.Invites.Any()) {
-            users.AddRange(organization.Invites.Select(i => new ViewUser {
+        if (organization.Invites.Any())
+        {
+            users.AddRange(organization.Invites.Select(i => new ViewUser
+            {
                 EmailAddress = i.EmailAddress,
                 IsInvite = true
             }));
@@ -107,7 +114,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpPatch("{id:objectid}")]
     [HttpPut("{id:objectid}")]
     [Consumes("application/json")]
-    public Task<ActionResult<ViewUser>> PatchAsync(string id, Delta<UpdateUser> changes) {
+    public Task<ActionResult<ViewUser>> PatchAsync(string id, Delta<UpdateUser> changes)
+    {
         return PatchImplAsync(id, changes);
     }
 
@@ -117,7 +125,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <response code="404">The current user could not be found.</response>
     [HttpDelete("me")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync() {
+    public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
+    {
         return DeleteImplAsync(new[] { CurrentUser.Id });
     }
 
@@ -132,7 +141,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
+    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
+    {
         return DeleteImplAsync(ids.FromDelimitedString());
     }
 
@@ -144,7 +154,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <response code="400">An error occurred while updating the users email address.</response>
     /// <response code="404">The user could not be found.</response>
     [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
-    public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email) {
+    public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email)
+    {
         var user = await GetModelAsync(id, false);
         if (user == null)
             return NotFound();
@@ -170,13 +181,16 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         else
             user.ResetVerifyEmailAddressToken();
 
-        try {
+        try
+        {
             await _repository.SaveAsync(user, o => o.Cache());
         }
-        catch (ValidationException ex) {
+        catch (ValidationException ex)
+        {
             return BadRequest(String.Join(", ", ex.Errors));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             using (_logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, ex.Message);
             return BadRequest("An error occurred.");
@@ -197,9 +211,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <response code="400">Verify Email Address Token has expired.</response>
     /// <response code="404">The user could not be found.</response>
     [HttpGet("verify-email-address/{token:token}")]
-    public async Task<IActionResult> VerifyAsync(string token) {
+    public async Task<IActionResult> VerifyAsync(string token)
+    {
         var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
-        if (user == null) {
+        if (user == null)
+        {
             // The user may already be logged in and verified.
             if (CurrentUser != null && CurrentUser.IsEmailAddressVerified)
                 return Ok();
@@ -222,12 +238,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <param name="id">The identifier of the user.</param>
     /// <response code="404">The user could not be found.</response>
     [HttpGet("{id:objectid}/resend-verification-email")]
-    public async Task<IActionResult> ResendVerificationEmailAsync(string id) {
+    public async Task<IActionResult> ResendVerificationEmailAsync(string id)
+    {
         var user = await GetModelAsync(id, false);
         if (user == null)
             return NotFound();
 
-        if (!user.IsEmailAddressVerified) {
+        if (!user.IsEmailAddressVerified)
+        {
             user.CreateVerifyEmailAddressToken();
             await _repository.SaveAsync(user, o => o.Cache());
             await _mailer.SendUserEmailVerifyAsync(user);
@@ -239,12 +257,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpPost("{id:objectid}/admin-role")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> AddAdminRoleAsync(string id) {
+    public async Task<IActionResult> AddAdminRoleAsync(string id)
+    {
         var user = await GetModelAsync(id, false);
         if (user == null)
             return NotFound();
 
-        if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
+        if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+        {
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
             await _repository.SaveAsync(user, o => o.Cache());
         }
@@ -255,12 +275,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpDelete("{id:objectid}/admin-role")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> DeleteAdminRoleAsync(string id) {
+    public async Task<IActionResult> DeleteAdminRoleAsync(string id)
+    {
         var user = await GetModelAsync(id, false);
         if (user == null)
             return NotFound();
 
-        if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
+        if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+        {
             user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
             await _repository.SaveAsync(user, o => o.Cache());
         }
@@ -268,7 +290,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         return StatusCode(StatusCodes.Status204NoContent);
     }
 
-    private async Task<bool> IsEmailAddressAvailableInternalAsync(string email) {
+    private async Task<bool> IsEmailAddressAvailableInternalAsync(string email)
+    {
         if (String.IsNullOrWhiteSpace(email))
             return false;
 
@@ -279,21 +302,24 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         return await _repository.GetByEmailAddressAsync(email) == null;
     }
 
-    protected override async Task<User> GetModelAsync(string id, bool useCache = true) {
+    protected override async Task<User> GetModelAsync(string id, bool useCache = true)
+    {
         if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
             return await base.GetModelAsync(id, useCache);
 
         return null;
     }
 
-    protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true) {
+    protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
+    {
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);
 
         return base.GetModelsAsync(ids.Where(id => String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
     }
 
-    protected override async Task<PermissionResult> CanDeleteAsync(User value) {
+    protected override async Task<PermissionResult> CanDeleteAsync(User value)
+    {
         if (value.OrganizationIds.Count > 0)
             return PermissionResult.DenyWithMessage("Please delete or leave any organizations before deleting your account.");
 
@@ -303,8 +329,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         return await base.CanDeleteAsync(value);
     }
 
-    protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<User> values) {
-        foreach (var user in values) {
+    protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<User> values)
+    {
+        foreach (var user in values)
+        {
             long removed = await _tokenRepository.RemoveAllByUserIdAsync(user.Id);
             _logger.RemovedTokens(removed, user.Id);
         }

@@ -6,23 +6,30 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline;
 
 [Priority(40)]
-public class SaveEventAction : EventPipelineActionBase {
+public class SaveEventAction : EventPipelineActionBase
+{
     private readonly IEventRepository _eventRepository;
 
-    public SaveEventAction(IEventRepository eventRepository, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public SaveEventAction(IEventRepository eventRepository, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    {
         _eventRepository = eventRepository;
     }
 
     protected override bool IsCritical => true;
 
-    public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
-        try {
+    public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
+    {
+        try
+        {
             await _eventRepository.AddAsync(contexts.Select(c => c.Event).ToList()).AnyContext();
         }
-        catch (Exception ex) {
-            foreach (var context in contexts) {
+        catch (Exception ex)
+        {
+            foreach (var context in contexts)
+            {
                 bool cont = false;
-                try {
+                try
+                {
                     cont = HandleError(ex, context);
                 }
                 catch { }
@@ -33,7 +40,8 @@ public class SaveEventAction : EventPipelineActionBase {
         }
     }
 
-    public override Task ProcessAsync(EventContext ctx) {
+    public override Task ProcessAsync(EventContext ctx)
+    {
         return Task.CompletedTask;
     }
 }

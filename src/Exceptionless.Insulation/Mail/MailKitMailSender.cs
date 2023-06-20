@@ -13,17 +13,20 @@ using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail;
 
-public class MailKitMailSender : IMailSender, IHealthCheck {
+public class MailKitMailSender : IMailSender, IHealthCheck
+{
     private readonly EmailOptions _emailOptions;
     private readonly ILogger _logger;
     private DateTime _lastSuccessfulConnection = DateTime.MinValue;
 
-    public MailKitMailSender(EmailOptions emailOptions, ILoggerFactory loggerFactory) {
+    public MailKitMailSender(EmailOptions emailOptions, ILoggerFactory loggerFactory)
+    {
         _emailOptions = emailOptions;
         _logger = loggerFactory.CreateLogger<MailKitMailSender>();
     }
 
-    public async Task SendAsync(MailMessage model) {
+    public async Task SendAsync(MailMessage model)
+    {
         _logger.LogTrace("Creating Mail Message from model");
 
         var message = CreateMailMessage(model);
@@ -32,7 +35,8 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
         message.Headers.Add("X-Auto-Response-Suppress", "All");
         message.Headers.Add("Auto-Submitted", "auto-generated");
 
-        using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger))) {
+        using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger)))
+        {
             string host = _emailOptions.SmtpHost;
             int port = _emailOptions.SmtpPort;
             var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
@@ -46,7 +50,8 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
             client.AuthenticationMechanisms.Remove("XOAUTH2");
 
             string user = _emailOptions.SmtpUser;
-            if (!String.IsNullOrEmpty(user)) {
+            if (!String.IsNullOrEmpty(user))
+            {
                 _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
                 sw.Restart();
                 await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
@@ -67,8 +72,10 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
         _lastSuccessfulConnection = SystemClock.UtcNow;
     }
 
-    private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption) {
-        switch (encryption) {
+    private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption)
+    {
+        switch (encryption)
+        {
             case SmtpEncryption.StartTLS:
                 return SecureSocketOptions.StartTls;
             case SmtpEncryption.SSL:
@@ -78,7 +85,8 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
         }
     }
 
-    private MimeMessage CreateMailMessage(MailMessage notification) {
+    private MimeMessage CreateMailMessage(MailMessage notification)
+    {
         var message = new MimeMessage { Subject = notification.Subject };
         var builder = new BodyBuilder();
 
@@ -97,14 +105,17 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
         return message;
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (_lastSuccessfulConnection.IsAfter(SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(5))))
             return HealthCheckResult.Healthy();
 
         var sw = Stopwatch.StartNew();
 
-        try {
-            using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger))) {
+        try
+        {
+            using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger)))
+            {
                 string host = _emailOptions.SmtpHost;
                 int port = _emailOptions.SmtpPort;
                 var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
@@ -115,7 +126,8 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
                 client.AuthenticationMechanisms.Remove("XOAUTH2");
 
                 string user = _emailOptions.SmtpUser;
-                if (!String.IsNullOrEmpty(user)) {
+                if (!String.IsNullOrEmpty(user))
+                {
                     await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
                 }
 
@@ -124,10 +136,12 @@ public class MailKitMailSender : IMailSender, IHealthCheck {
 
             _lastSuccessfulConnection = SystemClock.UtcNow;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             return HealthCheckResult.Unhealthy("Email Not Working.", ex);
         }
-        finally {
+        finally
+        {
             sw.Stop();
             _logger.LogTrace("Checking email took {Duration:g}", sw.Elapsed);
         }

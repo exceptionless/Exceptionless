@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Web.Extensions;
 
-internal static class LoggerExtensions {
+internal static class LoggerExtensions
+{
     private static readonly Action<ILogger, string?, string, Exception?> _projectRouteDoesNotMatch =
         LoggerMessage.Define<string?, string>(
             LogLevel.Information,

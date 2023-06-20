@@ -2,12 +2,15 @@
 
 namespace Exceptionless.Core.Models.Data;
 
-public class UserDescription : IData {
-    public UserDescription() {
+public class UserDescription : IData
+{
+    public UserDescription()
+    {
         Data = new DataDictionary();
     }
 
-    public UserDescription(string emailAddress, string description) : this() {
+    public UserDescription(string emailAddress, string description) : this()
+    {
         if (!String.IsNullOrWhiteSpace(emailAddress))
             EmailAddress = emailAddress.Trim();
 
@@ -23,11 +26,13 @@ public class UserDescription : IData {
     /// </summary>
     public DataDictionary Data { get; set; }
 
-    protected bool Equals(UserDescription other) {
+    protected bool Equals(UserDescription other)
+    {
         return String.Equals(EmailAddress, other.EmailAddress) && String.Equals(Description, other.Description) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -37,8 +42,10 @@ public class UserDescription : IData {
         return Equals((UserDescription)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = EmailAddress?.GetHashCode() ?? 0;
             hashCode = (hashCode * 397) ^ (Description?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);

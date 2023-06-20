@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Web.Models;
 
-public class NewWebHook : IOwnedByOrganizationAndProject {
+public class NewWebHook : IOwnedByOrganizationAndProject
+{
     public string OrganizationId { get; set; }
     public string ProjectId { get; set; }
     public string Url { get; set; }

@@ -5,11 +5,13 @@ using OpenTelemetry.Internal;
 
 namespace OpenTelemetry.Extensions.Hosting.Implementation;
 
-public class SelfDiagnosticsLoggingHostedService : IHostedService, IDisposable {
+public class SelfDiagnosticsLoggingHostedService : IHostedService, IDisposable
+{
     private readonly ILoggerFactory loggerFactory;
     private readonly IDisposable forwarder;
 
-    public SelfDiagnosticsLoggingHostedService(ILoggerFactory loggerFactory, EventLevel? minEventLevel = null) {
+    public SelfDiagnosticsLoggingHostedService(ILoggerFactory loggerFactory, EventLevel? minEventLevel = null)
+    {
         this.loggerFactory = loggerFactory;
 
         // The sole purpose of this HostedService is to
@@ -18,15 +20,18 @@ public class SelfDiagnosticsLoggingHostedService : IHostedService, IDisposable {
         this.forwarder = new SelfDiagnosticsEventLogForwarder(this.loggerFactory, minEventLevel);
     }
 
-    public void Dispose() {
+    public void Dispose()
+    {
         this.forwarder?.Dispose();
     }
 
-    public Task StartAsync(CancellationToken cancellationToken) {
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) {
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
         return Task.CompletedTask;
     }
 }

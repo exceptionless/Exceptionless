@@ -5,16 +5,19 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Queries;
 
-public class StackDateFixedQueryVisitor : ChainableQueryVisitor {
+public class StackDateFixedQueryVisitor : ChainableQueryVisitor
+{
     private readonly string _dateFixedFieldName;
-    public StackDateFixedQueryVisitor(string dateFixedFieldName) {
+    public StackDateFixedQueryVisitor(string dateFixedFieldName)
+    {
         if (String.IsNullOrEmpty(dateFixedFieldName))
             throw new ArgumentNullException(nameof(dateFixedFieldName));
 
         _dateFixedFieldName = dateFixedFieldName;
     }
 
-    public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context) {
+    public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context)
+    {
         if (!String.Equals(node.Field, "fixed", StringComparison.OrdinalIgnoreCase))
             return Task.FromResult<IQueryNode>(node);
 

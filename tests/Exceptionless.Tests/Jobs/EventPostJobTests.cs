@@ -9,16 +9,17 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
-using Foundatio.Storage;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
+using Foundatio.Storage;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Jobs;
 
-public class EventPostJobTests : IntegrationTestsBase {
+public class EventPostJobTests : IntegrationTestsBase
+{
     private readonly EventPostsJob _job;
     private readonly IFileStorage _storage;
     private readonly IOrganizationRepository _organizationRepository;
@@ -34,7 +35,8 @@ public class EventPostJobTests : IntegrationTestsBase {
     private readonly BillingPlans _plans;
     private readonly AppOptions _options;
 
-    public EventPostJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public EventPostJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _job = GetService<EventPostsJob>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _storage = GetService<IFileStorage>();
@@ -51,14 +53,16 @@ public class EventPostJobTests : IntegrationTestsBase {
         _options = GetService<AppOptions>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         await _eventQueue.DeleteQueueAsync();
         await CreateDataAsync();
     }
 
     [Fact]
-    public async Task CanRunJob() {
+    public async Task CanRunJob()
+    {
         var ev = GenerateEvent();
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
@@ -80,7 +84,8 @@ public class EventPostJobTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanRunJobWithDiscardedEventUsage() {
+    public async Task CanRunJobWithDiscardedEventUsage()
+    {
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
         var usage = await _usageService.GetUsageAsync(organization.Id);
         Assert.Equal(0, usage.CurrentUsage.Total);
@@ -129,14 +134,15 @@ public class EventPostJobTests : IntegrationTestsBase {
         await RefreshDataAsync();
         events = await _eventRepository.GetAllAsync();
         Assert.Equal(3, events.Total);
-        
+
         usage = await _usageService.GetUsageAsync(organization.Id);
         Assert.Equal(1, usage.CurrentUsage.Total);
         Assert.Equal(0, usage.CurrentUsage.Blocked);
     }
 
     [Fact]
-    public async Task CanRunJobWithMassiveEventAsync() {
+    public async Task CanRunJobWithMassiveEventAsync()
+    {
         var ev = GenerateEvent();
         for (int i = 1; i < 100; i++)
             ev.Data[$"{i}MB"] = new string('0', 1024 * 1000);
@@ -158,7 +164,8 @@ public class EventPostJobTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanRunJobWithNonExistingEventDataAsync() {
+    public async Task CanRunJobWithNonExistingEventDataAsync()
+    {
         var ev = GenerateEvent();
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
@@ -173,8 +180,10 @@ public class EventPostJobTests : IntegrationTestsBase {
         Assert.Equal(1, stats.Abandoned);
     }
 
-    private async Task CreateDataAsync(BillingPlan plan = null) {
-        foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans)) {
+    private async Task CreateDataAsync(BillingPlan plan = null)
+    {
+        foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
+        {
             if (plan is not null)
                 _billingManager.ApplyBillingPlan(organization, plan, UserData.GenerateSampleUser());
             else if (organization.Id == TestConstants.OrganizationId3)
@@ -182,7 +191,8 @@ public class EventPostJobTests : IntegrationTestsBase {
             else
                 _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
 
-            if (organization.BillingPrice > 0) {
+            if (organization.BillingPrice > 0)
+            {
                 organization.StripeCustomerId = "stripe_customer_id";
                 organization.CardLast4 = "1234";
                 organization.SubscribeDate = SystemClock.UtcNow;
@@ -190,7 +200,8 @@ public class EventPostJobTests : IntegrationTestsBase {
                 organization.BillingChangedByUserId = TestConstants.UserId;
             }
 
-            if (organization.IsSuspended) {
+            if (organization.IsSuspended)
+            {
                 organization.SuspendedByUserId = TestConstants.UserId;
                 organization.SuspensionCode = SuspensionCode.Billing;
                 organization.SuspensionDate = SystemClock.UtcNow;
@@ -201,8 +212,10 @@ public class EventPostJobTests : IntegrationTestsBase {
 
         await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache().ImmediateConsistency());
 
-        foreach (var user in UserData.GenerateSampleUsers()) {
-            if (user.Id == TestConstants.UserId) {
+        foreach (var user in UserData.GenerateSampleUsers())
+        {
+            if (user.Id == TestConstants.UserId)
+            {
                 user.OrganizationIds.Add(TestConstants.OrganizationId2);
                 user.OrganizationIds.Add(TestConstants.OrganizationId3);
             }
@@ -214,14 +227,17 @@ public class EventPostJobTests : IntegrationTestsBase {
         }
     }
 
-    private Task<string> EnqueueEventPostAsync(PersistentEvent ev) {
+    private Task<string> EnqueueEventPostAsync(PersistentEvent ev)
+    {
         return EnqueueEventPostAsync(new List<PersistentEvent> { ev });
     }
 
-    private Task<string> EnqueueEventPostAsync(List<PersistentEvent> ev) {
+    private Task<string> EnqueueEventPostAsync(List<PersistentEvent> ev)
+    {
         var first = ev.First();
 
-        var eventPostInfo = new EventPost(_options.EnableArchive) {
+        var eventPostInfo = new EventPost(_options.EnableArchive)
+        {
             OrganizationId = first.OrganizationId,
             ProjectId = first.ProjectId,
             ApiVersion = 2,
@@ -235,7 +251,8 @@ public class EventPostJobTests : IntegrationTestsBase {
         return _eventPostService.EnqueueAsync(eventPostInfo, stream);
     }
 
-    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string source = null, string sessionId = null) {
+    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string source = null, string sessionId = null)
+    {
         occurrenceDate ??= SystemClock.OffsetNow;
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
     }

@@ -8,22 +8,26 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
-public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
+public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository
+{
     public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator, AppOptions options)
         : base(configuration.WebHooks, validator, options) { }
 
-    public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl) {
+    public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl)
+    {
         return FindAsync(q => q.FieldEquals(w => w.Url, targetUrl));
     }
 
-    public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId) {
+    public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId)
+    {
         var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
         // TODO: This cache key may not always be cleared out if the web hook doesn't have both a org and project id.
         return FindAsync(q => q.ElasticFilter(filter), o => o.Cache(PagedCacheKey(organizationId, projectId)));
     }
 
-    public async Task MarkDisabledAsync(string id) {
+    public async Task MarkDisabledAsync(string id)
+    {
         var webHook = await GetByIdAsync(id).AnyContext();
         if (!webHook.IsEnabled)
             return;
@@ -32,7 +36,8 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         await SaveAsync(webHook, o => o.Cache()).AnyContext();
     }
 
-    public static class EventTypes {
+    public static class EventTypes
+    {
         // TODO: Add support for these new web hook types.
         public const string NewError = "NewError";
         public const string CriticalError = "CriticalError";
@@ -42,7 +47,8 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         public const string StackPromoted = "StackPromoted";
     }
 
-    protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ChangeType? changeType = null) {
+    protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ChangeType? changeType = null)
+    {
         var keysToRemove = documents.Select(d => d.Value).Select(CacheKey).Distinct();
         await Cache.RemoveAllAsync(keysToRemove).AnyContext();
 

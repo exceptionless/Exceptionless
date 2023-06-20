@@ -5,24 +5,27 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Xunit;
-using Xunit.Abstractions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class ProjectRepositoryTests : IntegrationTestsBase {
+public sealed class ProjectRepositoryTests : IntegrationTestsBase
+{
     private readonly ICacheClient _cache;
     private readonly IProjectRepository _repository;
 
-    public ProjectRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public ProjectRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _cache = GetService<ICacheClient>();
         _repository = GetService<IProjectRepository>();
     }
 
     [Fact]
-    public async Task IncrementNextSummaryEndOfDayTicksAsync() {
+    public async Task IncrementNextSummaryEndOfDayTicksAsync()
+    {
         Assert.Equal(0, await _repository.CountAsync());
 
         var project = await _repository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
@@ -53,7 +56,8 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetByOrganizationIdsAsync() {
+    public async Task GetByOrganizationIdsAsync()
+    {
         var project1 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"), o => o.ImmediateConsistency());
         var project2 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.OrganizationId, name: "Two"), o => o.ImmediateConsistency());
 
@@ -77,7 +81,8 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetByFilterAsyncAsync() {
+    public async Task GetByFilterAsyncAsync()
+    {
         var organizations = OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>());
         var organization1 = organizations.Single(o => String.Equals(o.Id, TestConstants.OrganizationId));
         var organization2 = organizations.Single(o => String.Equals(o.Id, TestConstants.OrganizationId2));
@@ -110,10 +115,13 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanRoundTripWithCaching() {
-        var token = new SlackToken {
+    public async Task CanRoundTripWithCaching()
+    {
+        var token = new SlackToken
+        {
             AccessToken = "MY KEY",
-            IncomingWebhook = new SlackToken.IncomingWebHook {
+            IncomingWebhook = new SlackToken.IncomingWebHook
+            {
                 Url = "MY Url"
             }
         };

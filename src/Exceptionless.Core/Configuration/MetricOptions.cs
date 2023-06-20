@@ -5,12 +5,14 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class MetricOptions {
+public class MetricOptions
+{
     public string ConnectionString { get; internal set; }
     public string Provider { get; internal set; }
     public Dictionary<string, string> Data { get; internal set; }
 
-    public static MetricOptions ReadFromConfiguration(IConfiguration config) {
+    public static MetricOptions ReadFromConfiguration(IConfiguration config)
+    {
         var options = new MetricOptions();
 
         string cs = config.GetConnectionString("Metrics");

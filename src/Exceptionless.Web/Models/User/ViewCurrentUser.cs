@@ -5,8 +5,10 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Web.Models;
 
-public class ViewCurrentUser : ViewUser {
-    public ViewCurrentUser(User user, IntercomOptions options) {
+public class ViewCurrentUser : ViewUser
+{
+    public ViewCurrentUser(User user, IntercomOptions options)
+    {
         Id = user.Id;
         OrganizationIds = user.OrganizationIds;
         FullName = user.FullName;
@@ -25,13 +27,15 @@ public class ViewCurrentUser : ViewUser {
     public bool HasLocalAccount { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
 
-    private string HMACSHA256HashString(string value, IntercomOptions options) {
+    private string HMACSHA256HashString(string value, IntercomOptions options)
+    {
         if (!options.EnableIntercom)
             return null;
 
         byte[] secretKey = Encoding.UTF8.GetBytes(options.IntercomSecret);
         byte[] bytes = Encoding.UTF8.GetBytes(value);
-        using (var hmac = new HMACSHA256(secretKey)) {
+        using (var hmac = new HMACSHA256(secretKey))
+        {
             hmac.ComputeHash(bytes);
             byte[] data = hmac.Hash;
 

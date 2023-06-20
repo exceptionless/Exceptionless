@@ -5,7 +5,8 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Helpers;
 
-public static class TypeHelper {
+public static class TypeHelper
+{
     public static readonly Type ObjectType = typeof(object);
     public static readonly Type StringType = typeof(string);
     public static readonly Type CharType = typeof(char);
@@ -27,7 +28,8 @@ public static class TypeHelper {
     public static readonly Type UInt64Type = typeof(ulong);
     public static readonly Type DoubleType = typeof(double);
 
-    public static string GetTypeName(string assemblyQualifiedName) {
+    public static string GetTypeName(string assemblyQualifiedName)
+    {
         if (String.IsNullOrEmpty(assemblyQualifiedName))
             return null;
 
@@ -39,9 +41,12 @@ public static class TypeHelper {
         return parts[0].Substring(i + 1);
     }
 
-    public static bool AreSameValue(object a, object b) {
-        if (a.GetType() != b.GetType()) {
-            try {
+    public static bool AreSameValue(object a, object b)
+    {
+        if (a.GetType() != b.GetType())
+        {
+            try
+            {
                 b = ChangeType(b, a.GetType());
             }
             catch { }
@@ -56,11 +61,13 @@ public static class TypeHelper {
         return true;
     }
 
-    public static T ChangeType<T>(object v) {
+    public static T ChangeType<T>(object v)
+    {
         return (T)ChangeType(v, typeof(T));
     }
 
-    public static object ChangeType(object v, Type desiredType) {
+    public static object ChangeType(object v, Type desiredType)
+    {
         var currentType = v.GetType();
 
         if (desiredType == currentType)
@@ -74,7 +81,8 @@ public static class TypeHelper {
         return Convert.ChangeType(v, desiredType, CultureInfo.InvariantCulture);
     }
 
-    private static object ToBoolean(object value) {
+    private static object ToBoolean(object value)
+    {
         if (Boolean.TryParse(value.ToString(), out bool b))
             return b;
 
@@ -84,20 +92,25 @@ public static class TypeHelper {
         return Convert.ToBoolean(value);
     }
 
-    public static IEnumerable<Type> GetDerivedTypes<TAction>() {
+    public static IEnumerable<Type> GetDerivedTypes<TAction>()
+    {
         return GetDerivedTypes(typeof(TAction));
     }
 
-    public static IEnumerable<Type> GetDerivedTypes(Type type, IEnumerable<Assembly> assemblies = null) {
+    public static IEnumerable<Type> GetDerivedTypes(Type type, IEnumerable<Assembly> assemblies = null)
+    {
         if (assemblies == null)
             assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
         var types = new List<Type>();
-        foreach (var assembly in assemblies) {
-            try {
+        foreach (var assembly in assemblies)
+        {
+            try
+            {
                 types.AddRange(from implementingType in assembly.GetTypes() where implementingType.IsClass && !implementingType.IsNotPublic && !implementingType.IsAbstract && type.IsAssignableFrom(implementingType) select implementingType);
             }
-            catch (ReflectionTypeLoadException ex) {
+            catch (ReflectionTypeLoadException ex)
+            {
                 string loaderMessages = String.Join(", ", ex.LoaderExceptions.ToList().Select(le => le.Message));
                 Trace.TraceInformation("Unable to search types from assembly '{0}' for plugins of type '{1}': {2}", assembly.FullName, type.Name, loaderMessages);
             }
@@ -106,7 +119,8 @@ public static class TypeHelper {
         return types;
     }
 
-    public static IEnumerable<Type> GetAllTypesImplementingOpenGenericType(Type openGenericType, IEnumerable<Assembly> assemblies = null) {
+    public static IEnumerable<Type> GetAllTypesImplementingOpenGenericType(Type openGenericType, IEnumerable<Assembly> assemblies = null)
+    {
         if (assemblies == null)
             assemblies = AppDomain.CurrentDomain.GetAssemblies();
 

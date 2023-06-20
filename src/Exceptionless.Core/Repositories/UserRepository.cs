@@ -9,13 +9,16 @@ using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Core.Repositories;
 
-public class UserRepository : RepositoryBase<User>, IUserRepository {
+public class UserRepository : RepositoryBase<User>, IUserRepository
+{
     public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, AppOptions options)
-        : base(configuration.Users, validator, options) {
+        : base(configuration.Users, validator, options)
+    {
         AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
-    public async Task<User> GetByEmailAddressAsync(string emailAddress) {
+    public async Task<User> GetByEmailAddressAsync(string emailAddress)
+    {
         if (String.IsNullOrWhiteSpace(emailAddress))
             return null;
 
@@ -24,7 +27,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository {
         return hit?.Document;
     }
 
-    public async Task<User> GetByPasswordResetTokenAsync(string token) {
+    public async Task<User> GetByPasswordResetTokenAsync(string token)
+    {
         if (String.IsNullOrEmpty(token))
             return null;
 
@@ -32,7 +36,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository {
         return hit?.Document;
     }
 
-    public async Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId) {
+    public async Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId)
+    {
         if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
             return null;
 
@@ -42,7 +47,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository {
         return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
     }
 
-    public async Task<User> GetByVerifyEmailAddressTokenAsync(string token) {
+    public async Task<User> GetByVerifyEmailAddressTokenAsync(string token)
+    {
         if (String.IsNullOrEmpty(token))
             return null;
 
@@ -51,7 +57,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository {
         return hit?.Document;
     }
 
-    public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null) {
+    public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null)
+    {
         if (String.IsNullOrEmpty(organizationId))
             return Task.FromResult(new FindResults<User>());
 
@@ -63,7 +70,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository {
         return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
     }
 
-    protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead) {
+    protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
+    {
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
 
         var cacheEntries = new Dictionary<string, FindHit<User>>();
@@ -74,7 +82,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository {
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn()).AnyContext();
     }
 
-    protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ChangeType? changeType = null) {
+    protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ChangeType? changeType = null)
+    {
         var keysToRemove = documents.UnionOriginalAndModified().Select(u => EmailCacheKey(u.EmailAddress)).Distinct();
         return Task.WhenAll(Cache.RemoveAllAsync(keysToRemove), base.InvalidateCacheAsync(documents, changeType));
     }

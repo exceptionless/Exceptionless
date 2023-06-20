@@ -14,23 +14,27 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Closes inactive user sessions.", InitialDelay = "30s", Interval = "30s")]
-public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
+public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
+{
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastActivity;
 
-    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _eventRepository = eventRepository;
         _cache = cacheClient;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    {
         return _lockProvider.AcquireAsync(nameof(CloseInactiveSessionsJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         _lastActivity = SystemClock.UtcNow;
         var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SearchAfterPaging().PageLimit(100)).AnyContext();
         int sessionsClosed = 0;
@@ -38,13 +42,15 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
         if (results.Documents.Count == 0)
             return JobResult.Success;
 
-        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
+        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
             var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
             var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
             var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
             var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var sessionStart in results.Documents) {
+            foreach (var sessionStart in results.Documents)
+            {
                 var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
                 var heartbeatResult = await GetHeartbeatAsync(sessionStart).AnyContext();
 
@@ -60,7 +66,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
                     continue;
 
                 sessionsToUpdate.Add(sessionStart);
-                if (heartbeatResult != null) {
+                if (heartbeatResult != null)
+                {
                     cacheKeysToRemove.Add(heartbeatResult.CacheKey);
                     if (heartbeatResult.Close)
                         cacheKeysToRemove.Add(heartbeatResult.CacheKey + "-close");
@@ -86,7 +93,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                 break;
 
-            if (results.Documents.Count > 0) {
+            if (results.Documents.Count > 0)
+            {
                 await context.RenewLockAsync().AnyContext();
                 _lastActivity = SystemClock.UtcNow;
             }
@@ -96,9 +104,11 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
         return JobResult.Success;
     }
 
-    private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart) {
+    private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart)
+    {
         string sessionId = sessionStart.GetSessionId();
-        if (!String.IsNullOrWhiteSpace(sessionId)) {
+        if (!String.IsNullOrWhiteSpace(sessionId))
+        {
             var result = await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}").AnyContext();
             if (result != null)
                 return result;
@@ -111,9 +121,11 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
         return await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}").AnyContext();
     }
 
-    private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey) {
+    private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey)
+    {
         var cacheValue = await _cache.GetAsync<DateTime>(cacheKey).AnyContext();
-        if (cacheValue.HasValue) {
+        if (cacheValue.HasValue)
+        {
             bool close = await _cache.GetAsync(cacheKey + "-close", false).AnyContext();
             return new HeartbeatResult { ActivityUtc = cacheValue.Value, Close = close, CacheKey = cacheKey };
         }
@@ -123,13 +135,15 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck {
 
     public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(5);
 
-    private class HeartbeatResult {
+    private class HeartbeatResult
+    {
         public DateTime ActivityUtc { get; set; }
         public string CacheKey { get; set; }
         public bool Close { get; set; }
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastActivity.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

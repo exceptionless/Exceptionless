@@ -3,8 +3,10 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
 
-public class Module : IData {
-    public Module() {
+public class Module : IData
+{
+    public Module()
+    {
         Data = new DataDictionary();
     }
 
@@ -16,7 +18,8 @@ public class Module : IData {
     public DateTime ModifiedDate { get; set; }
     public DataDictionary Data { get; set; }
 
-    public override string ToString() {
+    public override string ToString()
+    {
         var sb = new StringBuilder();
         sb.Append(Name);
         sb.Append(", Version=");
@@ -27,11 +30,13 @@ public class Module : IData {
         return sb.ToString();
     }
 
-    protected bool Equals(Module other) {
+    protected bool Equals(Module other)
+    {
         return ModuleId == other.ModuleId && String.Equals(Name, other.Name) && String.Equals(Version, other.Version) && IsEntry == other.IsEntry && CreatedDate.Equals(other.CreatedDate) && ModifiedDate.Equals(other.ModifiedDate) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -41,8 +46,10 @@ public class Module : IData {
         return Equals((Module)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = ModuleId;
             hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Version?.GetHashCode() ?? 0);

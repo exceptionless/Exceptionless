@@ -3,36 +3,45 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Tests.Mail;
 
-public class NullMailer : IMailer {
-    public Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+public class NullMailer : IMailer
+{
+    public Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
+    {
         return Task.FromResult(true);
     }
 
-    public Task SendOrganizationAddedAsync(User sender, Organization organization, User user) {
+    public Task SendOrganizationAddedAsync(User sender, Organization organization, User user)
+    {
         return Task.CompletedTask;
     }
 
-    public Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite) {
+    public Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite)
+    {
         return Task.CompletedTask;
     }
 
-    public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit) {
+    public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit)
+    {
         return Task.CompletedTask;
     }
 
-    public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization) {
+    public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
+    {
         return Task.CompletedTask;
     }
 
-    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan) {
+    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
+    {
         return Task.CompletedTask;
     }
 
-    public Task SendUserEmailVerifyAsync(User user) {
+    public Task SendUserEmailVerifyAsync(User user)
+    {
         return Task.CompletedTask;
     }
 
-    public Task SendUserPasswordResetAsync(User user) {
+    public Task SendUserPasswordResetAsync(User user)
+    {
         return Task.CompletedTask;
     }
 }

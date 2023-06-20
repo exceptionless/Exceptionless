@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Web.Models;
 
-public class ViewUser : IIdentity {
+public class ViewUser : IIdentity
+{
     public string Id { get; set; }
     public ICollection<string> OrganizationIds { get; set; }
     public string FullName { get; set; }

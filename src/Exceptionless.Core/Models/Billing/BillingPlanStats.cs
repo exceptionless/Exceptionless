@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models.Billing;
 
-public class BillingPlanStats {
+public class BillingPlanStats
+{
     public int SmallTotal { get; set; }
     public int SmallYearlyTotal { get; set; }
     public int MediumTotal { get; set; }

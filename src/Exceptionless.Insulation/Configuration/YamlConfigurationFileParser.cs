@@ -3,7 +3,8 @@ using YamlDotNet.RepresentationModel;
 
 namespace Exceptionless.Insulation.Configuration;
 
-internal class YamlConfigurationFileParser {
+internal class YamlConfigurationFileParser
+{
     private readonly Stack<string> _context = new Stack<string>();
 
     private readonly IDictionary<string, string> _data =
@@ -11,7 +12,8 @@ internal class YamlConfigurationFileParser {
 
     private string _currentPath;
 
-    public IDictionary<string, string> Parse(Stream stream) {
+    public IDictionary<string, string> Parse(Stream stream)
+    {
         _data.Clear();
 
         var yamlStream = new YamlStream();
@@ -23,7 +25,8 @@ internal class YamlConfigurationFileParser {
         if (!(yamlStream.Documents[0].RootNode is YamlMappingNode mappingNode))
             return _data;
 
-        foreach (var nodePair in mappingNode.Children) {
+        foreach (var nodePair in mappingNode.Children)
+        {
             string context = ((YamlScalarNode)nodePair.Key).Value;
             VisitYamlNode(context, nodePair.Value);
         }
@@ -31,8 +34,10 @@ internal class YamlConfigurationFileParser {
         return _data;
     }
 
-    private void VisitYamlNode(string context, YamlNode node) {
-        switch (node) {
+    private void VisitYamlNode(string context, YamlNode node)
+    {
+        switch (node)
+        {
             case YamlScalarNode scalarNode:
                 VisitYamlScalarNode(context, scalarNode);
                 break;
@@ -50,7 +55,8 @@ internal class YamlConfigurationFileParser {
         }
     }
 
-    private void VisitYamlScalarNode(string context, YamlScalarNode scalarNode) {
+    private void VisitYamlScalarNode(string context, YamlScalarNode scalarNode)
+    {
         EnterContext(context);
         string currentKey = _currentPath;
 
@@ -61,10 +67,12 @@ internal class YamlConfigurationFileParser {
         ExitContext();
     }
 
-    private void VisitYamlMappingNode(string context, YamlMappingNode mappingNode) {
+    private void VisitYamlMappingNode(string context, YamlMappingNode mappingNode)
+    {
         EnterContext(context);
 
-        foreach (var nodePair in mappingNode.Children) {
+        foreach (var nodePair in mappingNode.Children)
+        {
             string innerContext = ((YamlScalarNode)nodePair.Key).Value;
             VisitYamlNode(innerContext, nodePair.Value);
         }
@@ -72,7 +80,8 @@ internal class YamlConfigurationFileParser {
         ExitContext();
     }
 
-    private void VisitYamlSequenceNode(string context, YamlSequenceNode sequenceNode) {
+    private void VisitYamlSequenceNode(string context, YamlSequenceNode sequenceNode)
+    {
         EnterContext(context);
 
         for (int i = 0; i < sequenceNode.Children.Count; ++i)
@@ -81,12 +90,14 @@ internal class YamlConfigurationFileParser {
         ExitContext();
     }
 
-    private void EnterContext(string context) {
+    private void EnterContext(string context)
+    {
         _context.Push(context);
         _currentPath = ConfigurationPath.Combine(_context.Reverse());
     }
 
-    private void ExitContext() {
+    private void ExitContext()
+    {
         _context.Pop();
         _currentPath = ConfigurationPath.Combine(_context.Reverse());
     }

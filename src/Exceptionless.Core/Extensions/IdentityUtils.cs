@@ -5,7 +5,8 @@ using IIdentity = System.Security.Principal.IIdentity;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class IdentityUtils {
+public static class IdentityUtils
+{
     public const string TokenAuthenticationType = "Token";
     public const string UserAuthenticationType = "User";
     public const string LoggedInUsersTokenId = "LoggedInUsersTokenId";
@@ -13,7 +14,8 @@ public static class IdentityUtils {
     public const string ProjectIdClaim = "ProjectId";
     public const string DefaultProjectIdClaim = "DefaultProjectId";
 
-    public static ClaimsIdentity ToIdentity(this Token token) {
+    public static ClaimsIdentity ToIdentity(this Token token)
+    {
         if (token == null || token.Type != TokenType.Access)
             return new ClaimsIdentity();
 
@@ -31,18 +33,21 @@ public static class IdentityUtils {
         if (!String.IsNullOrEmpty(token.DefaultProjectId))
             claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
 
-        if (token.Scopes.Count > 0) {
+        if (token.Scopes.Count > 0)
+        {
             foreach (string scope in token.Scopes)
                 claims.Add(new Claim(ClaimTypes.Role, scope));
         }
-        else {
+        else
+        {
             claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
         }
 
         return new ClaimsIdentity(claims, TokenAuthenticationType);
     }
 
-    public static ClaimsIdentity ToIdentity(this User user, Token token = null) {
+    public static ClaimsIdentity ToIdentity(this User user, Token token = null)
+    {
         if (user == null)
             return new ClaimsIdentity();
 
@@ -52,14 +57,16 @@ public static class IdentityUtils {
                     new Claim(OrganizationIdsClaim, String.Join(",", user.OrganizationIds))
                 };
 
-        if (token != null) {
+        if (token != null)
+        {
             claims.Add(new Claim(LoggedInUsersTokenId, token.Id));
 
             if (!String.IsNullOrEmpty(token.DefaultProjectId))
                 claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
         }
 
-        if (user.Roles.Count > 0) {
+        if (user.Roles.Count > 0)
+        {
             // add implied scopes
             var roles = user.Roles.ToHashSet();
             if (roles.Contains(AuthorizationRoles.GlobalAdmin))
@@ -71,7 +78,8 @@ public static class IdentityUtils {
             foreach (string role in roles)
                 claims.Add(new Claim(ClaimTypes.Role, role));
         }
-        else {
+        else
+        {
             claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
             claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.User));
         }
@@ -79,14 +87,16 @@ public static class IdentityUtils {
         return new ClaimsIdentity(claims, UserAuthenticationType);
     }
 
-    public static AuthType GetAuthType(this ClaimsPrincipal principal) {
+    public static AuthType GetAuthType(this ClaimsPrincipal principal)
+    {
         if (principal?.Identity == null || !principal.Identity.IsAuthenticated)
             return AuthType.Anonymous;
 
         return IsTokenAuthType(principal) ? AuthType.Token : AuthType.User;
     }
 
-    public static bool IsTokenAuthType(this ClaimsPrincipal principal) {
+    public static bool IsTokenAuthType(this ClaimsPrincipal principal)
+    {
         var identity = GetClaimsIdentity(principal);
         if (identity == null)
             return false;
@@ -94,7 +104,8 @@ public static class IdentityUtils {
         return identity.AuthenticationType == TokenAuthenticationType;
     }
 
-    public static bool IsUserAuthType(this ClaimsPrincipal principal) {
+    public static bool IsUserAuthType(this ClaimsPrincipal principal)
+    {
         var identity = GetClaimsIdentity(principal);
         if (identity == null)
             return false;
@@ -102,11 +113,13 @@ public static class IdentityUtils {
         return identity.AuthenticationType == UserAuthenticationType;
     }
 
-    public static ClaimsIdentity GetClaimsIdentity(this ClaimsPrincipal principal) {
+    public static ClaimsIdentity GetClaimsIdentity(this ClaimsPrincipal principal)
+    {
         return principal?.Identity as ClaimsIdentity;
     }
 
-    public static string GetUserId(this ClaimsPrincipal principal) {
+    public static string GetUserId(this ClaimsPrincipal principal)
+    {
         return IsUserAuthType(principal) ? GetClaimValue(principal, ClaimTypes.NameIdentifier) : null;
     }
 
@@ -115,15 +128,18 @@ public static class IdentityUtils {
     /// </summary>
     /// <param name="principal"></param>
     /// <returns></returns>
-    public static string GetLoggedInUsersTokenId(this ClaimsPrincipal principal) {
+    public static string GetLoggedInUsersTokenId(this ClaimsPrincipal principal)
+    {
         return IsUserAuthType(principal) ? GetClaimValue(principal, LoggedInUsersTokenId) : null;
     }
 
-    public static string GetTokenOrganizationId(this ClaimsPrincipal principal) {
+    public static string GetTokenOrganizationId(this ClaimsPrincipal principal)
+    {
         return GetClaimValue(principal, OrganizationIdsClaim);
     }
 
-    public static string[] GetOrganizationIds(this ClaimsPrincipal principal) {
+    public static string[] GetOrganizationIds(this ClaimsPrincipal principal)
+    {
         string ids = GetClaimValue(principal, OrganizationIdsClaim);
         if (String.IsNullOrEmpty(ids))
             return Array.Empty<string>();
@@ -131,16 +147,19 @@ public static class IdentityUtils {
         return ids.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
     }
 
-    public static string GetProjectId(this ClaimsPrincipal principal) {
+    public static string GetProjectId(this ClaimsPrincipal principal)
+    {
         return GetClaimValue(principal, ProjectIdClaim);
     }
 
-    public static string GetDefaultProjectId(this ClaimsPrincipal principal) {
+    public static string GetDefaultProjectId(this ClaimsPrincipal principal)
+    {
         // if this claim is for a specific project, then that is always the default project.
         return GetClaimValue(principal, ProjectIdClaim) ?? GetClaimValue(principal, DefaultProjectIdClaim);
     }
 
-    public static string GetClaimValue(this ClaimsPrincipal principal, string type) {
+    public static string GetClaimValue(this ClaimsPrincipal principal, string type)
+    {
         var identity = principal?.GetClaimsIdentity();
         if (identity == null)
             return null;
@@ -148,7 +167,8 @@ public static class IdentityUtils {
         return GetClaimValue(identity, type);
     }
 
-    public static string GetClaimValue(this IIdentity identity, string type) {
+    public static string GetClaimValue(this IIdentity identity, string type)
+    {
         if (identity is not ClaimsIdentity claimsIdentity)
             return null;
 
@@ -157,7 +177,8 @@ public static class IdentityUtils {
     }
 }
 
-public enum AuthType {
+public enum AuthType
+{
     User,
     Token,
     Anonymous

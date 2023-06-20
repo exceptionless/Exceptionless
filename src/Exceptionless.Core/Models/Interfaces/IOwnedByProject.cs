@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public interface IOwnedByProject {
+public interface IOwnedByProject
+{
     /// <summary>
     /// The project that the document belongs to.
     /// </summary>

@@ -1,18 +1,21 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(20)]
-public sealed class VersionTwoPlugin : WebHookDataPluginBase {
+public sealed class VersionTwoPlugin : WebHookDataPluginBase
+{
     public VersionTwoPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
-    public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
+    public override Task<object> CreateFromEventAsync(WebHookDataContext ctx)
+    {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version2))
             return Task.FromResult<object>(null);
 
-        return Task.FromResult<object>(new WebHookEvent(_options.BaseURL) {
+        return Task.FromResult<object>(new WebHookEvent(_options.BaseURL)
+        {
             Id = ctx.Event.Id,
             OccurrenceDate = ctx.Event.Date,
             Tags = ctx.Event.Tags,
@@ -36,11 +39,13 @@ public sealed class VersionTwoPlugin : WebHookDataPluginBase {
         });
     }
 
-    public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
+    public override Task<object> CreateFromStackAsync(WebHookDataContext ctx)
+    {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version2))
             return Task.FromResult<object>(null);
 
-        return Task.FromResult<object>(new WebHookStack(_options.BaseURL) {
+        return Task.FromResult<object>(new WebHookStack(_options.BaseURL)
+        {
             Id = ctx.Stack.Id,
             Title = ctx.Stack.Title,
             Description = ctx.Stack.Description,

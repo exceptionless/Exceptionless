@@ -2,12 +2,14 @@
 
 namespace Exceptionless.Core.Mail;
 
-public class InMemoryMailSender : IMailSender {
+public class InMemoryMailSender : IMailSender
+{
     private readonly Queue<MailMessage> _recentMessages = new Queue<MailMessage>();
     private readonly int _messagesToStore;
     private long _totalSent;
 
-    public InMemoryMailSender(int messagesToStore = 25) {
+    public InMemoryMailSender(int messagesToStore = 25)
+    {
         _messagesToStore = messagesToStore;
     }
 
@@ -15,7 +17,8 @@ public class InMemoryMailSender : IMailSender {
     public List<MailMessage> SentMessages => _recentMessages.ToList();
     public MailMessage LastMessage => SentMessages.LastOrDefault();
 
-    public Task SendAsync(MailMessage model) {
+    public Task SendAsync(MailMessage model)
+    {
         _recentMessages.Enqueue(model);
         Interlocked.Increment(ref _totalSent);
 

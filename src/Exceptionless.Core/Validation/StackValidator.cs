@@ -4,8 +4,10 @@ using FluentValidation.Results;
 
 namespace Exceptionless.Core.Validation;
 
-public class StackValidator : AbstractValidator<Stack> {
-    public override ValidationResult Validate(ValidationContext<Stack> context) {
+public class StackValidator : AbstractValidator<Stack>
+{
+    public override ValidationResult Validate(ValidationContext<Stack> context)
+    {
         var result = new ValidationResult();
         var stack = context.InstanceToValidate;
 
@@ -28,7 +30,8 @@ public class StackValidator : AbstractValidator<Stack> {
         //if (stack.Tags.Count > 50)
         //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
 
-        foreach (string tag in stack.Tags) {
+        foreach (string tag in stack.Tags)
+        {
             if (String.IsNullOrEmpty(tag))
                 result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
             else if (tag.Length > 255)
@@ -44,11 +47,13 @@ public class StackValidator : AbstractValidator<Stack> {
         return result;
     }
 
-    public override Task<ValidationResult> ValidateAsync(ValidationContext<Stack> context, CancellationToken cancellation = new CancellationToken()) {
+    public override Task<ValidationResult> ValidateAsync(ValidationContext<Stack> context, CancellationToken cancellation = new CancellationToken())
+    {
         return Task.FromResult(Validate(context.InstanceToValidate));
     }
 
-    private bool IsObjectId(string value) {
+    private bool IsObjectId(string value)
+    {
         if (String.IsNullOrEmpty(value))
             return false;
 

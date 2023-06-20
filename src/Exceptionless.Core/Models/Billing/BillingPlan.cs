@@ -3,7 +3,8 @@
 namespace Exceptionless.Core.Models.Billing;
 
 [DebuggerDisplay("Id: {Id} Name: {Name} Price: {Price}")]
-public class BillingPlan {
+public class BillingPlan
+{
     public string Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }

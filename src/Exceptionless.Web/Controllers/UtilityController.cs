@@ -8,11 +8,13 @@ namespace Exceptionless.Web.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
 [Route(API_PREFIX)]
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class UtilityController : ExceptionlessApiController {
+public class UtilityController : ExceptionlessApiController
+{
     private readonly PersistentEventQueryValidator _eventQueryValidator;
     private readonly StackQueryValidator _stackQueryValidator;
 
-    public UtilityController(PersistentEventQueryValidator eventQueryValidator, StackQueryValidator stackQueryValidator) {
+    public UtilityController(PersistentEventQueryValidator eventQueryValidator, StackQueryValidator stackQueryValidator)
+    {
         _eventQueryValidator = eventQueryValidator;
         _stackQueryValidator = stackQueryValidator;
     }
@@ -25,17 +27,23 @@ public class UtilityController : ExceptionlessApiController {
     /// </remarks>
     /// <param name="query">The query you wish to validate.</param>
     [HttpGet("search/validate")]
-    public async Task<ActionResult<AppQueryValidator.QueryProcessResult>> ValidateAsync(string query) {
-        try {
+    public async Task<ActionResult<AppQueryValidator.QueryProcessResult>> ValidateAsync(string query)
+    {
+        try
+        {
             var eventResults = await _eventQueryValidator.ValidateQueryAsync(query);
             var stackResults = await _stackQueryValidator.ValidateQueryAsync(query);
-            return Ok(new AppQueryValidator.QueryProcessResult {
+            return Ok(new AppQueryValidator.QueryProcessResult
+            {
                 IsValid = eventResults.IsValid || stackResults.IsValid,
                 UsesPremiumFeatures = eventResults.UsesPremiumFeatures && stackResults.UsesPremiumFeatures,
                 Message = eventResults.Message ?? stackResults.Message
             });
-        } catch (Exception) {
-            return Ok(new AppQueryValidator.QueryProcessResult {
+        }
+        catch (Exception)
+        {
+            return Ok(new AppQueryValidator.QueryProcessResult
+            {
                 IsValid = false,
                 Message = $"Error parsing query: \"{query}\""
             });

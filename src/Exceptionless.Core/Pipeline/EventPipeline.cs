@@ -1,29 +1,34 @@
 ﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Plugins.EventProcessor;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
 
-public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
+public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
+{
     public EventPipeline(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
 
-    public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
+    public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null)
+    {
         return RunAsync(new EventContext(ev, organization, project, epi));
     }
 
-    public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo epi = null) {
+    public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo epi = null)
+    {
         return RunAsync(events.Select(ev => new EventContext(ev, organization, project, epi)).ToList());
     }
 
-    public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts) {
+    public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts)
+    {
         if (contexts == null || contexts.Count == 0)
             return contexts ?? new List<EventContext>();
 
         AppDiagnostics.EventsSubmitted.Add(contexts.Count);
-        try {
+        try
+        {
             if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                 throw new ArgumentException("All Event Ids should not be populated.");
 
@@ -58,7 +63,8 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
             if (errors > 0)
                 AppDiagnostics.EventsProcessErrors.Add(errors);
         }
-        catch (Exception) {
+        catch (Exception)
+        {
             AppDiagnostics.EventsProcessErrors.Add(contexts.Count);
             throw;
         }
@@ -66,7 +72,8 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
         return contexts;
     }
 
-    protected override IList<Type> GetActionTypes() {
+    protected override IList<Type> GetActionTypes()
+    {
         return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>().SortByPriority());
     }
 }

@@ -5,13 +5,16 @@ using Foundatio.Parsers.LuceneQueries.Visitors;
 
 namespace Exceptionless.Core.Repositories.Queries;
 
-public class EventFieldsQueryVisitor : ChainableQueryVisitor {
-    public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context) {
+public class EventFieldsQueryVisitor : ChainableQueryVisitor
+{
+    public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
+    {
         var childTerms = new List<string>();
         if (node.Left is TermNode leftTermNode && leftTermNode.Field == null)
             childTerms.Add(leftTermNode.Term);
 
-        if (node.Left is TermRangeNode leftTermRangeNode && leftTermRangeNode.Field == null) {
+        if (node.Left is TermRangeNode leftTermRangeNode && leftTermRangeNode.Field == null)
+        {
             childTerms.Add(leftTermRangeNode.Min);
             childTerms.Add(leftTermRangeNode.Max);
         }
@@ -19,7 +22,8 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor {
         if (node.Right is TermNode rightTermNode && rightTermNode.Field == null)
             childTerms.Add(rightTermNode.Term);
 
-        if (node.Right is TermRangeNode rightTermRangeNode && rightTermRangeNode.Field == null) {
+        if (node.Right is TermRangeNode rightTermRangeNode && rightTermRangeNode.Field == null)
+        {
             childTerms.Add(rightTermRangeNode.Min);
             childTerms.Add(rightTermRangeNode.Max);
         }
@@ -29,9 +33,11 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor {
             await child.AcceptAsync(this, context).AnyContext();
     }
 
-    public override Task VisitAsync(TermNode node, IQueryVisitorContext context) {
+    public override Task VisitAsync(TermNode node, IQueryVisitorContext context)
+    {
         // using all fields search
-        if (String.IsNullOrEmpty(node.Field)) {
+        if (String.IsNullOrEmpty(node.Field))
+        {
             return Task.CompletedTask;
         }
 
@@ -39,22 +45,26 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor {
         return Task.CompletedTask;
     }
 
-    public override Task VisitAsync(TermRangeNode node, IQueryVisitorContext context) {
+    public override Task VisitAsync(TermRangeNode node, IQueryVisitorContext context)
+    {
         node.Field = GetCustomFieldName(node.Field, new[] { node.Min, node.Max });
         return Task.CompletedTask;
     }
 
-    public override Task VisitAsync(ExistsNode node, IQueryVisitorContext context) {
+    public override Task VisitAsync(ExistsNode node, IQueryVisitorContext context)
+    {
         node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
         return Task.CompletedTask;
     }
 
-    public override Task VisitAsync(MissingNode node, IQueryVisitorContext context) {
+    public override Task VisitAsync(MissingNode node, IQueryVisitorContext context)
+    {
         node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
         return Task.CompletedTask;
     }
 
-    private string GetCustomFieldName(string field, string[] terms) {
+    private string GetCustomFieldName(string field, string[] terms)
+    {
         if (String.IsNullOrEmpty(field))
             return null;
 
@@ -62,7 +72,8 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor {
         if (parts.Length != 2 || (parts.Length == 2 && parts[1].StartsWith("@")))
             return field;
 
-        if (String.Equals(parts[0], "data", StringComparison.OrdinalIgnoreCase)) {
+        if (String.Equals(parts[0], "data", StringComparison.OrdinalIgnoreCase))
+        {
             string termType;
             if (String.Equals(parts[1], Event.KnownDataKeys.SessionEnd, StringComparison.OrdinalIgnoreCase))
                 termType = "d";
@@ -73,18 +84,21 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor {
 
             field = $"idx.{parts[1].ToLowerInvariant()}-{termType}";
         }
-        else if (String.Equals(parts[0], "ref", StringComparison.OrdinalIgnoreCase)) {
+        else if (String.Equals(parts[0], "ref", StringComparison.OrdinalIgnoreCase))
+        {
             field = $"idx.{parts[1].ToLowerInvariant()}-r";
         }
 
         return field;
     }
 
-    private static string GetTermType(string[] terms) {
+    private static string GetTermType(string[] terms)
+    {
         string termType = "s";
 
         var trimmedTerms = terms.Where(t => t != null).Distinct().ToList();
-        foreach (string term in trimmedTerms) {
+        foreach (string term in trimmedTerms)
+        {
             if (term.StartsWith("*"))
                 continue;
 
@@ -105,11 +119,13 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor {
         return termType;
     }
 
-    public static Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext context = null) {
+    public static Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext context = null)
+    {
         return new EventFieldsQueryVisitor().AcceptAsync(node, context);
     }
 
-    public static IQueryNode Run(IQueryNode node, IQueryVisitorContext context = null) {
+    public static IQueryNode Run(IQueryNode node, IQueryVisitorContext context = null)
+    {
         return RunAsync(node, context).GetAwaiter().GetResult();
     }
 }

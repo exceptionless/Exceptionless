@@ -4,17 +4,21 @@ using Exceptionless.Core.Extensions;
 namespace Exceptionless.Core.Models.Data;
 
 [DebuggerDisplay("{Identity}, {Name}")]
-public class UserInfo : IData {
-    public UserInfo() {
+public class UserInfo : IData
+{
+    public UserInfo()
+    {
         Data = new DataDictionary();
     }
 
-    public UserInfo(string identity) : this() {
+    public UserInfo(string identity) : this()
+    {
         if (!String.IsNullOrWhiteSpace(identity))
             Identity = identity.Trim();
     }
 
-    public UserInfo(string identity, string name) : this(identity) {
+    public UserInfo(string identity, string name) : this(identity)
+    {
         if (!String.IsNullOrWhiteSpace(name))
             Name = name.Trim();
     }
@@ -34,11 +38,13 @@ public class UserInfo : IData {
     /// </summary>
     public DataDictionary Data { get; set; }
 
-    protected bool Equals(UserInfo other) {
+    protected bool Equals(UserInfo other)
+    {
         return String.Equals(Identity, other.Identity) && String.Equals(Name, other.Name) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -48,8 +54,10 @@ public class UserInfo : IData {
         return Equals((UserInfo)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = Identity?.GetHashCode() ?? 0;
             hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode() ?? 0);

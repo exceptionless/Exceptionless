@@ -2,8 +2,10 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
 
-public class EnvironmentInfo : IData {
-    public EnvironmentInfo() {
+public class EnvironmentInfo : IData
+{
+    public EnvironmentInfo()
+    {
         Data = new DataDictionary();
     }
 
@@ -101,11 +103,13 @@ public class EnvironmentInfo : IData {
     /// </summary>
     public DataDictionary Data { get; set; }
 
-    protected bool Equals(EnvironmentInfo other) {
+    protected bool Equals(EnvironmentInfo other)
+    {
         return ProcessorCount == other.ProcessorCount && TotalPhysicalMemory == other.TotalPhysicalMemory && AvailablePhysicalMemory == other.AvailablePhysicalMemory && String.Equals(CommandLine, other.CommandLine) && String.Equals(ProcessName, other.ProcessName) && String.Equals(ProcessId, other.ProcessId) && ProcessMemorySize == other.ProcessMemorySize && String.Equals(ThreadName, other.ThreadName) && String.Equals(ThreadId, other.ThreadId) && String.Equals(Architecture, other.Architecture) && String.Equals(OSName, other.OSName) && String.Equals(OSVersion, other.OSVersion) && String.Equals(IpAddress, other.IpAddress) && String.Equals(MachineName, other.MachineName) && String.Equals(InstallId, other.InstallId) && String.Equals(RuntimeVersion, other.RuntimeVersion) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -115,8 +119,10 @@ public class EnvironmentInfo : IData {
         return Equals((EnvironmentInfo)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = ProcessorCount;
             hashCode = (hashCode * 397) ^ TotalPhysicalMemory.GetHashCode();
             hashCode = (hashCode * 397) ^ (CommandLine?.GetHashCode() ?? 0);

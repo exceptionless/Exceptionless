@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Authorization;
 
-public static class AuthorizationRoles {
+public static class AuthorizationRoles
+{
     public const string ClientPolicy = nameof(ClientPolicy);
     public const string Client = "client";
     public const string UserPolicy = nameof(UserPolicy);

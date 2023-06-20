@@ -3,11 +3,13 @@ using Foundatio.Caching;
 
 namespace Exceptionless.Extensions;
 
-public static class CacheClientExtensions {
+public static class CacheClientExtensions
+{
     /// <summary>
     /// Increment a value if condition is true.
     /// </summary>
-    public static async Task<long> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null) {
+    public static async Task<long> IncrementAsync(this ICacheClient client, string key, int value, TimeSpan timeToLive, long? startingValue = null)
+    {
         startingValue ??= 0;
 
         var count = await client.GetAsync<long>(key).AnyContext();

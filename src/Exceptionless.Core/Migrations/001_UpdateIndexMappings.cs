@@ -7,11 +7,13 @@ using Nest;
 
 namespace Exceptionless.Core.Migrations;
 
-public sealed class UpdateIndexMappings : MigrationBase {
+public sealed class UpdateIndexMappings : MigrationBase
+{
     private readonly IElasticClient _client;
     private readonly ExceptionlessElasticConfiguration _config;
 
-    public UpdateIndexMappings(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
+    public UpdateIndexMappings(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory)
+    {
         _config = configuration;
         _client = configuration.Client;
 
@@ -19,11 +21,13 @@ public sealed class UpdateIndexMappings : MigrationBase {
         Version = 1;
     }
 
-    public override async Task RunAsync(MigrationContext context) {
+    public override async Task RunAsync(MigrationContext context)
+    {
         _logger.LogInformation("Start migration for adding index mappings...");
 
         _logger.LogInformation("Updating Organization mappings...");
-        var response = await _client.MapAsync<Organization>(d => {
+        var response = await _client.MapAsync<Organization>(d =>
+        {
             d.Index(_config.Organizations.VersionedName);
             d.Properties(p => p
                 .Date(f => f.Name(s => s.LastEventDateUtc))
@@ -40,7 +44,8 @@ public sealed class UpdateIndexMappings : MigrationBase {
         _logger.LogRequest(updateResponse);
 
         _logger.LogInformation("Updating Project mappings...");
-        response = await _client.MapAsync<Project>(d => {
+        response = await _client.MapAsync<Project>(d =>
+        {
             d.Index(_config.Projects.VersionedName);
             d.Properties(p => p
                 .Date(f => f.Name(s => s.LastEventDateUtc))
@@ -56,7 +61,8 @@ public sealed class UpdateIndexMappings : MigrationBase {
         _logger.LogRequest(updateResponse);
 
         _logger.LogInformation("Updating Stack mappings...");
-        response = await _client.MapAsync<Stack>(d => {
+        response = await _client.MapAsync<Stack>(d =>
+        {
             d.Index(_config.Stacks.VersionedName);
             d.Properties(p => p
                 .Keyword(f => f.Name(s => s.Status))

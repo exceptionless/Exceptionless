@@ -17,7 +17,8 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction {
+public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction
+{
     private readonly AppOptions _appOptions;
     private readonly JsonSerializerSettings _serializerSettings;
 
@@ -29,7 +30,8 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
         ILoggerFactory loggerFactory
-    ) : base(workItemQueue, cacheClient, messageBus, loggerFactory) {
+    ) : base(workItemQueue, cacheClient, messageBus, loggerFactory)
+    {
         _appOptions = appOptions;
         _serializerSettings = serializerSettings;
 
@@ -44,14 +46,16 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(WebHooks = new WebHookIndex(this));
     }
 
-    public Task RunAsync(CancellationToken shutdownToken = default) {
+    public Task RunAsync(CancellationToken shutdownToken = default)
+    {
         if (_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
             return Task.CompletedTask;
 
         return ConfigureIndexesAsync();
     }
 
-    public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder) {
+    public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder)
+    {
         builder.Register(new AppFilterQueryBuilder(_appOptions));
         builder.Register(new OrganizationQueryBuilder());
         builder.Register(new ProjectQueryBuilder());
@@ -68,7 +72,8 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public UserIndex Users { get; }
     public WebHookIndex WebHooks { get; }
 
-    protected override IElasticClient CreateElasticClient() {
+    protected override IElasticClient CreateElasticClient()
+    {
         var connectionPool = CreateConnectionPool();
         var settings = new ConnectionSettings(connectionPool, (serializer, values) => new ElasticJsonNetSerializer(serializer, values, _serializerSettings));
 
@@ -83,12 +88,14 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         return client;
     }
 
-    protected override IConnectionPool CreateConnectionPool() {
+    protected override IConnectionPool CreateConnectionPool()
+    {
         var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
         return new StaticConnectionPool(serverUris);
     }
 
-    protected override void ConfigureSettings(ConnectionSettings settings) {
+    protected override void ConfigureSettings(ConnectionSettings settings)
+    {
         if (_appOptions.AppMode == AppMode.Development)
             settings.EnableDebugMode();
 

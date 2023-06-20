@@ -11,21 +11,25 @@ using Foundatio.Repositories.Queries;
 
 namespace Exceptionless.Core.Repositories;
 
-public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new() {
+public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new()
+{
     protected readonly IValidator<T> _validator;
     protected readonly AppOptions _options;
 
-    public RepositoryBase(IIndex index, IValidator<T> validator, AppOptions options) : base(index) {
+    public RepositoryBase(IIndex index, IValidator<T> validator, AppOptions options) : base(index)
+    {
         _validator = validator;
         _options = options;
         NotificationsEnabled = options.EnableRepositoryNotifications;
     }
 
-    protected override Task ValidateAndThrowAsync(T document) {
+    protected override Task ValidateAndThrowAsync(T document)
+    {
         return _validator.ValidateAndThrowAsync(document);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null) {
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null)
+    {
         if (!NotificationsEnabled)
             return Task.CompletedTask;
 
@@ -35,7 +39,8 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         return PublishMessageAsync(CreateEntityChanged(changeType, organizationId, projectId, stackId, document?.Id, data), delay);
     }
 
-    protected override Task SendQueryNotificationsAsync(ChangeType changeType, IRepositoryQuery query, ICommandOptions options) {
+    protected override Task SendQueryNotificationsAsync(ChangeType changeType, IRepositoryQuery query, ICommandOptions options)
+    {
         if (!NotificationsEnabled || !options.ShouldNotify())
             return Task.CompletedTask;
 
@@ -47,7 +52,8 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         var tasks = new List<Task>();
 
         string organizationId = organizations.Count == 1 ? organizations.Single() : null;
-        if (ids.Count > 0) {
+        if (ids.Count > 0)
+        {
             string projectId = projects.Count == 1 ? projects.Single() : null;
             string stackId = stacks.Count == 1 ? stacks.Single() : null;
 
@@ -57,7 +63,8 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
             return Task.WhenAll(tasks);
         }
 
-        if (stacks.Count > 0) {
+        if (stacks.Count > 0)
+        {
             string projectId = projects.Count == 1 ? projects.Single() : null;
             foreach (string stackId in stacks)
                 tasks.Add(PublishMessageAsync(CreateEntityChanged(changeType, organizationId, projectId, stackId), delay));
@@ -65,34 +72,40 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
             return Task.WhenAll(tasks);
         }
 
-        if (projects.Count > 0) {
+        if (projects.Count > 0)
+        {
             foreach (string projectId in projects)
                 tasks.Add(PublishMessageAsync(CreateEntityChanged(changeType, organizationId, projectId), delay));
 
             return Task.WhenAll(tasks);
         }
 
-        if (organizations.Count > 0) {
+        if (organizations.Count > 0)
+        {
             foreach (string organization in organizations)
                 tasks.Add(PublishMessageAsync(CreateEntityChanged(changeType, organization), delay));
 
             return Task.WhenAll(tasks);
         }
 
-        return PublishMessageAsync(new EntityChanged {
+        return PublishMessageAsync(new EntityChanged
+        {
             ChangeType = changeType,
             Type = EntityTypeName
         }, delay);
     }
 
-    protected EntityChanged CreateEntityChanged(ChangeType changeType, string organizationId = null, string projectId = null, string stackId = null, string id = null, IDictionary<string, object> data = null) {
-        var model = new EntityChanged {
+    protected EntityChanged CreateEntityChanged(ChangeType changeType, string organizationId = null, string projectId = null, string stackId = null, string id = null, IDictionary<string, object> data = null)
+    {
+        var model = new EntityChanged
+        {
             ChangeType = changeType,
             Type = EntityTypeName,
             Id = id
         };
 
-        if (data != null) {
+        if (data != null)
+        {
             foreach (var kvp in data)
                 model.Data[kvp.Key] = kvp.Value;
         }

@@ -1,26 +1,31 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
 [Priority(2000)]
-public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
+public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
+{
     public V2EventUpgrade(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
-    public void Upgrade(EventUpgraderContext ctx) {
+    public void Upgrade(EventUpgraderContext ctx)
+    {
         if (ctx.Version > new Version(2, 0))
             return;
 
-        foreach (var doc in ctx.Documents.OfType<JObject>()) {
+        foreach (var doc in ctx.Documents.OfType<JObject>())
+        {
             bool isNotFound = doc.GetPropertyStringValue("Code") == "404";
 
-            if (ctx.IsMigration) {
+            if (ctx.IsMigration)
+            {
                 doc.Rename("ErrorStackId", "StackId");
             }
-            else {
+            else
+            {
                 doc.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
                 doc.Remove("OrganizationId");
                 doc.Remove("ProjectId");
@@ -29,10 +34,13 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
 
             doc.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
             doc.Remove("ExceptionlessClientInfo");
-            if (!doc.RemoveIfNullOrEmpty("Tags")) {
+            if (!doc.RemoveIfNullOrEmpty("Tags"))
+            {
                 var tags = doc.GetValue("Tags");
-                if (tags.Type == JTokenType.Array) {
-                    foreach (var tag in tags.ToList()) {
+                if (tags.Type == JTokenType.Array)
+                {
+                    foreach (var tag in tags.ToList())
+                    {
                         string t = tag.ToString();
                         if (String.IsNullOrEmpty(t) || t.Length > 255)
                             tag.Remove();
@@ -51,21 +59,24 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
             doc.RenameAll("ExtendedData", "Data");
 
             var extendedData = doc.Property("Data") != null ? doc.Property("Data").Value as JObject : null;
-            if (extendedData != null) {
+            if (extendedData != null)
+            {
                 if (!isNotFound)
                     extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "@trace");
                 else
                     extendedData.Remove("TraceLog");
             }
 
-            if (isNotFound && hasRequestInfo) {
+            if (isNotFound && hasRequestInfo)
+            {
                 doc.RemoveAll("Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
                 if (extendedData?["__ExceptionInfo"] != null)
                     extendedData.Remove("__ExceptionInfo");
 
                 doc.Add("Type", new JValue("404"));
             }
-            else {
+            else
+            {
                 var error = new JObject();
 
                 if (!doc.RemoveIfNullOrEmpty("Message"))
@@ -74,7 +85,8 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
                 error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                 // Copy the exception info from root extended data to the current errors extended data.
-                if (extendedData?["__ExceptionInfo"] != null) {
+                if (extendedData?["__ExceptionInfo"] != null)
+                {
                     error.Add("Data", new JObject());
                     ((JObject)error["Data"]).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
                 }
@@ -84,7 +96,8 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
                 RenameAndValidateExtraExceptionProperties(id, error);
 
                 var inner = error["Inner"] as JObject;
-                while (inner != null) {
+                while (inner != null)
+                {
                     RenameAndValidateExtraExceptionProperties(id, inner);
                     inner = inner["Inner"] as JObject;
                 }
@@ -106,7 +119,8 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
         }
     }
 
-    private void RenameAndValidateExtraExceptionProperties(string id, JObject error) {
+    private void RenameAndValidateExtraExceptionProperties(string id, JObject error)
+    {
         var extendedData = error?["Data"] as JObject;
         if (extendedData?["__ExceptionInfo"] == null)
             return;
@@ -117,15 +131,18 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin {
         if (String.IsNullOrWhiteSpace(json))
             return;
 
-        if (json.Length > 200000) {
+        if (json.Length > 200000)
+        {
             _logger.LogError("__ExceptionInfo on {id} is Too Big: {Length}", id, json.Length);
             return;
         }
 
         var ext = new JObject();
-        try {
+        try
+        {
             var extraProperties = JObject.Parse(json);
-            foreach (var property in extraProperties.Properties()) {
+            foreach (var property in extraProperties.Properties())
+            {
                 if (property.IsNullOrEmpty())
                     continue;
 

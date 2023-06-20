@@ -3,17 +3,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility;
 
-public class SemanticVersionParser {
+public class SemanticVersionParser
+{
     private static readonly IReadOnlyCollection<string> EmptyIdentifiers = new List<string>(0).AsReadOnly();
     private readonly ILogger _logger;
 
-    public SemanticVersionParser(ILoggerFactory loggerFactory) {
+    public SemanticVersionParser(ILoggerFactory loggerFactory)
+    {
         _logger = loggerFactory.CreateLogger<SemanticVersionParser>();
     }
 
     public SemanticVersion Default { get; } = new SemanticVersion(0, 0);
 
-    public SemanticVersion Parse(string version, IDictionary<string, SemanticVersion> versionCache = null) {
+    public SemanticVersion Parse(string version, IDictionary<string, SemanticVersion> versionCache = null)
+    {
         if (version == null || version.Length == 0)
             return null;
 
@@ -24,7 +27,8 @@ public class SemanticVersionParser {
         if (wildCardIndex > 0)
             version = version.Substring(0, wildCardIndex).TrimEnd('.');
 
-        if (version.Length >= 5 && SemanticVersion.TryParse(version, out var semanticVersion)) {
+        if (version.Length >= 5 && SemanticVersion.TryParse(version, out var semanticVersion))
+        {
             if (versionCache != null)
                 versionCache[version] = semanticVersion;
 
@@ -35,7 +39,8 @@ public class SemanticVersionParser {
         if (versionParts.Length > 1)
             version = versionParts[0];
 
-        if (SemanticVersion.TryParse(version, ParseMode.Lenient, out semanticVersion)) {
+        if (SemanticVersion.TryParse(version, ParseMode.Lenient, out semanticVersion))
+        {
             if (versionCache != null)
                 versionCache[version] = semanticVersion;
 
@@ -48,7 +53,7 @@ public class SemanticVersionParser {
             semanticVersion = new SemanticVersion(major, 0);
         else
             _logger.LogInformation("Unable to parse version: {Version}", version);
-        
+
         if (versionCache != null)
             versionCache[version] = semanticVersion;
 

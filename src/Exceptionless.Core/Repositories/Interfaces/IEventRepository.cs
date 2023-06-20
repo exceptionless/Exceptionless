@@ -6,7 +6,8 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;
 
-public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<PersistentEvent> {
+public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<PersistentEvent>
+{
     Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
     Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
     Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null);
@@ -15,8 +16,10 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
 }
 
-public static class EventRepositoryExtensions {
-    public static async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(this IEventRepository repository, string id, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+public static class EventRepositoryExtensions
+{
+    public static async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(this IEventRepository repository, string id, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
+    {
         var ev = await repository.GetByIdAsync(id, o => o.Cache()).AnyContext();
         return await repository.GetPreviousAndNextEventIdsAsync(ev, systemFilter, utcStart, utcEnd).AnyContext();
     }

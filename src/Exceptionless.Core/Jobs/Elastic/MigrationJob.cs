@@ -8,18 +8,21 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs.Elastic;
 
 [Job(Description = "Runs any pending document migrations.", IsContinuous = false)]
-public class MigrationJob : JobBase {
+public class MigrationJob : JobBase
+{
     private readonly MigrationManager _migrationManager;
     private readonly ExceptionlessElasticConfiguration _configuration;
 
     public MigrationJob(ILoggerFactory loggerFactory, MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration)
-        : base(loggerFactory) {
+        : base(loggerFactory)
+    {
 
         _migrationManager = migrationManager;
         _configuration = configuration;
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         await _configuration.ConfigureIndexesAsync(null, false).AnyContext();
         await _migrationManager.RunMigrationsAsync().AnyContext();
 
@@ -29,7 +32,8 @@ public class MigrationJob : JobBase {
         return JobResult.Success;
     }
 
-    private async Task ReindexIfNecessary(VersionedIndex index) {
+    private async Task ReindexIfNecessary(VersionedIndex index)
+    {
         if (index.Version != await index.GetCurrentVersionAsync().AnyContext())
             await index.ReindexAsync().AnyContext();
     }

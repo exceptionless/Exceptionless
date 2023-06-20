@@ -1,6 +1,6 @@
 ﻿using Exceptionless.Core.Billing;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Xunit;
@@ -9,12 +9,14 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class OrganizationRepositoryTests : IntegrationTestsBase {
+public sealed class OrganizationRepositoryTests : IntegrationTestsBase
+{
     private readonly InMemoryCacheClient _cache;
     private readonly IOrganizationRepository _repository;
     private readonly BillingPlans _plans;
 
-    public OrganizationRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public OrganizationRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
         _cache = GetService<ICacheClient>() as InMemoryCacheClient;
         _repository = GetService<IOrganizationRepository>();
@@ -22,7 +24,8 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanCreateUpdateRemoveAsync() {
+    public async Task CanCreateUpdateRemoveAsync()
+    {
         Assert.Equal(0, await _repository.CountAsync());
 
         var organization = new Organization { Name = "Test Organization", PlanId = _plans.FreePlan.Id };
@@ -42,7 +45,8 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanAddAndGetByCachedAsync() {
+    public async Task CanAddAndGetByCachedAsync()
+    {
         var organization = new Organization { Name = "Test Organization", PlanId = _plans.FreePlan.Id };
         Assert.Null(organization.Id);
 

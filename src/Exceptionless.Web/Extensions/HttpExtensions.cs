@@ -7,12 +7,15 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Web.Extensions;
 
-public static class HttpExtensions {
-    public static User GetUser(this HttpRequest request) {
+public static class HttpExtensions
+{
+    public static User GetUser(this HttpRequest request)
+    {
         return request.HttpContext.Items.TryGetAndReturn("User") as User;
     }
 
-    public static void SetUser(this HttpRequest request, User user) {
+    public static void SetUser(this HttpRequest request, User user)
+    {
         if (request == null)
             throw new ArgumentNullException(nameof(request));
 
@@ -20,63 +23,75 @@ public static class HttpExtensions {
             request.HttpContext.Items["User"] = user;
     }
 
-    public static Project GetProject(this HttpRequest request) {
+    public static Project GetProject(this HttpRequest request)
+    {
         return request?.HttpContext.Items.TryGetAndReturn("Project") as Project;
     }
 
-    public static void SetProject(this HttpRequest request, Project project) {
+    public static void SetProject(this HttpRequest request, Project project)
+    {
         if (project != null)
             request.HttpContext.Items["Project"] = project;
     }
 
-    public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequest request) {
+    public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequest request)
+    {
         return request.HttpContext.User;
     }
 
-    public static AuthType GetAuthType(this HttpRequest request) {
+    public static AuthType GetAuthType(this HttpRequest request)
+    {
         var principal = request.GetClaimsPrincipal();
         return principal.GetAuthType();
     }
 
-    public static bool CanAccessOrganization(this HttpRequest request, string organizationId) {
+    public static bool CanAccessOrganization(this HttpRequest request, string organizationId)
+    {
         if (request.IsInOrganization(organizationId))
             return true;
 
         return request.IsGlobalAdmin();
     }
 
-    public static bool IsGlobalAdmin(this HttpRequest request) {
+    public static bool IsGlobalAdmin(this HttpRequest request)
+    {
         var principal = request.GetClaimsPrincipal();
         return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
     }
 
-    public static bool IsInOrganization(this HttpRequest request, string organizationId) {
+    public static bool IsInOrganization(this HttpRequest request, string organizationId)
+    {
         if (String.IsNullOrEmpty(organizationId))
             return false;
 
         return request.GetAssociatedOrganizationIds().Contains(organizationId);
     }
 
-    public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequest request) {
+    public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequest request)
+    {
         var principal = request.GetClaimsPrincipal();
         return principal?.GetOrganizationIds();
     }
 
-    public static string GetTokenOrganizationId(this HttpRequest request) {
+    public static string GetTokenOrganizationId(this HttpRequest request)
+    {
         var principal = request.GetClaimsPrincipal();
         return principal?.GetTokenOrganizationId();
     }
 
-    public static string GetDefaultOrganizationId(this HttpRequest request) {
+    public static string GetDefaultOrganizationId(this HttpRequest request)
+    {
         return request?.GetAssociatedOrganizationIds().FirstOrDefault();
     }
 
-    public static string GetProjectId(this HttpRequest request) {
+    public static string GetProjectId(this HttpRequest request)
+    {
         var principal = request.GetClaimsPrincipal();
         return principal?.GetProjectId();
     }
 
-    public static string GetDefaultProjectId(this HttpRequest request) {
+    public static string GetDefaultProjectId(this HttpRequest request)
+    {
         // TODO: Use project id from url. E.G., /api/v{apiVersion:int=2}/projects/{projectId:objectid}/events
         //var path = request.Path.Value;
 
@@ -84,18 +99,21 @@ public static class HttpExtensions {
         return principal?.GetDefaultProjectId();
     }
 
-    public static string GetClientIpAddress(this HttpRequest request) {
+    public static string GetClientIpAddress(this HttpRequest request)
+    {
         return request.HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
-    public static string GetQueryString(this HttpRequest request, string key) {
+    public static string GetQueryString(this HttpRequest request, string key)
+    {
         if (request.Query.TryGetValue(key, out var queryStrings))
             return queryStrings;
 
         return null;
     }
 
-    public static AuthInfo GetBasicAuth(this HttpRequest request) {
+    public static AuthInfo GetBasicAuth(this HttpRequest request)
+    {
         string authHeader = request.Headers.TryGetAndReturn("Authorization");
         if (authHeader == null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
             return null;
@@ -106,20 +124,23 @@ public static class HttpExtensions {
         if (credentials.Length != 2)
             return null;
 
-        return new AuthInfo {
+        return new AuthInfo
+        {
             Username = credentials[0],
             Password = credentials[1]
         };
     }
 
-    public static bool IsLocal(this HttpRequest request) {
+    public static bool IsLocal(this HttpRequest request)
+    {
         if (request.Host.Host.Contains("localtest.me", StringComparison.OrdinalIgnoreCase) ||
             request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
             return true;
 
         var connection = request.HttpContext.Connection;
 
-        if (IsSet(connection.RemoteIpAddress)) {
+        if (IsSet(connection.RemoteIpAddress))
+        {
             return IsSet(connection.LocalIpAddress)
                 ? connection.RemoteIpAddress.Equals(connection.LocalIpAddress)
                 : IPAddress.IsLoopback(connection.RemoteIpAddress);
@@ -130,11 +151,13 @@ public static class HttpExtensions {
 
     private const string NullIpAddress = "::1";
 
-    private static bool IsSet(IPAddress address) {
+    private static bool IsSet(IPAddress address)
+    {
         return address != null && address.ToString() != NullIpAddress;
     }
 
-    public static bool IsEventPost(this HttpRequest request) {
+    public static bool IsEventPost(this HttpRequest request)
+    {
         string method = request.Method;
         if (String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
             return request.Path.Value.Contains("/events/submit");
@@ -151,7 +174,8 @@ public static class HttpExtensions {
     }
 }
 
-public class AuthInfo {
+public class AuthInfo
+{
     public string Username { get; set; }
     public string Password { get; set; }
 }
