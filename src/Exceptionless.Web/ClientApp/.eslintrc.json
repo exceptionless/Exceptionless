@@ -44,7 +44,7 @@
         "prefer-destructuring": "off",
         "prefer-regex-literals": "off",
         "prefer-template": "off",
-        "quotes": ["error", "double"],
+        "quotes": ["error", "double", { "avoidEscape": true }],
         "strict": "off",
         "vars-on-top": "off"
     }
