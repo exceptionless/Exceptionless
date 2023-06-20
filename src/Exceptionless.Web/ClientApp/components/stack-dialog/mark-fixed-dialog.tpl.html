@@ -1,37 +1,64 @@
 <form name="vm.markFixedForm" role="form" class="form-validation" autocomplete="on">
-  <div class="modal-header dialog-header-confirm">
-    <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
-    <h4 class="modal-title">
-      <span class="glyphicon glyphicon-check"></span>
-      {{::'Mark Fixed' | translate}}
-    </h4>
-  </div>
-
-  <div class="modal-body text-muted">
-    <p>{{::'Marks the stack as fixed. This will also prevent error occurrences from being displayed in the dashboard.' | translate}}</p>
-    <p>
-      <b>{{::'Optional:' | translate}}</b> {{::'Please enter the version in which the stack has been fixed. Any submitted occurrences with a lower version will not cause a regression.' | translate}}
-      <a href="https://exceptionless.com/docs/versioning/" target="_blank" title="{{::'Versioning Documentation' | translate}}" aria-label="Versioning Documentation">
-        <i class="fa fa-fw fa-question-circle"></i>
-      </a>
-    </p>
-
-    <div class="form-group">
-      <input id="version" name="version" type="text" class="form-control input-lg" placeholder="{{::'Optional Version (Example: 1.2.3)' | translate}}"
-             ng-model="vm.data.version"
-             ng-model-options='{ debounce: 500 }'
-             semver
-             semantic-version-validator
-             autofocus />
-
-      <div class="error" ng-messages="vm.markFixedForm.$error" ng-if="vm.markFixedForm.$submitted || vm.markFixedForm.version.$touched">
-        <small ng-message="semver">{{::'Invalid version.' | translate}}</small>
-      </div>
+    <div class="modal-header dialog-header-confirm">
+        <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
+        <h4 class="modal-title">
+            <span class="glyphicon glyphicon-check"></span>
+            {{::'Mark Fixed' | translate}}
+        </h4>
     </div>
-  </div>
 
-  <div class="modal-footer">
-    <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">{{::'Cancel' | translate}}</button>
-    <input type="submit" role="button" class="btn btn-primary btn-dialog-confirm" ng-click="vm.save(vm.markFixedForm.$valid)" value="{{::'Mark Fixed' | translate}}" />
-  </div>
+    <div class="modal-body text-muted">
+        <p>
+            {{::'Marks the stack as fixed. This will also prevent error occurrences from being displayed in the
+            dashboard.' | translate}}
+        </p>
+        <p>
+            <b>{{::'Optional:' | translate}}</b> {{::'Please enter the version in which the stack has been fixed. Any
+            submitted occurrences with a lower version will not cause a regression.' | translate}}
+            <a
+                href="https://exceptionless.com/docs/versioning/"
+                target="_blank"
+                title="{{::'Versioning Documentation' | translate}}"
+                aria-label="Versioning Documentation"
+            >
+                <i class="fa fa-fw fa-question-circle"></i>
+            </a>
+        </p>
+
+        <div class="form-group">
+            <input
+                id="version"
+                name="version"
+                type="text"
+                class="form-control input-lg"
+                placeholder="{{::'Optional Version (Example: 1.2.3)' | translate}}"
+                ng-model="vm.data.version"
+                ng-model-options="{ debounce: 500 }"
+                semver
+                semantic-version-validator
+                autofocus
+            />
+
+            <div
+                class="error"
+                ng-messages="vm.markFixedForm.$error"
+                ng-if="vm.markFixedForm.$submitted || vm.markFixedForm.version.$touched"
+            >
+                <small ng-message="semver">{{::'Invalid version.' | translate}}</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">
+            {{::'Cancel' | translate}}
+        </button>
+        <input
+            type="submit"
+            role="button"
+            class="btn btn-primary btn-dialog-confirm"
+            ng-click="vm.save(vm.markFixedForm.$valid)"
+            value="{{::'Mark Fixed' | translate}}"
+        />
+    </div>
 </form>

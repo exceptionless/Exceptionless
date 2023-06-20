@@ -1,10 +1,10 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.validators', [
-    'exceptionless.auth',
-    'exceptionless.organization',
-    'exceptionless.project',
-    'exceptionless.search'
-  ]);
-}());
+    angular.module("exceptionless.validators", [
+        "exceptionless.auth",
+        "exceptionless.organization",
+        "exceptionless.project",
+        "exceptionless.search",
+    ]);
+})();

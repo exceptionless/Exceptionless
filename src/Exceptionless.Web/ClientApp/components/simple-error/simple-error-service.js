@@ -1,21 +1,20 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.simple-error', [])
-    .factory('simpleErrorService', function () {
-      function getExceptions(exception) {
-        var exceptions = [];
-        var currentException = exception;
-        while (currentException) {
-          exceptions.push(currentException);
-          currentException = currentException.inner;
+    angular.module("exceptionless.simple-error", []).factory("simpleErrorService", function () {
+        function getExceptions(exception) {
+            var exceptions = [];
+            var currentException = exception;
+            while (currentException) {
+                exceptions.push(currentException);
+                currentException = currentException.inner;
+            }
+
+            return exceptions;
         }
 
-        return exceptions;
-      }
-
-      return {
-        getExceptions: getExceptions
-      };
+        return {
+            getExceptions: getExceptions,
+        };
     });
-}());
+})();

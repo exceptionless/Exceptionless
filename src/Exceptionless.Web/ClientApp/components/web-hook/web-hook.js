@@ -1,15 +1,15 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.web-hook', [
-    'checklist-model',
-    'ngMessages',
-    'restangular',
-    'ui.bootstrap',
+    angular.module("exceptionless.web-hook", [
+        "checklist-model",
+        "ngMessages",
+        "restangular",
+        "ui.bootstrap",
 
-    'dialogs.main',
+        "dialogs.main",
 
-    'exceptionless',
-    'exceptionless.autofocus'
-  ]);
-}());
+        "exceptionless",
+        "exceptionless.autofocus",
+    ]);
+})();

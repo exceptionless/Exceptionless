@@ -1,11 +1,5 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.dialog', [
-    'ui.bootstrap',
-
-    'dialogs.main',
-
-    'exceptionless.autofocus'
-  ]);
-}());
+    angular.module("exceptionless.dialog", ["ui.bootstrap", "dialogs.main", "exceptionless.autofocus"]);
+})();

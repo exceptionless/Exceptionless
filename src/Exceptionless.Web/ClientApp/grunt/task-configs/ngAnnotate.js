@@ -1,10 +1,10 @@
 module.exports = {
     options: {
-        singleQuotes: true
+        singleQuotes: true,
     },
     main: {
         files: {
-            'dist/app.js': ['dist/app.js']
-        }
-    }
+            "dist/app.js": ["dist/app.js"],
+        },
+    },
 };

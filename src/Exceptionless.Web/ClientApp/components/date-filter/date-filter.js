@@ -1,15 +1,15 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.date-filter', [
-    'ui.bootstrap',
+    angular.module("exceptionless.date-filter", [
+        "ui.bootstrap",
 
-    'dialogs.main',
+        "dialogs.main",
 
-    'exceptionless',
-    'exceptionless.autofocus',
-    'exceptionless.date-range-parser',
-    'exceptionless.date-range-picker',
-    'exceptionless.refresh'
-  ]);
-}());
+        "exceptionless",
+        "exceptionless.autofocus",
+        "exceptionless.date-range-parser",
+        "exceptionless.date-range-picker",
+        "exceptionless.refresh",
+    ]);
+})();

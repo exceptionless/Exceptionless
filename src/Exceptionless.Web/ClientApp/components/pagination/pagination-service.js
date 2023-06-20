@@ -1,22 +1,21 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.pagination', [])
-    .factory('paginationService', function () {
-      function getCurrentPageSummary(data, page, limit) {
-        page = page ? parseInt(page) : 1;
-        limit = limit ? parseInt(limit) : 100;
+    angular.module("exceptionless.pagination", []).factory("paginationService", function () {
+        function getCurrentPageSummary(data, page, limit) {
+            page = page ? parseInt(page, 10) : 1;
+            limit = limit ? parseInt(limit, 10) : 100;
 
-        var from = ((page - 1) * limit) + 1;
-        var to = data && data.length > 0 ? from + data.length - 1 : from;
+            var from = (page - 1) * limit + 1;
+            var to = data && data.length > 0 ? from + data.length - 1 : from;
 
-        return from + '-' + to;
-      }
+            return from + "-" + to;
+        }
 
-      var service = {
-        getCurrentPageSummary: getCurrentPageSummary
-      };
+        var service = {
+            getCurrentPageSummary: getCurrentPageSummary,
+        };
 
-      return service;
+        return service;
     });
-}());
+})();
