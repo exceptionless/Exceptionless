@@ -1,11 +1,10 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.filter', [
-    'angular-locker',
-
-    'exceptionless.date-range-parser',
-    'exceptionless.objectid',
-    'exceptionless.organization'
-  ]);
-}());
+    angular.module("exceptionless.filter", [
+        "angular-locker",
+        "exceptionless.date-range-parser",
+        "exceptionless.objectid",
+        "exceptionless.organization",
+    ]);
+})();

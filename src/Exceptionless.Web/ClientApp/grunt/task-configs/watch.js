@@ -4,10 +4,10 @@ module.exports = function (grunt) {
             options: {
                 livereload: true,
                 livereloadOnError: false,
-                spawn: false
+                spawn: false,
             },
-            files: [grunt.option('folderGlobs')(['*.js', '*.less', '*.html']), '!_SpecRunner.html', '!.grunt'],
-            tasks: [] //all the tasks are run dynamically during the watch event handler
-        }
+            files: [grunt.option("folderGlobs")(["*.js", "*.less", "*.html"]), "!_SpecRunner.html", "!.grunt"],
+            tasks: [], // all the tasks are run dynamically during the watch event handler
+        },
     };
 };

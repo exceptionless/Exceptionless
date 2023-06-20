@@ -1,20 +1,20 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.events', [
-    'checklist-model',
-    'ui.bootstrap',
+    angular.module("exceptionless.events", [
+        "checklist-model",
+        "ui.bootstrap",
 
-    'dialogs.main',
+        "dialogs.main",
 
-    'exceptionless',
-    'exceptionless.filter',
-    'exceptionless.link',
-    'exceptionless.notification',
-    'exceptionless.pagination',
-    'exceptionless.refresh',
-    'exceptionless.relative-time',
-    'exceptionless.summary',
-    'exceptionless.timeago'
-  ]);
-}());
+        "exceptionless",
+        "exceptionless.filter",
+        "exceptionless.link",
+        "exceptionless.notification",
+        "exceptionless.pagination",
+        "exceptionless.refresh",
+        "exceptionless.relative-time",
+        "exceptionless.summary",
+        "exceptionless.timeago",
+    ]);
+})();

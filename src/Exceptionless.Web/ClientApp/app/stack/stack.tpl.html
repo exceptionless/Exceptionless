@@ -1,253 +1,397 @@
 <organization-notifications organization-id="vm.stack.organization_id"></organization-notifications>
 
-<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="StackChanged PersistentEventChanged" refresh-action="vm.get(data)" refresh-if="vm.canRefresh(data)" refresh-debounce="1000">
-  <div class="wrapper-md" refresh-on="filterChanged" refresh-action="vm.get()">
-    <div class="row" refresh-always="PlanChanged" refresh-action="vm.get(data)">
-      <div class="col-sm-12">
-        <div class="row row-sm text-center">
-          <div class="col-md-3 col-sm-6 col-xs-6">
-            <div class="dashboard-block">
-              <div class="rotate">
-                <i class="fa fa-calendar fa-4x"></i>
-              </div>
-              <div class="details">
-                <span class="title">{{::'Events' | translate}}</span>
-                <span class="sub">
-                  <abbr title="{{::'In Date Range' | translate}}">
-                    {{vm.stats.events | number:0}}
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeEvents()">{{vm.stack.total_occurrences | number:0}}</abbr>&nbsp
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-6">
-            <div class="dashboard-block">
-              <div class="rotate">
-                <i class="fa fa-users fa-4x"></i>
-              </div>
-              <div class="details">
-                <span class="title">{{::'UserRatio' | translate}}</span>
-                <span class="sub">
-                  <abbr title="{{vm.stats.usersTitle}}">{{vm.stats.users}}</abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">&nbsp</span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-6">
-            <div class="dashboard-block">
-              <div class="rotate">
-                <i class="fa fa-arrow-circle-left fa-4x"></i>
-              </div>
-              <div class="details">
-                <span class="title">{{::'First' | translate}}</span>
-                <span class="sub visible-md visible-lg">
-                  <abbr title="{{::'First In Date Range' | translate}}">
-                    <timeago date="vm.stats.first_occurrence"></timeago>
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'First Ever' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'shortDate' }}</abbr>&nbsp
-                  </span>
-                </span>
-                <span class="sub visible-sm">
-                  <abbr title="{{::'First In Date Range' | translate}}">
-                    <span ng-if="vm.isValidDate(vm.stats.first_occurrence)">{{vm.stats.first_occurrence | date:'shortDate' }}</span>
-                    <span ng-if="!vm.isValidDate(vm.stats.first_occurrence)">never</span>
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'First Ever' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'shortDate' }}</abbr>&nbsp
-                  </span>
-                </span>
-                <span class="sub visible-xs">
-                  <abbr title="{{::'First In Date Range' | translate}}">
-                    <span ng-if="vm.isValidDate(vm.stats.first_occurrence)">{{vm.stats.first_occurrence | date:'M/d' }}</span>
-                    <span ng-if="!vm.isValidDate(vm.stats.first_occurrence)">NA</span>
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'First Ever' | translate}}" ng-if="vm.showAllTimeFirstOccurrence()">{{vm.stack.first_occurrence | date:'M/d/yy' }}</abbr>&nbsp
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-6">
-            <div class="dashboard-block">
-              <div class="rotate">
-                <i class="fa fa-arrow-circle-right fa-4x"></i>
-              </div>
-              <div class="details">
-                <span class="title">{{::'Last' | translate}}</span>
-                <span class="sub visible-md visible-lg">
-                  <abbr title="{{::'Last In Date Range' | translate}}">
-                    <timeago date="vm.stats.last_occurrence"></timeago>
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'Last Ever' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'shortDate' }}</abbr>&nbsp
-                  </span>
-                </span>
-                <span class="sub visible-sm">
-                  <abbr title="{{::'Last In Date Range' | translate}}">
-                    <span ng-if="vm.isValidDate(vm.stats.last_occurrence)">{{vm.stats.last_occurrence | date:'shortDate' }}</span>
-                    <span ng-if="!vm.isValidDate(vm.stats.last_occurrence)">never</span>
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'Last Ever' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'shortDate' }}</abbr>&nbsp
-                  </span>
-                </span>
-                <span class="sub visible-xs">
-                  <abbr title="{{::'Last In Date Range' | translate}}">
-                    <span ng-if="vm.isValidDate(vm.stats.last_occurrence)">{{vm.stats.last_occurrence | date:'M/d' }}</span>
-                    <span ng-if="!vm.isValidDate(vm.stats.last_occurrence)">NA</span>
-                  </abbr>
-                  <span class="subAlternative" ng-if="vm.showAllTimeRow()">
-                    <abbr title="{{::'Last Ever' | translate}}" ng-if="vm.showAllTimeLastOccurrence()">{{vm.stack.last_occurrence | date:'M/d/yy' }}</abbr>&nbsp
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        {{::'Stack' | translate}}
-        <span class="labels">
-          <span class="label label-success" ng-if="vm.stack.fixed_in_version && vm.stack.status !== 'regressed'">
-              <span class="hidden-xs">{{'Fixed_With_Version' | translate : vm.stack}}</span>
-          </span>
-          <span class="label label-info" ng-if="vm.stack.status === 'snoozed'">
-              <span class="hidden-xs">
-                {{::'Opening' | translate}} <timeago date="vm.stack.snooze_until_utc"></timeago>
-              </span>
-          </span>
-        </span>
-
-        <div class="btn-toolbar pull-right hidden-print" role="toolbar" aria-label="Stack Options">
-          <div class="btn-group btn-group-sm" role="group">
-            <button type="button" role="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-              <span class="visible-xs-inline"><i class="fa fa-fw fa-gear fa-size-sm"></i></span>
-              <span class="hidden-xs">{{::'Options' | translate}}</span>
-              <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-right" role="menu">
-              <li><a ng-click="vm.updateCritical()" title="{{::'All future occurrences will be marked as critical' | translate}}"><i ng-if="vm.showActionIcons()" class="fa fa-fw" ng-class="{'fa-check': vm.stack.occurrences_are_critical}"></i>{{::'Future Occurrences Are Critical' | translate}}</a></li>
-              <li class="divider"></li>
-              <li><a ng-click="vm.promoteToExternal()" title="{{::'Used to promote stacks to external systems.' | translate}}"><i ng-if="vm.showActionIcons()" class="fa fa-fw"></i>{{::'Promote To External' | translate}}</a></li>
-              <li><a ng-click="vm.addReferenceLink()" title="{{::'Add a reference link to an external resource.' | translate}}"><i ng-if="vm.showActionIcons()" class="fa fa-fw"></i>{{::'Add Reference Link' | translate}}</a></li>
-              <li class="divider"></li>
-              <li><a ng-click="vm.remove()" title="{{::'Delete this stack' | translate}}"><i ng-if="vm.showActionIcons()" class="fa fa-fw"></i>{{::'Delete' | translate}}</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="btn-toolbar pull-right hidden-print" style="margin-right: 10px" role="toolbar" aria-label="Status">
-          <div class="btn-group btn-group-sm" role="group">
-            <button type="button" role="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-              <span>{{::'Status' | translate}}: {{vm.stack.status | translate}}</span>
-              <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-right" role="menu">
-              <li ng-class="{'active': vm.stack.status == 'open'}"><a ng-click="vm.updateOpen()" title="{{::'Mark this stack as open' | translate}}"></i>{{::'open' | translate}}</a></li>
-              <li ng-class="{'active': vm.stack.status == 'fixed'}"><a ng-click="vm.updateFixed()" title="{{::'Mark this stack as fixed' | translate}}">{{'fixed' | translate}}</a></li>
-              <li class="dropdown-submenu" ng-class="{'active': vm.stack.status == 'snoozed'}">
-                <a ng-click="vm.updateSnooze()" title="{{::'Hide this stack from reports and mutes occurrence notifications' | translate}}">
-                  {{::'snoozed' | translate}} <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a ng-click="vm.updateSnooze('6hours')">{{::'6 Hours' | translate}}</a></li>
-                  <li><a ng-click="vm.updateSnooze('day')">{{::'1 Day' | translate}}</a></li>
-                  <li><a ng-click="vm.updateSnooze('week')">{{::'1 Week' | translate}}</a></li>
-                  <li><a ng-click="vm.updateSnooze('month')">{{::'1 Month' | translate}}</a></li>
-                </ul>
-              </li>
-              <li ng-class="{'active': vm.stack.status == 'ignored'}"><a ng-click="vm.updateIgnore()" title="{{::'Stop sending occurrence notifications for this stack' | translate}}">{{::'ignored' | translate}}</a></li>
-              <li ng-class="{'active': vm.stack.status == 'discarded'}"><a ng-click="vm.updateDiscard()" title="{{::'All future occurrences will be discarded and will not count against your event limit.' | translate}}">{{::'discarded' | translate}}</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <log-level ng-if="vm.stack.type == 'log'" class="pull-right" project-id="vm.project.id" source="vm.stack.signature_info.Source"></log-level>
-      </div>
-
-      <div class="panel-body">
-        <table class="table table-striped table-bordered table-fixed table-key-value b-t">
-          <tbody>
-            <tr>
-              <th>{{::'Title' | translate}}</th>
-              <td><span truncate lines="3">{{vm.stack.title}}</span></td>
-            </tr>
-            <tr>
-              <th>{{::'Project' | translate}}</th>
-              <td><a ui-sref="app.project-frequent({ projectId: vm.project.id })">{{vm.project.name}}</a></td>
-            </tr>
-            <tr ng-if="(vm.stack.date_fixed && vm.stack.status !== 'regressed')">
-              <th>{{::'Date Fixed' | translate}}</th>
-              <td><span>{{'DateTime' | translate : {'date' : vm.stack.date_fixed} }}</span></td>
-            </tr>
-            <tr ng-if="vm.stack.description">
-              <th>{{::'Description' | translate}}</th>
-              <td><span truncate lines="2">{{vm.stack.description}}</span></td>
-            </tr>
-            <tr ng-if="vm.stack.tags.length > 0">
-              <th>{{::'Tags' | translate}}</th>
-              <td><span class="label label-info" ng-repeat="tag in vm.stack.tags.slice(0,25) track by tag">{{::tag}}</span></td>
-            </tr>
-            <tr ng-if="vm.stack.references.length > 0">
-              <th>{{(vm.stack.references.length > 1) ? 'Reference Links' : 'Reference Link' | translate}}</th>
-              <td>
-                <ul ng-if="vm.stack.references.length > 1">
-                  <li ng-repeat="reference in vm.stack.references track by reference">
-                    <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
-                    <a class="delete-link" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-fw fa-times"></i></a>
-                  </li>
-                </ul>
-
-                <div ng-if="vm.stack.references.length === 1">
-                  <a ng-href="{{::vm.stack.references[0]}}" target="_blank">{{::vm.stack.references[0]}}</a>
-                  <a class="delete-link" ng-click="vm.removeReferenceLink(vm.stack.references[0])"><i class="fa fa-fw fa-times"></i></a>
+<div
+    class="hbox hbox-auto-xs hbox-auto-sm"
+    refresh-on="StackChanged PersistentEventChanged"
+    refresh-action="vm.get(data)"
+    refresh-if="vm.canRefresh(data)"
+    refresh-debounce="1000"
+>
+    <div class="wrapper-md" refresh-on="filterChanged" refresh-action="vm.get()">
+        <div class="row" refresh-always="PlanChanged" refresh-action="vm.get(data)">
+            <div class="col-sm-12">
+                <div class="row row-sm text-center">
+                    <div class="col-md-3 col-sm-6 col-xs-6">
+                        <div class="dashboard-block">
+                            <div class="rotate">
+                                <i class="fa fa-calendar fa-4x"></i>
+                            </div>
+                            <div class="details">
+                                <span class="title">{{::'Events' | translate}}</span>
+                                <span class="sub">
+                                    <abbr title="{{::'In Date Range' | translate}}">
+                                        {{vm.stats.events | number:0}}
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr title="{{::'All Time' | translate}}" ng-if="vm.showAllTimeEvents()"
+                                            >{{vm.stack.total_occurrences | number:0}}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-6">
+                        <div class="dashboard-block">
+                            <div class="rotate">
+                                <i class="fa fa-users fa-4x"></i>
+                            </div>
+                            <div class="details">
+                                <span class="title">{{::'UserRatio' | translate}}</span>
+                                <span class="sub">
+                                    <abbr title="{{vm.stats.usersTitle}}">{{vm.stats.users}}</abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">&nbsp</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-6">
+                        <div class="dashboard-block">
+                            <div class="rotate">
+                                <i class="fa fa-arrow-circle-left fa-4x"></i>
+                            </div>
+                            <div class="details">
+                                <span class="title">{{::'First' | translate}}</span>
+                                <span class="sub visible-md visible-lg">
+                                    <abbr title="{{::'First In Date Range' | translate}}">
+                                        <timeago date="vm.stats.first_occurrence"></timeago>
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr
+                                            title="{{::'First Ever' | translate}}"
+                                            ng-if="vm.showAllTimeFirstOccurrence()"
+                                            >{{vm.stack.first_occurrence | date:'shortDate' }}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                                <span class="sub visible-sm">
+                                    <abbr title="{{::'First In Date Range' | translate}}">
+                                        <span ng-if="vm.isValidDate(vm.stats.first_occurrence)"
+                                            >{{vm.stats.first_occurrence | date:'shortDate' }}</span
+                                        >
+                                        <span ng-if="!vm.isValidDate(vm.stats.first_occurrence)">never</span>
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr
+                                            title="{{::'First Ever' | translate}}"
+                                            ng-if="vm.showAllTimeFirstOccurrence()"
+                                            >{{vm.stack.first_occurrence | date:'shortDate' }}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                                <span class="sub visible-xs">
+                                    <abbr title="{{::'First In Date Range' | translate}}">
+                                        <span ng-if="vm.isValidDate(vm.stats.first_occurrence)"
+                                            >{{vm.stats.first_occurrence | date:'M/d' }}</span
+                                        >
+                                        <span ng-if="!vm.isValidDate(vm.stats.first_occurrence)">NA</span>
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr
+                                            title="{{::'First Ever' | translate}}"
+                                            ng-if="vm.showAllTimeFirstOccurrence()"
+                                            >{{vm.stack.first_occurrence | date:'M/d/yy' }}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-6">
+                        <div class="dashboard-block">
+                            <div class="rotate">
+                                <i class="fa fa-arrow-circle-right fa-4x"></i>
+                            </div>
+                            <div class="details">
+                                <span class="title">{{::'Last' | translate}}</span>
+                                <span class="sub visible-md visible-lg">
+                                    <abbr title="{{::'Last In Date Range' | translate}}">
+                                        <timeago date="vm.stats.last_occurrence"></timeago>
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr
+                                            title="{{::'Last Ever' | translate}}"
+                                            ng-if="vm.showAllTimeLastOccurrence()"
+                                            >{{vm.stack.last_occurrence | date:'shortDate' }}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                                <span class="sub visible-sm">
+                                    <abbr title="{{::'Last In Date Range' | translate}}">
+                                        <span ng-if="vm.isValidDate(vm.stats.last_occurrence)"
+                                            >{{vm.stats.last_occurrence | date:'shortDate' }}</span
+                                        >
+                                        <span ng-if="!vm.isValidDate(vm.stats.last_occurrence)">never</span>
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr
+                                            title="{{::'Last Ever' | translate}}"
+                                            ng-if="vm.showAllTimeLastOccurrence()"
+                                            >{{vm.stack.last_occurrence | date:'shortDate' }}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                                <span class="sub visible-xs">
+                                    <abbr title="{{::'Last In Date Range' | translate}}">
+                                        <span ng-if="vm.isValidDate(vm.stats.last_occurrence)"
+                                            >{{vm.stats.last_occurrence | date:'M/d' }}</span
+                                        >
+                                        <span ng-if="!vm.isValidDate(vm.stats.last_occurrence)">NA</span>
+                                    </abbr>
+                                    <span class="subAlternative" ng-if="vm.showAllTimeRow()">
+                                        <abbr
+                                            title="{{::'Last Ever' | translate}}"
+                                            ng-if="vm.showAllTimeLastOccurrence()"
+                                            >{{vm.stack.last_occurrence | date:'M/d/yy' }}</abbr
+                                        >&nbsp
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h4>{{::'Stacking Information' | translate}}</h4>
-        <table class="table table-striped table-bordered table-fixed table-key-value b-t">
-          <tbody>
-          <tr ng-repeat="(key, value) in vm.stack.signature_info track by key">
-            <th>{{key | translate}}</th>
-            <td>{{value}}</td>
-          </tr>
-          </tbody>
-        </table>
-
-        <div>
-          <div class="btn-group btn-group-xs pull-right" role="group">
-            <button type="button" role="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-              <span class="visible-xs-inline"><i class="fa fa-fw fa-gear"></i></span>
-              <span class="hidden-xs">{{::'Chart Options' | translate}}</span>
-              <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-right" role="menu">
-              <li ng-repeat="o in vm.chartOptions | filter: { render: true } track by o.field">
-                <a ng-click="o.selected = !o.selected; vm.updateStats();" title="{{::o.title}}"><i class="fa fa-fw" ng-class="{'fa-check': !!o.selected}" ng-if="vm.hasSelectedChartOption()"></i>{{::o.menuName}}</a>
-              </li>
-            </ul>
-          </div>
-          <div class="clearfix"></div>
-          <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="panel panel-default">
-      <div class="panel-heading"><i class="fa fa-fw fa-calendar"></i> {{::'Recent Occurrences' | translate}}</div>
-      <events settings="vm.recentOccurrences"></events>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                {{::'Stack' | translate}}
+                <span class="labels">
+                    <span
+                        class="label label-success"
+                        ng-if="vm.stack.fixed_in_version && vm.stack.status !== 'regressed'"
+                    >
+                        <span class="hidden-xs">{{'Fixed_With_Version' | translate : vm.stack}}</span>
+                    </span>
+                    <span class="label label-info" ng-if="vm.stack.status === 'snoozed'">
+                        <span class="hidden-xs">
+                            {{::'Opening' | translate}} <timeago date="vm.stack.snooze_until_utc"></timeago>
+                        </span>
+                    </span>
+                </span>
+
+                <div class="btn-toolbar pull-right hidden-print" role="toolbar" aria-label="Stack Options">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button
+                            type="button"
+                            role="button"
+                            class="btn btn-default dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <span class="visible-xs-inline"><i class="fa fa-fw fa-gear fa-size-sm"></i></span>
+                            <span class="hidden-xs">{{::'Options' | translate}}</span>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                            <li>
+                                <a
+                                    ng-click="vm.updateCritical()"
+                                    title="{{::'All future occurrences will be marked as critical' | translate}}"
+                                    ><i
+                                        ng-if="vm.showActionIcons()"
+                                        class="fa fa-fw"
+                                        ng-class="{'fa-check': vm.stack.occurrences_are_critical}"
+                                    ></i
+                                    >{{::'Future Occurrences Are Critical' | translate}}</a
+                                >
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <a
+                                    ng-click="vm.promoteToExternal()"
+                                    title="{{::'Used to promote stacks to external systems.' | translate}}"
+                                    ><i ng-if="vm.showActionIcons()" class="fa fa-fw"></i>{{::'Promote To External' |
+                                    translate}}</a
+                                >
+                            </li>
+                            <li>
+                                <a
+                                    ng-click="vm.addReferenceLink()"
+                                    title="{{::'Add a reference link to an external resource.' | translate}}"
+                                    ><i ng-if="vm.showActionIcons()" class="fa fa-fw"></i>{{::'Add Reference Link' |
+                                    translate}}</a
+                                >
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <a ng-click="vm.remove()" title="{{::'Delete this stack' | translate}}"
+                                    ><i ng-if="vm.showActionIcons()" class="fa fa-fw"></i>{{::'Delete' | translate}}</a
+                                >
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div
+                    class="btn-toolbar pull-right hidden-print"
+                    style="margin-right: 10px"
+                    role="toolbar"
+                    aria-label="Status"
+                >
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button
+                            type="button"
+                            role="button"
+                            class="btn btn-default dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <span>{{::'Status' | translate}}: {{vm.stack.status | translate}}</span>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                            <li ng-class="{'active': vm.stack.status == 'open'}">
+                                <a ng-click="vm.updateOpen()" title="{{::'Mark this stack as open' | translate}}"
+                                    >{{::'open' | translate}}</a
+                                >
+                            </li>
+                            <li ng-class="{'active': vm.stack.status == 'fixed'}">
+                                <a ng-click="vm.updateFixed()" title="{{::'Mark this stack as fixed' | translate}}"
+                                    >{{'fixed' | translate}}</a
+                                >
+                            </li>
+                            <li class="dropdown-submenu" ng-class="{'active': vm.stack.status == 'snoozed'}">
+                                <a
+                                    ng-click="vm.updateSnooze()"
+                                    title="{{::'Hide this stack from reports and mutes occurrence notifications' | translate}}"
+                                >
+                                    {{::'snoozed' | translate}} <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a ng-click="vm.updateSnooze('6hours')">{{::'6 Hours' | translate}}</a></li>
+                                    <li><a ng-click="vm.updateSnooze('day')">{{::'1 Day' | translate}}</a></li>
+                                    <li><a ng-click="vm.updateSnooze('week')">{{::'1 Week' | translate}}</a></li>
+                                    <li><a ng-click="vm.updateSnooze('month')">{{::'1 Month' | translate}}</a></li>
+                                </ul>
+                            </li>
+                            <li ng-class="{'active': vm.stack.status == 'ignored'}">
+                                <a
+                                    ng-click="vm.updateIgnore()"
+                                    title="{{::'Stop sending occurrence notifications for this stack' | translate}}"
+                                    >{{::'ignored' | translate}}</a
+                                >
+                            </li>
+                            <li ng-class="{'active': vm.stack.status == 'discarded'}">
+                                <a
+                                    ng-click="vm.updateDiscard()"
+                                    title="{{::'All future occurrences will be discarded and will not count against your event limit.' | translate}}"
+                                    >{{::'discarded' | translate}}</a
+                                >
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <log-level
+                    ng-if="vm.stack.type == 'log'"
+                    class="pull-right"
+                    project-id="vm.project.id"
+                    source="vm.stack.signature_info.Source"
+                ></log-level>
+            </div>
+
+            <div class="panel-body">
+                <table class="table table-striped table-bordered table-fixed table-key-value b-t">
+                    <tbody>
+                        <tr>
+                            <th>{{::'Title' | translate}}</th>
+                            <td><span truncate lines="3">{{vm.stack.title}}</span></td>
+                        </tr>
+                        <tr>
+                            <th>{{::'Project' | translate}}</th>
+                            <td>
+                                <a ui-sref="app.project-frequent({ projectId: vm.project.id })">{{vm.project.name}}</a>
+                            </td>
+                        </tr>
+                        <tr ng-if="(vm.stack.date_fixed && vm.stack.status !== 'regressed')">
+                            <th>{{::'Date Fixed' | translate}}</th>
+                            <td><span>{{'DateTime' | translate : {'date' : vm.stack.date_fixed} }}</span></td>
+                        </tr>
+                        <tr ng-if="vm.stack.description">
+                            <th>{{::'Description' | translate}}</th>
+                            <td><span truncate lines="2">{{vm.stack.description}}</span></td>
+                        </tr>
+                        <tr ng-if="vm.stack.tags.length > 0">
+                            <th>{{::'Tags' | translate}}</th>
+                            <td>
+                                <span class="label label-info" ng-repeat="tag in vm.stack.tags.slice(0,25) track by tag"
+                                    >{{::tag}}</span
+                                >
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.stack.references.length > 0">
+                            <th>
+                                {{(vm.stack.references.length > 1) ? 'Reference Links' : 'Reference Link' | translate}}
+                            </th>
+                            <td>
+                                <ul ng-if="vm.stack.references.length > 1">
+                                    <li ng-repeat="reference in vm.stack.references track by reference">
+                                        <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
+                                        <a class="delete-link" ng-click="vm.removeReferenceLink(reference)"
+                                            ><i class="fa fa-fw fa-times"></i
+                                        ></a>
+                                    </li>
+                                </ul>
+
+                                <div ng-if="vm.stack.references.length === 1">
+                                    <a ng-href="{{::vm.stack.references[0]}}" target="_blank"
+                                        >{{::vm.stack.references[0]}}</a
+                                    >
+                                    <a class="delete-link" ng-click="vm.removeReferenceLink(vm.stack.references[0])"
+                                        ><i class="fa fa-fw fa-times"></i
+                                    ></a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>{{::'Stacking Information' | translate}}</h4>
+                <table class="table table-striped table-bordered table-fixed table-key-value b-t">
+                    <tbody>
+                        <tr ng-repeat="(key, value) in vm.stack.signature_info track by key">
+                            <th>{{key | translate}}</th>
+                            <td>{{value}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div>
+                    <div class="btn-group btn-group-xs pull-right" role="group">
+                        <button
+                            type="button"
+                            role="button"
+                            class="btn btn-default btn-sm dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <span class="visible-xs-inline"><i class="fa fa-fw fa-gear"></i></span>
+                            <span class="hidden-xs">{{::'Chart Options' | translate}}</span>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                            <li ng-repeat="o in vm.chartOptions | filter: { render: true } track by o.field">
+                                <a ng-click="o.selected = !o.selected; vm.updateStats();" title="{{::o.title}}"
+                                    ><i
+                                        class="fa fa-fw"
+                                        ng-class="{'fa-check': !!o.selected}"
+                                        ng-if="vm.hasSelectedChartOption()"
+                                    ></i
+                                    >{{::o.menuName}}</a
+                                >
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="clearfix"></div>
+                    <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><i class="fa fa-fw fa-calendar"></i> {{::'Recent Occurrences' | translate}}</div>
+            <events settings="vm.recentOccurrences"></events>
+        </div>
     </div>
-  </div>
 </div>

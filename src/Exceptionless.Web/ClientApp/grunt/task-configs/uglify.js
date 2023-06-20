@@ -3,11 +3,11 @@ module.exports = {
         sourceMap: true,
         sourceMapIncludeSources: false,
         mangle: {
-          reserved: ['$super']
-        }
+            reserved: ["$super"],
+        },
     },
     main: {
-        src: 'dist/app.js',
-        dest: 'dist/app.min.js'
-    }
+        src: "dist/app.js",
+        dest: "dist/app.min.js",
+    },
 };
