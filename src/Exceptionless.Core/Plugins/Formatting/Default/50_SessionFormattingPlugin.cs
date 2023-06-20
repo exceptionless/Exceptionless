@@ -1,25 +1,29 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(50)]
-public sealed class SessionFormattingPlugin : FormattingPluginBase {
+public sealed class SessionFormattingPlugin : FormattingPluginBase
+{
     public SessionFormattingPlugin(AppOptions options) : base(options) { }
 
-    private bool ShouldHandle(PersistentEvent ev) {
+    private bool ShouldHandle(PersistentEvent ev)
+    {
         return ev.IsSessionStart() || ev.IsSessionEnd() || ev.IsSessionHeartbeat();
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack) {
+    public override SummaryData GetStackSummaryData(Stack stack)
+    {
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Session, Event.KnownTypes.SessionEnd, Event.KnownTypes.SessionHeartbeat))
             return null;
 
         return new SummaryData { TemplateKey = "stack-session-summary", Data = new Dictionary<string, object>() };
     }
 
-    public override string GetStackTitle(PersistentEvent ev) {
+    public override string GetStackTitle(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -29,14 +33,16 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase {
         return ev.IsSessionStart() ? "Session Start" : "Session End";
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
         var data = new Dictionary<string, object> { { "SessionId", ev.GetSessionId() }, { "Type", ev.Type } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        if (ev.IsSessionStart()) {
+        if (ev.IsSessionStart())
+        {
             data.Add("Value", ev.Value.GetValueOrDefault());
 
             var endTime = ev.GetSessionEndTime();

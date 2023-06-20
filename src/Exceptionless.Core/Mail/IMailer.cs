@@ -2,7 +2,8 @@ using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Mail;
 
-public interface IMailer {
+public interface IMailer
+{
     Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences);
     Task SendOrganizationAddedAsync(User sender, Organization organization, User user);
     Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite);

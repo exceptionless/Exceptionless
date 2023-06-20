@@ -4,15 +4,18 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class TokenIndex : VersionedIndex<Models.Token> {
+public sealed class TokenIndex : VersionedIndex<Models.Token>
+{
     internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public TokenIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "tokens", 1) {
+    public TokenIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "tokens", 1)
+    {
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<Models.Token> ConfigureIndexMapping(TypeMappingDescriptor<Models.Token> map) {
+    public override TypeMappingDescriptor<Models.Token> ConfigureIndexMapping(TypeMappingDescriptor<Models.Token> map)
+    {
         return map
             .Dynamic(false)
             .Properties(p => p
@@ -30,7 +33,8 @@ public sealed class TokenIndex : VersionedIndex<Models.Token> {
                 .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    {
         return base.ConfigureIndex(idx.Settings(s => s
             .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)

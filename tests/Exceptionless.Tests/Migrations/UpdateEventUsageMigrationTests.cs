@@ -13,34 +13,38 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Migrations;
 
-public class UpdateEventUsageMigrationTests : IntegrationTestsBase {
+public class UpdateEventUsageMigrationTests : IntegrationTestsBase
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
 
-    public UpdateEventUsageMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public UpdateEventUsageMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
     }
 
-    protected override void RegisterServices(IServiceCollection services) {
+    protected override void RegisterServices(IServiceCollection services)
+    {
         services.AddTransient<SetStackDuplicateSignature>();
         services.AddSingleton<ILock>(new EmptyLock());
         base.RegisterServices(services);
     }
 
     [Fact]
-    public async Task ShouldPopulateUsageStats() {
+    public async Task ShouldPopulateUsageStats()
+    {
         var billingPlans = GetService<BillingPlans>();
         var organization = await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizationWithPlan(GetService<BillingManager>(), billingPlans, billingPlans.MediumPlan), o => o.ImmediateConsistency());
         Assert.Single(organization.Usage);
-        
+
         var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-        Assert.Empty(project.Usage); 
-        
+        Assert.Empty(project.Usage);
+
         var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
         var previousMonthUsageDate = SystemClock.UtcNow.SubtractMonths(1).StartOfMonth();
@@ -48,7 +52,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase {
 
         var currentMonthUsageDate = SystemClock.UtcNow.StartOfMonth();
         await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: SystemClock.UtcNow), o => o.ImmediateConsistency());
-        
+
         var migration = GetService<UpdateEventUsage>();
         var context = new MigrationContext(GetService<ILock>(), _logger, CancellationToken.None);
         await migration.RunAsync(context);

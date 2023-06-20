@@ -7,21 +7,27 @@ using Nest;
 
 namespace Exceptionless.Insulation.HealthChecks;
 
-public class ElasticsearchHealthCheck : IHealthCheck {
+public class ElasticsearchHealthCheck : IHealthCheck
+{
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ILogger _logger;
 
-    public ElasticsearchHealthCheck(ExceptionlessElasticConfiguration config, ILoggerFactory loggerFactory) {
+    public ElasticsearchHealthCheck(ExceptionlessElasticConfiguration config, ILoggerFactory loggerFactory)
+    {
         _config = config;
         _logger = loggerFactory.CreateLogger<ElasticsearchHealthCheck>();
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         var sw = Stopwatch.StartNew();
 
-        try {
-            var pingResult = await _config.Client.LowLevel.PingAsync<PingResponse>(ctx: cancellationToken, requestParameters: new PingRequestParameters {
-                RequestConfiguration = new RequestConfiguration {
+        try
+        {
+            var pingResult = await _config.Client.LowLevel.PingAsync<PingResponse>(ctx: cancellationToken, requestParameters: new PingRequestParameters
+            {
+                RequestConfiguration = new RequestConfiguration
+                {
                     RequestTimeout = TimeSpan.FromSeconds(60) // 60 seconds is default for NEST
                 }
             });
@@ -29,10 +35,12 @@ public class ElasticsearchHealthCheck : IHealthCheck {
 
             return isSuccess ? HealthCheckResult.Healthy() : new HealthCheckResult(context.Registration.FailureStatus);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             return new HealthCheckResult(context.Registration.FailureStatus, exception: ex);
         }
-        finally {
+        finally
+        {
             sw.Stop();
             _logger.LogTrace("Checking Elasticsearch took {Duration:g}", sw.Elapsed);
         }

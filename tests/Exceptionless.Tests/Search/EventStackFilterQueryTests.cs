@@ -10,22 +10,26 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search;
 
-public class EventStackFilterQueryTests : IntegrationTestsBase {
+public class EventStackFilterQueryTests : IntegrationTestsBase
+{
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private static bool _isTestDataGenerated;
 
-    public EventStackFilterQueryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public EventStackFilterQueryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         if (_isTestDataGenerated)
             return;
 
         await base.ResetDataAsync();
-        await CreateDataAsync(d => {
+        await CreateDataAsync(d =>
+        {
             d.Event().Type(Event.KnownTypes.Log).Status(StackStatus.Open).Source("Namespace.ClassName").UserIdentity("test@test.com", "Test Test");
             d.Event().Type(Event.KnownTypes.Log).FreeProject().Status(StackStatus.Open);
             d.Event().StackId(TestConstants.StackId).Type(Event.KnownTypes.Log).Status(StackStatus.Open);
@@ -58,7 +62,8 @@ public class EventStackFilterQueryTests : IntegrationTestsBase {
     [InlineData("is_regressed:true", 1)]
     [InlineData("is_hidden:true", 4)]
     [InlineData("project:" + SampleDataService.TEST_PROJECT_ID + " (status:open OR status:regressed)", 6, 4)]
-    public async Task VerifyStackFilter(string filter, int expected, int? expectedInverted = null) {
+    public async Task VerifyStackFilter(string filter, int expected, int? expectedInverted = null)
+    {
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
 
         long totalStacks = await _stackRepository.CountAsync(o => o.IncludeSoftDeletes());
@@ -95,7 +100,8 @@ public class EventStackFilterQueryTests : IntegrationTestsBase {
     [InlineData("project:" + SampleDataService.TEST_PROJECT_ID + " (status:open OR status:regressed)", 5)]
     [InlineData("project:" + SampleDataService.TEST_PROJECT_ID + " (status:open OR status:regressed) ref.session:sessionId", 1)]
     [InlineData("project:" + SampleDataService.TEST_PROJECT_ID + " (status:open OR status:regressed) reference:referenceId", 1)]
-    public async Task VerifyEventFilter(string filter, int expected) {
+    public async Task VerifyEventFilter(string filter, int expected)
+    {
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
         Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);

@@ -15,8 +15,10 @@ using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web;
 
-public class Bootstrapper {
-    public static void RegisterServices(IServiceCollection services, AppOptions appOptions, ILoggerFactory loggerFactory) {
+public class Bootstrapper
+{
+    public static void RegisterServices(IServiceCollection services, AppOptions appOptions, ILoggerFactory loggerFactory)
+    {
         services.AddSingleton<WebSocketConnectionManager>();
         services.AddSingleton<MessageBusBroker>();
 
@@ -30,9 +32,11 @@ public class Bootstrapper {
 
         var logger = loggerFactory.CreateLogger<Startup>();
         services.AddStartupAction<MessageBusBroker>();
-        services.AddStartupAction("Subscribe to Log Work Item Progress", (sp, ct) => {
+        services.AddStartupAction("Subscribe to Log Work Item Progress", (sp, ct) =>
+        {
             var subscriber = sp.GetRequiredService<IMessageSubscriber>();
-            return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus => {
+            return subscriber.SubscribeAsync<WorkItemStatus>(workItemStatus =>
+            {
                 if (logger.IsEnabled(LogLevel.Trace))
                     logger.LogTrace("WorkItem id:{WorkItemId} message:{Message} progress:{Progress}", workItemStatus.WorkItemId ?? "<NULL>", workItemStatus.Message ?? "<NULL>", workItemStatus.Progress);
 
@@ -44,16 +48,20 @@ public class Bootstrapper {
         services.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
     }
 
-    public class ApiMappings : Profile {
-        public ApiMappings(BillingPlans plans) {
+    public class ApiMappings : Profile
+    {
+        public ApiMappings(BillingPlans plans)
+        {
             CreateMap<UserDescription, EventUserDescription>();
 
             CreateMap<NewOrganization, Organization>();
-            CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
+            CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) =>
+            {
                 vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
             });
 
-            CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) => {
+            CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) =>
+            {
                 igm.Id = igm.Id.Substring(3);
                 igm.Date = si.Created;
             });

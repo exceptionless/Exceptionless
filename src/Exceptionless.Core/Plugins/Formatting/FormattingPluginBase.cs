@@ -4,30 +4,37 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
-public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
+public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
+{
     public FormattingPluginBase(AppOptions options) : base(options) { }
 
-    public virtual SummaryData GetStackSummaryData(Stack stack) {
+    public virtual SummaryData GetStackSummaryData(Stack stack)
+    {
         return null;
     }
 
-    public virtual SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public virtual SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         return null;
     }
 
-    public virtual string GetStackTitle(PersistentEvent ev) {
+    public virtual string GetStackTitle(PersistentEvent ev)
+    {
         return null;
     }
 
-    public virtual MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+    public virtual MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    {
         return null;
     }
 
-    public virtual SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+    public virtual SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    {
         return null;
     }
 
-    protected void AddDefaultSlackFields(PersistentEvent ev, List<SlackMessage.SlackAttachmentFields> attachmentFields, bool includeUrl = true) {
+    protected void AddDefaultSlackFields(PersistentEvent ev, List<SlackMessage.SlackAttachmentFields> attachmentFields, bool includeUrl = true)
+    {
         var requestInfo = ev.GetRequestInfo();
         if (requestInfo != null && includeUrl)
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
@@ -52,7 +59,8 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
         attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
     }
 
-    protected string GetSlackEventUrl(string eventId, string message = null) {
+    protected string GetSlackEventUrl(string eventId, string message = null)
+    {
         var parts = new List<string> { $"{_options.BaseURL}/event/{eventId}" };
         if (!String.IsNullOrEmpty(message))
             parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
@@ -60,7 +68,8 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin {
         return $"<{String.Join(String.Empty, parts)}>";
     }
 
-    protected void AddUserIdentitySummaryData(Dictionary<string, object> data, UserInfo identity) {
+    protected void AddUserIdentitySummaryData(Dictionary<string, object> data, UserInfo identity)
+    {
         if (identity == null)
             return;
 

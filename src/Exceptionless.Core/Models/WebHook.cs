@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Core.Models;
 
-public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate {
+public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate
+{
     public string Id { get; set; }
     public string OrganizationId { get; set; }
     public string ProjectId { get; set; }
@@ -18,7 +19,8 @@ public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedD
 
     public DateTime CreatedUtc { get; set; }
 
-    public static class KnownVersions {
+    public static class KnownVersions
+    {
         public const string Version1 = "v1";
         public const string Version2 = "v2";
     }

@@ -4,8 +4,10 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class RequestInfoExtensions {
-    public static RequestInfo ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000) {
+public static class RequestInfoExtensions
+{
+    public static RequestInfo ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000)
+    {
         if (request == null)
             return null;
 
@@ -16,17 +18,20 @@ public static class RequestInfoExtensions {
         return request;
     }
 
-    private static object ApplyPostDataExclusions(object data, IEnumerable<string> exclusions, int maxLength) {
+    private static object ApplyPostDataExclusions(object data, IEnumerable<string> exclusions, int maxLength)
+    {
         if (data == null)
             return null;
 
         var dictionary = data as Dictionary<string, string>;
-        if (dictionary == null && data is string) {
+        if (dictionary == null && data is string)
+        {
             string json = (string)data;
             if (!json.IsJson())
                 return data;
 
-            try {
+            try
+            {
                 dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
             }
             catch (Exception) { }
@@ -35,7 +40,8 @@ public static class RequestInfoExtensions {
         return dictionary != null ? ApplyExclusions(dictionary, exclusions, maxLength) : data;
     }
 
-    private static Dictionary<string, string> ApplyExclusions(Dictionary<string, string> dictionary, IEnumerable<string> exclusions, int maxLength) {
+    private static Dictionary<string, string> ApplyExclusions(Dictionary<string, string> dictionary, IEnumerable<string> exclusions, int maxLength)
+    {
         if (dictionary == null || dictionary.Count == 0)
             return dictionary;
 
@@ -51,12 +57,14 @@ public static class RequestInfoExtensions {
     /// <summary>
     /// The full path for the request including host, path and query String.
     /// </summary>
-    public static string GetFullPath(this RequestInfo requestInfo, bool includeHttpMethod = false, bool includeHost = true, bool includeQueryString = true) {
+    public static string GetFullPath(this RequestInfo requestInfo, bool includeHttpMethod = false, bool includeHost = true, bool includeQueryString = true)
+    {
         var sb = new StringBuilder();
         if (includeHttpMethod)
             sb.Append(requestInfo.HttpMethod).Append(" ");
 
-        if (includeHost) {
+        if (includeHost)
+        {
             sb.Append(requestInfo.IsSecure ? "https://" : "http://");
             sb.Append(requestInfo.Host);
             if (requestInfo.Port != 80 && requestInfo.Port != 443)
@@ -74,7 +82,8 @@ public static class RequestInfoExtensions {
         return sb.ToString();
     }
 
-    private static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args) {
+    private static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args)
+    {
         if (args == null)
             return String.Empty;
 
@@ -83,11 +92,13 @@ public static class RequestInfoExtensions {
 
         var sb = new StringBuilder(args.Count() * 10);
 
-        foreach (var p in args) {
+        foreach (var p in args)
+        {
             if (String.IsNullOrEmpty(p.Key) && p.Value == null)
                 continue;
 
-            if (!String.IsNullOrEmpty(p.Key)) {
+            if (!String.IsNullOrEmpty(p.Key))
+            {
                 sb.Append(Uri.EscapeDataString(p.Key));
                 sb.Append('=');
             }

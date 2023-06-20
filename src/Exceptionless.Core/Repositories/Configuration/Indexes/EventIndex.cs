@@ -14,11 +14,13 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class EventIndex : DailyIndex<PersistentEvent> {
+public sealed class EventIndex : DailyIndex<PersistentEvent>
+{
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IServiceProvider _serviceProvider;
 
-    public EventIndex(ExceptionlessElasticConfiguration configuration, IServiceProvider serviceProvider, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime) {
+    public EventIndex(ExceptionlessElasticConfiguration configuration, IServiceProvider serviceProvider, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime)
+    {
         _configuration = configuration;
         _serviceProvider = serviceProvider;
 
@@ -32,14 +34,16 @@ public sealed class EventIndex : DailyIndex<PersistentEvent> {
         AddAlias($"{Name}-last90days", TimeSpan.FromDays(90));
     }
 
-    protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder) {
+    protected override void ConfigureQueryBuilder(ElasticQueryBuilder builder)
+    {
         var stacksRepository = _serviceProvider.GetRequiredService<IStackRepository>();
         var cacheClient = _serviceProvider.GetRequiredService<ICacheClient>();
         base.ConfigureQueryBuilder(builder);
         builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackFilterQueryBuilder(stacksRepository, cacheClient, _configuration.LoggerFactory));
     }
 
-    public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map) {
+    public override TypeMappingDescriptor<PersistentEvent> ConfigureIndexMapping(TypeMappingDescriptor<PersistentEvent> map)
+    {
         var mapping = map
             .Dynamic(false)
             .DynamicTemplates(dt => dt
@@ -93,7 +97,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent> {
         return mapping;
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    {
         return base.ConfigureIndex(idx.Settings(s => s
             .Analysis(BuildAnalysis)
             .NumberOfShards(_configuration.Options.NumberOfShards)
@@ -103,17 +108,20 @@ public sealed class EventIndex : DailyIndex<PersistentEvent> {
             .Priority(1)));
     }
 
-    public override async Task ConfigureAsync() {
+    public override async Task ConfigureAsync()
+    {
         const string pipeline = "events-pipeline";
         var response = await Configuration.Client.Ingest.PutPipelineAsync(pipeline, d => d.Processors(p => p
-            .Script(s => new ScriptProcessor {
+            .Script(s => new ScriptProcessor
+            {
                 Source = FLATTEN_ERRORS_SCRIPT.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ")
             })));
 
         var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
         logger.LogRequest(response);
 
-        if (!response.IsValid) {
+        if (!response.IsValid)
+        {
             logger.LogError(response.OriginalException, "Error creating the pipeline {Pipeline}: {Message}", pipeline, response.GetErrorMessage());
             throw new ApplicationException($"Error creating the pipeline {pipeline}: {response.GetErrorMessage()}", response.OriginalException);
         }
@@ -121,7 +129,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent> {
         await base.ConfigureAsync();
     }
 
-    protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
+    protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config)
+    {
         config
             .SetDefaultFields(new[] {
                     "id",
@@ -153,7 +162,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent> {
 
     public ElasticsearchOptions Options => (Configuration as ExceptionlessElasticConfiguration)?.Options;
 
-    private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
+    private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad)
+    {
         return ad.Analyzers(a => a
             .Pattern(COMMA_WHITESPACE_ANALYZER, p => p.Pattern(@"[,\s]+"))
             .Custom(EMAIL_ANALYZER, c => c.Filters(EMAIL_TOKEN_FILTER, "lowercase", TLD_STOPWORDS_TOKEN_FILTER, EDGE_NGRAM_TOKEN_FILTER, "unique").Tokenizer("keyword"))
@@ -242,7 +252,8 @@ ctx.error.type = types;
 ctx.error.message = messages;
 ctx.error.code = codes;";
 
-    public sealed class Alias {
+    public sealed class Alias
+    {
         public const string OrganizationId = "organization";
         public const string ProjectId = "project";
         public const string StackId = "stack";
@@ -304,8 +315,10 @@ ctx.error.code = codes;";
     }
 }
 
-internal static class EventIndexExtensions {
-    public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor) {
+internal static class EventIndexExtensions
+{
+    public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor)
+    {
         return descriptor
             .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
             .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
@@ -317,7 +330,8 @@ internal static class EventIndexExtensions {
                 .Text(f6 => f6.Name("targetmethod").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())));
     }
 
-    public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryAliases(this PropertiesDescriptor<PersistentEvent> descriptor) {
+    public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryAliases(this PropertiesDescriptor<PersistentEvent> descriptor)
+    {
         return descriptor
             .FieldAlias(a => a.Name(EventIndex.Alias.Version).Path(f => (string)f.Data[Event.KnownDataKeys.Version]))
             .FieldAlias(a => a.Name(EventIndex.Alias.Level).Path(f => (string)f.Data[Event.KnownDataKeys.Level]))
@@ -338,26 +352,31 @@ internal static class EventIndexExtensions {
             .FieldAlias(a => a.Name(EventIndex.Alias.MachineName).Path(f => ((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]).MachineName));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Version).Analyzer(EventIndex.VERSION_INDEX_ANALYZER).SearchAnalyzer(EventIndex.VERSION_SEARCH_ANALYZER).AddKeywordField());
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddLevelMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Text(f2 => f2.Name(Event.KnownDataKeys.Level).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField());
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddSubmissionMethodMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Keyword(f2 => f2.Name(Event.KnownDataKeys.SubmissionMethod).IgnoreAbove(1024));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddSubmissionClientMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddSubmissionClientMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<SubmissionClient>(f2 => f2.Name(Event.KnownDataKeys.SubmissionClient).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Field(EventIndex.Alias.IpAddress)))
             .Text(f3 => f3.Name(r => r.UserAgent).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
             .Keyword(f3 => f3.Name(r => r.Version).IgnoreAbove(1024))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddLocationMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<Location>(f2 => f2.Name(Event.KnownDataKeys.Location).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.Country).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
             .Keyword(f3 => f3.Name(r => r.Level1).IgnoreAbove(1024))
@@ -365,7 +384,8 @@ internal static class EventIndexExtensions {
             .Keyword(f3 => f3.Name(r => r.Locality).IgnoreAbove(1024))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddRequestInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.ClientIpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Field(EventIndex.Alias.IpAddress)))
             .Text(f3 => f3.Name(r => r.UserAgent).AddKeywordField())
@@ -384,7 +404,8 @@ internal static class EventIndexExtensions {
                 .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot))))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
             .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                 .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
@@ -392,14 +413,16 @@ internal static class EventIndexExtensions {
                     .Keyword(f6 => f6.Name("Method").IgnoreAbove(1024).CopyTo(fd => fd.Field(EventIndex.Alias.ErrorTargetMethod)))))))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddSimpleErrorMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Properties(p3 => p3
             .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Properties(p4 => p4
                 .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Properties(p5 => p5
                     .Keyword(f6 => f6.Name("ExceptionType").IgnoreAbove(1024).CopyTo(fd => fd.Field(EventIndex.Alias.ErrorTargetType)))))))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddEnvironmentInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).CopyTo(fd => fd.Field(EventIndex.Alias.IpAddress)))
             .Text(f3 => f3.Name(r => r.MachineName).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())
@@ -408,13 +431,15 @@ internal static class EventIndexExtensions {
             .Keyword(f3 => f3.Name(r => r.Architecture).IgnoreAbove(1024))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddUserDescriptionMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.Description))
             .Text(f3 => f3.Name(r => r.EmailAddress).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer("simple").AddKeywordField().CopyTo(f4 => f4.Field($"data.{Event.KnownDataKeys.UserInfo}.identity")))));
     }
 
-    public static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor) {
+    public static PropertiesDescriptor<DataDictionary> AddUserInfoMapping(this PropertiesDescriptor<DataDictionary> descriptor)
+    {
         return descriptor.Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
             .Text(f3 => f3.Name(r => r.Identity).Analyzer(EventIndex.EMAIL_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
             .Text(f3 => f3.Name(r => r.Name).Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())));

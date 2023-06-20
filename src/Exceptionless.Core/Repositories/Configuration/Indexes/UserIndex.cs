@@ -5,15 +5,18 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class UserIndex : VersionedIndex<User> {
+public sealed class UserIndex : VersionedIndex<User>
+{
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public UserIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "users", 1) {
+    public UserIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "users", 1)
+    {
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<User> ConfigureIndexMapping(TypeMappingDescriptor<User> map) {
+    public override TypeMappingDescriptor<User> ConfigureIndexMapping(TypeMappingDescriptor<User> map)
+    {
         return map
             .Dynamic(false)
             .Properties(p => p
@@ -34,7 +37,8 @@ public sealed class UserIndex : VersionedIndex<User> {
             );
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    {
         return base.ConfigureIndex(idx.Settings(s => s
             .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)

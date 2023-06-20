@@ -4,7 +4,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class ElasticsearchOptions {
+public class ElasticsearchOptions
+{
     public string ServerUrl { get; internal set; }
     public int NumberOfShards { get; internal set; } = 1;
     public int NumberOfReplicas { get; internal set; }
@@ -22,7 +23,8 @@ public class ElasticsearchOptions {
     public DateTime ReindexCutOffDate { get; internal set; }
     public ElasticsearchOptions ElasticsearchToMigrate { get; internal set; }
 
-    public static ElasticsearchOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+    public static ElasticsearchOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
+    {
         var options = new ElasticsearchOptions();
 
         options.Scope = appOptions.AppScope;
@@ -36,8 +38,10 @@ public class ElasticsearchOptions {
         ParseConnectionString(connectionString, options, appOptions.AppMode);
 
         string connectionStringToMigrate = config.GetConnectionString("ElasticsearchToMigrate");
-        if (!String.IsNullOrEmpty(connectionStringToMigrate)) {
-            options.ElasticsearchToMigrate = new ElasticsearchOptions {
+        if (!String.IsNullOrEmpty(connectionStringToMigrate))
+        {
+            options.ElasticsearchToMigrate = new ElasticsearchOptions
+            {
                 ReindexCutOffDate = options.ReindexCutOffDate
             };
 
@@ -47,7 +51,8 @@ public class ElasticsearchOptions {
         return options;
     }
 
-    private static void ParseConnectionString(string connectionString, ElasticsearchOptions options, AppMode appMode) {
+    private static void ParseConnectionString(string connectionString, ElasticsearchOptions options, AppMode appMode)
+    {
         var pairs = connectionString.ParseConnectionString();
 
         options.ServerUrl = pairs.GetString("server", "http://localhost:9200");

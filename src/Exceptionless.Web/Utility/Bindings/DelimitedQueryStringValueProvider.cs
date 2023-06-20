@@ -5,12 +5,14 @@ using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Web.Utility;
 
-public class DelimitedQueryStringValueProvider : QueryStringValueProvider {
+public class DelimitedQueryStringValueProvider : QueryStringValueProvider
+{
     private readonly CultureInfo _culture;
     private readonly char[] _delimiters;
     private readonly IQueryCollection _queryCollection;
 
-    public DelimitedQueryStringValueProvider(BindingSource bindingSource, IQueryCollection values, CultureInfo culture, char[] delimiters) : base(bindingSource, values, culture) {
+    public DelimitedQueryStringValueProvider(BindingSource bindingSource, IQueryCollection values, CultureInfo culture, char[] delimiters) : base(bindingSource, values, culture)
+    {
         _queryCollection = values;
         _culture = culture;
         _delimiters = delimiters;
@@ -18,7 +20,8 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider {
 
     public char[] Delimiters => _delimiters;
 
-    public override ValueProviderResult GetValue(string key) {
+    public override ValueProviderResult GetValue(string key)
+    {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
@@ -35,20 +38,23 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider {
     }
 }
 
-public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory {
+public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
+{
     private static readonly char[] DefaultDelimiters = { ',' };
     private readonly char[] _delimiters;
 
     public DelimitedQueryStringValueProviderFactory() : this(DefaultDelimiters) { }
 
-    public DelimitedQueryStringValueProviderFactory(params char[] delimiters) {
+    public DelimitedQueryStringValueProviderFactory(params char[] delimiters)
+    {
         if (delimiters == null || delimiters.Length == 0)
             _delimiters = DefaultDelimiters;
         else
             _delimiters = delimiters;
     }
 
-    public Task CreateValueProviderAsync(ValueProviderFactoryContext context) {
+    public Task CreateValueProviderAsync(ValueProviderFactoryContext context)
+    {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
@@ -61,19 +67,23 @@ public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory {
 }
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class DelimitedQueryStringAttribute : Attribute, IResourceFilter {
+public class DelimitedQueryStringAttribute : Attribute, IResourceFilter
+{
     private readonly char[] _delimiters;
 
-    public DelimitedQueryStringAttribute(params char[] delimiters) {
+    public DelimitedQueryStringAttribute(params char[] delimiters)
+    {
         _delimiters = delimiters;
     }
 
-    public void OnResourceExecuted(ResourceExecutedContext context) {
+    public void OnResourceExecuted(ResourceExecutedContext context)
+    {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
     }
 
-    public void OnResourceExecuting(ResourceExecutingContext context) {
+    public void OnResourceExecuting(ResourceExecutingContext context)
+    {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
@@ -81,14 +91,18 @@ public class DelimitedQueryStringAttribute : Attribute, IResourceFilter {
     }
 }
 
-public static class ValueProviderFactoriesExtensions {
-    public static void AddDelimitedValueProviderFactory(this IList<IValueProviderFactory> valueProviderFactories, char[] delimiters) {
+public static class ValueProviderFactoriesExtensions
+{
+    public static void AddDelimitedValueProviderFactory(this IList<IValueProviderFactory> valueProviderFactories, char[] delimiters)
+    {
         var queryStringValueProviderFactory = valueProviderFactories.OfType<QueryStringValueProviderFactory>().FirstOrDefault();
 
-        if (queryStringValueProviderFactory == null) {
+        if (queryStringValueProviderFactory == null)
+        {
             valueProviderFactories.Insert(0, new DelimitedQueryStringValueProviderFactory(delimiters));
         }
-        else {
+        else
+        {
             valueProviderFactories.Insert(valueProviderFactories.IndexOf(queryStringValueProviderFactory), new DelimitedQueryStringValueProviderFactory(delimiters));
             valueProviderFactories.Remove(queryStringValueProviderFactory);
         }

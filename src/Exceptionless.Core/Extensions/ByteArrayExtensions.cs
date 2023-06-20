@@ -2,17 +2,23 @@
 
 namespace Exceptionless.Core.Extensions;
 
-public static class ByteArrayExtensions {
-    public static byte[] Decompress(this byte[] data, string encoding) {
+public static class ByteArrayExtensions
+{
+    public static byte[] Decompress(this byte[] data, string encoding)
+    {
         byte[] decompressedData;
-        using (var outputStream = new MemoryStream()) {
-            using (var inputStream = new MemoryStream(data)) {
+        using (var outputStream = new MemoryStream())
+        {
+            using (var inputStream = new MemoryStream(data))
+            {
                 if (encoding == "gzip")
-                    using (var zip = new GZipStream(inputStream, CompressionMode.Decompress)) {
+                    using (var zip = new GZipStream(inputStream, CompressionMode.Decompress))
+                    {
                         zip.CopyTo(outputStream);
                     }
                 else if (encoding == "deflate")
-                    using (var zip = new DeflateStream(inputStream, CompressionMode.Decompress)) {
+                    using (var zip = new DeflateStream(inputStream, CompressionMode.Decompress))
+                    {
                         zip.CopyTo(outputStream);
                     }
                 else
@@ -25,10 +31,13 @@ public static class ByteArrayExtensions {
         return decompressedData;
     }
 
-    public static byte[] Compress(this byte[] data) {
+    public static byte[] Compress(this byte[] data)
+    {
         byte[] compressesData;
-        using (var outputStream = new MemoryStream()) {
-            using (var zip = new GZipStream(outputStream, CompressionMode.Compress, true)) {
+        using (var outputStream = new MemoryStream())
+        {
+            using (var zip = new GZipStream(outputStream, CompressionMode.Compress, true))
+            {
                 zip.Write(data, 0, data.Length);
             }
 

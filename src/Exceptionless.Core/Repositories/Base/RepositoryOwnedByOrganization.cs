@@ -7,12 +7,15 @@ using Foundatio.Repositories.Options;
 
 namespace Exceptionless.Core.Repositories;
 
-public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-    public RepositoryOwnedByOrganization(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options) {
+public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new()
+{
+    public RepositoryOwnedByOrganization(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options)
+    {
         AddPropertyRequiredForRemove(o => o.OrganizationId);
     }
 
-    public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T> options = null) {
+    public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T> options = null)
+    {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
 
@@ -23,7 +26,8 @@ public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRep
         return FindAsync(q => q.Organization(organizationId), o => commandOptions);
     }
 
-    public virtual Task<long> RemoveAllByOrganizationIdAsync(string organizationId) {
+    public virtual Task<long> RemoveAllByOrganizationIdAsync(string organizationId)
+    {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
 

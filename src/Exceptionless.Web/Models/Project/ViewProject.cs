@@ -5,7 +5,8 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Web.Models;
 
-public class ViewProject : IIdentity, IData, IHaveCreatedDate {
+public class ViewProject : IIdentity, IData, IHaveCreatedDate
+{
     public string Id { get; set; }
     public DateTime CreatedUtc { get; set; }
     public string OrganizationId { get; set; }
@@ -23,13 +24,16 @@ public class ViewProject : IIdentity, IData, IHaveCreatedDate {
     public ICollection<UsageInfo> Usage { get; set; } = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
 }
 
-public static class ViewProjectExtensions {
-    public static UsageHourInfo GetHourlyUsage(this ViewProject project, DateTime date) {
+public static class ViewProjectExtensions
+{
+    public static UsageHourInfo GetHourlyUsage(this ViewProject project, DateTime date)
+    {
         var overage = project.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
         if (overage != null)
             return overage;
 
-        overage = new UsageHourInfo {
+        overage = new UsageHourInfo
+        {
             Date = date.ToUniversalTime().StartOfHour()
         };
         project.UsageHours.Add(overage);
@@ -37,29 +41,35 @@ public static class ViewProjectExtensions {
         return overage;
     }
 
-    public static UsageHourInfo GetCurrentHourlyUsage(this ViewProject project) {
+    public static UsageHourInfo GetCurrentHourlyUsage(this ViewProject project)
+    {
         return project.GetHourlyUsage(SystemClock.UtcNow);
     }
 
-    public static void EnsureUsage(this ViewProject project, int limit) {
+    public static void EnsureUsage(this ViewProject project, int limit)
+    {
         var startDate = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
 
-        while (startDate < SystemClock.UtcNow.StartOfMonth()) {
+        while (startDate < SystemClock.UtcNow.StartOfMonth())
+        {
             project.GetUsage(startDate, limit);
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
     }
 
-    public static UsageInfo GetCurrentUsage(this ViewProject project, int limit) {
+    public static UsageInfo GetCurrentUsage(this ViewProject project, int limit)
+    {
         return project.GetUsage(SystemClock.UtcNow, limit);
     }
 
-    public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit) {
+    public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
+    {
         var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
         if (usage != null)
             return usage;
 
-        usage = new UsageInfo {
+        usage = new UsageInfo
+        {
             Date = date.ToUniversalTime().StartOfMonth(),
             Limit = limit
         };
@@ -68,7 +78,8 @@ public static class ViewProjectExtensions {
         return usage;
     }
 
-    public static void TrimUsage(this ViewProject project) {
+    public static void TrimUsage(this ViewProject project)
+    {
         // keep 1 year of usage
         project.Usage = project.Usage.Except(project.Usage
             .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))

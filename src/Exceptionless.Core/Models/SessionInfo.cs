@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class SessionInfo {
+public class SessionInfo
+{
     /// <summary>
     /// The application version during the time of the session.
     /// </summary>

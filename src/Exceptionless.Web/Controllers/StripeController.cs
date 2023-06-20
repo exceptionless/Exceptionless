@@ -9,12 +9,14 @@ namespace Exceptionless.Web.Controllers;
 [Route(API_PREFIX + "/stripe")]
 [ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
-public class StripeController : ExceptionlessApiController {
+public class StripeController : ExceptionlessApiController
+{
     private readonly StripeEventHandler _stripeEventHandler;
     private readonly StripeOptions _stripeOptions;
     private readonly ILogger _logger;
 
-    public StripeController(StripeEventHandler stripeEventHandler, StripeOptions stripeOptions, ILogger<StripeController> logger) {
+    public StripeController(StripeEventHandler stripeEventHandler, StripeOptions stripeOptions, ILogger<StripeController> logger)
+    {
         _stripeEventHandler = stripeEventHandler;
         _stripeOptions = stripeOptions;
         _logger = logger;
@@ -23,24 +25,30 @@ public class StripeController : ExceptionlessApiController {
     [AllowAnonymous]
     [HttpPost]
     [Consumes("application/json")]
-    public async Task<IActionResult> PostAsync() {
+    public async Task<IActionResult> PostAsync()
+    {
         string json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-        using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", json))) {
-            if (String.IsNullOrEmpty(json)) {
+        using (_logger.BeginScope(new ExceptionlessState().SetHttpContext(HttpContext).Property("event", json)))
+        {
+            if (String.IsNullOrEmpty(json))
+            {
                 _logger.LogWarning("Unable to get json of incoming event.");
                 return BadRequest();
             }
 
             Stripe.Event stripeEvent;
-            try {
+            try
+            {
                 stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], _stripeOptions.StripeWebHookSigningSecret, throwOnApiVersionMismatch: false);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogError(ex, "Unable to parse incoming event with {Signature}: {Message}", Request.Headers["Stripe-Signature"], ex.Message);
                 return BadRequest();
             }
 
-            if (stripeEvent == null) {
+            if (stripeEvent == null)
+            {
                 _logger.LogWarning("Null stripe event.");
                 return BadRequest();
             }

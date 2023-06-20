@@ -3,7 +3,8 @@ using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
-public static class TestConstants {
+public static class TestConstants
+{
     public const string ProjectId = SampleDataService.TEST_PROJECT_ID;
     public const string ProjectIdWithNoRoles = "1ecd0826e447ad1e78877a66";
     public const string SuspendedProjectId = "1ecd0826e446dd1e78877ab3";

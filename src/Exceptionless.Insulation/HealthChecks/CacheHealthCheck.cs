@@ -6,27 +6,33 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Insulation.HealthChecks;
 
-public class CacheHealthCheck : IHealthCheck {
+public class CacheHealthCheck : IHealthCheck
+{
     private readonly ICacheClient _cache;
     private readonly ILogger _logger;
 
-    public CacheHealthCheck(ICacheClient cache, ILoggerFactory loggerFactory) {
+    public CacheHealthCheck(ICacheClient cache, ILoggerFactory loggerFactory)
+    {
         _cache = cache;
         _logger = loggerFactory.CreateLogger<CacheHealthCheck>();
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         var sw = Stopwatch.StartNew();
-        try {
+        try
+        {
             var cache = new ScopedCacheClient(_cache, "health");
             var cacheValue = await cache.GetAsync<string>("__PING__").AnyContext();
             if (cacheValue.HasValue)
                 return HealthCheckResult.Unhealthy("Cache Not Working");
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             return HealthCheckResult.Unhealthy("Cache Not Working.", ex);
         }
-        finally {
+        finally
+        {
             sw.Stop();
             _logger.LogTrace("Checking cache took {Duration:g}", sw.Elapsed);
         }

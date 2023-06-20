@@ -29,9 +29,12 @@ using QueueOptions = Exceptionless.Core.Configuration.QueueOptions;
 
 namespace Exceptionless.Insulation;
 
-public class Bootstrapper {
-    public static void RegisterServices(IServiceCollection services, AppOptions appOptions, bool runMaintenanceTasks) {
-        if (!String.IsNullOrEmpty(appOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(appOptions.ExceptionlessServerUrl)) {
+public class Bootstrapper
+{
+    public static void RegisterServices(IServiceCollection services, AppOptions appOptions, bool runMaintenanceTasks)
+    {
+        if (!String.IsNullOrEmpty(appOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(appOptions.ExceptionlessServerUrl))
+        {
             var client = ExceptionlessClient.Default;
             client.Configuration.ServerUrl = appOptions.ExceptionlessServerUrl;
             client.Configuration.ApiKey = appOptions.ExceptionlessApiKey;
@@ -62,13 +65,15 @@ public class Bootstrapper {
 
         var healthCheckBuilder = RegisterHealthChecks(services, appOptions);
 
-        if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost)) {
+        if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
+        {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
             healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
         }
     }
 
-    private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, AppOptions appOptions) {
+    private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, AppOptions appOptions)
+    {
         services.AddStartupActionToWaitForHealthChecks("Critical");
 
         return services.AddHealthChecks()
@@ -94,8 +99,10 @@ public class Bootstrapper {
             .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
     }
 
-    private static void RegisterCache(IServiceCollection container, CacheOptions options) {
-        if (String.Equals(options.Provider, "redis")) {
+    private static void RegisterCache(IServiceCollection container, CacheOptions options)
+    {
+        if (String.Equals(options.Provider, "redis"))
+        {
             container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
             if (!String.IsNullOrEmpty(options.Scope))
@@ -107,19 +114,24 @@ public class Bootstrapper {
         }
     }
 
-    private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options) {
-        if (String.Equals(options.Provider, "redis")) {
+    private static void RegisterMessageBus(IServiceCollection container, MessageBusOptions options)
+    {
+        if (String.Equals(options.Provider, "redis"))
+        {
             container.ReplaceSingleton(s => GetRedisConnection(options.Data));
 
-            container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions {
+            container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions
+            {
                 Subscriber = s.GetRequiredService<IConnectionMultiplexer>().GetSubscriber(),
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-        else if (String.Equals(options.Provider, "rabbitmq")) {
-            container.ReplaceSingleton<IMessageBus>(s => new RabbitMQMessageBus(new RabbitMQMessageBusOptions {
+        else if (String.Equals(options.Provider, "rabbitmq"))
+        {
+            container.ReplaceSingleton<IMessageBus>(s => new RabbitMQMessageBus(new RabbitMQMessageBusOptions
+            {
                 ConnectionString = options.ConnectionString,
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
@@ -128,14 +140,17 @@ public class Bootstrapper {
         }
     }
 
-    private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options) {
+    private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options)
+    {
         // TODO: Remove this extra config parse step when sentinel bug is fixed
         var config = ConfigurationOptions.Parse(options.GetString("server"));
         return ConnectionMultiplexer.Connect(config);
     }
 
-    private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks) {
-        if (String.Equals(options.Provider, "azurestorage")) {
+    private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks)
+    {
+        if (String.Equals(options.Provider, "azurestorage"))
+        {
             container.ReplaceSingleton(s => CreateAzureStorageQueue<EventPost>(s, options, retries: 1));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<EventUserDescription>(s, options));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<EventNotification>(s, options));
@@ -143,7 +158,8 @@ public class Bootstrapper {
             container.ReplaceSingleton(s => CreateAzureStorageQueue<MailMessage>(s, options));
             container.ReplaceSingleton(s => CreateAzureStorageQueue<WorkItemData>(s, options, workItemTimeout: TimeSpan.FromHours(1)));
         }
-        else if (String.Equals(options.Provider, "redis")) {
+        else if (String.Equals(options.Provider, "redis"))
+        {
             container.ReplaceSingleton(s => CreateRedisQueue<EventPost>(s, options, runMaintenanceTasks, retries: 1));
             container.ReplaceSingleton(s => CreateRedisQueue<EventUserDescription>(s, options, runMaintenanceTasks));
             container.ReplaceSingleton(s => CreateRedisQueue<EventNotification>(s, options, runMaintenanceTasks));
@@ -151,7 +167,8 @@ public class Bootstrapper {
             container.ReplaceSingleton(s => CreateRedisQueue<MailMessage>(s, options, runMaintenanceTasks));
             container.ReplaceSingleton(s => CreateRedisQueue<WorkItemData>(s, options, runMaintenanceTasks, workItemTimeout: TimeSpan.FromHours(1)));
         }
-        else if (String.Equals(options.Provider, "sqs")) {
+        else if (String.Equals(options.Provider, "sqs"))
+        {
             container.ReplaceSingleton(s => CreateSQSQueue<EventPost>(s, options, retries: 1));
             container.ReplaceSingleton(s => CreateSQSQueue<EventUserDescription>(s, options));
             container.ReplaceSingleton(s => CreateSQSQueue<EventNotification>(s, options));
@@ -161,39 +178,50 @@ public class Bootstrapper {
         }
     }
 
-    private static void RegisterStorage(IServiceCollection container, StorageOptions options) {
-        if (String.Equals(options.Provider, "aliyun")) {
-            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions {
+    private static void RegisterStorage(IServiceCollection container, StorageOptions options)
+    {
+        if (String.Equals(options.Provider, "aliyun"))
+        {
+            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
+            {
                 ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-        else if (String.Equals(options.Provider, "azurestorage")) {
-            container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions {
+        else if (String.Equals(options.Provider, "azurestorage"))
+        {
+            container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions
+            {
                 ConnectionString = options.ConnectionString,
                 ContainerName = $"{options.ScopePrefix}ex-events",
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-        else if (String.Equals(options.Provider, "folder")) {
+        else if (String.Equals(options.Provider, "folder"))
+        {
             string path = options.Data.GetString("path", "|DataDirectory|\\storage");
-            container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions {
+            container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions
+            {
                 Folder = PathHelper.ExpandPath(path),
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-        else if (String.Equals(options.Provider, "minio")) {
-            container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions {
+        else if (String.Equals(options.Provider, "minio"))
+        {
+            container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions
+            {
                 ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-        else if (String.Equals(options.Provider, "s3")) {
-            container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(new S3FileStorageOptions {
+        else if (String.Equals(options.Provider, "s3"))
+        {
+            container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(new S3FileStorageOptions
+            {
                 ConnectionString = options.ConnectionString,
                 Credentials = GetAWSCredentials(options.Data),
                 Region = GetAWSRegionEndpoint(options.Data),
@@ -204,8 +232,10 @@ public class Bootstrapper {
         }
     }
 
-    private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
-        return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T> {
+    private static IQueue<T> CreateAzureStorageQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class
+    {
+        return new AzureStorageQueue<T>(new AzureStorageQueueOptions<T>
+        {
             ConnectionString = options.ConnectionString,
             Name = GetQueueName<T>(options).ToLowerInvariant(),
             Retries = retries,
@@ -216,8 +246,10 @@ public class Bootstrapper {
         });
     }
 
-    private static IQueue<T> CreateRedisQueue<T>(IServiceProvider container, QueueOptions options, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
-        return new RedisQueue<T>(new RedisQueueOptions<T> {
+    private static IQueue<T> CreateRedisQueue<T>(IServiceProvider container, QueueOptions options, bool runMaintenanceTasks, int retries = 2, TimeSpan? workItemTimeout = null) where T : class
+    {
+        return new RedisQueue<T>(new RedisQueueOptions<T>
+        {
             ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
             Name = GetQueueName<T>(options),
             Retries = retries,
@@ -229,16 +261,20 @@ public class Bootstrapper {
         });
     }
 
-    private static RedisCacheClient CreateRedisCacheClient(IServiceProvider container) {
-        return new RedisCacheClient(new RedisCacheClientOptions {
+    private static RedisCacheClient CreateRedisCacheClient(IServiceProvider container)
+    {
+        return new RedisCacheClient(new RedisCacheClientOptions
+        {
             ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
             Serializer = container.GetRequiredService<ISerializer>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
     }
 
-    private static IQueue<T> CreateSQSQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class {
-        return new SQSQueue<T>(new SQSQueueOptions<T> {
+    private static IQueue<T> CreateSQSQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class
+    {
+        return new SQSQueue<T>(new SQSQueueOptions<T>
+        {
             Name = GetQueueName<T>(options),
             Credentials = GetAWSCredentials(options.Data),
             Region = GetAWSRegionEndpoint(options.Data),
@@ -251,16 +287,19 @@ public class Bootstrapper {
         });
     }
 
-    private static string GetQueueName<T>(QueueOptions options) {
+    private static string GetQueueName<T>(QueueOptions options)
+    {
         return String.Concat(options.ScopePrefix, typeof(T).Name);
     }
 
-    private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string> data) {
+    private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string> data)
+    {
         string region = data.GetString("region");
         return RegionEndpoint.GetBySystemName(String.IsNullOrEmpty(region) ? "us-east-1" : region);
     }
 
-    private static AWSCredentials GetAWSCredentials(IDictionary<string, string> data) {
+    private static AWSCredentials GetAWSCredentials(IDictionary<string, string> data)
+    {
         string accessKey = data.GetString("accesskey");
         string secretKey = data.GetString("secretkey");
         if (String.IsNullOrEmpty(accessKey)

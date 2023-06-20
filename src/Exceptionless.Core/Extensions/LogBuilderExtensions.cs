@@ -1,16 +1,19 @@
 ﻿namespace Microsoft.Extensions.Logging;
 
-public class ExceptionlessState : Dictionary<string, object> {
+public class ExceptionlessState : Dictionary<string, object>
+{
     public ExceptionlessState() { }
 
-    public ExceptionlessState Project(string projectId) {
+    public ExceptionlessState Project(string projectId)
+    {
         if (!String.IsNullOrEmpty(projectId))
             base["project"] = projectId;
 
         return this;
     }
 
-    public ExceptionlessState Organization(string organizationId) {
+    public ExceptionlessState Organization(string organizationId)
+    {
         if (!String.IsNullOrEmpty(organizationId))
             base["organization"] = organizationId;
 
@@ -21,7 +24,8 @@ public class ExceptionlessState : Dictionary<string, object> {
     /// Adds one or more tags to the event.
     /// </summary>
     /// <param name="tag">The tag to be added to the event.</param>
-    public ExceptionlessState Tag(string tag) {
+    public ExceptionlessState Tag(string tag)
+    {
         if (String.IsNullOrEmpty(tag))
             return this;
 
@@ -37,12 +41,14 @@ public class ExceptionlessState : Dictionary<string, object> {
         return this;
     }
 
-    public ExceptionlessState Value(decimal value) {
+    public ExceptionlessState Value(decimal value)
+    {
         base["@value"] = value;
         return this;
     }
 
-    public ExceptionlessState ManualStackingKey(string stackingKey) {
+    public ExceptionlessState ManualStackingKey(string stackingKey)
+    {
         if (!String.IsNullOrEmpty(stackingKey))
             base["@stack"] = stackingKey;
 
@@ -53,7 +59,8 @@ public class ExceptionlessState : Dictionary<string, object> {
     /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
     /// </summary>
     /// <param name="identity">The user's identity that the event happened to.</param>
-    public ExceptionlessState Identity(string identity) {
+    public ExceptionlessState Identity(string identity)
+    {
         return Identity(identity, null);
     }
 
@@ -62,7 +69,8 @@ public class ExceptionlessState : Dictionary<string, object> {
     /// </summary>
     /// <param name="identity">The user's identity that the event happened to.</param>
     /// <param name="name">The user's friendly name that the event happened to.</param>
-    public ExceptionlessState Identity(string identity, string name) {
+    public ExceptionlessState Identity(string identity, string name)
+    {
         if (String.IsNullOrWhiteSpace(identity) && String.IsNullOrWhiteSpace(name))
             return this;
 
@@ -70,7 +78,8 @@ public class ExceptionlessState : Dictionary<string, object> {
         return this;
     }
 
-    public ExceptionlessState Property(string key, object value) {
+    public ExceptionlessState Property(string key, object value)
+    {
         base[key] = value;
         return this;
     }
@@ -79,14 +88,16 @@ public class ExceptionlessState : Dictionary<string, object> {
     /// Marks the event as being a unhandled occurrence and sets the submission method.
     /// </summary>
     /// <param name="submissionMethod">The submission method.</param>
-    public ExceptionlessState MarkUnhandled(string submissionMethod = null) {
+    public ExceptionlessState MarkUnhandled(string submissionMethod = null)
+    {
         return MarkAsUnhandledError().SetSubmissionMethod(submissionMethod);
     }
 
     /// <summary>
     /// Marks the event as being a unhandled error occurrence.
     /// </summary>
-    public ExceptionlessState MarkAsUnhandledError() {
+    public ExceptionlessState MarkAsUnhandledError()
+    {
         base[IsUnhandledError] = true;
         return this;
     }
@@ -94,7 +105,8 @@ public class ExceptionlessState : Dictionary<string, object> {
     /// <summary>
     /// Sets the submission method that created the event (E.G., UnobservedTaskException)
     /// </summary>
-    public ExceptionlessState SetSubmissionMethod(string submissionMethod) {
+    public ExceptionlessState SetSubmissionMethod(string submissionMethod)
+    {
         base[SubmissionMethod] = submissionMethod;
         return this;
     }

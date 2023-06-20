@@ -2,8 +2,10 @@
 
 namespace Exceptionless.Core.Models.Data;
 
-public class Error : InnerError {
-    public Error() {
+public class Error : InnerError
+{
+    public Error()
+    {
         Modules = new ModuleCollection();
     }
 
@@ -12,16 +14,19 @@ public class Error : InnerError {
     /// </summary>
     public ModuleCollection Modules { get; set; }
 
-    public static class KnownDataKeys {
+    public static class KnownDataKeys
+    {
         public const string ExtraProperties = "@ext";
         public const string TargetInfo = "@target";
     }
 
-    protected bool Equals(Error other) {
+    protected bool Equals(Error other)
+    {
         return base.Equals(other) && Modules.CollectionEquals(other.Modules);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -31,8 +36,10 @@ public class Error : InnerError {
         return Equals((Error)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             return (base.GetHashCode() * 397) ^ (Modules?.GetCollectionHashCode() ?? 0);
         }
     }

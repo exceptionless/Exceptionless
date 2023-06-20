@@ -16,7 +16,8 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Jobs;
 
-public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
+public class CloseInactiveSessionsJobTests : IntegrationTestsBase
+{
     private readonly CloseInactiveSessionsJob _job;
     private readonly ICacheClient _cache;
     private readonly IOrganizationRepository _organizationRepository;
@@ -27,7 +28,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public CloseInactiveSessionsJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public CloseInactiveSessionsJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _job = GetService<CloseInactiveSessionsJob>();
         _cache = GetService<ICacheClient>();
         _organizationRepository = GetService<IOrganizationRepository>();
@@ -39,13 +41,15 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
         _plans = GetService<BillingPlans>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         await CreateDataAsync();
     }
 
     [Fact]
-    public async Task CloseDuplicateIdentitySessions() {
+    public async Task CloseDuplicateIdentitySessions()
+    {
         const string userId = "blake@exceptionless.io";
         var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
         var event2 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId, sessionId: "123456789");
@@ -79,7 +83,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat() {
+    public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat()
+    {
         const string userId = "blake@exceptionless.io";
         const string sessionId = "123456789";
         var event1 = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
@@ -120,7 +125,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
     [InlineData(1, false, 50, false)]
     [InlineData(1, true, 50, true)]
     [InlineData(60, false, null, false)]
-    public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession) {
+    public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession)
+    {
         const string userId = "blake@exceptionless.io";
         var ev = GenerateEvent(SystemClock.OffsetNow.SubtractMinutes(5), userId);
 
@@ -138,7 +144,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
         Assert.False(sessionStart.HasSessionEndTime());
 
         var utcNow = SystemClock.UtcNow;
-        if (sessionHeartbeatUpdatedAgoInSeconds.HasValue) {
+        if (sessionHeartbeatUpdatedAgoInSeconds.HasValue)
+        {
             await _cache.SetAsync($"Project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
             if (heartbeatClosesSession)
                 await _cache.SetAsync($"Project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}-close", true);
@@ -152,18 +159,22 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
 
         sessionStart = events.Documents.First(e => e.IsSessionStart());
         decimal sessionStartDuration = (decimal)(sessionHeartbeatUpdatedAgoInSeconds.HasValue ? (utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value) - sessionStart.Date.UtcDateTime).TotalSeconds : 0);
-        if (willCloseSession) {
+        if (willCloseSession)
+        {
             Assert.Equal(sessionStartDuration, sessionStart.Value);
             Assert.True(sessionStart.HasSessionEndTime());
         }
-        else {
+        else
+        {
             Assert.Equal(sessionStartDuration, sessionStart.Value);
             Assert.False(sessionStart.HasSessionEndTime());
         }
     }
 
-    private async Task CreateDataAsync(BillingPlan plan = null) {
-        foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans)) {
+    private async Task CreateDataAsync(BillingPlan plan = null)
+    {
+        foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
+        {
             if (plan is not null)
                 _billingManager.ApplyBillingPlan(organization, plan, UserData.GenerateSampleUser());
             else if (organization.Id == TestConstants.OrganizationId3)
@@ -171,7 +182,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
             else
                 _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
 
-            if (organization.BillingPrice > 0) {
+            if (organization.BillingPrice > 0)
+            {
                 organization.StripeCustomerId = "stripe_customer_id";
                 organization.CardLast4 = "1234";
                 organization.SubscribeDate = SystemClock.UtcNow;
@@ -179,7 +191,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
                 organization.BillingChangedByUserId = TestConstants.UserId;
             }
 
-            if (organization.IsSuspended) {
+            if (organization.IsSuspended)
+            {
                 organization.SuspendedByUserId = TestConstants.UserId;
                 organization.SuspensionCode = SuspensionCode.Billing;
                 organization.SuspensionDate = SystemClock.UtcNow;
@@ -190,8 +203,10 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
 
         await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
 
-        foreach (var user in UserData.GenerateSampleUsers()) {
-            if (user.Id == TestConstants.UserId) {
+        foreach (var user in UserData.GenerateSampleUsers())
+        {
+            if (user.Id == TestConstants.UserId)
+            {
                 user.OrganizationIds.Add(TestConstants.OrganizationId2);
                 user.OrganizationIds.Add(TestConstants.OrganizationId3);
             }
@@ -205,7 +220,8 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase {
         await RefreshDataAsync();
     }
 
-    private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null) {
+    private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string sessionId = null)
+    {
         occurrenceDate ??= SystemClock.OffsetNow;
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
     }

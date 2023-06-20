@@ -1,21 +1,24 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(99)]
-public sealed class DefaultFormattingPlugin : FormattingPluginBase {
+public sealed class DefaultFormattingPlugin : FormattingPluginBase
+{
     public DefaultFormattingPlugin(AppOptions options) : base(options) { }
 
-    public override string GetStackTitle(PersistentEvent ev) {
+    public override string GetStackTitle(PersistentEvent ev)
+    {
         if (String.IsNullOrWhiteSpace(ev.Message) && ev.IsError())
             return "Unknown Error";
 
         return ev.Message ?? ev.Source ?? $"{ev.Type} Event".TrimStart();
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack) {
+    public override SummaryData GetStackSummaryData(Stack stack)
+    {
         var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
         if (stack.SignatureInfo.TryGetValue("Source", out string value))
@@ -24,7 +27,8 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "stack-summary", Data = data };
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         var data = new Dictionary<string, object> {
                 { "Message", GetStackTitle(ev) },
                 { "Source", ev.Source },
@@ -36,7 +40,8 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "event-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    {
         string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
             return null;
@@ -65,7 +70,8 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase {
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    {
         string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
             return null;
@@ -88,7 +94,8 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase {
 
         AddDefaultSlackFields(ev, attachment.Fields);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, messageOrSource.Truncate(120))}*";
-        return new SlackMessage(subject) {
+        return new SlackMessage(subject)
+        {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }
         };
     }

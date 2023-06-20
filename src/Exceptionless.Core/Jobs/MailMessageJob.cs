@@ -8,21 +8,26 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Sends queued email messages.", InitialDelay = "5s")]
-public class MailMessageJob : QueueJobBase<MailMessage> {
+public class MailMessageJob : QueueJobBase<MailMessage>
+{
     private readonly IMailSender _mailSender;
 
-    public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+    public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory)
+    {
         _mailSender = mailSender;
     }
 
-    protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context) {
+    protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context)
+    {
         _logger.LogTrace("Processing message {Id}.", context.QueueEntry.Id);
 
-        try {
+        try
+        {
             await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
             _logger.LogInformation("Sent message: to={To} subject={Subject}", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             return JobResult.FromException(ex);
         }
 

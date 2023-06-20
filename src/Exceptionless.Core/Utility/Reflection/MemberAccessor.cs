@@ -5,7 +5,8 @@ namespace Exceptionless.Core.Reflection;
 /// <summary>
 /// A base class for member accessors.
 /// </summary>
-internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAccessor> {
+internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAccessor>
+{
     /// <summary>
     /// Gets the type of the member.
     /// </summary>
@@ -54,7 +55,8 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// <returns>
     /// 	<c>true</c> if the specified <see cref="IMemberAccessor"/> is equal to this instance; otherwise, <c>false</c>.
     /// </returns>
-    public bool Equals(IMemberAccessor other) {
+    public bool Equals(IMemberAccessor other)
+    {
         if (other is null)
             return false;
         if (ReferenceEquals(this, other))
@@ -70,7 +72,8 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// <returns>
     /// 	<c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.
     /// </returns>
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -87,7 +90,8 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// <returns>
     /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
     /// </returns>
-    public override int GetHashCode() {
+    public override int GetHashCode()
+    {
         return MemberInfo.GetHashCode();
     }
 }

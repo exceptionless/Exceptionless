@@ -4,7 +4,8 @@ using FluentRest;
 
 namespace Exceptionless.Tests.Utility;
 
-public class AppSendBuilder : PostBuilder<AppSendBuilder> {
+public class AppSendBuilder : PostBuilder<AppSendBuilder>
+{
     internal static readonly HttpMethod HttpPatch = new HttpMethod("PATCH");
 
     public AppSendBuilder(HttpRequestMessage request) : base(request) { }
@@ -15,7 +16,8 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder> {
     /// <param name="method">The header request method.</param>
     /// <returns>A fluent request builder.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="method" /> is <see langword="null" />.</exception>
-    public AppSendBuilder Method(HttpMethod method) {
+    public AppSendBuilder Method(HttpMethod method)
+    {
         RequestMessage.Method = method ?? throw new ArgumentNullException(nameof(method));
         return this;
     }
@@ -24,7 +26,8 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder> {
     /// Sets HTTP request method to POST.
     /// </summary>
     /// <returns>A fluent request builder.</returns>
-    public AppSendBuilder Post() {
+    public AppSendBuilder Post()
+    {
         return Method(HttpMethod.Post);
     }
 
@@ -32,7 +35,8 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder> {
     /// Sets HTTP request method to PUT.
     /// </summary>
     /// <returns>A fluent request builder.</returns>
-    public AppSendBuilder Put() {
+    public AppSendBuilder Put()
+    {
         return Method(HttpMethod.Put);
     }
 
@@ -40,7 +44,8 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder> {
     /// Sets HTTP request method to PATCH.
     /// </summary>
     /// <returns>A fluent request builder.</returns>
-    public AppSendBuilder Patch() {
+    public AppSendBuilder Patch()
+    {
         return Method(HttpPatch);
     }
 
@@ -48,37 +53,45 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder> {
     /// Sets HTTP request method to DELETE.
     /// </summary>
     /// <returns>A fluent request builder.</returns>
-    public AppSendBuilder Delete() {
+    public AppSendBuilder Delete()
+    {
         return Method(HttpMethod.Delete);
     }
 
-    public AppSendBuilder AsGlobalAdminUser() {
+    public AppSendBuilder AsGlobalAdminUser()
+    {
         return this.BasicAuthorization(SampleDataService.TEST_USER_EMAIL, SampleDataService.TEST_USER_PASSWORD);
     }
 
-    public AppSendBuilder AsTestOrganizationUser() {
+    public AppSendBuilder AsTestOrganizationUser()
+    {
         return this.BasicAuthorization(SampleDataService.TEST_ORG_USER_EMAIL, SampleDataService.TEST_ORG_USER_PASSWORD);
     }
 
-    public AppSendBuilder AsFreeOrganizationUser() {
+    public AppSendBuilder AsFreeOrganizationUser()
+    {
         return this.BasicAuthorization(SampleDataService.FREE_USER_EMAIL, SampleDataService.FREE_USER_PASSWORD);
     }
 
-    public AppSendBuilder AsTestOrganizationClientUser() {
+    public AppSendBuilder AsTestOrganizationClientUser()
+    {
         return this.BearerToken(SampleDataService.TEST_API_KEY);
     }
 
-    public AppSendBuilder AsFreeOrganizationClientUser() {
+    public AppSendBuilder AsFreeOrganizationClientUser()
+    {
         return this.BearerToken(SampleDataService.FREE_API_KEY);
     }
 
     public bool IsAnonymous { get; private set; }
-    public AppSendBuilder AsAnonymousUser() {
+    public AppSendBuilder AsAnonymousUser()
+    {
         IsAnonymous = true;
         return this;
     }
 
-    public AppSendBuilder ExpectedStatus(HttpStatusCode statusCode) {
+    public AppSendBuilder ExpectedStatus(HttpStatusCode statusCode)
+    {
         RequestMessage.Options.Set(ExpectedStatusKey, statusCode);
         return this;
     }

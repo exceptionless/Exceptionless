@@ -7,10 +7,12 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
-public sealed class EventParserTests : TestWithServices {
+public sealed class EventParserTests : TestWithServices
+{
     private readonly EventParserPluginManager _parser;
 
-    public EventParserTests(ITestOutputHelper output) : base(output) {
+    public EventParserTests(ITestOutputHelper output) : base(output)
+    {
         _parser = GetService<EventParserPluginManager>();
     }
 
@@ -30,10 +32,12 @@ public sealed class EventParserTests : TestWithServices {
 
     [Theory]
     [MemberData(nameof(EventData))]
-    public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
+    public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType)
+    {
         var events = _parser.ParseEvents(input, 2, "exceptionless/2.0.0.0");
         Assert.Equal(expectedEvents, events.Count);
-        for (int index = 0; index < events.Count; index++) {
+        for (int index = 0; index < events.Count; index++)
+        {
             var ev = events[index];
             Assert.Equal(expectedMessage[index], ev.Message);
             Assert.Equal(expectedType, ev.Type);
@@ -43,7 +47,8 @@ public sealed class EventParserTests : TestWithServices {
 
     [Theory]
     [MemberData(nameof(Events))]
-    public void VerifyEventParserSerialization(string eventsFilePath) {
+    public void VerifyEventParserSerialization(string eventsFilePath)
+    {
         string json = File.ReadAllText(eventsFilePath);
 
         var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
@@ -55,15 +60,18 @@ public sealed class EventParserTests : TestWithServices {
 
     [Theory]
     [MemberData(nameof(Events))]
-    public void CanDeserializeEvents(string eventsFilePath) {
+    public void CanDeserializeEvents(string eventsFilePath)
+    {
         string json = File.ReadAllText(eventsFilePath);
 
         var ev = json.FromJson<PersistentEvent>(GetService<JsonSerializerSettings>());
         Assert.NotNull(ev);
     }
 
-    public static IEnumerable<object[]> Events {
-        get {
+    public static IEnumerable<object[]> Events
+    {
+        get
+        {
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                 if (!file.EndsWith("summary.json"))

@@ -15,7 +15,8 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Stats;
 
-public sealed class AggregationTests : IntegrationTestsBase {
+public sealed class AggregationTests : IntegrationTestsBase
+{
     private readonly EventPipeline _pipeline;
     private readonly IEventRepository _eventRepository;
     private readonly IStackRepository _stackRepository;
@@ -25,7 +26,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public AggregationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public AggregationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _pipeline = GetService<EventPipeline>();
         _eventRepository = GetService<IEventRepository>();
         _stackRepository = GetService<IStackRepository>();
@@ -37,7 +39,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetCardinalityAggregationsAsync() {
+    public async Task CanGetCardinalityAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -49,7 +52,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetDateHistogramWithCardinalityAggregationsAsync() {
+    public async Task CanGetDateHistogramWithCardinalityAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -62,7 +66,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
         Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault()));
 
         var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageLimit(100));
-        foreach (var stack in stacks.Documents) {
+        foreach (var stack in stacks.Documents)
+        {
             var stackResult = await _eventRepository.CountAsync(q => q.FilterExpression($"stack:{stack.Id}").AggregationsExpression("cardinality:id"));
             Assert.Equal(stack.TotalOccurrences, stackResult.Total);
             Assert.Equal(stack.TotalOccurrences, stackResult.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
@@ -70,7 +75,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetExcludedTermsAggregationsAsync() {
+    public async Task CanGetExcludedTermsAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -81,7 +87,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetNumericAggregationsAsync() {
+    public async Task CanGetNumericAggregationsAsync()
+    {
         await CreateDataAsync(0, false);
 
         decimal?[] values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
@@ -101,7 +108,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetTagTermAggregationsAsync() {
+    public async Task CanGetTagTermAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -116,7 +124,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetVersionTermAggregationsAsync() {
+    public async Task CanGetVersionTermAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -128,7 +137,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetStackIdTermAggregationsAsync() {
+    public async Task CanGetStackIdTermAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -139,13 +149,15 @@ public sealed class AggregationTests : IntegrationTestsBase {
 
         var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
         Assert.Equal(eventCount, termsAggregation.Buckets.Sum(b1 => b1.Total.GetValueOrDefault()) + (long)termsAggregation.Data["SumOtherDocCount"]);
-        foreach (var term in termsAggregation.Buckets) {
+        foreach (var term in termsAggregation.Buckets)
+        {
             Assert.Equal(1, term.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.Sum(b => b.Total.GetValueOrDefault()));
         }
     }
 
     [Fact]
-    public async Task CanGetStackIdTermMinMaxAggregationsAsync() {
+    public async Task CanGetStackIdTermMinMaxAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -169,7 +181,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetProjectTermAggregationsAsync() {
+    public async Task CanGetProjectTermAggregationsAsync()
+    {
         const int eventCount = 100;
         await CreateDataAsync(eventCount);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -181,7 +194,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetSessionAggregationsAsync() {
+    public async Task CanGetSessionAggregationsAsync()
+    {
         await CreateDataAsync();
         await CreateSessionEventsAsync();
 
@@ -191,7 +205,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
         Assert.Equal(3600.0 / result.Total, result.Aggregations.Average("avg_value").Value.GetValueOrDefault());
     }
 
-    private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true) {
+    private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true)
+    {
         var orgs = OrganizationData.GenerateSampleOrganizations(_billingManager, _plans);
         await _organizationRepository.AddAsync(orgs, o => o.Cache());
 
@@ -203,7 +218,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
             await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
     }
 
-    private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1) {
+    private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1)
+    {
         var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(3), endDate: SystemClock.OffsetUtcNow, value: value);
         foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
             await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -212,7 +228,8 @@ public sealed class AggregationTests : IntegrationTestsBase {
         await RefreshDataAsync();
     }
 
-    private async Task<List<PersistentEvent>> CreateSessionEventsAsync() {
+    private async Task<List<PersistentEvent>> CreateSessionEventsAsync()
+    {
         var startDate = SystemClock.OffsetUtcNow.SubtractHours(1);
         var events = new List<PersistentEvent> {
                 EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),

@@ -1,14 +1,15 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
 [Priority(40)]
-public sealed class RequestInfoPlugin : EventProcessorPluginBase {
+public sealed class RequestInfoPlugin : EventProcessorPluginBase
+{
     public const int MAX_VALUE_LENGTH = 1000;
     public static readonly List<string> DefaultExclusions = new List<string> {
             "*VIEWSTATE*",
@@ -23,23 +24,28 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase {
 
     private readonly UserAgentParser _parser;
 
-    public RequestInfoPlugin(UserAgentParser parser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public RequestInfoPlugin(UserAgentParser parser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    {
         _parser = parser;
     }
 
-    public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts) {
+    public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
+    {
         var project = contexts.First().Project;
         var exclusions = DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList();
-        foreach (var context in contexts) {
+        foreach (var context in contexts)
+        {
             var request = context.Event.GetRequestInfo();
             if (request == null)
                 continue;
 
-            if (context.IncludePrivateInformation) {
+            if (context.IncludePrivateInformation)
+            {
                 var submissionClient = context.Event.GetSubmissionClient();
                 AddClientIpAddress(request, submissionClient);
             }
-            else {
+            else
+            {
                 request.ClientIpAddress = null;
                 request.Cookies?.Clear();
                 request.PostData = null;
@@ -51,13 +57,15 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase {
         }
     }
 
-    private void AddClientIpAddress(RequestInfo request, SubmissionClient submissionClient) {
+    private void AddClientIpAddress(RequestInfo request, SubmissionClient submissionClient)
+    {
         var ips = (request.ClientIpAddress ?? String.Empty)
             .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
             .Select(ip => ip.Trim())
             .ToList();
 
-        if (!String.IsNullOrEmpty(submissionClient?.IpAddress) && submissionClient.IsJavaScriptClient()) {
+        if (!String.IsNullOrEmpty(submissionClient?.IpAddress) && submissionClient.IsJavaScriptClient())
+        {
             bool requestIpIsLocal = submissionClient.IpAddress.IsLocalHost();
             if (ips.Count == 0 || !requestIpIsLocal && ips.Count(ip => !ip.IsLocalHost()) == 0)
                 ips.Add(submissionClient.IpAddress);
@@ -66,12 +74,16 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase {
         request.ClientIpAddress = ips.Distinct().ToDelimitedString();
     }
 
-    private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context) {
+    private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context)
+    {
         var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
-        if (info != null) {
-            if (!String.Equals(info.UA.Family, "Other")) {
+        if (info != null)
+        {
+            if (!String.Equals(info.UA.Family, "Other"))
+            {
                 request.Data[RequestInfo.KnownDataKeys.Browser] = info.UA.Family;
-                if (!String.IsNullOrEmpty(info.UA.Major)) {
+                if (!String.IsNullOrEmpty(info.UA.Major))
+                {
                     request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UA.Major, info.UA.Minor, info.UA.Patch }.Where(v => !String.IsNullOrEmpty(v)));
                     request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UA.Major;
                 }
@@ -80,9 +92,11 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase {
             if (!String.Equals(info.Device.Family, "Other"))
                 request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
 
-            if (!String.Equals(info.OS.Family, "Other")) {
+            if (!String.Equals(info.OS.Family, "Other"))
+            {
                 request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
-                if (!String.IsNullOrEmpty(info.OS.Major)) {
+                if (!String.IsNullOrEmpty(info.OS.Major))
+                {
                     request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new[] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
                     request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
                 }

@@ -3,8 +3,10 @@ using Exceptionless.Web.Utility;
 
 namespace Exceptionless.Web.Extensions;
 
-public static class DeltaExtensions {
-    public static bool ContainsChangedProperty<T>(this Delta<T> value, Expression<Func<T, object>> action) where T : class, new() {
+public static class DeltaExtensions
+{
+    public static bool ContainsChangedProperty<T>(this Delta<T> value, Expression<Func<T, object>> action) where T : class, new()
+    {
         if (!value.GetChangedPropertyNames().Any())
             return false;
 

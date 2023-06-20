@@ -11,28 +11,33 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Update stack statuses", InitialDelay = "10s", Interval = "30s")]
-public class StackStatusJob : JobWithLockBase, IHealthCheck {
+public class StackStatusJob : JobWithLockBase, IHealthCheck
+{
     private readonly IStackRepository _stackRepository;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _stackRepository = stackRepository;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(10));
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    {
         return _lockProvider.AcquireAsync(nameof(StackStatusJob), TimeSpan.FromSeconds(10), new CancellationToken(true));
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         const int LIMIT = 100;
         _lastRun = SystemClock.UtcNow;
         _logger.LogTrace("Start save stack event counts.");
 
         // Get list of stacks where snooze has expired
         var results = await _stackRepository.GetExpiredSnoozedStatuses(SystemClock.UtcNow, o => o.PageLimit(LIMIT)).AnyContext();
-        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
+        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
             foreach (var stack in results.Documents)
                 stack.MarkOpen();
 
@@ -52,7 +57,8 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck {
         return JobResult.Success;
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

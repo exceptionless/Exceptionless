@@ -23,7 +23,8 @@ namespace Exceptionless.Web.Controllers;
 [Route(API_PREFIX + "/admin")]
 [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
 [ApiExplorerSettings(IgnoreApi = true)]
-public class AdminController : ExceptionlessApiController {
+public class AdminController : ExceptionlessApiController
+{
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IFileStorage _fileStorage;
     private readonly IMessagePublisher _messagePublisher;
@@ -43,7 +44,8 @@ public class AdminController : ExceptionlessApiController {
         IQueue<WorkItemData> workItemQueue,
         AppOptions appOptions,
         BillingManager billingManager,
-        BillingPlans plans) {
+        BillingPlans plans)
+    {
         _configuration = configuration;
         _fileStorage = fileStorage;
         _messagePublisher = messagePublisher;
@@ -56,27 +58,32 @@ public class AdminController : ExceptionlessApiController {
     }
 
     [HttpGet("settings")]
-    public ActionResult SettingsRequest() {
+    public ActionResult SettingsRequest()
+    {
         return Ok(_appOptions);
     }
 
     [HttpGet("echo")]
-    public ActionResult EchoRequest() {
-        return Ok(new {
+    public ActionResult EchoRequest()
+    {
+        return Ok(new
+        {
             Request.Headers,
             IpAddress = Request.GetClientIpAddress()
         });
     }
 
     [HttpGet("assemblies")]
-    public ActionResult<IReadOnlyCollection<AssemblyDetail>> Assemblies() {
+    public ActionResult<IReadOnlyCollection<AssemblyDetail>> Assemblies()
+    {
         var details = AssemblyDetail.ExtractAll();
         return Ok(details);
     }
 
     [Consumes("application/json")]
     [HttpPost("change-plan")]
-    public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId) {
+    public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId)
+    {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -93,7 +100,8 @@ public class AdminController : ExceptionlessApiController {
         _billingManager.ApplyBillingPlan(organization, plan, CurrentUser, false);
 
         await _organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
-        await _messagePublisher.PublishAsync(new PlanChanged {
+        await _messagePublisher.PublishAsync(new PlanChanged
+        {
             OrganizationId = organization.Id
         });
 
@@ -102,7 +110,8 @@ public class AdminController : ExceptionlessApiController {
 
     [Consumes("application/json")]
     [HttpPost("set-bonus")]
-    public async Task<IActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null) {
+    public async Task<IActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null)
+    {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -117,12 +126,14 @@ public class AdminController : ExceptionlessApiController {
     }
 
     [HttpGet("requeue")]
-    public async Task<IActionResult> RequeueAsync(string path = null, bool archive = false) {
+    public async Task<IActionResult> RequeueAsync(string path = null, bool archive = false)
+    {
         if (String.IsNullOrEmpty(path))
             path = @"q\*";
 
         int enqueued = 0;
-        foreach (var file in await _fileStorage.GetFileListAsync(path)) {
+        foreach (var file in await _fileStorage.GetFileListAsync(path))
+        {
             await _eventPostQueue.EnqueueAsync(new EventPost(_appOptions.EnableArchive && archive) { FilePath = file.Path });
             enqueued++;
         }
@@ -131,8 +142,10 @@ public class AdminController : ExceptionlessApiController {
     }
 
     [HttpGet("maintenance/{name:minlength(1)}")]
-    public async Task<IActionResult> RunJobAsync(string name) {
-        switch (name.ToLowerInvariant()) {
+    public async Task<IActionResult> RunJobAsync(string name)
+    {
+        switch (name.ToLowerInvariant())
+        {
             case "indexes":
                 if (!_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
                     await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);

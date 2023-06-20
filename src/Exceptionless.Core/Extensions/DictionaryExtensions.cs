@@ -2,14 +2,18 @@
 
 namespace Exceptionless.Core.Extensions;
 
-public static class DictionaryExtensions {
-    public static void Trim(this HashSet<string> items, Predicate<string> itemsToRemove, Predicate<string> itemsToAlwaysInclude, int maxLength) {
+public static class DictionaryExtensions
+{
+    public static void Trim(this HashSet<string> items, Predicate<string> itemsToRemove, Predicate<string> itemsToAlwaysInclude, int maxLength)
+    {
         if (items == null)
             return;
 
         items.RemoveWhere(itemsToRemove);
-        if (maxLength > 0 && items.Count > maxLength) {
-            foreach (string item in items.ToList()) {
+        if (maxLength > 0 && items.Count > maxLength)
+        {
+            foreach (string item in items.ToList())
+            {
                 if (items.Count <= maxLength)
                     break;
 
@@ -21,7 +25,8 @@ public static class DictionaryExtensions {
         }
     }
 
-    public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string value) {
+    public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string value)
+    {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
@@ -32,43 +37,51 @@ public static class DictionaryExtensions {
     /// <summary>
     /// Adds or overwrites the existing value.
     /// </summary>
-    public static void AddOrUpdate<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue value) {
+    public static void AddOrUpdate<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+    {
         dictionary.AddOrUpdate(key, value, (oldkey, oldvalue) => value);
     }
 
-    public static bool ContainsKeyWithValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, params TValue[] values) {
+    public static bool ContainsKeyWithValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, params TValue[] values)
+    {
         if (dictionary == null || values == null || values.Length == 0)
             return false;
 
         TValue temp;
-        try {
+        try
+        {
             if (!dictionary.TryGetValue(key, out temp))
                 return false;
         }
-        catch (ArgumentNullException) {
+        catch (ArgumentNullException)
+        {
             return false;
         }
 
         return values.Any(v => v.Equals(temp));
     }
 
-    public static TValue TryGetAndReturn<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
+    public static TValue TryGetAndReturn<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+    {
         if (!dictionary.TryGetValue(key, out var value))
             value = default;
 
         return value;
     }
 
-    public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) {
+    public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+    {
         dictionary.TryGetValue(key, out var obj);
         return obj;
     }
 
-    public static bool CollectionEquals<TValue>(this IDictionary<string, TValue> source, IDictionary<string, TValue> other) {
+    public static bool CollectionEquals<TValue>(this IDictionary<string, TValue> source, IDictionary<string, TValue> other)
+    {
         if (source.Count != other.Count)
             return false;
 
-        foreach (string key in source.Keys) {
+        foreach (string key in source.Keys)
+        {
             var sourceValue = source[key];
 
             if (!other.TryGetValue(key, out var otherValue))
@@ -82,18 +95,21 @@ public static class DictionaryExtensions {
     }
 
 
-    public static int GetCollectionHashCode<TValue>(this IDictionary<string, TValue> source, IList<string> exclusions = null) {
+    public static int GetCollectionHashCode<TValue>(this IDictionary<string, TValue> source, IList<string> exclusions = null)
+    {
         string assemblyQualifiedName = typeof(TValue).AssemblyQualifiedName;
         int hashCode = assemblyQualifiedName?.GetHashCode() ?? 0;
 
         var keyValuePairHashes = new List<int>(source.Keys.Count);
 
-        foreach (string key in source.Keys.OrderBy(x => x)) {
+        foreach (string key in source.Keys.OrderBy(x => x))
+        {
             if (exclusions != null && exclusions.Contains(key))
                 continue;
 
             var item = source[key];
-            unchecked {
+            unchecked
+            {
                 int kvpHash = key.GetHashCode();
                 kvpHash = (kvpHash * 397) ^ item.GetHashCode();
                 keyValuePairHashes.Add(kvpHash);
@@ -101,8 +117,10 @@ public static class DictionaryExtensions {
         }
 
         keyValuePairHashes.Sort();
-        foreach (int kvpHash in keyValuePairHashes) {
-            unchecked {
+        foreach (int kvpHash in keyValuePairHashes)
+        {
+            unchecked
+            {
                 hashCode = (hashCode * 397) ^ kvpHash;
             }
         }
@@ -110,7 +128,8 @@ public static class DictionaryExtensions {
         return hashCode;
     }
 
-    public static T GetValueOrDefault<T>(this IDictionary<string, string> source, string key, T defaultValue = default) {
+    public static T GetValueOrDefault<T>(this IDictionary<string, string> source, string key, T defaultValue = default)
+    {
         if (!source.ContainsKey(key))
             return defaultValue;
 
@@ -121,7 +140,8 @@ public static class DictionaryExtensions {
         if (data == null)
             return defaultValue;
 
-        try {
+        try
+        {
             return data.ToType<T>();
         }
         catch { }
@@ -129,11 +149,13 @@ public static class DictionaryExtensions {
         return defaultValue;
     }
 
-    public static string GetString(this IDictionary<string, string> source, string name) {
+    public static string GetString(this IDictionary<string, string> source, string name)
+    {
         return source.GetString(name, String.Empty);
     }
 
-    public static string GetString(this IDictionary<string, string> source, string name, string @default) {
+    public static string GetString(this IDictionary<string, string> source, string name, string @default)
+    {
         if (!source.TryGetValue(name, out string value))
             return @default;
 

@@ -5,7 +5,8 @@ namespace Exceptionless.Core.Reflection;
 /// <summary>
 /// An accessor class for <see cref="FieldInfo"/>.
 /// </summary>
-internal class FieldAccessor : MemberAccessor {
+internal class FieldAccessor : MemberAccessor
+{
     private readonly FieldInfo _fieldInfo;
     private readonly string _name;
     private readonly bool _hasGetter;
@@ -18,7 +19,8 @@ internal class FieldAccessor : MemberAccessor {
     /// Initializes a new instance of the <see cref="FieldAccessor"/> class.
     /// </summary>
     /// <param name="fieldInfo">The <see cref="FieldInfo"/> instance to use for this accessor.</param>
-    public FieldAccessor(FieldInfo fieldInfo) {
+    public FieldAccessor(FieldInfo fieldInfo)
+    {
         _fieldInfo = fieldInfo;
         _name = fieldInfo.Name;
         _memberType = fieldInfo.FieldType;
@@ -68,7 +70,8 @@ internal class FieldAccessor : MemberAccessor {
     /// <returns>
     /// The member value for the instance parameter.
     /// </returns>
-    public override object GetValue(object instance) {
+    public override object GetValue(object instance)
+    {
         if (_lateBoundGet == null || !HasGetter)
             throw new InvalidOperationException($"Field '{Name}' does not have a getter.");
 
@@ -84,7 +87,8 @@ internal class FieldAccessor : MemberAccessor {
     /// </summary>
     /// <param name="instance">The object whose member value will be set.</param>
     /// <param name="value">The new value for this member.</param>
-    public override void SetValue(object instance, object value) {
+    public override void SetValue(object instance, object value)
+    {
         if (_lateBoundSet == null || !HasSetter)
             throw new InvalidOperationException($"Field '{Name}' does not have a setter.");
 

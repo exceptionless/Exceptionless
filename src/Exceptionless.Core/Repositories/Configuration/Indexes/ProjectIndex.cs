@@ -5,16 +5,19 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class ProjectIndex : VersionedIndex<Project> {
+public sealed class ProjectIndex : VersionedIndex<Project>
+{
     internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public ProjectIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "projects", 2) {
+    public ProjectIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "projects", 2)
+    {
         _configuration = configuration;
     }
 
 
-    public override TypeMappingDescriptor<Project> ConfigureIndexMapping(TypeMappingDescriptor<Project> map) {
+    public override TypeMappingDescriptor<Project> ConfigureIndexMapping(TypeMappingDescriptor<Project> map)
+    {
         return map
             .Dynamic(false)
             .Properties(p => p
@@ -27,7 +30,8 @@ public sealed class ProjectIndex : VersionedIndex<Project> {
             );
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    {
         return base.ConfigureIndex(idx.Settings(s => s
             .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
@@ -36,8 +40,10 @@ public sealed class ProjectIndex : VersionedIndex<Project> {
     }
 }
 
-internal static class ProjectIndexExtensions {
-    public static PropertiesDescriptor<Project> AddUsageMappings(this PropertiesDescriptor<Project> descriptor) {
+internal static class ProjectIndexExtensions
+{
+    public static PropertiesDescriptor<Project> AddUsageMappings(this PropertiesDescriptor<Project> descriptor)
+    {
         return descriptor
             .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(p => p
                 .Date(fu => fu.Name(i => i.Date))

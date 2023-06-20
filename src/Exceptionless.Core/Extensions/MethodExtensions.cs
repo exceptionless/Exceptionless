@@ -3,8 +3,10 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class MethodExtensions {
-    public static string GetFullName(this Method method) {
+public static class MethodExtensions
+{
+    public static string GetFullName(this Method method)
+    {
         if (method == null)
             return null;
 
@@ -13,7 +15,8 @@ public static class MethodExtensions {
         return sb.ToString();
     }
 
-    public static string GetSignature(this Method method) {
+    public static string GetSignature(this Method method)
+    {
         if (method == null)
             return null;
 
@@ -22,8 +25,10 @@ public static class MethodExtensions {
         return sb.ToString();
     }
 
-    internal static void AppendMethod(Method method, StringBuilder sb, bool includeParameters = true) {
-        if (String.IsNullOrEmpty(method?.Name)) {
+    internal static void AppendMethod(Method method, StringBuilder sb, bool includeParameters = true)
+    {
+        if (String.IsNullOrEmpty(method?.Name))
+        {
             sb.Append("<null>");
             return;
         }
@@ -36,10 +41,12 @@ public static class MethodExtensions {
 
         sb.Append(method.Name);
 
-        if (method.GenericArguments?.Count > 0) {
+        if (method.GenericArguments?.Count > 0)
+        {
             sb.Append("[");
             bool first = true;
-            foreach (string arg in method.GenericArguments) {
+            foreach (string arg in method.GenericArguments)
+            {
                 if (first)
                     first = false;
                 else
@@ -51,11 +58,14 @@ public static class MethodExtensions {
             sb.Append("]");
         }
 
-        if (includeParameters) {
+        if (includeParameters)
+        {
             sb.Append("(");
             bool first = true;
-            if (method.Parameters?.Count > 0) {
-                foreach (var p in method.Parameters) {
+            if (method.Parameters?.Count > 0)
+            {
+                foreach (var p in method.Parameters)
+                {
                     if (first)
                         first = false;
                     else

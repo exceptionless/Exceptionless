@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Utility;
 
-public static class PathHelper {
+public static class PathHelper
+{
     private const string DATA_DIRECTORY = "|DataDirectory|";
 
     /// <summary>
@@ -8,7 +9,8 @@ public static class PathHelper {
     /// </summary>
     /// <param name="path">The path to expand</param>
     /// <returns>The expanded path</returns>
-    public static string ExpandPath(string path) {
+    public static string ExpandPath(string path)
+    {
         if (String.IsNullOrEmpty(path))
             return path;
 
@@ -43,7 +45,8 @@ public static class PathHelper {
     /// Gets the data directory for the |DataDirectory| macro.
     /// </summary>
     /// <returns>The DataDirectory path.</returns>
-    public static string GetDataDirectory() {
+    public static string GetDataDirectory()
+    {
         string dataDirectory = Environment.GetEnvironmentVariable("WEBROOT_PATH");
         if (!String.IsNullOrEmpty(dataDirectory))
             dataDirectory = Path.Combine(dataDirectory, "App_Data");

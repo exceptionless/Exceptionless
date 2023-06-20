@@ -3,10 +3,10 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -29,7 +29,8 @@ namespace Exceptionless.Web.Controllers;
 
 [Route(API_PREFIX + "/stacks")]
 [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
-public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
+public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack>
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
@@ -59,7 +60,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         StackQueryValidator validator,
         AppOptions options,
         ILoggerFactory loggerFactory
-    ) : base(stackRepository, mapper, validator, loggerFactory) {
+    ) : base(stackRepository, mapper, validator, loggerFactory)
+    {
         _stackRepository = stackRepository;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
@@ -85,7 +87,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">The stack could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetStackById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<Stack>> GetAsync(string id, string offset = null) {
+    public async Task<ActionResult<Stack>> GetAsync(string id, string offset = null)
+    {
         var stack = await GetModelAsync(id);
         if (stack == null)
             return NotFound();
@@ -103,10 +106,12 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult> MarkFixedAsync(string ids, string version = null) {
+    public async Task<ActionResult> MarkFixedAsync(string ids, string version = null)
+    {
         SemanticVersion semanticVersion = null;
 
-        if (!String.IsNullOrEmpty(version)) {
+        if (!String.IsNullOrEmpty(version))
+        {
             semanticVersion = _semanticVersionParser.Parse(version);
             if (semanticVersion == null)
                 return BadRequest("Invalid semantic version");
@@ -116,7 +121,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (!stacks.Any())
             return NotFound();
 
-        if (stacks.Count > 0) {
+        if (stacks.Count > 0)
+        {
             foreach (var stack in stacks)
                 stack.MarkFixed(semanticVersion);
 
@@ -133,7 +139,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpPost("mark-fixed")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ActionResult> MarkFixedAsync(JObject data) {
+    public async Task<ActionResult> MarkFixedAsync(JObject data)
+    {
         string id = null;
         if (data.TryGetValue("ErrorStack", out var value))
             id = value.Value<string>();
@@ -160,7 +167,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc) {
+    public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
+    {
         if (snoozeUntilUtc < SystemClock.UtcNow.AddMinutes(5))
             return BadRequest("Must snooze for at least 5 minutes.");
 
@@ -168,8 +176,10 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (!stacks.Any())
             return NotFound();
 
-        if (stacks.Count > 0) {
-            foreach (var stack in stacks) {
+        if (stacks.Count > 0)
+        {
+            foreach (var stack in stacks)
+            {
                 stack.Status = StackStatus.Snoozed;
                 stack.SnoozeUntilUtc = snoozeUntilUtc;
                 stack.FixedInVersion = null;
@@ -192,7 +202,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpPost("{id:objectid}/add-link")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string> url) {
+    public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string> url)
+    {
         if (String.IsNullOrWhiteSpace(url?.Value))
             return BadRequest();
 
@@ -200,7 +211,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stack == null)
             return NotFound();
 
-        if (!stack.References.Contains(url.Value.Trim())) {
+        if (!stack.References.Contains(url.Value.Trim()))
+        {
             stack.References.Add(url.Value.Trim());
             await _stackRepository.SaveAsync(stack);
         }
@@ -215,7 +227,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpPost("add-link")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> AddLinkAsync(JObject data) {
+    public async Task<IActionResult> AddLinkAsync(JObject data)
+    {
         string id = null;
         if (data.TryGetValue("ErrorStack", out var value))
             id = value.Value<string>();
@@ -245,7 +258,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> RemoveLinkAsync(string id, ValueFromBody<string> url) {
+    public async Task<IActionResult> RemoveLinkAsync(string id, ValueFromBody<string> url)
+    {
         if (String.IsNullOrWhiteSpace(url?.Value))
             return BadRequest();
 
@@ -253,7 +267,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stack == null)
             return NotFound();
 
-        if (stack.References.Contains(url.Value.Trim())) {
+        if (stack.References.Contains(url.Value.Trim()))
+        {
             stack.References.Remove(url.Value.Trim());
             await _stackRepository.SaveAsync(stack);
         }
@@ -268,13 +283,15 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-critical")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> MarkCriticalAsync(string ids) {
+    public async Task<IActionResult> MarkCriticalAsync(string ids)
+    {
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
         if (!stacks.Any())
             return NotFound();
 
         stacks = stacks.Where(s => !s.OccurrencesAreCritical).ToList();
-        if (stacks.Count > 0) {
+        if (stacks.Count > 0)
+        {
             foreach (var stack in stacks)
                 stack.OccurrencesAreCritical = true;
 
@@ -293,13 +310,15 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpDelete("{ids:objectids}/mark-critical")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> MarkNotCriticalAsync(string ids) {
+    public async Task<IActionResult> MarkNotCriticalAsync(string ids)
+    {
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
         if (!stacks.Any())
             return NotFound();
 
         stacks = stacks.Where(s => s.OccurrencesAreCritical).ToList();
-        if (stacks.Count > 0) {
+        if (stacks.Count > 0)
+        {
             foreach (var stack in stacks)
                 stack.OccurrencesAreCritical = false;
 
@@ -317,7 +336,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/change-status")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> ChangeStatusAsync(string ids, StackStatus status) {
+    public async Task<IActionResult> ChangeStatusAsync(string ids, StackStatus status)
+    {
         if (status == StackStatus.Regressed || status == StackStatus.Snoozed)
             return BadRequest("Can't set stack status to regressed or snoozed.");
 
@@ -326,13 +346,17 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return NotFound();
 
         stacks = stacks.Where(s => s.Status != status).ToList();
-        if (stacks.Count > 0) {
-            foreach (var stack in stacks) {
+        if (stacks.Count > 0)
+        {
+            foreach (var stack in stacks)
+            {
                 stack.Status = status;
-                if (status == StackStatus.Fixed) {
+                if (status == StackStatus.Fixed)
+                {
                     stack.DateFixed = SystemClock.UtcNow;
                 }
-                else {
+                else
+                {
                     stack.DateFixed = null;
                     stack.FixedInVersion = null;
                 }
@@ -356,7 +380,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="501">"No promoted web hooks are configured for this project.</response>
     [HttpPost("{id:objectid}/promote")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> PromoteAsync(string id) {
+    public async Task<IActionResult> PromoteAsync(string id)
+    {
         if (String.IsNullOrEmpty(id))
             return NotFound();
 
@@ -378,21 +403,25 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             .Identity(CurrentUser.EmailAddress)
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext));
-        
-        foreach (var hook in promotedProjectHooks) {
-            if (!hook.IsEnabled) {
+
+        foreach (var hook in promotedProjectHooks)
+        {
+            if (!hook.IsEnabled)
+            {
                 _logger.LogWarning("Unable to promote to disabled WebHook Id={WebHookId}, Url={WebHookUrl}", hook.Id, hook.Url);
                 continue;
             }
 
             var context = new WebHookDataContext(hook, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.Status == StackStatus.Regressed);
             var data = await _webHookDataPluginManager.CreateFromStackAsync(context);
-            if (data is null) {
+            if (data is null)
+            {
                 _logger.LogWarning("Unable to promote to WebHook with null payload Id={WebHookId}, Url={WebHookUrl}", hook.Id, hook.Url);
                 continue;
             }
 
-            await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
+            await _webHookNotificationQueue.EnqueueAsync(new WebHookNotification
+            {
                 OrganizationId = stack.OrganizationId,
                 ProjectId = stack.ProjectId,
                 WebHookId = hook.Id,
@@ -416,7 +445,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
+    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
+    {
         return DeleteImplAsync(ids.FromDelimitedString());
     }
 
@@ -433,7 +463,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="400">Invalid filter.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
+    {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.Count(o => !o.IsSuspended) == 0)
             return Ok(EmptyModels);
@@ -443,7 +474,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
 
-    private async Task<ActionResult<IReadOnlyCollection<Stack>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10) {
+    private async Task<ActionResult<IReadOnlyCollection<Stack>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10)
+    {
         page = GetPage(page);
         limit = GetLimit(limit);
         int skip = GetSkip(page, limit);
@@ -456,7 +488,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
-        try {
+        try
+        {
             var results = await _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
 
             var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
@@ -465,7 +498,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
 
             return OkWithResourceLinks(stacks, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
-        catch (ApplicationException ex) {
+        catch (ApplicationException ex)
+        {
             using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "An error has occurred. Please check your search filter.");
 
@@ -489,7 +523,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
+    {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization == null)
             return NotFound();
@@ -518,7 +553,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
+    {
         var project = await GetProjectAsync(projectId);
         if (project == null)
             return NotFound();
@@ -535,14 +571,16 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
 
-    private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true) {
+    private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return null;
 
         return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
+    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(projectId))
             return null;
 
@@ -553,7 +591,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         return project;
     }
 
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, AppFilter eventSystemFilter, TimeInfo ti) {
+    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, AppFilter eventSystemFilter, TimeInfo ti)
+    {
         if (stacks.Count == 0)
             return new List<StackSummaryModel>();
 
@@ -562,14 +601,17 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
     }
 
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti) {
+    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)
+    {
         if (stacks.Count == 0)
             return new List<StackSummaryModel>(0);
 
         var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
-        return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) => {
+        return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) =>
+        {
             var data = _formattingPluginManager.GetStackSummaryData(stack);
-            var summary = new StackSummaryModel {
+            var summary = new StackSummaryModel
+            {
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,
                 Id = stack.Id,
@@ -587,7 +629,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         }).ToList();
     }
 
-    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd) {
+    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd)
+    {
         var scopedCacheClient = new ScopedCacheClient(_cache, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
         var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
         var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);

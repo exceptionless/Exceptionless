@@ -11,9 +11,11 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
-public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository {
+public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
+{
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, IValidator<PersistentEvent> validator)
-        : base(configuration.Events, validator, options) {
+        : base(configuration.Events, validator, options)
+    {
         DisableCache(); // NOTE: If cache is ever enabled, then fast paths for patching/deleting with scripts will be super slow!
         BatchNotifications = true;
         DefaultPipeline = "events-pipeline";
@@ -27,7 +29,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         AddPropertyRequiredForRemove(e => e.Date);
     }
 
-    public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null) {
+    public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null)
+    {
         var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
         if (createdBeforeUtc.Ticks > 0)
             filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
@@ -35,7 +38,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
     }
 
-    public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true) {
+    public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true)
+    {
         var ev = await GetByIdAsync(id).AnyContext();
         if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
             return false;
@@ -44,7 +48,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return true;
     }
 
-    public Task<long> RemoveAllAsync(string organizationId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null) {
+    public Task<long> RemoveAllAsync(string organizationId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null)
+    {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
 
@@ -62,23 +67,27 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return RemoveAllAsync(q => query, options);
     }
 
-    public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId) {
+    public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
+    {
         var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
         return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
-    public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, DateTime? utcStart, DateTime? utcEnd) {
+    public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, DateTime? utcStart, DateTime? utcEnd)
+    {
         var previous = GetPreviousEventIdAsync(ev, systemFilter, utcStart, utcEnd);
         var next = GetNextEventIdAsync(ev, systemFilter, utcStart, utcEnd);
         await Task.WhenAll(previous, next).AnyContext();
 
-        return new PreviousAndNextEventIdResult {
+        return new PreviousAndNextEventIdResult
+        {
             Previous = previous.Result,
             Next = next.Result
         };
     }
 
-    private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+    private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
+    {
         if (ev == null)
             return null;
 
@@ -121,7 +130,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return index == 0 ? null : unionResults[index - 1].Id;
     }
 
-    private async Task<string> GetNextEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+    private async Task<string> GetNextEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
+    {
         if (ev == null)
             return null;
 
@@ -163,18 +173,21 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
     }
 
-    public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent> options = null) {
+    public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent> options = null)
+    {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
 
         return FindAsync(q => q.Organization(organizationId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
 
-    public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null) {
+    public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null)
+    {
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
 
-    public Task<long> RemoveAllByStackIdsAsync(string[] stackIds) {
+    public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)
+    {
         if (stackIds is null || stackIds.Length == 0)
             throw new ArgumentNullException(nameof(stackIds));
 

@@ -1,28 +1,33 @@
-﻿using Exceptionless.DateTimeExtensions;
+﻿using System.Linq;
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Utility;
-using System.Linq;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class OrganizationExtensions {
-    public static Invite GetInvite(this Organization organization, string token) {
+public static class OrganizationExtensions
+{
+    public static Invite GetInvite(this Organization organization, string token)
+    {
         if (organization == null || String.IsNullOrEmpty(token))
             return null;
 
         return organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project, int maximumRetentionDays) {
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project, int maximumRetentionDays)
+    {
         return organization.GetRetentionUtcCutoff(maximumRetentionDays, project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
     }
 
-    public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack, int maximumRetentionDays) {
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack, int maximumRetentionDays)
+    {
         return organization.GetRetentionUtcCutoff(maximumRetentionDays, stack.FirstOccurrence);
     }
 
-    public static DateTime GetRetentionUtcCutoff(this Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) {
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null)
+    {
         // NOTE: We allow you to submit events 3 days before your creation date.
         var oldestPossibleOrganizationEventAge = organization.CreatedUtc.Date.SafeSubtract(TimeSpan.FromDays(3));
         if (!oldestPossibleEventAge.HasValue || oldestPossibleEventAge.Value.IsBefore(oldestPossibleOrganizationEventAge))
@@ -33,11 +38,13 @@ public static class OrganizationExtensions {
         return retentionDate.IsAfter(oldestPossibleEventAge.Value) ? retentionDate : oldestPossibleEventAge.Value;
     }
 
-    public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations, int maximumRetentionDays) {
+    public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations, int maximumRetentionDays)
+    {
         return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff(maximumRetentionDays)) : DateTime.MinValue;
     }
 
-    public static void RemoveSuspension(this Organization organization) {
+    public static void RemoveSuspension(this Organization organization)
+    {
         organization.IsSuspended = false;
         organization.SuspensionDate = null;
         organization.SuspensionCode = null;
@@ -45,7 +52,8 @@ public static class OrganizationExtensions {
         organization.SuspendedByUserId = null;
     }
 
-    public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit) {
+    public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit)
+    {
         if (apiThrottleLimit == Int32.MaxValue)
             return false;
 
@@ -54,7 +62,8 @@ public static class OrganizationExtensions {
         return limit.HasValue && limit.Value >= apiThrottleLimit;
     }
 
-    public static int GetMaxEventsPerMonthWithBonus(this Organization organization) {
+    public static int GetMaxEventsPerMonthWithBonus(this Organization organization)
+    {
         if (organization.MaxEventsPerMonth <= 0)
             return -1;
 
@@ -62,23 +71,27 @@ public static class OrganizationExtensions {
         return organization.MaxEventsPerMonth + bonusEvents;
     }
 
-    public static bool IsOverMonthlyLimit(this Organization organization) {
+    public static bool IsOverMonthlyLimit(this Organization organization)
+    {
         if (organization.MaxEventsPerMonth < 0)
             return false;
 
         return organization.GetCurrentUsage().Total >= organization.GetMaxEventsPerMonthWithBonus();
     }
 
-    public static bool HasHourlyUsage(this Organization organization, DateTime date) {
+    public static bool HasHourlyUsage(this Organization organization, DateTime date)
+    {
         return organization.UsageHours.Any(o => o.Date == date.ToUniversalTime().StartOfHour());
     }
 
-    public static UsageHourInfo GetHourlyUsage(this Organization organization, DateTime date) {
+    public static UsageHourInfo GetHourlyUsage(this Organization organization, DateTime date)
+    {
         var overage = organization.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
         if (overage != null)
             return overage;
 
-        overage = new UsageHourInfo {
+        overage = new UsageHourInfo
+        {
             Date = date.ToUniversalTime().StartOfHour()
         };
         organization.UsageHours.Add(overage);
@@ -86,11 +99,13 @@ public static class OrganizationExtensions {
         return overage;
     }
 
-    public static UsageHourInfo GetCurrentHourlyUsage(this Organization organization) {
+    public static UsageHourInfo GetCurrentHourlyUsage(this Organization organization)
+    {
         return organization.GetHourlyUsage(SystemClock.UtcNow);
     }
 
-    public static void TrimUsage(this Organization organization) {
+    public static void TrimUsage(this Organization organization)
+    {
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
             .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
@@ -102,17 +117,20 @@ public static class OrganizationExtensions {
             .ToList();
     }
 
-    public static UsageInfo GetCurrentUsage(this Organization organization) {
+    public static UsageInfo GetCurrentUsage(this Organization organization)
+    {
         return organization.GetUsage(SystemClock.UtcNow);
     }
 
-    public static UsageInfo GetUsage(this Organization organization, DateTime date) {
+    public static UsageInfo GetUsage(this Organization organization, DateTime date)
+    {
         var startOfMonth = date.ToUniversalTime().StartOfMonth();
         var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
         if (usage != null)
             return usage;
 
-        usage = new UsageInfo {
+        usage = new UsageInfo
+        {
             Date = startOfMonth,
             Limit = organization.GetMaxEventsPerMonthWithBonus()
         };

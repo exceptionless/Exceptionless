@@ -1,12 +1,15 @@
 ﻿namespace Exceptionless.Web.Utility.Handlers;
 
-public class ApiException : Exception {
-    public ApiException(string message, int statusCode = StatusCodes.Status500InternalServerError, ICollection<ApiErrorItem> errors = null) : base(message) {
+public class ApiException : Exception
+{
+    public ApiException(string message, int statusCode = StatusCodes.Status500InternalServerError, ICollection<ApiErrorItem> errors = null) : base(message)
+    {
         StatusCode = statusCode;
         Errors = errors;
     }
 
-    public ApiException(Exception ex, int statusCode = StatusCodes.Status500InternalServerError) : base(ex.Message) {
+    public ApiException(Exception ex, int statusCode = StatusCodes.Status500InternalServerError) : base(ex.Message)
+    {
         StatusCode = statusCode;
     }
 

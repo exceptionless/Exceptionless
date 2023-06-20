@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
-using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
@@ -15,13 +15,15 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class UsageServiceTests : IntegrationTestsBase {
+public sealed class UsageServiceTests : IntegrationTestsBase
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
 
-    public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
         _usageService = GetService<UsageService>();
@@ -31,11 +33,13 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementUsageAsync() {
+    public async Task CanIncrementUsageAsync()
+    {
         var messageBus = GetService<IMessageBus>();
 
         var countdown = new AsyncCountdownEvent(2);
-        await messageBus.SubscribeAsync<PlanOverage>(po => {
+        await messageBus.SubscribeAsync<PlanOverage>(po =>
+        {
             _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
         });
@@ -58,7 +62,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeft);
         await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
         Assert.Equal(0, countdown.CurrentCount);
-        
+
         eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
         Assert.Equal(0, eventsLeft);
 
@@ -83,7 +87,8 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetEventsLeft() {
+    public async Task CanGetEventsLeft()
+    {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
         int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
@@ -104,11 +109,13 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementOverageUsageAsync() {
+    public async Task CanIncrementOverageUsageAsync()
+    {
         var messageBus = GetService<IMessageBus>();
 
         var countdown = new AsyncCountdownEvent(2);
-        await messageBus.SubscribeAsync<PlanOverage>(po => {
+        await messageBus.SubscribeAsync<PlanOverage>(po =>
+        {
             _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
         });
@@ -119,7 +126,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
         Assert.InRange(eventsLeftInBucket, 1, 750);
         Assert.Empty(organization.Usage);
         Assert.Empty(organization.UsageHours);
-        
+
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket + 1);
         await countdown.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(0, countdown.CurrentCount);
@@ -187,10 +194,11 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementBlockedAsync() {
+    public async Task CanIncrementBlockedAsync()
+    {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
-        
+
         await _usageService.IncrementBlockedAsync(organization.Id, project.Id);
 
         // move clock forward so that pending usages are saved
@@ -224,7 +232,8 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementDiscardedAsync() {
+    public async Task CanIncrementDiscardedAsync()
+    {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
 
@@ -261,7 +270,8 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanIncrementTooBigAsync() {
+    public async Task CanIncrementTooBigAsync()
+    {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency().Cache());
 
@@ -288,13 +298,15 @@ public sealed class UsageServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task RunBenchmarkAsync() {
+    public async Task RunBenchmarkAsync()
+    {
         const int iterations = 10000;
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = iterations - 10, PlanId = _plans.ExtraLargePlan.Id }, o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = SystemClock.UtcNow.Ticks }, o => o.ImmediateConsistency());
 
         var sw = Stopwatch.StartNew();
-        for (int i = 0; i < iterations; i++) {
+        for (int i = 0; i < iterations; i++)
+        {
             var eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
             await _usageService.IncrementTotalAsync(organization.Id, project.Id);
         }

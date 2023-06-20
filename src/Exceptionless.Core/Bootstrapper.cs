@@ -49,16 +49,21 @@ using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainInd
 
 namespace Exceptionless.Core;
 
-public class Bootstrapper {
-    public static void RegisterServices(IServiceCollection services, AppOptions appOptions) {
-        JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
+public class Bootstrapper
+{
+    public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
+    {
+        JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+        {
             DateParseHandling = DateParseHandling.DateTimeOffset
         };
 
         services.AddSingleton<IContractResolver>(_ => GetJsonContractResolver());
-        services.AddSingleton<JsonSerializerSettings>(s => {
+        services.AddSingleton<JsonSerializerSettings>(s =>
+        {
             // NOTE: These settings may need to be synced in the Elastic Configuration.
-            var settings = new JsonSerializerSettings {
+            var settings = new JsonSerializerSettings
+            {
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 DateParseHandling = DateParseHandling.DateTimeOffset,
                 ContractResolver = s.GetRequiredService<IContractResolver>()
@@ -82,7 +87,8 @@ public class Bootstrapper {
         services.AddStartupAction("Create Sample Data", CreateSampleDataAsync);
 
         services.AddSingleton(typeof(IWorkItemHandler), typeof(Bootstrapper).Assembly, typeof(ReindexWorkItemHandler).Assembly);
-        services.AddSingleton<WorkItemHandlers>(s => {
+        services.AddSingleton<WorkItemHandlers>(s =>
+        {
             var handlers = new WorkItemHandlers();
             handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
             handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
@@ -110,7 +116,8 @@ public class Bootstrapper {
         services.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
         services.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
-        services.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions {
+        services.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions
+        {
             Serializer = s.GetRequiredService<ITextSerializer>(),
             LoggerFactory = s.GetRequiredService<ILoggerFactory>()
         }));
@@ -171,9 +178,11 @@ public class Bootstrapper {
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
         services.AddTransient<AutoMapper.Profile, CoreMappings>();
-        services.AddSingleton<IMapper>(s => {
+        services.AddSingleton<IMapper>(s =>
+        {
             var profiles = s.GetServices<AutoMapper.Profile>();
-            var c = new MapperConfiguration(cfg => {
+            var c = new MapperConfiguration(cfg =>
+            {
                 cfg.ConstructServicesUsing(s.GetRequiredService);
 
                 foreach (var profile in profiles)
@@ -184,7 +193,8 @@ public class Bootstrapper {
         });
     }
 
-    public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger) {
+    public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
+    {
         if (!logger.IsEnabled(LogLevel.Warning))
             return;
 
@@ -220,7 +230,8 @@ public class Bootstrapper {
             logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
     }
 
-    private static async Task CreateSampleDataAsync(IServiceProvider container) {
+    private static async Task CreateSampleDataAsync(IServiceProvider container)
+    {
         var options = container.GetRequiredService<AppOptions>();
         if (!options.EnableSampleData)
             return;
@@ -237,7 +248,8 @@ public class Bootstrapper {
         await dataHelper.CreateDataAsync().AnyContext();
     }
 
-    public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory) {
+    public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)
+    {
         services.AddJob<CloseInactiveSessionsJob>(true);
         services.AddJob<DailySummaryJob>(true);
         services.AddJob<EventNotificationsJob>(true);
@@ -259,16 +271,19 @@ public class Bootstrapper {
         logger.LogWarning("Jobs running in process.");
     }
 
-    public static DynamicTypeContractResolver GetJsonContractResolver() {
+    public static DynamicTypeContractResolver GetJsonContractResolver()
+    {
         var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
         resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOnePlugin.VersionOneWebHookStack), typeof(VersionOnePlugin.VersionOneWebHookEvent));
         return resolver;
     }
 
-    private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class {
+    private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class
+    {
         var loggerFactory = container.GetRequiredService<ILoggerFactory>();
 
-        return new InMemoryQueue<T>(new InMemoryQueueOptions<T> {
+        return new InMemoryQueue<T>(new InMemoryQueueOptions<T>
+        {
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             LoggerFactory = loggerFactory

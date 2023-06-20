@@ -2,8 +2,10 @@
 
 namespace Exceptionless.Core.Models.Data;
 
-public class InnerError : IData {
-    public InnerError() {
+public class InnerError : IData
+{
+    public InnerError()
+    {
         Data = new DataDictionary();
         StackTrace = new StackFrameCollection();
     }
@@ -43,11 +45,13 @@ public class InnerError : IData {
     /// </summary>
     public Method TargetMethod { get; set; }
 
-    protected bool Equals(InnerError other) {
+    protected bool Equals(InnerError other)
+    {
         return String.Equals(Message, other.Message) && String.Equals(Type, other.Type) && String.Equals(Code, other.Code) && Equals(Data, other.Data) && Equals(Inner, other.Inner) && StackTrace.CollectionEquals(other.StackTrace) && Equals(TargetMethod, other.TargetMethod);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -57,8 +61,10 @@ public class InnerError : IData {
         return Equals((InnerError)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = Message?.GetHashCode() ?? 0;
             hashCode = (hashCode * 397) ^ (Type?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Code?.GetHashCode() ?? 0);

@@ -5,20 +5,23 @@ using Foundatio.Serializer;
 
 namespace Exceptionless.Web.Utility;
 
-public sealed class ProjectConfigMiddleware {
+public sealed class ProjectConfigMiddleware
+{
     private readonly IProjectRepository _projectRepository;
     private readonly ITextSerializer _serializer;
     private readonly RequestDelegate _next;
     private static readonly PathString _v1Path = new("/api/v1/project/config");
     private static readonly PathString _v2Path = new("/api/v2/projects/config");
 
-    public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer) {
+    public ProjectConfigMiddleware(RequestDelegate next, IProjectRepository projectRepository, ITextSerializer serializer)
+    {
         _next = next;
         _projectRepository = projectRepository;
         _serializer = serializer;
     }
 
-    private bool IsProjectConfigRoute(HttpContext context) {
+    private bool IsProjectConfigRoute(HttpContext context)
+    {
         if (!context.Request.Method.Equals(HttpMethods.Get, StringComparison.Ordinal))
             return false;
 
@@ -29,25 +32,30 @@ public sealed class ProjectConfigMiddleware {
         return false;
     }
 
-    public async Task Invoke(HttpContext context) {
-        if (!IsProjectConfigRoute(context)) {
+    public async Task Invoke(HttpContext context)
+    {
+        if (!IsProjectConfigRoute(context))
+        {
             await _next(context);
             return;
         }
 
         string projectId = context.Request.GetDefaultProjectId();
-        if (String.IsNullOrEmpty(projectId)) {
+        if (String.IsNullOrEmpty(projectId))
+        {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
         }
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
-        if (project == null) {
+        if (project == null)
+        {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             return;
         }
 
-        if (context.Request.Query.TryGetValue("v", out var v) && Int32.TryParse(v, out int version) && version == project.Configuration.Version) {
+        if (context.Request.Query.TryGetValue("v", out var v) && Int32.TryParse(v, out int version) && version == project.Configuration.Version)
+        {
             context.Response.StatusCode = StatusCodes.Status304NotModified;
             return;
         }

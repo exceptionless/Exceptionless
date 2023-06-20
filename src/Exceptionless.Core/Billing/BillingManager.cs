@@ -1,25 +1,28 @@
 ﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models;
 using Foundatio.Utility;
 
 namespace Exceptionless.Core.Billing;
 
-public class BillingManager {
+public class BillingManager
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingPlans _plans;
 
-    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans) {
+    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans)
+    {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _plans = plans;
     }
 
-    public async Task<bool> CanAddOrganizationAsync(User user) {
+    public async Task<bool> CanAddOrganizationAsync(User user)
+    {
         if (user == null)
             return false;
 
@@ -27,7 +30,8 @@ public class BillingManager {
         return !organizations.Any();
     }
 
-    public async Task<bool> CanAddUserAsync(Organization organization) {
+    public async Task<bool> CanAddUserAsync(Organization organization)
+    {
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return false;
 
@@ -35,7 +39,8 @@ public class BillingManager {
         return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
     }
 
-    public async Task<bool> CanAddProjectAsync(Project project) {
+    public async Task<bool> CanAddProjectAsync(Project project)
+    {
         if (String.IsNullOrWhiteSpace(project?.OrganizationId))
             return false;
 
@@ -47,7 +52,8 @@ public class BillingManager {
         return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
     }
 
-    public async Task<bool> HasPremiumFeaturesAsync(string organizationId) {
+    public async Task<bool> HasPremiumFeaturesAsync(string organizationId)
+    {
         var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
         if (organization == null)
             return false;
@@ -55,7 +61,8 @@ public class BillingManager {
         return organization.HasPremiumFeatures;
     }
 
-    public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User user) {
+    public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User user)
+    {
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return ChangePlanResult.FailWithMessage("Invalid Organization");
 
@@ -76,15 +83,18 @@ public class BillingManager {
         return new ChangePlanResult { Success = true };
     }
 
-    public BillingPlan GetBillingPlan(string planId) {
+    public BillingPlan GetBillingPlan(string planId)
+    {
         return _plans.Plans.FirstOrDefault(p => String.Equals(p.Id, planId, StringComparison.OrdinalIgnoreCase));
     }
 
-    public BillingPlan GetBillingPlanByUpsellingRetentionPeriod(int retentionDays) {
+    public BillingPlan GetBillingPlanByUpsellingRetentionPeriod(int retentionDays)
+    {
         return _plans.Plans.Where(p => p.RetentionDays > retentionDays && p.Price > 0).OrderBy(p => p.RetentionDays).ThenBy(p => p.Price).FirstOrDefault();
     }
 
-    public void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true) {
+    public void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true)
+    {
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
         organization.PlanDescription = plan.Description;
@@ -105,7 +115,8 @@ public class BillingManager {
         organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
     }
 
-    public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null) {
+    public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null)
+    {
         organization.BonusEventsPerMonth = bonusEvents;
         organization.BonusExpiration = expires;
         organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();

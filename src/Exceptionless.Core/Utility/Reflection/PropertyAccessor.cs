@@ -5,7 +5,8 @@ namespace Exceptionless.Core.Reflection;
 /// <summary>
 /// An accessor class for <see cref="PropertyInfo"/>.
 /// </summary>
-internal class PropertyAccessor : MemberAccessor {
+internal class PropertyAccessor : MemberAccessor
+{
     private readonly PropertyInfo _propertyInfo;
     private readonly string _name;
     private readonly bool _hasGetter;
@@ -18,7 +19,8 @@ internal class PropertyAccessor : MemberAccessor {
     /// Initializes a new instance of the <see cref="PropertyAccessor"/> class.
     /// </summary>
     /// <param name="propertyInfo">The <see cref="PropertyInfo"/> instance to use for this accessor.</param>
-    public PropertyAccessor(PropertyInfo propertyInfo) {
+    public PropertyAccessor(PropertyInfo propertyInfo)
+    {
         _propertyInfo = propertyInfo;
         _name = _propertyInfo.Name;
         _memberType = _propertyInfo.PropertyType;
@@ -69,7 +71,8 @@ internal class PropertyAccessor : MemberAccessor {
     /// <returns>
     /// The member value for the instance parameter.
     /// </returns>
-    public override object GetValue(object instance) {
+    public override object GetValue(object instance)
+    {
         if (_lateBoundGet == null || !HasGetter)
             throw new InvalidOperationException($"Property '{Name}' does not have a getter.");
 
@@ -85,7 +88,8 @@ internal class PropertyAccessor : MemberAccessor {
     /// </summary>
     /// <param name="instance">The object whose member value will be set.</param>
     /// <param name="value">The new value for this member.</param>
-    public override void SetValue(object instance, object value) {
+    public override void SetValue(object instance, object value)
+    {
         if (_lateBoundSet == null || !HasSetter)
             throw new InvalidOperationException($"Property '{Name}' does not have a setter.");
 

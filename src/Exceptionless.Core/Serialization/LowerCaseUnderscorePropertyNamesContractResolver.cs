@@ -5,8 +5,10 @@ using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Core.Serialization;
 
-public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver {
-    protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
+public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver
+{
+    protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+    {
         var property = base.CreateProperty(member, memberSerialization);
 
         var shouldSerialize = property.ShouldSerialize;
@@ -14,13 +16,15 @@ public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractR
         return property;
     }
 
-    protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
+    protected override JsonDictionaryContract CreateDictionaryContract(Type objectType)
+    {
         var contract = base.CreateDictionaryContract(objectType);
         contract.DictionaryKeyResolver = propertyName => propertyName;
         return contract;
     }
 
-    protected override string ResolvePropertyName(string propertyName) {
+    protected override string ResolvePropertyName(string propertyName)
+    {
         return propertyName.ToLowerUnderscoredWords();
     }
 }

@@ -1,9 +1,11 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class WebHookEvent {
+public class WebHookEvent
+{
     private readonly string _baseUrl;
 
-    public WebHookEvent(string baseUrl) {
+    public WebHookEvent(string baseUrl)
+    {
         _baseUrl = baseUrl;
     }
 

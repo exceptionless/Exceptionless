@@ -1,7 +1,9 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class OAuthAccount : IEquatable<OAuthAccount> {
-    public OAuthAccount() {
+public class OAuthAccount : IEquatable<OAuthAccount>
+{
+    public OAuthAccount()
+    {
         ExtraData = new SettingsDictionary();
     }
 
@@ -11,7 +13,8 @@ public class OAuthAccount : IEquatable<OAuthAccount> {
 
     public SettingsDictionary ExtraData { get; private set; }
 
-    public bool Equals(OAuthAccount other) {
+    public bool Equals(OAuthAccount other)
+    {
         if (other is null)
             return false;
         if (ReferenceEquals(this, other))
@@ -19,7 +22,8 @@ public class OAuthAccount : IEquatable<OAuthAccount> {
         return other.Provider.Equals(Provider) && other.ProviderUserId.Equals(ProviderUserId);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -29,8 +33,10 @@ public class OAuthAccount : IEquatable<OAuthAccount> {
         return Equals((OAuthAccount)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hash = 2153;
             if (Provider != null)
                 hash = hash * 9929 + Provider.GetHashCode();
@@ -40,11 +46,13 @@ public class OAuthAccount : IEquatable<OAuthAccount> {
         }
     }
 
-    public string EmailAddress() {
+    public string EmailAddress()
+    {
         if (!String.IsNullOrEmpty(Username) && Username.Contains("@"))
             return Username;
 
-        foreach (var kvp in ExtraData) {
+        foreach (var kvp in ExtraData)
+        {
             if ((String.Equals(kvp.Key, "email") || String.Equals(kvp.Key, "account_email") || String.Equals(kvp.Key, "preferred_email") || String.Equals(kvp.Key, "personal_email")) && !String.IsNullOrEmpty(kvp.Value))
                 return kvp.Value;
         }
@@ -52,7 +60,8 @@ public class OAuthAccount : IEquatable<OAuthAccount> {
         return null;
     }
 
-    public string FullName() {
+    public string FullName()
+    {
         foreach (var kvp in ExtraData.Where(kvp => String.Equals(kvp.Key, "name") && !String.IsNullOrEmpty(kvp.Value)))
             return kvp.Value;
 

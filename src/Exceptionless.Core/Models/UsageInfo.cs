@@ -1,6 +1,7 @@
 namespace Exceptionless.Core.Models;
 
-public record UsageInfo {
+public record UsageInfo
+{
     public DateTime Date { get; set; }
     public int Limit { get; set; }
 
@@ -10,7 +11,8 @@ public record UsageInfo {
     public int TooBig { get; set; }
 }
 
-public record UsageHourInfo {
+public record UsageHourInfo
+{
     public DateTime Date { get; set; }
     public int Total { get; set; }
     public int Blocked { get; set; }
@@ -18,7 +20,8 @@ public record UsageHourInfo {
     public int TooBig { get; set; }
 }
 
-public record UsageInfoResponse {
+public record UsageInfoResponse
+{
     public bool IsThrottled { get; set; }
     public UsageInfo CurrentUsage { get; set; }
     public UsageHourInfo CurrentHourUsage { get; set; }

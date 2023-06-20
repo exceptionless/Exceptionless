@@ -9,17 +9,20 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline;
 
 [Priority(30)]
-public class CheckForRegressionAction : EventPipelineActionBase {
+public class CheckForRegressionAction : EventPipelineActionBase
+{
     private readonly IStackRepository _stackRepository;
     private readonly SemanticVersionParser _semanticVersionParser;
 
-    public CheckForRegressionAction(IStackRepository stackRepository, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public CheckForRegressionAction(IStackRepository stackRepository, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    {
         _stackRepository = stackRepository;
         _semanticVersionParser = semanticVersionParser;
         ContinueOnError = true;
     }
 
-    public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+    public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
+    {
         var stacks = contexts.Where(c => c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue).OrderBy(c => c.Event.Date).GroupBy(c => c.Event.StackId);
 
         // more than one event in this batch, likely to be the same version
@@ -27,18 +30,24 @@ public class CheckForRegressionAction : EventPipelineActionBase {
         if (contexts.Count > 1)
             versionCache = new Dictionary<string, SemanticVersion>();
 
-        foreach (var stackGroup in stacks) {
-            try {
+        foreach (var stackGroup in stacks)
+        {
+            try
+            {
                 var stack = stackGroup.First().Stack;
 
                 EventContext regressedContext = null;
                 SemanticVersion regressedVersion = null;
-                if (String.IsNullOrEmpty(stack.FixedInVersion)) {
+                if (String.IsNullOrEmpty(stack.FixedInVersion))
+                {
                     regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
-                } else {
+                }
+                else
+                {
                     var fixedInVersion = _semanticVersionParser.Parse(stack.FixedInVersion, versionCache);
                     var versions = stackGroup.GroupBy(c => c.Event.GetVersion());
-                    foreach (var versionGroup in versions) {
+                    foreach (var versionGroup in versions)
+                    {
                         var version = _semanticVersionParser.Parse(versionGroup.Key, versionCache) ?? _semanticVersionParser.Default;
                         if (version < fixedInVersion)
                             continue;
@@ -59,10 +68,13 @@ public class CheckForRegressionAction : EventPipelineActionBase {
                 foreach (var ctx in stackGroup)
                     ctx.IsRegression = ctx == regressedContext;
             }
-            catch (Exception ex) {
-                foreach (var context in stackGroup) {
+            catch (Exception ex)
+            {
+                foreach (var context in stackGroup)
+                {
                     bool cont = false;
-                    try {
+                    try
+                    {
                         cont = HandleError(ex, context);
                     }
                     catch { }
@@ -74,7 +86,8 @@ public class CheckForRegressionAction : EventPipelineActionBase {
         }
     }
 
-    public override Task ProcessAsync(EventContext ctx) {
+    public override Task ProcessAsync(EventContext ctx)
+    {
         return Task.CompletedTask;
     }
 }

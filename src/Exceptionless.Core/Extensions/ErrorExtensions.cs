@@ -3,22 +3,27 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class ErrorExtensions {
-    public static StackingTarget GetStackingTarget(this Error error) {
+public static class ErrorExtensions
+{
+    public static StackingTarget GetStackingTarget(this Error error)
+    {
         if (error == null)
             return null;
 
         InnerError targetError = error;
-        while (targetError != null) {
+        while (targetError != null)
+        {
             var frame = targetError.StackTrace?.FirstOrDefault(st => st.IsSignatureTarget);
             if (frame != null)
-                return new StackingTarget {
+                return new StackingTarget
+                {
                     Error = targetError,
                     Method = frame
                 };
 
             if (targetError.TargetMethod != null && targetError.TargetMethod.IsSignatureTarget)
-                return new StackingTarget {
+                return new StackingTarget
+                {
                     Error = targetError,
                     Method = targetError.TargetMethod
                 };
@@ -29,23 +34,27 @@ public static class ErrorExtensions {
         // fallback to default
         var defaultError = error.GetInnermostError();
         var defaultMethod = defaultError.StackTrace?.FirstOrDefault();
-        if (defaultMethod == null && error.StackTrace != null) {
+        if (defaultMethod == null && error.StackTrace != null)
+        {
             defaultMethod = error.StackTrace.FirstOrDefault();
             defaultError = error;
         }
 
-        return new StackingTarget {
+        return new StackingTarget
+        {
             Error = defaultError,
             Method = defaultMethod
         };
     }
 
-    public static StackingTarget GetStackingTarget(this Event ev) {
+    public static StackingTarget GetStackingTarget(this Event ev)
+    {
         var error = ev.GetError();
         return error?.GetStackingTarget();
     }
 
-    public static InnerError GetInnermostError(this InnerError error) {
+    public static InnerError GetInnermostError(this InnerError error)
+    {
         if (error == null)
             throw new ArgumentNullException(nameof(error));
 
@@ -57,7 +66,8 @@ public static class ErrorExtensions {
     }
 }
 
-public class StackingTarget {
+public class StackingTarget
+{
     public Method Method { get; set; }
     public InnerError Error { get; set; }
 }

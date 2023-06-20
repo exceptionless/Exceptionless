@@ -14,14 +14,16 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Migrations;
 
-public sealed class FixDuplicateStacks : MigrationBase {
+public sealed class FixDuplicateStacks : MigrationBase
+{
     private readonly IElasticClient _client;
     private readonly ICacheClient _cache;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly ExceptionlessElasticConfiguration _config;
 
-    public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(loggerFactory) {
+    public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(loggerFactory)
+    {
         _config = configuration;
         _client = configuration.Client;
         _cache = configuration.Cache;
@@ -31,7 +33,8 @@ public sealed class FixDuplicateStacks : MigrationBase {
         MigrationType = MigrationType.Repeatable;
     }
 
-    public override async Task RunAsync(MigrationContext context) {
+    public override async Task RunAsync(MigrationContext context)
+    {
         _logger.LogInformation("Getting duplicate stacks");
 
         var duplicateStackAgg = await _client.SearchAsync<Stack>(q => q
@@ -48,15 +51,19 @@ public sealed class FixDuplicateStacks : MigrationBase {
         var lastStatus = SystemClock.Now;
         int batch = 1;
 
-        while (buckets.Count > 0) {
+        while (buckets.Count > 0)
+        {
             _logger.LogInformation($"Found {total} duplicate stacks in batch #{batch}.");
 
-            foreach (var duplicateSignature in buckets) {
+            foreach (var duplicateSignature in buckets)
+            {
                 string projectId = null;
                 string signature = null;
-                try {
+                try
+                {
                     var parts = duplicateSignature.Key.Split(':');
-                    if (parts.Length != 2) {
+                    if (parts.Length != 2)
+                    {
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key);
                         continue;
                     }
@@ -64,7 +71,8 @@ public sealed class FixDuplicateStacks : MigrationBase {
                     signature = parts[1];
 
                     var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
-                    if (stacks.Documents.Count < 2) {
+                    if (stacks.Documents.Count < 2)
+                    {
                         _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);
                         continue;
                     }
@@ -80,7 +88,8 @@ public sealed class FixDuplicateStacks : MigrationBase {
                     var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
 
                     // use the stack that has the most events on it so we can reduce the number of updates
-                    if (eventCountBuckets.Count > 0) {
+                    if (eventCountBuckets.Count > 0)
+                    {
                         var targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
                         targetStack = stacks.Documents.Single(d => d.Id == targetStackId);
                         duplicateStacks = stacks.Documents.Where(d => d.Id != targetStackId).ToList();
@@ -104,7 +113,8 @@ public sealed class FixDuplicateStacks : MigrationBase {
                     long eventsToMove = eventCountBuckets.Where(b => b.Key != targetStack.Id).Sum(b => b.Total) ?? 0;
                     _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds} HasEvents={HasEvents}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id), shouldUpdateEvents);
 
-                    if (shouldUpdateEvents) {
+                    if (shouldUpdateEvents)
+                    {
                         var response = await _client.UpdateByQueryAsync<PersistentEvent>(u => u
                             .Query(q => q.Bool(b => b.Must(m => m
                                 .Terms(t => t.Field(f => f.StackId).Terms(duplicateStacks.Select(s => s.Id)))
@@ -118,11 +128,13 @@ public sealed class FixDuplicateStacks : MigrationBase {
                         var taskId = response.Task;
                         int attempts = 0;
                         long affectedRecords = 0;
-                        do {
+                        do
+                        {
                             attempts++;
                             var taskStatus = await _client.Tasks.GetTaskAsync(taskId);
                             var status = taskStatus.Task.Status;
-                            if (taskStatus.Completed) {
+                            if (taskStatus.Completed)
+                            {
                                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
                                 if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                     _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
@@ -150,13 +162,15 @@ public sealed class FixDuplicateStacks : MigrationBase {
                         totalUpdatedEventCount += affectedRecords;
                     }
 
-                    if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
+                    if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
+                    {
                         lastStatus = SystemClock.UtcNow;
                         _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                         await _cache.RemoveByPrefixAsync(nameof(Stack));
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     error++;
                     _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                 }

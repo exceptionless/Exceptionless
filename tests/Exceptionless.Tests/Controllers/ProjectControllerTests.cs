@@ -1,7 +1,7 @@
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
-using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using FluentRest;
@@ -11,18 +11,22 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 
-public sealed class ProjectControllerTests : IntegrationTestsBase {
-    public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+public sealed class ProjectControllerTests : IntegrationTestsBase
+{
+    public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
 
     [Fact]
-    public async Task CanGetProjectConfiguration() {
+    public async Task CanGetProjectConfiguration()
+    {
         var response = await SendRequestAsync(r => r
            .AsFreeOrganizationClientUser()
            .AppendPath("projects/config")
@@ -40,7 +44,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetProjectListStats() {
+    public async Task CanGetProjectListStats()
+    {
         var projects = await SendRequestAsAsync<List<ViewProject>>(r => r
             .AsTestOrganizationUser()
             .AppendPath("projects")
@@ -53,7 +58,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase {
         Assert.Equal(0, project.StackCount);
         Assert.Equal(0, project.EventCount);
 
-        var (stacks, events) = await CreateDataAsync(d => {
+        var (stacks, events) = await CreateDataAsync(d =>
+        {
             d.Event().Message("test");
         });
 

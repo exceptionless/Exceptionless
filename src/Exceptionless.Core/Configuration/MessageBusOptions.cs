@@ -5,7 +5,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class MessageBusOptions {
+public class MessageBusOptions
+{
     public string ConnectionString { get; internal set; }
     public string Provider { get; internal set; }
     public Dictionary<string, string> Data { get; internal set; }
@@ -14,7 +15,8 @@ public class MessageBusOptions {
     public string ScopePrefix { get; internal set; }
     public string Topic { get; internal set; }
 
-    public static MessageBusOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+    public static MessageBusOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
+    {
         var options = new MessageBusOptions();
 
         options.Scope = appOptions.AppScope;

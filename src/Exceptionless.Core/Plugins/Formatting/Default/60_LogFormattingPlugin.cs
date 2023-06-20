@@ -1,26 +1,31 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(60)]
-public sealed class LogFormattingPlugin : FormattingPluginBase {
+public sealed class LogFormattingPlugin : FormattingPluginBase
+{
     public LogFormattingPlugin(AppOptions options) : base(options) { }
 
-    private bool ShouldHandle(PersistentEvent ev) {
+    private bool ShouldHandle(PersistentEvent ev)
+    {
         return ev.IsLog();
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack) {
+    public override SummaryData GetStackSummaryData(Stack stack)
+    {
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
             return null;
 
         var data = new Dictionary<string, object>();
         string source = stack.SignatureInfo?.GetString("Source");
-        if (!String.IsNullOrWhiteSpace(source) && String.Equals(source, stack.Title)) {
+        if (!String.IsNullOrWhiteSpace(source) && String.Equals(source, stack.Title))
+        {
             string[] parts = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 1 && !String.Equals(source, parts.Last()) && parts.All(p => p.IsValidIdentifier())) {
+            if (parts.Length > 1 && !String.Equals(source, parts.Last()) && parts.All(p => p.IsValidIdentifier()))
+            {
                 data.Add("Source", source);
                 data.Add("SourceShortName", parts.Last());
             }
@@ -29,21 +34,24 @@ public sealed class LogFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "stack-log-summary", Data = data };
     }
 
-    public override string GetStackTitle(PersistentEvent ev) {
+    public override string GetStackTitle(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
         return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
         var data = new Dictionary<string, object> { { "Message", ev.Message } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        if (!String.IsNullOrWhiteSpace(ev.Source)) {
+        if (!String.IsNullOrWhiteSpace(ev.Source))
+        {
             data.Add("Source", ev.Source);
 
             string[] parts = ev.Source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
@@ -58,7 +66,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "event-log-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -88,7 +97,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase {
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -102,7 +112,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase {
             notificationType = String.Concat("critical ", notificationType);
 
         string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
-        var attachment = new SlackMessage.SlackAttachment(ev) {
+        var attachment = new SlackMessage.SlackAttachment(ev)
+        {
             Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
                         Title = "Source",
@@ -115,8 +126,10 @@ public sealed class LogFormattingPlugin : FormattingPluginBase {
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
 
         string level = ev.GetLevel();
-        if (!String.IsNullOrEmpty(level)) {
-            switch (level.ToLower()) {
+        if (!String.IsNullOrEmpty(level))
+        {
+            switch (level.ToLower())
+            {
                 case "trace":
                 case "debug":
                     attachment.Color = "#5cb85c";
@@ -142,7 +155,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase {
 
         AddDefaultSlackFields(ev, attachment.Fields);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, source.Truncate(120))}*";
-        return new SlackMessage(subject) {
+        return new SlackMessage(subject)
+        {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }
         };
     }

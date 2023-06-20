@@ -7,12 +7,14 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
-public class ManualStackingTests : TestWithServices {
+public class ManualStackingTests : TestWithServices
+{
     public ManualStackingTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
     [MemberData(nameof(StackingData))]
-    public async Task AddManualStackSignatureData(string stackingKey, bool willAddManualStackSignature) {
+    public async Task AddManualStackSignatureData(string stackingKey, bool willAddManualStackSignature)
+    {
         var ev = new PersistentEvent();
         ev.SetManualStackingKey(stackingKey);
 

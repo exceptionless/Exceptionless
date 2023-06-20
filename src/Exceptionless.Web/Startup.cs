@@ -1,35 +1,38 @@
+using System.Diagnostics;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.HttpOverrides;
-using Joonasw.AspNetCore.SecurityHeaders;
-using Exceptionless.Web.Extensions;
 using Foundatio.Extensions.Hosting.Startup;
+using Joonasw.AspNetCore.SecurityHeaders;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
-using Microsoft.AspNetCore.Hosting.Server.Features;
-using System.Diagnostics;
-using OpenTelemetry;
 
 namespace Exceptionless.Web;
 
-public class Startup {
-    public Startup(IConfiguration configuration) {
+public class Startup
+{
+    public Startup(IConfiguration configuration)
+    {
         Configuration = configuration;
     }
 
     public IConfiguration Configuration { get; }
 
-    public void ConfigureServices(IServiceCollection services) {
+    public void ConfigureServices(IServiceCollection services)
+    {
         services.AddCors(b => b.AddPolicy("AllowAny", p => p
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -38,18 +41,21 @@ public class Startup {
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
             .WithExposedHeaders("ETag", "Link", Headers.RateLimit, Headers.RateLimitRemaining, "X-Result-Count", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion)));
 
-        services.Configure<ForwardedHeadersOptions>(options => {
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
             options.RequireHeaderSymmetry = false;
             options.KnownNetworks.Clear();
             options.KnownProxies.Clear();
         });
 
-        services.AddControllers(o => {
+        services.AddControllers(o =>
+        {
             o.Filters.Add<ApiExceptionFilter>();
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-        }).AddNewtonsoftJson(o => {
+        }).AddNewtonsoftJson(o =>
+        {
             o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
             o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
             o.SerializerSettings.Formatting = Formatting.Indented;
@@ -57,14 +63,16 @@ public class Startup {
         });
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
-        services.AddAuthorization(options => {
+        services.AddAuthorization(options =>
+        {
             options.DefaultPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
             options.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
             options.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
             options.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
         });
 
-        services.AddRouting(r => {
+        services.AddRouting(r =>
+        {
             r.LowercaseUrls = true;
             r.ConstraintMap.Add("identifier", typeof(IdentifierRouteConstraint));
             r.ConstraintMap.Add("identifiers", typeof(IdentifiersRouteConstraint));
@@ -73,23 +81,28 @@ public class Startup {
             r.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
-        services.AddSwaggerGen(c => {
-            c.SwaggerDoc("v2", new OpenApiInfo {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v2", new OpenApiInfo
+            {
                 Title = "Exceptionless API",
                 Version = "v2"
             });
 
-            c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme {
+            c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
+            {
                 Description = "Basic HTTP Authentication",
                 Scheme = "basic",
                 Type = SecuritySchemeType.Http
             });
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
                 Description = "Authorization token. Example: \"Bearer {apikey}\"",
                 Scheme = "bearer",
                 Type = SecuritySchemeType.Http
             });
-            c.AddSecurityDefinition("Token", new OpenApiSecurityScheme {
+            c.AddSecurityDefinition("Token", new OpenApiSecurityScheme
+            {
                 Description = "Authorization token. Example: \"Bearer {apikey}\"",
                 Name = "access_token",
                 In = ParameterLocation.Query,
@@ -127,15 +140,18 @@ public class Startup {
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
-        services.AddSingleton(s => {
-            return new ThrottlingOptions {
+        services.AddSingleton(s =>
+        {
+            return new ThrottlingOptions
+            {
                 MaxRequestsForUserIdentifierFunc = userIdentifier => appOptions.ApiThrottleLimit,
                 Period = TimeSpan.FromMinutes(15)
             };
         });
     }
 
-    public void Configure(IApplicationBuilder app) {
+    public void Configure(IApplicationBuilder app)
+    {
         var options = app.ApplicationServices.GetRequiredService<AppOptions>();
         Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
@@ -145,7 +161,8 @@ public class Startup {
         if (apmConfig.EnableMetrics)
             app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-        app.UseHealthChecks("/health", new HealthCheckOptions {
+        app.UseHealthChecks("/health", new HealthCheckOptions
+        {
             Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
         });
 
@@ -158,7 +175,8 @@ public class Startup {
         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
             app.UseExceptionless(ExceptionlessClient.Default);
 
-        app.Use(async (context, next) => {
+        app.Use(async (context, next) =>
+        {
             if (options.AppMode != AppMode.Development && context.Request.IsLocal() == false)
                 context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 
@@ -177,7 +195,8 @@ public class Startup {
         if (ssl)
             app.UseHttpsRedirection();
 
-        app.UseCsp(csp => {
+        app.UseCsp(csp =>
+        {
             csp.AllowFonts.FromSelf()
                 .From("https://fonts.gstatic.com")
                 .From("https://www.gravatar.com")
@@ -207,7 +226,7 @@ public class Startup {
                 .To("https://collector.exceptionless.io")
                 .To("https://api-iam.intercom.io/")
                 .To("wss://nexus-websocket-a.intercom.io");
-            
+
             csp.OnSendingHeader = context =>
             {
                 context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
@@ -215,12 +234,15 @@ public class Startup {
             };
         });
 
-        app.UseSerilogRequestLogging(o => {
-            o.EnrichDiagnosticContext = (context, httpContext) => {
+        app.UseSerilogRequestLogging(o =>
+        {
+            o.EnrichDiagnosticContext = (context, httpContext) =>
+            {
                 context.Set("ActivityId", Activity.Current.Id);
             };
             o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-            o.GetLevel = (context, duration, ex) => {
+            o.GetLevel = (context, duration, ex) =>
+            {
                 if (ex != null || context.Response.StatusCode > 499)
                     return LogEventLevel.Error;
 
@@ -234,8 +256,10 @@ public class Startup {
             };
         });
 
-        app.UseStaticFiles(new StaticFileOptions {
-            ContentTypeProvider = new FileExtensionContentTypeProvider {
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            ContentTypeProvider = new FileExtensionContentTypeProvider
+            {
                 Mappings = {
                         [".less"] = "plain/text"
                     }
@@ -255,7 +279,8 @@ public class Startup {
         app.UseMiddleware<ProjectConfigMiddleware>();
         app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-        if (options.ApiThrottleLimit < Int32.MaxValue) {
+        if (options.ApiThrottleLimit < Int32.MaxValue)
+        {
             // Throttle api calls to X every 15 minutes by IP address.
             app.UseMiddleware<ThrottlingMiddleware>();
         }
@@ -263,31 +288,37 @@ public class Startup {
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        app.UseSwagger(c => {
+        app.UseSwagger(c =>
+        {
             c.RouteTemplate = "docs/{documentName}/swagger.json";
             // TODO: Remove once 5.6.4+ is released 
             c.PreSerializeFilters.Add((doc, _) => doc.Servers?.Clear());
         });
-        app.UseSwaggerUI(s => {
+        app.UseSwaggerUI(s =>
+        {
             s.RoutePrefix = "docs";
             s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
             s.InjectStylesheet("/docs.css");
         });
 
-        if (options.EnableWebSockets) {
+        if (options.EnableWebSockets)
+        {
             app.UseWebSockets();
             app.UseMiddleware<MessageBusBrokerMiddleware>();
         }
 
-        app.UseEndpoints(endpoints => {
+        app.UseEndpoints(endpoints =>
+        {
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
     }
 
-    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath) {
+    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
+    {
         var app = endpoints.CreateApplicationBuilder();
-        app.Use(next => context => {
+        app.Use(next => context =>
+        {
             var apiPathSegment = new PathString("/api");
             var docsPathSegment = new PathString("/docs");
             bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
@@ -295,7 +326,7 @@ public class Startup {
 
             if (!isApiRequest && !isDocsRequest)
                 context.Request.Path = "/" + filePath;
-            
+
             // Set endpoint to null so the static files middleware will handle the request.
             context.SetEndpoint(null);
 

@@ -6,50 +6,64 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
 using Nest;
 
-namespace Exceptionless.Core.Repositories {
-    public static class StackQueryExtensions {
+namespace Exceptionless.Core.Repositories
+{
+    public static class StackQueryExtensions
+    {
         internal const string StacksKey = "@Stacks";
         internal const string ExcludedStacksKey = "@ExcludedStacks";
 
-        public static T Stack<T>(this T query, string stackId) where T : IRepositoryQuery {
+        public static T Stack<T>(this T query, string stackId) where T : IRepositoryQuery
+        {
             return query.AddCollectionOptionValue(StacksKey, stackId);
         }
-        
-        public static T Stack<T>(this T query, IEnumerable<string> stackIds) where T : IRepositoryQuery {
+
+        public static T Stack<T>(this T query, IEnumerable<string> stackIds) where T : IRepositoryQuery
+        {
             return query.AddCollectionOptionValue(StacksKey, stackIds.Distinct());
         }
 
-        public static T ExcludeStack<T>(this T query, string stackId) where T : IRepositoryQuery {
+        public static T ExcludeStack<T>(this T query, string stackId) where T : IRepositoryQuery
+        {
             return query.AddCollectionOptionValue(ExcludedStacksKey, stackId);
         }
 
-        public static T ExcludeStack<T>(this T query, IEnumerable<string> stackIds) where T : IRepositoryQuery {
+        public static T ExcludeStack<T>(this T query, IEnumerable<string> stackIds) where T : IRepositoryQuery
+        {
             return query.AddCollectionOptionValue(ExcludedStacksKey, stackIds);
         }
     }
 }
 
-namespace Exceptionless.Core.Repositories.Options {
-    public static class ReadStackQueryExtensions {
-        public static ICollection<string> GetStacks(this IRepositoryQuery query) {
+namespace Exceptionless.Core.Repositories.Options
+{
+    public static class ReadStackQueryExtensions
+    {
+        public static ICollection<string> GetStacks(this IRepositoryQuery query)
+        {
             return query.SafeGetCollection<string>(StackQueryExtensions.StacksKey);
         }
 
-        public static ICollection<string> GetExcludedStacks(this IRepositoryQuery query) {
+        public static ICollection<string> GetExcludedStacks(this IRepositoryQuery query)
+        {
             return query.SafeGetCollection<string>(StackQueryExtensions.ExcludedStacksKey);
         }
     }
 }
 
-namespace Exceptionless.Core.Repositories.Queries {
-    public class StackQueryBuilder : IElasticQueryBuilder {
+namespace Exceptionless.Core.Repositories.Queries
+{
+    public class StackQueryBuilder : IElasticQueryBuilder
+    {
         private readonly string _stackIdFieldName;
 
-        public StackQueryBuilder() {
+        public StackQueryBuilder()
+        {
             _stackIdFieldName = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
         }
 
-        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
+        {
             var stackIds = ctx.Source.GetStacks();
             var excludedStackIds = ctx.Source.GetExcludedStacks();
 

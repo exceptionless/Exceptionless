@@ -1,7 +1,7 @@
-using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Utility;
 using Xunit;
@@ -9,11 +9,14 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 
-public class StatusControllerTests : IntegrationTestsBase {
-    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+public class StatusControllerTests : IntegrationTestsBase
+{
+    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
 
         var service = GetService<SampleDataService>();
@@ -26,11 +29,13 @@ public class StatusControllerTests : IntegrationTestsBase {
     //[InlineData(null, true, false)] // TODO: Resolve issue where you are required to pass a message via the body.
     [InlineData("New Release!!", false)]
     [InlineData("New Release!!", true)]
-    public async Task CanSendReleaseNotification(string message, bool critical, bool sendMessageAsContentIfEmpty = true) {
+    public async Task CanSendReleaseNotification(string message, bool critical, bool sendMessageAsContentIfEmpty = true)
+    {
         var utcNow = SystemClock.UtcNow;
 
         ReleaseNotification notification;
-        if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty) {
+        if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty)
+        {
             notification = await SendRequestAsAsync<ReleaseNotification>(r => r
                 .Post()
                 .AsGlobalAdminUser()
@@ -39,7 +44,8 @@ public class StatusControllerTests : IntegrationTestsBase {
                 .Content(new ValueFromBody<string>(message))
                 .StatusCodeShouldBeOk());
         }
-        else {
+        else
+        {
             notification = await SendRequestAsAsync<ReleaseNotification>(r => r
                 .Post()
                 .AsGlobalAdminUser()

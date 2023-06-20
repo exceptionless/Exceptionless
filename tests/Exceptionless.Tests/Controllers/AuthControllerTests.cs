@@ -1,32 +1,34 @@
-﻿using Exceptionless.Web.Models;
-using Exceptionless.Tests.Authentication;
-using Exceptionless.Tests.Extensions;
-using Exceptionless.Core.Authorization;
+﻿using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Tests.Authentication;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Models;
+using FluentRest;
 using Foundatio.Queues;
-using Foundatio.Utility;
 using Foundatio.Repositories;
+using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
-using FluentRest;
 
 namespace Exceptionless.Tests.Controllers;
 
-public class AuthControllerTests : IntegrationTestsBase {
+public class AuthControllerTests : IntegrationTestsBase
+{
     private readonly AuthOptions _authOptions;
     private readonly IUserRepository _userRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ITokenRepository _tokenRepository;
 
-    public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _authOptions = GetService<AuthOptions>();
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
@@ -37,17 +39,20 @@ public class AuthControllerTests : IntegrationTestsBase {
         _tokenRepository = GetService<ITokenRepository>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         await CreateTestOrganizationAndProjectsAsync();
     }
 
     [Fact]
-    public Task CannotSignupWithoutPassword() {
+    public Task CannotSignupWithoutPassword()
+    {
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel {
+            .Content(new SignupModel
+            {
                 Email = "test@domain.com",
                 Name = "hello"
             })
@@ -59,11 +64,13 @@ public class AuthControllerTests : IntegrationTestsBase {
     [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
     [InlineData(true, "test1.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
     [InlineData(false, "test1@exceptionless.io", "Password1$")]
-    public Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password) {
+    public Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password)
+    {
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
-        if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+        if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
+        {
             var provider = new TestDomainLoginProvider();
             email = provider.GetEmailAddressFromUsername(email);
         }
@@ -71,7 +78,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel {
+            .Content(new SignupModel
+            {
                 Email = email,
                 InviteToken = "",
                 Name = "Test",
@@ -85,11 +93,13 @@ public class AuthControllerTests : IntegrationTestsBase {
     [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
     [InlineData(true, "test2.2@exceptionless.io", TestDomainLoginProvider.ValidPassword)]
     [InlineData(false, "test2@exceptionless.io", "Password1$")]
-    public Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password) {
+    public Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password)
+    {
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
-        if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+        if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
+        {
             var provider = new TestDomainLoginProvider();
             email = provider.GetEmailAddressFromUsername(email);
         }
@@ -97,7 +107,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel {
+            .Content(new SignupModel
+            {
                 Email = email,
                 InviteToken = StringExtensions.GetNewToken(),
                 Name = "Test",
@@ -110,11 +121,13 @@ public class AuthControllerTests : IntegrationTestsBase {
     [Theory]
     [InlineData(true, TestDomainLoginProvider.ValidUsername, TestDomainLoginProvider.ValidPassword)]
     [InlineData(false, "test3@exceptionless.io", "Password1$")]
-    public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password) {
+    public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password)
+    {
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
-        if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername) {
+        if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
+        {
             var provider = new TestDomainLoginProvider();
             email = provider.GetEmailAddressFromUsername(email);
         }
@@ -122,7 +135,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
 
-        var invite = new Invite {
+        var invite = new Invite
+        {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
             DateAdded = SystemClock.UtcNow
@@ -134,7 +148,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = email,
                InviteToken = invite.Token,
                Name = "Test",
@@ -148,7 +163,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync() {
+    public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync()
+    {
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = true;
 
@@ -157,7 +173,8 @@ public class AuthControllerTests : IntegrationTestsBase {
 
         var orgs = await _organizationRepository.GetAllAsync();
         var organization = orgs.Documents.First();
-        var invite = new Invite {
+        var invite = new Invite
+        {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
             DateAdded = SystemClock.UtcNow
@@ -170,7 +187,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = email,
                InviteToken = invite.Token,
                Name = "Test",
@@ -181,13 +199,15 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync() {
+    public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync()
+    {
         _authOptions.EnableAccountCreation = true;
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = "test4@exceptionless.io",
                InviteToken = "",
                Name = "Test",
@@ -201,7 +221,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync() {
+    public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync()
+    {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
@@ -211,7 +232,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = email,
                InviteToken = "",
                Name = "Test",
@@ -225,14 +247,16 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync() {
+    public Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync()
+    {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = "testuser2@exceptionless.io",
                InviteToken = "",
                Name = "Test",
@@ -243,7 +267,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAsync() {
+    public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAsync()
+    {
         _authOptions.EnableAccountCreation = true;
 
         var orgs = await _organizationRepository.GetAllAsync();
@@ -252,7 +277,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         const string name = "Test";
         const string password = "Password1$";
 
-        var invite = new Invite {
+        var invite = new Invite
+        {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
             DateAdded = SystemClock.UtcNow
@@ -266,7 +292,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = email,
                InviteToken = invite.Token,
                Name = name,
@@ -301,7 +328,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync() {
+    public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync()
+    {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
@@ -310,7 +338,8 @@ public class AuthControllerTests : IntegrationTestsBase {
 
         var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
-        var invite = new Invite {
+        var invite = new Invite
+        {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
             DateAdded = SystemClock.UtcNow
@@ -322,7 +351,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = email,
                InviteToken = invite.Token,
                Name = "Test",
@@ -336,14 +366,16 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync() {
+    public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync()
+    {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         string email = "testuser4@exceptionless.io";
         var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
-        var invite = new Invite {
+        var invite = new Invite
+        {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
             DateAdded = SystemClock.UtcNow
@@ -355,7 +387,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel {
+           .Content(new SignupModel
+           {
                Email = email,
                InviteToken = invite.Token,
                Name = "Test",
@@ -366,7 +399,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task SignupShouldFailWhenUsingExistingAccountWithNoPasswordOrInvalidPassword() {
+    public async Task SignupShouldFailWhenUsingExistingAccountWithNoPasswordOrInvalidPassword()
+    {
         var userRepo = GetService<IUserRepository>();
 
         const string email = "test6@exceptionless.io";
@@ -374,7 +408,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
 
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -386,7 +421,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel {
+            .Content(new SignupModel
+            {
                 Email = email,
                 Name = "Random Name"
             })
@@ -396,7 +432,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel {
+            .Content(new SignupModel
+            {
                 Email = email,
                 Name = "Random Name",
                 Password = "invalidPass",
@@ -406,14 +443,16 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginValidAsync() {
+    public async Task LoginValidAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = false;
 
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -425,7 +464,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = email,
                Password = password
            })
@@ -437,7 +477,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginInvalidPasswordAsync() {
+    public async Task LoginInvalidPasswordAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = false;
 
         const string email = "test7@exceptionless.io";
@@ -445,7 +486,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
 
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -458,7 +500,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = email,
                Password = "This password ain't right"
            })
@@ -467,14 +510,16 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginNoSuchUserAsync() {
+    public async Task LoginNoSuchUserAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = false;
 
         const string email = "test8@exceptionless.io";
         const string password = "Test8 password";
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -486,7 +531,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = "Thisguydoesntexist@exceptionless.io",
                Password = "This password ain't right"
            })
@@ -495,12 +541,14 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginValidExistingActiveDirectoryAsync() {
+    public async Task LoginValidExistingActiveDirectoryAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             IsEmailAddressVerified = true,
             FullName = "User 6"
@@ -511,7 +559,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = email,
                Password = TestDomainLoginProvider.ValidPassword
            })
@@ -523,7 +572,8 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public Task LoginValidNonExistantActiveDirectoryAsync() {
+    public Task LoginValidNonExistantActiveDirectoryAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
@@ -532,7 +582,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = email,
                Password = TestDomainLoginProvider.ValidPassword
            })
@@ -541,13 +592,15 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginInvalidNonExistantActiveDirectoryAsync() {
+    public async Task LoginInvalidNonExistantActiveDirectoryAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = true;
 
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = TestDomainLoginProvider.ValidUsername + ".au",
                Password = "Totallywrongpassword1234"
            })
@@ -562,12 +615,14 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task LoginInvalidExistingActiveDirectoryAsync() {
+    public async Task LoginInvalidExistingActiveDirectoryAsync()
+    {
         _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             IsEmailAddressVerified = true,
             FullName = "User 6"
@@ -577,7 +632,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel {
+           .Content(new LoginModel
+           {
                Email = TestDomainLoginProvider.ValidUsername,
                Password = "Totallywrongpassword1234"
            })
@@ -586,13 +642,15 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanChangePasswordAsync() {
+    public async Task CanChangePasswordAsync()
+    {
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
 
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -606,7 +664,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel {
+            .Content(new LoginModel
+            {
                 Email = email,
                 Password = password,
             })
@@ -628,7 +687,8 @@ public class AuthControllerTests : IntegrationTestsBase {
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/change-password")
-            .Content(new ChangePasswordModel {
+            .Content(new ChangePasswordModel
+            {
                 CurrentPassword = password,
                 Password = newPassword
             })
@@ -643,13 +703,15 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task ChangePasswordShouldFailWithCurrentPasswordAsync() {
+    public async Task ChangePasswordShouldFailWithCurrentPasswordAsync()
+    {
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
 
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -663,7 +725,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel {
+            .Content(new LoginModel
+            {
                 Email = email,
                 Password = password,
             })
@@ -684,7 +747,8 @@ public class AuthControllerTests : IntegrationTestsBase {
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/change-password")
-            .Content(new ChangePasswordModel {
+            .Content(new ChangePasswordModel
+            {
                 CurrentPassword = password,
                 Password = password
             })
@@ -695,13 +759,15 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanResetPasswordAsync() {
+    public async Task CanResetPasswordAsync()
+    {
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
 
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -716,7 +782,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel {
+            .Content(new LoginModel
+            {
                 Email = email,
                 Password = password,
             })
@@ -738,7 +805,8 @@ public class AuthControllerTests : IntegrationTestsBase {
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/reset-password")
-            .Content(new ResetPasswordModel {
+            .Content(new ResetPasswordModel
+            {
                 PasswordResetToken = user.PasswordResetToken,
                 Password = newPassword
             })
@@ -749,13 +817,15 @@ public class AuthControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task ResetPasswordShouldFailWithCurrentPasswordAsync() {
+    public async Task ResetPasswordShouldFailWithCurrentPasswordAsync()
+    {
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
         const string salt = "1234567890123456";
         string passwordHash = password.ToSaltedHash(salt);
 
-        var user = new User {
+        var user = new User
+        {
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
@@ -770,7 +840,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel {
+            .Content(new LoginModel
+            {
                 Email = email,
                 Password = password,
             })
@@ -791,7 +862,8 @@ public class AuthControllerTests : IntegrationTestsBase {
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/reset-password")
-            .Content(new ResetPasswordModel {
+            .Content(new ResetPasswordModel
+            {
                 PasswordResetToken = user.PasswordResetToken,
                 Password = password
             })
@@ -801,7 +873,8 @@ public class AuthControllerTests : IntegrationTestsBase {
         Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
     }
 
-    private Task CreateTestOrganizationAndProjectsAsync() {
+    private Task CreateTestOrganizationAndProjectsAsync()
+    {
         return Task.WhenAll(
             _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
             _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())

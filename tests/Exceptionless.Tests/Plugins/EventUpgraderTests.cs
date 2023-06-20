@@ -5,18 +5,21 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
-public sealed class EventUpgraderTests : TestWithServices {
+public sealed class EventUpgraderTests : TestWithServices
+{
     private readonly EventUpgraderPluginManager _upgrader;
     private readonly EventParserPluginManager _parser;
 
-    public EventUpgraderTests(ITestOutputHelper output) : base(output) {
+    public EventUpgraderTests(ITestOutputHelper output) : base(output)
+    {
         _upgrader = GetService<EventUpgraderPluginManager>();
         _parser = GetService<EventParserPluginManager>();
     }
 
     [Theory]
     [MemberData(nameof(Errors))]
-    public void ParseErrors(string errorFilePath) {
+    public void ParseErrors(string errorFilePath)
+    {
         string json = File.ReadAllText(errorFilePath);
         var ctx = new EventUpgraderContext(json);
 
@@ -28,8 +31,10 @@ public sealed class EventUpgraderTests : TestWithServices {
         Assert.Single(events);
     }
 
-    public static IEnumerable<object[]> Errors {
-        get {
+    public static IEnumerable<object[]> Errors
+    {
+        get
+        {
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "ErrorData"), "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
                 result.Add(new object[] { Path.GetFullPath(file) });

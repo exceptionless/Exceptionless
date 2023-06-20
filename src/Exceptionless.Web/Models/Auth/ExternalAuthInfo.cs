@@ -1,6 +1,7 @@
 namespace Exceptionless.Web.Models;
 
-public class ExternalAuthInfo {
+public class ExternalAuthInfo
+{
     public string ClientId { get; set; }
     public string Code { get; set; }
     public string RedirectUri { get; set; }

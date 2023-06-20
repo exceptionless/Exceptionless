@@ -10,21 +10,25 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
-public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository {
+public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository
+{
     private readonly BillingPlans _plans;
 
     public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingPlans plans, AppOptions options)
-        : base(configuration.Organizations, validator, options) {
+        : base(configuration.Organizations, validator, options)
+    {
         _plans = plans;
         DocumentsChanging.AddSyncHandler(OnDocumentsChanging);
     }
 
-    private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Organization> args) {
+    private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Organization> args)
+    {
         foreach (var organization in args.Documents)
             organization.Value.TrimUsage();
     }
 
-    public async Task<Organization> GetByInviteTokenAsync(string token) {
+    public async Task<Organization> GetByInviteTokenAsync(string token)
+    {
         if (String.IsNullOrEmpty(token))
             throw new ArgumentNullException(nameof(token));
 
@@ -33,7 +37,8 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return hit?.Document;
     }
 
-    public async Task<Organization> GetByStripeCustomerIdAsync(string customerId) {
+    public async Task<Organization> GetByStripeCustomerIdAsync(string customerId)
+    {
         if (String.IsNullOrEmpty(customerId))
             throw new ArgumentNullException(nameof(customerId));
 
@@ -42,19 +47,22 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return hit?.Document;
     }
 
-    public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+    public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
+    {
         var filter = Query<Organization>.MatchAll();
         if (!String.IsNullOrWhiteSpace(criteria))
             filter &= Query<Organization>.Term(o => o.Name, criteria);
 
-        if (paid.HasValue) {
+        if (paid.HasValue)
+        {
             if (paid.Value)
                 filter &= !Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
             else
                 filter &= Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
         }
 
-        if (suspended.HasValue) {
+        if (suspended.HasValue)
+        {
             if (suspended.Value)
                 filter &= (!Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
                         !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
@@ -69,7 +77,8 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         }
 
         var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
-        switch (sortBy) {
+        switch (sortBy)
+        {
             case OrganizationSortBy.Newest:
                 query.SortDescending((Organization o) => o.Id);
                 break;
@@ -87,7 +96,8 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return FindAsync(q => query, options);
     }
 
-    public async Task<BillingPlanStats> GetBillingPlanStatsAsync() {
+    public async Task<BillingPlanStats> GetBillingPlanStatsAsync()
+    {
         var results = (await FindAsync(q => q
             .Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
             .SortDescending(o => o.PlanId)).AnyContext()).Documents;
@@ -105,7 +115,8 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
             + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
-        return new BillingPlanStats {
+        return new BillingPlanStats
+        {
             SmallTotal = smallOrganizations.Count,
             SmallYearlyTotal = smallYearlyOrganizations.Count,
             MediumTotal = mediumOrganizations.Count,
@@ -124,7 +135,8 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     }
 }
 
-public enum OrganizationSortBy {
+public enum OrganizationSortBy
+{
     Newest = 0,
     Subscribed = 1,
     MostActive = 2,

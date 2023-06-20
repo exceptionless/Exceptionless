@@ -2,17 +2,21 @@ using Foundatio.Repositories.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
 
-public class ManualStackingInfo {
-    public ManualStackingInfo() {
+public class ManualStackingInfo
+{
+    public ManualStackingInfo()
+    {
         SignatureData = new Dictionary<string, string>();
     }
 
-    public ManualStackingInfo(string title) : this() {
+    public ManualStackingInfo(string title) : this()
+    {
         if (!String.IsNullOrWhiteSpace(title))
             Title = title.Trim();
     }
 
-    public ManualStackingInfo(string title, IDictionary<string, string> signatureData) : this(title) {
+    public ManualStackingInfo(string title, IDictionary<string, string> signatureData) : this(title)
+    {
         if (signatureData != null && signatureData.Count > 0)
             SignatureData.AddRange(signatureData);
     }

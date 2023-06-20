@@ -1,16 +1,18 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
 [Priority(30)]
-public sealed class SimpleErrorPlugin : EventProcessorPluginBase {
+public sealed class SimpleErrorPlugin : EventProcessorPluginBase
+{
     public SimpleErrorPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
-    public override Task EventProcessingAsync(EventContext context) {
+    public override Task EventProcessingAsync(EventContext context)
+    {
         if (!context.Event.IsError())
             return Task.CompletedTask;
 

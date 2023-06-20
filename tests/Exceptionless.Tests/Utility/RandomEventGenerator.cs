@@ -4,11 +4,13 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Helpers;
 
-public class RandomEventGenerator {
+public class RandomEventGenerator
+{
     public DateTime? MinDate { get; set; }
     public DateTime? MaxDate { get; set; }
 
-    public List<Event> Generate(int count, bool setUserIdentity = true) {
+    public List<Event> Generate(int count, bool setUserIdentity = true)
+    {
         var events = new List<Event>();
         for (int i = 0; i < count; i++)
             events.Add(Generate(setUserIdentity));
@@ -16,8 +18,10 @@ public class RandomEventGenerator {
         return events;
     }
 
-    public PersistentEvent GeneratePersistent(bool setUserIdentity = true) {
-        var ev = new PersistentEvent {
+    public PersistentEvent GeneratePersistent(bool setUserIdentity = true)
+    {
+        var ev = new PersistentEvent
+        {
             OrganizationId = "537650f3b77efe23a47914f3",
             ProjectId = "537650f3b77efe23a47914f4",
             StackId = "1ecd0826e447a44e78877ab1",
@@ -28,13 +32,15 @@ public class RandomEventGenerator {
         return ev;
     }
 
-    public Event Generate(bool setUserIdentity = true) {
+    public Event Generate(bool setUserIdentity = true)
+    {
         var ev = new Event();
         PopulateEvent(ev, setUserIdentity);
         return ev;
     }
 
-    public void PopulateEvent(Event ev, bool setUserIdentity = true) {
+    public void PopulateEvent(Event ev, bool setUserIdentity = true)
+    {
         if (MinDate.HasValue || MaxDate.HasValue)
             ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
 
@@ -43,7 +49,8 @@ public class RandomEventGenerator {
             ev.Source = FeatureNames.Random();
         else if (ev.Type == Event.KnownTypes.NotFound)
             ev.Source = PageNames.Random();
-        else if (ev.Type == Event.KnownTypes.Log) {
+        else if (ev.Type == Event.KnownTypes.Log)
+        {
             ev.Source = LogSources.Random();
             ev.Message = RandomData.GetString();
 
@@ -63,17 +70,20 @@ public class RandomEventGenerator {
 
         ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));
 
-        ev.AddRequestInfo(new RequestInfo {
+        ev.AddRequestInfo(new RequestInfo
+        {
             //ClientIpAddress = ClientIpAddresses.Random(),
             Path = PageNames.Random()
         });
 
-        ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, new EnvironmentInfo {
+        ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, new EnvironmentInfo
+        {
             IpAddress = MachineIpAddresses.Random() + ", " + MachineIpAddresses.Random(),
             MachineName = MachineNames.Random()
         });
 
-        for (int i = 0; i < RandomData.GetInt(1, 3); i++) {
+        for (int i = 0; i < RandomData.GetInt(1, 3); i++)
+        {
             string key = RandomData.GetWord();
             while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
                 key = RandomData.GetWord();
@@ -82,21 +92,25 @@ public class RandomEventGenerator {
         }
 
         int tagCount = RandomData.GetInt(1, 3);
-        for (int i = 0; i < tagCount; i++) {
+        for (int i = 0; i < tagCount; i++)
+        {
             string tag = EventTags.Random();
             if (!ev.Tags.Contains(tag))
                 ev.Tags.Add(tag);
         }
 
-        if (ev.Type == Event.KnownTypes.Error) {
-            if (RandomData.GetBool()) {
+        if (ev.Type == Event.KnownTypes.Error)
+        {
+            if (RandomData.GetBool())
+            {
                 // limit error variation so that stacking will occur
                 if (_randomErrors == null)
                     _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
 
                 ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
             }
-            else {
+            else
+            {
                 // limit error variation so that stacking will occur
                 if (_randomSimpleErrors == null)
                     _randomSimpleErrors = new List<SimpleError>(Enumerable.Range(1, 25).Select(i => GenerateSimpleError()));
@@ -108,13 +122,16 @@ public class RandomEventGenerator {
 
     private List<Error> _randomErrors;
 
-    public Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
+    public Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
+    {
         var error = new Error { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
         if (RandomData.GetBool())
             error.Code = RandomData.GetInt(-234523453, 98690899).ToString();
 
-        if (generateData) {
-            for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
+        if (generateData)
+        {
+            for (int i = 0; i < RandomData.GetInt(1, 5); i++)
+            {
                 string key = RandomData.GetWord();
                 while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
                     key = RandomData.GetWord();
@@ -136,10 +153,13 @@ public class RandomEventGenerator {
 
     private List<SimpleError> _randomSimpleErrors;
 
-    public SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
+    public SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
+    {
         var error = new SimpleError { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
-        if (generateData) {
-            for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
+        if (generateData)
+        {
+            for (int i = 0; i < RandomData.GetInt(1, 5); i++)
+            {
                 string key = RandomData.GetWord();
                 while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
                     key = RandomData.GetWord();
@@ -156,8 +176,10 @@ public class RandomEventGenerator {
         return error;
     }
 
-    public StackFrame GenerateStackFrame() {
-        return new StackFrame {
+    public StackFrame GenerateStackFrame()
+    {
+        return new StackFrame
+        {
             DeclaringNamespace = Namespaces.Random(),
             DeclaringType = TypeNames.Random(),
             Name = MethodNames.Random(),

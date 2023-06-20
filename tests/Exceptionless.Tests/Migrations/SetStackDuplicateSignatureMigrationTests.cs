@@ -13,21 +13,25 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Migrations;
 
-public class SetStackDuplicateSignatureMigrationTests : TestWithServices {
+public class SetStackDuplicateSignatureMigrationTests : TestWithServices
+{
     private readonly IStackRepository _repository;
 
-    public SetStackDuplicateSignatureMigrationTests(ITestOutputHelper output) : base(output) {
+    public SetStackDuplicateSignatureMigrationTests(ITestOutputHelper output) : base(output)
+    {
         _repository = GetService<IStackRepository>();
     }
 
-    protected override void RegisterServices(IServiceCollection services, AppOptions options) {
+    protected override void RegisterServices(IServiceCollection services, AppOptions options)
+    {
         services.AddTransient<SetStackDuplicateSignature>();
         services.AddSingleton<ILock>(new EmptyLock());
         base.RegisterServices(services, options);
     }
 
     [Fact]
-    public async Task WillSetStackDuplicateSignature() {
+    public async Task WillSetStackDuplicateSignature()
+    {
         var stack = StackData.GenerateStack();
         stack.DuplicateSignature = null;
         stack = await _repository.AddAsync(stack, o => o.ImmediateConsistency());

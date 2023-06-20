@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public enum SuspensionCode {
+public enum SuspensionCode
+{
     Billing,
     Overage,
     Abuse,

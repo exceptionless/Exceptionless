@@ -3,8 +3,10 @@ using FluentValidation;
 
 namespace Exceptionless.Core.Validation;
 
-public class UserDescriptionValidator : AbstractValidator<UserDescription> {
-    public UserDescriptionValidator() {
+public class UserDescriptionValidator : AbstractValidator<UserDescription>
+{
+    public UserDescriptionValidator()
+    {
         RuleFor(u => u.EmailAddress)
             .EmailAddress()
             .Unless(u => String.IsNullOrEmpty(u.EmailAddress))

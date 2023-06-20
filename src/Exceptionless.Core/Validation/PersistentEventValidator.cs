@@ -5,8 +5,10 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Core.Validation;
 
-public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
-    public override ValidationResult Validate(ValidationContext<PersistentEvent> context) {
+public class PersistentEventValidator : AbstractValidator<PersistentEvent>
+{
+    public override ValidationResult Validate(ValidationContext<PersistentEvent> context)
+    {
         var result = new ValidationResult();
         var ev = context.InstanceToValidate;
 
@@ -46,7 +48,8 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
         //if (ev.Tags.Count > 50)
         //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
 
-        foreach (string tag in ev.Tags) {
+        foreach (string tag in ev.Tags)
+        {
             if (String.IsNullOrEmpty(tag))
                 result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
             else if (tag.Length > 255)
@@ -56,11 +59,13 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
         return result;
     }
 
-    public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new CancellationToken()) {
+    public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new CancellationToken())
+    {
         return Task.FromResult(Validate(context.InstanceToValidate));
     }
 
-    private bool IsObjectId(string value) {
+    private bool IsObjectId(string value)
+    {
         if (String.IsNullOrEmpty(value))
             return false;
 

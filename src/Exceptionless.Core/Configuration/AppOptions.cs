@@ -7,7 +7,8 @@ using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core;
 
-public class AppOptions {
+public class AppOptions
+{
     public string BaseURL { get; internal set; }
 
     /// <summary>
@@ -78,7 +79,8 @@ public class AppOptions {
     public StripeOptions StripeOptions { get; internal set; }
     public AuthOptions AuthOptions { get; internal set; }
 
-    public static AppOptions ReadFromConfiguration(IConfiguration config) {
+    public static AppOptions ReadFromConfiguration(IConfiguration config)
+    {
         var options = new AppOptions();
         options.BaseURL = config.GetValue<string>(nameof(options.BaseURL))?.TrimEnd('/');
         options.InternalProjectId = config.GetValue(nameof(options.InternalProjectId), "54b56e480ef9605a88a13153");
@@ -108,7 +110,8 @@ public class AppOptions {
         options.EnableRepositoryNotifications = config.GetValue(nameof(options.EnableRepositoryNotifications), true);
         options.EnableWebSockets = config.GetValue(nameof(options.EnableWebSockets), true);
 
-        try {
+        try
+        {
             var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);
             options.Version = versionInfo.FileVersion;
             options.InformationalVersion = versionInfo.ProductVersion;
@@ -130,7 +133,8 @@ public class AppOptions {
     }
 }
 
-public enum AppMode {
+public enum AppMode
+{
     Development,
     Staging,
     Production

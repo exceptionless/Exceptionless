@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
 
-public class SlackService {
+public class SlackService
+{
     private readonly HttpClient _client = new HttpClient();
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
     private readonly FormattingPluginManager _pluginManager;
@@ -17,7 +18,8 @@ public class SlackService {
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
 
-    public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, ILoggerFactory loggerFactory = null) {
+    public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, ILoggerFactory loggerFactory = null)
+    {
         _webHookNotificationQueue = webHookNotificationQueue;
         _pluginManager = pluginManager;
         _serializer = serializer;
@@ -25,7 +27,8 @@ public class SlackService {
         _logger = loggerFactory.CreateLogger<SlackService>();
     }
 
-    public async Task<SlackToken> GetAccessTokenAsync(string code) {
+    public async Task<SlackToken> GetAccessTokenAsync(string code)
+    {
         if (String.IsNullOrEmpty(code))
             throw new ArgumentNullException(nameof(code));
 
@@ -41,12 +44,14 @@ public class SlackService {
         byte[] body = await response.Content.ReadAsByteArrayAsync().AnyContext();
         var result = _serializer.Deserialize<OAuthAccessResponse>(body);
 
-        if (!result.ok) {
+        if (!result.ok)
+        {
             _logger.LogWarning("Error getting access token: {Message}, Response: {Response}", result.error ?? result.warning, result);
             return null;
         }
 
-        var token = new SlackToken {
+        var token = new SlackToken
+        {
             AccessToken = result.access_token,
             Scopes = result.scope?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0],
             UserId = result.user_id,
@@ -54,8 +59,10 @@ public class SlackService {
             TeamName = result.team_name
         };
 
-        if (result.incoming_webhook != null) {
-            token.IncomingWebhook = new SlackToken.IncomingWebHook {
+        if (result.incoming_webhook != null)
+        {
+            token.IncomingWebhook = new SlackToken.IncomingWebHook
+            {
                 Channel = result.incoming_webhook.channel,
                 ChannelId = result.incoming_webhook.channel_id,
                 ConfigurationUrl = result.incoming_webhook.configuration_url,
@@ -66,7 +73,8 @@ public class SlackService {
         return token;
     }
 
-    public async Task<bool> RevokeAccessTokenAsync(string token) {
+    public async Task<bool> RevokeAccessTokenAsync(string token)
+    {
         if (String.IsNullOrEmpty(token))
             throw new ArgumentNullException(nameof(token));
 
@@ -82,7 +90,8 @@ public class SlackService {
         return false;
     }
 
-    public Task SendMessageAsync(string organizationId, string projectId, string url, SlackMessage message) {
+    public Task SendMessageAsync(string organizationId, string projectId, string url, SlackMessage message)
+    {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
 
@@ -95,7 +104,8 @@ public class SlackService {
         if (message == null)
             throw new ArgumentNullException(nameof(message));
 
-        var notification = new WebHookNotification {
+        var notification = new WebHookNotification
+        {
             OrganizationId = organizationId,
             ProjectId = projectId,
             Url = url,
@@ -106,14 +116,16 @@ public class SlackService {
         return _webHookNotificationQueue.EnqueueAsync(notification);
     }
 
-    public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression) {
+    public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression)
+    {
         var token = project.GetSlackToken();
         if (token?.IncomingWebhook?.Url == null)
             return false;
 
         bool isCritical = ev.IsCritical();
         var message = _pluginManager.GetSlackEventNotificationMessage(ev, project, isCritical, isNew, isRegression);
-        if (message == null) {
+        if (message == null)
+        {
             _logger.LogWarning("Unable to create event notification slack message for event {id}.", ev.Id);
             return false;
         }
@@ -122,17 +134,20 @@ public class SlackService {
         return true;
     }
 
-    private class Response {
+    private class Response
+    {
         public bool ok { get; set; }
         public string warning { get; set; }
         public string error { get; set; }
     }
 
-    private class AuthRevokeResponse : Response {
+    private class AuthRevokeResponse : Response
+    {
         public bool revoked { get; set; }
     }
 
-    private class OAuthAccessResponse : Response {
+    private class OAuthAccessResponse : Response
+    {
         public string access_token { get; set; }
         public string scope { get; set; }
         public string user_id { get; set; }
@@ -140,7 +155,8 @@ public class SlackService {
         public string team_name { get; set; }
         public IncomingWebHook incoming_webhook { get; set; }
 
-        public class IncomingWebHook {
+        public class IncomingWebHook
+        {
             public string channel { get; set; }
             public string channel_id { get; set; }
             public string configuration_url { get; set; }

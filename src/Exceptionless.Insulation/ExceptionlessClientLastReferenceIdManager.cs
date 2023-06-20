@@ -2,14 +2,17 @@
 
 namespace Exceptionless.Insulation;
 
-public class ExceptionlessClientCoreLastReferenceIdManager : ICoreLastReferenceIdManager {
+public class ExceptionlessClientCoreLastReferenceIdManager : ICoreLastReferenceIdManager
+{
     private readonly ExceptionlessClient _client;
 
-    public ExceptionlessClientCoreLastReferenceIdManager(ExceptionlessClient client) {
+    public ExceptionlessClientCoreLastReferenceIdManager(ExceptionlessClient client)
+    {
         _client = client;
     }
 
-    public string GetLastReferenceId() {
+    public string GetLastReferenceId()
+    {
         return _client.GetLastReferenceId();
     }
 }

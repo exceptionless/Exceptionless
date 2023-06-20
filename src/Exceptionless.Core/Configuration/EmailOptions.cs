@@ -6,7 +6,8 @@ using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Configuration;
 
-public class EmailOptions {
+public class EmailOptions
+{
     public bool EnableDailySummary { get; internal set; }
 
     /// <summary>
@@ -32,7 +33,8 @@ public class EmailOptions {
 
     public string SmtpPassword { get; internal set; }
 
-    public static EmailOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+    public static EmailOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
+    {
         var options = new EmailOptions();
 
         options.EnableDailySummary = config.GetValue(nameof(options.EnableDailySummary), appOptions.AppMode == AppMode.Production);
@@ -40,7 +42,8 @@ public class EmailOptions {
         options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "test@localhost" : "");
 
         string emailConnectionString = config.GetConnectionString("Email");
-        if (!String.IsNullOrEmpty(emailConnectionString)) {
+        if (!String.IsNullOrEmpty(emailConnectionString))
+        {
             var uri = new SmtpUri(emailConnectionString);
             options.SmtpHost = uri.Host;
             options.SmtpPort = uri.Port;
@@ -57,8 +60,10 @@ public class EmailOptions {
         return options;
     }
 
-    private static SmtpEncryption GetDefaultSmtpEncryption(int port) {
-        return port switch {
+    private static SmtpEncryption GetDefaultSmtpEncryption(int port)
+    {
+        return port switch
+        {
             465 => SmtpEncryption.SSL,
             587 => SmtpEncryption.StartTLS,
             2525 => SmtpEncryption.StartTLS,
@@ -67,7 +72,8 @@ public class EmailOptions {
     }
 }
 
-public enum SmtpEncryption {
+public enum SmtpEncryption
+{
     None,
     StartTLS,
     SSL

@@ -1,13 +1,15 @@
 ﻿namespace Exceptionless.Core.Extensions;
 
-public static class EnumHelper {
+public static class EnumHelper
+{
     /// <summary>
     /// Will try and parse an enum and it's default type.
     /// </summary>
     /// <param name="type"></param>
     /// <param name="value"></param>
     /// <returns>True if the enum value is defined.</returns>
-    public static bool TryEnumIsDefined(Type type, object value) {
+    public static bool TryEnumIsDefined(Type type, object value)
+    {
         if (type == null || value == null || !type.IsEnum)
             return false;
 
@@ -37,9 +39,11 @@ public static class EnumHelper {
         return false;
     }
 
-    private static bool TryEnumIsDefined<T>(Type type, object value) {
+    private static bool TryEnumIsDefined<T>(Type type, object value)
+    {
         // Catch any casting errors that can occur or if 0 is not defined as a default value.
-        try {
+        try
+        {
             if (value is T && Enum.IsDefined(type, (T)value))
                 return true;
         }
