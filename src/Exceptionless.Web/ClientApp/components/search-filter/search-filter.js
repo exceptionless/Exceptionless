@@ -1,12 +1,12 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.search-filter', [
-    'ngMessages',
+    angular.module("exceptionless.search-filter", [
+        "ngMessages",
 
-    'exceptionless',
-    'exceptionless.autofocus',
-    'exceptionless.refresh',
-    'exceptionless.validators'
-  ]);
-}());
+        "exceptionless",
+        "exceptionless.autofocus",
+        "exceptionless.refresh",
+        "exceptionless.validators",
+    ]);
+})();

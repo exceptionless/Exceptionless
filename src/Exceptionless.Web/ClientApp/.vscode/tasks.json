@@ -9,10 +9,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": [
-                "$lessCompile",
-                "$jshint"
-            ]
+            "problemMatcher": ["$lessCompile", "$eslint"]
         },
         {
             "type": "npm",

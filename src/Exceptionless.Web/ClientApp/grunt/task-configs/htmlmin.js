@@ -8,10 +8,10 @@ module.exports = {
             removeComments: true,
             removeEmptyAttributes: true,
             removeScriptTypeAttributes: true,
-            removeStyleLinkTypeAttributes: true
+            removeStyleLinkTypeAttributes: true,
         },
         files: {
-            'dist/index.html': 'dist/index.html'
-        }
-    }
+            "dist/index.html": "dist/index.html",
+        },
+    },
 };

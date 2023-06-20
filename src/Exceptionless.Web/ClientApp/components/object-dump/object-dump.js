@@ -1,5 +1,5 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  angular.module('exceptionless.object-dump', []);
-}());
+    angular.module("exceptionless.object-dump", []);
+})();

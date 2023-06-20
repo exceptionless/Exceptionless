@@ -1,35 +1,53 @@
 <div class="app-header-fixed app-aside-fixed" ng-class="{'app-aside-folded': !!appVm.isSideNavCollapsed}">
-  <nav ng-include="'app/blocks/header.tpl.html'" class="app-header navbar navbar-default bg-black"></nav>
+    <nav ng-include="'app/blocks/header.tpl.html'" class="app-header navbar navbar-default bg-black"></nav>
 
-  <div ng-include="'app/blocks/sidebar.tpl.html'" class="app-aside hidden-xs bg-dark"></div>
+    <div ng-include="'app/blocks/sidebar.tpl.html'" class="app-aside hidden-xs bg-dark"></div>
 
-  <div class="app-content" refresh-on="UserChanged" refresh-action="appVm.getUser(data)" refresh-debounce="1000">
-    <div refresh-on="OrganizationChanged" refresh-action="appVm.getOrganizations()" refresh-debounce="5000"></div>
-    <button type="button" role="button" class="off-screen-toggle hide" ui-toggle-class="off-screen" data-target=".app-aside"></button>
+    <div class="app-content" refresh-on="UserChanged" refresh-action="appVm.getUser(data)" refresh-debounce="1000">
+        <div refresh-on="OrganizationChanged" refresh-action="appVm.getOrganizations()" refresh-debounce="5000"></div>
+        <button
+            type="button"
+            role="button"
+            class="off-screen-toggle hide"
+            ui-toggle-class="off-screen"
+            data-target=".app-aside"
+        ></button>
 
-    <system-notification></system-notification>
-    <release-notification></release-notification>
-    <rate-limit></rate-limit>
+        <system-notification></system-notification>
+        <release-notification></release-notification>
+        <rate-limit></rate-limit>
 
-    <div class="app-content-body fade-in" ui-view autoscroll="true"></div>
-  </div>
+        <div class="app-content-body fade-in" ui-view autoscroll="true"></div>
+    </div>
 
-  <div class="app-footer wrapper b-t bg-light">
-    <span class="pull-right">
-      <a href="https://github.com/exceptionless/Exceptionless/releases" target="_blank" title="Version">{{appVm.apiVersionNumber}}</a>&nbsp;
-      <a href="javascript:void(0);" ui-scroll="app" class="m-l-sm text-muted"><i class="fa fa-long-arrow-up"></i></a>
-    </span>
-    <span class="visible-xs">
-      &copy; 2023 <a href="https://exceptionless.com" target="_blank">Exceptionless</a>
-      <a href="https://exceptionless.com/privacy/" target="_blank" class="m-l-xs text-muted" title="Privacy Policy">Privacy</a>
-      <a href="https://exceptionless.com/terms/" target="_blank" class="m-l-xs text-muted" title="Terms of Use">Terms</a>
-    </span>
-    <span class="hidden-xs">
-      &copy; 2023 <a href="https://exceptionless.com" target="_blank">Exceptionless</a>
-      <a href="https://exceptionless.com/news/" target="_blank" class="m-l-sm text-muted">News</a>
-      <a href="https://exceptionless.com/privacy/" target="_blank" class="m-l-sm text-muted">Privacy Policy</a>
-      <a href="https://exceptionless.com/terms/" target="_blank" class="m-l-sm text-muted">Terms of Use</a>
-    </span>
-  </div>
-  <intercom ng-if="appVm.isIntercomEnabled()"></intercom>
+    <div class="app-footer wrapper b-t bg-light">
+        <span class="pull-right">
+            <a href="https://github.com/exceptionless/Exceptionless/releases" target="_blank" title="Version"
+                >{{appVm.apiVersionNumber}}</a
+            >&nbsp;
+            <a href="javascript:void(0);" ui-scroll="app" class="m-l-sm text-muted"
+                ><i class="fa fa-long-arrow-up"></i
+            ></a>
+        </span>
+        <span class="visible-xs">
+            &copy; 2023 <a href="https://exceptionless.com" target="_blank">Exceptionless</a>
+            <a
+                href="https://exceptionless.com/privacy/"
+                target="_blank"
+                class="m-l-xs text-muted"
+                title="Privacy Policy"
+                >Privacy</a
+            >
+            <a href="https://exceptionless.com/terms/" target="_blank" class="m-l-xs text-muted" title="Terms of Use"
+                >Terms</a
+            >
+        </span>
+        <span class="hidden-xs">
+            &copy; 2023 <a href="https://exceptionless.com" target="_blank">Exceptionless</a>
+            <a href="https://exceptionless.com/news/" target="_blank" class="m-l-sm text-muted">News</a>
+            <a href="https://exceptionless.com/privacy/" target="_blank" class="m-l-sm text-muted">Privacy Policy</a>
+            <a href="https://exceptionless.com/terms/" target="_blank" class="m-l-sm text-muted">Terms of Use</a>
+        </span>
+    </div>
+    <intercom ng-if="appVm.isIntercomEnabled()"></intercom>
 </div>

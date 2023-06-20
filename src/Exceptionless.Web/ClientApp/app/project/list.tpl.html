@@ -1,38 +1,47 @@
 <div class="hbox hbox-auto-xs hbox-auto-sm">
-  <div class="col">
-    <div class="wrapper-md">
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <i class="fa fa-briefcase"></i> {{::'My Projects' | translate}}
+    <div class="col">
+        <div class="wrapper-md">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="fa fa-briefcase"></i> {{::'My Projects' | translate}}
 
-          <div class="pull-right">
-            <form name="vm.form" role="search">
-              <div class="form-group panel-heading-search">
-                <input id="projectSearch" name="projectSearch" type="search" class="form-control" placeholder="{{::'Filter' | translate}}"
-                       autocomplete="off"
-                       ng-model="vm.filter"
-                       ng-model-options="{ debounce: 500 }"
-                       ng-change="vm.setSearchFilter(vm.filter)"
-                       search-filter-validator
-                       uib-tooltip="{{(vm.form.projectSearch.$invalid) ? 'An invalid search term was found.' : ''}}"
-                       tooltip-class="error-tooltip"
-                       tooltip-is-open="vm.form.projectSearch.$invalid"
-                       tooltip-placement="bottom"
-                />
-              </div>
-            </form>
-          </div>
+                    <div class="pull-right">
+                        <form name="vm.form" role="search">
+                            <div class="form-group panel-heading-search">
+                                <input
+                                    id="projectSearch"
+                                    name="projectSearch"
+                                    type="search"
+                                    class="form-control"
+                                    placeholder="{{::'Filter' | translate}}"
+                                    autocomplete="off"
+                                    ng-model="vm.filter"
+                                    ng-model-options="{ debounce: 500 }"
+                                    ng-change="vm.setSearchFilter(vm.filter)"
+                                    search-filter-validator
+                                    uib-tooltip="{{(vm.form.projectSearch.$invalid) ? 'An invalid search term was found.' : ''}}"
+                                    tooltip-class="error-tooltip"
+                                    tooltip-is-open="vm.form.projectSearch.$invalid"
+                                    tooltip-placement="bottom"
+                                />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <projects settings="vm.projects"></projects>
+
+                <footer class="panel-footer">
+                    <a ui-sref="app.project.add" class="btn btn-primary" role="button"
+                        >{{::'Add New Project' | translate}}</a
+                    >
+                    <div class="pull-right">
+                        <a ui-sref="app.frequent" class="btn btn-default" role="button"
+                            >{{::'Go To Most Frequent' | translate}}</a
+                        >
+                    </div>
+                </footer>
+            </div>
         </div>
-
-        <projects settings="vm.projects"></projects>
-
-        <footer class="panel-footer">
-          <a ui-sref="app.project.add" class="btn btn-primary" role="button">{{::'Add New Project' | translate}}</a>
-          <div class="pull-right">
-            <a ui-sref="app.frequent" class="btn btn-default" role="button">{{::'Go To Most Frequent' | translate}}</a>
-          </div>
-        </footer>
-      </div>
     </div>
-  </div>
 </div>

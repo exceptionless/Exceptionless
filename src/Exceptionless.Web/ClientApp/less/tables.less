@@ -8,8 +8,8 @@
 }
 
 .table th.clickable {
-  cursor: pointer;
-  cursor: hand;
+    cursor: pointer;
+    cursor: hand;
 }
 
 .table th.action {
@@ -17,15 +17,15 @@
 }
 
 .table th.action-lg {
-  width: 136px;
+    width: 136px;
 }
 
 .table th.action-xl {
-  width: 175px;
+    width: 175px;
 }
 
 .table th.action-xxl {
-  width: 210px;
+    width: 210px;
 }
 
 .table th.date {
@@ -34,8 +34,8 @@
 }
 
 .table th.relative-date {
-  white-space: nowrap;
-  width: 155px;
+    white-space: nowrap;
+    width: 155px;
 }
 
 .table th.number {
@@ -44,23 +44,25 @@
 }
 
 .table th.percentage {
-  white-space: nowrap;
-  width: 74px;
+    white-space: nowrap;
+    width: 74px;
 }
 
 td.number {
-  text-align: right;
+    text-align: right;
 }
 
 .table th.selection {
     width: 50px;
 }
 
-.table-key-value td+td, .table-key-value th+td {
-    width: 100%
+.table-key-value td + td,
+.table-key-value th + td {
+    width: 100%;
 }
 
-.table-key-value th:first-child, .table-key-value td:first-child {
+.table-key-value th:first-child,
+.table-key-value td:first-child {
     @media (max-width: @screen-xs-max) {
         width: 120px;
     }
@@ -78,14 +80,15 @@ td.number {
     }
 }
 
-.table-selectable th:nth-child(2), .table-selectable td:nth-child(2) {
-  @media (max-width: @screen-xs-max) {
-    border-left: none;
-  }
+.table-selectable th:nth-child(2),
+.table-selectable td:nth-child(2) {
+    @media (max-width: @screen-xs-max) {
+        border-left: none;
+    }
 }
 
-.table-key-value td>ul {
-  padding-left: 15px;
+.table-key-value td > ul {
+    padding-left: 15px;
 }
 
 .table-footer {
@@ -97,46 +100,46 @@ td.number {
 }
 
 .tab-pane .table-footer {
-  padding: inherit;
-  border-top: inherit;
+    padding: inherit;
+    border-top: inherit;
 }
 
 .tab-content .table {
-  @media (min-width: @screen-sm-min) and (max-width: @screen-sm-max) {
-    margin-bottom: 15px;
-  }
+    @media (min-width: @screen-sm-min) and (max-width: @screen-sm-max) {
+        margin-bottom: 15px;
+    }
 
-  @media (min-width: @screen-md-min) and (max-width: @screen-md-max) {
-    margin-bottom: 15px;
-  }
+    @media (min-width: @screen-md-min) and (max-width: @screen-md-max) {
+        margin-bottom: 15px;
+    }
 
-  @media (min-width: @screen-lg-min) {
-    margin-bottom: 15px;
-  }
+    @media (min-width: @screen-lg-min) {
+        margin-bottom: 15px;
+    }
 }
 
 // Override default styles. This fixes dropdowns not being cut off and long content not running over other td's.
 .table-responsive {
-  overflow-x: inherit;
+    overflow-x: inherit;
 
-  @media screen and (max-width: @screen-xs-max) {
-    overflow-y: inherit;
+    @media screen and (max-width: @screen-xs-max) {
+        overflow-y: inherit;
 
-    > .table {
-      > thead,
-      > tbody,
-      > tfoot {
-        > tr {
-          > th,
-          > td {
-            white-space: inherit;
-          }
+        > .table {
+            > thead,
+            > tbody,
+            > tfoot {
+                > tr {
+                    > th,
+                    > td {
+                        white-space: inherit;
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }
 
 .editable-wrap {
-  width: 100%;
+    width: 100%;
 }
