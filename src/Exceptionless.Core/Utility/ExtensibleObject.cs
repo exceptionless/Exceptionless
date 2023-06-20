@@ -5,7 +5,8 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Utility;
 
-public interface IExtensibleObject {
+public interface IExtensibleObject
+{
     void SetProperty<T>(string name, T value);
 
     T GetProperty<T>(string name);
@@ -19,15 +20,18 @@ public interface IExtensibleObject {
     IEnumerable<KeyValuePair<string, object>> GetProperties();
 }
 
-public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject {
-    public ExtensibleObject() {
+public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
+{
+    public ExtensibleObject()
+    {
         _extendedData = new Dictionary<string, object>();
     }
 
     [JsonProperty]
     private readonly Dictionary<string, object> _extendedData;
 
-    public void SetProperty<T>(string name, T value) {
+    public void SetProperty<T>(string name, T value)
+    {
         if (_extendedData.ContainsKey(name))
             _extendedData[name] = value;
         else
@@ -36,7 +40,8 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject {
         NotifyPropertyChanged(name);
     }
 
-    public T GetProperty<T>(string name) {
+    public T GetProperty<T>(string name)
+    {
         object value = GetProperty(name);
         if (value == null)
             throw new InvalidOperationException($"Property value \"{name}\" is null.  Can't use generic method on null values.");
@@ -50,20 +55,25 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject {
         return value.ToType<T>();
     }
 
-    public object GetProperty(string name) {
+    public object GetProperty(string name)
+    {
         return _extendedData.TryGetValue(name, out object value) ? value : null;
     }
 
-    public IEnumerable<KeyValuePair<string, object>> GetProperties() {
+    public IEnumerable<KeyValuePair<string, object>> GetProperties()
+    {
         return _extendedData;
     }
 
-    public bool HasProperty(string name) {
+    public bool HasProperty(string name)
+    {
         return _extendedData.ContainsKey(name);
     }
 
-    public void RemoveProperty(string name) {
-        if (_extendedData.ContainsKey(name)) {
+    public void RemoveProperty(string name)
+    {
+        if (_extendedData.ContainsKey(name))
+        {
             _extendedData.Remove(name);
             NotifyPropertyChanged(name);
         }
@@ -71,7 +81,8 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject {
 
     public event PropertyChangedEventHandler PropertyChanged;
 
-    protected void NotifyPropertyChanged(string name) {
+    protected void NotifyPropertyChanged(string name)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

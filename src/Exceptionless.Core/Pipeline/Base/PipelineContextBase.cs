@@ -3,7 +3,8 @@
 /// <summary>
 /// The interface for pipeline context data
 /// </summary>
-public interface IPipelineContext {
+public interface IPipelineContext
+{
     /// <summary>
     /// Gets or sets a value indicating whether this pipeline is cancelled.
     /// </summary>
@@ -49,7 +50,8 @@ public interface IPipelineContext {
 /// <summary>
 /// The base class for pipeline context data
 /// </summary>
-public abstract class PipelineContextBase : IPipelineContext {
+public abstract class PipelineContextBase : IPipelineContext
+{
     /// <summary>
     /// Gets or sets a value indicating whether this pipeline is cancelled.
     /// </summary>
@@ -76,7 +78,8 @@ public abstract class PipelineContextBase : IPipelineContext {
     /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="ex">The Exception that occurred.</param>
-    public void SetError(string message, Exception ex = null) {
+    public void SetError(string message, Exception ex = null)
+    {
         ErrorMessage = message;
         Exception = ex;
     }

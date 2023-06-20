@@ -4,14 +4,16 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class SlackOptions {
+public class SlackOptions
+{
     public string SlackId { get; internal set; }
 
     public string SlackSecret { get; internal set; }
 
     public bool EnableSlack => !String.IsNullOrEmpty(SlackId);
 
-    public static SlackOptions ReadFromConfiguration(IConfiguration config) {
+    public static SlackOptions ReadFromConfiguration(IConfiguration config)
+    {
         var options = new SlackOptions();
 
         var oAuth = config.GetConnectionString("OAuth").ParseConnectionString();

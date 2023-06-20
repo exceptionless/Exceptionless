@@ -15,7 +15,8 @@ namespace Exceptionless.Web.Controllers;
 [Route(API_PREFIX)]
 [ApiExplorerSettings(IgnoreApi = true)]
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class StatusController : ExceptionlessApiController {
+public class StatusController : ExceptionlessApiController
+{
     private readonly ICacheClient _cacheClient;
     private readonly IMessagePublisher _messagePublisher;
     private readonly IQueue<EventPost> _eventQueue;
@@ -33,7 +34,8 @@ public class StatusController : ExceptionlessApiController {
         IQueue<EventNotification> notificationQueue,
         IQueue<WebHookNotification> webHooksQueue,
         IQueue<EventUserDescription> userDescriptionQueue,
-        AppOptions appOptions) {
+        AppOptions appOptions)
+    {
         _cacheClient = cacheClient;
         _messagePublisher = messagePublisher;
         _eventQueue = eventQueue;
@@ -49,8 +51,10 @@ public class StatusController : ExceptionlessApiController {
     /// </summary>
     [AllowAnonymous]
     [HttpGet("about")]
-    public IActionResult IndexAsync() {
-        return Ok(new {
+    public IActionResult IndexAsync()
+    {
+        return Ok(new
+        {
             _appOptions.InformationalVersion,
             AppMode = _appOptions.AppMode.ToString(),
             Environment.MachineName
@@ -59,35 +63,42 @@ public class StatusController : ExceptionlessApiController {
 
     [HttpGet("queue-stats")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<IActionResult> QueueStatsAsync() {
+    public async Task<IActionResult> QueueStatsAsync()
+    {
         var eventQueueStats = await _eventQueue.GetQueueStatsAsync();
         var mailQueueStats = await _mailQueue.GetQueueStatsAsync();
         var userDescriptionQueueStats = await _userDescriptionQueue.GetQueueStatsAsync();
         var notificationQueueStats = await _notificationQueue.GetQueueStatsAsync();
         var webHooksQueueStats = await _webHooksQueue.GetQueueStatsAsync();
 
-        return Ok(new {
-            EventPosts = new {
+        return Ok(new
+        {
+            EventPosts = new
+            {
                 Active = eventQueueStats.Enqueued,
                 eventQueueStats.Deadletter,
                 eventQueueStats.Working
             },
-            MailMessages = new {
+            MailMessages = new
+            {
                 Active = mailQueueStats.Enqueued,
                 mailQueueStats.Deadletter,
                 mailQueueStats.Working
             },
-            UserDescriptions = new {
+            UserDescriptions = new
+            {
                 Active = userDescriptionQueueStats.Enqueued,
                 userDescriptionQueueStats.Deadletter,
                 userDescriptionQueueStats.Working
             },
-            Notifications = new {
+            Notifications = new
+            {
                 Active = notificationQueueStats.Enqueued,
                 notificationQueueStats.Deadletter,
                 notificationQueueStats.Working
             },
-            WebHooks = new {
+            WebHooks = new
+            {
                 Active = webHooksQueueStats.Enqueued,
                 webHooksQueueStats.Deadletter,
                 webHooksQueueStats.Working
@@ -98,7 +109,8 @@ public class StatusController : ExceptionlessApiController {
     [HttpPost("notifications/release")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false) {
+    public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
+    {
         var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message?.Value };
         await _messagePublisher.PublishAsync(notification);
         return Ok(notification);
@@ -108,7 +120,8 @@ public class StatusController : ExceptionlessApiController {
     /// Returns the current system notification messages.
     /// </summary>
     [HttpGet("notifications/system")]
-    public async Task<ActionResult<SystemNotification>> GetSystemNotificationAsync() {
+    public async Task<ActionResult<SystemNotification>> GetSystemNotificationAsync()
+    {
         var notification = await _cacheClient.GetAsync<SystemNotification>("system-notification");
         if (!notification.HasValue)
             return Ok();
@@ -119,7 +132,8 @@ public class StatusController : ExceptionlessApiController {
     [HttpPost("notifications/system")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message) {
+    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message)
+    {
         if (String.IsNullOrWhiteSpace(message?.Value))
             return NotFound();
 
@@ -132,7 +146,8 @@ public class StatusController : ExceptionlessApiController {
 
     [HttpDelete("notifications/system")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<IActionResult> RemoveSystemNotificationAsync() {
+    public async Task<IActionResult> RemoveSystemNotificationAsync()
+    {
         await _cacheClient.RemoveAsync("system-notification");
         await _messagePublisher.PublishAsync(new SystemNotification { Date = SystemClock.UtcNow });
         return Ok();

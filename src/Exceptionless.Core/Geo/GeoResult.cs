@@ -5,7 +5,8 @@ using Exceptionless.Core.Models.Data;
 namespace Exceptionless.Core.Geo;
 
 [DebuggerDisplay("{Latitude},{Longitude}, {Locality}, {Level2}, {Level1}, {Country}")]
-public class GeoResult {
+public class GeoResult
+{
     public double? Latitude { get; set; }
 
     public double? Longitude { get; set; }
@@ -27,7 +28,8 @@ public class GeoResult {
     /// </summary>
     public string Locality { get; set; }
 
-    public bool IsValid() {
+    public bool IsValid()
+    {
         if (!Latitude.HasValue || Latitude < -90.0 || Latitude > 90.0)
             return false;
 
@@ -37,7 +39,8 @@ public class GeoResult {
         return true;
     }
 
-    public static bool TryParse(string input, out GeoResult result) {
+    public static bool TryParse(string input, out GeoResult result)
+    {
         result = null;
         if (String.IsNullOrEmpty(input))
             return false;
@@ -56,7 +59,8 @@ public class GeoResult {
         return true;
     }
 
-    public override string ToString() {
+    public override string ToString()
+    {
         if (!Latitude.HasValue || !Longitude.HasValue)
             return null;
 
@@ -64,15 +68,18 @@ public class GeoResult {
     }
 }
 
-public static class GeoResultExtensions {
-    public static Location ToLocation(this GeoResult result) {
+public static class GeoResultExtensions
+{
+    public static Location ToLocation(this GeoResult result)
+    {
         if (result == null)
             return null;
 
         if (String.IsNullOrEmpty(result.Country) && String.IsNullOrEmpty(result.Level1) && String.IsNullOrEmpty(result.Level2) && String.IsNullOrEmpty(result.Locality))
             return null;
 
-        return new Location {
+        return new Location
+        {
             Country = result.Country?.Trim(),
             Level1 = result.Level1?.Trim(),
             Level2 = result.Level2?.Trim(),

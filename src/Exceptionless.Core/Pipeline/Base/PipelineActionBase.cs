@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
 
-public interface IPipelineAction<TContext> where TContext : IPipelineContext {
+public interface IPipelineAction<TContext> where TContext : IPipelineContext
+{
     string Name { get; }
     bool Enabled { get; }
 
@@ -32,11 +33,13 @@ public interface IPipelineAction<TContext> where TContext : IPipelineContext {
 /// The base class for pipeline actions
 /// </summary>
 /// <typeparam name="TContext">The type of the pipeline context.</typeparam>
-public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> where TContext : class, IPipelineContext {
+public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> where TContext : class, IPipelineContext
+{
     private readonly AppOptions _options;
     protected readonly ILogger _logger;
 
-    public PipelineActionBase(AppOptions options, ILoggerFactory loggerFactory = null) {
+    public PipelineActionBase(AppOptions options, ILoggerFactory loggerFactory = null)
+    {
         _options = options;
         var type = GetType();
         Name = type.Name;
@@ -54,7 +57,8 @@ public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> w
     /// Processes this action using the specified pipeline context.
     /// </summary>
     /// <param name="context">The pipeline context.</param>
-    public virtual Task ProcessAsync(TContext context) {
+    public virtual Task ProcessAsync(TContext context)
+    {
         throw new NotImplementedException();
     }
 
@@ -62,14 +66,19 @@ public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> w
     /// Processes this action using the specified pipeline context.
     /// </summary>
     /// <param name="contexts">The pipeline context.</param>
-    public virtual async Task ProcessBatchAsync(ICollection<TContext> contexts) {
-        foreach (var ctx in contexts) {
-            try {
+    public virtual async Task ProcessBatchAsync(ICollection<TContext> contexts)
+    {
+        foreach (var ctx in contexts)
+        {
+            try
+            {
                 await ProcessAsync(ctx).AnyContext();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 bool cont = false;
-                try {
+                try
+                {
                     cont = HandleError(ex, ctx);
                 }
                 catch { }
@@ -86,7 +95,8 @@ public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> w
     /// <param name="exception">The exception that occurred while processing the action.</param>
     /// <param name="context">The pipeline context.</param>
     /// <returns>Return true if processing should continue or false if processing should halt.</returns>
-    public virtual bool HandleError(Exception exception, TContext context) {
+    public virtual bool HandleError(Exception exception, TContext context)
+    {
         return ContinueOnError;
     }
 }

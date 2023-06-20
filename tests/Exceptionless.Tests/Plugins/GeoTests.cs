@@ -17,7 +17,8 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
-public sealed class GeoTests : TestWithServices {
+public sealed class GeoTests : TestWithServices
+{
     private const string GREEN_BAY_COORDINATES = "44.5458,-88.1019";
     private const string GREEN_BAY_IP = "24.208.86.80";
     private const string IRVING_COORDINATES = "32.8489,-96.9667";
@@ -26,25 +27,30 @@ public sealed class GeoTests : TestWithServices {
     private readonly BillingPlans _plans;
     private readonly AppOptions _options;
 
-    public GeoTests(ITestOutputHelper output) : base(output) {
+    public GeoTests(ITestOutputHelper output) : base(output)
+    {
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
         _options = GetService<AppOptions>();
     }
 
-    private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory) {
-        if (String.IsNullOrEmpty(_options.MaxMindGeoIpKey)) {
+    private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory)
+    {
+        if (String.IsNullOrEmpty(_options.MaxMindGeoIpKey))
+        {
             _logger.LogInformation("Configure {SettingKey} to run geo tests.", nameof(AppOptions.MaxMindGeoIpKey));
             return new NullGeoIpService();
         }
 
         string dataDirectory = PathHelper.ExpandPath(".\\");
-        var storage = new FolderFileStorage(new FolderFileStorageOptions {
+        var storage = new FolderFileStorage(new FolderFileStorageOptions
+        {
             Folder = dataDirectory,
             LoggerFactory = loggerFactory
         });
 
-        if (!await storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH)) {
+        if (!await storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH))
+        {
             var job = new DownloadGeoIPDatabaseJob(_options, GetService<ICacheClient>(), storage, loggerFactory);
             var result = await job.RunAsync();
             Assert.NotNull(result);
@@ -55,7 +61,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillNotSetLocation() {
+    public async Task WillNotSetLocation()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -74,7 +81,8 @@ public sealed class GeoTests : TestWithServices {
     [InlineData("Invalid")]
     [InlineData("x,y")]
     [InlineData("190,180")]
-    public async Task WillResetLocation(string geo) {
+    public async Task WillResetLocation(string geo)
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -88,7 +96,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillSetLocationFromGeo() {
+    public async Task WillSetLocationFromGeo()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -107,7 +116,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillSetLocationFromRequestInfo() {
+    public async Task WillSetLocationFromRequestInfo()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -126,7 +136,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillSetLocationFromEnvironmentInfoInfo() {
+    public async Task WillSetLocationFromEnvironmentInfoInfo()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -145,7 +156,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillSetFromSingleGeo() {
+    public async Task WillSetFromSingleGeo()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -159,7 +171,8 @@ public sealed class GeoTests : TestWithServices {
 
         await plugin.EventBatchProcessingAsync(contexts);
 
-        foreach (var context in contexts) {
+        foreach (var context in contexts)
+        {
             AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, context.Event.Geo);
 
             var location = context.Event.GetLocation();
@@ -170,7 +183,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillNotSetFromMultipleGeo() {
+    public async Task WillNotSetFromMultipleGeo()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -200,7 +214,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task ReverseGeocodeLookup() {
+    public async Task ReverseGeocodeLookup()
+    {
         var service = GetService<IGeocodeService>();
         if (service is NullGeocodeService)
             return;
@@ -214,7 +229,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task WillSetMultipleFromEmptyGeo() {
+    public async Task WillSetMultipleFromEmptyGeo()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -247,7 +263,8 @@ public sealed class GeoTests : TestWithServices {
 
     [Theory]
     [MemberData(nameof(IPData))]
-    public async Task CanResolveIpAsync(string ip, bool canResolve) {
+    public async Task CanResolveIpAsync(string ip, bool canResolve)
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -260,7 +277,8 @@ public sealed class GeoTests : TestWithServices {
     }
 
     [Fact]
-    public async Task CanResolveIpFromCacheAsync() {
+    public async Task CanResolveIpFromCacheAsync()
+    {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
             return;
@@ -279,13 +297,15 @@ public sealed class GeoTests : TestWithServices {
     /// <summary>
     /// Takes in 32.8489,-96.9667 and only checks to one decimal place.
     /// </summary>
-    private void AssertCoordinatesAreEqual(string expected, string actual) {
+    private void AssertCoordinatesAreEqual(string expected, string actual)
+    {
         if (String.Equals(actual, expected))
             return;
 
         string[] actualParts = actual.Split(',');
         string[] expectedParts = expected.Split(',');
-        if (actualParts.Length != expectedParts.Length || actualParts.Length != 2) {
+        if (actualParts.Length != expectedParts.Length || actualParts.Length != 2)
+        {
             Assert.Equal(expected, actual);
             return;
         }

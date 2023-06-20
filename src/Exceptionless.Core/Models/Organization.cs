@@ -5,8 +5,10 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("{Id}, {Name}, {PlanName}")]
-public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, ISupportSoftDeletes {
-    public Organization() {
+public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, ISupportSoftDeletes
+{
+    public Organization()
+    {
         Invites = new Collection<Invite>();
         BillingStatus = BillingStatus.Trialing;
         Usage = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
@@ -162,7 +164,8 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
 }
 
-public enum BillingStatus {
+public enum BillingStatus
+{
     Trialing = 0,
     Active = 1,
     PastDue = 2,

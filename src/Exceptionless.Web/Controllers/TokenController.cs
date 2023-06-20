@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Queries.Validation;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
@@ -17,10 +17,12 @@ namespace Exceptionless.App.Controllers.API;
 
 [Route(API_PREFIX + "/tokens")]
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, UpdateToken> {
+public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, UpdateToken>
+{
     private readonly IProjectRepository _projectRepository;
 
-    public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
+    public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory)
+    {
         _projectRepository = projectRepository;
     }
 
@@ -34,7 +36,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10)
+    {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return NotFound();
 
@@ -53,7 +56,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10)
+    {
         var project = await GetProjectAsync(projectId);
         if (project == null)
             return NotFound();
@@ -71,7 +75,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <param name="projectId">The identifier of the project.</param>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/default")]
-    public async Task<ActionResult<ViewToken>> GetDefaultTokenAsync(string projectId) {
+    public async Task<ActionResult<ViewToken>> GetDefaultTokenAsync(string projectId)
+    {
         var project = await GetProjectAsync(projectId);
         if (project == null)
             return NotFound();
@@ -89,7 +94,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <param name="id">The identifier of the token.</param>
     /// <response code="404">The token could not be found.</response>
     [HttpGet("{id:token}", Name = "GetTokenById")]
-    public Task<ActionResult<ViewToken>> GetAsync(string id) {
+    public Task<ActionResult<ViewToken>> GetAsync(string id)
+    {
         return GetByIdImplAsync(id);
     }
 
@@ -104,7 +110,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost]
     [Consumes("application/json")]
-    public Task<ActionResult<ViewToken>> PostAsync(NewToken token) {
+    public Task<ActionResult<ViewToken>> PostAsync(NewToken token)
+    {
         return PostImplAsync(token);
     }
 
@@ -122,7 +129,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
     [Consumes("application/json")]
-    public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken token = null) {
+    public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken token = null)
+    {
         var project = await GetProjectAsync(projectId);
         if (project == null)
             return NotFound();
@@ -148,7 +156,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
     [Consumes("application/json")]
-    public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken token = null) {
+    public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken token = null)
+    {
         if (token is null)
             token = new NewToken();
 
@@ -169,7 +178,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [HttpPatch("{id:tokens}")]
     [HttpPut("{id:tokens}")]
     [Consumes("application/json")]
-    public Task<ActionResult<ViewToken>> PatchAsync(string id, Delta<UpdateToken> changes) {
+    public Task<ActionResult<ViewToken>> PatchAsync(string id, Delta<UpdateToken> changes)
+    {
         return PatchImplAsync(id, changes);
     }
 
@@ -183,13 +193,15 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="500">An error occurred while deleting one or more tokens.</response>
     [HttpDelete("{ids:tokens}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
+    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
+    {
         return DeleteImplAsync(ids.FromDelimitedString());
     }
 
     #endregion
 
-    protected override async Task<Token> GetModelAsync(string id, bool useCache = true) {
+    protected override async Task<Token> GetModelAsync(string id, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(id))
             return null;
 
@@ -212,7 +224,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         return model;
     }
 
-    protected override async Task<PermissionResult> CanAddAsync(Token value) {
+    protected override async Task<PermissionResult> CanAddAsync(Token value)
+    {
         // We only allow users to create organization scoped tokens.
         if (String.IsNullOrEmpty(value.OrganizationId))
             return PermissionResult.Deny;
@@ -225,9 +238,11 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
             return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
 
-        foreach (string scope in value.Scopes.ToList()) {
+        foreach (string scope in value.Scopes.ToList())
+        {
             string lowerCaseScoped = scope.ToLowerInvariant();
-            if (!String.Equals(scope, lowerCaseScoped)) {
+            if (!String.Equals(scope, lowerCaseScoped))
+            {
                 value.Scopes.Remove(scope);
                 value.Scopes.Add(lowerCaseScoped);
             }
@@ -248,7 +263,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !hasGlobalAdminRole)
             return PermissionResult.Deny;
 
-        if (!String.IsNullOrEmpty(value.ProjectId)) {
+        if (!String.IsNullOrEmpty(value.ProjectId))
+        {
             var project = await GetProjectAsync(value.ProjectId);
             if (project == null)
                 return PermissionResult.Deny;
@@ -257,7 +273,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
             value.DefaultProjectId = null;
         }
 
-        if (!String.IsNullOrEmpty(value.DefaultProjectId)) {
+        if (!String.IsNullOrEmpty(value.DefaultProjectId))
+        {
             var project = await GetProjectAsync(value.DefaultProjectId);
             if (project == null)
                 return PermissionResult.Deny;
@@ -266,7 +283,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         return await base.CanAddAsync(value);
     }
 
-    protected override Task<Token> AddModelAsync(Token value) {
+    protected override Task<Token> AddModelAsync(Token value)
+    {
         value.Id = StringExtensions.GetNewToken();
         value.CreatedUtc = value.UpdatedUtc = SystemClock.UtcNow;
         value.Type = TokenType.Access;
@@ -282,7 +300,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         return base.AddModelAsync(value);
     }
 
-    protected override async Task<PermissionResult> CanDeleteAsync(Token value) {
+    protected override async Task<PermissionResult> CanDeleteAsync(Token value)
+    {
         if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser.Id)
             return PermissionResult.DenyWithMessage("Can only delete tokens created by you.");
 
@@ -292,7 +311,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         return await base.CanDeleteAsync(value);
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
+    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(projectId))
             return null;
 
@@ -303,7 +323,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         return project;
     }
 
-    private async Task<bool> IsInProjectAsync(string projectId) {
+    private async Task<bool> IsInProjectAsync(string projectId)
+    {
         var project = await GetProjectAsync(projectId);
         return project != null;
     }

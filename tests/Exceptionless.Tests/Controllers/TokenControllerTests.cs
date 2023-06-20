@@ -1,32 +1,36 @@
 using Exceptionless.Core.Authorization;
-using Exceptionless.Tests.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using FluentRest;
+using Foundatio.Repositories;
 using Xunit;
 using Xunit.Abstractions;
-using Exceptionless.Core.Models;
-using Foundatio.Repositories;
 
 namespace Exceptionless.Tests.Controllers;
 
-public sealed class TokenControllerTests : IntegrationTestsBase {
-    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {}
+public sealed class TokenControllerTests : IntegrationTestsBase
+{
+    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
 
     [Fact]
-    public async Task CanDisableApiKey() {
+    public async Task CanDisableApiKey()
+    {
         var token = await SendRequestAsAsync<ViewToken>(r => r
            .Post()
            .AsGlobalAdminUser()
            .AppendPath("tokens")
-           .Content(new NewToken {
+           .Content(new NewToken
+           {
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
                Scopes = new HashSet<string> { AuthorizationRoles.Client, AuthorizationRoles.User }
@@ -38,7 +42,8 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
         Assert.False(token.IsDisabled);
         Assert.Equal(2, token.Scopes.Count);
 
-        var updateToken = new UpdateToken {
+        var updateToken = new UpdateToken
+        {
             IsDisabled = true,
             Notes = "Disabling until next release"
         };
@@ -76,12 +81,14 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task SuspendingOrganizationWillDisableApiKey() {
+    public async Task SuspendingOrganizationWillDisableApiKey()
+    {
         var token = await SendRequestAsAsync<ViewToken>(r => r
            .Post()
            .AsGlobalAdminUser()
            .AppendPath("tokens")
-           .Content(new NewToken {
+           .Content(new NewToken
+           {
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
                Scopes = new HashSet<string> { AuthorizationRoles.Client }
@@ -108,7 +115,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase {
            .QueryString("code", SuspensionCode.Billing)
            .StatusCodeShouldBeOk()
         );
-        
+
         var actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
         Assert.NotNull(actualToken);
         Assert.True(actualToken.IsSuspended);

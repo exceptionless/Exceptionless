@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Web.Utility;
 
-public static class Headers {
+public static class Headers
+{
     public const string Bearer = "Bearer";
     public const string LegacyConfigurationVersion = "v";
     public const string ConfigurationVersion = "X-Exceptionless-ConfigVersion";

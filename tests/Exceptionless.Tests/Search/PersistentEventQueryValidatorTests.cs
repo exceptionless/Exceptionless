@@ -12,11 +12,13 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search;
 
-public sealed class PersistentEventQueryValidatorTests : TestWithServices {
+public sealed class PersistentEventQueryValidatorTests : TestWithServices
+{
     private readonly ElasticQueryParser _parser;
     private readonly PersistentEventQueryValidator _validator;
 
-    public PersistentEventQueryValidatorTests(ITestOutputHelper output) : base(output) {
+    public PersistentEventQueryValidatorTests(ITestOutputHelper output) : base(output)
+    {
         _parser = GetService<ExceptionlessElasticConfiguration>().Events.QueryParser;
         _validator = GetService<PersistentEventQueryValidator>();
     }
@@ -50,14 +52,17 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices {
     [InlineData("stack:404", "stack:404", true, false)]
     [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
     [InlineData("status:open", "status:open", true, false)]
-    public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures) {
+    public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures)
+    {
         var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Query };
 
         IQueryNode result;
-        try {
+        try
+        {
             result = await _parser.ParseAsync(query, context).AnyContext();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex, "Error parsing query: {Query}. Message: {Message}", query, ex.Message);
             if (isValid)
                 throw;
@@ -116,7 +121,8 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices {
     [InlineData("date:(date cardinality:user sum:value avg:value sum:count~1) min:date max:date cardinality:user sum:count~1", true, false)] // stack dashboard
     [InlineData("avg:value cardinality:user date:(date cardinality:user)", true, false)] // session dashboard
     [InlineData("date:(date~month terms:(project cardinality:stack terms:(first @include:true)) cardinality:stack terms:(first @include:true))", true, true)] // Breakdown of total events, new events and unique events per month by project
-    public async Task CanProcessAggregationsAsync(string query, bool isValid, bool usesPremiumFeatures) {
+    public async Task CanProcessAggregationsAsync(string query, bool isValid, bool usesPremiumFeatures)
+    {
         var info = await _validator.ValidateAggregationsAsync(query);
         _logger.LogInformation("UsesPremiumFeatures: {UsesPremiumFeatures} IsValid: {IsValid} Message: {Message}", info.UsesPremiumFeatures, info.IsValid, info.Message);
         Assert.Equal(isValid, info.IsValid);

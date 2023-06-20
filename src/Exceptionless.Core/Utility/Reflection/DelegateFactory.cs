@@ -9,8 +9,10 @@ public delegate object LateBoundGet(object target);
 public delegate void LateBoundSet(object target, object value);
 public delegate object LateBoundConstructor();
 
-public static class DelegateFactory {
-    private static DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner) {
+public static class DelegateFactory
+{
+    private static DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner)
+    {
         var dynamicMethod = !owner.IsInterface
           ? new DynamicMethod(name, returnType, parameterTypes, owner, true)
           : new DynamicMethod(name, returnType, parameterTypes, owner.Assembly.ManifestModule, true);
@@ -18,7 +20,8 @@ public static class DelegateFactory {
         return dynamicMethod;
     }
 
-    public static LateBoundMethod CreateMethod(MethodBase method) {
+    public static LateBoundMethod CreateMethod(MethodBase method)
+    {
         var dynamicMethod = CreateDynamicMethod(method.ToString(), typeof(object), new[] { typeof(object), typeof(object[]) }, method.DeclaringType);
         var generator = dynamicMethod.GetILGenerator();
 
@@ -39,7 +42,8 @@ public static class DelegateFactory {
         if (!method.IsConstructor && !method.IsStatic)
             generator.PushInstance(method.DeclaringType);
 
-        for (int i = 0; i < args.Length; i++) {
+        for (int i = 0; i < args.Length; i++)
+        {
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Ldc_I4, i);
             generator.Emit(OpCodes.Ldelem_Ref);
@@ -66,17 +70,20 @@ public static class DelegateFactory {
         return (LateBoundMethod)dynamicMethod.CreateDelegate(typeof(LateBoundMethod));
     }
 
-    public static LateBoundConstructor CreateConstructor(Type type) {
+    public static LateBoundConstructor CreateConstructor(Type type)
+    {
         var dynamicMethod = CreateDynamicMethod("Create" + type.FullName, typeof(object), Type.EmptyTypes, type);
         dynamicMethod.InitLocals = true;
         var generator = dynamicMethod.GetILGenerator();
 
-        if (type.IsValueType) {
+        if (type.IsValueType)
+        {
             generator.DeclareLocal(type);
             generator.Emit(OpCodes.Ldloc_0);
             generator.Emit(OpCodes.Box, type);
         }
-        else {
+        else
+        {
             var constructorInfo = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
             if (constructorInfo == null)
                 throw new InvalidOperationException($"Could not get constructor for {type}.");
@@ -89,7 +96,8 @@ public static class DelegateFactory {
         return (LateBoundConstructor)dynamicMethod.CreateDelegate(typeof(LateBoundConstructor));
     }
 
-    public static LateBoundGet CreateGet(PropertyInfo propertyInfo) {
+    public static LateBoundGet CreateGet(PropertyInfo propertyInfo)
+    {
         var getMethod = propertyInfo.GetGetMethod(true);
         if (getMethod == null)
             throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a getter.");
@@ -107,7 +115,8 @@ public static class DelegateFactory {
         return (LateBoundGet)dynamicMethod.CreateDelegate(typeof(LateBoundGet));
     }
 
-    public static LateBoundGet CreateGet(FieldInfo fieldInfo) {
+    public static LateBoundGet CreateGet(FieldInfo fieldInfo)
+    {
         var dynamicMethod = CreateDynamicMethod("Get" + fieldInfo.Name, typeof(object), new[] { typeof(object) }, fieldInfo.DeclaringType);
 
         var generator = dynamicMethod.GetILGenerator();
@@ -122,7 +131,8 @@ public static class DelegateFactory {
         return (LateBoundGet)dynamicMethod.CreateDelegate(typeof(LateBoundGet));
     }
 
-    public static LateBoundSet CreateSet(PropertyInfo propertyInfo) {
+    public static LateBoundSet CreateSet(PropertyInfo propertyInfo)
+    {
         var setMethod = propertyInfo.GetSetMethod(true);
         if (setMethod == null)
             throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a setter.");
@@ -141,7 +151,8 @@ public static class DelegateFactory {
         return (LateBoundSet)dynamicMethod.CreateDelegate(typeof(LateBoundSet));
     }
 
-    public static LateBoundSet CreateSet(FieldInfo fieldInfo) {
+    public static LateBoundSet CreateSet(FieldInfo fieldInfo)
+    {
         var dynamicMethod = CreateDynamicMethod("Set" + fieldInfo.Name, null, new[] { typeof(object), typeof(object) }, fieldInfo.DeclaringType);
         var generator = dynamicMethod.GetILGenerator();
 

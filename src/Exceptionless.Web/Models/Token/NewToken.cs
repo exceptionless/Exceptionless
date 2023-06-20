@@ -2,8 +2,10 @@
 
 namespace Exceptionless.Web.Models;
 
-public class NewToken : IOwnedByOrganizationAndProject {
-    public NewToken() {
+public class NewToken : IOwnedByOrganizationAndProject
+{
+    public NewToken()
+    {
         Scopes = new HashSet<string>();
     }
 

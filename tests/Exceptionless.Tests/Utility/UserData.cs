@@ -6,13 +6,16 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
-internal static class UserData {
-    public static IEnumerable<User> GenerateUsers(int count = 10, bool generateId = false, string id = null, string organizationId = null, string emailAddress = null, List<string> roles = null) {
+internal static class UserData
+{
+    public static IEnumerable<User> GenerateUsers(int count = 10, bool generateId = false, string id = null, string organizationId = null, string emailAddress = null, List<string> roles = null)
+    {
         for (int i = 0; i < count; i++)
             yield return GenerateUser(generateId, id, organizationId, emailAddress, roles);
     }
 
-    public static IEnumerable<User> GenerateSampleUsers() {
+    public static IEnumerable<User> GenerateSampleUsers()
+    {
         return new List<User> {
                 GenerateSampleUser(),
                 GenerateSampleUserWithNoRoles(),
@@ -24,7 +27,8 @@ internal static class UserData {
             };
     }
 
-    public static User GenerateSampleUser() {
+    public static User GenerateSampleUser()
+    {
         return GenerateUser(id: TestConstants.UserId, organizationId: TestConstants.OrganizationId, emailAddress: TestConstants.UserEmail, roles: new List<string> {
                 AuthorizationRoles.GlobalAdmin,
                 AuthorizationRoles.User,
@@ -32,12 +36,15 @@ internal static class UserData {
             });
     }
 
-    public static User GenerateSampleUserWithNoRoles() {
+    public static User GenerateSampleUserWithNoRoles()
+    {
         return GenerateUser(id: TestConstants.UserIdWithNoRoles, organizationId: TestConstants.OrganizationId, emailAddress: TestConstants.UserEmailWithNoRoles);
     }
 
-    public static User GenerateUser(bool generateId = false, string id = null, string organizationId = null, string emailAddress = null, IEnumerable<string> roles = null) {
-        var user = new User {
+    public static User GenerateUser(bool generateId = false, string id = null, string organizationId = null, string emailAddress = null, IEnumerable<string> roles = null)
+    {
+        var user = new User
+        {
             Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.UserId : id,
             EmailAddress = emailAddress.IsNullOrEmpty() ? String.Concat(RandomData.GetWord(false), "@", RandomData.GetWord(false), ".com") : emailAddress,
             Password = TestConstants.UserPassword,

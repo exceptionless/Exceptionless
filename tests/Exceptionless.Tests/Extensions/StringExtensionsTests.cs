@@ -4,11 +4,13 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Extensions;
 
-public class StringExtensionsTests : TestWithServices {
+public class StringExtensionsTests : TestWithServices
+{
     public StringExtensionsTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
-    public void ToAddress() {
+    public void ToAddress()
+    {
         Assert.Equal("::1", "::1".ToAddress());
         Assert.Equal("1.2.3.4", "1.2.3.4".ToAddress());
         Assert.Equal("1.2.3.4", "1.2.3.4:".ToAddress());
@@ -19,7 +21,8 @@ public class StringExtensionsTests : TestWithServices {
     }
 
     [Fact(Skip = "TODO: https://github.com/exceptionless/Exceptionless.Net/issues/2")]
-    public void LowerUnderscoredWords() {
+    public void LowerUnderscoredWords()
+    {
         Assert.Equal("enable_ssl", "EnableSSL".ToLowerUnderscoredWords());
         Assert.Equal("base_url", "BaseURL".ToLowerUnderscoredWords());
         Assert.Equal("website_mode", "WebsiteMode".ToLowerUnderscoredWords());

@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Queues.Models;
 
-public class EventPostInfo {
+public class EventPostInfo
+{
     public string OrganizationId { get; set; }
     public string ProjectId { get; set; }
     public string CharSet { get; set; }
@@ -11,8 +12,10 @@ public class EventPostInfo {
     public string IpAddress { get; set; }
 }
 
-public class EventPost : EventPostInfo {
-    public EventPost(bool enableArchive) {
+public class EventPost : EventPostInfo
+{
+    public EventPost(bool enableArchive)
+    {
         ShouldArchive = enableArchive;
     }
 

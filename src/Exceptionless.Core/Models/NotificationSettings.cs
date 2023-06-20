@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class NotificationSettings {
+public class NotificationSettings
+{
     public bool SendDailySummary { get; set; }
     public bool ReportNewErrors { get; set; }
     public bool ReportCriticalErrors { get; set; }

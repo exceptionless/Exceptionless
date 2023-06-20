@@ -1,9 +1,9 @@
 ﻿using Exceptionless.Core.Billing;
-using Exceptionless.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Tests.Utility;
 using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
@@ -11,45 +11,53 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
-public sealed class WebHookDataTests : TestWithServices {
+public sealed class WebHookDataTests : TestWithServices
+{
     private readonly WebHookDataPluginManager _webHookData;
     private readonly FormattingPluginManager _formatter;
 
-    public WebHookDataTests(ITestOutputHelper output) : base(output) {
+    public WebHookDataTests(ITestOutputHelper output) : base(output)
+    {
         _webHookData = GetService<WebHookDataPluginManager>();
         _formatter = GetService<FormattingPluginManager>();
     }
 
     [Theory]
     [MemberData(nameof(WebHookData))]
-    public async Task CreateFromEventAsync(string version, bool expectData) {
+    public async Task CreateFromEventAsync(string version, bool expectData)
+    {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
         object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
-        if (expectData) {
+        if (expectData)
+        {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath);
             string actualContent = JsonConvert.SerializeObject(data, settings);
             Assert.Equal(expectedContent, actualContent);
         }
-        else {
+        else
+        {
             Assert.Null(data);
         }
     }
 
     [Theory]
     [MemberData(nameof(WebHookData))]
-    public async Task CanCreateFromStackAsync(string version, bool expectData) {
+    public async Task CanCreateFromStackAsync(string version, bool expectData)
+    {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
         object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
-        if (expectData) {
+        if (expectData)
+        {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath);
             string actualContent = JsonConvert.SerializeObject(data, settings);
             Assert.Equal(expectedContent, actualContent);
         }
-        else {
+        else
+        {
             Assert.Null(data);
         }
     }
@@ -61,18 +69,20 @@ public sealed class WebHookDataTests : TestWithServices {
             new object[] { "v3", false }
         }.ToArray();
 
-    private WebHookDataContext GetWebHookDataContext(string version) {
+    private WebHookDataContext GetWebHookDataContext(string version)
+    {
         string json = File.ReadAllText(Path.GetFullPath(Path.Combine("..", "..", "..", "ErrorData", "1477.expected.json")));
 
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
 
-        var hook = new WebHook {
+        var hook = new WebHook
+        {
             Id = TestConstants.WebHookId,
-            OrganizationId = TestConstants.OrganizationId, 
+            OrganizationId = TestConstants.OrganizationId,
             ProjectId = TestConstants.ProjectId,
             Url = "http://localhost:40000/test",
-            EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, 
+            EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted },
             Version = version,
             CreatedUtc = SystemClock.UtcNow
         };
@@ -83,7 +93,8 @@ public sealed class WebHookDataTests : TestWithServices {
         ev.StackId = TestConstants.StackId;
         ev.Id = TestConstants.EventId;
 
-        var context = new WebHookDataContext(hook, ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject()) {
+        var context = new WebHookDataContext(hook, ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject())
+        {
             Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc")
         };
         context.Stack.Tags = new TagSet { "Test" };

@@ -1,6 +1,7 @@
 namespace Exceptionless.Core.Models.WorkItems;
 
-public class RemoveBotEventsWorkItem {
+public class RemoveBotEventsWorkItem
+{
     public string OrganizationId { get; set; }
     public string ProjectId { get; set; }
     public string ClientIpAddress { get; set; }

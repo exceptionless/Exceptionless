@@ -31,20 +31,23 @@ using Run = Exceptionless.Tests.Utility.Run;
 
 namespace Exceptionless.Tests.Controllers;
 
-public class EventControllerTests : IntegrationTestsBase {
+public class EventControllerTests : IntegrationTestsBase
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
 
-    public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _organizationRepository = GetService<IOrganizationRepository>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         await _eventQueue.DeleteQueueAsync();
 
@@ -53,7 +56,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostUserDescriptionAsync() {
+    public async Task CanPostUserDescriptionAsync()
+    {
         const string json = "{\"message\":\"test\",\"reference_id\":\"TestReferenceId\",\"@user\":{\"identity\":\"Test user\",\"name\":null}}";
         await SendRequestAsync(r => r
             .Post()
@@ -119,7 +123,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostUserDescriptionWithNoMatchingEventAsync() {
+    public async Task CanPostUserDescriptionWithNoMatchingEventAsync()
+    {
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
@@ -141,7 +146,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostStringAsync() {
+    public async Task CanPostStringAsync()
+    {
         const string message = "simple string";
         await SendRequestAsync(r => r
             .Post()
@@ -167,13 +173,14 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostCompressedStringAsync() {
+    public async Task CanPostCompressedStringAsync()
+    {
         const string message = "simple string";
 
         byte[] data = Encoding.UTF8.GetBytes(message);
         var ms = new MemoryStream();
         await using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
-        await gzip.WriteAsync(data, CancellationToken.None);
+            await gzip.WriteAsync(data, CancellationToken.None);
         ms.Position = 0;
 
         var content = new StreamContent(ms);
@@ -201,7 +208,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostJsonWithUserInfoAsync() {
+    public async Task CanPostJsonWithUserInfoAsync()
+    {
         const string json = "{\"message\":\"test\",\"@user\":{\"identity\":\"Test user\",\"name\":null}}";
         await SendRequestAsync(r => r
             .Post()
@@ -233,7 +241,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostEventAsync() {
+    public async Task CanPostEventAsync()
+    {
         var ev = new RandomEventGenerator().GeneratePersistent(false);
         if (String.IsNullOrEmpty(ev.Message))
             ev.Message = "Generated message.";
@@ -263,11 +272,13 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostManyEventsAsync() {
+    public async Task CanPostManyEventsAsync()
+    {
         const int batchSize = 50;
         const int batchCount = 10;
 
-        await Run.InParallelAsync(batchCount, async i => {
+        await Run.InParallelAsync(batchCount, async i =>
+        {
             var events = new RandomEventGenerator().Generate(batchSize, false);
             await SendRequestAsync(r => r
                .Post()
@@ -296,7 +307,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanPostProjectEventAsync() {
+    public async Task CanPostProjectEventAsync()
+    {
         var ev = new RandomEventGenerator().GeneratePersistent(false);
         if (String.IsNullOrEmpty(ev.Message))
             ev.Message = "Generated message.";
@@ -334,7 +346,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetMostFrequentStackMode() {
+    public async Task CanGetMostFrequentStackMode()
+    {
         await CreateStacksAndEventsAsync();
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
@@ -351,7 +364,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetProjectLevelMostFrequentStackMode() {
+    public async Task CanGetProjectLevelMostFrequentStackMode()
+    {
         await CreateStacksAndEventsAsync();
 
         string projectId = SampleDataService.TEST_PROJECT_ID;
@@ -370,7 +384,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetFreeProjectLevelMostFrequentStackMode() {
+    public async Task CanGetFreeProjectLevelMostFrequentStackMode()
+    {
         await CreateStacksAndEventsAsync();
 
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
@@ -392,7 +407,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetNewStackMode() {
+    public async Task CanGetNewStackMode()
+    {
         await CreateStacksAndEventsAsync();
 
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
@@ -412,7 +428,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetRecentStackMode() {
+    public async Task GetRecentStackMode()
+    {
         await CreateStacksAndEventsAsync();
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
@@ -427,7 +444,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetUsersStackMode() {
+    public async Task GetUsersStackMode()
+    {
         await CreateStacksAndEventsAsync();
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
@@ -443,8 +461,10 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillExcludeDeletedSessions() {
-        await CreateDataAsync(d => {
+    public async Task WillExcludeDeletedSessions()
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().TestProject().Type(Event.KnownTypes.Session).Deleted();
             d.Event().TestProject().Type(Event.KnownTypes.Session);
         });
@@ -473,8 +493,10 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillGetStackEvents() {
-        var (stacks, _) = await CreateDataAsync(d => {
+    public async Task WillGetStackEvents()
+    {
+        var (stacks, _) = await CreateDataAsync(d =>
+        {
             d.Event().TestProject();
         });
 
@@ -492,9 +514,11 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillGetEventSessions() {
+    public async Task WillGetEventSessions()
+    {
         string sessionId = Guid.NewGuid().ToString("N");
-        await CreateDataAsync(d => {
+        await CreateDataAsync(d =>
+        {
             d.Event().TestProject().Type(Event.KnownTypes.Session).SessionId(sessionId);
             d.Event().TestProject().Type(Event.KnownTypes.Log).SessionId(sessionId);
         });
@@ -543,11 +567,13 @@ public class EventControllerTests : IntegrationTestsBase {
     [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
     [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
     [InlineData("type:error", 1)]
-    public async Task CheckStackModeCounts(string filter, int expected) {
+    public async Task CheckStackModeCounts(string filter, int expected)
+    {
         await CreateStacksAndEventsAsync();
 
         string[] modes = new[] { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
-        foreach (string mode in modes) {
+        foreach (string mode in modes)
+        {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
                 .AppendPath("events")
@@ -587,7 +613,8 @@ public class EventControllerTests : IntegrationTestsBase {
     [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
     [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
     [InlineData("type:error", 2)]
-    public async Task CheckSummaryModeCounts(string filter, int expected) {
+    public async Task CheckSummaryModeCounts(string filter, int expected)
+    {
         await CreateStacksAndEventsAsync();
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
@@ -621,10 +648,12 @@ public class EventControllerTests : IntegrationTestsBase {
     [InlineData("@!status:open OR status:regressed")]
     [InlineData("@!(status:open OR status:regressed)")]
     [Theory]
-    public async Task WillExcludeDeletedStacks(string filter) {
+    public async Task WillExcludeDeletedStacks(string filter)
+    {
         var utcNow = SystemClock.UtcNow;
 
-        await CreateDataAsync(d => {
+        await CreateDataAsync(d =>
+        {
             d.Event()
                 .TestProject()
                 .Type(Event.KnownTypes.Log)
@@ -677,10 +706,12 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillExcludeOldStacksForStackNewMode() {
+    public async Task WillExcludeOldStacksForStackNewMode()
+    {
         var utcNow = SystemClock.UtcNow;
 
-        await CreateDataAsync(d => {
+        await CreateDataAsync(d =>
+        {
             d.Event()
                 .TestProject()
                 .Message("New stack - skip due to date filter")
@@ -793,7 +824,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task ShouldRespectEventUsageLimits() {
+    public async Task ShouldRespectEventUsageLimits()
+    {
         TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
 
         // update plan limits
@@ -803,7 +835,8 @@ public class EventControllerTests : IntegrationTestsBase {
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
-        if (organization.BillingPrice > 0) {
+        if (organization.BillingPrice > 0)
+        {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
             organization.SubscribeDate = SystemClock.UtcNow;
@@ -893,7 +926,7 @@ public class EventControllerTests : IntegrationTestsBase {
             .Content(new RandomEventGenerator().Generate(1))
             .StatusCodeShouldBePaymentRequired()
         );
-        
+
         // Increment blocked count due to submission failure.
         usageInfo = await usageService.GetUsageAsync(organizationId);
         Assert.Equal(total, usageInfo.CurrentUsage.Total);
@@ -951,7 +984,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task ShouldDiscardEventsForSuspendedOrganization() {
+    public async Task ShouldDiscardEventsForSuspendedOrganization()
+    {
         TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
 
         // update plan limits
@@ -961,7 +995,8 @@ public class EventControllerTests : IntegrationTestsBase {
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
-        if (organization.BillingPrice > 0) {
+        if (organization.BillingPrice > 0)
+        {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
             organization.SubscribeDate = SystemClock.UtcNow;
@@ -1009,7 +1044,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task SpaFallbackWorks() {
+    public async Task SpaFallbackWorks()
+    {
         var response = await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
             .AppendPath("blah")
@@ -1032,7 +1068,8 @@ public class EventControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task PlanChangeShouldAllowEventSubmission() {
+    public async Task PlanChangeShouldAllowEventSubmission()
+    {
         TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
 
         // update plan limits
@@ -1042,7 +1079,8 @@ public class EventControllerTests : IntegrationTestsBase {
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
-        if (organization.BillingPrice > 0) {
+        if (organization.BillingPrice > 0)
+        {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
             organization.SubscribeDate = SystemClock.UtcNow;
@@ -1104,7 +1142,8 @@ public class EventControllerTests : IntegrationTestsBase {
         // Upgrade Plan
         organization = await _organizationRepository.GetByIdAsync(organizationId);
         billingManager.ApplyBillingPlan(organization, plans.MediumPlan, UserData.GenerateSampleUser());
-        if (organization.BillingPrice > 0) {
+        if (organization.BillingPrice > 0)
+        {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
             organization.SubscribeDate = SystemClock.UtcNow;
@@ -1156,7 +1195,8 @@ public class EventControllerTests : IntegrationTestsBase {
         // Downgrade Plan and verify throttled
         organization = await _organizationRepository.GetByIdAsync(organizationId);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
-        if (organization.BillingPrice > 0) {
+        if (organization.BillingPrice > 0)
+        {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
             organization.SubscribeDate = SystemClock.UtcNow;
@@ -1193,10 +1233,12 @@ public class EventControllerTests : IntegrationTestsBase {
         Assert.Equal(0, organizationUsage.TooBig);
     }
 
-    private async Task CreateStacksAndEventsAsync() {
+    private async Task CreateStacksAndEventsAsync()
+    {
         var utcNow = SystemClock.UtcNow;
 
-        await CreateDataAsync(d => {
+        await CreateDataAsync(d =>
+        {
             // matches event1.json / stack1.json
             d.Event()
                 .FreeProject()

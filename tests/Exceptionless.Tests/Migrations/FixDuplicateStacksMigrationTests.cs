@@ -14,23 +14,27 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Migrations;
 
-public class FixDuplicateStacksMigrationTests : IntegrationTestsBase {
+public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
+{
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
 
-    public FixDuplicateStacksMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public FixDuplicateStacksMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
     }
 
-    protected override void RegisterServices(IServiceCollection services) {
+    protected override void RegisterServices(IServiceCollection services)
+    {
         services.AddTransient<SetStackDuplicateSignature>();
         services.AddSingleton<ILock>(new EmptyLock());
         base.RegisterServices(services);
     }
 
     [Fact]
-    public async Task WillMergeDuplicatedStacks() {
+    public async Task WillMergeDuplicatedStacks()
+    {
         var utcNow = SystemClock.UtcNow;
         var originalStack = StackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
@@ -83,7 +87,8 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillMergeToStackWithMostEvents() {
+    public async Task WillMergeToStackWithMostEvents()
+    {
         var utcNow = SystemClock.UtcNow;
         var originalStack = StackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
@@ -136,7 +141,8 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task WillNotMergeDuplicatedDeletedStacks() {
+    public async Task WillNotMergeDuplicatedDeletedStacks()
+    {
         var originalStack = StackData.GenerateStack();
         var duplicateStack = originalStack.DeepClone();
         duplicateStack.Id = ObjectId.GenerateNewId().ToString();

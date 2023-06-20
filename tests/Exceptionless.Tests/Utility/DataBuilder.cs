@@ -11,23 +11,27 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
-public class DataBuilder {
+public class DataBuilder
+{
     private readonly List<EventDataBuilder> _eventBuilders;
     private readonly IServiceProvider _serviceProvider;
 
-    public DataBuilder(List<EventDataBuilder> eventBuilders, IServiceProvider serviceProvider) {
+    public DataBuilder(List<EventDataBuilder> eventBuilders, IServiceProvider serviceProvider)
+    {
         _eventBuilders = eventBuilders;
         _serviceProvider = serviceProvider;
     }
 
-    public EventDataBuilder Event() {
+    public EventDataBuilder Event()
+    {
         var eventBuilder = _serviceProvider.GetService<EventDataBuilder>();
         _eventBuilders.Add(eventBuilder);
         return eventBuilder;
     }
 }
 
-public class EventDataBuilder {
+public class EventDataBuilder
+{
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly ISerializer _serializer;
     private readonly ICollection<Action<Stack>> _stackMutations;
@@ -37,155 +41,182 @@ public class EventDataBuilder {
     private EventDataBuilder _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
 
-    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer) {
+    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer)
+    {
         _stackMutations = new List<Action<Stack>>();
         _formattingPluginManager = formattingPluginManager;
         _serializer = serializer;
     }
 
-    public EventDataBuilder Mutate(Action<PersistentEvent> mutation) {
+    public EventDataBuilder Mutate(Action<PersistentEvent> mutation)
+    {
         mutation?.Invoke(_event);
 
         return this;
     }
 
-    public EventDataBuilder MutateStack(Action<Stack> mutation) {
+    public EventDataBuilder MutateStack(Action<Stack> mutation)
+    {
         _stackMutations.Add(mutation);
 
         return this;
     }
 
-    public EventDataBuilder Stack(EventDataBuilder stackEventBuilder) {
+    public EventDataBuilder Stack(EventDataBuilder stackEventBuilder)
+    {
         _stackEventBuilder = stackEventBuilder;
 
         return this;
     }
 
-    public EventDataBuilder Stack(Stack stack) {
+    public EventDataBuilder Stack(Stack stack)
+    {
         _stack = stack;
 
         return this;
     }
 
-    public EventDataBuilder StackId(string stackId) {
+    public EventDataBuilder StackId(string stackId)
+    {
         _event.StackId = stackId;
         _stackMutations.Add(s => s.Id = stackId);
 
         return this;
     }
 
-    public EventDataBuilder Id(string id) {
+    public EventDataBuilder Id(string id)
+    {
         _event.Id = id;
         return this;
     }
 
-    public EventDataBuilder TestProject() {
+    public EventDataBuilder TestProject()
+    {
         Organization(SampleDataService.TEST_ORG_ID);
         Project(SampleDataService.TEST_PROJECT_ID);
 
         return this;
     }
 
-    public EventDataBuilder FreeProject() {
+    public EventDataBuilder FreeProject()
+    {
         Organization(SampleDataService.FREE_ORG_ID);
         Project(SampleDataService.FREE_PROJECT_ID);
 
         return this;
     }
 
-    public EventDataBuilder Organization(string organizationId) {
+    public EventDataBuilder Organization(string organizationId)
+    {
         _event.OrganizationId = organizationId;
         return this;
     }
 
-    public EventDataBuilder Project(string projectId) {
+    public EventDataBuilder Project(string projectId)
+    {
         _event.ProjectId = projectId;
         return this;
     }
 
-    public EventDataBuilder Type(string type) {
+    public EventDataBuilder Type(string type)
+    {
         _event.Type = type;
         return this;
     }
 
-    public EventDataBuilder Date(DateTimeOffset date) {
+    public EventDataBuilder Date(DateTimeOffset date)
+    {
         _event.Date = date;
         return this;
     }
 
-    public EventDataBuilder Date(DateTime date) {
+    public EventDataBuilder Date(DateTime date)
+    {
         _event.Date = date.ToUniversalTime();
         return this;
     }
 
-    public EventDataBuilder Date(string date) {
+    public EventDataBuilder Date(string date)
+    {
         if (DateTimeOffset.TryParse(date, out var dt))
             return Date(dt);
 
         throw new ArgumentException("Invalid date specified", nameof(date));
     }
 
-    public EventDataBuilder IsFirstOccurrence(bool isFirstOccurrence = true) {
+    public EventDataBuilder IsFirstOccurrence(bool isFirstOccurrence = true)
+    {
         _isFirstOccurrenceSet = true;
         _event.IsFirstOccurrence = isFirstOccurrence;
 
         return this;
     }
 
-    public EventDataBuilder CreatedDate(DateTime createdUtc) {
+    public EventDataBuilder CreatedDate(DateTime createdUtc)
+    {
         _event.CreatedUtc = createdUtc;
         return this;
     }
 
-    public EventDataBuilder CreatedDate(string createdUtc) {
+    public EventDataBuilder CreatedDate(string createdUtc)
+    {
         if (DateTime.TryParse(createdUtc, out var dt))
             return CreatedDate(dt);
 
         throw new ArgumentException("Invalid date specified", nameof(createdUtc));
     }
 
-    public EventDataBuilder Message(string message) {
+    public EventDataBuilder Message(string message)
+    {
         _event.Message = message;
         _stackMutations.Add(s => s.Title = message);
         return this;
     }
 
-    public EventDataBuilder Source(string source) {
+    public EventDataBuilder Source(string source)
+    {
         _event.Source = source;
         return this;
     }
 
-    public EventDataBuilder Tag(params string[] tags) {
+    public EventDataBuilder Tag(params string[] tags)
+    {
         _event.Tags.AddRange(tags);
         return this;
     }
 
-    public EventDataBuilder Geo(string geo) {
+    public EventDataBuilder Geo(string geo)
+    {
         _event.Geo = geo;
         return this;
     }
 
-    public EventDataBuilder Value(decimal? value) {
+    public EventDataBuilder Value(decimal? value)
+    {
         _event.Value = value;
         return this;
     }
 
-    public EventDataBuilder EnvironmentInfo(EnvironmentInfo environmentInfo) {
+    public EventDataBuilder EnvironmentInfo(EnvironmentInfo environmentInfo)
+    {
         _event.SetEnvironmentInfo(environmentInfo);
         return this;
     }
 
-    public EventDataBuilder RequestInfo(RequestInfo requestInfo) {
+    public EventDataBuilder RequestInfo(RequestInfo requestInfo)
+    {
         _event.AddRequestInfo(requestInfo);
         return this;
     }
 
-    public EventDataBuilder RequestInfo(string json) {
+    public EventDataBuilder RequestInfo(string json)
+    {
         _event.AddRequestInfo(_serializer.Deserialize<RequestInfo>(json));
         return this;
     }
 
-    public EventDataBuilder RequestInfoSample(Action<RequestInfo> requestMutator = null) {
+    public EventDataBuilder RequestInfoSample(Action<RequestInfo> requestMutator = null)
+    {
         var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo);
         requestMutator?.Invoke(requestInfo);
         _event.AddRequestInfo(requestInfo);
@@ -193,109 +224,130 @@ public class EventDataBuilder {
         return this;
     }
 
-    public EventDataBuilder ReferenceId(string id) {
+    public EventDataBuilder ReferenceId(string id)
+    {
         _event.ReferenceId = id;
         return this;
     }
 
-    public EventDataBuilder Reference(string name, string id) {
+    public EventDataBuilder Reference(string name, string id)
+    {
         _event.SetEventReference(name, id);
         return this;
     }
 
-    public EventDataBuilder UserDescription(string emailAddress, string description) {
+    public EventDataBuilder UserDescription(string emailAddress, string description)
+    {
         _event.SetUserDescription(emailAddress, description);
         return this;
     }
 
-    public EventDataBuilder ManualStackingKey(string title, string manualStackingKey) {
+    public EventDataBuilder ManualStackingKey(string title, string manualStackingKey)
+    {
         _event.SetManualStackingKey(title, manualStackingKey);
         return this;
     }
 
-    public EventDataBuilder ManualStackingKey(string manualStackingKey) {
+    public EventDataBuilder ManualStackingKey(string manualStackingKey)
+    {
         _event.SetManualStackingKey(manualStackingKey);
         return this;
     }
 
-    public EventDataBuilder SessionId(string sessionId) {
+    public EventDataBuilder SessionId(string sessionId)
+    {
         _event.SetSessionId(sessionId);
         return this;
     }
 
-    public EventDataBuilder SubmissionClient(SubmissionClient submissionClient) {
+    public EventDataBuilder SubmissionClient(SubmissionClient submissionClient)
+    {
         _event.SetSubmissionClient(submissionClient);
         return this;
     }
 
-    public EventDataBuilder UserIdentity(string identity) {
+    public EventDataBuilder UserIdentity(string identity)
+    {
         _event.SetUserIdentity(identity);
         return this;
     }
 
-    public EventDataBuilder UserIdentity(string identity, string name) {
+    public EventDataBuilder UserIdentity(string identity, string name)
+    {
         _event.SetUserIdentity(identity, name);
         return this;
     }
 
-    public EventDataBuilder UserIdentity(UserInfo userInfo) {
+    public EventDataBuilder UserIdentity(UserInfo userInfo)
+    {
         _event.SetUserIdentity(userInfo);
         return this;
     }
 
-    public EventDataBuilder Level(string level) {
+    public EventDataBuilder Level(string level)
+    {
         _event.SetLevel(level);
         return this;
     }
 
-    public EventDataBuilder Version(string version) {
+    public EventDataBuilder Version(string version)
+    {
         _event.SetVersion(version);
         return this;
     }
 
-    public EventDataBuilder Location(Location location) {
+    public EventDataBuilder Location(Location location)
+    {
         _event.SetLocation(location);
         return this;
     }
 
-    public EventDataBuilder Deleted() {
+    public EventDataBuilder Deleted()
+    {
         _stackMutations.Add(s => s.IsDeleted = true);
 
         return this;
     }
 
-    public EventDataBuilder Status(StackStatus status) {
+    public EventDataBuilder Status(StackStatus status)
+    {
         _stackMutations.Add(s => s.Status = status);
 
         return this;
     }
 
-    public EventDataBuilder StackReference(string reference) {
+    public EventDataBuilder StackReference(string reference)
+    {
         _stackMutations.Add(s => s.References.Add(reference));
 
         return this;
     }
 
-    public EventDataBuilder OccurrencesAreCritical(bool occurrencesAreCritical = true) {
+    public EventDataBuilder OccurrencesAreCritical(bool occurrencesAreCritical = true)
+    {
         if (occurrencesAreCritical)
             _event.MarkAsCritical();
 
-        _stackMutations.Add(s => {
+        _stackMutations.Add(s =>
+        {
             s.OccurrencesAreCritical = occurrencesAreCritical;
             s.Tags.Add(Event.KnownTags.Critical);
         });
         return this;
     }
 
-    public EventDataBuilder TotalOccurrences(int totalOccurrences) {
+    public EventDataBuilder TotalOccurrences(int totalOccurrences)
+    {
         _stackMutations.Add(s => s.TotalOccurrences = totalOccurrences);
 
         return this;
     }
 
-    public EventDataBuilder Create(int additionalOccurrences) {
+    public EventDataBuilder Create(int additionalOccurrences)
+    {
         _additionalEventsToCreate = additionalOccurrences;
-        _stackMutations.Add(s => {
+        _stackMutations.Add(s =>
+        {
             if (s.TotalOccurrences <= additionalOccurrences)
                 s.TotalOccurrences = additionalOccurrences + 1;
         });
@@ -303,28 +355,32 @@ public class EventDataBuilder {
         return this;
     }
 
-    public EventDataBuilder FirstOccurrence(DateTime firstOccurrenceUtc) {
+    public EventDataBuilder FirstOccurrence(DateTime firstOccurrenceUtc)
+    {
         _event.CreatedUtc = firstOccurrenceUtc;
         _stackMutations.Add(s => s.FirstOccurrence = firstOccurrenceUtc);
 
         return this;
     }
 
-    public EventDataBuilder FirstOccurrence(string firstOccurrenceUtc) {
+    public EventDataBuilder FirstOccurrence(string firstOccurrenceUtc)
+    {
         if (DateTime.TryParse(firstOccurrenceUtc, out var dt))
             return FirstOccurrence(dt);
 
         throw new ArgumentException("Invalid date specified", nameof(firstOccurrenceUtc));
     }
 
-    public EventDataBuilder LastOccurrence(DateTime lastOccurrenceUtc) {
+    public EventDataBuilder LastOccurrence(DateTime lastOccurrenceUtc)
+    {
         if (_event.CreatedUtc.IsAfter(lastOccurrenceUtc))
             _event.CreatedUtc = lastOccurrenceUtc;
 
         if (_event.Date.IsAfter(lastOccurrenceUtc))
             _event.Date = lastOccurrenceUtc;
 
-        _stackMutations.Add(s => {
+        _stackMutations.Add(s =>
+        {
             if (s.FirstOccurrence.IsAfter(lastOccurrenceUtc))
                 s.FirstOccurrence = lastOccurrenceUtc;
 
@@ -334,16 +390,19 @@ public class EventDataBuilder {
         return this;
     }
 
-    public EventDataBuilder LastOccurrence(string lastOccurrenceUtc) {
+    public EventDataBuilder LastOccurrence(string lastOccurrenceUtc)
+    {
         if (DateTime.TryParse(lastOccurrenceUtc, out var dt))
             return LastOccurrence(dt);
 
         throw new ArgumentException("Invalid date specified", nameof(lastOccurrenceUtc));
     }
 
-    public EventDataBuilder DateFixed(DateTime? dateFixed = null) {
+    public EventDataBuilder DateFixed(DateTime? dateFixed = null)
+    {
         Status(StackStatus.Fixed);
-        _stackMutations.Add(s => {
+        _stackMutations.Add(s =>
+        {
             var fixedOn = dateFixed ?? SystemClock.UtcNow;
             if (s.FirstOccurrence.IsAfter(fixedOn))
                 throw new ArgumentException("Fixed on date is before first occurence");
@@ -354,34 +413,39 @@ public class EventDataBuilder {
         return this;
     }
 
-    public EventDataBuilder DateFixed(string dateFixedUtc) {
+    public EventDataBuilder DateFixed(string dateFixedUtc)
+    {
         if (DateTime.TryParse(dateFixedUtc, out var dt))
             return DateFixed(dt);
 
         throw new ArgumentException("Invalid date specified", nameof(dateFixedUtc));
     }
 
-    public EventDataBuilder FixedInVersion(string version) {
+    public EventDataBuilder FixedInVersion(string version)
+    {
         Status(StackStatus.Fixed);
         _stackMutations.Add(s => s.FixedInVersion = version);
 
         return this;
     }
 
-    public EventDataBuilder Snooze(DateTime? snoozeUntil = null) {
+    public EventDataBuilder Snooze(DateTime? snoozeUntil = null)
+    {
         Status(StackStatus.Snoozed);
         _stackMutations.Add(s => s.SnoozeUntilUtc = snoozeUntil ?? SystemClock.UtcNow.AddDays(1));
 
         return this;
     }
 
-    public Stack GetStack() {
+    public Stack GetStack()
+    {
         Build();
         return _stack;
     }
 
     private bool _isBuilt = false;
-    public (Stack Stack, PersistentEvent[] Events) Build() {
+    public (Stack Stack, PersistentEvent[] Events) Build()
+    {
         if (_isBuilt)
             return (_stack, BuildEvents(_stack, _event));
 
@@ -400,11 +464,13 @@ public class EventDataBuilder {
 
         _event.CopyDataToIndex();
 
-        if (_stackEventBuilder != null) {
+        if (_stackEventBuilder != null)
+        {
             _stack = _stackEventBuilder.GetStack();
 
             _stack.TotalOccurrences++;
-            if (_event.Date.UtcDateTime < _stack.FirstOccurrence) {
+            if (_event.Date.UtcDateTime < _stack.FirstOccurrence)
+            {
                 if (!_isFirstOccurrenceSet)
                     _event.IsFirstOccurrence = true;
                 _stack.FirstOccurrence = _event.Date.UtcDateTime;
@@ -415,9 +481,11 @@ public class EventDataBuilder {
 
             _stack.Tags.AddRange(_event.Tags ?? new TagSet());
         }
-        else if (_stack == null) {
+        else if (_stack == null)
+        {
             string title = _formattingPluginManager.GetStackTitle(_event);
-            _stack = new Stack {
+            _stack = new Stack
+            {
                 OrganizationId = _event.OrganizationId,
                 ProjectId = _event.ProjectId,
                 Title = title?.Truncate(1000),
@@ -434,9 +502,11 @@ public class EventDataBuilder {
             if (!_isFirstOccurrenceSet)
                 _event.IsFirstOccurrence = true;
         }
-        else {
+        else
+        {
             _stack.TotalOccurrences++;
-            if (_event.Date.UtcDateTime < _stack.FirstOccurrence) {
+            if (_event.Date.UtcDateTime < _stack.FirstOccurrence)
+            {
                 if (!_isFirstOccurrenceSet)
                     _event.IsFirstOccurrence = true;
                 _stack.FirstOccurrence = _event.Date.UtcDateTime;
@@ -458,13 +528,15 @@ public class EventDataBuilder {
             _event.IsFirstOccurrence = false;
 
         var msi = _event.GetManualStackingInfo();
-        if (msi != null) {
+        if (msi != null)
+        {
             _stack.Title = msi.Title;
             _stack.SignatureInfo.Clear();
             _stack.SignatureInfo.AddRange(msi.SignatureData);
         }
 
-        if (_stack.SignatureInfo.Count == 0) {
+        if (_stack.SignatureInfo.Count == 0)
+        {
             _stack.SignatureInfo.AddItemIfNotEmpty("Type", _event.Type);
             _stack.SignatureInfo.AddItemIfNotEmpty("Source", _event.Source);
         }
@@ -482,13 +554,15 @@ public class EventDataBuilder {
         return (_stack, BuildEvents(_stack, _event));
     }
 
-    private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev) {
+    private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev)
+    {
         var events = new List<PersistentEvent>(_additionalEventsToCreate) { ev };
         if (_additionalEventsToCreate <= 0)
             return events.ToArray();
 
         int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / _additionalEventsToCreate;
-        for (int index = 0; index < stack.TotalOccurrences - 1; index++) {
+        for (int index = 0; index < stack.TotalOccurrences - 1; index++)
+        {
             var clone = ev.DeepClone();
             clone.Id = null;
             if (interval > 0)

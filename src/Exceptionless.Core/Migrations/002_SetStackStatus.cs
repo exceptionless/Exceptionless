@@ -9,12 +9,14 @@ using Nest;
 
 namespace Exceptionless.Core.Migrations;
 
-public sealed class SetStackStatus : MigrationBase {
+public sealed class SetStackStatus : MigrationBase
+{
     private readonly IElasticClient _client;
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ICacheClient _cache;
 
-    public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory) {
+    public SetStackStatus(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory)
+    {
         _config = configuration;
         _client = configuration.Client;
         _cache = configuration.Cache;
@@ -23,7 +25,8 @@ public sealed class SetStackStatus : MigrationBase {
         Version = 2;
     }
 
-    public override async Task RunAsync(MigrationContext context) {
+    public override async Task RunAsync(MigrationContext context)
+    {
         _logger.LogInformation("Begin refreshing all indices");
         await _config.Client.Indices.RefreshAsync(Indices.All);
         _logger.LogInformation("Done refreshing all indices");
@@ -42,11 +45,13 @@ public sealed class SetStackStatus : MigrationBase {
         var taskId = stackResponse.Task;
         int attempts = 0;
         long affectedRecords = 0;
-        do {
+        do
+        {
             attempts++;
             var taskStatus = await _client.Tasks.GetTaskAsync(taskId);
             var status = taskStatus.Task.Status;
-            if (taskStatus.Completed) {
+            if (taskStatus.Completed)
+            {
                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
                 _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                 affectedRecords += status.Created + status.Updated + status.Deleted;

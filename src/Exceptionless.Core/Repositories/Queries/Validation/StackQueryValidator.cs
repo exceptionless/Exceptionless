@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Queries.Validation;
 
-public sealed class StackQueryValidator : AppQueryValidator {
+public sealed class StackQueryValidator : AppQueryValidator
+{
     private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
@@ -54,14 +55,17 @@ public sealed class StackQueryValidator : AppQueryValidator {
 
     public StackQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Stacks.QueryParser, loggerFactory) { }
 
-    protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result) {
-        return new QueryProcessResult {
+    protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result)
+    {
+        return new QueryProcessResult
+        {
             IsValid = result.IsValid,
             UsesPremiumFeatures = !result.ReferencedFields.All(_freeQueryFields.Contains)
         };
     }
 
-    protected override QueryProcessResult ApplyAggregationRules(QueryValidationResult result) {
+    protected override QueryProcessResult ApplyAggregationRules(QueryValidationResult result)
+    {
         if (!result.IsValid)
             return new QueryProcessResult { Message = "Invalid aggregation" };
 
@@ -84,7 +88,8 @@ public sealed class StackQueryValidator : AppQueryValidator {
             return new QueryProcessResult { Message = "Terms aggregation count exceeded" };
 
         bool usesPremiumFeatures = !result.ReferencedFields.All(_freeAggregationFields.Contains);
-        return new QueryProcessResult {
+        return new QueryProcessResult
+        {
             IsValid = result.IsValid,
             UsesPremiumFeatures = usesPremiumFeatures
         };

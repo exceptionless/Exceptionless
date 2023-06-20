@@ -1,25 +1,27 @@
-﻿using Exceptionless.Tests.Authentication;
-using Exceptionless.Tests.Mail;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
 using Exceptionless.Insulation.Configuration;
-using Foundatio.Xunit;
-using Foundatio.Utility;
-using Xunit.Abstractions;
-using Exceptionless.Core;
+using Exceptionless.Tests.Authentication;
+using Exceptionless.Tests.Mail;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
+using Foundatio.Utility;
+using Foundatio.Xunit;
+using Xunit.Abstractions;
 using IAsyncLifetime = Foundatio.Utility.IAsyncLifetime;
 
 namespace Exceptionless.Tests;
 
-public class TestWithServices : TestWithLoggingBase, IAsyncLifetime {
+public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
+{
     private readonly IDisposable _testSystemClock = TestSystemClock.Install();
     private readonly IServiceProvider _container;
 
-    public TestWithServices(ITestOutputHelper output) : base(output) {
+    public TestWithServices(ITestOutputHelper output) : base(output)
+    {
         Log.MinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
@@ -29,17 +31,20 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime {
         _container = CreateContainer();
     }
 
-    public virtual async Task InitializeAsync() {
+    public virtual async Task InitializeAsync()
+    {
         var result = await _container.RunStartupActionsAsync();
         if (!result.Success)
             throw new ApplicationException($"Startup action \"{result.FailedActionName}\" failed");
     }
 
-    protected TService GetService<TService>() where TService : class {
+    protected TService GetService<TService>() where TService : class
+    {
         return _container.GetRequiredService<TService>();
     }
 
-    protected virtual void RegisterServices(IServiceCollection services, AppOptions options) {
+    protected virtual void RegisterServices(IServiceCollection services, AppOptions options)
+    {
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
         Web.Bootstrapper.RegisterServices(services, options, Log);
@@ -48,7 +53,8 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime {
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
     }
 
-    private IServiceProvider CreateContainer() {
+    private IServiceProvider CreateContainer()
+    {
         var services = new ServiceCollection();
 
         var config = new ConfigurationBuilder()
@@ -65,7 +71,8 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime {
         return services.BuildServiceProvider();
     }
 
-    public ValueTask DisposeAsync() {
+    public ValueTask DisposeAsync()
+    {
         _testSystemClock.Dispose();
         return new ValueTask(Task.CompletedTask);
     }

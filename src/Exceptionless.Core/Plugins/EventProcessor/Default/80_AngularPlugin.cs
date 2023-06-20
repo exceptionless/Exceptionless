@@ -6,10 +6,12 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
 [Priority(80)]
-public sealed class AngularPlugin : EventProcessorPluginBase {
+public sealed class AngularPlugin : EventProcessorPluginBase
+{
     public AngularPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
-    public override Task EventProcessingAsync(EventContext context) {
+    public override Task EventProcessingAsync(EventContext context)
+    {
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
@@ -28,7 +30,8 @@ public sealed class AngularPlugin : EventProcessorPluginBase {
         if (String.IsNullOrEmpty(cause))
             return Task.CompletedTask;
 
-        if (cause.StartsWith("Possibly unhandled rejection")) {
+        if (cause.StartsWith("Possibly unhandled rejection"))
+        {
             context.StackSignatureData.Remove("NoStackingInformation");
             context.StackSignatureData.Add("ExceptionType", error.Type ?? "Error");
             context.StackSignatureData.Add("Source", "unhandledRejection");

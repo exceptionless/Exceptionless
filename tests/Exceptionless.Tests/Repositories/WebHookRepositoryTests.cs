@@ -1,20 +1,23 @@
-﻿using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class WebHookRepositoryTests : IntegrationTestsBase {
+public sealed class WebHookRepositoryTests : IntegrationTestsBase
+{
     private readonly IWebHookRepository _repository;
 
-    public WebHookRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public WebHookRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _repository = GetService<IWebHookRepository>();
     }
 
     [Fact]
-    public async Task GetByOrganizationIdOrProjectIdAsync() {
+    public async Task GetByOrganizationIdOrProjectIdAsync()
+    {
         await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
         await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
         await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
@@ -27,7 +30,8 @@ public sealed class WebHookRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSaveWebHookVersionAsync() {
+    public async Task CanSaveWebHookVersionAsync()
+    {
         await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version1 });
         await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
 

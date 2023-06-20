@@ -3,7 +3,8 @@
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Status: {Status}, Title: {Title}, First: {FirstOccurrence}, Last: {LastOccurrence}")]
-public class StackSummaryModel : SummaryData {
+public class StackSummaryModel : SummaryData
+{
     public string Id { get; set; }
     public string Title { get; set; }
     public StackStatus Status { get; set; }

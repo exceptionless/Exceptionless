@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace Exceptionless.Web.Utility;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-public class ConfigurationResponseFilterAttribute : ActionFilterAttribute {
-    public override void OnActionExecuted(ActionExecutedContext context) {
+public class ConfigurationResponseFilterAttribute : ActionFilterAttribute
+{
+    public override void OnActionExecuted(ActionExecutedContext context)
+    {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 

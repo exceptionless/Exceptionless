@@ -3,9 +3,11 @@ using Xunit;
 
 namespace Exceptionless.Tests.Miscellaneous;
 
-public class DeltaTests {
+public class DeltaTests
+{
     [Fact]
-    public void CanSetUnknownProperties() {
+    public void CanSetUnknownProperties()
+    {
         dynamic delta = new Delta<SimpleMessageA>();
         delta.Data = "Blah";
         delta.SomeUnknown = "yes";
@@ -13,11 +15,13 @@ public class DeltaTests {
     }
 
     [Fact]
-    public void CanPatchUnrelatedTypes() {
+    public void CanPatchUnrelatedTypes()
+    {
         dynamic delta = new Delta<SimpleMessageA>();
         delta.Data = "Blah";
 
-        var msg = new SimpleMessageB {
+        var msg = new SimpleMessageB
+        {
             Data = "Blah2"
         };
         delta.Patch(msg);
@@ -25,11 +29,13 @@ public class DeltaTests {
         Assert.Equal(delta.Data, msg.Data);
     }
 
-    public class SimpleMessageA {
+    public class SimpleMessageA
+    {
         public string Data { get; set; }
     }
 
-    public class SimpleMessageB {
+    public class SimpleMessageB
+    {
         public string Data { get; set; }
     }
 }

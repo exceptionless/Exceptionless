@@ -5,14 +5,17 @@ using Foundatio.Utility;
 namespace Exceptionless.Web.Controllers;
 
 [DebuggerDisplay("Range: {Range} Offset: {Offset} Field: {Field}")]
-public class TimeInfo {
+public class TimeInfo
+{
     public string Field { get; set; }
     public DateTimeRange Range { get; set; }
     public TimeSpan Offset { get; set; }
 }
 
-public static class TimeInfoExtensions {
-    public static void ApplyMinimumUtcStartDate(this TimeInfo ti, DateTime minimumUtcStartDate) {
+public static class TimeInfoExtensions
+{
+    public static void ApplyMinimumUtcStartDate(this TimeInfo ti, DateTime minimumUtcStartDate)
+    {
         if (ti.Range.UtcStart >= minimumUtcStartDate)
             return;
 
@@ -24,7 +27,8 @@ public static class TimeInfoExtensions {
         ti.Range = new DateTimeRange(start, end);
     }
 
-    public static void AdjustEndTimeIfMaxValue(this TimeInfo ti) {
+    public static void AdjustEndTimeIfMaxValue(this TimeInfo ti)
+    {
         if (ti.Range.UtcEnd != DateTime.MaxValue)
             return;
 

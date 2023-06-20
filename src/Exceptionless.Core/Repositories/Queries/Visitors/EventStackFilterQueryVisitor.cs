@@ -7,7 +7,8 @@ using Foundatio.Parsers.LuceneQueries.Visitors;
 
 namespace Exceptionless.Core.Repositories.Queries;
 
-public class EventStackFilter {
+public class EventStackFilter
+{
     private readonly ISet<string> _stackNonInvertedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "organization_id", StackIndex.Alias.OrganizationId,
             "project_id", StackIndex.Alias.ProjectId,
@@ -49,7 +50,8 @@ public class EventStackFilter {
     private readonly ChainedQueryVisitor _stackQueryVisitor;
     private readonly ChainedQueryVisitor _invertedStackQueryVisitor;
 
-    public EventStackFilter() {
+    public EventStackFilter()
+    {
         var stackOnlyFields = _stackOnlyFields.Union(_stackOnlySpecialFields);
         var stackFields = stackOnlyFields.Union(_stackAndEventFields);
 
@@ -78,14 +80,16 @@ public class EventStackFilter {
         _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
     }
 
-    public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext context = null) {
+    public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext context = null)
+    {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
         await _eventQueryVisitor.AcceptAsync(result, context);
         return result.ToString();
     }
 
-    public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext context = null) {
+    public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext context = null)
+    {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
         var invertedResult = result.Clone();
@@ -93,7 +97,8 @@ public class EventStackFilter {
         result = await _stackQueryVisitor.AcceptAsync(result, context);
         invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context);
 
-        return new StackFilter {
+        return new StackFilter
+        {
             Filter = result.ToString(),
             InvertedFilter = invertedResult.ToString(),
             HasStatus = context.GetBoolean(nameof(StackFilter.HasStatus)),
@@ -103,18 +108,22 @@ public class EventStackFilter {
     }
 }
 
-public class StackFilterQueryVisitor : ChainableQueryVisitor {
-    public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context) {
+public class StackFilterQueryVisitor : ChainableQueryVisitor
+{
+    public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context)
+    {
         IQueryNode result = node;
 
         // don't include terms without fields
-        if (node.Field == null) {
+        if (node.Field == null)
+        {
             node.RemoveSelf();
             return Task.FromResult<IQueryNode>(null);
         }
 
         // process special stack fields
-        switch (node.Field?.ToLowerInvariant()) {
+        switch (node.Field?.ToLowerInvariant())
+        {
             case EventIndex.Alias.StackId:
             case "stack_id":
                 node.Field = "id";
@@ -136,8 +145,10 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor {
             case "is_hidden":
             case StackIndex.Alias.IsHidden:
                 bool isHidden = Boolean.TryParse(node.Term, out bool hidden) && hidden;
-                if (isHidden) {
-                    var isHiddenNode = new GroupNode {
+                if (isHidden)
+                {
+                    var isHiddenNode = new GroupNode
+                    {
                         HasParens = true,
                         IsNegated = true,
                         Operator = GroupOperator.Or,
@@ -149,8 +160,10 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor {
 
                     break;
                 }
-                else {
-                    var notHiddenNode = new GroupNode {
+                else
+                {
+                    var notHiddenNode = new GroupNode
+                    {
                         HasParens = true,
                         Operator = GroupOperator.Or,
                         Left = new TermNode { Field = "status", Term = "open" },
@@ -163,8 +176,10 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor {
                 }
         }
 
-        if (result is TermNode termNode) {
-            if (String.Equals(termNode.Field, "status", StringComparison.OrdinalIgnoreCase)) {
+        if (result is TermNode termNode)
+        {
+            if (String.Equals(termNode.Field, "status", StringComparison.OrdinalIgnoreCase))
+            {
                 context.SetValue(nameof(StackFilter.HasStatus), true);
 
                 if (!termNode.IsNegated.GetValueOrDefault() && String.Equals(termNode.Term, "open", StringComparison.OrdinalIgnoreCase))
@@ -173,7 +188,8 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor {
 
             if ((String.Equals(termNode.Field, EventIndex.Alias.StackId, StringComparison.OrdinalIgnoreCase)
                 || String.Equals(termNode.Field, "stack_id", StringComparison.OrdinalIgnoreCase))
-                && !String.IsNullOrEmpty(termNode.Term)) {
+                && !String.IsNullOrEmpty(termNode.Term))
+            {
                 context.SetValue(nameof(StackFilter.HasStackIds), true);
             }
         }
@@ -181,12 +197,14 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor {
         return Task.FromResult<IQueryNode>(result);
     }
 
-    public override Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context) {
+    public override Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
+    {
         return node.AcceptAsync(this, context);
     }
 }
 
-public class StackFilter {
+public class StackFilter
+{
     public string Filter { get; set; }
     public string InvertedFilter { get; set; }
     public bool HasStatus { get; set; }

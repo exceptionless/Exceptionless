@@ -1,12 +1,12 @@
 ﻿using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -19,7 +19,8 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Queues event notification emails.", InitialDelay = "5s")]
-public class EventNotificationsJob : QueueJobBase<EventNotification> {
+public class EventNotificationsJob : QueueJobBase<EventNotification>
+{
     private readonly SlackService _slackService;
     private readonly IMailer _mailer;
     private readonly IProjectRepository _projectRepository;
@@ -30,7 +31,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
     private readonly ICacheClient _cache;
     private readonly UserAgentParser _parser;
 
-    public EventNotificationsJob(IQueue<EventNotification> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory) {
+    public EventNotificationsJob(IQueue<EventNotification> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory)
+    {
         _slackService = slackService;
         _mailer = mailer;
         _projectRepository = projectRepository;
@@ -42,7 +44,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
         _parser = parser;
     }
 
-    protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context) {
+    protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context)
+    {
         var wi = context.QueueEntry.Value;
         var ev = await _eventRepository.GetByIdAsync(wi.EventId).AnyContext();
         if (ev == null)
@@ -56,12 +59,14 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
         if (project == null)
             return JobResult.SuccessWithMessage($"Could not load project: {ev.ProjectId}.");
 
-        using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id))) {
+        using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id)))
+        {
             if (shouldLog) _logger.LogTrace("Loaded project: name={ProjectName}", project.Name);
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
             var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue).AnyContext();
-            if (wi.TotalOccurrences > 2 && !wi.IsRegression && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30)) {
+            if (wi.TotalOccurrences > 2 && !wi.IsRegression && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
+            {
                 if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
                 return JobResult.Success;
             }
@@ -73,12 +78,14 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
             var projectTimeWindow = TimeSpan.FromMinutes(30);
             string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", SystemClock.UtcNow.Floor(projectTimeWindow).Ticks);
             double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow).AnyContext();
-            if (notificationCount > 10 && !wi.IsRegression) {
+            if (notificationCount > 10 && !wi.IsRegression)
+            {
                 if (shouldLog) _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
                 return JobResult.Success;
             }
 
-            foreach (var kv in project.NotificationSettings) {
+            foreach (var kv in project.NotificationSettings)
+            {
                 var settings = kv.Value;
                 if (shouldLog) _logger.LogTrace("Processing notification: {Key}", kv.Key);
 
@@ -90,17 +97,20 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
                 bool shouldReportCriticalEvent = settings.ReportCriticalEvents && isCritical;
                 bool shouldReport = shouldReportNewError || shouldReportCriticalError || shouldReportRegression || shouldReportNewEvent || shouldReportCriticalEvent;
 
-                if (shouldLog) {
+                if (shouldLog)
+                {
                     _logger.LogTrace("Settings: new error={ReportNewErrors} critical error={ReportCriticalErrors} regression={ReportEventRegressions} new={ReportNewEvents} critical={ReportCriticalEvents}", settings.ReportNewErrors, settings.ReportCriticalErrors, settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents);
                     _logger.LogTrace("Should process: new error={ShouldReportNewError} critical error={ShouldReportCriticalError} regression={ShouldReportRegression} new={ShouldReportNewEvent} critical={ShouldReportCriticalEvent}", shouldReportNewError, shouldReportCriticalError, shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent);
                 }
                 var request = ev.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
-                if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent)) {
+                if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent))
+                {
                     var botPatterns = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
 
                     var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
-                    if (info != null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns)) {
+                    if (info != null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
+                    {
                         shouldReport = false;
                         if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}.", request.UserAgent);
                     }
@@ -110,7 +120,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
                     continue;
 
                 bool processed;
-                switch (kv.Key) {
+                switch (kv.Key)
+                {
                     case Project.NotificationIntegrations.Slack:
                         processed = await _slackService.SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression).AnyContext();
                         break;
@@ -125,7 +136,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
             }
 
             // if we sent any notifications, mark the last time a notification for this stack was sent.
-            if (sent > 0) {
+            if (sent > 0)
+            {
                 await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15)).AnyContext();
                 if (shouldLog) _logger.LogInformation("Notifications sent: event={id} stack={stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }
@@ -133,24 +145,29 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
         return JobResult.Success;
     }
 
-    private async Task<bool> SendEmailNotificationAsync(string userId, Project project, PersistentEvent ev, EventNotification wi, bool shouldLog) {
+    private async Task<bool> SendEmailNotificationAsync(string userId, Project project, PersistentEvent ev, EventNotification wi, bool shouldLog)
+    {
         var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
-        if (String.IsNullOrEmpty(user?.EmailAddress)) {
+        if (String.IsNullOrEmpty(user?.EmailAddress))
+        {
             if (shouldLog) _logger.LogError("Could not load user {user} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");
             return false;
         }
 
-        if (!user.IsEmailAddressVerified) {
+        if (!user.IsEmailAddressVerified)
+        {
             if (shouldLog) _logger.LogInformation("User {user} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
             return false;
         }
 
-        if (!user.EmailNotificationsEnabled) {
+        if (!user.EmailNotificationsEnabled)
+        {
             if (shouldLog) _logger.LogInformation("User {user} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
             return false;
         }
 
-        if (!user.OrganizationIds.Contains(project.OrganizationId)) {
+        if (!user.OrganizationIds.Contains(project.OrganizationId))
+        {
             if (shouldLog) _logger.LogError("Unauthorized user: project={project} user={user} organization={organization} event={id}", project.Id, userId, project.OrganizationId, ev.Id);
             return false;
         }
@@ -158,7 +175,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification> {
         if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
         // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
-        if (_appOptions.AppMode != AppMode.Production && !_emailOptions.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
+        if (_appOptions.AppMode != AppMode.Production && !_emailOptions.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v)))
+        {
             if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
             return false;
         }

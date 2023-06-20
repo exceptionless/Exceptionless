@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Queues.Models;
 
-public class WebHookNotification {
+public class WebHookNotification
+{
     public string OrganizationId { get; set; }
     public string ProjectId { get; set; }
     public string WebHookId { get; set; }
@@ -9,7 +10,8 @@ public class WebHookNotification {
     public object Data { get; set; }
 }
 
-public enum WebHookType {
+public enum WebHookType
+{
     General = 0,
     Slack = 1
 }

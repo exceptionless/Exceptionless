@@ -1,6 +1,6 @@
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
@@ -12,11 +12,13 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class EventStackFilterTests : IntegrationTestsBase {
+public sealed class EventStackFilterTests : IntegrationTestsBase
+{
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
 
-    public EventStackFilterTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public EventStackFilterTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
@@ -25,7 +27,8 @@ public sealed class EventStackFilterTests : IntegrationTestsBase {
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
 
         var oldLoggingLevel = Log.MinimumLevel;
@@ -41,7 +44,8 @@ public sealed class EventStackFilterTests : IntegrationTestsBase {
     [InlineData("status:fixed", 2)]
     [InlineData("status:regressed", 3)]
     [InlineData("status:open", 1)]
-    public async Task GetByStatusAsync(string filter, int count) {
+    public async Task GetByStatusAsync(string filter, int count)
+    {
         var result = await GetAsync(filter);
         Assert.NotNull(result);
         Assert.Equal(count, result.Total);
@@ -63,13 +67,15 @@ public sealed class EventStackFilterTests : IntegrationTestsBase {
     [InlineData("54dbc16ca0f5c61398427b00", 1)] // Event Id
     [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
     [InlineData("type:error", 2)]
-    public async Task GetByFilterAsync(string filter, int count) {
+    public async Task GetByFilterAsync(string filter, int count)
+    {
         var result = await GetAsync(filter);
         Assert.NotNull(result);
         Assert.Equal(count, result.Total);
     }
 
-    private Task<FindResults<PersistentEvent>> GetAsync(string filter) {
+    private Task<FindResults<PersistentEvent>> GetAsync(string filter)
+    {
         return _eventRepository.FindAsync(q => q.FilterExpression(filter).EnforceEventStackFilter(), o => o.QueryLogLevel(LogLevel.Information));
     }
 }

@@ -1,9 +1,11 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class WebHookStack {
+public class WebHookStack
+{
     private readonly string _baseUrl;
 
-    public WebHookStack(string baseUrl) {
+    public WebHookStack(string baseUrl)
+    {
         _baseUrl = baseUrl;
     }
 

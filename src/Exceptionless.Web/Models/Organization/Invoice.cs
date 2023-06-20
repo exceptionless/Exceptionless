@@ -1,7 +1,9 @@
 ﻿namespace Exceptionless.Web.Models;
 
-public class Invoice {
-    public Invoice() {
+public class Invoice
+{
+    public Invoice()
+    {
         Items = new List<InvoiceLineItem>();
     }
 

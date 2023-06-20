@@ -5,7 +5,8 @@ namespace Exceptionless.Core.Reflection;
 /// <summary>
 /// An interface for member accessors.
 /// </summary>
-public interface IMemberAccessor {
+public interface IMemberAccessor
+{
     /// <summary>
     /// Gets the type of the member.
     /// </summary>

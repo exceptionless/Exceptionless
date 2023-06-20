@@ -2,8 +2,10 @@
 
 namespace Exceptionless.Core.Models.Data;
 
-public class RequestInfo : IData {
-    public RequestInfo() {
+public class RequestInfo : IData
+{
+    public RequestInfo()
+    {
         Data = new DataDictionary();
         Headers = new Dictionary<string, string[]>();
         Cookies = new Dictionary<string, string>();
@@ -75,11 +77,13 @@ public class RequestInfo : IData {
     /// </summary>
     public DataDictionary Data { get; set; }
 
-    protected bool Equals(RequestInfo other) {
+    protected bool Equals(RequestInfo other)
+    {
         return String.Equals(UserAgent, other.UserAgent) && String.Equals(HttpMethod, other.HttpMethod) && IsSecure == other.IsSecure && String.Equals(Host, other.Host) && Port == other.Port && String.Equals(Path, other.Path) && String.Equals(Referrer, other.Referrer) && String.Equals(ClientIpAddress, other.ClientIpAddress) && Cookies.CollectionEquals(other.Cookies) && QueryString.CollectionEquals(other.QueryString) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -91,8 +95,10 @@ public class RequestInfo : IData {
 
     private static readonly List<string> _cookieHashCodeExclusions = new List<string> { "__LastReferenceId" };
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = UserAgent?.GetHashCode() ?? 0;
             hashCode = (hashCode * 397) ^ (HttpMethod?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ IsSecure.GetHashCode();
@@ -107,7 +113,8 @@ public class RequestInfo : IData {
             return hashCode;
         }
     }
-    public static class KnownDataKeys {
+    public static class KnownDataKeys
+    {
         public const string Browser = "@browser";
         public const string BrowserVersion = "@browser_version";
         public const string BrowserMajorVersion = "@browser_major_version";

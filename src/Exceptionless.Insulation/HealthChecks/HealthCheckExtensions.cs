@@ -3,8 +3,10 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Exceptionless.Insulation.HealthChecks;
 
-public static class HealthCheckExtensions {
-    public static IHealthChecksBuilder AddAutoNamedCheck<T>(this IHealthChecksBuilder builder, params string[] tags) where T : class, IHealthCheck {
+public static class HealthCheckExtensions
+{
+    public static IHealthChecksBuilder AddAutoNamedCheck<T>(this IHealthChecksBuilder builder, params string[] tags) where T : class, IHealthCheck
+    {
         var checkType = typeof(T);
         string name = checkType.Name;
         if (checkType.IsConstructedGenericType && checkType.GenericTypeArguments.Length == 1)

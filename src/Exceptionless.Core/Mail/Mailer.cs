@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Queues;
 using Foundatio.Utility;
@@ -11,24 +11,28 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Mail;
 
-public class Mailer : IMailer {
+public class Mailer : IMailer
+{
     private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new ConcurrentDictionary<string, HandlebarsTemplate<object, object>>();
     private readonly IQueue<MailMessage> _queue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, ILogger<Mailer> logger) {
+    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, ILogger<Mailer> logger)
+    {
         _queue = queue;
         _pluginManager = pluginManager;
         _appOptions = appOptions;
         _logger = logger;
     }
 
-    public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences) {
+    public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
+    {
         bool isCritical = ev.IsCritical();
         var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
-        if (result == null || result.Data.Count == 0) {
+        if (result == null || result.Data.Count == 0)
+        {
             _logger.LogWarning("Unable to create event notification mail message for event \"{user}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);
             return false;
         }
@@ -54,7 +58,8 @@ public class Mailer : IMailer {
         AddUserInfo(ev, messageData);
 
         const string template = "event-notice";
-        await QueueMessageAsync(new MailMessage {
+        await QueueMessageAsync(new MailMessage
+        {
             To = user.EmailAddress,
             Subject = $"[{project.Name}] {result.Subject}",
             Body = RenderTemplate(template, messageData)
@@ -62,7 +67,8 @@ public class Mailer : IMailer {
         return true;
     }
 
-    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data) {
+    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data)
+    {
         var ud = ev.GetUserDescription();
         var ui = ev.GetUserIdentity();
         if (!String.IsNullOrEmpty(ud?.Description))
@@ -89,7 +95,8 @@ public class Mailer : IMailer {
         data["HasUserInfo"] = ud != null || ui != null;
     }
 
-    private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data) {
+    private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data)
+    {
         if (ev.Tags.Count > 0)
             data["Tags"] = String.Join(", ", ev.Tags);
 
@@ -101,7 +108,8 @@ public class Mailer : IMailer {
             data["Version"] = version;
     }
 
-    public Task SendOrganizationAddedAsync(User sender, Organization organization, User user) {
+    public Task SendOrganizationAddedAsync(User sender, Organization organization, User user)
+    {
         const string template = "organization-added";
         string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
         var data = new Dictionary<string, object> {
@@ -111,14 +119,16 @@ public class Mailer : IMailer {
                 { "OrganizationName", organization.Name }
             };
 
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = user.EmailAddress,
             Subject = subject,
             Body = RenderTemplate(template, data)
         }, template);
     }
 
-    public Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite) {
+    public Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite)
+    {
         const string template = "organization-invited";
         string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
         var data = new Dictionary<string, object> {
@@ -128,14 +138,16 @@ public class Mailer : IMailer {
             };
 
         var body = RenderTemplate(template, data);
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = invite.EmailAddress,
             Subject = subject,
             Body = body
         }, template);
     }
 
-    public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit) {
+    public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit)
+    {
         const string template = "organization-notice";
         string subject = isOverMonthlyLimit
                 ? $"[{organization.Name}] Monthly plan limit exceeded."
@@ -151,14 +163,16 @@ public class Mailer : IMailer {
                 { "ThrottledUntil", SystemClock.UtcNow.StartOfHour().AddHours(1).ToShortTimeString() }
             };
 
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = user.EmailAddress,
             Subject = subject,
             Body = RenderTemplate(template, data)
         }, template);
     }
 
-    public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization) {
+    public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
+    {
         const string template = "organization-payment-failed";
         string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interruption!";
         var data = new Dictionary<string, object> {
@@ -168,14 +182,16 @@ public class Mailer : IMailer {
                 { "OrganizationName", organization.Name }
             };
 
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = owner.EmailAddress,
             Subject = subject,
             Body = RenderTemplate(template, data)
         }, template);
     }
 
-    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan) {
+    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
+    {
         const string template = "project-daily-summary";
         string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
         var data = new Dictionary<string, object> {
@@ -197,15 +213,18 @@ public class Mailer : IMailer {
                 { "IsFreePlan", isFreePlan }
             };
 
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = user.EmailAddress,
             Subject = subject,
             Body = RenderTemplate(template, data)
         }, template);
     }
 
-    private static IEnumerable<object> GetStackTemplateData(IEnumerable<Stack> stacks) {
-        return stacks?.Select(s => new {
+    private static IEnumerable<object> GetStackTemplateData(IEnumerable<Stack> stacks)
+    {
+        return stacks?.Select(s => new
+        {
             StackId = s.Id,
             Title = s.Title.Truncate(50),
             TypeName = s.GetTypeName().Truncate(50),
@@ -213,7 +232,8 @@ public class Mailer : IMailer {
         });
     }
 
-    public Task SendUserEmailVerifyAsync(User user) {
+    public Task SendUserEmailVerifyAsync(User user)
+    {
         if (String.IsNullOrEmpty(user?.VerifyEmailAddressToken))
             return Task.CompletedTask;
 
@@ -226,14 +246,16 @@ public class Mailer : IMailer {
                 { "UserVerifyEmailAddressToken", user.VerifyEmailAddressToken }
             };
 
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = user.EmailAddress,
             Subject = subject,
             Body = RenderTemplate(template, data)
         }, template);
     }
 
-    public Task SendUserPasswordResetAsync(User user) {
+    public Task SendUserPasswordResetAsync(User user)
+    {
         if (String.IsNullOrEmpty(user?.PasswordResetToken))
             return Task.CompletedTask;
 
@@ -246,26 +268,32 @@ public class Mailer : IMailer {
                 { "UserPasswordResetToken", user.PasswordResetToken }
             };
 
-        return QueueMessageAsync(new MailMessage {
+        return QueueMessageAsync(new MailMessage
+        {
             To = user.EmailAddress,
             Subject = subject,
             Body = RenderTemplate(template, data)
         }, template);
     }
 
-    private string RenderTemplate(string name, IDictionary<string, object> data) {
+    private string RenderTemplate(string name, IDictionary<string, object> data)
+    {
         var template = GetCompiledTemplate(name);
         var result = template(data);
         return result?.ToString();
     }
 
-    private HandlebarsTemplate<object, object> GetCompiledTemplate(string name) {
-        return _cachedTemplates.GetOrAdd(name, templateName => {
+    private HandlebarsTemplate<object, object> GetCompiledTemplate(string name)
+    {
+        return _cachedTemplates.GetOrAdd(name, templateName =>
+        {
             var assembly = typeof(Mailer).Assembly;
             string resourceName = $"Exceptionless.Core.Mail.Templates.{templateName}.html";
 
-            using (var stream = assembly.GetManifestResourceStream(resourceName)) {
-                using (var reader = new StreamReader(stream)) {
+            using (var stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                using (var reader = new StreamReader(stream))
+                {
                     string template = reader.ReadToEnd();
                     var compiledTemplateFunc = Handlebars.Compile(template);
                     return compiledTemplateFunc;
@@ -274,13 +302,15 @@ public class Mailer : IMailer {
         });
     }
 
-    private Task QueueMessageAsync(MailMessage message, string metricsName) {
+    private Task QueueMessageAsync(MailMessage message, string metricsName)
+    {
         CleanAddresses(message);
         AppDiagnostics.Counter($"mailer.{metricsName}");
         return _queue.EnqueueAsync(message);
     }
 
-    private void CleanAddresses(MailMessage message) {
+    private void CleanAddresses(MailMessage message)
+    {
         if (_appOptions.AppMode == AppMode.Production)
             return;
 

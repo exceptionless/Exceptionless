@@ -4,8 +4,10 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISupportSoftDeletes {
-    public Project() {
+public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISupportSoftDeletes
+{
+    public Project()
+    {
         Configuration = new ClientConfiguration();
         NotificationSettings = new Dictionary<string, NotificationSettings>();
         PromotedTabs = new HashSet<string>();
@@ -65,11 +67,13 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     public DateTime UpdatedUtc { get; set; }
     public bool IsDeleted { get; set; }
 
-    public static class NotificationIntegrations {
+    public static class NotificationIntegrations
+    {
         public const string Slack = "slack";
     }
 
-    public static class KnownDataKeys {
+    public static class KnownDataKeys
+    {
         public const string SlackToken = "-@slack";
     }
 }

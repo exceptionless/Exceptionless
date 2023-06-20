@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Utility;
 using FluentValidation;
 using Foundatio.Repositories;
@@ -13,10 +13,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Controllers;
 
-public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
+public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new()
+{
     public RepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) { }
 
-    protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value) {
+    protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value)
+    {
         if (value == null)
             return BadRequest();
 
@@ -30,18 +32,21 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             return Permission(permission);
 
         TModel model;
-        try {
+        try
+        {
             model = await AddModelAsync(mapped);
             await AfterAddAsync(model);
         }
-        catch (ValidationException ex) {
+        catch (ValidationException ex)
+        {
             return BadRequest(ex.Errors.ToErrorMessage());
         }
 
         return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true));
     }
 
-    protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc) {
+    protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc)
+    {
         var model = await GetModelAsync(id);
         if (model == null)
             return NotFound();
@@ -58,7 +63,8 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return Ok(await MapAsync<TViewModel>(model, true));
     }
 
-    protected async Task<ActionResult<TViewModel>> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc) {
+    protected async Task<ActionResult<TViewModel>> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc)
+    {
         var models = await GetModelsAsync(ids, false);
         if (models == null || models.Count == 0)
             return NotFound();
@@ -77,31 +83,40 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return Ok(await MapAsync<TViewModel>(models, true));
     }
 
-    protected virtual string GetEntityLink(string id) {
-        return Url.Link($"Get{typeof(TModel).Name}ById", new {
+    protected virtual string GetEntityLink(string id)
+    {
+        return Url.Link($"Get{typeof(TModel).Name}ById", new
+        {
             id
         });
     }
 
-    protected virtual string GetEntityResourceLink(string id, string type) {
-        return GetResourceLink(Url.Link($"Get{typeof(TModel).Name}ById", new {
+    protected virtual string GetEntityResourceLink(string id, string type)
+    {
+        return GetResourceLink(Url.Link($"Get{typeof(TModel).Name}ById", new
+        {
             id
         }), type);
     }
 
-    protected virtual string GetEntityLink<TEntityType>(string id) {
-        return Url.Link($"Get{typeof(TEntityType).Name}ById", new {
+    protected virtual string GetEntityLink<TEntityType>(string id)
+    {
+        return Url.Link($"Get{typeof(TEntityType).Name}ById", new
+        {
             id
         });
     }
 
-    protected virtual string GetEntityResourceLink<TEntityType>(string id, string type) {
-        return GetResourceLink(Url.Link($"Get{typeof(TEntityType).Name}ById", new {
+    protected virtual string GetEntityResourceLink<TEntityType>(string id, string type)
+    {
+        return GetResourceLink(Url.Link($"Get{typeof(TEntityType).Name}ById", new
+        {
             id
         }), type);
     }
 
-    protected virtual async Task<PermissionResult> CanAddAsync(TModel value) {
+    protected virtual async Task<PermissionResult> CanAddAsync(TModel value)
+    {
         if (_isOrganization || !(value is IOwnedByOrganization orgModel))
             return PermissionResult.Allow;
 
@@ -111,19 +126,23 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return PermissionResult.Allow;
     }
 
-    protected virtual Task<TModel> AddModelAsync(TModel value) {
+    protected virtual Task<TModel> AddModelAsync(TModel value)
+    {
         return _repository.AddAsync(value, o => o.Cache());
     }
 
-    protected virtual Task<TModel> AfterAddAsync(TModel value) {
+    protected virtual Task<TModel> AfterAddAsync(TModel value)
+    {
         return Task.FromResult(value);
     }
 
-    protected virtual Task<TModel> AfterUpdateAsync(TModel value) {
+    protected virtual Task<TModel> AfterUpdateAsync(TModel value)
+    {
         return Task.FromResult(value);
     }
 
-    protected async Task<ActionResult<TViewModel>> PatchImplAsync(string id, Delta<TUpdateModel> changes) {
+    protected async Task<ActionResult<TViewModel>> PatchImplAsync(string id, Delta<TUpdateModel> changes)
+    {
         var original = await GetModelAsync(id, false);
         if (original == null)
             return NotFound();
@@ -136,18 +155,21 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (!permission.Allowed)
             return Permission(permission);
 
-        try {
+        try
+        {
             await UpdateModelAsync(original, changes);
             await AfterPatchAsync(original);
         }
-        catch (ValidationException ex) {
+        catch (ValidationException ex)
+        {
             return BadRequest(ex.Errors.ToErrorMessage());
         }
 
         return await OkModelAsync(original);
     }
 
-    protected virtual async Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes) {
+    protected virtual async Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes)
+    {
         if (original is IOwnedByOrganization orgModel && !CanAccessOrganization(orgModel.OrganizationId))
             return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
@@ -157,16 +179,19 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return PermissionResult.Allow;
     }
 
-    protected virtual Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
+    protected virtual Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes)
+    {
         changes.Patch(original);
         return _repository.SaveAsync(original, o => o.Cache());
     }
 
-    protected virtual Task<TModel> AfterPatchAsync(TModel value) {
+    protected virtual Task<TModel> AfterPatchAsync(TModel value)
+    {
         return Task.FromResult(value);
     }
 
-    protected async Task<ActionResult<WorkInProgressResult>> DeleteImplAsync(string[] ids) {
+    protected async Task<ActionResult<WorkInProgressResult>> DeleteImplAsync(string[] ids)
+    {
         var items = await GetModelsAsync(ids, false);
         if (items.Count == 0)
             return NotFound();
@@ -175,7 +200,8 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         results.AddNotFound(ids.Except(items.Select(i => i.Id)));
 
         var list = items.ToList();
-        foreach (var model in items) {
+        foreach (var model in items)
+        {
             var permission = await CanDeleteAsync(model);
             if (permission.Allowed)
                 continue;
@@ -188,10 +214,12 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
         IEnumerable<string> workIds;
-        try {
+        try
+        {
             workIds = await DeleteModelsAsync(list) ?? new List<string>();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, ex.Message);
             return StatusCode(StatusCodes.Status500InternalServerError);
@@ -205,19 +233,23 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return BadRequest(results);
     }
 
-    protected virtual async Task<PermissionResult> CanDeleteAsync(TModel value) {
+    protected virtual async Task<PermissionResult> CanDeleteAsync(TModel value)
+    {
         if (value is IOwnedByOrganization orgModel && !CanAccessOrganization(orgModel.OrganizationId))
             return PermissionResult.DenyWithNotFound(value.Id);
 
         return PermissionResult.Allow;
     }
 
-    protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values) {
-        if (_supportsSoftDeletes) {
+    protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values)
+    {
+        if (_supportsSoftDeletes)
+        {
             values.Cast<ISupportSoftDeletes>().ForEach(v => v.IsDeleted = true);
             await _repository.SaveAsync(values);
         }
-        else {
+        else
+        {
             await _repository.RemoveAsync(values);
         }
 

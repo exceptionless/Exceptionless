@@ -5,8 +5,10 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 public class RequestBodyContentAttribute : Attribute { }
 
-public class RequestBodyOperationFilter : IOperationFilter {
-    public void Apply(OpenApiOperation operation, OperationFilterContext context) {
+public class RequestBodyOperationFilter : IOperationFilter
+{
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    {
         var attributes = context.MethodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).FirstOrDefault();
         if (attributes == null)
             return;
@@ -16,8 +18,10 @@ public class RequestBodyOperationFilter : IOperationFilter {
             return;
 
         operation.RequestBody = new OpenApiRequestBody { Required = true };
-        foreach (string contentType in consumesAttribute.ContentTypes) {
-            operation.RequestBody.Content.Add(contentType, new OpenApiMediaType {
+        foreach (string contentType in consumesAttribute.ContentTypes)
+        {
+            operation.RequestBody.Content.Add(contentType, new OpenApiMediaType
+            {
                 Schema = new OpenApiSchema { Type = "string", Example = new OpenApiString(String.Empty) }
             });
         }

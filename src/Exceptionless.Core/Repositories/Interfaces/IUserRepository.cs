@@ -4,7 +4,8 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;
 
-public interface IUserRepository : ISearchableRepository<User> {
+public interface IUserRepository : ISearchableRepository<User>
+{
     Task<User> GetByEmailAddressAsync(string emailAddress);
     Task<User> GetByPasswordResetTokenAsync(string token);
     Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId);

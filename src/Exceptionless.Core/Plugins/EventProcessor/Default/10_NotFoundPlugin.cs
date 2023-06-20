@@ -1,15 +1,17 @@
 ﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
 [Priority(10)]
-public sealed class NotFoundPlugin : EventProcessorPluginBase {
+public sealed class NotFoundPlugin : EventProcessorPluginBase
+{
     public NotFoundPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
 
-    public override Task EventProcessingAsync(EventContext context) {
+    public override Task EventProcessingAsync(EventContext context)
+    {
         if (context.Event.Type != Event.KnownTypes.NotFound)
             return Task.CompletedTask;
 
@@ -20,7 +22,8 @@ public sealed class NotFoundPlugin : EventProcessorPluginBase {
         if (req == null)
             return Task.CompletedTask;
 
-        if (String.IsNullOrWhiteSpace(context.Event.Source)) {
+        if (String.IsNullOrWhiteSpace(context.Event.Source))
+        {
             context.Event.Message = null;
             context.Event.Source = req.GetFullPath(includeHttpMethod: true, includeHost: false, includeQueryString: false);
         }

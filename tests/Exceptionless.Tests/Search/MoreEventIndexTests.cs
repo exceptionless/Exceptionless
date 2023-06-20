@@ -1,21 +1,23 @@
-using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
-using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class MoreEventIndexTests : IntegrationTestsBase {
+public sealed class MoreEventIndexTests : IntegrationTestsBase
+{
     private readonly IEventRepository _repository;
     private readonly PersistentEventQueryValidator _validator;
 
-    public MoreEventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public MoreEventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         _repository = GetService<IEventRepository>();
         _validator = GetService<PersistentEventQueryValidator>();
@@ -48,8 +50,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("source:System.Text.StringBuilder", 1)]
     [InlineData("source:System.Text", 1)]
     [InlineData("source:System.Text.StringBuilder,System.Text", 1)]
-    public async Task GetBySourceAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetBySourceAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().Source("Exceptionless.Web.GET.Print.SomeClass");
             d.Event().Source("some/web/path");
             d.Event().Source("Exceptionless");
@@ -72,8 +76,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("test@exceptionless.com", 2)]
     [InlineData("user.email:test@exceptionless.com", 2)]
     [InlineData("user.email:exceptionless.com", 3)]
-    public async Task GetByUserEmailAddressAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetByUserEmailAddressAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().UserDescription("test@exceptionless.com", "");
             d.Event().UserIdentity("test@exceptionless.com");
             d.Event().UserIdentity("eric@exceptionless.com");
@@ -90,8 +96,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("type:log", 1)]
     [InlineData("type:error", 1)]
     [InlineData("type:custom", 1)]
-    public async Task GetByTypeAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetByTypeAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().Type(Event.KnownTypes.Log);
             d.Event().Type(Event.KnownTypes.Error);
             d.Event().Type("custom");
@@ -108,8 +116,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("tag:Blake", 0)]
     [InlineData("tag:Niemyjski", 0)]
     [InlineData("tag:\"Blake Niemyjski\"", 1)]
-    public async Task GetByTagAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetByTagAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().Tag("Blake Niemyjski");
             d.Event().Tag("test");
             d.Event();
@@ -125,8 +135,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("project:" + SampleDataService.TEST_PROJECT_ID, 1)]
     [InlineData("project:" + SampleDataService.FREE_PROJECT_ID, 1)]
     [InlineData("project:123", 1)]
-    public async Task GetByProjectIdAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetByProjectIdAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().TestProject();
             d.Event().FreeProject();
             d.Event().Project("123");
@@ -142,8 +154,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("organization:" + SampleDataService.TEST_ORG_ID, 1)]
     [InlineData("organization:" + SampleDataService.FREE_ORG_ID, 1)]
     [InlineData("organization:123", 1)]
-    public async Task GetByOrganizationIdAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetByOrganizationIdAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             d.Event().TestProject();
             d.Event().FreeProject();
             d.Event().Organization("123");
@@ -158,8 +172,10 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
     [InlineData("stack:000000000000000000000000", 0)]
     [InlineData("stack:1ecd0826e447a44e78877ab1", 2)]
     [InlineData("stack:2ecd0826e447a44e78877ab2", 1)]
-    public async Task GetByStackIdAsync(string search, int count) {
-        await CreateDataAsync(d => {
+    public async Task GetByStackIdAsync(string search, int count)
+    {
+        await CreateDataAsync(d =>
+        {
             var stack1 = d.Event().StackId("1ecd0826e447a44e78877ab1");
             d.Event().Stack(stack1);
 
@@ -171,7 +187,8 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase {
         Assert.Equal(count, result.Total);
     }
 
-    private async Task<FindResults<PersistentEvent>> GetEventsAsync(string search) {
+    private async Task<FindResults<PersistentEvent>> GetEventsAsync(string search)
+    {
         var result = await _validator.ValidateQueryAsync(search);
         Assert.True(result.IsValid);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);

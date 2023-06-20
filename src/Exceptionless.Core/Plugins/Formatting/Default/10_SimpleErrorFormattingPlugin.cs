@@ -1,23 +1,27 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(10)]
-public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
+public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
+{
     public SimpleErrorFormattingPlugin(AppOptions options) : base(options) { }
 
-    private bool ShouldHandle(PersistentEvent ev) {
+    private bool ShouldHandle(PersistentEvent ev)
+    {
         return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack) {
+    public override SummaryData GetStackSummaryData(Stack stack)
+    {
         if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
             return null;
 
         var data = new Dictionary<string, object>();
-        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value)) {
+        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value))
+        {
             data.Add("Type", value.TypeName());
             data.Add("TypeFullName", value);
         }
@@ -28,7 +32,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "stack-simple-summary", Data = data };
     }
 
-    public override string GetStackTitle(PersistentEvent ev) {
+    public override string GetStackTitle(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -36,7 +41,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
         return error?.Message;
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -47,7 +53,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
         var data = new Dictionary<string, object> { { "Message", ev.Message } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        if (!String.IsNullOrEmpty(error.Type)) {
+        if (!String.IsNullOrEmpty(error.Type))
+        {
             data.Add("Type", error.Type.TypeName());
             data.Add("TypeFullName", error.Type);
         }
@@ -59,7 +66,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -93,7 +101,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -115,7 +124,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev) {
+        var attachment = new SlackMessage.SlackAttachment(ev)
+        {
             Color = "#BB423F",
             Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
@@ -129,7 +139,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Type", Value = errorTypeName });
 
         var lines = error.StackTrace.SplitLines().ToList();
-        if (lines.Count > 0) {
+        if (lines.Count > 0)
+        {
             var frames = lines.Take(3).ToList();
             if (lines.Count > 3)
                 frames.Add("...");
@@ -139,7 +150,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase {
 
         AddDefaultSlackFields(ev, attachment.Fields);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, error.Message.Truncate(120))}*";
-        return new SlackMessage(subject) {
+        return new SlackMessage(subject)
+        {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }
         };
     }

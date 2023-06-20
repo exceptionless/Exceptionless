@@ -1,22 +1,24 @@
 ﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
 
 [Priority(70)]
-public class QueueNotificationAction : EventPipelineActionBase {
+public class QueueNotificationAction : EventPipelineActionBase
+{
     private readonly IQueue<EventNotification> _notificationQueue;
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
     private readonly IWebHookRepository _webHookRepository;
     private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    {
         _notificationQueue = notificationQueue;
         _webHookNotificationQueue = webHookNotificationQueue;
         _webHookRepository = webHookRepository;
@@ -24,7 +26,8 @@ public class QueueNotificationAction : EventPipelineActionBase {
         ContinueOnError = true;
     }
 
-    public override async Task ProcessAsync(EventContext ctx) {
+    public override async Task ProcessAsync(EventContext ctx)
+    {
         // if they don't have premium features, then we don't need to queue notifications
         if (!ctx.Organization.HasPremiumFeatures)
             return;
@@ -33,7 +36,8 @@ public class QueueNotificationAction : EventPipelineActionBase {
             return;
 
         if (ShouldQueueNotification(ctx))
-            await _notificationQueue.EnqueueAsync(new EventNotification {
+            await _notificationQueue.EnqueueAsync(new EventNotification
+            {
                 EventId = ctx.Event.Id,
                 IsNew = ctx.IsNew,
                 IsRegression = ctx.IsRegression,
@@ -41,12 +45,14 @@ public class QueueNotificationAction : EventPipelineActionBase {
             }).AnyContext();
 
         var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext();
-        foreach (var hook in webHooks.Documents) {
+        foreach (var hook in webHooks.Documents)
+        {
             if (!ShouldCallWebHook(hook, ctx))
                 continue;
 
             var context = new WebHookDataContext(hook, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
-            var notification = new WebHookNotification {
+            var notification = new WebHookNotification
+            {
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,
                 WebHookId = hook.Id,
@@ -61,7 +67,8 @@ public class QueueNotificationAction : EventPipelineActionBase {
         }
     }
 
-    private bool ShouldCallWebHook(WebHook hook, EventContext ctx) {
+    private bool ShouldCallWebHook(WebHook hook, EventContext ctx)
+    {
         if (!hook.IsEnabled)
             return false;
 
@@ -86,7 +93,8 @@ public class QueueNotificationAction : EventPipelineActionBase {
         return false;
     }
 
-    private bool ShouldQueueNotification(EventContext ctx) {
+    private bool ShouldQueueNotification(EventContext ctx)
+    {
         if (ctx.Project.NotificationSettings.Count == 0)
             return false;
 

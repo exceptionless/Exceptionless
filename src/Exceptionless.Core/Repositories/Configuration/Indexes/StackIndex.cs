@@ -7,7 +7,8 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
-public sealed class StackIndex : VersionedIndex<Stack> {
+public sealed class StackIndex : VersionedIndex<Stack>
+{
     private const string COMMA_WHITESPACE_ANALYZER = "comma_whitespace";
     private const string STANDARDPLUS_ANALYZER = "standardplus";
     private const string WHITESPACE_LOWERCASE_ANALYZER = "whitespace_lower";
@@ -15,11 +16,13 @@ public sealed class StackIndex : VersionedIndex<Stack> {
 
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1) {
+    public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1)
+    {
         _configuration = configuration;
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx) {
+    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    {
         return base.ConfigureIndex(idx.Settings(s => s
             .Analysis(BuildAnalysis)
             .NumberOfShards(_configuration.Options.NumberOfShards)
@@ -27,7 +30,8 @@ public sealed class StackIndex : VersionedIndex<Stack> {
             .Priority(5)));
     }
 
-    public override TypeMappingDescriptor<Stack> ConfigureIndexMapping(TypeMappingDescriptor<Stack> map) {
+    public override TypeMappingDescriptor<Stack> ConfigureIndexMapping(TypeMappingDescriptor<Stack> map)
+    {
         return map
             .Dynamic(false)
             .Properties(p => p
@@ -64,7 +68,8 @@ public sealed class StackIndex : VersionedIndex<Stack> {
             );
     }
 
-    protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config) {
+    protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config)
+    {
         string dateFixedFieldName = InferPropertyName(f => f.DateFixed);
         config
             .SetDefaultFields(new[] { "id", Alias.Title, Alias.Description, Alias.Tags, Alias.References })
@@ -74,7 +79,8 @@ public sealed class StackIndex : VersionedIndex<Stack> {
             });
     }
 
-    private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad) {
+    private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad)
+    {
         return ad.Analyzers(a => a
                 .Pattern(COMMA_WHITESPACE_ANALYZER, p => p.Pattern(@"[,\s]+"))
                 .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
@@ -83,7 +89,8 @@ public sealed class StackIndex : VersionedIndex<Stack> {
                 .Pattern(COMMA_WHITESPACE_TOKENIZER, p => p.Pattern(@"[,\s]+")));
     }
 
-    public class Alias {
+    public class Alias
+    {
         public const string Stack = "stack";
         public const string Status = "status";
         public const string OrganizationId = "organization";

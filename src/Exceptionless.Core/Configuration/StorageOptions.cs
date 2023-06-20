@@ -5,7 +5,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class StorageOptions {
+public class StorageOptions
+{
     public string ConnectionString { get; internal set; }
     public string Provider { get; internal set; }
     public Dictionary<string, string> Data { get; internal set; }
@@ -13,7 +14,8 @@ public class StorageOptions {
     public string Scope { get; internal set; }
     public string ScopePrefix { get; internal set; }
 
-    public static StorageOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+    public static StorageOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
+    {
         var options = new StorageOptions();
 
         options.Scope = appOptions.AppScope;

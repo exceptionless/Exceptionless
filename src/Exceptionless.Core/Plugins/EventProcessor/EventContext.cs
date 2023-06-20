@@ -1,12 +1,14 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
-public class EventContext : ExtensibleObject, IPipelineContext {
-    public EventContext(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null) {
+public class EventContext : ExtensibleObject, IPipelineContext
+{
+    public EventContext(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null)
+    {
         Organization = organization;
         Project = project;
         Event = ev;
@@ -34,7 +36,8 @@ public class EventContext : ExtensibleObject, IPipelineContext {
 
     public bool HasError => ErrorMessage != null || Exception != null;
 
-    public void SetError(string message, Exception ex = null) {
+    public void SetError(string message, Exception ex = null)
+    {
         ErrorMessage = message;
         Exception = ex;
     }

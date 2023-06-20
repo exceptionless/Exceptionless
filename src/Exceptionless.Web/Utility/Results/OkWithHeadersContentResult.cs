@@ -7,19 +7,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Utility.Results;
 
-public class OkWithHeadersContentResult<T> : ObjectWithHeadersResult {
-    public OkWithHeadersContentResult(T content, IHeaderDictionary headers = null) : base(content, headers) {
+public class OkWithHeadersContentResult<T> : ObjectWithHeadersResult
+{
+    public OkWithHeadersContentResult(T content, IHeaderDictionary headers = null) : base(content, headers)
+    {
         StatusCode = StatusCodes.Status200OK;
     }
 }
 
-public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerable<TEntity>> where TEntity : class {
+public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerable<TEntity>> where TEntity : class
+{
     //public OkWithResourceLinks(IEnumerable<TEntity> content, IHeaderDictionary headers = null) : base(content, headers) { }
 
     public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false)
         : this(content, hasMore, page, null, pagePropertyAccessor, headers, isDescending) { }
 
-    public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) : base(content, headers) {
+    public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) : base(content, headers)
+    {
         Content = content;
         HasMore = hasMore;
         IsDescending = isDescending;
@@ -35,8 +39,10 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
     public long? Total { get; }
     public Func<TEntity, string> PagePropertyAccessor { get; }
 
-    public override void OnFormatting(ActionContext context) {
-        if (Content != null) {
+    public override void OnFormatting(ActionContext context)
+    {
+        if (Content != null)
+        {
             List<string> links;
             if (Page.HasValue)
                 links = GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore);
@@ -53,13 +59,15 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
         base.OnFormatting(context);
     }
 
-    public static List<string> GetPagedLinks(Uri url, int page, bool hasMore) {
+    public static List<string> GetPagedLinks(Uri url, int page, bool hasMore)
+    {
         bool includePrevious = page > 1;
         bool includeNext = hasMore;
 
         var previousParameters = HttpUtility.ParseQueryString(url.Query);
         previousParameters["page"] = (page - 1).ToString();
-        var nextParameters = new NameValueCollection(previousParameters) {
+        var nextParameters = new NameValueCollection(previousParameters)
+        {
             ["page"] = (page + 1).ToString()
         };
 
@@ -77,7 +85,8 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
         return links;
     }
 
-    public static List<string> GetBeforeAndAfterLinks(Uri url, IEnumerable<TEntity> content, bool isDescending, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
+    public static List<string> GetBeforeAndAfterLinks(Uri url, IEnumerable<TEntity> content, bool isDescending, bool hasMore, Func<TEntity, string> pagePropertyAccessor)
+    {
         var contentList = content.ToList();
         if (pagePropertyAccessor == null && typeof(IIdentity).IsAssignableFrom(typeof(TEntity)))
             pagePropertyAccessor = e => ((IIdentity)e).Id;
@@ -105,13 +114,15 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
 
         bool includePrevious = hasBefore ? hasMore : true;
         bool includeNext = !hasBefore ? hasMore : true;
-        if (hasBefore && !contentList.Any()) {
+        if (hasBefore && !contentList.Any())
+        {
             // are we currently before the first page?
             includePrevious = false;
             includeNext = true;
             nextParameters.Remove("after");
         }
-        else if (!hasBefore && !hasAfter) {
+        else if (!hasBefore && !hasAfter)
+        {
             // are we at the first page?
             includePrevious = false;
         }

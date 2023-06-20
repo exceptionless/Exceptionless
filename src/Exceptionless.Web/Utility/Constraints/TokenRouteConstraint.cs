@@ -2,6 +2,7 @@
 
 namespace Exceptionless.Web.Utility;
 
-public class TokenRouteConstraint : RegexRouteConstraint {
+public class TokenRouteConstraint : RegexRouteConstraint
+{
     public TokenRouteConstraint() : base(@"^[a-zA-Z\d-]{24,40}$") { }
 }

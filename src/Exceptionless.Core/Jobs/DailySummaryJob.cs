@@ -19,7 +19,8 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Sends daily summary emails.", InitialDelay = "1m", Interval = "1h")]
-public class DailySummaryJob : JobWithLockBase, IHealthCheck {
+public class DailySummaryJob : JobWithLockBase, IHealthCheck
+{
     private readonly EmailOptions _emailOptions;
     private readonly IProjectRepository _projectRepository;
     private readonly IOrganizationRepository _organizationRepository;
@@ -31,7 +32,8 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _emailOptions = emailOptions;
         _projectRepository = projectRepository;
         _organizationRepository = organizationRepository;
@@ -43,51 +45,61 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    {
         return _lockProvider.AcquireAsync(nameof(DailySummaryJob), TimeSpan.FromHours(1), new CancellationToken(true));
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         _lastRun = SystemClock.UtcNow;
 
         if (!_emailOptions.EnableDailySummary || _mailer == null)
             return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
         var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
-        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested) {
+        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
             _logger.LogTrace("Got {Count} projects to process. ", results.Documents.Count);
 
             var projectsToBulkUpdate = new List<Project>(results.Documents.Count);
             var processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2);
-            foreach (var project in results.Documents) {
-                using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id))) {
+            foreach (var project in results.Documents)
+            {
+                using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id)))
+                {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
-                    if (utcStartTime < processSummariesNewerThan) {
+                    if (utcStartTime < processSummariesNewerThan)
+                    {
                         _logger.LogInformation("Skipping daily summary older than two days for project: {Name}", project.Name);
                         projectsToBulkUpdate.Add(project);
                         continue;
                     }
 
-                    var notification = new SummaryNotification {
+                    var notification = new SummaryNotification
+                    {
                         Id = project.Id,
                         UtcStartTime = utcStartTime,
                         UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                     };
 
                     bool summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
-                    if (summarySent) {
+                    if (summarySent)
+                    {
                         await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
 
                         // Sleep so we are not hammering the backend as we just generated a report.
                         await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
                     }
-                    else {
+                    else
+                    {
                         projectsToBulkUpdate.Add(project);
                     }
                 }
             }
 
-            if (projectsToBulkUpdate.Count > 0) {
+            if (projectsToBulkUpdate.Count > 0)
+            {
                 await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate).AnyContext();
 
                 // Sleep so we are not hammering the backend
@@ -97,7 +109,8 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
                 break;
 
-            if (results.Documents.Count > 0) {
+            if (results.Documents.Count > 0)
+            {
                 await context.RenewLockAsync().AnyContext();
                 _lastRun = SystemClock.UtcNow;
             }
@@ -106,24 +119,28 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
         return JobResult.SuccessWithMessage("Successfully sent summary notifications.");
     }
 
-    private async Task<bool> SendSummaryNotificationAsync(Project project, SummaryNotification data) {
+    private async Task<bool> SendSummaryNotificationAsync(Project project, SummaryNotification data)
+    {
         // TODO: Add slack daily summaries
         var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary && !String.Equals(n.Key, Project.NotificationIntegrations.Slack)).Select(n => n.Key).ToList();
-        if (userIds.Count == 0) {
+        if (userIds.Count == 0)
+        {
             _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
             return false;
         }
 
         var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache()).AnyContext();
         var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
-        if (users.Count == 0) {
+        if (users.Count == 0)
+        {
             _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
             return false;
         }
 
         // TODO: What should we do about suspended organizations.
         var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
-        if (organization == null) {
+        if (organization == null)
+        {
             _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
             return false;
         }
@@ -158,7 +175,8 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
         if (newTotal > 0)
             newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3)).AnyContext()).Documents;
 
-        foreach (var user in users) {
+        foreach (var user in users)
+        {
             _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
             await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan).AnyContext();
         }
@@ -167,7 +185,8 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck {
         return true;
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

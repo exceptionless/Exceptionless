@@ -1,10 +1,12 @@
 ﻿namespace Exceptionless.Core.Utility;
 
-public interface IConnectionString {
+public interface IConnectionString
+{
     string ConnectionString { get; }
 }
 
-public interface IElasticsearchConnectionString : IConnectionString {
+public interface IElasticsearchConnectionString : IConnectionString
+{
     bool EnableMapperSizePlugin { get; }
     int FieldsLimit { get; }
     int NumberOfReplicas { get; }
@@ -12,8 +14,10 @@ public interface IElasticsearchConnectionString : IConnectionString {
     string ServerUrl { get; }
 }
 
-public class DefaultConnectionString : IConnectionString {
-    public DefaultConnectionString(string connectionString) {
+public class DefaultConnectionString : IConnectionString
+{
+    public DefaultConnectionString(string connectionString)
+    {
         ConnectionString = connectionString;
     }
 

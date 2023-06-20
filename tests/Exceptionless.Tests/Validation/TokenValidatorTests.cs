@@ -1,16 +1,18 @@
-﻿using Exceptionless.Core.Validation;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
-public sealed class TokenValidatorTests : TestWithServices {
+public sealed class TokenValidatorTests : TestWithServices
+{
     private readonly TokenValidator _validator;
 
-    public TokenValidatorTests(ITestOutputHelper output) : base(output) {
+    public TokenValidatorTests(ITestOutputHelper output) : base(output)
+    {
         _validator = new TokenValidator();
     }
 
@@ -19,8 +21,10 @@ public sealed class TokenValidatorTests : TestWithServices {
     [InlineData(TokenType.Access, true, true)]
     [InlineData(TokenType.Authentication, false, true)]
     [InlineData(TokenType.Authentication, true, false)]
-    public void VerifyIsDisabled(TokenType type, bool isDisabled, bool isValid) {
-        var token = new Token {
+    public void VerifyIsDisabled(TokenType type, bool isDisabled, bool isValid)
+    {
+        var token = new Token
+        {
             Id = SampleDataService.TEST_API_KEY,
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Type = type,

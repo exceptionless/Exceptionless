@@ -2,8 +2,10 @@
 
 namespace Exceptionless.Core.Models.Data;
 
-public class SimpleError : IData {
-    public SimpleError() {
+public class SimpleError : IData
+{
+    public SimpleError()
+    {
         Data = new DataDictionary();
     }
 
@@ -32,11 +34,13 @@ public class SimpleError : IData {
     /// </summary>
     public SimpleError Inner { get; set; }
 
-    protected bool Equals(SimpleError other) {
+    protected bool Equals(SimpleError other)
+    {
         return String.Equals(Message, other.Message) && String.Equals(Type, other.Type) && String.Equals(StackTrace, other.StackTrace) && Equals(Data, other.Data) && Equals(Inner, other.Inner);
     }
 
-    public override bool Equals(object obj) {
+    public override bool Equals(object obj)
+    {
         if (obj is null)
             return false;
         if (ReferenceEquals(this, obj))
@@ -46,8 +50,10 @@ public class SimpleError : IData {
         return Equals((SimpleError)obj);
     }
 
-    public override int GetHashCode() {
-        unchecked {
+    public override int GetHashCode()
+    {
+        unchecked
+        {
             int hashCode = Message?.GetHashCode() ?? 0;
             hashCode = (hashCode * 397) ^ (Type?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (StackTrace?.GetHashCode() ?? 0);
@@ -57,7 +63,8 @@ public class SimpleError : IData {
         }
     }
 
-    public static class KnownDataKeys {
+    public static class KnownDataKeys
+    {
         public const string ExtraProperties = "@ext";
     }
 }

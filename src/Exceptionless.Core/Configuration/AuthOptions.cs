@@ -4,7 +4,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class AuthOptions {
+public class AuthOptions
+{
     public bool EnableAccountCreation { get; internal set; }
     public bool EnableActiveDirectoryAuth { get; internal set; }
 
@@ -26,7 +27,8 @@ public class AuthOptions {
 
     public string LdapConnectionString { get; internal set; }
 
-    public static AuthOptions ReadFromConfiguration(IConfiguration config) {
+    public static AuthOptions ReadFromConfiguration(IConfiguration config)
+    {
         var options = new AuthOptions();
 
         options.EnableAccountCreation = config.GetValue(nameof(options.EnableAccountCreation), true);

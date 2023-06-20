@@ -15,17 +15,22 @@ using Serilog.Sinks.Exceptionless;
 
 namespace Exceptionless.Job;
 
-public class Program {
-    public static async Task<int> Main(string[] args) {
-        try {
+public class Program
+{
+    public static async Task<int> Main(string[] args)
+    {
+        try
+        {
             await CreateHostBuilder(args).Build().RunAsync();
             return 0;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             Log.Fatal(ex, "Job host terminated unexpectedly");
             return 1;
         }
-        finally {
+        finally
+        {
             Log.CloseAndFlush();
             await ExceptionlessClient.Default.ProcessQueueAsync();
 
@@ -34,7 +39,8 @@ public class Program {
         }
     }
 
-    public static IHostBuilder CreateHostBuilder(string[] args) {
+    public static IHostBuilder CreateHostBuilder(string[] args)
+    {
         var jobOptions = new JobRunnerOptions(args);
 
         Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
@@ -63,7 +69,8 @@ public class Program {
         var builder = Host.CreateDefaultBuilder()
             .UseEnvironment(environment)
             .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
-            .UseSerilog((ctx, sp, c) => {
+            .UseSerilog((ctx, sp, c) =>
+            {
                 c.ReadFrom.Configuration(config);
                 c.ReadFrom.Services(sp);
                 c.Enrich.WithMachineName();
@@ -71,13 +78,17 @@ public class Program {
                 if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
                     loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
             }, writeToProviders: true)
-            .ConfigureWebHostDefaults(webBuilder => {
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
                 webBuilder
                     .UseConfiguration(config)
-                    .Configure(app => {
-                        app.UseSerilogRequestLogging(o => {
+                    .Configure(app =>
+                    {
+                        app.UseSerilogRequestLogging(o =>
+                        {
                             o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-                            o.GetLevel = (context, duration, ex) => {
+                            o.GetLevel = (context, duration, ex) =>
+                            {
                                 if (ex != null || context.Response.StatusCode > 499)
                                     return LogEventLevel.Error;
 
@@ -93,21 +104,25 @@ public class Program {
                         if (apmConfig.EnableMetrics)
                             app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-                        app.UseHealthChecks("/health", new HealthCheckOptions {
+                        app.UseHealthChecks("/health", new HealthCheckOptions
+                        {
                             Predicate = hcr => !String.IsNullOrEmpty(jobOptions.JobName) ? hcr.Tags.Contains(jobOptions.JobName) : hcr.Tags.Contains("AllJobs")
                         });
 
-                        app.UseHealthChecks("/ready", new HealthCheckOptions {
+                        app.UseHealthChecks("/ready", new HealthCheckOptions
+                        {
                             Predicate = hcr => hcr.Tags.Contains("Critical")
                         });
 
                         app.UseWaitForStartupActionsBeforeServingRequests();
-                        app.Run(async context => {
+                        app.Run(async context =>
+                        {
                             await context.Response.WriteAsync($"Running Job: {jobOptions.JobName}");
                         });
                     });
             })
-            .ConfigureServices((ctx, services) => {
+            .ConfigureServices((ctx, services) =>
+            {
                 AddJobs(services, jobOptions);
                 services.AddAppOptions(options);
 
@@ -119,7 +134,8 @@ public class Program {
         return builder;
     }
 
-    private static void AddJobs(IServiceCollection services, JobRunnerOptions options) {
+    private static void AddJobs(IServiceCollection services, JobRunnerOptions options)
+    {
         services.AddJobLifetimeService();
 
         if (options.CleanupData)

@@ -4,7 +4,8 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Utility;
 
-public class AssemblyDetail {
+public class AssemblyDetail
+{
     public string AssemblyName { get; private set; }
 
     public string AssemblyTitle { get; private set; }
@@ -28,8 +29,10 @@ public class AssemblyDetail {
 
     private static readonly ConcurrentDictionary<Assembly, AssemblyDetail> _detailCache = new ConcurrentDictionary<Assembly, AssemblyDetail>();
 
-    public static AssemblyDetail Extract(Assembly assembly) {
-        var detail = _detailCache.GetOrAdd(assembly, a => {
+    public static AssemblyDetail Extract(Assembly assembly)
+    {
+        var detail = _detailCache.GetOrAdd(assembly, a =>
+        {
             var assemblyDetail = new AssemblyDetail();
             var assemblyName = a.GetName();
 
@@ -51,10 +54,12 @@ public class AssemblyDetail {
         return detail;
     }
 
-    public static IEnumerable<AssemblyDetail> ExtractAll(string filter = "Exceptionless*") {
+    public static IEnumerable<AssemblyDetail> ExtractAll(string filter = "Exceptionless*")
+    {
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-        foreach (var assembly in assemblies) {
+        foreach (var assembly in assemblies)
+        {
             if (!assembly.FullName.AnyWildcardMatches(new[] { filter }))
                 continue;
 

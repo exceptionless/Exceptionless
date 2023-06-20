@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public interface IOwnedByOrganization {
+public interface IOwnedByOrganization
+{
     /// <summary>
     /// The organization that the document belongs to.
     /// </summary>

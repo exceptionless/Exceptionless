@@ -6,7 +6,8 @@ namespace Exceptionless.Insulation.Configuration;
 /// <summary>
 ///     Extension methods for adding <see cref="YamlConfigurationProvider" />.
 /// </summary>
-public static class YamlConfigurationExtensions {
+public static class YamlConfigurationExtensions
+{
     /// <summary>
     ///     Adds the YAML configuration provider at <paramref name="path" /> to <paramref name="builder" />.
     /// </summary>
@@ -20,7 +21,8 @@ public static class YamlConfigurationExtensions {
     /// <returns>
     ///     The <see cref="IConfigurationBuilder" />.
     /// </returns>
-    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, string path) {
+    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, string path)
+    {
         return AddYamlFile(builder, null, path, false, false);
     }
 
@@ -41,7 +43,8 @@ public static class YamlConfigurationExtensions {
     ///     The <see cref="IConfigurationBuilder" />.
     /// </returns>
     public static IConfigurationBuilder
-        AddYamlFile(this IConfigurationBuilder builder, string path, bool optional) {
+        AddYamlFile(this IConfigurationBuilder builder, string path, bool optional)
+    {
         return AddYamlFile(builder, null, path, optional, false);
     }
 
@@ -64,7 +67,8 @@ public static class YamlConfigurationExtensions {
     /// <returns>
     ///     The <see cref="IConfigurationBuilder" />.
     /// </returns>
-    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange) {
+    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange)
+    {
         return AddYamlFile(builder, null, path, optional, reloadOnChange);
     }
 
@@ -90,14 +94,16 @@ public static class YamlConfigurationExtensions {
     /// <returns>
     ///     The <see cref="IConfigurationBuilder" />.
     /// </returns>
-    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, IFileProvider provider, string path, bool optional, bool reloadOnChange) {
+    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, IFileProvider provider, string path, bool optional, bool reloadOnChange)
+    {
         if (builder == null)
             throw new ArgumentNullException(nameof(builder));
 
         if (String.IsNullOrEmpty(path))
             throw new ArgumentException("File path must be a non-empty string.", nameof(path));
 
-        return builder.AddYamlFile(s => {
+        return builder.AddYamlFile(s =>
+        {
             s.FileProvider = provider;
             s.Path = path;
             s.Optional = optional;
@@ -120,7 +126,8 @@ public static class YamlConfigurationExtensions {
     /// </returns>
     public static IConfigurationBuilder AddYamlFile(
         this IConfigurationBuilder builder,
-        Action<YamlConfigurationSource> configureSource) {
+        Action<YamlConfigurationSource> configureSource)
+    {
         return builder.Add(configureSource);
     }
 }

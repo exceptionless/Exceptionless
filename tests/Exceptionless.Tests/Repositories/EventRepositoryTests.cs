@@ -1,9 +1,9 @@
 using System.Diagnostics;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
@@ -14,19 +14,23 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class EventRepositoryTests : IntegrationTestsBase {
+public sealed class EventRepositoryTests : IntegrationTestsBase
+{
     private readonly IEventRepository _repository;
     private readonly IStackRepository _stackRepository;
 
-    public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _repository = GetService<IEventRepository>();
         _stackRepository = GetService<IStackRepository>();
     }
 
     [Fact(Skip = "https://github.com/elastic/elasticsearch-net/issues/2463")]
-    public async Task GetAsync() {
+    public async Task GetAsync()
+    {
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-        var ev = await _repository.AddAsync(new PersistentEvent {
+        var ev = await _repository.AddAsync(new PersistentEvent
+        {
             CreatedUtc = SystemClock.UtcNow,
             Date = new DateTimeOffset(SystemClock.UtcNow.Date, TimeSpan.Zero),
             OrganizationId = TestConstants.OrganizationId,
@@ -42,14 +46,16 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact(Skip = "Performance Testing")]
-    public async Task GetAsyncPerformanceAsync() {
+    public async Task GetAsyncPerformanceAsync()
+    {
         var ev = await _repository.AddAsync(new RandomEventGenerator().GeneratePersistent());
         await RefreshDataAsync();
         Assert.Equal(1, await _repository.CountAsync());
 
         var sw = Stopwatch.StartNew();
         const int MAX_ITERATIONS = 100;
-        for (int i = 0; i < MAX_ITERATIONS; i++) {
+        for (int i = 0; i < MAX_ITERATIONS; i++)
+        {
             Assert.NotNull(await _repository.GetByIdAsync(ev.Id));
         }
 
@@ -58,7 +64,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetPagedAsync() {
+    public async Task GetPagedAsync()
+    {
         var events = new List<PersistentEvent>();
         for (int i = 0; i < 6; i++)
             events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(i))));
@@ -79,7 +86,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetPreviousEventIdInStackTestAsync() {
+    public async Task GetPreviousEventIdInStackTestAsync()
+    {
         await CreateDataAsync();
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -98,7 +106,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
         _logger.LogDebug("Tests:");
         await RefreshDataAsync();
         Assert.Equal(_ids.Count, await _repository.CountAsync());
-        for (int i = 0; i < sortedIds.Count; i++) {
+        for (int i = 0; i < sortedIds.Count; i++)
+        {
             _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
             if (i == 0)
                 Assert.Null((await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Previous);
@@ -108,7 +117,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetNextEventIdInStackTestAsync() {
+    public async Task GetNextEventIdInStackTestAsync()
+    {
         await CreateDataAsync();
 
         _logger.LogDebug("Actual order:");
@@ -125,7 +135,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
         _logger.LogDebug("Tests:");
         await RefreshDataAsync();
         Assert.Equal(_ids.Count, await _repository.CountAsync());
-        for (int i = 0; i < sortedIds.Count; i++) {
+        for (int i = 0; i < sortedIds.Count; i++)
+        {
             _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
             string nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
             if (i == sortedIds.Count - 1)
@@ -136,7 +147,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanGetPreviousAndNExtEventIdWithFilterTestAsync() {
+    public async Task CanGetPreviousAndNExtEventIdWithFilterTestAsync()
+    {
         await CreateDataAsync();
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -149,7 +161,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetByReferenceIdAsync() {
+    public async Task GetByReferenceIdAsync()
+    {
         string referenceId = ObjectId.GenerateNewId().ToString();
         await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList());
 
@@ -161,7 +174,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetOpenSessionsAsync() {
+    public async Task GetOpenSessionsAsync()
+    {
         var firstEvent = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(35));
 
         var sessionLastActive35MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
@@ -187,7 +201,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task RemoveAllByClientIpAndDateAsync() {
+    public async Task RemoveAllByClientIpAndDateAsync()
+    {
         const string _clientIpAddress = "123.123.12.255";
 
         const int NUMBER_OF_EVENTS_TO_CREATE = 50;
@@ -198,7 +213,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
         await RefreshDataAsync();
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
-        events.ForEach(e => {
+        events.ForEach(e =>
+        {
             var ri = e.GetRequestInfo();
             Assert.NotNull(ri);
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
@@ -213,7 +229,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
 
     private readonly List<Tuple<string, DateTime>> _ids = new List<Tuple<string, DateTime>>();
 
-    private async Task CreateDataAsync() {
+    private async Task CreateDataAsync()
+    {
         var baseDate = SystemClock.UtcNow.SubtractHours(1);
         var occurrenceDateStart = baseDate.AddMinutes(-30);
         var occurrenceDateMid = baseDate;
@@ -236,7 +253,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase {
                 occurrenceDateStart
             };
 
-        foreach (var date in occurrenceDates) {
+        foreach (var date in occurrenceDates)
+        {
             var ev = await _repository.AddAsync(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: date));
             _ids.Add(Tuple.Create(ev.Id, date));
         }

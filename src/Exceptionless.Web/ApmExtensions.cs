@@ -1,30 +1,34 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Diagnostics.Tracing;
-using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Net.Http;
-using OpenTelemetry.Extensions.Hosting.Implementation;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Exporter;
-using Serilog;
-using Serilog.Events;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.RegularExpressions;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Extensions.Hosting.Implementation;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Serilog;
+using Serilog.Events;
 
-namespace OpenTelemetry {
-    public static partial class ApmExtensions {
-        public static IHostBuilder AddApm(this IHostBuilder builder, ApmConfig config) {
+namespace OpenTelemetry
+{
+    public static partial class ApmExtensions
+    {
+        public static IHostBuilder AddApm(this IHostBuilder builder, ApmConfig config)
+        {
             // check if everything is disabled
-            if (!config.IsEnabled) {
+            if (!config.IsEnabled)
+            {
                 Log.Information("APM is disabled");
                 return builder;
             }
@@ -42,26 +46,33 @@ namespace OpenTelemetry {
                 new KeyValuePair<string, object>("service.version", config.ServiceVersion)
             });
 
-            builder.ConfigureServices(services => {
+            builder.ConfigureServices(services =>
+            {
                 services.AddSingleton(config);
                 services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
                 if (config.EnableTracing)
-                    services.AddOpenTelemetry().WithTracing(b => {
+                    services.AddOpenTelemetry().WithTracing(b =>
+                    {
                         b.SetResourceBuilder(resourceBuilder);
 
-                        b.AddAspNetCoreInstrumentation(o => {
-                            o.Filter = context => {
+                        b.AddAspNetCoreInstrumentation(o =>
+                        {
+                            o.Filter = context =>
+                            {
                                 return !context.Request.Headers.UserAgent.ToString().Contains("HealthChecker");
                             };
                         });
 
-                        b.AddElasticsearchClientInstrumentation(c => {
+                        b.AddElasticsearchClientInstrumentation(c =>
+                        {
                             c.SuppressDownstreamInstrumentation = true;
                             c.ParseAndFormatRequest = config.FullDetails;
-                            c.Enrich = (activity, source, data) => {
+                            c.Enrich = (activity, source, data) =>
+                            {
                                 // truncate statements
-                                if (activity.GetTagItem("db.statement") is string dbStatement && dbStatement.Length > 10000) {
+                                if (activity.GetTagItem("db.statement") is string dbStatement && dbStatement.Length > 10000)
+                                {
                                     dbStatement = _stackIdListShortener.Replace(dbStatement, "$1...]");
                                     if (dbStatement.Length > 10000)
                                         dbStatement = dbStatement.Substring(0, 10000);
@@ -80,7 +91,8 @@ namespace OpenTelemetry {
                         b.AddSource("Exceptionless", "Foundatio");
 
                         if (config.EnableRedis)
-                            b.AddRedisInstrumentation(null, c => {
+                            b.AddRedisInstrumentation(null, c =>
+                            {
                                 c.EnrichActivityWithTimingEvents = false;
                                 c.SetVerboseDatabaseStatements = config.FullDetails;
                             });
@@ -90,10 +102,13 @@ namespace OpenTelemetry {
                         if (config.Console)
                             b.AddConsoleExporter();
 
-                        if (!String.IsNullOrEmpty(config.Endpoint)) {
-                            if (config.MinDurationMs > 0) {
+                        if (!String.IsNullOrEmpty(config.Endpoint))
+                        {
+                            if (config.MinDurationMs > 0)
+                            {
                                 // filter out insignificant activities
-                                b.AddFilteredOtlpExporter(c => {
+                                b.AddFilteredOtlpExporter(c =>
+                                {
                                     if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
                                         c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
@@ -104,8 +119,11 @@ namespace OpenTelemetry {
 
                                     c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") != null;
                                 });
-                            } else {
-                                b.AddOtlpExporter(c => {
+                            }
+                            else
+                            {
+                                b.AddOtlpExporter(c =>
+                                {
                                     if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
                                         c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
@@ -118,7 +136,8 @@ namespace OpenTelemetry {
                         }
                     });
 
-                services.AddOpenTelemetry().WithMetrics(b => {
+                services.AddOpenTelemetry().WithMetrics(b =>
+                {
                     b.SetResourceBuilder(resourceBuilder);
 
                     b.AddHttpClientInstrumentation();
@@ -127,7 +146,8 @@ namespace OpenTelemetry {
                     b.AddRuntimeInstrumentation();
 
                     if (config.Console)
-                        b.AddConsoleExporter((exporterOptions, metricReaderOptions) => {
+                        b.AddConsoleExporter((exporterOptions, metricReaderOptions) =>
+                        {
                             // The ConsoleMetricExporter defaults to a manual collect cycle.
                             // This configuration causes metrics to be exported to stdout on a 10s interval.
                             metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 10000;
@@ -136,7 +156,8 @@ namespace OpenTelemetry {
                     b.AddPrometheusExporter();
 
                     if (!String.IsNullOrEmpty(config.Endpoint))
-                        b.AddOtlpExporter((c, o) => {
+                        b.AddOtlpExporter((c, o) =>
+                        {
                             if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
                                 c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
@@ -150,9 +171,11 @@ namespace OpenTelemetry {
                         });
                 });
 
-                if (config.EnableLogs) {
+                if (config.EnableLogs)
+                {
                     services.AddSingleton<ILoggerProvider, OpenTelemetryLoggerProvider>();
-                    services.Configure<OpenTelemetryLoggerOptions>(o => {
+                    services.Configure<OpenTelemetryLoggerOptions>(o =>
+                    {
                         o.SetResourceBuilder(resourceBuilder);
                         o.IncludeScopes = true;
                         o.ParseStateValues = true;
@@ -161,8 +184,10 @@ namespace OpenTelemetry {
                         if (config.Console)
                             o.AddConsoleExporter();
 
-                        if (!String.IsNullOrEmpty(config.Endpoint)) {
-                            o.AddOtlpExporter(c => {
+                        if (!String.IsNullOrEmpty(config.Endpoint))
+                        {
+                            o.AddOtlpExporter(c =>
+                            {
                                 if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
                                     c.Protocol = OtlpExportProtocol.HttpProtobuf;
 
@@ -185,10 +210,12 @@ namespace OpenTelemetry {
         private static partial Regex StackIdListShortenerRegex();
     }
 
-    public class ApmConfig {
+    public class ApmConfig
+    {
         private readonly IConfiguration _apmConfig;
 
-        public ApmConfig(IConfigurationRoot config, string processName, string serviceVersion, bool enableRedis) {
+        public ApmConfig(IConfigurationRoot config, string processName, string serviceVersion, bool enableRedis)
+        {
             _apmConfig = config.GetSection("Apm");
             processName = processName.StartsWith("-") ? processName : "-" + processName;
 
@@ -223,26 +250,33 @@ namespace OpenTelemetry {
         public bool Console => _apmConfig.GetValue("Console", false);
     }
 
-    public sealed class CustomFilterProcessor : CompositeProcessor<Activity> {
+    public sealed class CustomFilterProcessor : CompositeProcessor<Activity>
+    {
         private readonly Func<Activity, bool> _filter;
 
-        public CustomFilterProcessor(BaseProcessor<Activity> processor, Func<Activity, bool> filter) : base(new[] { processor }) {
+        public CustomFilterProcessor(BaseProcessor<Activity> processor, Func<Activity, bool> filter) : base(new[] { processor })
+        {
             _filter = filter;
         }
 
-        public override void OnEnd(Activity activity) {
+        public override void OnEnd(Activity activity)
+        {
             if (_filter == null || _filter(activity))
                 base.OnEnd(activity);
         }
     }
 
-    public static class CustomFilterProcessorExtensions {
-        public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions> configure = null) {
+    public static class CustomFilterProcessorExtensions
+    {
+        public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions> configure = null)
+        {
             if (builder == null)
                 throw new ArgumentNullException(nameof(builder));
 
-            if (builder is IDeferredTracerProviderBuilder deferredTracerProviderBuilder) {
-                return deferredTracerProviderBuilder.Configure((sp, builder) => {
+            if (builder is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
+            {
+                return deferredTracerProviderBuilder.Configure((sp, builder) =>
+                {
                     var oltpOptions = sp.GetService<IOptions<FilteredOtlpExporterOptions>>()?.Value ?? new FilteredOtlpExporterOptions();
                     AddFilteredOtlpExporter(builder, oltpOptions, configure, sp);
                 });
@@ -256,7 +290,8 @@ namespace OpenTelemetry {
             FilteredOtlpExporterOptions exporterOptions,
             Action<FilteredOtlpExporterOptions> configure,
             IServiceProvider serviceProvider,
-            Func<BaseExporter<Activity>, BaseExporter<Activity>> configureExporterInstance = null) {
+            Func<BaseExporter<Activity>, BaseExporter<Activity>> configureExporterInstance = null)
+        {
 
             configure?.Invoke(exporterOptions);
 
@@ -267,10 +302,12 @@ namespace OpenTelemetry {
             if (configureExporterInstance != null)
                 otlpExporter = configureExporterInstance(otlpExporter);
 
-            if (exporterOptions.ExportProcessorType == ExportProcessorType.Simple) {
+            if (exporterOptions.ExportProcessorType == ExportProcessorType.Simple)
+            {
                 return builder.AddProcessor(new CustomFilterProcessor(new SimpleActivityExportProcessor(otlpExporter), exporterOptions.Filter));
             }
-            else {
+            else
+            {
                 var batchOptions = exporterOptions.BatchExportProcessorOptions ?? new();
 
                 return builder.AddProcessor(new CustomFilterProcessor(new BatchActivityExportProcessor(
@@ -282,7 +319,8 @@ namespace OpenTelemetry {
             }
         }
 
-        public static void TryEnableIHttpClientFactoryIntegration(this OtlpExporterOptions options, IServiceProvider serviceProvider, string httpClientName) {
+        public static void TryEnableIHttpClientFactoryIntegration(this OtlpExporterOptions options, IServiceProvider serviceProvider, string httpClientName)
+        {
             // use reflection to call the method
 
             var exporterExtensionsType = typeof(OtlpExporterOptions).Assembly.GetType("OpenTelemetry.Exporter.OtlpExporterOptionsExtensions");
@@ -292,7 +330,8 @@ namespace OpenTelemetry {
         }
     }
 
-    public class FilteredOtlpExporterOptions : OtlpExporterOptions {
+    public class FilteredOtlpExporterOptions : OtlpExporterOptions
+    {
         public Func<Activity, bool> Filter { get; set; }
     }
 }

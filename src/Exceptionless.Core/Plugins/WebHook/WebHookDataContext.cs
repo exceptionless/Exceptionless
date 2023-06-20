@@ -1,10 +1,12 @@
-﻿using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Plugins.WebHook;
 
-public class WebHookDataContext : ExtensibleObject {
-    public WebHookDataContext(Models.WebHook webHook, PersistentEvent ev, Organization organization = null, Project project = null, Stack stack = null, bool isNew = false, bool isRegression = false) {
+public class WebHookDataContext : ExtensibleObject
+{
+    public WebHookDataContext(Models.WebHook webHook, PersistentEvent ev, Organization organization = null, Project project = null, Stack stack = null, bool isNew = false, bool isRegression = false)
+    {
         WebHook = webHook ?? throw new ArgumentException("WebHook cannot be null.", nameof(webHook));
         Organization = organization;
         Project = project;
@@ -14,7 +16,8 @@ public class WebHookDataContext : ExtensibleObject {
         IsRegression = isRegression;
     }
 
-    public WebHookDataContext(Models.WebHook webHook, Stack stack, Organization organization = null, Project project = null, bool isNew = false, bool isRegression = false) {
+    public WebHookDataContext(Models.WebHook webHook, Stack stack, Organization organization = null, Project project = null, bool isNew = false, bool isRegression = false)
+    {
         WebHook = webHook ?? throw new ArgumentException("WebHook cannot be null.", nameof(webHook));
         Organization = organization;
         Project = project;

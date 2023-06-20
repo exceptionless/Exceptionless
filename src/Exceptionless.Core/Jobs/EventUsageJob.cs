@@ -8,21 +8,25 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Saves event usages", IsContinuous = true, Interval = "30s")]
-public class EventUsageJob : JobWithLockBase, IHealthCheck {
+public class EventUsageJob : JobWithLockBase, IHealthCheck
+{
     private readonly UsageService _usageService;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _usageService = usageService;
         _lockProvider = lockProvider;
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    {
         return _lockProvider.AcquireAsync(nameof(EventUsageJob), TimeSpan.FromMinutes(4), new CancellationToken(true));
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         _lastRun = SystemClock.UtcNow;
 
         _logger.LogInformation("Saving pending event usage");
@@ -33,12 +37,14 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck {
         return JobResult.Success;
     }
 
-    private Task RenewLockAsync(JobContext context) {
+    private Task RenewLockAsync(JobContext context)
+    {
         _lastRun = SystemClock.UtcNow;
         return context.RenewLockAsync();
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

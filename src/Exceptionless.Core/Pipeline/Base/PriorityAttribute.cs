@@ -3,8 +3,10 @@
 /// <summary>
 /// Used to determine action priority.
 /// </summary>
-public class PriorityAttribute : Attribute {
-    public PriorityAttribute(int priority) {
+public class PriorityAttribute : Attribute
+{
+    public PriorityAttribute(int priority)
+    {
         Priority = priority;
     }
 

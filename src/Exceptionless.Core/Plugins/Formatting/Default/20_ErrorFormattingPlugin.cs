@@ -1,18 +1,21 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(20)]
-public sealed class ErrorFormattingPlugin : FormattingPluginBase {
+public sealed class ErrorFormattingPlugin : FormattingPluginBase
+{
     public ErrorFormattingPlugin(AppOptions options) : base(options) { }
 
-    private bool ShouldHandle(PersistentEvent ev) {
+    private bool ShouldHandle(PersistentEvent ev)
+    {
         return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
     }
 
-    public override string GetStackTitle(PersistentEvent ev) {
+    public override string GetStackTitle(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -20,17 +23,20 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
         return error?.Message;
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack) {
+    public override SummaryData GetStackSummaryData(Stack stack)
+    {
         if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
             return null;
 
         var data = new Dictionary<string, object>();
-        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value)) {
+        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value) && !String.IsNullOrEmpty(value))
+        {
             data.Add("Type", value.TypeName());
             data.Add("TypeFullName", value);
         }
 
-        if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value)) {
+        if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value))
+        {
             string method = value.TypeName();
             int index = method.IndexOf('(');
             data.Add("Method", index > 0 ? method.Substring(0, index) : method);
@@ -46,7 +52,8 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -57,12 +64,14 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
         var data = new Dictionary<string, object> { { "Id", ev.Id }, { "Message", ev.Message } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        if (!String.IsNullOrEmpty(stackingTarget.Error.Type)) {
+        if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
+        {
             data.Add("Type", stackingTarget.Error.Type.TypeName());
             data.Add("TypeFullName", stackingTarget.Error.Type);
         }
 
-        if (stackingTarget.Method != null) {
+        if (stackingTarget.Method != null)
+        {
             data.Add("Method", stackingTarget.Method.Name);
             data.Add("MethodFullName", stackingTarget.Method.GetFullName());
         }
@@ -74,7 +83,8 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "event-error-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -112,7 +122,8 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -135,7 +146,8 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev) {
+        var attachment = new SlackMessage.SlackAttachment(ev)
+        {
             Color = "#BB423F",
             Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
@@ -153,7 +165,8 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase {
 
         AddDefaultSlackFields(ev, attachment.Fields);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message.Truncate(120))}*";
-        return new SlackMessage(subject) {
+        return new SlackMessage(subject)
+        {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }
         };
     }

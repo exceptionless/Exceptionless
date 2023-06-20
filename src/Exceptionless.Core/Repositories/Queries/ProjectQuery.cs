@@ -6,37 +6,48 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
 using Nest;
 
-namespace Exceptionless.Core.Repositories {
-    public static class ProjectQueryExtensions {
+namespace Exceptionless.Core.Repositories
+{
+    public static class ProjectQueryExtensions
+    {
         internal const string ProjectsKey = "@Projects";
 
-        public static T Project<T>(this T query, string projectId) where T : IRepositoryQuery {
+        public static T Project<T>(this T query, string projectId) where T : IRepositoryQuery
+        {
             return query.AddCollectionOptionValue(ProjectsKey, projectId);
         }
-        
-        public static T Project<T>(this T query, IEnumerable<string> projectIds) where T : IRepositoryQuery {
+
+        public static T Project<T>(this T query, IEnumerable<string> projectIds) where T : IRepositoryQuery
+        {
             return query.AddCollectionOptionValue(ProjectsKey, projectIds.Distinct());
         }
     }
 }
 
-namespace Exceptionless.Core.Repositories.Options {
-    public static class ReadProjectQueryExtensions {
-        public static ICollection<string> GetProjects(this IRepositoryQuery query) {
+namespace Exceptionless.Core.Repositories.Options
+{
+    public static class ReadProjectQueryExtensions
+    {
+        public static ICollection<string> GetProjects(this IRepositoryQuery query)
+        {
             return query.SafeGetCollection<string>(ProjectQueryExtensions.ProjectsKey);
         }
     }
 }
 
-namespace Exceptionless.Core.Repositories.Queries {
-    public class ProjectQueryBuilder : IElasticQueryBuilder {
+namespace Exceptionless.Core.Repositories.Queries
+{
+    public class ProjectQueryBuilder : IElasticQueryBuilder
+    {
         private readonly string _projectIdFieldName;
 
-        public ProjectQueryBuilder() {
+        public ProjectQueryBuilder()
+        {
             _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
         }
 
-        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+        public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
+        {
             var projectIds = ctx.Source.GetProjects();
             if (projectIds.Count <= 0)
                 return Task.CompletedTask;

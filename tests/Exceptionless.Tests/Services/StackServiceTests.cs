@@ -11,12 +11,14 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services;
 
-public class StackServiceTests : IntegrationTestsBase {
+public class StackServiceTests : IntegrationTestsBase
+{
     private readonly ICacheClient _cache;
     private readonly StackService _stackService;
     private readonly IStackRepository _stackRepository;
 
-    public StackServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public StackServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         Log.SetLogLevel<StackService>(LogLevel.Trace);
         _cache = GetService<ICacheClient>();
         _stackService = GetService<StackService>();
@@ -24,7 +26,8 @@ public class StackServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task IncrementUsage_OnlyChangeCache() {
+    public async Task IncrementUsage_OnlyChangeCache()
+    {
         var stack = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
         // Assert stack state in elasticsearch before increment usage
@@ -69,13 +72,15 @@ public class StackServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task IncrementUsageConcurrently() {
+    public async Task IncrementUsageConcurrently()
+    {
         var stack = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
         var stack2 = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId2, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
         DateTime? minOccurrenceDate = null, maxOccurrenceDate = null;
         var tasks = new List<Task>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++)
+        {
             tasks.Add(IncrementUsageBatch());
         }
         await Task.WhenAll(tasks);
@@ -104,8 +109,10 @@ public class StackServiceTests : IntegrationTestsBase {
         var occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(_stackService.GetStackOccurrenceSetCacheKey());
         Assert.Equal(2, occurrenceSet.Value.Count);
 
-        async Task IncrementUsageBatch() {
-            for (int i = 0; i < 10; i++) {
+        async Task IncrementUsageBatch()
+        {
+            for (int i = 0; i < 10; i++)
+            {
                 var utcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
                 if (!minOccurrenceDate.HasValue)
                     minOccurrenceDate = utcNow;
@@ -117,7 +124,8 @@ public class StackServiceTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSaveStackUsage() {
+    public async Task CanSaveStackUsage()
+    {
         var stack = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
         var utcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));

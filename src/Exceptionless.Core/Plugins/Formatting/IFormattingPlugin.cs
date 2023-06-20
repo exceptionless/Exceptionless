@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
-public interface IFormattingPlugin : IPlugin {
+public interface IFormattingPlugin : IPlugin
+{
     string GetStackTitle(PersistentEvent ev);
     SummaryData GetStackSummaryData(Stack stack);
     SummaryData GetEventSummaryData(PersistentEvent ev);

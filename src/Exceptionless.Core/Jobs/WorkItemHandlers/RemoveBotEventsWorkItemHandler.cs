@@ -9,22 +9,26 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 
-public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase {
+public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
+{
     private readonly IEventRepository _eventRepository;
     private readonly ILockProvider _lockProvider;
 
-    public RemoveBotEventsWorkItemHandler(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public RemoveBotEventsWorkItemHandler(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _eventRepository = eventRepository;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    {
         var wi = (RemoveBotEventsWorkItem)workItem;
         string cacheKey = $"{nameof(RemoveBotEventsWorkItem)}:{wi.OrganizationId}:{wi.ProjectId}";
         return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
     }
 
-    public override async Task HandleItemAsync(WorkItemContext context) {
+    public override async Task HandleItemAsync(WorkItemContext context)
+    {
         var wi = context.GetData<RemoveBotEventsWorkItem>();
         using var _ = Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId));
         Log.LogInformation("Received remove bot events work item OrganizationId={OrganizationId} ProjectId={ProjectId}, ClientIpAddress={ClientIpAddress}, UtcStartDate={UtcStartDate}, UtcEndDate={UtcEndDate}", wi.OrganizationId, wi.ProjectId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate);

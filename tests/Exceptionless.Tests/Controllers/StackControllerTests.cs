@@ -1,11 +1,11 @@
 using Exceptionless.Core.Extensions;
-using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Controllers;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -14,20 +14,23 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 
-public class StackControllerTests : IntegrationTestsBase {
+public class StackControllerTests : IntegrationTestsBase
+{
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _workItemQueue = GetService<IQueue<WorkItemData>>();
     }
 
-    protected override async Task ResetDataAsync() {
+    protected override async Task ResetDataAsync()
+    {
         await base.ResetDataAsync();
         await _eventQueue.DeleteQueueAsync();
         await _workItemQueue.DeleteQueueAsync();
@@ -37,7 +40,8 @@ public class StackControllerTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task CanSearchByNonPremiumFields() {
+    public async Task CanSearchByNonPremiumFields()
+    {
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);
 
@@ -59,7 +63,8 @@ public class StackControllerTests : IntegrationTestsBase {
     [InlineData(null)]
     [InlineData("1.0.0")]
     [InlineData("1.0.0.0")]
-    public async Task CanMarkFixed(string version) {
+    public async Task CanMarkFixed(string version)
+    {
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);
 
@@ -79,13 +84,15 @@ public class StackControllerTests : IntegrationTestsBase {
         Assert.True(stack.IsFixed());
     }
 
-    private async Task<PersistentEvent> SubmitErrorEventAsync() {
+    private async Task<PersistentEvent> SubmitErrorEventAsync()
+    {
         const string message = "simple string";
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new Event {
+            .Content(new Event
+            {
                 Message = message,
                 Type = Event.KnownTypes.Error,
                 Data = {{ Event.KnownDataKeys.SimpleError, new SimpleError {

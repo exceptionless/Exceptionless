@@ -1,11 +1,12 @@
-﻿using Foundatio.Parsers.LuceneQueries.Visitors;
-using Exceptionless.Core.Repositories.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Parsers.LuceneQueries;
+using Foundatio.Parsers.LuceneQueries.Visitors;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Queries.Validation;
 
-public sealed class PersistentEventQueryValidator : AppQueryValidator {
+public sealed class PersistentEventQueryValidator : AppQueryValidator
+{
     private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "date",
             "type",
@@ -90,14 +91,17 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator {
 
     public PersistentEventQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Events.QueryParser, loggerFactory) { }
 
-    protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result) {
-        return new QueryProcessResult {
+    protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result)
+    {
+        return new QueryProcessResult
+        {
             IsValid = result.IsValid,
             UsesPremiumFeatures = !result.ReferencedFields.All(_freeQueryFields.Contains)
         };
     }
 
-    protected override QueryProcessResult ApplyAggregationRules(QueryValidationResult result) {
+    protected override QueryProcessResult ApplyAggregationRules(QueryValidationResult result)
+    {
         if (!result.IsValid)
             return new QueryProcessResult { Message = "Invalid aggregation" };
 
@@ -120,7 +124,8 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator {
             return new QueryProcessResult { Message = "Terms aggregation count exceeded" };
 
         bool usesPremiumFeatures = !result.ReferencedFields.All(_freeAggregationFields.Contains);
-        return new QueryProcessResult {
+        return new QueryProcessResult
+        {
             IsValid = result.IsValid,
             UsesPremiumFeatures = usesPremiumFeatures
         };

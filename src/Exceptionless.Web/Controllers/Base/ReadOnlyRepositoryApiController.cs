@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Controllers;
 
-public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : ISearchableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() {
+public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> : ExceptionlessApiController where TRepository : ISearchableReadOnlyRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new()
+{
     protected readonly TRepository _repository;
     protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
     protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
@@ -18,14 +19,16 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
     protected readonly IAppQueryValidator _validator;
     protected readonly ILogger _logger;
 
-    public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) {
+    public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory)
+    {
         _repository = repository;
         _mapper = mapper;
         _validator = validator;
         _logger = loggerFactory.CreateLogger(GetType());
     }
 
-    protected async Task<ActionResult<TViewModel>> GetByIdImplAsync(string id) {
+    protected async Task<ActionResult<TViewModel>> GetByIdImplAsync(string id)
+    {
         var model = await GetModelAsync(id);
         if (model == null)
             return NotFound();
@@ -33,11 +36,13 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return await OkModelAsync(model);
     }
 
-    protected async Task<ActionResult<TViewModel>> OkModelAsync(TModel model) {
+    protected async Task<ActionResult<TViewModel>> OkModelAsync(TModel model)
+    {
         return Ok(await MapAsync<TViewModel>(model, true));
     }
 
-    protected virtual async Task<TModel> GetModelAsync(string id, bool useCache = true) {
+    protected virtual async Task<TModel> GetModelAsync(string id, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(id))
             return null;
 
@@ -51,7 +56,8 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return model;
     }
 
-    protected virtual async Task<IReadOnlyCollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true) {
+    protected virtual async Task<IReadOnlyCollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true)
+    {
         if (ids == null || ids.Length == 0)
             return EmptyModels;
 
@@ -65,7 +71,8 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
 
     #region Mapping
 
-    protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false) {
+    protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false)
+    {
         var destination = _mapper.Map<TDestination>(source);
         if (isResult)
             await AfterResultMapAsync(new List<TDestination>(new[] { destination }));
@@ -73,7 +80,8 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return destination;
     }
 
-    protected async Task<ICollection<TDestination>> MapCollectionAsync<TDestination>(object source, bool isResult = false) {
+    protected async Task<ICollection<TDestination>> MapCollectionAsync<TDestination>(object source, bool isResult = false)
+    {
         var destination = _mapper.Map<ICollection<TDestination>>(source);
         if (isResult)
             await AfterResultMapAsync<TDestination>(destination);
@@ -81,7 +89,8 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return destination;
     }
 
-    protected virtual Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models) {
+    protected virtual Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models)
+    {
         foreach (var model in models.OfType<IData>())
             model.Data.RemoveSensitiveData();
 

@@ -6,7 +6,8 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless;
 
-public static class AppDiagnostics {
+public static class AppDiagnostics
+{
     internal static readonly AssemblyName AssemblyName = typeof(AppDiagnostics).Assembly.GetName();
     internal static readonly string AssemblyVersion = typeof(AppDiagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? AssemblyName.Version.ToString();
     internal static readonly ActivitySource ActivitySource = new(AssemblyName.Name, AssemblyVersion);
@@ -17,51 +18,60 @@ public static class AppDiagnostics {
     private static readonly ConcurrentDictionary<string, GaugeInfo> _gauges = new();
     private static readonly ConcurrentDictionary<string, Histogram<double>> _timers = new();
 
-    public static void Counter(string name, int value = 1) {
+    public static void Counter(string name, int value = 1)
+    {
         if (!_counters.TryGetValue(_metricsPrefix + name, out var counter))
             counter = _counters.GetOrAdd(_metricsPrefix + name, key => Meter.CreateCounter<int>(key));
 
         counter.Add(value);
     }
 
-    public static void Gauge(string name, double value) {
+    public static void Gauge(string name, double value)
+    {
         if (!_gauges.TryGetValue(_metricsPrefix + name, out var gauge))
             gauge = _gauges.GetOrAdd(_metricsPrefix + name, key => new GaugeInfo(Meter, key));
 
         gauge.Value = value;
     }
 
-    public static void Timer(string name, int milliseconds) {
+    public static void Timer(string name, int milliseconds)
+    {
         if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
             timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
 
         timer.Record(milliseconds);
     }
 
-    public static IDisposable StartTimer(string name) {
+    public static IDisposable StartTimer(string name)
+    {
         if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
             timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
 
         return timer.StartTimer();
     }
 
-    public static async Task TimeAsync(Func<Task> action, string name) {
+    public static async Task TimeAsync(Func<Task> action, string name)
+    {
         using (StartTimer(name))
             await action().AnyContext();
     }
 
-    public static void Time(Action action, string name) {
+    public static void Time(Action action, string name)
+    {
         using (StartTimer(name))
             action();
     }
 
-    public static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name) {
+    public static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name)
+    {
         using (StartTimer(name))
             return await func().AnyContext();
     }
 
-    private class GaugeInfo {
-        public GaugeInfo(Meter meter, string name) {
+    private class GaugeInfo
+    {
+        public GaugeInfo(Meter meter, string name)
+        {
             Gauge = meter.CreateObservableGauge(name, () => Value);
         }
 
@@ -103,38 +113,46 @@ public static class AppDiagnostics {
     internal static readonly Counter<int> UsageGeocodingApi = Meter.CreateCounter<int>("exceptionless.usage.geocoding", description: "Geocode API calls");
 }
 
-public static class MetricsClientExtensions {
-    public static IDisposable StartTimer(this Histogram<double> histogram) {
+public static class MetricsClientExtensions
+{
+    public static IDisposable StartTimer(this Histogram<double> histogram)
+    {
         return new HistogramTimer(histogram);
     }
 
-    public static async Task TimeAsync(this Histogram<double> histogram, Func<Task> action) {
+    public static async Task TimeAsync(this Histogram<double> histogram, Func<Task> action)
+    {
         using (histogram.StartTimer())
             await action().AnyContext();
     }
 
-    public static void Time(this Histogram<double> histogram, Action action) {
+    public static void Time(this Histogram<double> histogram, Action action)
+    {
         using (histogram.StartTimer())
             action();
     }
 
-    public static async Task<T> TimeAsync<T>(this Histogram<double> histogram, Func<Task<T>> func) {
+    public static async Task<T> TimeAsync<T>(this Histogram<double> histogram, Func<Task<T>> func)
+    {
         using (histogram.StartTimer())
             return await func().AnyContext();
     }
 }
 
-public class HistogramTimer : IDisposable {
+public class HistogramTimer : IDisposable
+{
     private readonly Stopwatch _stopWatch;
     private bool _disposed;
     private readonly Histogram<double> _histogram;
 
-    public HistogramTimer(Histogram<double> histogram) {
+    public HistogramTimer(Histogram<double> histogram)
+    {
         _histogram = histogram;
         _stopWatch = Stopwatch.StartNew();
     }
 
-    public void Dispose() {
+    public void Dispose()
+    {
         if (_disposed)
             return;
 

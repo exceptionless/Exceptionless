@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.TestHost;
 
 namespace Exceptionless.Tests;
 
-public static class TestServerExtensions {
+public static class TestServerExtensions
+{
     private static bool _alreadyWaited;
 
-    public static async Task WaitForReadyAsync(this TestServer server) {
+    public static async Task WaitForReadyAsync(this TestServer server)
+    {
         var startupContext = server.Services.GetService<StartupActionsContext>();
         var maxWaitTime = !_alreadyWaited ? TimeSpan.FromSeconds(30) : TimeSpan.FromSeconds(2);
         if (Debugger.IsAttached)
@@ -17,7 +19,8 @@ public static class TestServerExtensions {
 
         var client = server.CreateClient();
         var startTime = DateTime.UtcNow;
-        do {
+        do
+        {
             if (startupContext != null && startupContext.IsStartupComplete && startupContext.Result.Success == false)
                 throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed");
 

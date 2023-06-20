@@ -1,8 +1,8 @@
-﻿using Exceptionless.Web.Extensions;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
@@ -12,17 +12,20 @@ namespace Exceptionless.Web.Controllers;
 
 [Produces("application/json")]
 [ApiController]
-public abstract class ExceptionlessApiController : Controller {
+public abstract class ExceptionlessApiController : Controller
+{
     public const string API_PREFIX = "api/v2";
     protected const int DEFAULT_LIMIT = 10;
     protected const int MAXIMUM_LIMIT = 100;
     protected const int MAXIMUM_SKIP = 1000;
 
-    public ExceptionlessApiController() {
+    public ExceptionlessApiController()
+    {
         AllowedDateFields = new List<string>();
     }
 
-    protected TimeSpan GetOffset(string offset) {
+    protected TimeSpan GetOffset(string offset)
+    {
         if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out var value) && value.HasValue)
             return value.Value;
 
@@ -32,9 +35,11 @@ public abstract class ExceptionlessApiController : Controller {
     protected ICollection<string> AllowedDateFields { get; private set; }
     protected string DefaultDateField { get; set; } = "created_utc";
 
-    protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null) {
+    protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null)
+    {
         string field = DefaultDateField;
-        if (!String.IsNullOrEmpty(time) && time.Contains("|")) {
+        if (!String.IsNullOrEmpty(time) && time.Contains("|"))
+        {
             string[] parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
             field = parts.Length > 0 && AllowedDateFields.Contains(parts[0]) ? parts[0] : DefaultDateField;
             time = parts.Length > 1 ? parts[1] : null;
@@ -52,7 +57,8 @@ public abstract class ExceptionlessApiController : Controller {
         return timeInfo;
     }
 
-    protected int GetLimit(int limit, int maximumLimit = MAXIMUM_LIMIT) {
+    protected int GetLimit(int limit, int maximumLimit = MAXIMUM_LIMIT)
+    {
         if (maximumLimit < MAXIMUM_LIMIT)
             throw new ArgumentOutOfRangeException(nameof(maximumLimit));
 
@@ -64,14 +70,16 @@ public abstract class ExceptionlessApiController : Controller {
         return limit;
     }
 
-    protected int GetPage(int page) {
+    protected int GetPage(int page)
+    {
         if (page < 1)
             page = 1;
 
         return page;
     }
 
-    protected int GetSkip(int currentPage, int limit) {
+    protected int GetSkip(int currentPage, int limit)
+    {
         if (currentPage < 1)
             currentPage = 1;
 
@@ -84,46 +92,56 @@ public abstract class ExceptionlessApiController : Controller {
 
     protected User CurrentUser => Request.GetUser();
 
-    protected bool CanAccessOrganization(string organizationId) {
+    protected bool CanAccessOrganization(string organizationId)
+    {
         return Request.CanAccessOrganization(organizationId);
     }
 
-    protected bool IsInOrganization(string organizationId) {
+    protected bool IsInOrganization(string organizationId)
+    {
         if (String.IsNullOrEmpty(organizationId))
             return false;
 
         return Request.IsInOrganization(organizationId);
     }
 
-    protected ICollection<string> GetAssociatedOrganizationIds() {
+    protected ICollection<string> GetAssociatedOrganizationIds()
+    {
         return Request.GetAssociatedOrganizationIds();
     }
 
     private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
-    protected async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null) {
+    protected async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null)
+    {
         var associatedOrganizationIds = GetAssociatedOrganizationIds();
         if (associatedOrganizationIds.Count == 0)
             return EmptyOrganizations;
 
-        if (!String.IsNullOrEmpty(filter)) {
+        if (!String.IsNullOrEmpty(filter))
+        {
             var scope = GetFilterScopeVisitor.Run(filter);
-            if (scope.IsScopable) {
+            if (scope.IsScopable)
+            {
                 Organization organization = null;
-                if (scope.OrganizationId != null) {
+                if (scope.OrganizationId != null)
+                {
                     organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, o => o.Cache());
                 }
-                else if (scope.ProjectId != null) {
+                else if (scope.ProjectId != null)
+                {
                     var project = await projectRepository.GetByIdAsync(scope.ProjectId, o => o.Cache());
                     if (project != null)
                         organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
                 }
-                else if (scope.StackId != null) {
+                else if (scope.StackId != null)
+                {
                     var stack = await stackRepository.GetByIdAsync(scope.StackId, o => o.Cache());
                     if (stack != null)
                         organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, o => o.Cache());
                 }
 
-                if (organization != null) {
+                if (organization != null)
+                {
                     if (associatedOrganizationIds.Contains(organization.Id) || Request.IsGlobalAdmin())
                         return new[] { organization }.ToList().AsReadOnly();
 
@@ -136,7 +154,8 @@ public abstract class ExceptionlessApiController : Controller {
         return organizations.ToList().AsReadOnly();
     }
 
-    protected bool ShouldApplySystemFilter(AppFilter sf, string filter) {
+    protected bool ShouldApplySystemFilter(AppFilter sf, string filter)
+    {
         // Apply filter to non admin user.
         if (!Request.IsGlobalAdmin())
             return true;
@@ -155,35 +174,43 @@ public abstract class ExceptionlessApiController : Controller {
         return !hasOrganizationOrProjectOrStackFilter;
     }
 
-    protected ObjectResult Permission(PermissionResult permission) {
+    protected ObjectResult Permission(PermissionResult permission)
+    {
         return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
     }
 
-    protected ObjectResult StatusCodeWithMessage(int statusCode, string message, string reason = null) {
+    protected ObjectResult StatusCodeWithMessage(int statusCode, string message, string reason = null)
+    {
         return StatusCode(statusCode, new MessageContent(message, reason));
     }
 
-    protected ActionResult<WorkInProgressResult> WorkInProgress(IEnumerable<string> workers) {
+    protected ActionResult<WorkInProgressResult> WorkInProgress(IEnumerable<string> workers)
+    {
         return StatusCode(StatusCodes.Status202Accepted, new WorkInProgressResult(workers));
     }
 
-    protected ObjectResult BadRequest(ModelActionResults results) {
+    protected ObjectResult BadRequest(ModelActionResults results)
+    {
         return StatusCode(StatusCodes.Status400BadRequest, results);
     }
 
-    protected ObjectResult PlanLimitReached(string message) {
+    protected ObjectResult PlanLimitReached(string message)
+    {
         return StatusCode(StatusCodes.Status426UpgradeRequired, new MessageContent(message));
     }
 
-    protected ObjectResult NotImplemented(string message) {
+    protected ObjectResult NotImplemented(string message)
+    {
         return StatusCode(StatusCodes.Status501NotImplemented, new MessageContent(message));
     }
 
-    protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link) {
+    protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link)
+    {
         return OkWithLinks(content, new[] { link });
     }
 
-    protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links) {
+    protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links)
+    {
         var headers = new HeaderDictionary();
         string[] linksToAdd = links.Where(l => l != null).ToArray();
         if (linksToAdd.Length > 0)
@@ -192,19 +219,23 @@ public abstract class ExceptionlessApiController : Controller {
         return new OkWithHeadersContentResult<T>(content, headers);
     }
 
-    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) where TEntity : class {
+    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) where TEntity : class
+    {
         return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headers, isDescending);
     }
 
-    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) where TEntity : class {
+    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) where TEntity : class
+    {
         return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, headers: headers);
     }
 
-    protected string GetResourceLink(string url, string type) {
+    protected string GetResourceLink(string url, string type)
+    {
         return url != null ? $"<{url}>; rel=\"{type}\"" : null;
     }
 
-    protected bool NextPageExceedsSkipLimit(int page, int limit) {
+    protected bool NextPageExceedsSkipLimit(int page, int limit)
+    {
         return (page + 1) * limit >= MAXIMUM_SKIP;
     }
 }

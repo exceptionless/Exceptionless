@@ -11,38 +11,45 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 
-public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase {
+public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
+{
     private readonly ICacheClient _cache;
     private readonly IEventRepository _eventRepository;
     private readonly IGeocodeService _geocodeService;
     private readonly ILockProvider _lockProvider;
 
-    public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _cache = new ScopedCacheClient(cacheClient, "Geo");
         _eventRepository = eventRepository;
         _geocodeService = geocodeService;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken()) {
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    {
         string cacheKey = $"{nameof(SetLocationFromGeoWorkItemHandler)}:{((SetLocationFromGeoWorkItem)workItem).EventId}";
         return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
-    public override async Task HandleItemAsync(WorkItemContext context) {
+    public override async Task HandleItemAsync(WorkItemContext context)
+    {
         var workItem = context.GetData<SetLocationFromGeoWorkItem>();
 
         if (!GeoResult.TryParse(workItem.Geo, out var result))
             return;
 
         var location = await _cache.GetAsync<Location>(workItem.Geo, null).AnyContext();
-        if (location == null) {
-            try {
+        if (location == null)
+        {
+            try
+            {
                 result = await _geocodeService.ReverseGeocodeAsync(result.Latitude.GetValueOrDefault(), result.Longitude.GetValueOrDefault()).AnyContext();
                 location = result.ToLocation();
                 AppDiagnostics.UsageGeocodingApi.Add(1);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Log.LogError(ex, "Error occurred looking up reverse geocode: {Geo}", workItem.Geo);
             }
         }

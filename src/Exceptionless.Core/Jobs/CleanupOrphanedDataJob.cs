@@ -18,7 +18,8 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Exceptionless.Core.Jobs;
 
 [Job(Description = "Deletes orphaned data.", IsContinuous = false)]
-public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
+public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
+{
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly IElasticClient _elasticClient;
     private readonly IStackRepository _stackRepository;
@@ -27,7 +28,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory) {
+    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    {
         _config = config;
         _elasticClient = config.Client;
         _stackRepository = stackRepository;
@@ -36,11 +38,13 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         _lockProvider = lockProvider;
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default) {
+    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    {
         return _lockProvider.AcquireAsync(nameof(CleanupOrphanedDataJob), TimeSpan.FromHours(2), new CancellationToken(true));
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         await DeleteOrphanedEventsByStackAsync(context).AnyContext();
         await DeleteOrphanedEventsByProjectAsync(context).AnyContext();
         await DeleteOrphanedEventsByOrganizationAsync(context).AnyContext();
@@ -50,7 +54,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         return JobResult.Success;
     }
 
-    public async Task DeleteOrphanedEventsByStackAsync(JobContext context) {
+    public async Task DeleteOrphanedEventsByStackAsync(JobContext context)
+    {
         // get approximate number of unique stack ids
         var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
             .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
@@ -66,7 +71,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         int totalOrphanedEventCount = 0;
         int totalStackIds = 0;
 
-        for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
+        for (int batchNumber = 0; batchNumber < buckets; batchNumber++)
+        {
             await RenewLockAsync(context);
 
             var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
@@ -82,7 +88,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
             string[] missingStackIds = stacks.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
 
 
-            if (missingStackIds.Length == 0) {
+            if (missingStackIds.Length == 0)
+            {
                 _logger.LogInformation("{BatchNumber}/{BatchCount}: Did not find any missing stacks out of {StackIdCount}", batchNumber, buckets, stackIds.Length);
                 continue;
             }
@@ -95,7 +102,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing stacks out of {StackIdCount}", totalOrphanedEventCount, totalStackIds);
     }
 
-    public async Task DeleteOrphanedEventsByProjectAsync(JobContext context) {
+    public async Task DeleteOrphanedEventsByProjectAsync(JobContext context)
+    {
         // get approximate number of unique project ids
         var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
             .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
@@ -111,7 +119,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         int totalOrphanedEventCount = 0;
         int totalProjectIds = 0;
 
-        for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
+        for (int batchNumber = 0; batchNumber < buckets; batchNumber++)
+        {
             await RenewLockAsync(context);
 
             var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
@@ -126,7 +135,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
             var projects = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Project>(projectIds));
             string[] missingProjectIds = projects.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
 
-            if (missingProjectIds.Length == 0) {
+            if (missingProjectIds.Length == 0)
+            {
                 _logger.LogInformation("{BatchNumber}/{BatchCount}: Did not find any missing projects out of {ProjectIdCount}", batchNumber, buckets, projectIds.Length);
                 continue;
             }
@@ -138,7 +148,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing projects out of {ProjectIdCount}", totalOrphanedEventCount, totalProjectIds);
     }
 
-    public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context) {
+    public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context)
+    {
         // get approximate number of unique organization ids
         var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
             .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
@@ -154,7 +165,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         int totalOrphanedEventCount = 0;
         int totalOrganizationIds = 0;
 
-        for (int batchNumber = 0; batchNumber < buckets; batchNumber++) {
+        for (int batchNumber = 0; batchNumber < buckets; batchNumber++)
+        {
             await RenewLockAsync(context);
 
             var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
@@ -169,7 +181,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
             var organizations = await _elasticClient.MultiGetAsync(r => r.SourceEnabled(false).GetMany<Organization>(organizationIds));
             string[] missingOrganizationIds = organizations.Hits.Where(h => !h.Found).Select(h => h.Id).ToArray();
 
-            if (missingOrganizationIds.Length == 0) {
+            if (missingOrganizationIds.Length == 0)
+            {
                 _logger.LogInformation("{BatchNumber}/{BatchCount}: Did not find any missing organizations out of {OrganizationIdCount}", batchNumber, buckets, organizationIds.Length);
                 continue;
             }
@@ -181,7 +194,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing organizations out of {OrganizationIdCount}", totalOrphanedEventCount, totalOrganizationIds);
     }
 
-    public async Task FixDuplicateStacks(JobContext context) {
+    public async Task FixDuplicateStacks(JobContext context)
+    {
         _logger.LogInformation("Getting duplicate stacks");
 
         var duplicateStackAgg = await _elasticClient.SearchAsync<Stack>(q => q
@@ -198,16 +212,20 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         var lastStatus = SystemClock.Now;
         int batch = 1;
 
-        while (buckets.Count > 0) {
+        while (buckets.Count > 0)
+        {
             _logger.LogInformation($"Found {buckets.Count} duplicate stacks in batch #{batch}.");
             await RenewLockAsync(context);
 
-            foreach (var duplicateSignature in buckets) {
+            foreach (var duplicateSignature in buckets)
+            {
                 string projectId = null;
                 string signature = null;
-                try {
+                try
+                {
                     string[] parts = duplicateSignature.Key.Split(':');
-                    if (parts.Length != 2) {
+                    if (parts.Length != 2)
+                    {
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key);
                         continue;
                     }
@@ -215,7 +233,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
                     signature = parts[1];
 
                     var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
-                    if (stacks.Documents.Count < 2) {
+                    if (stacks.Documents.Count < 2)
+                    {
                         _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);
                         continue;
                     }
@@ -231,7 +250,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
                     var duplicateStacks = stacks.Documents.OrderBy(s => s.CreatedUtc).Skip(1).ToList();
 
                     // use the stack that has the most events on it so we can reduce the number of updates
-                    if (eventCountBuckets.Count > 0) {
+                    if (eventCountBuckets.Count > 0)
+                    {
                         string targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
                         targetStack = stacks.Documents.Single(d => d.Id == targetStackId);
                         duplicateStacks = stacks.Documents.Where(d => d.Id != targetStackId).ToList();
@@ -255,7 +275,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
                     long eventsToMove = eventCountBuckets.Where(b => b.Key != targetStack.Id).Sum(b => b.Total) ?? 0;
                     _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds} HasEvents={HasEvents}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id), shouldUpdateEvents);
 
-                    if (shouldUpdateEvents) {
+                    if (shouldUpdateEvents)
+                    {
                         var response = await _elasticClient.UpdateByQueryAsync<PersistentEvent>(u => u
                             .Query(q => q.Bool(b => b.Must(m => m
                                 .Terms(t => t.Field(f => f.StackId).Terms(duplicateStacks.Select(s => s.Id)))
@@ -269,11 +290,13 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
                         var taskId = response.Task;
                         int attempts = 0;
                         long affectedRecords = 0;
-                        do {
+                        do
+                        {
                             attempts++;
                             var taskStatus = await _elasticClient.Tasks.GetTaskAsync(taskId);
                             var status = taskStatus.Task.Status;
-                            if (taskStatus.Completed) {
+                            if (taskStatus.Completed)
+                            {
                                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
                                 if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                     _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
@@ -282,7 +305,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
                                 break;
                             }
 
-                            if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30)) {
+                            if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                            {
                                 await RenewLockAsync(context);
                                 _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
                             }
@@ -303,13 +327,15 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
                         totalUpdatedEventCount += affectedRecords;
                     }
 
-                    if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5)) {
+                    if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
+                    {
                         lastStatus = SystemClock.UtcNow;
                         _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                         await _cacheClient.RemoveByPrefixAsync(nameof(Stack));
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     error++;
                     _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
                 }
@@ -331,12 +357,14 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck {
         }
     }
 
-    private Task RenewLockAsync(JobContext context) {
+    private Task RenewLockAsync(JobContext context)
+    {
         _lastRun = SystemClock.UtcNow;
         return context.RenewLockAsync();
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

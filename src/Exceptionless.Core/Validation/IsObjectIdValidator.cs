@@ -3,10 +3,12 @@ using FluentValidation.Validators;
 
 namespace Exceptionless.Core.Validation;
 
-public class IsObjectIdValidator<T, TProperty> : PropertyValidator<T, TProperty> {
+public class IsObjectIdValidator<T, TProperty> : PropertyValidator<T, TProperty>
+{
     public override string Name => "IsObjectIdValidator";
 
-    public override bool IsValid(ValidationContext<T> context, TProperty value) {
+    public override bool IsValid(ValidationContext<T> context, TProperty value)
+    {
         if (value is not string stringValue)
             return false;
 

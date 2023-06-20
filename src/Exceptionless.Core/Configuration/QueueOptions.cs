@@ -5,7 +5,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
-public class QueueOptions {
+public class QueueOptions
+{
     public string ConnectionString { get; internal set; }
     public string Provider { get; internal set; }
     public Dictionary<string, string> Data { get; internal set; }
@@ -13,7 +14,8 @@ public class QueueOptions {
     public string Scope { get; internal set; }
     public string ScopePrefix { get; internal set; }
 
-    public static QueueOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions) {
+    public static QueueOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
+    {
         var options = new QueueOptions();
 
         options.Scope = appOptions.AppScope;

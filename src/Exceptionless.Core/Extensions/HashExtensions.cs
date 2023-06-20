@@ -3,12 +3,14 @@ using System.Text;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class HashExtensions {
+public static class HashExtensions
+{
     /// <summary>Compute hash on input string</summary>
     /// <param name="input">The string to compute hash on.</param>
     /// <param name="algorithm"> </param>
     /// <returns>The hash as a hexadecimal String.</returns>
-    public static string ComputeHash(this string input, HashAlgorithm algorithm) {
+    public static string ComputeHash(this string input, HashAlgorithm algorithm)
+    {
         if (String.IsNullOrEmpty(input))
             throw new ArgumentNullException(nameof(input));
 
@@ -20,14 +22,16 @@ public static class HashExtensions {
     /// <summary>Compute SHA1 hash on input string</summary>
     /// <param name="input">The string to compute hash on.</param>
     /// <returns>The hash as a hexadecimal String.</returns>
-    public static string ToSHA1(this string input) {
+    public static string ToSHA1(this string input)
+    {
         return ComputeHash(input, SHA1.Create());
     }
 
     /// <summary>Compute SHA1 hash on a collection of input string</summary>
     /// <param name="inputs">The collection of strings to compute hash on.</param>
     /// <returns>The hash as a hexadecimal String.</returns>
-    public static string ToSHA1(this IEnumerable<string> inputs) {
+    public static string ToSHA1(this IEnumerable<string> inputs)
+    {
         var builder = new StringBuilder();
 
         foreach (string input in inputs)
@@ -39,7 +43,8 @@ public static class HashExtensions {
     /// <summary>Compute SHA256 hash on input string</summary>
     /// <param name="input">The string to compute hash on.</param>
     /// <returns>The hash as a hexadecimal String.</returns>
-    public static string ToSHA256(this string input) {
+    public static string ToSHA256(this string input)
+    {
         return ComputeHash(input, SHA256.Create());
     }
 
@@ -48,7 +53,8 @@ public static class HashExtensions {
     /// </summary>
     /// <param name="bytes">The bytes to convert.</param>
     /// <returns>Hexadecimal string of the byte array.</returns>
-    public static string ToHex(this IEnumerable<byte> bytes) {
+    public static string ToHex(this IEnumerable<byte> bytes)
+    {
         var sb = new StringBuilder();
         foreach (byte b in bytes)
             sb.Append(b.ToString("x2"));

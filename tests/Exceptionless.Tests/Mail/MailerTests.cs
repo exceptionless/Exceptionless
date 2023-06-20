@@ -3,10 +3,10 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
@@ -16,13 +16,15 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail;
 
-public sealed class MailerTests : TestWithServices {
+public sealed class MailerTests : TestWithServices
+{
     private readonly IMailer _mailer;
     private readonly AppOptions _options;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public MailerTests(ITestOutputHelper output) : base(output) {
+    public MailerTests(ITestOutputHelper output) : base(output)
+    {
         _mailer = GetService<IMailer>();
         _options = GetService<AppOptions>();
         _billingManager = GetService<BillingManager>();
@@ -33,7 +35,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public void CanParseSmtpUri() {
+    public void CanParseSmtpUri()
+    {
         var uri = new SmtpUri("smtps://test%40test.com:testpass@smtp.test.com:587");
         Assert.NotNull(uri);
         Assert.True(uri.IsSecure);
@@ -44,9 +47,11 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeSimpleErrorAsync() {
+    public Task SendEventNoticeSimpleErrorAsync()
+    {
         var ex = GetException();
-        return SendEventNoticeAsync(new PersistentEvent {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
                     {
@@ -61,8 +66,10 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeErrorAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeErrorAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
                     {
@@ -74,8 +81,10 @@ public sealed class MailerTests : TestWithServices {
 
 
     [Fact]
-    public Task SendEventNoticeErrorWithDetailsAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeErrorWithDetailsAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Type = Event.KnownTypes.Error,
             Geo = "44.5241,-87.9056",
             ReferenceId = "ex_blake_dreams_of_cookies",
@@ -92,16 +101,20 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeNotFoundAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeNotFoundAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "[GET] /not-found?page=20",
             Type = Event.KnownTypes.NotFound
         });
     }
 
     [Fact]
-    public Task SendEventNoticeFeatureAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeFeatureAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "My Feature Usage",
             Value = 1,
             Type = Event.KnownTypes.FeatureUsage
@@ -109,40 +122,50 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeEmptyLogEventAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeEmptyLogEventAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Value = 1,
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogMessageAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogMessageAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "Only Message",
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogSourceAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogSourceAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "Only Source",
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogReallyLongSourceAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogReallyLongSourceAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Source = "Soooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooorce",
             Type = Event.KnownTypes.Log
         });
     }
 
     [Fact]
-    public Task SendEventNoticeLogMessageSourceLevelAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeLogMessageSourceLevelAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "My Message",
             Source = "My Source",
             Type = Event.KnownTypes.Log,
@@ -153,14 +176,17 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public Task SendEventNoticeDefaultAsync() {
-        return SendEventNoticeAsync(new PersistentEvent {
+    public Task SendEventNoticeDefaultAsync()
+    {
+        return SendEventNoticeAsync(new PersistentEvent
+        {
             Message = "Default Test Message",
             Source = "Default Test Source"
         });
     }
 
-    private async Task SendEventNoticeAsync(PersistentEvent ev) {
+    private async Task SendEventNoticeAsync(PersistentEvent ev)
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
@@ -174,7 +200,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendOrganizationAddedAsync() {
+    public async Task SendOrganizationAddedAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
@@ -183,11 +210,13 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendOrganizationInviteAsync() {
+    public async Task SendOrganizationInviteAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
-        await _mailer.SendOrganizationInviteAsync(user, organization, new Invite {
+        await _mailer.SendOrganizationInviteAsync(user, organization, new Invite
+        {
             DateAdded = SystemClock.UtcNow,
             EmailAddress = "test@exceptionless.com",
             Token = "1"
@@ -202,7 +231,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendOrganizationHourlyOverageNoticeAsync() {
+    public async Task SendOrganizationHourlyOverageNoticeAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
@@ -211,7 +241,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendOrganizationMonthlyOverageNoticeAsync() {
+    public async Task SendOrganizationMonthlyOverageNoticeAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
@@ -220,7 +251,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendOrganizationPaymentFailedAsync() {
+    public async Task SendOrganizationPaymentFailedAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
 
@@ -229,7 +261,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryAsync() {
+    public async Task SendProjectDailySummaryAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
         var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
@@ -239,7 +272,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithAllBlockedAsync() {
+    public async Task SendProjectDailySummaryWithAllBlockedAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
         var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
@@ -249,7 +283,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryNotConfiguredAsync() {
+    public async Task SendProjectDailySummaryNotConfiguredAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
@@ -258,7 +293,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithNoEventsButHasFixedEventsAsync() {
+    public async Task SendProjectDailySummaryWithNoEventsButHasFixedEventsAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
@@ -267,7 +303,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithNoEventsButHasFixedAndTooBigEventsAsync() {
+    public async Task SendProjectDailySummaryWithNoEventsButHasFixedAndTooBigEventsAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
@@ -276,7 +313,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithFreeProjectAsync() {
+    public async Task SendProjectDailySummaryWithFreeProjectAsync()
+    {
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
         var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
@@ -287,7 +325,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendUserPasswordResetAsync() {
+    public async Task SendUserPasswordResetAsync()
+    {
         var user = UserData.GenerateSampleUser();
         user.CreatePasswordResetToken();
 
@@ -296,7 +335,8 @@ public sealed class MailerTests : TestWithServices {
     }
 
     [Fact]
-    public async Task SendUserEmailVerifyAsync() {
+    public async Task SendUserEmailVerifyAsync()
+    {
         var user = UserData.GenerateSampleUser();
         user.CreateVerifyEmailAddressToken();
 
@@ -304,7 +344,8 @@ public sealed class MailerTests : TestWithServices {
         await RunMailJobAsync();
     }
 
-    private async Task RunMailJobAsync() {
+    private async Task RunMailJobAsync()
+    {
         var job = GetService<MailMessageJob>();
         await job.RunAsync();
 
@@ -316,19 +357,24 @@ public sealed class MailerTests : TestWithServices {
         _logger.LogTrace("Body:\n{Body}", sender.LastMessage.Body);
     }
 
-    private Exception GetException() {
-        void TestInner() {
-            void TestInnerInner() {
+    private Exception GetException()
+    {
+        void TestInner()
+        {
+            void TestInnerInner()
+            {
                 throw new ApplicationException("Random Test Exception");
             }
 
             TestInnerInner();
         }
 
-        try {
+        try
+        {
             TestInner();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             return ex;
         }
 

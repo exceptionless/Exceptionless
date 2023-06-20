@@ -8,31 +8,40 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Pipeline;
 
 [Priority(50)]
-public class MarkProjectConfiguredAction : EventPipelineActionBase {
+public class MarkProjectConfiguredAction : EventPipelineActionBase
+{
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) {
+    public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    {
         _workItemQueue = workItemQueue;
         ContinueOnError = true;
     }
 
-    public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+    public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
+    {
         var projectIds = contexts.Where(c => !c.Project.IsConfigured.GetValueOrDefault()).Select(c => c.Project.Id).Distinct().ToList();
         if (projectIds.Count == 0)
             return;
 
-        try {
-            foreach (string projectId in projectIds) {
-                await _workItemQueue.EnqueueAsync(new SetProjectIsConfiguredWorkItem {
+        try
+        {
+            foreach (string projectId in projectIds)
+            {
+                await _workItemQueue.EnqueueAsync(new SetProjectIsConfiguredWorkItem
+                {
                     ProjectId = projectId,
                     IsConfigured = true
                 }).AnyContext();
             }
         }
-        catch (Exception ex) {
-            foreach (var context in contexts) {
+        catch (Exception ex)
+        {
+            foreach (var context in contexts)
+            {
                 bool cont = false;
-                try {
+                try
+                {
                     cont = HandleError(ex, context);
                 }
                 catch { }
@@ -43,7 +52,8 @@ public class MarkProjectConfiguredAction : EventPipelineActionBase {
         }
     }
 
-    public override Task ProcessAsync(EventContext ctx) {
+    public override Task ProcessAsync(EventContext ctx)
+    {
         return Task.CompletedTask;
     }
 }

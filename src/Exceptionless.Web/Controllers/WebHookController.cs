@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
-using Exceptionless.Web.Controllers;
-using Exceptionless.Web.Extensions;
-using Exceptionless.Web.Models;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +17,13 @@ namespace Exceptionless.App.Controllers.API;
 
 [Route(API_PREFIX + "/webhooks")]
 [Authorize(Policy = AuthorizationRoles.ClientPolicy)]
-public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, UpdateWebHook> {
+public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, UpdateWebHook>
+{
     private readonly IProjectRepository _projectRepository;
     private readonly BillingManager _billingManager;
 
-    public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) {
+    public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory)
+    {
         _projectRepository = projectRepository;
         _billingManager = billingManager;
     }
@@ -37,7 +39,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     /// <response code="404">The project could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<WebHook>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10) {
+    public async Task<ActionResult<IReadOnlyCollection<WebHook>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10)
+    {
         var project = await GetProjectAsync(projectId);
         if (project == null)
             return NotFound();
@@ -55,7 +58,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     /// <response code="404">The web hook could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetWebHookById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public Task<ActionResult<WebHook>> GetAsync(string id) {
+    public Task<ActionResult<WebHook>> GetAsync(string id)
+    {
         return GetByIdImplAsync(id);
     }
 
@@ -69,7 +73,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpPost]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public Task<ActionResult<WebHook>> PostAsync(NewWebHook webhook) {
+    public Task<ActionResult<WebHook>> PostAsync(NewWebHook webhook)
+    {
         return PostImplAsync(webhook);
     }
 
@@ -84,7 +89,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids) {
+    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
+    {
         return DeleteImplAsync(ids.FromDelimitedString());
     }
 
@@ -98,8 +104,10 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpPost("~/api/v1/projecthook/subscribe")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1) {
-        var webHook = new NewWebHook {
+    public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1)
+    {
+        var webHook = new NewWebHook
+        {
             EventTypes = new[] { data.GetValue("event").Value<string>() },
             Url = data.GetValue("target_url").Value<string>(),
             Version = new Version(apiVersion >= 0 ? apiVersion : 0, 0)
@@ -125,7 +133,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpPost("~/api/v1/projecthook/unsubscribe")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> UnsubscribeAsync(JObject data) {
+    public async Task<IActionResult> UnsubscribeAsync(JObject data)
+    {
         string targetUrl = data.GetValue("target_url").Value<string>();
 
         // don't let this anon method delete non-zapier hooks
@@ -133,7 +142,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             return NotFound();
 
         var results = await _repository.GetByUrlAsync(targetUrl);
-        if (results.Documents.Count > 0) {
+        if (results.Documents.Count > 0)
+        {
             string organizationId = results.Documents.First().OrganizationId;
             if (results.Documents.Any(h => h.OrganizationId != organizationId))
                 throw new ArgumentException("All OrganizationIds must be the same.");
@@ -153,14 +163,16 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpGet("~/api/v1/projecthook/test")]
     [HttpPost("~/api/v1/projecthook/test")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public IActionResult Test() {
+    public IActionResult Test()
+    {
         return Ok(new[] {
                 new { id = 1, Message = "Test message 1." },
                 new { id = 2, Message = "Test message 2." }
             });
     }
 
-    protected override async Task<WebHook> GetModelAsync(string id, bool useCache = true) {
+    protected override async Task<WebHook> GetModelAsync(string id, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(id))
             return null;
 
@@ -177,7 +189,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return webHook;
     }
 
-    protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true) {
+    protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true)
+    {
         if (ids == null || ids.Length == 0)
             return EmptyModels;
 
@@ -186,7 +199,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             return EmptyModels;
 
         var results = new List<WebHook>();
-        foreach (var webHook in webHooks) {
+        foreach (var webHook in webHooks)
+        {
             if ((!String.IsNullOrEmpty(webHook.OrganizationId) && IsInOrganization(webHook.OrganizationId))
                 || (!String.IsNullOrEmpty(webHook.ProjectId) && (await IsInProjectAsync(webHook.ProjectId))))
                 results.Add(webHook);
@@ -195,7 +209,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return results;
     }
 
-    protected override async Task<PermissionResult> CanAddAsync(WebHook value) {
+    protected override async Task<PermissionResult> CanAddAsync(WebHook value)
+    {
         if (String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
             return PermissionResult.Deny;
 
@@ -206,7 +221,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
         Project project = null;
-        if (!String.IsNullOrEmpty(value.ProjectId)) {
+        if (!String.IsNullOrEmpty(value.ProjectId))
+        {
             project = await GetProjectAsync(value.ProjectId);
             if (project == null)
                 return PermissionResult.DenyWithMessage("Invalid project id specified.");
@@ -220,14 +236,16 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return PermissionResult.Allow;
     }
 
-    protected override Task<WebHook> AddModelAsync(WebHook value) {
+    protected override Task<WebHook> AddModelAsync(WebHook value)
+    {
         if (!IsValidWebHookVersion(value.Version))
             value.Version = WebHook.KnownVersions.Version2;
 
         return base.AddModelAsync(value);
     }
 
-    protected override async Task<PermissionResult> CanDeleteAsync(WebHook value) {
+    protected override async Task<PermissionResult> CanDeleteAsync(WebHook value)
+    {
         if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))
             return PermissionResult.DenyWithNotFound(value.Id);
 
@@ -237,7 +255,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return PermissionResult.Allow;
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true) {
+    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    {
         if (String.IsNullOrEmpty(projectId))
             return null;
 
@@ -248,12 +267,14 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return project;
     }
 
-    private async Task<bool> IsInProjectAsync(string projectId) {
+    private async Task<bool> IsInProjectAsync(string projectId)
+    {
         var project = await GetProjectAsync(projectId);
         return project != null;
     }
 
-    private bool IsValidWebHookVersion(string version) {
+    private bool IsValidWebHookVersion(string version)
+    {
         return String.Equals(version, WebHook.KnownVersions.Version1) || String.Equals(version, WebHook.KnownVersions.Version2);
     }
 }

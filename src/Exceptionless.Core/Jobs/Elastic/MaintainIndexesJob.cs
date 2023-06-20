@@ -8,17 +8,20 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs.Elastic;
 
 [Job(Description = "Maintains Elasticsearch index aliases and index retention", IsContinuous = false)]
-public class MaintainIndexesJob : Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob, IHealthCheck {
+public class MaintainIndexesJob : Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob, IHealthCheck
+{
     private DateTime? _lastRun;
 
     public MaintainIndexesJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration, lockProvider, loggerFactory) { }
 
-    public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken()) {
+    public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken())
+    {
         _lastRun = SystemClock.UtcNow;
         return base.RunAsync(cancellationToken);
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) {
+    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 

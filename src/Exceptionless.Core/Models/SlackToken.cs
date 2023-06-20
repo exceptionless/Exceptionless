@@ -2,7 +2,8 @@
 
 namespace Exceptionless.Core.Models;
 
-public class SlackToken {
+public class SlackToken
+{
     public string AccessToken { get; set; }
     public string[] Scopes { get; set; }
     public string UserId { get; set; }
@@ -10,7 +11,8 @@ public class SlackToken {
     public string TeamName { get; set; }
     public IncomingWebHook IncomingWebhook { get; set; }
 
-    public class IncomingWebHook {
+    public class IncomingWebHook
+    {
         public string Channel { get; set; }
         public string ChannelId { get; set; }
         public string ConfigurationUrl { get; set; }
@@ -18,8 +20,10 @@ public class SlackToken {
     }
 }
 
-public class SlackMessage {
-    public SlackMessage(string text) {
+public class SlackMessage
+{
+    public SlackMessage(string text)
+    {
         Text = text;
     }
 
@@ -28,8 +32,10 @@ public class SlackMessage {
     [JsonProperty("attachments")]
     public List<SlackAttachment> Attachments { get; set; } = new List<SlackAttachment>();
 
-    public class SlackAttachment {
-        public SlackAttachment(PersistentEvent ev) {
+    public class SlackAttachment
+    {
+        public SlackAttachment(PersistentEvent ev)
+        {
             TimeStamp = ev.Date.ToUnixTimeSeconds();
 
             var ud = ev.GetUserDescription();
@@ -48,10 +54,12 @@ public class SlackMessage {
             else if (!String.IsNullOrEmpty(ui?.Identity) && !String.IsNullOrEmpty(ui.Name))
                 displayName = $"{ui.Name} ({ui.Identity})";
 
-            if (!String.IsNullOrEmpty(displayName)) {
+            if (!String.IsNullOrEmpty(displayName))
+            {
                 AuthorName = displayName;
 
-                if (!String.IsNullOrEmpty(ud?.EmailAddress)) {
+                if (!String.IsNullOrEmpty(ud?.EmailAddress))
+                {
                     AuthorLink = $"mailto:{ud.EmailAddress}?body={ud.Description}";
                     //AuthorIcon = $"https://www.gravatar.com/avatar/{ud.EmailAddress.ToMD5()}",
                 }
@@ -78,7 +86,8 @@ public class SlackMessage {
         public long TimeStamp { get; set; }
     }
 
-    public class SlackAttachmentFields {
+    public class SlackAttachmentFields
+    {
         [JsonProperty("title")]
         public string Title { get; set; }
         [JsonProperty("value")]

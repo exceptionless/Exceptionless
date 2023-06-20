@@ -1,23 +1,25 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using Exceptionless.Web.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
 namespace Exceptionless.Web.Security;
 
-public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions {
+public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
+{
     public const string ApiKeySchema = "ApiKey";
 
     public string AuthenticationScheme { get; } = ApiKeySchema;
 }
 
-public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthenticationOptions> {
+public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
+{
     public const string BearerScheme = "bearer";
     public const string BasicScheme = "basic";
     public const string TokenScheme = "token";
@@ -25,12 +27,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock) : base(options, logger, encoder, clock) {
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock) : base(options, logger, encoder, clock)
+    {
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
     }
 
-    protected override async Task<AuthenticateResult> HandleAuthenticateAsync() {
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
         string authHeaderValue = Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
         AuthenticationHeaderValue authHeader = null;
         if (!String.IsNullOrEmpty(authHeaderValue) && !AuthenticationHeaderValue.TryParse(authHeaderValue, out authHeader))
@@ -38,22 +42,28 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         string scheme = authHeader?.Scheme.ToLower();
         string token = null;
-        if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme)) {
+        if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme))
+        {
             token = authHeader.Parameter;
         }
-        else if (authHeader != null && scheme == BasicScheme) {
+        else if (authHeader != null && scheme == BasicScheme)
+        {
             var authInfo = Request.GetBasicAuth();
-            if (authInfo != null) {
+            if (authInfo != null)
+            {
                 if (authInfo.Username.ToLower() == "client")
                     token = authInfo.Password;
                 else if (authInfo.Password.ToLower() == "x-oauth-basic" || String.IsNullOrEmpty(authInfo.Password))
                     token = authInfo.Username;
-                else {
+                else
+                {
                     User user;
-                    try {
+                    try
+                    {
                         user = await _userRepository.GetByEmailAddressAsync(authInfo.Username);
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         return AuthenticateResult.Fail(ex);
                     }
 
@@ -71,7 +81,8 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                 }
             }
         }
-        else {
+        else
+        {
             token = Request.GetQueryString("access_token");
             if (String.IsNullOrEmpty(token))
                 token = Request.GetQueryString("api_key");
@@ -85,28 +96,33 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         Request.HttpContext.Items["ApiKey"] = token;
         var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
-        if (tokenRecord == null) {
+        if (tokenRecord == null)
+        {
             Logger.LogInformation("Token {Token} for {Path} not found.", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.IsDisabled || (Request.IsEventPost() && tokenRecord.IsSuspended)) {
+        if (tokenRecord.IsDisabled || (Request.IsEventPost() && tokenRecord.IsSuspended))
+        {
             AppDiagnostics.PostsBlocked.Add(1);
             Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}.", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow) {
+        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow)
+        {
             Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}.", token, Request.Path, tokenRecord.ExpiresUtc.Value);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (!String.IsNullOrEmpty(tokenRecord.UserId)) {
+        if (!String.IsNullOrEmpty(tokenRecord.UserId))
+        {
             var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
-            if (user == null) {
+            if (user == null)
+            {
                 Logger.LogInformation("Could not find user for token {Token} with user {user} for {Path}.", token, tokenRecord.UserId, Request.Path);
 
                 return AuthenticateResult.Fail("Token is not valid");
@@ -118,29 +134,35 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         return AuthenticateResult.Success(CreateTokenAuthenticationTicket(tokenRecord));
     }
 
-    private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token token = null) {
+    private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token token = null)
+    {
         Request.SetUser(user);
 
         var principal = new ClaimsPrincipal(user.ToIdentity(token));
         return new AuthenticationTicket(principal, CreateAuthenticationProperties(token), Options.AuthenticationScheme);
     }
 
-    private AuthenticationTicket CreateTokenAuthenticationTicket(Token token) {
+    private AuthenticationTicket CreateTokenAuthenticationTicket(Token token)
+    {
         var principal = new ClaimsPrincipal(token.ToIdentity());
         return new AuthenticationTicket(principal, CreateAuthenticationProperties(token), Options.AuthenticationScheme);
     }
 
-    private AuthenticationProperties CreateAuthenticationProperties(Token token) {
+    private AuthenticationProperties CreateAuthenticationProperties(Token token)
+    {
         var utcNow = Foundatio.Utility.SystemClock.UtcNow;
-        return new AuthenticationProperties {
+        return new AuthenticationProperties
+        {
             ExpiresUtc = token?.ExpiresUtc ?? utcNow.AddHours(12),
             IssuedUtc = token?.CreatedUtc ?? utcNow
         };
     }
 }
 
-public static class ApiKeyAuthMiddlewareExtensions {
-    public static AuthenticationBuilder AddApiKeyAuthentication(this AuthenticationBuilder builder) {
+public static class ApiKeyAuthMiddlewareExtensions
+{
+    public static AuthenticationBuilder AddApiKeyAuthentication(this AuthenticationBuilder builder)
+    {
         return builder.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationOptions.ApiKeySchema, null, _ => { });
     }
 }

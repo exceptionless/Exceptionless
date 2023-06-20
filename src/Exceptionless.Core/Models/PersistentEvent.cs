@@ -4,8 +4,10 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate {
-    public PersistentEvent() {
+public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate
+{
+    public PersistentEvent()
+    {
         Idx = new DataDictionary();
     }
 

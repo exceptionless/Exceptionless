@@ -2,14 +2,17 @@
 
 namespace Exceptionless.Web.Utility.Results;
 
-public class ObjectWithHeadersResult : ObjectResult {
-    public ObjectWithHeadersResult(object value, IHeaderDictionary headers) : base(value) {
+public class ObjectWithHeadersResult : ObjectResult
+{
+    public ObjectWithHeadersResult(object value, IHeaderDictionary headers) : base(value)
+    {
         Headers = headers ?? new HeaderDictionary();
     }
 
     public IHeaderDictionary Headers { get; set; }
 
-    public override void OnFormatting(ActionContext context) {
+    public override void OnFormatting(ActionContext context)
+    {
         base.OnFormatting(context);
 
         if (Headers == null)

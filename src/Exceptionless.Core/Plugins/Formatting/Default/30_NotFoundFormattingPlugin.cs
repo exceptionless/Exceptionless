@@ -1,32 +1,37 @@
-﻿using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(30)]
-public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
+public sealed class NotFoundFormattingPlugin : FormattingPluginBase
+{
     public NotFoundFormattingPlugin(AppOptions options) : base(options) { }
 
-    private bool ShouldHandle(PersistentEvent ev) {
+    private bool ShouldHandle(PersistentEvent ev)
+    {
         return ev.IsNotFound();
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack) {
+    public override SummaryData GetStackSummaryData(Stack stack)
+    {
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
             return null;
 
         return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new Dictionary<string, object>() };
     }
 
-    public override string GetStackTitle(PersistentEvent ev) {
+    public override string GetStackTitle(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
         return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Unknown)";
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev) {
+    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -40,7 +45,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
         return new SummaryData { TemplateKey = "event-notfound-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression) {
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -62,7 +68,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression) {
+    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    {
         if (!ShouldHandle(ev))
             return null;
 
@@ -76,7 +83,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
             notificationType = String.Concat("critical ", notificationType);
 
         var requestInfo = ev.GetRequestInfo();
-        var attachment = new SlackMessage.SlackAttachment(ev) {
+        var attachment = new SlackMessage.SlackAttachment(ev)
+        {
             Color = "#BB423F",
             Fields = new List<SlackMessage.SlackAttachmentFields> {
                     new SlackMessage.SlackAttachmentFields {
@@ -88,7 +96,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase {
 
         AddDefaultSlackFields(ev, attachment.Fields, false);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source.Truncate(120))}*";
-        return new SlackMessage(subject) {
+        return new SlackMessage(subject)
+        {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }
         };
     }

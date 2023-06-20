@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Web.Utility.Results;
 
-public class PermissionResult {
+public class PermissionResult
+{
     public bool Allowed { get; set; }
     public string Id { get; set; }
     public string Message { get; set; }
@@ -11,16 +12,20 @@ public class PermissionResult {
 
     public static PermissionResult Deny = new PermissionResult { Allowed = false, StatusCode = StatusCodes.Status400BadRequest };
 
-    public static PermissionResult DenyWithNotFound(string id = null) {
-        return new PermissionResult {
+    public static PermissionResult DenyWithNotFound(string id = null)
+    {
+        return new PermissionResult
+        {
             Allowed = false,
             Id = id,
             StatusCode = StatusCodes.Status404NotFound
         };
     }
 
-    public static PermissionResult DenyWithMessage(string message, string id = null) {
-        return new PermissionResult {
+    public static PermissionResult DenyWithMessage(string message, string id = null)
+    {
+        return new PermissionResult
+        {
             Allowed = false,
             Id = id,
             Message = message,
@@ -28,8 +33,10 @@ public class PermissionResult {
         };
     }
 
-    public static PermissionResult DenyWithStatus(int statusCode, string message = null, string id = null) {
-        return new PermissionResult {
+    public static PermissionResult DenyWithStatus(int statusCode, string message = null, string id = null)
+    {
+        return new PermissionResult
+        {
             Allowed = false,
             Id = id,
             Message = message,
@@ -37,8 +44,10 @@ public class PermissionResult {
         };
     }
 
-    public static PermissionResult DenyWithPlanLimitReached(string message, string id = null) {
-        return new PermissionResult {
+    public static PermissionResult DenyWithPlanLimitReached(string message, string id = null)
+    {
+        return new PermissionResult
+        {
             Allowed = false,
             Id = id,
             Message = message,
@@ -47,8 +56,10 @@ public class PermissionResult {
     }
 
 
-    public static PermissionResult DenyWithPNotImplemented(string message, string id = null) {
-        return new PermissionResult {
+    public static PermissionResult DenyWithPNotImplemented(string message, string id = null)
+    {
+        return new PermissionResult
+        {
             Allowed = false,
             Id = id,
             Message = message,

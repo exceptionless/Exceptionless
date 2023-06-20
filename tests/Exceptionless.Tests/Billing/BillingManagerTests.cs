@@ -4,18 +4,21 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Billing;
 
-public class BillingManagerTests : TestWithServices {
+public class BillingManagerTests : TestWithServices
+{
     public BillingManagerTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
-    public void GetBillingPlan() {
+    public void GetBillingPlan()
+    {
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
         Assert.Equal(plans.FreePlan.Id, billingManager.GetBillingPlan(plans.FreePlan.Id).Id);
     }
 
     [Fact]
-    public void GetBillingPlanByUpsellingRetentionPeriod() {
+    public void GetBillingPlanByUpsellingRetentionPeriod()
+    {
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
 

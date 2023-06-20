@@ -1,11 +1,13 @@
-﻿using System.Text;
+﻿using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Security.Cryptography;
 
 namespace Exceptionless.Core.Extensions;
 
-public static class StringExtensions {
-    public static bool IsLocalHost(this string ip) {
+public static class StringExtensions
+{
+    public static bool IsLocalHost(this string ip)
+    {
         if (String.IsNullOrEmpty(ip))
             return false;
 
@@ -16,7 +18,8 @@ public static class StringExtensions {
     /// Very basic check to try and remove the port from any ipv4 or ipv6 address.
     /// </summary>
     /// <returns>ip address without port</returns>
-    public static string ToAddress(this string ip) {
+    public static string ToAddress(this string ip)
+    {
         if (String.IsNullOrEmpty(ip) || String.Equals(ip, "::1"))
             return ip;
 
@@ -29,7 +32,8 @@ public static class StringExtensions {
         return ip;
     }
 
-    public static bool IsPrivateNetwork(this string ip) {
+    public static bool IsPrivateNetwork(this string ip)
+    {
         if (String.IsNullOrEmpty(ip))
             return false;
 
@@ -41,8 +45,10 @@ public static class StringExtensions {
             return true;
 
         // 172.16.0.0 – 172.31.255.255 (Class B)
-        if (ip.StartsWith("172.")) {
-            for (int range = 16; range < 32; range++) {
+        if (ip.StartsWith("172."))
+        {
+            for (int range = 16; range < 32; range++)
+            {
                 if (ip.StartsWith("172." + range + "."))
                     return true;
             }
@@ -52,7 +58,8 @@ public static class StringExtensions {
         return ip.StartsWith("192.168.");
     }
 
-    public static string TrimScript(this string script) {
+    public static string TrimScript(this string script)
+    {
         if (String.IsNullOrEmpty(script))
             return script;
 
@@ -62,11 +69,13 @@ public static class StringExtensions {
             .Replace("  ", " ");
     }
 
-    public static string GetNewToken() {
+    public static string GetNewToken()
+    {
         return GetRandomString(40);
     }
 
-    public static string GetRandomString(int length, string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") {
+    public static string GetRandomString(int length, string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    {
         if (length < 0)
             throw new ArgumentOutOfRangeException(nameof(length), "length cannot be less than zero.");
 
@@ -81,9 +90,11 @@ public static class StringExtensions {
         var result = new StringBuilder();
         byte[] buf = new byte[128];
 
-        while (result.Length < length) {
+        while (result.Length < length)
+        {
             RandomNumberGenerator.Fill(buf);
-            for (int i = 0; i < buf.Length && result.Length < length; ++i) {
+            for (int i = 0; i < buf.Length && result.Length < length; ++i)
+            {
                 int outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
                 if (outOfRangeStart <= buf[i])
                     continue;
@@ -95,11 +106,13 @@ public static class StringExtensions {
     }
 
     // TODO: Add support for detecting the culture number separators as well as suffix (Ex. 100d)
-    public static bool IsNumeric(this string value) {
+    public static bool IsNumeric(this string value)
+    {
         if (String.IsNullOrEmpty(value))
             return false;
 
-        for (int i = 0; i < value.Length; i++) {
+        for (int i = 0; i < value.Length; i++)
+        {
             if (Char.IsNumber(value[i]))
                 continue;
 
@@ -112,18 +125,21 @@ public static class StringExtensions {
         return true;
     }
 
-    public static bool IsValidFieldName(this string value) {
+    public static bool IsValidFieldName(this string value)
+    {
         if (value == null || value.Length > 25)
             return false;
 
         return IsValidIdentifier(value);
     }
 
-    public static bool IsValidIdentifier(this string value) {
+    public static bool IsValidIdentifier(this string value)
+    {
         if (value == null)
             return false;
 
-        for (int index = 0; index < value.Length; index++) {
+        for (int index = 0; index < value.Length; index++)
+        {
             if (!Char.IsLetterOrDigit(value[index]) && value[index] != '-')
                 return false;
         }
@@ -131,21 +147,26 @@ public static class StringExtensions {
         return true;
     }
 
-    public static string ToSaltedHash(this string password, string salt) {
+    public static string ToSaltedHash(this string password, string salt)
+    {
         byte[] passwordBytes = Encoding.Unicode.GetBytes(password);
         byte[] saltBytes = Convert.FromBase64String(salt);
         var hashStrategy = new HMACSHA256();
-        if (hashStrategy.Key.Length == saltBytes.Length) {
+        if (hashStrategy.Key.Length == saltBytes.Length)
+        {
             hashStrategy.Key = saltBytes;
         }
-        else if (hashStrategy.Key.Length < saltBytes.Length) {
+        else if (hashStrategy.Key.Length < saltBytes.Length)
+        {
             byte[] keyBytes = new byte[hashStrategy.Key.Length];
             Buffer.BlockCopy(saltBytes, 0, keyBytes, 0, keyBytes.Length);
             hashStrategy.Key = keyBytes;
         }
-        else {
+        else
+        {
             byte[] keyBytes = new byte[hashStrategy.Key.Length];
-            for (int i = 0; i < keyBytes.Length;) {
+            for (int i = 0; i < keyBytes.Length;)
+            {
                 int len = Math.Min(saltBytes.Length, keyBytes.Length - i);
                 Buffer.BlockCopy(saltBytes, 0, keyBytes, i, len);
                 i += len;
@@ -157,12 +178,14 @@ public static class StringExtensions {
         return Convert.ToBase64String(result);
     }
 
-    public static string ToDelimitedString(this IEnumerable<string> values, string delimiter = ",") {
+    public static string ToDelimitedString(this IEnumerable<string> values, string delimiter = ",")
+    {
         if (String.IsNullOrEmpty(delimiter))
             delimiter = ",";
 
         var sb = new StringBuilder();
-        foreach (string i in values) {
+        foreach (string i in values)
+        {
             if (sb.Length > 0)
                 sb.Append(delimiter);
 
@@ -172,7 +195,8 @@ public static class StringExtensions {
         return sb.ToString();
     }
 
-    public static string[] FromDelimitedString(this string value, string delimiter = ",") {
+    public static string[] FromDelimitedString(this string value, string delimiter = ",")
+    {
         if (String.IsNullOrEmpty(value))
             return null;
 
@@ -182,20 +206,24 @@ public static class StringExtensions {
         return value.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries).ToArray();
     }
 
-    public static string ToLowerUnderscoredWords(this string value, char delimiter = '_') {
+    public static string ToLowerUnderscoredWords(this string value, char delimiter = '_')
+    {
         if (value == null)
             return null;
 
         var builder = new StringBuilder(value.Length + 10);
-        for (int index = 0; index < value.Length; index++) {
+        for (int index = 0; index < value.Length; index++)
+        {
             char c = value[index];
-            if (Char.IsUpper(c)) {
+            if (Char.IsUpper(c))
+            {
                 if (index > 0 && value[index - 1] != delimiter)
                     builder.Append(delimiter);
 
                 builder.Append(Char.ToLower(c));
             }
-            else {
+            else
+            {
                 builder.Append(c);
             }
         }
@@ -203,14 +231,16 @@ public static class StringExtensions {
         return builder.ToString();
     }
 
-    public static bool AnyWildcardMatches(this string value, IEnumerable<string> patternsToMatch, bool ignoreCase = false) {
+    public static bool AnyWildcardMatches(this string value, IEnumerable<string> patternsToMatch, bool ignoreCase = false)
+    {
         if (ignoreCase)
             value = value.ToLowerInvariant();
 
         return patternsToMatch.Any(pattern => CheckForMatch(pattern, value, ignoreCase));
     }
 
-    private static bool CheckForMatch(string pattern, string value, bool ignoreCase = true) {
+    private static bool CheckForMatch(string pattern, string value, bool ignoreCase = true)
+    {
         bool startsWithWildcard = pattern.StartsWith("*");
         if (startsWithWildcard)
             pattern = pattern.Substring(1);
@@ -234,13 +264,16 @@ public static class StringExtensions {
         return value.Equals(pattern);
     }
 
-    public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> stringSelector) {
+    public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> stringSelector)
+    {
         return values.ToConcatenatedString(stringSelector, String.Empty);
     }
 
-    public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> action, string separator) {
+    public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> action, string separator)
+    {
         var sb = new StringBuilder();
-        foreach (var item in values) {
+        foreach (var item in values)
+        {
             if (sb.Length > 0)
                 sb.Append(separator);
 
@@ -250,7 +283,8 @@ public static class StringExtensions {
         return sb.ToString();
     }
 
-    public static string ReplaceFirst(this string input, string find, string replace) {
+    public static string ReplaceFirst(this string input, string find, string replace)
+    {
         if (String.IsNullOrEmpty(input))
             return input;
 
@@ -263,15 +297,18 @@ public static class StringExtensions {
         return String.Concat(pre, replace, post);
     }
 
-    public static IEnumerable<string> SplitLines(this string text) {
+    public static IEnumerable<string> SplitLines(this string text)
+    {
         return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
     }
 
-    public static string StripInvisible(this string s) {
+    public static string StripInvisible(this string s)
+    {
         return s.Replace("\r\n", " ").Replace('\n', ' ').Replace('\t', ' ');
     }
 
-    public static string NormalizeLineEndings(this string text, string lineEnding = null) {
+    public static string NormalizeLineEndings(this string text, string lineEnding = null)
+    {
         if (String.IsNullOrEmpty(lineEnding))
             lineEnding = Environment.NewLine;
 
@@ -282,7 +319,8 @@ public static class StringExtensions {
         return text;
     }
 
-    public static string Truncate(this string text, int keep) {
+    public static string Truncate(this string text, int keep)
+    {
         if (String.IsNullOrEmpty(text))
             return String.Empty;
 
@@ -293,21 +331,26 @@ public static class StringExtensions {
         return String.Concat(buffer.Substring(0, keep - 3), "...");
     }
 
-    public static string TypeName(this string typeFullName) {
+    public static string TypeName(this string typeFullName)
+    {
         return typeFullName?.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
     }
 
-    public static string ToLowerFiltered(this string value, char[] charsToRemove) {
+    public static string ToLowerFiltered(this string value, char[] charsToRemove)
+    {
         var builder = new StringBuilder(value.Length);
 
-        for (int index = 0; index < value.Length; index++) {
+        for (int index = 0; index < value.Length; index++)
+        {
             char c = value[index];
             if (Char.IsUpper(c))
                 c = Char.ToLowerInvariant(c);
 
             bool includeChar = true;
-            for (int i = 0; i < charsToRemove.Length; i++) {
-                if (charsToRemove[i] == c) {
+            for (int i = 0; i < charsToRemove.Length; i++)
+            {
+                if (charsToRemove[i] == c)
+                {
                     includeChar = false;
                     break;
                 }
@@ -320,7 +363,8 @@ public static class StringExtensions {
         return builder.ToString();
     }
 
-    public static string[] SplitAndTrim(this string s, char[] separator) {
+    public static string[] SplitAndTrim(this string s, char[] separator)
+    {
         if (s.IsNullOrEmpty())
             return new string[0];
 
@@ -332,31 +376,38 @@ public static class StringExtensions {
 
     }
 
-    public static bool IsNullOrEmpty(this string item) {
+    public static bool IsNullOrEmpty(this string item)
+    {
         return String.IsNullOrEmpty(item);
     }
 
     private static readonly Regex _entityResolver = new Regex("([&][#](?'decimal'[0-9]+);)|([&][#][(x|X)](?'hex'[0-9a-fA-F]+);)|([&](?'html'\\w+);)");
 
-    public static string HtmlEntityDecode(this string encodedText) {
+    public static string HtmlEntityDecode(this string encodedText)
+    {
         return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
     }
 
-    private static string ResolveEntityAngleAmp(Match matchToProcess) {
+    private static string ResolveEntityAngleAmp(Match matchToProcess)
+    {
         return !matchToProcess.Groups["decimal"].Success ? (!matchToProcess.Groups["hex"].Success ? (!matchToProcess.Groups["html"].Success ? "Y" : EntityLookup(matchToProcess.Groups["html"].Value)) : Convert.ToChar(HexToInt(matchToProcess.Groups["hex"].Value)).ToString()) : Convert.ToChar(Convert.ToInt32(matchToProcess.Groups["decimal"].Value)).ToString();
     }
 
-    public static int HexToInt(string input) {
+    public static int HexToInt(string input)
+    {
         int num = 0;
         input = input.ToUpperInvariant();
         char[] chArray = input.ToCharArray();
-        for (int index = chArray.Length - 1; index >= 0; --index) {
+        for (int index = chArray.Length - 1; index >= 0; --index)
+        {
             if ((int)chArray[index] >= 48 && (int)chArray[index] <= 57)
                 num += ((int)chArray[index] - 48) * (int)Math.Pow(16.0, (double)(chArray.Length - 1 - index));
-            else if ((int)chArray[index] >= 65 && (int)chArray[index] <= 70) {
+            else if ((int)chArray[index] >= 65 && (int)chArray[index] <= 70)
+            {
                 num += ((int)chArray[index] - 55) * (int)Math.Pow(16.0, (double)(chArray.Length - 1 - index));
             }
-            else {
+            else
+            {
                 num = 0;
                 break;
             }
@@ -364,9 +415,11 @@ public static class StringExtensions {
         return num;
     }
 
-    private static string EntityLookup(string entity) {
+    private static string EntityLookup(string entity)
+    {
         string str = "";
-        switch (entity) {
+        switch (entity)
+        {
             case "Aacute":
                 str = Convert.ToChar(193).ToString();
                 break;

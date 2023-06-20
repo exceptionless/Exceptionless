@@ -6,7 +6,8 @@ namespace Exceptionless.Core.Reflection;
 /// <summary>
 /// A class for late bound operations on a type.
 /// </summary>
-public static class LateBinder {
+public static class LateBinder
+{
     private static readonly ConcurrentDictionary<Type, TypeAccessor> _accessorCache = new ConcurrentDictionary<Type, TypeAccessor>();
 
     /// <summary>
@@ -17,7 +18,8 @@ public static class LateBinder {
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the property if found; otherwise <c>null</c>.
     /// </returns>
-    public static IMemberAccessor FindProperty(Type type, string name) {
+    public static IMemberAccessor FindProperty(Type type, string name)
+    {
         return FindProperty(type, name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
     }
 
@@ -30,7 +32,8 @@ public static class LateBinder {
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the property if found; otherwise <c>null</c>.
     /// </returns>
-    public static IMemberAccessor FindProperty(Type type, string name, BindingFlags flags) {
+    public static IMemberAccessor FindProperty(Type type, string name, BindingFlags flags)
+    {
         if (type == null)
             throw new ArgumentNullException(nameof(type));
         if (String.IsNullOrEmpty(name))
@@ -42,7 +45,8 @@ public static class LateBinder {
 
         // support nested property
         string[] parts = name.Split('.');
-        foreach (string part in parts) {
+        foreach (string part in parts)
+        {
             if (memberAccessor != null)
                 currentType = memberAccessor.MemberType;
 
@@ -60,7 +64,8 @@ public static class LateBinder {
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the property.
     /// </returns>
-    public static IMemberAccessor GetPropertyAccessor(PropertyInfo property) {
+    public static IMemberAccessor GetPropertyAccessor(PropertyInfo property)
+    {
         if (property == null)
             throw new ArgumentNullException(nameof(property));
 
@@ -74,7 +79,8 @@ public static class LateBinder {
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the property.
     /// </returns>
-    public static IMemberAccessor GetFieldAccessor(FieldInfo field) {
+    public static IMemberAccessor GetFieldAccessor(FieldInfo field)
+    {
         if (field == null)
             throw new ArgumentNullException(nameof(field));
 
@@ -90,7 +96,8 @@ public static class LateBinder {
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the field if found; otherwise <c>null</c>.
     /// </returns>
-    public static IMemberAccessor FindField(Type type, string name) {
+    public static IMemberAccessor FindField(Type type, string name)
+    {
         return FindField(type, name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }
 
@@ -103,7 +110,8 @@ public static class LateBinder {
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the field if found; otherwise <c>null</c>.
     /// </returns>
-    public static IMemberAccessor FindField(Type type, string name, BindingFlags flags) {
+    public static IMemberAccessor FindField(Type type, string name, BindingFlags flags)
+    {
         if (type == null)
             throw new ArgumentNullException(nameof(type));
         if (String.IsNullOrEmpty(name))
@@ -121,7 +129,8 @@ public static class LateBinder {
     /// <param name="target">The object whose property value will be set.</param>
     /// <param name="name">The name of the property to set.</param>
     /// <param name="value">The new value to be set.</param>
-    public static void SetProperty(object target, string name, object value) {
+    public static void SetProperty(object target, string name, object value)
+    {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
         if (String.IsNullOrEmpty(name))
@@ -136,8 +145,10 @@ public static class LateBinder {
 
         // support nested property
         string[] parts = name.Split('.');
-        foreach (string part in parts) {
-            if (memberAccessor != null) {
+        foreach (string part in parts)
+        {
+            if (memberAccessor != null)
+            {
                 currentTarget = memberAccessor.GetValue(currentTarget);
                 currentType = memberAccessor.MemberType;
             }
@@ -158,7 +169,8 @@ public static class LateBinder {
     /// <param name="target">The object whose field value will be set.</param>
     /// <param name="name">The name of the field to set.</param>
     /// <param name="value">The new value to be set.</param>
-    public static void SetField(object target, string name, object value) {
+    public static void SetField(object target, string name, object value)
+    {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
         if (String.IsNullOrEmpty(name))
@@ -179,7 +191,8 @@ public static class LateBinder {
     /// <param name="target">The object whose property value will be returned.</param>
     /// <param name="name">The name of the property to read.</param>
     /// <returns>The value of the property.</returns>
-    public static object GetProperty(object target, string name) {
+    public static object GetProperty(object target, string name)
+    {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
         if (String.IsNullOrEmpty(name))
@@ -194,8 +207,10 @@ public static class LateBinder {
 
         // support nested property
         string[] parts = name.Split('.');
-        foreach (string part in parts) {
-            if (memberAccessor != null) {
+        foreach (string part in parts)
+        {
+            if (memberAccessor != null)
+            {
                 currentTarget = memberAccessor.GetValue(currentTarget);
                 currentType = memberAccessor.MemberType;
             }
@@ -216,7 +231,8 @@ public static class LateBinder {
     /// <param name="target">The object whose field value will be returned.</param>
     /// <param name="name">The name of the field to read.</param>
     /// <returns>The value of the field.</returns>
-    public static object GetField(object target, string name) {
+    public static object GetField(object target, string name)
+    {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
         if (String.IsNullOrEmpty(name))
@@ -235,7 +251,8 @@ public static class LateBinder {
     /// </summary>
     /// <param name="type">The type to create.</param>
     /// <returns>A new instance of the specified type.</returns>
-    public static object CreateInstance(Type type) {
+    public static object CreateInstance(Type type)
+    {
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
@@ -246,7 +263,8 @@ public static class LateBinder {
         return typeAccessor.Create();
     }
 
-    private static TypeAccessor GetAccessor(Type type) {
+    private static TypeAccessor GetAccessor(Type type)
+    {
         return _accessorCache.GetOrAdd(type, t => new TypeAccessor(t));
     }
 }

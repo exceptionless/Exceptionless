@@ -5,10 +5,12 @@ using Exceptionless.Core.Pipeline;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(10)]
-public sealed class VersionOnePlugin : WebHookDataPluginBase {
+public sealed class VersionOnePlugin : WebHookDataPluginBase
+{
     public VersionOnePlugin(AppOptions options) : base(options) { }
 
-    public override Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
+    public override Task<object> CreateFromEventAsync(WebHookDataContext ctx)
+    {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object>(null);
 
@@ -19,7 +21,8 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase {
         var requestInfo = ctx.Event.GetRequestInfo();
         var environmentInfo = ctx.Event.GetEnvironmentInfo();
 
-        return Task.FromResult<object>(new VersionOneWebHookEvent(_options.BaseURL) {
+        return Task.FromResult<object>(new VersionOneWebHookEvent(_options.BaseURL)
+        {
             Id = ctx.Event.Id,
             OccurrenceDate = ctx.Event.Date,
             Tags = ctx.Event.Tags,
@@ -48,11 +51,13 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase {
         });
     }
 
-    public override Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
+    public override Task<object> CreateFromStackAsync(WebHookDataContext ctx)
+    {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object>(null);
 
-        return Task.FromResult<object>(new VersionOneWebHookStack(_options.BaseURL) {
+        return Task.FromResult<object>(new VersionOneWebHookStack(_options.BaseURL)
+        {
             Id = ctx.Stack.Id,
             Status = ctx.Stack.Status,
             Title = ctx.Stack.Title,
@@ -75,10 +80,12 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase {
         });
     }
 
-    public class VersionOneWebHookEvent {
+    public class VersionOneWebHookEvent
+    {
         private readonly string _baseUrl;
 
-        public VersionOneWebHookEvent(string baseUrl) {
+        public VersionOneWebHookEvent(string baseUrl)
+        {
             _baseUrl = baseUrl;
         }
 
@@ -112,10 +119,12 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase {
         public bool IsCritical => Tags != null && Tags.Contains("Critical");
     }
 
-    public class VersionOneWebHookStack {
+    public class VersionOneWebHookStack
+    {
         private readonly string _baseUrl;
 
-        public VersionOneWebHookStack(string baseUrl) {
+        public VersionOneWebHookStack(string baseUrl)
+        {
             _baseUrl = baseUrl;
         }
 

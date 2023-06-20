@@ -2,8 +2,10 @@
 
 namespace Exceptionless.Core.Models;
 
-public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
-    public Token() {
+public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates
+{
+    public Token()
+    {
         Scopes = new HashSet<string>();
     }
 
@@ -24,7 +26,8 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
     public DateTime UpdatedUtc { get; set; }
 }
 
-public enum TokenType {
+public enum TokenType
+{
     Authentication,
     Access
 }

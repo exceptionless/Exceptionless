@@ -14,18 +14,21 @@ using Nest;
 namespace Exceptionless.Core.Jobs.Elastic;
 
 [Job(Description = "Migrate data to new format.", IsContinuous = false)]
-public class DataMigrationJob : JobBase {
+public class DataMigrationJob : JobBase
+{
     private readonly ExceptionlessElasticConfiguration _configuration;
     private const string MIGRATE_VERSION_SCRIPT = "if (ctx._source.version instanceof String == false) { ctx._source.version = 'v' + ctx._source.version.major; }";
 
     public DataMigrationJob(
         ExceptionlessElasticConfiguration configuration,
         ILoggerFactory loggerFactory
-    ) : base(loggerFactory) {
+    ) : base(loggerFactory)
+    {
         _configuration = configuration;
     }
 
-    protected override async Task<JobResult> RunInternalAsync(JobContext context) {
+    protected override async Task<JobResult> RunInternalAsync(JobContext context)
+    {
         var elasticOptions = _configuration.Options;
         if (elasticOptions.ElasticsearchToMigrate == null)
             return JobResult.CancelledWithMessage($"Please configure the connection string EX_{nameof(elasticOptions.ElasticsearchToMigrate)}.");
@@ -47,8 +50,10 @@ public class DataMigrationJob : JobBase {
         workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}stacks-v1", "stacks", $"{scope}stacks-v1", "last_occurrence"));
 
         // create the new indexes, don't migrate yet
-        foreach (var index in _configuration.Indexes.OfType<DailyIndex>()) {
-            for (int day = 0; day <= retentionPeriod.Days; day++) {
+        foreach (var index in _configuration.Indexes.OfType<DailyIndex>())
+        {
+            for (int day = 0; day <= retentionPeriod.Days; day++)
+            {
                 var date = day == 0 ? SystemClock.UtcNow : SystemClock.UtcNow.SubtractDays(day);
                 string indexToCreate = $"{scope}events-v1-{date:yyyy.MM.dd}";
                 workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", indexToCreate, "updated_utc", () => index.EnsureIndexAsync(date)));
@@ -66,16 +71,21 @@ public class DataMigrationJob : JobBase {
         var workingTasks = new List<ReindexWorkItem>();
         var completedTasks = new List<ReindexWorkItem>();
         var failedTasks = new List<ReindexWorkItem>();
-        while (true) {
+        while (true)
+        {
             if (workingTasks.Count == 0 && workItemQueue.Count == 0)
                 break;
 
-            if (workingTasks.Count < 10 && workItemQueue.TryDequeue(out var dequeuedWorkItem)) {
-                if (dequeuedWorkItem.CreateIndex != null) {
-                    try {
+            if (workingTasks.Count < 10 && workItemQueue.TryDequeue(out var dequeuedWorkItem))
+            {
+                if (dequeuedWorkItem.CreateIndex != null)
+                {
+                    try
+                    {
                         await dequeuedWorkItem.CreateIndex().AnyContext();
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         _logger.LogError(ex, "Failed to create index for {TargetIndex}", dequeuedWorkItem.TargetIndex);
                         continue;
                     }
@@ -92,7 +102,8 @@ public class DataMigrationJob : JobBase {
                         .Remote(ConfigureRemoteElasticSource)
                         .Index(dequeuedWorkItem.SourceIndex)
                         .Size(batchSize)
-                        .Query<object>(q => {
+                        .Query<object>(q =>
+                        {
                             var container = q.Term("_type", dequeuedWorkItem.SourceIndexType);
                             if (!String.IsNullOrEmpty(dequeuedWorkItem.DateField))
                                 container &= q.DateRange(d => d.Field(dequeuedWorkItem.DateField).GreaterThanOrEquals(cutOffDate));
@@ -103,7 +114,8 @@ public class DataMigrationJob : JobBase {
                         .Index(dequeuedWorkItem.TargetIndex))
                         .Conflicts(Conflicts.Proceed)
                         .WaitForCompletion(false)
-                    .Script(s => {
+                    .Script(s =>
+                    {
                         if (!String.IsNullOrEmpty(dequeuedWorkItem.Script))
                             return s.Source(dequeuedWorkItem.Script);
 
@@ -120,12 +132,14 @@ public class DataMigrationJob : JobBase {
             }
 
             double highestProgress = 0;
-            foreach (var workItem in workingTasks.ToArray()) {
+            foreach (var workItem in workingTasks.ToArray())
+            {
                 var taskStatus = await client.Tasks.GetTaskAsync(workItem.TaskId, t => t.WaitForCompletion(false)).AnyContext();
                 _logger.LogRequest(taskStatus);
 
                 var status = taskStatus?.Task?.Status;
-                if (status == null) {
+                if (status == null)
+                {
                     _logger.LogWarning(taskStatus?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
                     if (taskStatus?.ServerError?.Status == 429)
                         await Task.Delay(TimeSpan.FromSeconds(1));
@@ -137,14 +151,17 @@ public class DataMigrationJob : JobBase {
                 double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
                 highestProgress = Math.Max(highestProgress, progress);
 
-                if (!taskStatus.IsValid) {
+                if (!taskStatus.IsValid)
+                {
                     _logger.LogWarning(taskStatus.OriginalException, "Error getting task status for {TargetIndex} ({TaskId}): {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
                     workItem.ConsecutiveStatusErrors++;
-                    if (taskStatus.Completed || workItem.ConsecutiveStatusErrors > 5) {
+                    if (taskStatus.Completed || workItem.ConsecutiveStatusErrors > 5)
+                    {
                         workingTasks.Remove(workItem);
                         workItem.LastTaskInfo = taskStatus.Task;
 
-                        if (taskStatus.Completed && workItem.Attempts < 3) {
+                        if (taskStatus.Completed && workItem.Attempts < 3)
+                        {
                             _logger.LogWarning("FAILED RETRY - {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                             workItem.ConsecutiveStatusErrors = 0;
                             workItemQueue.Enqueue(workItem);
@@ -152,7 +169,8 @@ public class DataMigrationJob : JobBase {
                             retriesCount++;
                             await Task.Delay(TimeSpan.FromSeconds(15)).AnyContext();
                         }
-                        else {
+                        else
+                        {
                             _logger.LogCritical("FAILED - {TargetIndex} in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
                             failedTasks.Add(workItem);
                         }
@@ -171,7 +189,8 @@ public class DataMigrationJob : JobBase {
 
                 _logger.LogInformation("COMPLETED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
             }
-            if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5)) {
+            if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5))
+            {
                 _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
                 lastProgress = SystemClock.UtcNow;
             }
@@ -179,7 +198,8 @@ public class DataMigrationJob : JobBase {
         }
 
         _logger.LogInformation("----- REINDEX COMPLETE", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
-        foreach (var task in completedTasks) {
+        foreach (var task in completedTasks)
+        {
             var status = task.LastTaskInfo.Status;
             var duration = TimeSpan.FromMilliseconds(task.LastTaskInfo.RunningTimeInNanoseconds * 0.000001);
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
@@ -188,7 +208,8 @@ public class DataMigrationJob : JobBase {
             _logger.LogInformation("SUCCESS - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
 
-        foreach (var task in failedTasks) {
+        foreach (var task in failedTasks)
+        {
             var status = task.LastTaskInfo.Status;
             var duration = TimeSpan.FromMilliseconds(task.LastTaskInfo.RunningTimeInNanoseconds * 0.000001);
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
@@ -204,7 +225,8 @@ public class DataMigrationJob : JobBase {
         return JobResult.Success;
     }
 
-    private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd) {
+    private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd)
+    {
         var elasticOptions = _configuration.Options.ElasticsearchToMigrate;
         if (!String.IsNullOrEmpty(elasticOptions.UserName) && !String.IsNullOrEmpty(elasticOptions.Password))
             rsd.Username(elasticOptions.UserName).Password(elasticOptions.Password);
@@ -213,8 +235,10 @@ public class DataMigrationJob : JobBase {
     }
 }
 
-public class ReindexWorkItem {
-    public ReindexWorkItem(string sourceIndex, string sourceIndexType, string targetIndex, string dateField, Func<Task> createIndex = null, string script = null) {
+public class ReindexWorkItem
+{
+    public ReindexWorkItem(string sourceIndex, string sourceIndexType, string targetIndex, string dateField, Func<Task> createIndex = null, string script = null)
+    {
         SourceIndex = sourceIndex;
         SourceIndexType = sourceIndexType;
         TargetIndex = targetIndex;

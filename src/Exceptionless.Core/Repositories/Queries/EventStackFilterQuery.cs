@@ -3,50 +3,60 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
 using Foundatio.Caching;
-using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries.Extensions;
+using Foundatio.Parsers.LuceneQueries.Nodes;
+using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Extensions;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
 using Nest;
 using DateRange = Foundatio.Repositories.DateRange;
-using Foundatio.Parsers.LuceneQueries.Nodes;
-using Foundatio.Repositories.Extensions;
-using Foundatio.Repositories.Models;
 
-namespace Exceptionless.Core.Repositories {
-    public static class EventStackFilterQueryExtensions {
+namespace Exceptionless.Core.Repositories
+{
+    public static class EventStackFilterQueryExtensions
+    {
         internal const string EnforceEventStackFilterKey = "@EnforceEventStackFilter";
 
-        public static T EnforceEventStackFilter<T>(this T query, bool shouldEnforceEventStackFilter = true) where T : IRepositoryQuery {
+        public static T EnforceEventStackFilter<T>(this T query, bool shouldEnforceEventStackFilter = true) where T : IRepositoryQuery
+        {
             query.Values.Set(EnforceEventStackFilterKey, shouldEnforceEventStackFilter);
             return query;
         }
 
         internal const string EventStackFilterInvertedKey = "@IsStackFilterInverted";
 
-        public static T EventStackFilterInverted<T>(this T query, bool eventStackFilterInverted = true) where T : IRepositoryQuery {
+        public static T EventStackFilterInverted<T>(this T query, bool eventStackFilterInverted = true) where T : IRepositoryQuery
+        {
             query.Values.Set(EventStackFilterInvertedKey, eventStackFilterInverted);
             return query;
         }
     }
 }
 
-namespace Exceptionless.Core.Repositories.Options {
-    public static class ReadEventStackFilterQueryExtensions {
-        public static bool ShouldEnforceEventStackFilter(this IRepositoryQuery query) {
+namespace Exceptionless.Core.Repositories.Options
+{
+    public static class ReadEventStackFilterQueryExtensions
+    {
+        public static bool ShouldEnforceEventStackFilter(this IRepositoryQuery query)
+        {
             return query.SafeGetOption<bool>(EventStackFilterQueryExtensions.EnforceEventStackFilterKey, false);
         }
 
-        public static bool IsEventStackFilterInverted(this IRepositoryQuery query) {
+        public static bool IsEventStackFilterInverted(this IRepositoryQuery query)
+        {
             return query.SafeGetOption<bool>(EventStackFilterQueryExtensions.EventStackFilterInvertedKey, false);
         }
     }
 }
 
-namespace Exceptionless.Core.Repositories.Queries {
-    public class EventStackFilterQueryBuilder : IElasticQueryBuilder {
+namespace Exceptionless.Core.Repositories.Queries
+{
+    public class EventStackFilterQueryBuilder : IElasticQueryBuilder
+    {
         private readonly IStackRepository _stackRepository;
         private readonly ILogger _logger;
         private readonly Field _inferredEventDateField;
@@ -54,7 +64,8 @@ namespace Exceptionless.Core.Repositories.Queries {
         private readonly EventStackFilter _eventStackFilter;
         private readonly ICacheClient _cacheClient;
 
-        public EventStackFilterQueryBuilder(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory) {
+        public EventStackFilterQueryBuilder(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory)
+        {
             _stackRepository = stackRepository;
             _cacheClient = new ScopedCacheClient(cacheClient, "stack-filter");
             _logger = loggerFactory.CreateLogger<EventStackFilterQueryBuilder>();
@@ -63,14 +74,16 @@ namespace Exceptionless.Core.Repositories.Queries {
             _eventStackFilter = new EventStackFilter();
         }
 
-        public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new() {
+        public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
+        {
             if (!ctx.Source.ShouldEnforceEventStackFilter())
                 return;
 
             // TODO: Handle search expressions as well
             string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
             //bool altInvertRequested = false;
-            if (filter.StartsWith("@!")) {
+            if (filter.StartsWith("@!"))
+            {
                 //altInvertRequested = true;
                 filter = filter.Substring(2);
                 ctx.Source.FilterExpression(filter);
@@ -103,14 +116,18 @@ namespace Exceptionless.Core.Repositories.Queries {
 
             FindResults<Stack> results = null;
             var tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
-            if (tooManyStacksCheck.HasValue) {
+            if (tooManyStacksCheck.HasValue)
+            {
                 stackTotal = tooManyStacksCheck.Value;
-            } else {
+            }
+            else
+            {
                 results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SearchAfterPaging().SoftDeleteMode(softDeleteMode)).AnyContext();
                 stackTotal = results.Total;
             }
-                
-            if (stackTotal > stackIdLimit) {
+
+            if (stackTotal > stackIdLimit)
+            {
                 if (!tooManyStacksCheck.HasValue)
                     await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
 
@@ -120,36 +137,45 @@ namespace Exceptionless.Core.Repositories.Queries {
                 systemFilterQuery.FilterExpression(stackFilterValue);
                 softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
-                
+
                 tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
-                if (tooManyStacksCheck.HasValue) {
+                if (tooManyStacksCheck.HasValue)
+                {
                     stackTotal = tooManyStacksCheck.Value;
-                } else {
+                }
+                else
+                {
                     results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SearchAfterPaging().SoftDeleteMode(softDeleteMode)).AnyContext();
                     stackTotal = results.Total;
                 }
             }
 
-            if (stackTotal > stackIdLimit) {
+            if (stackTotal > stackIdLimit)
+            {
                 if (!tooManyStacksCheck.HasValue)
                     await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
                 throw new DocumentLimitExceededException($"Event filter resulted in too many matching stacks ({stackTotal} of {stackIdLimit} max). Please limit your search criteria (possibly by reducing number of days being searched).");
             }
 
-            if (results?.Hits != null) {
-                do {
+            if (results?.Hits != null)
+            {
+                do
+                {
                     stackIds.AddRange(results.Hits.Select(h => h.Id));
                 } while (await results.NextPageAsync());
             }
 
             _logger.LogTrace("Setting stack filter with {IdCount} ids", stackIds.Count);
 
-            if (!isStackIdsNegated) {
+            if (!isStackIdsNegated)
+            {
                 if (stackIds.Count > 0)
                     ctx.Source.Stack(stackIds);
                 else
                     ctx.Source.Stack("none");
-            } else {
+            }
+            else
+            {
                 if (stackIds.Count > 0)
                     ctx.Source.ExcludeStack(stackIds);
             }
@@ -159,13 +185,16 @@ namespace Exceptionless.Core.Repositories.Queries {
             ctx.Source.FilterExpression(eventFilter);
         }
 
-        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context, bool isStackIdsNegated) {
+        private IRepositoryQuery GetSystemFilterQuery(IQueryVisitorContext context, bool isStackIdsNegated)
+        {
             var builderContext = context as IQueryBuilderContext;
             var systemFilter = builderContext?.Source.GetSystemFilter();
             var systemFilterQuery = systemFilter?.GetQuery().Clone();
-            if (systemFilterQuery == null) {
+            if (systemFilterQuery == null)
+            {
                 systemFilterQuery = new RepositoryQuery<Stack>();
-                foreach (var range in builderContext?.Source.GetDateRanges() ?? Enumerable.Empty<DateRange>()) {
+                foreach (var range in builderContext?.Source.GetDateRanges() ?? Enumerable.Empty<DateRange>())
+                {
                     systemFilterQuery.DateRange(range.StartDate, range.EndDate, range.Field, range.TimeZone);
                 }
             }
@@ -173,8 +202,10 @@ namespace Exceptionless.Core.Repositories.Queries {
             if (!systemFilterQuery.HasAppFilter())
                 systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
 
-            foreach (var range in systemFilterQuery.GetDateRanges()) {
-                if (range.Field == _inferredEventDateField || range.Field == "date") {
+            foreach (var range in systemFilterQuery.GetDateRanges())
+            {
+                if (range.Field == _inferredEventDateField || range.Field == "date")
+                {
                     range.Field = _inferredStackLastOccurrenceField;
                     if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
                         range.StartDate = null;
@@ -185,7 +216,8 @@ namespace Exceptionless.Core.Repositories.Queries {
             return systemFilterQuery;
         }
 
-        private static string GetQueryHash(IRepositoryQuery query) {
+        private static string GetQueryHash(IRepositoryQuery query)
+        {
             // org ids, project ids, date ranges, filter expression
 
             var appFilter = query.GetAppFilter();
@@ -197,7 +229,7 @@ namespace Exceptionless.Core.Repositories.Queries {
                 organizationIds.AddRange(appFilter.Organizations.Select(o => o.Id));
 
             var hashCode = new HashCode();
-            
+
             if (projectIds.Count > 0)
                 foreach (string projectId in projectIds)
                     hashCode.Add(projectId);
@@ -208,10 +240,10 @@ namespace Exceptionless.Core.Repositories.Queries {
             var dateRanges = query.GetDateRanges();
             var minDate = dateRanges.Min(r => r.StartDate) ?? DateTime.MinValue;
             var maxDate = dateRanges.Max(r => r.EndDate) ?? DateTime.MaxValue;
-            
+
             hashCode.Add(minDate);
             hashCode.Add(maxDate);
-            
+
             hashCode.Add(query.GetFilterExpression());
 
             string cacheScope = "";

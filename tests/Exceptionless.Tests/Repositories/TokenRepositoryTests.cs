@@ -10,15 +10,18 @@ using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Tests.Repositories;
 
-public sealed class TokenRepositoryTests : IntegrationTestsBase {
+public sealed class TokenRepositoryTests : IntegrationTestsBase
+{
     private readonly ITokenRepository _repository;
 
-    public TokenRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) {
+    public TokenRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
         _repository = GetService<ITokenRepository>();
     }
 
     [Fact]
-    public async Task GetAndRemoveByProjectIdOrDefaultProjectIdAsync() {
+    public async Task GetAndRemoveByProjectIdOrDefaultProjectIdAsync()
+    {
         await _repository.AddAsync(new List<Token> {
                 new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
                 new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
@@ -55,7 +58,8 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase {
     }
 
     [Fact]
-    public async Task GetAndRemoveByByUserIdAsync() {
+    public async Task GetAndRemoveByByUserIdAsync()
+    {
         await _repository.AddAsync(new List<Token> {
                 new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
                 new Token { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },

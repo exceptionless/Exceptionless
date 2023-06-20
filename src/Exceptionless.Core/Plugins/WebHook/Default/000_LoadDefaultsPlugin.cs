@@ -6,18 +6,21 @@ using Foundatio.Repositories;
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(0)]
-public sealed class LoadDefaultsPlugin : WebHookDataPluginBase {
+public sealed class LoadDefaultsPlugin : WebHookDataPluginBase
+{
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
 
-    public LoadDefaultsPlugin(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, AppOptions options) : base(options) {
+    public LoadDefaultsPlugin(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, AppOptions options) : base(options)
+    {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
     }
 
-    public override async Task<object> CreateFromEventAsync(WebHookDataContext ctx) {
+    public override async Task<object> CreateFromEventAsync(WebHookDataContext ctx)
+    {
         if (ctx.Event == null)
             throw new ArgumentException("Event cannot be null.");
 
@@ -27,7 +30,7 @@ public sealed class LoadDefaultsPlugin : WebHookDataPluginBase {
         if (ctx.Project == null)
             throw new ArgumentException("Project not found.");
 
-        if (ctx.Organization == null) 
+        if (ctx.Organization == null)
             ctx.Organization = await _organizationRepository.GetByIdAsync(ctx.Event.OrganizationId, o => o.Cache()).AnyContext();
 
         if (ctx.Organization == null)
@@ -42,7 +45,8 @@ public sealed class LoadDefaultsPlugin : WebHookDataPluginBase {
         return null;
     }
 
-    public override async Task<object> CreateFromStackAsync(WebHookDataContext ctx) {
+    public override async Task<object> CreateFromStackAsync(WebHookDataContext ctx)
+    {
         if (ctx.Stack == null)
             throw new ArgumentException("Stack cannot be null.");
 

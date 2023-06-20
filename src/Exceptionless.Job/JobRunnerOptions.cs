@@ -1,7 +1,9 @@
 namespace Exceptionless.Job;
 
-public class JobRunnerOptions {
-    public JobRunnerOptions(string[] args) {
+public class JobRunnerOptions
+{
+    public JobRunnerOptions(string[] args)
+    {
         if (args.Length > 1)
             throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 

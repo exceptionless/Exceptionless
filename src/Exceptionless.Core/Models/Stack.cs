@@ -8,8 +8,10 @@ using Newtonsoft.Json.Converters;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id={Id} Type={Type} Status={Status} IsDeleted={IsDeleted} Title={Title} TotalOccurrences={TotalOccurrences}")]
-public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes {
-    public Stack() {
+public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes
+{
+    public Stack()
+    {
         Tags = new TagSet();
         References = new Collection<string>();
         SignatureInfo = new SettingsDictionary();
@@ -116,7 +118,8 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
 
     public bool AllowNotifications => Status != StackStatus.Fixed && Status != StackStatus.Ignored && Status != StackStatus.Discarded && Status != StackStatus.Snoozed;
 
-    public static class KnownTypes {
+    public static class KnownTypes
+    {
         public const string Error = "error";
         public const string FeatureUsage = "usage";
         public const string SessionHeartbeat = "heartbeat";
@@ -128,7 +131,8 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
 }
 
 [JsonConverter(typeof(StringEnumConverter))]
-public enum StackStatus {
+public enum StackStatus
+{
     [EnumMember(Value = "open")] Open,
     [EnumMember(Value = "fixed")] Fixed,
     [EnumMember(Value = "regressed")] Regressed,

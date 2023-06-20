@@ -14,7 +14,8 @@ namespace Exceptionless.Web.Utility;
 /// A class the tracks changes (i.e. the Delta) for a particular <typeparamref name="TEntityType" />.
 /// </summary>
 /// <typeparam name="TEntityType">TEntityType is the base type of entity this delta tracks changes for.</typeparam>
-public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class {
+public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class
+{
     // cache property accessors for this type and all its derived types.
     private static readonly ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
 
@@ -36,7 +37,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     ///     The derived entity type for which the changes would be tracked.
     ///     <paramref name="entityType" /> should be assignable to instances of <typeparamref name="TEntityType" />.
     /// </param>
-    public Delta(Type entityType) {
+    public Delta(Type entityType)
+    {
         Initialize(entityType);
     }
 
@@ -48,7 +50,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <summary>
     /// Clears the Delta and resets the underlying Entity.
     /// </summary>
-    public void Clear() {
+    public void Clear()
+    {
         Initialize(_entityType);
     }
 
@@ -63,7 +66,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <param name="value">The new value of the Property</param>
     /// <param name="target">The target entity to set the value on</param>
     /// <returns>True if successful</returns>
-    public bool TrySetPropertyValue(string name, object value, TEntityType target = null) {
+    public bool TrySetPropertyValue(string name, object value, TEntityType target = null)
+    {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
@@ -75,16 +79,21 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
         if (value == null && !IsNullable(cacheHit.MemberType))
             return false;
 
-        if (value != null) {
-            if (value is JToken) {
-                try {
+        if (value != null)
+        {
+            if (value is JToken)
+            {
+                try
+                {
                     value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
                 }
-                catch (Exception) {
+                catch (Exception)
+                {
                     return false;
                 }
             }
-            else {
+            else
+            {
                 bool isGuid = cacheHit.MemberType == typeof(Guid) && value is string;
                 bool isEnum = cacheHit.MemberType.IsEnum && value is Int64 && (long)value <= Int32.MaxValue;
                 bool isInt32 = cacheHit.MemberType == typeof(int) && value is Int64 && (long)value <= Int32.MaxValue;
@@ -118,11 +127,13 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <param name="value">The value of the Property</param>
     /// <param name="target">The target entity to get the value from</param>
     /// <returns>True if the Property was found</returns>
-    public bool TryGetPropertyValue(string name, out object value, TEntityType target = null) {
+    public bool TryGetPropertyValue(string name, out object value, TEntityType target = null)
+    {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_propertiesThatExist.ContainsKey(name)) {
+        if (_propertiesThatExist.ContainsKey(name))
+        {
             var cacheHit = _propertiesThatExist[name];
             value = cacheHit.GetValue(target ?? _entity);
             return true;
@@ -142,11 +153,13 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <param name="name">The name of the Property</param>
     /// <param name="type">The type of the Property</param>
     /// <returns>Returns <c>true</c> if the Property was found and <c>false</c> if not.</returns>
-    public bool TryGetPropertyType(string name, out Type type) {
+    public bool TryGetPropertyType(string name, out Type type)
+    {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_propertiesThatExist.TryGetValue(name, out var value)) {
+        if (_propertiesThatExist.TryGetValue(name, out var value))
+        {
             type = value.MemberType;
             return true;
         }
@@ -164,12 +177,14 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Overrides the DynamicObject TrySetMember method, so that only the properties
     /// of <see cref="EntityType" /> can be set.
     /// </summary>
-    public override bool TrySetMember(SetMemberBinder binder, object value) {
+    public override bool TrySetMember(SetMemberBinder binder, object value)
+    {
         if (binder == null)
             throw new ArgumentNullException(nameof(binder));
 
         // add properties that don't exist to the unknown properties collect
-        if (!_propertiesThatExist.ContainsKey(binder.Name)) {
+        if (!_propertiesThatExist.ContainsKey(binder.Name))
+        {
             _unknownProperties[binder.Name] = value;
             return true;
         }
@@ -181,7 +196,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Overrides the DynamicObject TryGetMember method, so that only the properties
     /// of <see cref="EntityType" /> can be got.
     /// </summary>
-    public override bool TryGetMember(GetMemberBinder binder, out object result) {
+    public override bool TryGetMember(GetMemberBinder binder, out object result)
+    {
         if (binder == null)
             throw new ArgumentNullException(nameof(binder));
 
@@ -193,7 +209,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// that holds all the changes (and original values) being tracked by this Delta.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not appropriate to be a property")]
-    public TEntityType GetEntity() {
+    public TEntityType GetEntity()
+    {
         return _entity;
     }
 
@@ -201,7 +218,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Returns the Properties that have been modified through this Delta as an
     /// enumeration of Property Names
     /// </summary>
-    public IEnumerable<string> GetChangedPropertyNames() {
+    public IEnumerable<string> GetChangedPropertyNames()
+    {
         return _changedProperties;
     }
 
@@ -209,13 +227,15 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Returns the Properties that have been modified from their original values through this Delta as an
     /// enumeration of Property Names
     /// </summary>
-    public IEnumerable<string> GetChangedPropertyNames(TEntityType original) {
+    public IEnumerable<string> GetChangedPropertyNames(TEntityType original)
+    {
         if (original == null)
             return _changedProperties;
 
         var changedPropertyNames = new HashSet<string>();
 
-        foreach (string propertyName in _changedProperties) {
+        foreach (string propertyName in _changedProperties)
+        {
             if (!TryGetPropertyValue(propertyName, out object originalValue, original))
                 changedPropertyNames.Add(propertyName);
 
@@ -236,7 +256,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Returns the Properties that have not been modified through this Delta as an
     /// enumeration of Property Names
     /// </summary>
-    public IEnumerable<string> GetUnchangedPropertyNames() {
+    public IEnumerable<string> GetUnchangedPropertyNames()
+    {
         return _propertiesThatExist.Keys.Except(GetChangedPropertyNames());
     }
 
@@ -245,7 +266,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// to the <paramref name="target" /> entity.
     /// </summary>
     /// <param name="target">The target entity to be updated.</param>
-    public void CopyChangedValues(object target) {
+    public void CopyChangedValues(object target)
+    {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
@@ -255,7 +277,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
 
         var propertiesToCopy = GetChangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
 
-        foreach (var sourceProperty in propertiesToCopy) {
+        foreach (var sourceProperty in propertiesToCopy)
+        {
             object value = sourceProperty.GetValue(_entity);
             if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out var targetAccessor))
                 continue;
@@ -272,7 +295,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// to the <paramref name="target" /> entity.
     /// </summary>
     /// <param name="target">The entity to be updated.</param>
-    public void CopyUnchangedValues(object target) {
+    public void CopyUnchangedValues(object target)
+    {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
@@ -283,7 +307,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
 
         var propertiesToCopy = GetUnchangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
 
-        foreach (var sourceProperty in propertiesToCopy) {
+        foreach (var sourceProperty in propertiesToCopy)
+        {
             object value = sourceProperty.GetValue(_entity);
             if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out var targetAccessor))
                 continue;
@@ -300,7 +325,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <remarks>The semantics of this operation are equivalent to a HTTP PATCH operation, hence the name.</remarks>
     /// </summary>
     /// <param name="target">The entity to be updated.</param>
-    public void Patch(object target) {
+    public void Patch(object target)
+    {
         CopyChangedValues(target);
     }
 
@@ -309,12 +335,14 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <remarks>The semantics of this operation are equivalent to a HTTP PUT operation, hence the name.</remarks>
     /// </summary>
     /// <param name="target">The entity to be updated.</param>
-    public void Put(object target) {
+    public void Put(object target)
+    {
         CopyChangedValues(target);
         CopyUnchangedValues(target);
     }
 
-    private void Initialize(Type entityType) {
+    private void Initialize(Type entityType)
+    {
         if (entityType == null)
             throw new ArgumentNullException(nameof(entityType));
 
@@ -328,14 +356,17 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
         _propertiesThatExist = _propertyCache[entityType];
     }
 
-    private void CachePropertyAccessors(Type type) {
-        _propertyCache.GetOrAdd(type, t => {
+    private void CachePropertyAccessors(Type type)
+    {
+        _propertyCache.GetOrAdd(type, t =>
+        {
             var properties = t.GetProperties()
                 .Where(p => p.GetSetMethod() != null && p.GetGetMethod() != null)
                 .Select(LateBinder.GetPropertyAccessor).ToList();
 
             var items = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
-            foreach (var p in properties) {
+            foreach (var p in properties)
+            {
                 items[p.Name] = p;
                 items[p.Name.ToLowerUnderscoredWords()] = p;
             }
@@ -344,7 +375,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
         });
     }
 
-    public static bool IsNullable(Type type) {
+    public static bool IsNullable(Type type)
+    {
         return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
     }
 }

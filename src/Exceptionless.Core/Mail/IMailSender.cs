@@ -2,6 +2,7 @@
 
 namespace Exceptionless.Core.Mail;
 
-public interface IMailSender {
+public interface IMailSender
+{
     Task SendAsync(MailMessage model);
 }

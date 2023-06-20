@@ -4,15 +4,18 @@ using StackExchange.Redis;
 
 namespace Exceptionless.Insulation.Redis;
 
-public sealed class RedisConnectionMapping : IConnectionMapping {
+public sealed class RedisConnectionMapping : IConnectionMapping
+{
     private const string KeyPrefix = "Hub:";
     private readonly IConnectionMultiplexer _muxer;
 
-    public RedisConnectionMapping(IConnectionMultiplexer muxer) {
+    public RedisConnectionMapping(IConnectionMultiplexer muxer)
+    {
         _muxer = muxer;
     }
 
-    public Task AddAsync(string key, string connectionId) {
+    public Task AddAsync(string key, string connectionId)
+    {
         if (key == null)
             return Task.CompletedTask;
 
@@ -21,7 +24,8 @@ public sealed class RedisConnectionMapping : IConnectionMapping {
 
     private IDatabase Database => _muxer.GetDatabase();
 
-    public async Task<ICollection<string>> GetConnectionsAsync(string key) {
+    public async Task<ICollection<string>> GetConnectionsAsync(string key)
+    {
         if (key == null)
             return new List<string>();
 
@@ -29,14 +33,16 @@ public sealed class RedisConnectionMapping : IConnectionMapping {
         return values.Select(v => v.ToString()).ToList();
     }
 
-    public async Task<int> GetConnectionCountAsync(string key) {
+    public async Task<int> GetConnectionCountAsync(string key)
+    {
         if (key == null)
             return 0;
 
         return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key)).AnyContext();
     }
 
-    public Task RemoveAsync(string key, string connectionId) {
+    public Task RemoveAsync(string key, string connectionId)
+    {
         if (key == null)
             return Task.CompletedTask;
 

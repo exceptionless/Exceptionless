@@ -16,7 +16,8 @@ namespace Exceptionless.Core.Pipeline;
 /// You also have to have a common base class that inherits <see cref="IPipelineContext"/> for all your actions.
 /// The pipeline looks for all types that inherit that action base class to run.
 /// </remarks>
-public abstract class PipelineBase<TContext, TAction> where TAction : class, IPipelineAction<TContext> where TContext : IPipelineContext {
+public abstract class PipelineBase<TContext, TAction> where TAction : class, IPipelineAction<TContext> where TContext : IPipelineContext
+{
     protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
     private readonly IServiceProvider _serviceProvider;
     private readonly AppOptions _options;
@@ -24,7 +25,8 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     protected readonly string _metricPrefix;
     protected readonly ILogger _logger;
 
-    public PipelineBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) {
+    public PipelineBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null)
+    {
         _serviceProvider = serviceProvider;
         _options = options;
 
@@ -39,7 +41,8 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     /// Runs all the actions of the pipeline with the specified context.
     /// </summary>
     /// <param name="context">The context to run the actions with.</param>
-    public virtual async Task<TContext> RunAsync(TContext context) {
+    public virtual async Task<TContext> RunAsync(TContext context)
+    {
         await RunAsync(new[] { context }).AnyContext();
         return context;
     }
@@ -48,11 +51,13 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     /// Runs all the specified actions with the specified context.
     /// </summary>
     /// <param name="contexts">The context to run the actions with.</param>
-    public virtual async Task<ICollection<TContext>> RunAsync(ICollection<TContext> contexts) {
+    public virtual async Task<ICollection<TContext>> RunAsync(ICollection<TContext> contexts)
+    {
         PipelineRunning(contexts);
 
         string metricPrefix = String.Concat(_metricPrefix, nameof(RunAsync).ToLower(), ".");
-        foreach (var action in _actions) {
+        foreach (var action in _actions)
+        {
             string metricName = String.Concat(metricPrefix, action.Name.ToLower());
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
@@ -82,22 +87,28 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     /// Gets the types that are subclasses of <typeparamref name="TAction"/>.
     /// </summary>
     /// <returns>An enumerable list of action types in priority order to run for the pipeline.</returns>
-    protected virtual IList<Type> GetActionTypes() {
+    protected virtual IList<Type> GetActionTypes()
+    {
         return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetDerivedTypes<TAction>().SortByPriority());
     }
 
-    private List<IPipelineAction<TContext>> LoadDefaultActions() {
+    private List<IPipelineAction<TContext>> LoadDefaultActions()
+    {
         var actions = new List<IPipelineAction<TContext>>();
-        foreach (var type in GetActionTypes()) {
-            if (_options.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase)) {
+        foreach (var type in GetActionTypes())
+        {
+            if (_options.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase))
+            {
                 _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed.", type.Name);
                 continue;
             }
 
-            try {
+            try
+            {
                 actions.Add((IPipelineAction<TContext>)_serviceProvider.GetService(type));
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogError(ex, "Unable to instantiate Pipeline Action of type {TypeFullName}: {Message}", type.FullName, ex.Message);
                 throw;
             }

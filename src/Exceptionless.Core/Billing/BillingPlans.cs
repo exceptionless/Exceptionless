@@ -2,9 +2,12 @@
 
 namespace Exceptionless.Core.Billing;
 
-public class BillingPlans {
-    public BillingPlans(AppOptions options) {
-        FreePlan = new BillingPlan {
+public class BillingPlans
+{
+    public BillingPlans(AppOptions options)
+    {
+        FreePlan = new BillingPlan
+        {
             Id = "EX_FREE",
             Name = "Free",
             Description = "Free",
@@ -16,7 +19,8 @@ public class BillingPlans {
             HasPremiumFeatures = false
         };
 
-        SmallPlan = new BillingPlan {
+        SmallPlan = new BillingPlan
+        {
             Id = "EX_SMALL",
             Name = "Small",
             Description = "Small ($15/month)",
@@ -28,7 +32,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        SmallYearlyPlan = new BillingPlan {
+        SmallYearlyPlan = new BillingPlan
+        {
             Id = "EX_SMALL_YEARLY",
             Name = "Small (Yearly)",
             Description = "Small Yearly ($165/year - Save $15)",
@@ -40,7 +45,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        MediumPlan = new BillingPlan {
+        MediumPlan = new BillingPlan
+        {
             Id = "EX_MEDIUM",
             Name = "Medium",
             Description = "Medium ($49/month)",
@@ -52,7 +58,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        MediumYearlyPlan = new BillingPlan {
+        MediumYearlyPlan = new BillingPlan
+        {
             Id = "EX_MEDIUM_YEARLY",
             Name = "Medium (Yearly)",
             Description = "Medium Yearly ($539/year - Save $49)",
@@ -64,7 +71,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        LargePlan = new BillingPlan {
+        LargePlan = new BillingPlan
+        {
             Id = "EX_LARGE",
             Name = "Large",
             Description = "Large ($99/month)",
@@ -76,7 +84,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        LargeYearlyPlan = new BillingPlan {
+        LargeYearlyPlan = new BillingPlan
+        {
             Id = "EX_LARGE_YEARLY",
             Name = "Large (Yearly)",
             Description = "Large Yearly ($1,089/year - Save $99)",
@@ -88,7 +97,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        ExtraLargePlan = new BillingPlan {
+        ExtraLargePlan = new BillingPlan
+        {
             Id = "EX_XL",
             Name = "Extra Large",
             Description = "Extra Large ($199/month)",
@@ -100,7 +110,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        ExtraLargeYearlyPlan = new BillingPlan {
+        ExtraLargeYearlyPlan = new BillingPlan
+        {
             Id = "EX_XL_YEARLY",
             Name = "Extra Large (Yearly)",
             Description = "Extra Large Yearly ($2,189/year - Save $199)",
@@ -112,7 +123,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        EnterprisePlan = new BillingPlan {
+        EnterprisePlan = new BillingPlan
+        {
             Id = "EX_ENT",
             Name = "Enterprise",
             Description = "Enterprise ($499/month)",
@@ -124,7 +136,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        EnterpriseYearlyPlan = new BillingPlan {
+        EnterpriseYearlyPlan = new BillingPlan
+        {
             Id = "EX_ENT_YEARLY",
             Name = "Enterprise (Yearly)",
             Description = "Enterprise Yearly ($5,489/year - Save $499)",
@@ -136,7 +149,8 @@ public class BillingPlans {
             HasPremiumFeatures = true
         };
 
-        UnlimitedPlan = new BillingPlan {
+        UnlimitedPlan = new BillingPlan
+        {
             Id = "EX_UNLIMITED",
             Name = "Unlimited",
             Description = "Unlimited",

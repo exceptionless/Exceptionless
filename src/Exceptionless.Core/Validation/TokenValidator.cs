@@ -4,8 +4,10 @@ using FluentValidation;
 
 namespace Exceptionless.Core.Validation;
 
-public class TokenValidator : AbstractValidator<Token> {
-    public TokenValidator() {
+public class TokenValidator : AbstractValidator<Token>
+{
+    public TokenValidator()
+    {
         RuleFor(t => t.Id).NotEmpty().WithMessage("Please specify a valid id.");
         RuleFor(t => t.OrganizationId).IsObjectId().When(t => !String.IsNullOrEmpty(t.OrganizationId)).WithMessage("Please specify a valid organization id.");
         RuleFor(t => t.OrganizationId).NotEmpty().When(t => !String.IsNullOrEmpty(t.ProjectId) || String.IsNullOrEmpty(t.UserId)).WithMessage("Please specify a valid organization id.");
