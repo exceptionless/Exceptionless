@@ -7,9 +7,9 @@
         "prod-serve": "cross-env ASPNETCORE_URLS=https://api.exceptionless.io npx grunt serve",
         "lint": "eslint . --ext .js",
         "lint:fix": "eslint . --ext .js --fix",
-        "prettier": "prettier --config .prettierrc **/* --write --ignore-unknown",
-        "prettier:check": "prettier --config .prettierrc **/* --check --ignore-unknown",
-        "prettier:staged": "prettier --config .prettierrc --write --ignore-unknown"
+        "prettier": "prettier . --write --ignore-unknown",
+        "prettier:check": "prettier . --check --ignore-unknown",
+        "prettier:staged": "prettier --write --ignore-unknown"
     },
     "devDependencies": {
         "cross-env": "7.0.3",
@@ -89,5 +89,9 @@
     },
     "overrides": {
         "angular": "1.8.3"
+    },
+    "prettier": {
+        "printWidth": 120,
+        "singleQuote": false
     }
 }
