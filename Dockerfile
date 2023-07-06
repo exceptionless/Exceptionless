@@ -1,6 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /app
 
+ENV HUSKY 0
+
 COPY ./*.sln ./NuGet.Config ./
 COPY ./src/*.props ./src/
 COPY ./tests/*.props ./tests/
