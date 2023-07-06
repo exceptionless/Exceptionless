@@ -15,7 +15,7 @@
     <EmbeddedResource Include="wwwroot\docs.css" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.8" />
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.0.2" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="4.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.7" />
