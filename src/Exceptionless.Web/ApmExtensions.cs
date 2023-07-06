@@ -91,7 +91,7 @@ namespace OpenTelemetry
                         b.AddSource("Exceptionless", "Foundatio");
 
                         if (config.EnableRedis)
-                            b.AddRedisInstrumentation(null, c =>
+                            b.AddRedisInstrumentation(c =>
                             {
                                 c.EnrichActivityWithTimingEvents = false;
                                 c.SetVerboseDatabaseStatements = config.FullDetails;

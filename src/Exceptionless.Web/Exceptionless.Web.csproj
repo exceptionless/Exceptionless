@@ -15,11 +15,11 @@
     <EmbeddedResource Include="wwwroot\docs.css" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.8" />
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.0.2" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="4.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.8" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
     <PackageReference Include="OAuth2" Version="0.10.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
@@ -27,11 +27,11 @@
     <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
 
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.5.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.5.1" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol.Logs" Version="1.5.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.5.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.5.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.5.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.5.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.5.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.5.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.5.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.0.0-rc9.10" />
