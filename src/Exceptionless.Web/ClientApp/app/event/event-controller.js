@@ -336,12 +336,29 @@
                             var exceptions = getExceptions(event);
                             return exceptions
                                 .map(function (ex, index, errors) {
+                                    function getAdditionalData(error) {
+                                        if (!error.data) {
+                                            return;
+                                        }
+
+                                        var additionalData = error.data["@ext"] || {};
+                                        angular.forEach(error.data, function (data, key) {
+                                            if (key.startsWith("@")) {
+                                                return;
+                                            }
+
+                                            additionalData[key] = data;
+                                        });
+
+                                        return additionalData;
+                                    }
+
                                     var errorType = ex.type || "Unknown";
                                     return {
                                         title: index === 0 ? "Additional Data" : errorType + " Additional Data",
                                         type: errorType,
                                         message: ex.message,
-                                        data: ex.data && ex.data["@ext"],
+                                        data: getAdditionalData(ex),
                                     };
                                 })
                                 .filter(function (errorData) {
