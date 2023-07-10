@@ -56,7 +56,7 @@ public class StackControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         Assert.NotNull(result);
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
     }
 
     [Theory]
