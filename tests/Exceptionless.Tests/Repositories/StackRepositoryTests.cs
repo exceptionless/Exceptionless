@@ -177,11 +177,11 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         var stacks = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(1).PageLimit(1));
         Assert.NotNull(stacks);
         Assert.Equal(3, stacks.Total);
-        Assert.Equal(1, stacks.Documents.Count);
+        Assert.Single(stacks.Documents);
 
         var stacks2 = await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageNumber(2).PageLimit(1));
         Assert.NotNull(stacks);
-        Assert.Equal(1, stacks.Documents.Count);
+        Assert.Single(stacks.Documents);
 
         Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
 
@@ -209,7 +209,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         var stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(8));
         Assert.NotNull(stacks);
         Assert.Equal(1, stacks.Total);
-        Assert.Equal(1, stacks.Documents.Count);
+        Assert.Single(stacks.Documents);
         Assert.Equal(TestConstants.StackId2, stacks.Documents.Single().Id);
 
         stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, SystemClock.UtcNow.SubtractDays(1));

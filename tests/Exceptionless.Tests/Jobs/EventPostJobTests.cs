@@ -67,7 +67,7 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
         var files = await _storage.GetFileListAsync();
-        Assert.Equal(1, files.Count);
+        Assert.Single(files);
 
         var result = await _job.RunAsync();
         Assert.True(result.IsSuccess);
@@ -80,7 +80,7 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.Equal(1, await _eventRepository.CountAsync());
 
         files = await _storage.GetFileListAsync();
-        Assert.Equal(0, files.Count);
+        Assert.Empty(files);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
         var files = await _storage.GetFileListAsync();
-        Assert.Equal(1, files.Count);
+        Assert.Single(files);
 
         var result = await _job.RunAsync();
         Assert.False(result.IsSuccess);
@@ -160,7 +160,7 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.Equal(1, stats.Completed);
 
         files = await _storage.GetFileListAsync();
-        Assert.Equal(0, files.Count);
+        Assert.Empty(files);
     }
 
     [Fact]

@@ -61,7 +61,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("date:(date cardinality:id) cardinality:id"));
         Assert.Equal(eventCount, result.Total);
         Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Total));
-        Assert.Equal(1, result.Aggregations.DateHistogram("date_date").Buckets.First().Aggregations.Count);
+        Assert.Single(result.Aggregations.DateHistogram("date_date").Buckets.First().Aggregations);
         Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
         Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault()));
 
@@ -133,7 +133,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:version"));
         Assert.Equal(eventCount, result.Total);
         // NOTE: The events are created without a version.
-        Assert.Equal(0, result.Aggregations.Terms<string>("terms_version").Buckets.Count);
+        Assert.Empty(result.Aggregations.Terms<string>("terms_version").Buckets);
     }
 
     [Fact]
