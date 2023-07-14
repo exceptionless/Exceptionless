@@ -150,25 +150,25 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
         if (String.IsNullOrEmpty(user?.EmailAddress))
         {
-            if (shouldLog) _logger.LogError("Could not load user {user} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");
+            if (shouldLog) _logger.LogError("Could not load user {UserId} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");
             return false;
         }
 
         if (!user.IsEmailAddressVerified)
         {
-            if (shouldLog) _logger.LogInformation("User {user} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
+            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
             return false;
         }
 
         if (!user.EmailNotificationsEnabled)
         {
-            if (shouldLog) _logger.LogInformation("User {user} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
+            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
             return false;
         }
 
         if (!user.OrganizationIds.Contains(project.OrganizationId))
         {
-            if (shouldLog) _logger.LogError("Unauthorized user: project={project} user={user} organization={organization} event={id}", project.Id, userId, project.OrganizationId, ev.Id);
+            if (shouldLog) _logger.LogError("Unauthorized user: project={project} user={UserId} organization={organization} event={id}", project.Id, userId, project.OrganizationId, ev.Id);
             return false;
         }
 

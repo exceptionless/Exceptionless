@@ -123,7 +123,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
             if (user == null)
             {
-                Logger.LogInformation("Could not find user for token {Token} with user {user} for {Path}.", token, tokenRecord.UserId, Request.Path);
+                Logger.LogInformation("Could not find user for token {Token} with user {UserId} for {Path}.", token, tokenRecord.UserId, Request.Path);
 
                 return AuthenticateResult.Fail("Token is not valid");
             }

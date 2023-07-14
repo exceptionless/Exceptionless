@@ -366,7 +366,7 @@ public static class StringExtensions
     public static string[] SplitAndTrim(this string s, char[] separator)
     {
         if (s.IsNullOrEmpty())
-            return new string[0];
+            return Array.Empty<string>();
 
         string[] result = s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < result.Length; i++)

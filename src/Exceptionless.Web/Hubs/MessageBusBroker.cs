@@ -78,12 +78,12 @@ public sealed class MessageBusBroker : IStartupAction
             // It's pointless to send a user added message to the new user.
             if (entityChanged.ChangeType == ChangeType.Added)
             {
-                _logger.LogTrace("Ignoring {UserTypeName} message for added user: {user}.", UserTypeName, entityChanged.Id);
+                _logger.LogTrace("Ignoring {UserTypeName} message for added user: {UserId}.", UserTypeName, entityChanged.Id);
                 return;
             }
 
             var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
-            _logger.LogTrace("Sending {UserTypeName} message to user: {user} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
+            _logger.LogTrace("Sending {UserTypeName} message to user: {UserId} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds)
                 await TypedSendAsync(connectionId, entityChanged);
 
@@ -97,7 +97,7 @@ public sealed class MessageBusBroker : IStartupAction
             if (userId != null)
             {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-                _logger.LogTrace("Sending {TokenTypeName} message for added user: {user} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
+                _logger.LogTrace("Sending {TokenTypeName} message for added user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
                     await TypedSendAsync(connectionId, entityChanged);
 
@@ -106,7 +106,7 @@ public sealed class MessageBusBroker : IStartupAction
 
             if (entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken))
             {
-                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {user}.", TokenTypeName, entityChanged.Id);
+                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {UserId}.", TokenTypeName, entityChanged.Id);
                 return;
             }
 

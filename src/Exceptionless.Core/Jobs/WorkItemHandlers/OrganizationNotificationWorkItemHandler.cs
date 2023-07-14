@@ -84,13 +84,13 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
         {
             if (!user.IsEmailAddressVerified)
             {
-                Log.LogInformation("User {user} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
+                Log.LogInformation("User {UserId} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
                 continue;
             }
 
             if (!user.EmailNotificationsEnabled)
             {
-                Log.LogInformation("User {user} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
+                Log.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
                 continue;
             }
 

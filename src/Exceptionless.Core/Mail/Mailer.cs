@@ -33,7 +33,7 @@ public class Mailer : IMailer
         var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
         if (result == null || result.Data.Count == 0)
         {
-            _logger.LogWarning("Unable to create event notification mail message for event \"{user}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);
+            _logger.LogWarning("Unable to create event notification mail message for event \"{UserId}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);
             return false;
         }
 
