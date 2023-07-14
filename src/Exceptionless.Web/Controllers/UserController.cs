@@ -261,7 +261,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> UnverifyEmailAddressAsync()
     {
         using var reader = new StreamReader(HttpContext.Request.Body);
-        string[] emailAddresses = (await reader.ReadToEndAsync()).SplitAndTrim(new []{ ',' });
+        string[] emailAddresses = (await reader.ReadToEndAsync()).SplitAndTrim(new[] { ',' });
 
         foreach (string emailAddress in emailAddresses)
         {
