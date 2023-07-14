@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -249,6 +249,33 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             user.CreateVerifyEmailAddressToken();
             await _repository.SaveAsync(user, o => o.Cache());
             await _mailer.SendUserEmailVerifyAsync(user);
+        }
+
+        return Ok();
+    }
+
+    [HttpPost("unverify-email-address")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [Consumes("text/plain")]
+    public async Task<IActionResult> UnverifyEmailAddressAsync()
+    {
+        using var reader = new StreamReader(HttpContext.Request.Body);
+        string[] emailAddresses = (await reader.ReadToEndAsync()).SplitAndTrim(new []{ ',' });
+
+        foreach (string emailAddress in emailAddresses)
+        {
+            var user = await _repository.GetByEmailAddressAsync(emailAddress);
+            if (user is null)
+            {
+                _logger.LogWarning("Unable to mark user with email address {EmailAddress} as unverified: User not Found", emailAddress);
+                continue;
+            }
+
+            user.IsEmailAddressVerified = false;
+            user.CreateVerifyEmailAddressToken();
+            await _repository.SaveAsync(user);
+            _logger.LogInformation("User {UserId} with email address {EmailAddress} is now unverified", user.Id, emailAddress);
         }
 
         return Ok();

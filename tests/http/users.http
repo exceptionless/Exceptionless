@@ -31,3 +31,11 @@ Authorization: Bearer {{token}}
 ### Delete Current User
 DELETE {{apiUrl}}/users/me
 Authorization: Bearer {{token}}
+
+### Unverify Email Addresses
+POST {{apiUrl}}/users/unverify-email-address
+Authorization: Bearer {{token}}
+Content-Type text/plain 
+
+noreply@localhost,
+test@localhost
