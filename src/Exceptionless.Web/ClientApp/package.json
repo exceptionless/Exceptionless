@@ -92,6 +92,7 @@
     },
     "prettier": {
         "printWidth": 120,
-        "singleQuote": false
+        "singleQuote": false,
+        "trailingComma": "es5"
     }
 }
