@@ -35,7 +35,7 @@ Authorization: Bearer {{token}}
 ### Unverify Email Addresses
 POST {{apiUrl}}/users/unverify-email-address
 Authorization: Bearer {{token}}
-Content-Type text/plain 
+Content-Type: text/plain
 
 noreply@localhost,
 test@localhost
