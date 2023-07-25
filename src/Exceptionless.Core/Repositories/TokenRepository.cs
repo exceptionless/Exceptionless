@@ -1,4 +1,4 @@
-using Exceptionless.Core.Messaging.Models;
+﻿using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -14,6 +14,7 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
     public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator, AppOptions options)
         : base(configuration.Tokens, validator, options)
     {
+        DefaultConsistency = Consistency.Immediate;
     }
 
     public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null)
