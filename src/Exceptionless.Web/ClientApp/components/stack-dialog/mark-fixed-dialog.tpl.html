@@ -1,4 +1,10 @@
-<form name="vm.markFixedForm" role="form" class="form-validation" autocomplete="on">
+<form
+    name="vm.markFixedForm"
+    role="form"
+    class="form-validation"
+    autocomplete="on"
+    ng-submit="vm.save(vm.markFixedForm.$valid)"
+>
     <div class="modal-header dialog-header-confirm">
         <button type="button" role="button" class="close" ng-click="vm.cancel()">&times;</button>
         <h4 class="modal-title">
@@ -33,7 +39,7 @@
                 class="form-control input-lg"
                 placeholder="{{::'Optional Version (Example: 1.2.3)' | translate}}"
                 ng-model="vm.data.version"
-                ng-model-options="{ debounce: 500 }"
+                ng-model-options="{ debounce: 1000 }"
                 semver
                 semantic-version-validator
                 autofocus
@@ -57,7 +63,6 @@
             type="submit"
             role="button"
             class="btn btn-primary btn-dialog-confirm"
-            ng-click="vm.save(vm.markFixedForm.$valid)"
             value="{{::'Mark Fixed' | translate}}"
         />
     </div>
