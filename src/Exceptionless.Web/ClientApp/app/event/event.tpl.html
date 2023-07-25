@@ -42,7 +42,7 @@
                     <uib-tab
                         ng-repeat="tab in vm.tabs"
                         heading="{{::tab.title | translate}}"
-                        ng-click="vm.activateTab(tab.title)"
+                        ng-click="vm.activateTab(tab.index)"
                     >
                         <div
                             ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'"
@@ -58,7 +58,7 @@
                         ng-repeat="tab in vm.tabs"
                         heading="{{::tab.title}}"
                         is-open="tab.active"
-                        ng-click="vm.activateTab(tab.title)"
+                        ng-click="vm.activateTab(tab.index)"
                     >
                         <div
                             ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'"
