@@ -15,7 +15,7 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
 
     public Task<FindResults<WebHook>> GetByUrlAsync(string targetUrl)
     {
-        return FindAsync(q => q.FieldEquals(w => w.Url, targetUrl));
+        return FindAsync(q => q.FieldEquals(w => w.Url, targetUrl).Sort(f => f.CreatedUtc));
     }
 
     public Task<FindResults<WebHook>> GetByOrganizationIdOrProjectIdAsync(string organizationId, string projectId)
@@ -23,7 +23,15 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
 
         // TODO: This cache key may not always be cleared out if the web hook doesn't have both a org and project id.
-        return FindAsync(q => q.ElasticFilter(filter), o => o.Cache(PagedCacheKey(organizationId, projectId)));
+        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
+    }
+
+    public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook> options = null)
+    {
+        if (String.IsNullOrEmpty(projectId))
+            throw new ArgumentNullException(nameof(projectId));
+
+        return FindAsync(q => q.Project(projectId).Sort(f => f.CreatedUtc), options);
     }
 
     public async Task MarkDisabledAsync(string id)

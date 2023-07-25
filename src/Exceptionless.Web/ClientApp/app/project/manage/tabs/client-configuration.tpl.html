@@ -21,7 +21,7 @@
                     e-form="rowform"
                     e-required
                     onbeforesave="vm.validateClientConfiguration(conf.value, $data)"
-                    onaftersave="vm.saveClientConfiguration(conf)"
+                    onaftersave="vm.saveClientConfiguration(conf, false)"
                 >
                     {{conf.value}}
                 </div>
