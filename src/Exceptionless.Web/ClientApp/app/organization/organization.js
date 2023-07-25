@@ -16,7 +16,6 @@
             "exceptionless.billing",
             "exceptionless.dialog",
             "exceptionless.filter",
-            "exceptionless.link",
             "exceptionless.organization",
             "exceptionless.pagination",
             "exceptionless.project",

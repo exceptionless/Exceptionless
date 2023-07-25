@@ -47,6 +47,6 @@
                     vm.email = null;
                     vm.resetPassword = resetPassword;
                 };
-            },
+            }
         );
 })();

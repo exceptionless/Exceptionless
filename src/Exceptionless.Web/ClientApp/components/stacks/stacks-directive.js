@@ -20,7 +20,7 @@
                 notificationService,
                 paginationService,
                 stacksActionsService,
-                translateService,
+                translateService
             ) {
                 var vm = this;
                 function canRefresh(data) {
@@ -59,7 +59,7 @@
                         vm.pageSummary = paginationService.getCurrentPageSummary(
                             response.data,
                             vm.currentOptions.page,
-                            vm.currentOptions.limit,
+                            vm.currentOptions.limit
                         );
 
                         if (vm.stacks.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
@@ -72,7 +72,7 @@
                     function onFailure(response) {
                         if (response.status !== 404 && response.data) {
                             notificationService.error(
-                                "Error loading stacks: " + (response.data.message || response.data),
+                                "Error loading stacks: " + (response.data.message || response.data)
                             );
                         }
 

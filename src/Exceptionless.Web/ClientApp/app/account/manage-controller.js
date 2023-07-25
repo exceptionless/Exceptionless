@@ -18,7 +18,7 @@
                 notificationService,
                 projectService,
                 userService,
-                translateService,
+                translateService
             ) {
                 var vm = this;
                 function activateTab(tabName) {
@@ -78,7 +78,7 @@
                 function get(data) {
                     if (data && data.type === "User" && data.deleted && data.id === vm.user.id) {
                         notificationService.error(
-                            translateService.T("Your user account was deleted. Please create a new account."),
+                            translateService.T("Your user account was deleted. Please create a new account.")
                         );
                         return authService.logout(true);
                     }
@@ -94,7 +94,7 @@
 
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while loading the notification settings."),
+                            translateService.T("An error occurred while loading the notification settings.")
                         );
                     }
 
@@ -155,7 +155,7 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to delete your account?"),
-                            translateService.T("DELETE ACCOUNT"),
+                            translateService.T("DELETE ACCOUNT")
                         )
                         .then(function () {
                             function onSuccess() {
@@ -167,7 +167,7 @@
                                 notificationService.error(
                                     translateService.T("An error occurred while trying remove your user account.") +
                                         " " +
-                                        response.data.message,
+                                        response.data.message
                                 );
                             }
 
@@ -276,7 +276,7 @@
                 function saveEnableEmailNotification() {
                     function onFailure(response) {
                         var message = translateService.T(
-                            "An error occurred while saving your email notification preferences.",
+                            "An error occurred while saving your email notification preferences."
                         );
                         if (response.data && response.data.message) {
                             message += " " + translateService.T("Message:") + " " + response.data.message;
@@ -360,6 +360,6 @@
                     activateTab($stateParams.tab);
                     get();
                 };
-            },
+            }
         );
 })();

@@ -22,12 +22,12 @@
                 notificationService,
                 projectService,
                 stateService,
-                translateService,
+                translateService
             ) {
                 var vm = this;
                 function getMessage(response) {
                     var message = translateService.T(
-                        "An error occurred while signing up.  Please contact support for more information.",
+                        "An error occurred while signing up.  Please contact support for more information."
                     );
                     if (response.data && response.data.message) {
                         message += " " + translateService.T("Message:") + " " + response.data.message;
@@ -156,6 +156,6 @@
                     vm.token = $stateParams.token;
                     vm.user = { invite_token: vm.token };
                 };
-            },
+            }
         );
 })();

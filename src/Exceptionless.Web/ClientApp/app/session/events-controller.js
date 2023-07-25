@@ -35,7 +35,7 @@
                             avg_duration: getAggregationValue(results, "avg_value"),
                             avg_per_hour: $filter("number")(
                                 eventService.calculateAveragePerHour(results.total, vm._organizations),
-                                1,
+                                1
                             ),
                         };
 
@@ -60,7 +60,7 @@
                                 (offset ? "^" + offset : "") +
                                 " cardinality:user)",
                             false,
-                            optionsCallback,
+                            optionsCallback
                         )
                         .then(onSuccess)
                         .catch(function (e) {});
@@ -148,7 +148,7 @@
                                     var end = moment.unix(position.coordMaxX).utc().local();
 
                                     filterService.setTime(
-                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss"),
+                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss")
                                     );
                                     $ExceptionlessClient
                                         .createFeatureUsage(vm._source + ".chart.range.onSelection")
@@ -205,6 +205,6 @@
                     };
                     get();
                 };
-            },
+            }
         );
 })();

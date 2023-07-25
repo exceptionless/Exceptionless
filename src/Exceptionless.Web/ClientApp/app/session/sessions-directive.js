@@ -18,7 +18,7 @@
                 linkService,
                 filterService,
                 notificationService,
-                paginationService,
+                paginationService
             ) {
                 var vm = this;
 
@@ -72,7 +72,7 @@
                         vm.pageSummary = paginationService.getCurrentPageSummary(
                             response.data,
                             vm.currentOptions.page,
-                            vm.currentOptions.limit,
+                            vm.currentOptions.limit
                         );
 
                         if (vm.events.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {

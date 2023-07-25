@@ -14,13 +14,13 @@
                 stateService,
                 statusService,
                 translateService,
-                Restangular,
+                Restangular
             ) {
                 var vm = this;
                 var contactSupport = translateService.T("Please contact support for more information.");
                 function getMessage() {
                     var underMaintenance = translateService.T(
-                        "We're sorry but the website is currently undergoing maintenance.",
+                        "We're sorry but the website is currently undergoing maintenance."
                     );
 
                     if (vm._redirect) {
@@ -28,7 +28,7 @@
                             underMaintenance +
                             " " +
                             translateService.T(
-                                "You'll be automatically redirected when the maintenance is completed.",
+                                "You'll be automatically redirected when the maintenance is completed."
                             ) +
                             " " +
                             contactSupport
@@ -82,6 +82,6 @@
                     vm.getMessage = getMessage;
                     updateStatus();
                 };
-            },
+            }
         );
 })();
