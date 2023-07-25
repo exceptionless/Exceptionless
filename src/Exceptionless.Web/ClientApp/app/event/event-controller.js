@@ -29,13 +29,18 @@
                 var vm = this;
 
                 function activateSessionEventsTab() {
-                    activateTab(translateService.T("Session Events"));
+                    const tabName = translateService.T("Session Events");
+                    activateTab(
+                        vm.tabs.findIndex(function (tab) {
+                            return tab.title === tabName;
+                        })
+                    );
                 }
 
-                function activateTab(tabName) {
+                function activateTab(tabIndex) {
                     for (var index = 0; index < vm.tabs.length; index++) {
                         var tab = vm.tabs[index];
-                        if (tab.title !== tabName) {
+                        if (tab.index !== tabIndex) {
                             tab.active = false;
                             continue;
                         }
@@ -223,7 +228,11 @@
 
                     vm.tabs = tabs;
                     $timeout(function () {
-                        activateTab(tabNameToActivate);
+                        activateTab(
+                            vm.tabs.findLastIndex(function (tab) {
+                                return tab.title === tabNameToActivate;
+                            })
+                        );
                     }, 1);
                 }
 
