@@ -161,6 +161,24 @@
     </tbody>
 </table>
 
+<div class="table-footer text-right" ng-if="vm.webHooksPrevious || vm.webHooksNext">
+    <ul class="pagination pagination-sm m-t-none m-b-none">
+        <li ng-show="vm.webHooksCurrentOptions.page && vm.webHooksCurrentOptions.page > 2">
+            <a ng-click="vm.getWebHooks({})"><i class="fa fa-fast-backward"></i></a>
+        </li>
+        <li ng-class="{'disabled': !vm.webHooksPrevious}">
+            <a ng-disabled="!vm.webHooksPrevious" ng-click="!vm.webHooksPrevious || vm.webHooksPreviousPage()"
+                ><i class="fa fa-chevron-left"></i
+            ></a>
+        </li>
+        <li ng-class="{'disabled': !vm.webHooksNext}">
+            <a ng-disabled="!vm.webHooksNext" ng-click="!vm.webHooksNext || vm.webHooksNextPage()"
+                ><i class="fa fa-chevron-right"></i
+            ></a>
+        </li>
+    </ul>
+</div>
+
 <button type="button" role="button" ng-click="vm.addWebHook()" class="btn btn-primary">
     {{::'Add Web Hook' | translate}}
 </button>

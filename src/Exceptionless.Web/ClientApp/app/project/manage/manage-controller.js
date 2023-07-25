@@ -93,6 +93,11 @@
                 }
 
                 function createWebHook(data) {
+                    function onSuccess(response) {
+                        vm.webHooks.push(response.data.plain());
+                        return vm.webHooks;
+                    }
+
                     function onFailure(response) {
                         if (response.status === 426) {
                             return billingService
@@ -108,7 +113,7 @@
                         );
                     }
 
-                    return webHookService.create(data).catch(onFailure);
+                    return webHookService.create(data).then(onSuccess, onFailure);
                 }
 
                 function copied() {
@@ -169,7 +174,9 @@
                             return getTokens();
                         })
                         .then(getSlackNotificationSettings)
-                        .then(getWebHooks);
+                        .then(function loadWebHooks() {
+                            return getWebHooks();
+                        });
                 }
 
                 function getOrganization() {
@@ -370,9 +377,12 @@
                         .then(onSuccess, onFailure);
                 }
 
-                function getWebHooks() {
+                function getWebHooks(options) {
                     function onSuccess(response) {
                         vm.webHooks = response.data.plain();
+                        var links = linkService.getLinksQueryParameters(response.headers("link"));
+                        vm.webHooksPrevious = links.previous;
+                        vm.webHooksNext = links.next;
                         return vm.webHooks;
                     }
 
@@ -382,7 +392,26 @@
                         );
                     }
 
-                    return webHookService.getByProjectId(vm._projectId).then(onSuccess, onFailure);
+                    vm.webHooksCurrentOptions = options || vm.webHooksCurrentOptions;
+                    return webHookService
+                        .getByProjectId(vm._projectId, vm.webHooksCurrentOptions)
+                        .then(onSuccess, onFailure);
+                }
+
+                function webHooksNextPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getWebHooks.webHooksNextPage")
+                        .setProperty("webHooksNext", vm.webHooksNext)
+                        .submit();
+                    return getWebHooks(vm.webHooksNext);
+                }
+
+                function webHooksPreviousPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getWebHooks.webHooksPreviousPage")
+                        .setProperty("webHooksPrevious", vm.webHooksPrevious)
+                        .submit();
+                    return getWebHooks(vm.webHooksPrevious);
                 }
 
                 function removeConfig(config) {
@@ -484,13 +513,20 @@
                             translateService.T("DELETE WEB HOOK")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                vm.webHooks = vm.webHooks.filter(function (wh) {
+                                    return wh.id !== hook.id;
+                                });
+                                return vm.webHooks;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while trying to delete the web hook.")
                                 );
                             }
 
-                            return webHookService.remove(hook.id).catch(onFailure);
+                            return webHookService.remove(hook.id).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -848,6 +884,11 @@
                     vm.validateApiKeyNote = validateApiKeyNote;
                     vm.validateClientConfiguration = validateClientConfiguration;
                     vm.webHooks = [];
+                    vm.webHooksCurrentOptions = {};
+                    vm.webHooksNext = null;
+                    vm.webHooksNextPage = webHooksNextPage;
+                    vm.webHooksPrevious = null;
+                    vm.webHooksPreviousPage = webHooksPreviousPage;
                     get();
                 };
             }
