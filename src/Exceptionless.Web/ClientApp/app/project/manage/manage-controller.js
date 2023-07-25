@@ -13,6 +13,7 @@
                 $stateParams,
                 billingService,
                 filterService,
+                linkService,
                 organizationService,
                 projectService,
                 tokenService,
@@ -31,7 +32,9 @@
                             "AddConfigurationDialog as vm",
                             vm.config
                         )
-                        .result.then(saveClientConfiguration)
+                        .result.then(function updateClientConfiguration(data) {
+                            return vm.saveClientConfiguration(data, true);
+                        })
                         .catch(function (e) {});
                 }
 
@@ -62,6 +65,11 @@
                 }
 
                 function addToken() {
+                    function onSuccess(response) {
+                        vm.tokens.push(response.data.plain());
+                        return vm.tokens;
+                    }
+
                     function onFailure() {
                         notificationService.error(
                             translateService.T("An error occurred while creating a new API key for your project.")
@@ -69,7 +77,7 @@
                     }
 
                     var options = { organization_id: vm.project.organization_id, project_id: vm._projectId };
-                    return tokenService.create(options).catch(onFailure);
+                    return tokenService.create(options).then(onSuccess, onFailure);
                 }
 
                 function addWebHook() {
@@ -87,6 +95,11 @@
                 }
 
                 function createWebHook(data) {
+                    function onSuccess(response) {
+                        vm.webHooks.push(response.data.plain());
+                        return vm.webHooks;
+                    }
+
                     function onFailure(response) {
                         if (response.status === 426) {
                             return billingService
@@ -102,7 +115,7 @@
                         );
                     }
 
-                    return webHookService.create(data).catch(onFailure);
+                    return webHookService.create(data).then(onSuccess, onFailure);
                 }
 
                 function copied() {
@@ -116,13 +129,21 @@
                             translateService.T("ENABLE API KEY")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                var index = vm.tokens.findIndex(function (t) {
+                                    return t.id === token.id;
+                                });
+                                vm.tokens[index].is_disabled = false;
+                                return vm.tokens;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while enabling the API key.")
                                 );
                             }
 
-                            return tokenService.update(token.id, { is_disabled: false }).catch(onFailure);
+                            return tokenService.update(token.id, { is_disabled: false }).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -134,13 +155,21 @@
                             translateService.T("DISABLE API KEY")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                var index = vm.tokens.findIndex(function (t) {
+                                    return t.id === token.id;
+                                });
+                                vm.tokens[index].is_disabled = true;
+                                return vm.tokens;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while disabling the API key.")
                                 );
                             }
 
-                            return tokenService.update(token.id, { is_disabled: true }).catch(onFailure);
+                            return tokenService.update(token.id, { is_disabled: true }).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -159,9 +188,13 @@
                     return getProject()
                         .then(getOrganization)
                         .then(getConfiguration)
-                        .then(getTokens)
+                        .then(function loadTokens() {
+                            return getTokens();
+                        })
                         .then(getSlackNotificationSettings)
-                        .then(getWebHooks);
+                        .then(function loadWebHooks() {
+                            return getWebHooks();
+                        });
                 }
 
                 function getOrganization() {
@@ -278,9 +311,12 @@
                     return projectService.getById(vm._projectId).then(onSuccess, onFailure);
                 }
 
-                function getTokens() {
+                function getTokens(options) {
                     function onSuccess(response) {
                         vm.tokens = response.data.plain();
+                        var links = linkService.getLinksQueryParameters(response.headers("link"));
+                        vm.tokensPrevious = links.previous;
+                        vm.tokensNext = links.next;
                         return vm.tokens;
                     }
 
@@ -288,7 +324,26 @@
                         notificationService.error(translateService.T("An error occurred loading the api keys."));
                     }
 
-                    return tokenService.getByProjectId(vm._projectId).then(onSuccess, onFailure);
+                    vm.tokensCurrentOptions = options || vm.tokensCurrentOptions;
+                    return tokenService
+                        .getByProjectId(vm._projectId, vm.tokensCurrentOptions)
+                        .then(onSuccess, onFailure);
+                }
+
+                function tokensNextPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getTokens.tokensNextPage")
+                        .setProperty("tokensNext", vm.tokensNext)
+                        .submit();
+                    return getTokens(vm.tokensNext);
+                }
+
+                function tokensPreviousPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getTokens.tokensPreviousPage")
+                        .setProperty("tokensPrevious", vm.tokensPrevious)
+                        .submit();
+                    return getTokens(vm.tokensPrevious);
                 }
 
                 function getConfiguration() {
@@ -340,9 +395,12 @@
                         .then(onSuccess, onFailure);
                 }
 
-                function getWebHooks() {
+                function getWebHooks(options) {
                     function onSuccess(response) {
                         vm.webHooks = response.data.plain();
+                        var links = linkService.getLinksQueryParameters(response.headers("link"));
+                        vm.webHooksPrevious = links.previous;
+                        vm.webHooksNext = links.next;
                         return vm.webHooks;
                     }
 
@@ -352,7 +410,26 @@
                         );
                     }
 
-                    return webHookService.getByProjectId(vm._projectId).then(onSuccess, onFailure);
+                    vm.webHooksCurrentOptions = options || vm.webHooksCurrentOptions;
+                    return webHookService
+                        .getByProjectId(vm._projectId, vm.webHooksCurrentOptions)
+                        .then(onSuccess, onFailure);
+                }
+
+                function webHooksNextPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getWebHooks.webHooksNextPage")
+                        .setProperty("webHooksNext", vm.webHooksNext)
+                        .submit();
+                    return getWebHooks(vm.webHooksNext);
+                }
+
+                function webHooksPreviousPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getWebHooks.webHooksPreviousPage")
+                        .setProperty("webHooksPrevious", vm.webHooksPrevious)
+                        .submit();
+                    return getWebHooks(vm.webHooksPrevious);
                 }
 
                 function removeConfig(config) {
@@ -362,6 +439,13 @@
                             translateService.T("DELETE CONFIGURATION SETTING")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                vm.config = vm.config.filter(function (c) {
+                                    return c.key !== config.key;
+                                });
+                                return vm.config;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T(
@@ -370,7 +454,7 @@
                                 );
                             }
 
-                            return projectService.removeConfig(vm._projectId, config.key).catch(onFailure);
+                            return projectService.removeConfig(vm._projectId, config.key).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -429,13 +513,20 @@
                             translateService.T("DELETE API KEY")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                vm.tokens = vm.tokens.filter(function (t) {
+                                    return t.id !== token.id;
+                                });
+                                return vm.tokens;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while trying to delete the API Key.")
                                 );
                             }
 
-                            return tokenService.remove(token.id).catch(onFailure);
+                            return tokenService.remove(token.id).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -447,13 +538,20 @@
                             translateService.T("DELETE WEB HOOK")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                vm.webHooks = vm.webHooks.filter(function (wh) {
+                                    return wh.id !== hook.id;
+                                });
+                                return vm.webHooks;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while trying to delete the web hook.")
                                 );
                             }
 
-                            return webHookService.remove(hook.id).catch(onFailure);
+                            return webHookService.remove(hook.id).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -498,14 +596,20 @@
                     return tokenService.update(data.id, { notes: data.notes }).catch(onFailure);
                 }
 
-                function saveClientConfiguration(data) {
+                function saveClientConfiguration(data, isAddOperation) {
+                    function onSuccess() {
+                        if (isAddOperation) {
+                            vm.config.push(data);
+                        }
+                    }
+
                     function onFailure() {
                         notificationService.error(
                             translateService.T("An error occurred while saving the configuration setting.")
                         );
                     }
 
-                    return projectService.setConfig(vm._projectId, data.key, data.value).catch(onFailure);
+                    return projectService.setConfig(vm._projectId, data.key, data.value).then(onSuccess, onFailure);
                 }
 
                 function saveCommonMethods() {
@@ -801,11 +905,21 @@
                     vm.showChangePlanDialog = showChangePlanDialog;
                     vm.slackNotificationSettings = null;
                     vm.tokens = [];
+                    vm.tokensCurrentOptions = {};
+                    vm.tokensNext = null;
+                    vm.tokensNextPage = tokensNextPage;
+                    vm.tokensPrevious = null;
+                    vm.tokensPreviousPage = tokensPreviousPage;
                     vm.user_agents = null;
                     vm.user_namespaces = null;
                     vm.validateApiKeyNote = validateApiKeyNote;
                     vm.validateClientConfiguration = validateClientConfiguration;
                     vm.webHooks = [];
+                    vm.webHooksCurrentOptions = {};
+                    vm.webHooksNext = null;
+                    vm.webHooksNextPage = webHooksNextPage;
+                    vm.webHooksPrevious = null;
+                    vm.webHooksPreviousPage = webHooksPreviousPage;
                     get();
                 };
             }
