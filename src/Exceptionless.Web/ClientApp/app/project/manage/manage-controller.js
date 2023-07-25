@@ -32,7 +32,9 @@
                             "AddConfigurationDialog as vm",
                             vm.config
                         )
-                        .result.then(saveClientConfiguration)
+                        .result.then(function updateClientConfiguration(data) {
+                            return vm.saveClientConfiguration(data, true);
+                        })
                         .catch(function (e) {});
                 }
 
@@ -421,6 +423,13 @@
                             translateService.T("DELETE CONFIGURATION SETTING")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                vm.config = vm.config.filter(function (c) {
+                                    return c.key !== config.key;
+                                });
+                                return vm.config;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T(
@@ -429,7 +438,7 @@
                                 );
                             }
 
-                            return projectService.removeConfig(vm._projectId, config.key).catch(onFailure);
+                            return projectService.removeConfig(vm._projectId, config.key).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -571,14 +580,20 @@
                     return tokenService.update(data.id, { notes: data.notes }).catch(onFailure);
                 }
 
-                function saveClientConfiguration(data) {
+                function saveClientConfiguration(data, isAddOperation) {
+                    function onSuccess() {
+                        if (isAddOperation) {
+                            vm.config.push(data);
+                        }
+                    }
+
                     function onFailure() {
                         notificationService.error(
                             translateService.T("An error occurred while saving the configuration setting.")
                         );
                     }
 
-                    return projectService.setConfig(vm._projectId, data.key, data.value).catch(onFailure);
+                    return projectService.setConfig(vm._projectId, data.key, data.value).then(onSuccess, onFailure);
                 }
 
                 function saveCommonMethods() {
