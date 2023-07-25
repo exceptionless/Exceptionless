@@ -99,6 +99,24 @@
     </tbody>
 </table>
 
+<div class="table-footer text-right" ng-if="vm.tokensPrevious || vm.tokensNext">
+    <ul class="pagination pagination-sm m-t-none m-b-none">
+        <li ng-show="vm.tokensCurrentOptions.page && vm.tokensCurrentOptions.page > 2">
+            <a ng-click="vm.getTokens({})"><i class="fa fa-fast-backward"></i></a>
+        </li>
+        <li ng-class="{'disabled': !vm.tokensPrevious}">
+            <a ng-disabled="!vm.tokensPrevious" ng-click="!vm.tokensPrevious || vm.tokensPreviousPage()"
+                ><i class="fa fa-chevron-left"></i
+            ></a>
+        </li>
+        <li ng-class="{'disabled': !vm.tokensNext}">
+            <a ng-disabled="!vm.tokensNext" ng-click="!vm.tokensNext || vm.tokensNextPage()"
+                ><i class="fa fa-chevron-right"></i
+            ></a>
+        </li>
+    </ul>
+</div>
+
 <button type="button" role="button" ng-click="vm.addToken()" class="btn btn-primary">
     {{::'New API Key' | translate}}
 </button>
