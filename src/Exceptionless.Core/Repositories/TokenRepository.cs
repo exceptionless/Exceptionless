@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -19,12 +19,15 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
     public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null)
     {
         var filter = Query<Token>.Term(e => e.UserId, userId) && Query<Token>.Term(t => t.Type, type);
-        return FindAsync(q => q.ElasticFilter(filter), options);
+        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token> options = null)
     {
-        return FindAsync(q => q.Organization(organizationId).ElasticFilter(Query<Token>.Term(t => t.Type, type)), options);
+        return FindAsync(q => q
+            .Organization(organizationId)
+            .ElasticFilter(Query<Token>.Term(t => t.Type, type))
+            .Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token> options = null)
@@ -33,13 +36,13 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
                 Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)
             ) && Query<Token>.Term(t => t.Type, type);
 
-        return FindAsync(q => q.ElasticFilter(filter), options);
+        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token> options = null)
     {
         var filter = (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId));
-        return FindAsync(q => q.ElasticFilter(filter), options);
+        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
     public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token> options = null)
