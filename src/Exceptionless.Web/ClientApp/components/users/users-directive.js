@@ -31,7 +31,7 @@
                     organizationService,
                     paginationService,
                     userService,
-                    translateService
+                    translateService,
                 ) {
                     var vm = this;
                     function get(options, useCache) {
@@ -45,7 +45,7 @@
                             vm.pageSummary = paginationService.getCurrentPageSummary(
                                 response.data,
                                 vm.currentOptions.page,
-                                vm.currentOptions.limit
+                                vm.currentOptions.limit,
                             );
 
                             if (vm.users.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
@@ -91,7 +91,7 @@
                         return dialogService
                             .confirmDanger(
                                 translateService.T("Are you sure you want to remove this user from your organization?"),
-                                translateService.T("Remove User")
+                                translateService.T("Remove User"),
                             )
                             .then(function () {
                                 function onSuccess() {
@@ -107,7 +107,7 @@
                                         .setProperty("user", user)
                                         .submit();
                                     notificationService.error(
-                                        translateService.T("An error occurred while trying to remove the user.")
+                                        translateService.T("An error occurred while trying to remove the user."),
                                     );
                                 }
 
@@ -121,7 +121,7 @@
                     function resendNotification(user) {
                         function onFailure() {
                             notificationService.error(
-                                translateService.T("An error occurred while trying to resend the notification.")
+                                translateService.T("An error occurred while trying to resend the notification."),
                             );
                         }
 
@@ -141,7 +141,7 @@
                         return dialogService
                             .confirmDanger(
                                 translateService.T(message),
-                                translateService.T(!userService.hasAdminRole(user) ? "Add" : "Remove")
+                                translateService.T(!userService.hasAdminRole(user) ? "Add" : "Remove"),
                             )
                             .then(function () {
                                 function onSuccess() {
@@ -160,8 +160,8 @@
                                         translateService.T(
                                             !userService.hasAdminRole(user)
                                                 ? "An error occurred while add the admin role."
-                                                : "An error occurred while remove the admin role."
-                                        )
+                                                : "An error occurred while remove the admin role.",
+                                        ),
                                     );
                                 }
 

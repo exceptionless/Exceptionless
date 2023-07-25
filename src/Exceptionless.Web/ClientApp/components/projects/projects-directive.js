@@ -33,7 +33,7 @@
                     notificationService,
                     paginationService,
                     projectService,
-                    translateService
+                    translateService,
                 ) {
                     var vm = this;
 
@@ -48,7 +48,7 @@
                             vm.pageSummary = paginationService.getCurrentPageSummary(
                                 response.data,
                                 vm.currentOptions.page,
-                                vm.currentOptions.limit
+                                vm.currentOptions.limit,
                             );
 
                             if (vm.projects.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
@@ -65,7 +65,7 @@
                             vm.pageSummary = paginationService.getCurrentPageSummary(
                                 vm.projects,
                                 vm.currentOptions.page,
-                                vm.currentOptions.limit
+                                vm.currentOptions.limit,
                             );
 
                             return vm.projects;
@@ -180,13 +180,13 @@
                         return dialogService
                             .confirmDanger(
                                 translateService.T("Are you sure you want to delete this project?"),
-                                translateService.T("Delete Project")
+                                translateService.T("Delete Project"),
                             )
                             .then(function () {
                                 function onSuccess() {
                                     vm.projects.splice(vm.projects.indexOf(project), 1);
                                     notificationService.info(
-                                        translateService.T("Successfully queued the project for deletion.")
+                                        translateService.T("Successfully queued the project for deletion."),
                                     );
                                     $ExceptionlessClient
                                         .createFeatureUsage(vm._source + ".remove.success")
@@ -200,7 +200,7 @@
                                         .setProperty("project", project)
                                         .submit();
                                     notificationService.error(
-                                        translateService.T("An error occurred while trying to remove the project.")
+                                        translateService.T("An error occurred while trying to remove the project."),
                                     );
                                 }
 

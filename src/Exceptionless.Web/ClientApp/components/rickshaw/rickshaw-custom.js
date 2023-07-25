@@ -17,7 +17,7 @@
             graph.onUpdate(
                 function () {
                     this.update();
-                }.bind(this)
+                }.bind(this),
             );
         },
         _addListeners: function () {
@@ -49,7 +49,7 @@
                             return false;
                         }
                     },
-                    false
+                    false,
                 );
             };
             graph.element.addEventListener(
@@ -65,7 +65,7 @@
                     selectionControl = true;
                     selectionDraw(startPointX);
                 },
-                true
+                true,
             );
             document.body.addEventListener(
                 "keyup",
@@ -83,7 +83,7 @@
                         height: 0,
                     });
                 },
-                true
+                true,
             );
             document.body.addEventListener(
                 "mouseup",
@@ -114,7 +114,7 @@
 
                     this.startPointX = 0;
                 },
-                false
+                false,
             );
         },
         update: function () {

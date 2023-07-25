@@ -13,7 +13,7 @@
                 organizationService,
                 notificationService,
                 translateService,
-                STRIPE_PUBLISHABLE_KEY
+                STRIPE_PUBLISHABLE_KEY,
             ) {
                 var vm = this;
 
@@ -21,7 +21,7 @@
                     function onFailure() {
                         $state.go("app.frequent");
                         notificationService.error(
-                            translateService.T("Cannot_Find_Organization", { organizationId: vm._organizationId })
+                            translateService.T("Cannot_Find_Organization", { organizationId: vm._organizationId }),
                         );
                     }
 
@@ -51,6 +51,6 @@
                     $ExceptionlessClient.submitFeatureUsage("organization.Upgrade");
                     return get().then(changePlan);
                 };
-            }
+            },
         );
 })();

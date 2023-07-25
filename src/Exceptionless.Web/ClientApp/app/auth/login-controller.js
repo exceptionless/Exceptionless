@@ -19,7 +19,7 @@
                 ENABLE_ACCOUNT_CREATION,
                 notificationService,
                 projectService,
-                stateService
+                stateService,
             ) {
                 var vm = this;
 
@@ -128,6 +128,6 @@
                     vm.token = $stateParams.token;
                     vm.user = { invite_token: vm.token };
                 };
-            }
+            },
         );
 })();

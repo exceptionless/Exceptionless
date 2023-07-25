@@ -36,7 +36,7 @@
                     projectService,
                     searchService,
                     translateService,
-                    STRIPE_PUBLISHABLE_KEY
+                    STRIPE_PUBLISHABLE_KEY,
                 ) {
                     var vm = this;
                     function get() {

@@ -19,7 +19,7 @@
                     objectIDService,
                     organizationService,
                     projectService,
-                    userService
+                    userService,
                 ) {
                     if (!authService.isAuthenticated()) {
                         return;

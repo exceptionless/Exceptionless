@@ -14,7 +14,7 @@
                 notificationService,
                 projectService,
                 tokenService,
-                translateService
+                translateService,
             ) {
                 var vm = this;
                 function canRedirect(data) {
@@ -49,7 +49,7 @@
 
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while getting the API key for your project.")
+                            translateService.T("An error occurred while getting the API key for your project."),
                         );
                     }
 
@@ -66,7 +66,7 @@
                     function onFailure() {
                         $state.go("app.frequent");
                         notificationService.error(
-                            translateService.T("Cannot_Find_Project", { projectId: vm._projectId })
+                            translateService.T("Cannot_Find_Project", { projectId: vm._projectId }),
                         );
                     }
 
@@ -172,6 +172,6 @@
 
                     getDefaultApiKey().then(getProject);
                 };
-            }
+            },
         );
 })();
