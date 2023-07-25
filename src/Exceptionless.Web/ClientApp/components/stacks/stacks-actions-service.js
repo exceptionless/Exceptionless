@@ -12,7 +12,7 @@
                 stackService,
                 notificationService,
                 translateService,
-                $q,
+                $q
             ) {
                 var source = "exceptionless.stacks.stacksActionsService";
 
@@ -47,7 +47,7 @@
                                 .setProperty("count", ids.length)
                                 .submit();
                             notificationService.error(
-                                translateService.T("An error occurred while marking stacks as open."),
+                                translateService.T("An error occurred while marking stacks as open.")
                             );
                         }
 
@@ -59,7 +59,7 @@
                             ids,
                             actionWithParameter(stackService.changeStatus, "open"),
                             onSuccess,
-                            onFailure,
+                            onFailure
                         );
                     },
                 };
@@ -74,14 +74,14 @@
                         return dialogService
                             .confirmDanger(
                                 translateService.T(
-                                    "Are you sure you want to delete these stacks (includes all stack events)?",
+                                    "Are you sure you want to delete these stacks (includes all stack events)?"
                                 ),
-                                translateService.T("DELETE STACKS"),
+                                translateService.T("DELETE STACKS")
                             )
                             .then(function () {
                                 function onSuccess() {
                                     notificationService.info(
-                                        translateService.T("Successfully queued the stacks for deletion."),
+                                        translateService.T("Successfully queued the stacks for deletion.")
                                     );
                                 }
 
@@ -91,7 +91,7 @@
                                         .setProperty("count", ids.length)
                                         .submit();
                                     notificationService.error(
-                                        translateService.T("An error occurred while deleting the stacks."),
+                                        translateService.T("An error occurred while deleting the stacks.")
                                     );
                                 }
 
@@ -113,7 +113,7 @@
                             .then(function (version) {
                                 function onSuccess() {
                                     notificationService.info(
-                                        translateService.T("Successfully marked the stacks as fixed."),
+                                        translateService.T("Successfully marked the stacks as fixed.")
                                     );
                                 }
 
@@ -123,7 +123,7 @@
                                         .setProperty("count", ids.length)
                                         .submit();
                                     notificationService.error(
-                                        translateService.T("An error occurred while marking stacks as fixed."),
+                                        translateService.T("An error occurred while marking stacks as fixed.")
                                     );
                                 }
 
@@ -131,7 +131,7 @@
                                     ids,
                                     actionWithParameter(stackService.markFixed, version),
                                     onSuccess,
-                                    onFailure,
+                                    onFailure
                                 );
                             })
                             .catch(function (e) {});
@@ -151,7 +151,7 @@
                                 .setProperty("count", ids.length)
                                 .submit();
                             notificationService.error(
-                                translateService.T("An error occurred while marking stacks as ignored."),
+                                translateService.T("An error occurred while marking stacks as ignored.")
                             );
                         }
 
@@ -163,7 +163,7 @@
                             ids,
                             actionWithParameter(stackService.changeStatus, "ignored"),
                             onSuccess,
-                            onFailure,
+                            onFailure
                         );
                     },
                 };
@@ -173,7 +173,7 @@
                     run: function (ids) {
                         function onSuccess() {
                             notificationService.info(
-                                translateService.T("Successfully marked the stacks as discarded."),
+                                translateService.T("Successfully marked the stacks as discarded.")
                             );
                         }
 
@@ -183,7 +183,7 @@
                                 .setProperty("count", ids.length)
                                 .submit();
                             notificationService.error(
-                                translateService.T("An error occurred while marking stacks as discarded."),
+                                translateService.T("An error occurred while marking stacks as discarded.")
                             );
                         }
 
@@ -195,7 +195,7 @@
                             ids,
                             actionWithParameter(stackService.changeStatus, "discarded"),
                             onSuccess,
-                            onFailure,
+                            onFailure
                         );
                     },
                 };
@@ -209,6 +209,6 @@
                 };
 
                 return service;
-            },
+            }
         );
 })();

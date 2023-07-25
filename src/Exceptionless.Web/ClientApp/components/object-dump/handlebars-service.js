@@ -117,7 +117,7 @@
                     "  </tr>\r\n" +
                     "{{/properties}}" +
                     "</table>\r\n" +
-                    "{{/ifHasData}}",
+                    "{{/ifHasData}}"
             );
 
             Handlebars.registerPartial(
@@ -128,7 +128,7 @@
                     "  <li>{{> valueDump}}</li>\r\n" +
                     "{{/each}}" +
                     "</ul>\r\n" +
-                    "{{/ifHasData}}",
+                    "{{/ifHasData}}"
             );
 
             Handlebars.registerPartial(
@@ -155,7 +155,7 @@
                     "{{/if}}" +
                     "{{/if}}" +
                     "{{/if}}" +
-                    "{{/reflect}}",
+                    "{{/reflect}}"
             );
         }
 

@@ -103,7 +103,7 @@ function generateCerts() {
     if (!certificateName) {
         // eslint-disable-next-line no-console
         console.error(
-            "Invalid certificate name. Run this script in the context of an npm/yarn script or pass --name=<<app>> explicitly.",
+            "Invalid certificate name. Run this script in the context of an npm/yarn script or pass --name=<<app>> explicitly."
         );
         process.exit(-1);
     }
@@ -115,8 +115,8 @@ function generateCerts() {
         var outp = s.execSync(
             "dotnet " +
                 ["dev-certs", "https", "--export-path", `"${certFilePath}"`, "--format", "Pem", "--no-password"].join(
-                    " ",
-                ),
+                    " "
+                )
         );
         // eslint-disable-next-line no-console
         console.log(outp.toString());

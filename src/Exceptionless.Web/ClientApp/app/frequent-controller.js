@@ -15,7 +15,7 @@
                 notificationService,
                 organizationService,
                 stackService,
-                translateService,
+                translateService
             ) {
                 var vm = this;
                 function canRefresh(data) {
@@ -62,11 +62,11 @@
                             stacks: $filter("number")(getAggregationValue(results, "cardinality_stack", 0), 0),
                             newStacks: $filter("number")(
                                 termsAggregation.length > 0 ? termsAggregation[0].total : 0,
-                                0,
+                                0
                             ),
                             avg_per_hour: $filter("number")(
                                 eventService.calculateAveragePerHour(count, vm._organizations),
-                                1,
+                                1
                             ),
                         };
 
@@ -94,7 +94,7 @@
                             "date:(date" +
                                 (offset ? "^" + offset : "") +
                                 " cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1",
-                            true,
+                            true
                         )
                         .then(onSuccess);
                 }
@@ -186,7 +186,7 @@
                                     var start = moment.unix(position.coordMinX).utc().local();
                                     var end = moment.unix(position.coordMaxX).utc().local();
                                     filterService.setTime(
-                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss"),
+                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss")
                                     );
                                     $ExceptionlessClient
                                         .createFeatureUsage(vm._source + ".chart.range.onSelection")
@@ -229,6 +229,6 @@
 
                     get();
                 };
-            },
+            }
         );
 })();

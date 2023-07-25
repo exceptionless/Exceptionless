@@ -20,7 +20,7 @@
                 organizationService,
                 paginationService,
                 translateService,
-                STRIPE_PUBLISHABLE_KEY,
+                STRIPE_PUBLISHABLE_KEY
             ) {
                 var vm = this;
                 function add() {
@@ -78,7 +78,7 @@
                         vm.pageSummary = paginationService.getCurrentPageSummary(
                             response.data,
                             vm.currentOptions.page,
-                            vm.currentOptions.limit,
+                            vm.currentOptions.limit
                         );
 
                         if (vm.organizations.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
@@ -102,7 +102,7 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to leave this organization?"),
-                            translateService.T("Leave Organization"),
+                            translateService.T("Leave Organization")
                         )
                         .then(function () {
                             function onSuccess() {
@@ -112,7 +112,7 @@
 
                             function onFailure(response) {
                                 var message = translateService.T(
-                                    "An error occurred while trying to leave the organization.",
+                                    "An error occurred while trying to leave the organization."
                                 );
                                 if (response.status === 400) {
                                     message += " " + translateService.T("Message:") + " " + response.data.message;
@@ -168,14 +168,14 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to delete this organization?"),
-                            translateService.T("Delete Organization"),
+                            translateService.T("Delete Organization")
                         )
                         .then(function () {
                             function onSuccess() {
                                 vm.organizations.splice(vm.organizations.indexOf(organization), 1);
                                 vm.canChangePlan = !!STRIPE_PUBLISHABLE_KEY && vm.organizations.length > 0;
                                 notificationService.info(
-                                    translateService.T("Successfully queued the organization for deletion."),
+                                    translateService.T("Successfully queued the organization for deletion.")
                                 );
                                 $ExceptionlessClient
                                     .createFeatureUsage(vm._source + ".remove.success")
@@ -185,7 +185,7 @@
 
                             function onFailure(response) {
                                 var message = translateService.T(
-                                    "An error occurred while trying to delete the organization.",
+                                    "An error occurred while trying to delete the organization."
                                 );
                                 if (response.status === 400) {
                                     message += " " + translateService.T("Message:") + " " + response.data.message;
@@ -222,6 +222,6 @@
                     $ExceptionlessClient.submitFeatureUsage(vm._source);
                     get();
                 };
-            },
+            }
         );
 })();

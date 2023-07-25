@@ -436,7 +436,7 @@
         var fromCharCode = String.fromCharCode;
         var re_btou = new RegExp(
             ["[\xC0-\xDF][\x80-\xBF]", "[\xE0-\xEF][\x80-\xBF]{2}", "[\xF0-\xF7][\x80-\xBF]{3}"].join("|"),
-            "g",
+            "g"
         );
         var cb_btou = function (cccc) {
             switch (cccc.length) {
@@ -452,7 +452,7 @@
                     return fromCharCode(
                         ((0x0f & cccc.charCodeAt(0)) << 12) |
                             ((0x3f & cccc.charCodeAt(1)) << 6) |
-                            (0x3f & cccc.charCodeAt(2)),
+                            (0x3f & cccc.charCodeAt(2))
                     );
                 default:
                     return fromCharCode(((0x1f & cccc.charCodeAt(0)) << 6) | (0x3f & cccc.charCodeAt(1)));
@@ -473,7 +473,7 @@
                 .replace(/[-_]/g, function (m0) {
                     return m0 === "-" ? "+" : "/";
                 })
-                .replace(/[^A-Za-z0-9\+\/]/g, ""),
+                .replace(/[^A-Za-z0-9\+\/]/g, "")
         );
     }
 
@@ -656,10 +656,10 @@
                         if (popupWindowPath === redirectUriPath) {
                             if (_this.popup.location.search || _this.popup.location.hash) {
                                 var query = parseQueryString(
-                                    _this.popup.location.search.substring(1).replace(/\/$/, ""),
+                                    _this.popup.location.search.substring(1).replace(/\/$/, "")
                                 );
                                 var hash = parseQueryString(
-                                    _this.popup.location.hash.substring(1).replace(/[\/$]/, ""),
+                                    _this.popup.location.hash.substring(1).replace(/[\/$]/, "")
                                 );
                                 var params = angular.extend({}, query, hash);
                                 if (params.error) {
@@ -672,8 +672,8 @@
                                     new Error(
                                         "OAuth redirect has occurred but no query or hash parameters were found. " +
                                             "They were either not set during the redirect, or were removed—typically by a " +
-                                            "routing library—before Satellizer could read it.",
-                                    ),
+                                            "routing library—before Satellizer could read it."
+                                    )
                                 );
                             }
                             _this.$interval.cancel(polling);
@@ -850,8 +850,8 @@
                             return reject(
                                 new Error(
                                     "The value returned in the state parameter does not match the state value from your original " +
-                                        "authorization code request.",
-                                ),
+                                        "authorization code request."
+                                )
                             );
                         }
                         resolve(_this.exchangeForToken(oauth, userData));
@@ -949,7 +949,7 @@
             SatellizerStorage,
             SatellizerShared,
             SatellizerOAuth1,
-            SatellizerOAuth2,
+            SatellizerOAuth2
         ) {
             this.$http = $http;
             this.$window = $window;
@@ -979,7 +979,7 @@
                             _this.$q,
                             _this.SatellizerConfig,
                             _this.SatellizerPopup,
-                            _this.SatellizerStorage,
+                            _this.SatellizerStorage
                         );
                         break;
                     default:

@@ -21,7 +21,7 @@
                 notificationService,
                 translateService,
                 dialogs,
-                STRIPE_PUBLISHABLE_KEY,
+                STRIPE_PUBLISHABLE_KEY
             ) {
                 var vm = this;
                 function activateTab(tabName) {
@@ -81,7 +81,7 @@
                     if (data && data.type === "Organization" && data.deleted && data.id === vm._organizationId) {
                         $state.go("app.frequent");
                         notificationService.error(
-                            translateService.T("Organization_Deleted", { organizationId: vm._organizationId }),
+                            translateService.T("Organization_Deleted", { organizationId: vm._organizationId })
                         );
                         return;
                     }
@@ -149,7 +149,7 @@
                     function onFailure() {
                         $state.go("app.frequent");
                         notificationService.error(
-                            translateService.T("Cannot_Find_Organization", { organizationId: vm._organizationId }),
+                            translateService.T("Cannot_Find_Organization", { organizationId: vm._organizationId })
                         );
                     }
 
@@ -164,7 +164,7 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to leave this organization?"),
-                            translateService.T("Leave Organization"),
+                            translateService.T("Leave Organization")
                         )
                         .then(function () {
                             function onSuccess() {
@@ -173,7 +173,7 @@
 
                             function onFailure(response) {
                                 var message = translateService.T(
-                                    "An error occurred while trying to leave the organization.",
+                                    "An error occurred while trying to leave the organization."
                                 );
                                 if (response.status === 400) {
                                     message += " " + translateService.T("Message:") + " " + response.data.message;
@@ -195,21 +195,21 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T(
-                                'Are you sure you want to delete the "' + vm.organization.name + '" organization?',
+                                'Are you sure you want to delete the "' + vm.organization.name + '" organization?'
                             ),
-                            translateService.T("Delete Organization"),
+                            translateService.T("Delete Organization")
                         )
                         .then(function () {
                             function onSuccess() {
                                 notificationService.info(
-                                    translateService.T("Successfully queued the organization for deletion."),
+                                    translateService.T("Successfully queued the organization for deletion.")
                                 );
                                 $state.go("app.organization.list");
                             }
 
                             function onFailure(response) {
                                 var message = translateService.T(
-                                    "An error occurred while trying to delete the organization.",
+                                    "An error occurred while trying to delete the organization."
                                 );
                                 if (response.status === 400) {
                                     message += " " + translateService.T("Message:") + " " + response.data.message;
@@ -232,7 +232,7 @@
 
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the organization."),
+                            translateService.T("An error occurred while saving the organization.")
                         );
                     }
 
@@ -336,7 +336,7 @@
                                     var end = moment.unix(position.coordMaxX).utc().local();
 
                                     filterService.setTime(
-                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss"),
+                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss")
                                     );
                                     $ExceptionlessClient
                                         .createFeatureUsage(vm._source + ".chart.range.onSelection")
@@ -402,6 +402,6 @@
                     activateTab($stateParams.tab);
                     get();
                 };
-            },
+            }
         );
 })();

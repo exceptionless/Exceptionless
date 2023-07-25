@@ -33,7 +33,7 @@
                     linkService,
                     notificationService,
                     paginationService,
-                    translateService,
+                    translateService
                 ) {
                     var vm = this;
                     function afterRelativeText(ev) {
@@ -114,7 +114,7 @@
                             vm.pageSummary = paginationService.getCurrentPageSummary(
                                 response.data,
                                 vm.currentOptions.page,
-                                vm.currentOptions.limit,
+                                vm.currentOptions.limit
                             );
 
                             if (vm.events.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
@@ -127,7 +127,7 @@
                         function onFailure(response) {
                             if (response.status !== 404 && response.data) {
                                 notificationService.error(
-                                    "Error loading events: " + (response.data.message || response.data),
+                                    "Error loading events: " + (response.data.message || response.data)
                                 );
                             }
 

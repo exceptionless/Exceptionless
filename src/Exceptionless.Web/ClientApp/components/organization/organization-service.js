@@ -40,9 +40,9 @@
                             organizations.reduce(function (o1, o2) {
                                 return Math.min(
                                     objectIDService.create(o1.id).timestamp,
-                                    objectIDService.create(o2.id).timestamp,
+                                    objectIDService.create(o2.id).timestamp
                                 );
-                            }) * 1000,
+                            }) * 1000
                         );
                     }
 
@@ -65,7 +65,7 @@
                         retentionDays = organizations.reduce(function (o1, o2) {
                             return Math.max(
                                 o1.retention_days > 0 ? o1.retention_days : maximumRetentionDays,
-                                o2.retention_days > 0 ? o2.retention_days : maximumRetentionDays,
+                                o2.retention_days > 0 ? o2.retention_days : maximumRetentionDays
                             );
                         });
                     } else if (organizations.length === 1) {

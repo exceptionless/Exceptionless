@@ -34,7 +34,7 @@
 
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while loading the projects."),
+                                    translateService.T("An error occurred while loading the projects.")
                                 );
                             }
 
@@ -56,7 +56,7 @@
 
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while saving the configuration setting."),
+                                    translateService.T("An error occurred while saving the configuration setting.")
                                 );
                             }
 
@@ -77,8 +77,8 @@
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T(
-                                        "An error occurred while trying to delete the configuration setting.",
-                                    ),
+                                        "An error occurred while trying to delete the configuration setting."
+                                    )
                                 );
                             }
 

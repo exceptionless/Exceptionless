@@ -43,7 +43,7 @@
                     e,
                     t,
                     n,
-                    r,
+                    r
                 );
             }
             return n[o].exports;
@@ -85,7 +85,7 @@
                             ? self
                             : typeof window !== "undefined"
                             ? window
-                            : {},
+                            : {}
                     );
                 },
                 {},
@@ -114,7 +114,7 @@
                             ? self
                             : typeof window !== "undefined"
                             ? window
-                            : {},
+                            : {}
                     );
                 },
                 { "./promisify": 3 },
@@ -153,7 +153,7 @@
                                         try {
                                             callback.apply(
                                                 receiver,
-                                                toArray(args).concat(Nodeback(apply, resolve, reject)),
+                                                toArray(args).concat(Nodeback(apply, resolve, reject))
                                             );
                                         } catch (err) {
                                             setTimeout(function () {
@@ -205,7 +205,7 @@
                             ? self
                             : typeof window !== "undefined"
                             ? window
-                            : {},
+                            : {}
                     );
                 },
                 { "assert-function": 10, "to-array": 31 },
@@ -599,7 +599,7 @@
                             ? self
                             : typeof window !== "undefined"
                             ? window
-                            : {},
+                            : {}
                     );
                 },
                 {},
@@ -752,7 +752,7 @@
                             return pad(
                                 (navigator.mimeTypes.length + navigator.userAgent.length).toString(36) +
                                     api.globalCount().toString(36),
-                                4,
+                                4
                             );
                         };
 
@@ -977,7 +977,7 @@
                             ? self
                             : typeof window !== "undefined"
                             ? window
-                            : {},
+                            : {}
                     );
                 },
                 {},
@@ -1266,8 +1266,8 @@
                                 if (!library)
                                     return callback(
                                         new Error(
-                                            "expected: `window." + options.global + "`, actual: `" + library + "`",
-                                        ),
+                                            "expected: `window." + options.global + "`, actual: `" + library + "`"
+                                        )
                                     );
                                 callback(null, library);
                             }
@@ -1665,7 +1665,7 @@
                                     if (response.error)
                                         return callback(assign(new Error(), response.error, { status: status }));
                                     callback(null, response);
-                                }),
+                                })
                             );
                         };
                     }
@@ -1800,7 +1800,7 @@
                                     url: url,
                                     global: "Stripe",
                                 },
-                                onLoad,
+                                onLoad
                             );
 
                             function onLoad(err, Stripe) {
@@ -1876,7 +1876,7 @@
                         verifyQ.$inject = ["assertQConstructor"];
                         function verifyQ(assertQConstructor) {
                             assertQConstructor(
-                                "angular-stripe: For Angular <= 1.2 support, first load https://github.com/bendrucker/angular-q-constructor",
+                                "angular-stripe: For Angular <= 1.2 support, first load https://github.com/bendrucker/angular-q-constructor"
                             );
                         }
                     }).call(
@@ -1887,13 +1887,13 @@
                             ? self
                             : typeof window !== "undefined"
                             ? window
-                            : {},
+                            : {}
                     );
                 },
                 { "./provider": 36, "angular-assert-q-constructor": 1, "angular-q-promisify": 2 },
             ],
         },
         {},
-        [37],
+        [37]
     )(37);
 });

@@ -59,7 +59,7 @@
                 function setCustomFilter() {
                     function onSuccess(range) {
                         setFilter(
-                            range.start.format("YYYY-MM-DDTHH:mm:ss") + "-" + range.end.format("YYYY-MM-DDTHH:mm:ss"),
+                            range.start.format("YYYY-MM-DDTHH:mm:ss") + "-" + range.end.format("YYYY-MM-DDTHH:mm:ss")
                         );
                         return range;
                     }
@@ -72,7 +72,7 @@
                             {
                                 start: range.start || moment().subtract(7, "days"),
                                 end: range.end || moment(),
-                            },
+                            }
                         )
                         .result.then(onSuccess)
                         .catch(function (e) {});

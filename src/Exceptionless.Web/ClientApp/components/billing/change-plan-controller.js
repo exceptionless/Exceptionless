@@ -20,7 +20,7 @@
                 userService,
                 translateService,
                 $window,
-                data,
+                data
             ) {
                 var vm = this;
                 function cancel() {
@@ -108,7 +108,7 @@
 
                         $uibModalInstance.close(vm.currentPlan);
                         notificationService.success(
-                            translateService.T("Thanks! Your billing plan has been successfully changed."),
+                            translateService.T("Thanks! Your billing plan has been successfully changed.")
                         );
                     }
 
@@ -180,7 +180,7 @@
                     }
                     return organizationService.changePlan(
                         vm.currentOrganization.id,
-                        angular.extend({}, { planId: vm.currentPlan.id }, options),
+                        angular.extend({}, { planId: vm.currentPlan.id }, options)
                     );
                 }
 
@@ -229,7 +229,7 @@
                         notificationService.error(
                             translateService.T("An error occurred while loading your organizations.") +
                                 " " +
-                                vm._contactSupport,
+                                vm._contactSupport
                         );
                         $ExceptionlessClient
                             .createFeatureUsage(vm._source + ".getOrganizations.error")
@@ -264,7 +264,7 @@
                         notificationService.error(
                             translateService.T("An error occurred while loading available billing plans.") +
                                 " " +
-                                vm._contactSupport,
+                                vm._contactSupport
                         );
                         $ExceptionlessClient
                             .createFeatureUsage(vm._source + ".getPlans.error")
@@ -293,7 +293,7 @@
                         notificationService.error(
                             translateService.T("An error occurred while loading your user account.") +
                                 " " +
-                                vm._contactSupport,
+                                vm._contactSupport
                         );
                         $ExceptionlessClient
                             .createFeatureUsage(vm._source + ".getUser.error")
@@ -373,6 +373,6 @@
                     $ExceptionlessClient.submitFeatureUsage(vm._source);
                     getOrganizations().then(getPlans).then(getUser);
                 };
-            },
+            }
         );
 })();

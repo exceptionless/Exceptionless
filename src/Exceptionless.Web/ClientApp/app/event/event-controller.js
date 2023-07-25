@@ -24,7 +24,7 @@
                 projectService,
                 simpleErrorService,
                 urlService,
-                translateService,
+                translateService
             ) {
                 var vm = this;
 
@@ -201,7 +201,7 @@
                                 extendedDataItems.push({ title: key, data: data });
                             }
                         },
-                        tabs,
+                        tabs
                     );
 
                     if (extendedDataItems.length > 0) {
@@ -434,7 +434,7 @@
                                 vm.request.host,
                                 vm.request.port,
                                 vm.request.path,
-                                vm.request.query_string,
+                                vm.request.query_string
                             );
 
                         vm.user = vm.event.data && vm.event.data["@user"];
@@ -464,13 +464,13 @@
                                 },
                                 function () {
                                     $state.go("app.frequent");
-                                },
+                                }
                             );
                         }
 
                         $state.go("app.frequent");
                         notificationService.error(
-                            translateService.T("Cannot_Find_Event", { eventId: $stateParams.id }),
+                            translateService.T("Cannot_Find_Event", { eventId: $stateParams.id })
                         );
                     }
 
@@ -726,7 +726,7 @@
                                 vm.event.project_id,
                                 vm.referenceId,
                                 options,
-                                optionsCallback,
+                                optionsCallback
                             );
                         },
                         options: {
@@ -749,6 +749,6 @@
                             buildTabs($stateParams.tab);
                         });
                 };
-            },
+            }
         );
 })();

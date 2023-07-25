@@ -13,7 +13,7 @@
                 organizationService,
                 projectService,
                 notificationService,
-                translateService,
+                translateService
             ) {
                 var vm = this;
                 function add(isRetrying) {
@@ -158,6 +158,6 @@
 
                     getOrganizations();
                 };
-            },
+            }
         );
 })();

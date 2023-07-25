@@ -30,7 +30,7 @@
                         organizationService,
                         projectService,
                         urlService,
-                        translateService,
+                        translateService
                     ) {
                         var vm = this;
                         function buildUrls() {
@@ -45,7 +45,7 @@
                                 if (isOnReports()) {
                                     return urlService.buildFilterUrl(
                                         { moduleName: "app.reports", route: "status", organizationId: organization.id },
-                                        { status: filterService.getStatus() },
+                                        { status: filterService.getStatus() }
                                     );
                                 }
 
@@ -63,7 +63,7 @@
                                 if (isOnReports()) {
                                     return urlService.buildFilterUrl(
                                         { moduleName: "app.reports", route: "status" },
-                                        { status: filterService.getStatus() },
+                                        { status: filterService.getStatus() }
                                     );
                                 }
 
@@ -81,7 +81,7 @@
                                 if (isOnReports()) {
                                     return urlService.buildFilterUrl(
                                         { moduleName: "app.reports", route: "status", projectId: project.id },
-                                        { status: filterService.getStatus() },
+                                        { status: filterService.getStatus() }
                                     );
                                 }
 
@@ -158,7 +158,7 @@
                             function onFailure() {
                                 vm.isLoadingOrganizations = false;
                                 notificationService.error(
-                                    translateService.T("An error occurred while loading your organizations."),
+                                    translateService.T("An error occurred while loading your organizations.")
                                 );
                             }
 
@@ -185,7 +185,7 @@
                             function onFailure() {
                                 vm.isLoadingProjects = false;
                                 notificationService.error(
-                                    translateService.T("An error occurred while loading your projects."),
+                                    translateService.T("An error occurred while loading your projects.")
                                 );
                             }
 
