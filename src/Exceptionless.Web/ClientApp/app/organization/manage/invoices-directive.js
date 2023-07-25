@@ -17,7 +17,7 @@
                 linkService,
                 notificationService,
                 paginationService,
-                userService
+                userService,
             ) {
                 var vm = this;
 

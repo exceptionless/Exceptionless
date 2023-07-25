@@ -18,12 +18,12 @@
                         return dialogService
                             .confirmDanger(
                                 translateService.T("Are you sure you want to delete these events?"),
-                                translateService.T("DELETE EVENTS")
+                                translateService.T("DELETE EVENTS"),
                             )
                             .then(function () {
                                 function onSuccess() {
                                     notificationService.info(
-                                        translateService.T("Successfully queued the events for deletion.")
+                                        translateService.T("Successfully queued the events for deletion."),
                                     );
                                 }
 
@@ -33,7 +33,7 @@
                                         .setProperty("count", ids.length)
                                         .submit();
                                     notificationService.error(
-                                        translateService.T("An error occurred while deleting the events.")
+                                        translateService.T("An error occurred while deleting the events."),
                                     );
                                 }
 
@@ -60,6 +60,6 @@
                 };
 
                 return service;
-            }
+            },
         );
 })();

@@ -16,7 +16,7 @@
                 return dialogs.create(
                     "components/billing/change-plan-dialog.tpl.html",
                     "ChangePlanDialog as vm",
-                    organizationId
+                    organizationId,
                 ).result;
             }
 

@@ -30,7 +30,7 @@
                                     } else {
                                         deferred.reject("An error occurred while validating the email address.");
                                     }
-                                }
+                                },
                             );
                         }
 

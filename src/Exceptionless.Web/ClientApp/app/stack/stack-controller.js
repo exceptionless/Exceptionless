@@ -23,7 +23,7 @@
                 projectService,
                 stackDialogService,
                 stackService,
-                translateService
+                translateService,
             ) {
                 var vm = this;
                 function addHotkeys() {
@@ -47,7 +47,7 @@
                         .add({
                             combo: "shift+h",
                             description: translateService.T(
-                                vm.stack.status === "discarded" ? "Mark Stack Open" : "Mark Stack Discarded"
+                                vm.stack.status === "discarded" ? "Mark Stack Open" : "Mark Stack Discarded",
                             ),
                             callback: function markIgnored() {
                                 logFeatureUsage("Ignored");
@@ -57,7 +57,7 @@
                         .add({
                             combo: "shift+f",
                             description: translateService.T(
-                                vm.stack.status === "fixed" ? "Mark Stack Open" : "Mark Stack Fixed"
+                                vm.stack.status === "fixed" ? "Mark Stack Open" : "Mark Stack Fixed",
                             ),
                             callback: function markFixed() {
                                 logFeatureUsage("Fixed");
@@ -69,7 +69,7 @@
                             description: translateService.T(
                                 vm.stack.occurrences_are_critical
                                     ? "Future Stack Occurrences are Not Critical"
-                                    : "Future Stack Occurrences are Critical"
+                                    : "Future Stack Occurrences are Critical",
                             ),
                             callback: function markCritical() {
                                 logFeatureUsage("Critical");
@@ -81,7 +81,7 @@
                             description: translateService.T(
                                 vm.stack.disable_notifications
                                     ? "Enable Stack Notifications"
-                                    : "Disable Stack Notifications"
+                                    : "Disable Stack Notifications",
                             ),
                             callback: function updateNotifications() {
                                 logFeatureUsage("Notifications");
@@ -133,7 +133,7 @@
                                     .setProperty("url", url)
                                     .submit();
                                 notificationService.error(
-                                    translateService.T("An error occurred while adding the reference link.")
+                                    translateService.T("An error occurred while adding the reference link."),
                                 );
                             }
 
@@ -237,7 +237,7 @@
 
                         if (response.status === 404) {
                             notificationService.error(
-                                translateService.T("Cannot_Find_Stack", { stackId: vm._stackId })
+                                translateService.T("Cannot_Find_Stack", { stackId: vm._stackId }),
                             );
                         } else {
                             notificationService.error(translateService.T("Error_Load_Stack", { stackId: vm._stackId }));
@@ -368,7 +368,7 @@
                                 buildFields(vm.chartOptions) +
                                 ") min:date max:date cardinality:user sum:count~1",
                             false,
-                            optionsCallback
+                            optionsCallback,
                         )
                         .then(onSuccess)
                         .then(getProjectUserStats);
@@ -394,7 +394,7 @@
                         .submit();
                     if (vm.project && !vm.project.has_premium_features) {
                         var message = translateService.T(
-                            "Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature."
+                            "Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.",
                         );
                         return billingService
                             .confirmUpgradePlan(message, vm.stack.organization_id)
@@ -450,7 +450,7 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to delete this reference link?"),
-                            translateService.T("DELETE REFERENCE LINK")
+                            translateService.T("DELETE REFERENCE LINK"),
                         )
                         .then(function () {
                             function onSuccess() {
@@ -467,7 +467,7 @@
                                     .setProperty("response", response)
                                     .submit();
                                 notificationService.info(
-                                    translateService.T("An error occurred while deleting the external reference link.")
+                                    translateService.T("An error occurred while deleting the external reference link."),
                                 );
                             }
 
@@ -482,14 +482,14 @@
                         .setProperty("id", vm._stackId)
                         .submit();
                     var message = translateService.T(
-                        "Are you sure you want to delete this stack (includes all stack events)?"
+                        "Are you sure you want to delete this stack (includes all stack events)?",
                     );
                     return dialogService
                         .confirmDanger(message, translateService.T("DELETE STACK"))
                         .then(function () {
                             function onSuccess() {
                                 notificationService.info(
-                                    translateService.T("Successfully queued the stack for deletion.")
+                                    translateService.T("Successfully queued the stack for deletion."),
                                 );
                                 $ExceptionlessClient
                                     .createFeatureUsage(vm._source + ".remove.success")
@@ -505,7 +505,7 @@
                                     .setProperty("response", response)
                                     .submit();
                                 notificationService.error(
-                                    translateService.T("An error occurred while deleting this stack.")
+                                    translateService.T("An error occurred while deleting this stack."),
                                 );
                             }
 
@@ -529,7 +529,7 @@
                             .setProperty("response", response)
                             .submit();
                         notificationService.error(
-                            translateService.T("An error occurred while marking this stack as open.")
+                            translateService.T("An error occurred while marking this stack as open."),
                         );
                     }
 
@@ -562,8 +562,8 @@
                             translateService.T(
                                 vm.stack.occurrences_are_critical
                                     ? "An error occurred while marking future occurrences as not critical."
-                                    : "An error occurred while marking future occurrences as critical."
-                            )
+                                    : "An error occurred while marking future occurrences as critical.",
+                            ),
                         );
                     }
 
@@ -597,7 +597,7 @@
                             .setProperty("response", response)
                             .submit();
                         notificationService.error(
-                            translateService.T("An error occurred while marking this stack as discarded.")
+                            translateService.T("An error occurred while marking this stack as discarded."),
                         );
                     }
 
@@ -607,11 +607,11 @@
                         .submit();
                     var message =
                         translateService.T(
-                            "Are you sure you want to all current stack events and discard any future stack events?"
+                            "Are you sure you want to all current stack events and discard any future stack events?",
                         ) +
                         " " +
                         translateService.T(
-                            "All future occurrences will be discarded and will not count against your event limit."
+                            "All future occurrences will be discarded and will not count against your event limit.",
                         );
                     return dialogService
                         .confirmDanger(message, translateService.T("Discard"))
@@ -645,7 +645,7 @@
                             .setProperty("response", response)
                             .submit();
                         notificationService.error(
-                            translateService.T("An error occurred while marking this stack as fixed.")
+                            translateService.T("An error occurred while marking this stack as fixed."),
                         );
                     }
 
@@ -686,8 +686,8 @@
                             translateService.T(
                                 vm.stack.status === "snoozed"
                                     ? "An error occurred while marking this stack as open."
-                                    : "An error occurred while marking this stack as snoozed."
-                            )
+                                    : "An error occurred while marking this stack as snoozed.",
+                            ),
                         );
                     }
 
@@ -735,8 +735,8 @@
                             translateService.T(
                                 vm.stack.status === "snoozed"
                                     ? "An error occurred while marking this stack as open."
-                                    : "An error occurred while marking this stack as ignored."
-                            )
+                                    : "An error occurred while marking this stack as ignored.",
+                            ),
                         );
                     }
 
@@ -846,7 +846,7 @@
                                     var end = moment.unix(position.coordMaxX).utc().local();
 
                                     filterService.setTime(
-                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss")
+                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss"),
                                     );
                                     $ExceptionlessClient
                                         .createFeatureUsage(vm._source + ".chart.range.onSelection")
@@ -978,6 +978,6 @@
 
                     get().then(executeAction);
                 };
-            }
+            },
         );
 })();

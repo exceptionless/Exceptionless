@@ -28,7 +28,7 @@
                 STRIPE_PUBLISHABLE_KEY,
                 urlService,
                 userService,
-                translateService
+                translateService,
             ) {
                 var vm = this;
                 function addHotkeys() {
@@ -169,7 +169,7 @@
                                     projectId: filterService.getProjectId(),
                                     organizationId: filterService.getOrganizationId(),
                                 },
-                                { status: status }
+                                { status: status },
                             );
                         });
 
@@ -294,7 +294,7 @@
 
                     if (data && data.type === "User" && data.deleted && data.id === vm.user.id) {
                         notificationService.error(
-                            translateService.T("Your user account was deleted. Please create a new account.")
+                            translateService.T("Your user account was deleted. Please create a new account."),
                         );
                         return authService.logout(true);
                     }
@@ -368,6 +368,6 @@
                     buildMenus();
                     getUser().then(getOrganizations).then(startWebSocket).then(getApiVersion);
                 };
-            }
+            },
         );
 })();

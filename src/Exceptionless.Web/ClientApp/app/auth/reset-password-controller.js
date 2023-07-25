@@ -83,6 +83,6 @@
                         cancelResetPassword();
                     }
                 };
-            }
+            },
         );
 })();

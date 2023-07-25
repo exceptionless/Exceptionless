@@ -31,7 +31,7 @@
                                 },
                                 function () {
                                     deferred.reject("An error occurred while validating the project name.");
-                                }
+                                },
                             );
                         }
 

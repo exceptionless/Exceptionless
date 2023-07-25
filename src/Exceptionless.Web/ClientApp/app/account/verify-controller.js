@@ -12,7 +12,7 @@
                 $stateParams,
                 notificationService,
                 userService,
-                translateService
+                translateService,
             ) {
                 var vm = this;
 
@@ -57,6 +57,6 @@
 
                     verify().finally(redirect);
                 };
-            }
+            },
         );
 })();

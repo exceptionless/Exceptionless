@@ -16,35 +16,35 @@
                         key: "NewError",
                         name: translateService.T("New Error"),
                         description: translateService.T(
-                            "Occurs when a new error that has never been seen before is reported to your project."
+                            "Occurs when a new error that has never been seen before is reported to your project.",
                         ),
                     },
                     {
                         key: "CriticalError",
                         name: translateService.T("Critical Error"),
                         description: translateService.T(
-                            "Occurs when an error that has been marked as critical is reported to your project."
+                            "Occurs when an error that has been marked as critical is reported to your project.",
                         ),
                     },
                     {
                         key: "StackRegression",
                         name: translateService.T("Regression"),
                         description: translateService.T(
-                            "Occurs when an event that has been marked as fixed has reoccurred in your project."
+                            "Occurs when an event that has been marked as fixed has reoccurred in your project.",
                         ),
                     },
                     {
                         key: "NewEvent",
                         name: translateService.T("New Event"),
                         description: translateService.T(
-                            "Occurs when a new event that has never been seen before is reported to your project."
+                            "Occurs when a new event that has never been seen before is reported to your project.",
                         ),
                     },
                     {
                         key: "CriticalEvent",
                         name: translateService.T("Critical Event"),
                         description: translateService.T(
-                            "Occurs when an event that has been marked as critical is reported to your project."
+                            "Occurs when an event that has been marked as critical is reported to your project.",
                         ),
                     },
                     {

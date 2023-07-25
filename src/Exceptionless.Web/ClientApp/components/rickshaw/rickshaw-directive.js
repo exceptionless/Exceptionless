@@ -234,7 +234,7 @@
                         if (!angular.equals(newValue, oldValue)) {
                             create();
                         }
-                    }
+                    },
                 );
 
                 var seriesDataWatcher = scope.$watch(
@@ -247,7 +247,7 @@
                         if (!angular.equals(newValue, oldValue)) {
                             create();
                         }
-                    }
+                    },
                 );
 
                 // TODO: resize should call configure function on the graph and set the elements width and height.

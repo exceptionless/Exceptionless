@@ -21,7 +21,7 @@
                 STRIPE_PUBLISHABLE_KEY,
                 dialogs,
                 dialogService,
-                translateService
+                translateService,
             ) {
                 var vm = this;
                 function addConfiguration() {
@@ -29,7 +29,7 @@
                         .create(
                             "app/project/manage/add-configuration-dialog.tpl.html",
                             "AddConfigurationDialog as vm",
-                            vm.config
+                            vm.config,
                         )
                         .result.then(saveClientConfiguration)
                         .catch(function (e) {});
@@ -40,7 +40,7 @@
                         return billingService
                             .confirmUpgradePlan(
                                 translateService.T("Please upgrade your plan to enable slack integration."),
-                                vm.project.organization_id
+                                vm.project.organization_id,
                             )
                             .then(function () {
                                 return addSlackIntegration();
@@ -54,7 +54,7 @@
                 function addSlackIntegration() {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while adding Slack to your project.")
+                            translateService.T("An error occurred while adding Slack to your project."),
                         );
                     }
 
@@ -64,7 +64,7 @@
                 function addToken() {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while creating a new API key for your project.")
+                            translateService.T("An error occurred while creating a new API key for your project."),
                         );
                     }
 
@@ -98,7 +98,7 @@
                         }
 
                         notificationService.error(
-                            translateService.T("An error occurred while saving the configuration setting.")
+                            translateService.T("An error occurred while saving the configuration setting."),
                         );
                     }
 
@@ -113,12 +113,12 @@
                     return dialogService
                         .confirm(
                             translateService.T("Are you sure you want to enable the API key?"),
-                            translateService.T("ENABLE API KEY")
+                            translateService.T("ENABLE API KEY"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while enabling the API key.")
+                                    translateService.T("An error occurred while enabling the API key."),
                                 );
                             }
 
@@ -131,12 +131,12 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to disable the API key?"),
-                            translateService.T("DISABLE API KEY")
+                            translateService.T("DISABLE API KEY"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while disabling the API key.")
+                                    translateService.T("An error occurred while disabling the API key."),
                                 );
                             }
 
@@ -236,7 +236,7 @@
                         notificationService.error(
                             translateService.T("Cannot_Find_Organization", {
                                 organizationId: vm.project.organization_id,
-                            })
+                            }),
                         );
                     }
 
@@ -271,7 +271,7 @@
                     function onFailure() {
                         $state.go("app.project.list");
                         notificationService.error(
-                            translateService.T("Cannot_Find_Project", { projectId: vm._projectId })
+                            translateService.T("Cannot_Find_Project", { projectId: vm._projectId }),
                         );
                     }
 
@@ -315,7 +315,7 @@
 
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred loading the notification settings.")
+                            translateService.T("An error occurred loading the notification settings."),
                         );
                     }
 
@@ -330,7 +330,7 @@
 
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while loading the slack notification settings.")
+                            translateService.T("An error occurred while loading the slack notification settings."),
                         );
                     }
 
@@ -348,7 +348,7 @@
 
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred loading the notification settings.")
+                            translateService.T("An error occurred loading the notification settings."),
                         );
                     }
 
@@ -359,14 +359,14 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to delete this configuration setting?"),
-                            translateService.T("DELETE CONFIGURATION SETTING")
+                            translateService.T("DELETE CONFIGURATION SETTING"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T(
-                                        "An error occurred while trying to delete the configuration setting."
-                                    )
+                                        "An error occurred while trying to delete the configuration setting.",
+                                    ),
                                 );
                             }
 
@@ -379,21 +379,21 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T(
-                                'Are you sure you want to delete the "' + vm.project.name + '" project?'
+                                'Are you sure you want to delete the "' + vm.project.name + '" project?',
                             ),
-                            translateService.T("Delete Project")
+                            translateService.T("Delete Project"),
                         )
                         .then(function () {
                             function onSuccess() {
                                 notificationService.info(
-                                    translateService.T("Successfully queued the project for deletion.")
+                                    translateService.T("Successfully queued the project for deletion."),
                                 );
                                 $state.go("app.project.list");
                             }
 
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while trying to delete the project.")
+                                    translateService.T("An error occurred while trying to delete the project."),
                                 );
                                 vm._ignoreRefresh = false;
                             }
@@ -408,12 +408,12 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to remove slack support?"),
-                            translateService.T("Remove Slack")
+                            translateService.T("Remove Slack"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while trying to remove slack.")
+                                    translateService.T("An error occurred while trying to remove slack."),
                                 );
                             }
 
@@ -426,12 +426,12 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to delete this API key?"),
-                            translateService.T("DELETE API KEY")
+                            translateService.T("DELETE API KEY"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while trying to delete the API Key.")
+                                    translateService.T("An error occurred while trying to delete the API Key."),
                                 );
                             }
 
@@ -444,12 +444,12 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to delete this web hook?"),
-                            translateService.T("DELETE WEB HOOK")
+                            translateService.T("DELETE WEB HOOK"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while trying to delete the web hook.")
+                                    translateService.T("An error occurred while trying to delete the web hook."),
                                 );
                             }
 
@@ -462,12 +462,12 @@
                     return dialogService
                         .confirmDanger(
                             translateService.T("Are you sure you want to reset the data for this project?"),
-                            translateService.T("RESET PROJECT DATA")
+                            translateService.T("RESET PROJECT DATA"),
                         )
                         .then(function () {
                             function onFailure() {
                                 notificationService.error(
-                                    translateService.T("An error occurred while resetting project data.")
+                                    translateService.T("An error occurred while resetting project data."),
                                 );
                             }
 
@@ -491,7 +491,7 @@
                 function saveApiKeyNote(data) {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the API key note.")
+                            translateService.T("An error occurred while saving the API key note."),
                         );
                     }
 
@@ -501,7 +501,7 @@
                 function saveClientConfiguration(data) {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the configuration setting.")
+                            translateService.T("An error occurred while saving the configuration setting."),
                         );
                     }
 
@@ -511,7 +511,7 @@
                 function saveCommonMethods() {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the common methods.")
+                            translateService.T("An error occurred while saving the common methods."),
                         );
                     }
 
@@ -526,7 +526,7 @@
                 function saveDataExclusion() {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the data exclusion.")
+                            translateService.T("An error occurred while saving the data exclusion."),
                         );
                     }
 
@@ -552,8 +552,8 @@
                     function onFailure() {
                         notificationService.error(
                             translateService.T(
-                                "An error occurred while saving the include private information setting."
-                            )
+                                "An error occurred while saving the include private information setting.",
+                            ),
                         );
                     }
 
@@ -568,7 +568,7 @@
                 function saveUserAgents() {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the user agents.")
+                            translateService.T("An error occurred while saving the user agents."),
                         );
                     }
 
@@ -583,7 +583,7 @@
                 function saveUserNamespaces() {
                     function onFailure() {
                         notificationService.error(
-                            translateService.T("An error occurred while saving the user namespaces.")
+                            translateService.T("An error occurred while saving the user namespaces."),
                         );
                     }
 
@@ -609,7 +609,7 @@
                         }
 
                         notificationService.error(
-                            translateService.T("An error occurred while saving your slack notification settings.")
+                            translateService.T("An error occurred while saving your slack notification settings."),
                         );
                     }
 
@@ -740,7 +740,7 @@
                                     var end = moment.unix(position.coordMaxX).utc().local();
 
                                     filterService.setTime(
-                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss")
+                                        start.format("YYYY-MM-DDTHH:mm:ss") + "-" + end.format("YYYY-MM-DDTHH:mm:ss"),
                                     );
                                     $ExceptionlessClient
                                         .createFeatureUsage(vm._source + ".chart.range.onSelection")
@@ -763,6 +763,7 @@
                             },
                         },
                     };
+
                     vm.config = [];
                     vm.copied = copied;
                     vm.common_methods = null;
@@ -808,6 +809,6 @@
                     vm.webHooks = [];
                     get();
                 };
-            }
+            },
         );
 })();

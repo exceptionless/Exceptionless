@@ -55,8 +55,8 @@
                         ],
                         onExit: resetEventStatusOnExit,
                     },
-                    routeDefaults
-                )
+                    routeDefaults,
+                ),
             );
 
             $stateProvider.state(
@@ -74,8 +74,8 @@
                         ],
                         onExit: resetEventStatusOnExit,
                     },
-                    routeDefaults
-                )
+                    routeDefaults,
+                ),
             );
 
             $stateProvider.state(
@@ -93,8 +93,8 @@
                         ],
                         onExit: resetEventStatusOnExit,
                     },
-                    routeDefaults
-                )
+                    routeDefaults,
+                ),
             );
 
             function setRouteFilter(filterService, organizationId, projectId, status) {

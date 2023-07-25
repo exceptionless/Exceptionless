@@ -13,7 +13,7 @@
                         moment(organizationService.getOldestPossibleEventDate(organizations)),
                     ].filter(function (d) {
                         return !!d;
-                    })
+                    }),
                 );
                 range.end = range.end || moment();
 
@@ -24,7 +24,7 @@
             function count(aggregations, includeStatusFilter, optionsCallback) {
                 var options = filterService.apply(
                     aggregations && aggregations.length > 0 ? { aggregations: aggregations } : {},
-                    includeStatusFilter
+                    includeStatusFilter,
                 );
                 options = angular.isFunction(optionsCallback) ? optionsCallback(options) : options;
 
