@@ -129,13 +129,21 @@
                             translateService.T("ENABLE API KEY")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                var index = vm.tokens.findIndex(function (t) {
+                                    return t.id === token.id;
+                                });
+                                vm.tokens[index].is_disabled = false;
+                                return vm.tokens;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while enabling the API key.")
                                 );
                             }
 
-                            return tokenService.update(token.id, { is_disabled: false }).catch(onFailure);
+                            return tokenService.update(token.id, { is_disabled: false }).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -147,13 +155,21 @@
                             translateService.T("DISABLE API KEY")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                var index = vm.tokens.findIndex(function (t) {
+                                    return t.id === token.id;
+                                });
+                                vm.tokens[index].is_disabled = true;
+                                return vm.tokens;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while disabling the API key.")
                                 );
                             }
 
-                            return tokenService.update(token.id, { is_disabled: true }).catch(onFailure);
+                            return tokenService.update(token.id, { is_disabled: true }).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
