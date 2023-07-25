@@ -13,6 +13,7 @@
                 $stateParams,
                 billingService,
                 filterService,
+                linkService,
                 organizationService,
                 projectService,
                 tokenService,
@@ -62,6 +63,11 @@
                 }
 
                 function addToken() {
+                    function onSuccess(response) {
+                        vm.tokens.push(response.data.plain());
+                        return vm.tokens;
+                    }
+
                     function onFailure() {
                         notificationService.error(
                             translateService.T("An error occurred while creating a new API key for your project.")
@@ -69,7 +75,7 @@
                     }
 
                     var options = { organization_id: vm.project.organization_id, project_id: vm._projectId };
-                    return tokenService.create(options).catch(onFailure);
+                    return tokenService.create(options).then(onSuccess, onFailure);
                 }
 
                 function addWebHook() {
@@ -159,7 +165,9 @@
                     return getProject()
                         .then(getOrganization)
                         .then(getConfiguration)
-                        .then(getTokens)
+                        .then(function loadTokens() {
+                            return getTokens();
+                        })
                         .then(getSlackNotificationSettings)
                         .then(getWebHooks);
                 }
@@ -278,9 +286,12 @@
                     return projectService.getById(vm._projectId).then(onSuccess, onFailure);
                 }
 
-                function getTokens() {
+                function getTokens(options) {
                     function onSuccess(response) {
                         vm.tokens = response.data.plain();
+                        var links = linkService.getLinksQueryParameters(response.headers("link"));
+                        vm.tokensPrevious = links.previous;
+                        vm.tokensNext = links.next;
                         return vm.tokens;
                     }
 
@@ -288,7 +299,26 @@
                         notificationService.error(translateService.T("An error occurred loading the api keys."));
                     }
 
-                    return tokenService.getByProjectId(vm._projectId).then(onSuccess, onFailure);
+                    vm.tokensCurrentOptions = options || vm.tokensCurrentOptions;
+                    return tokenService
+                        .getByProjectId(vm._projectId, vm.tokensCurrentOptions)
+                        .then(onSuccess, onFailure);
+                }
+
+                function tokensNextPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getTokens.tokensNextPage")
+                        .setProperty("tokensNext", vm.tokensNext)
+                        .submit();
+                    return getTokens(vm.tokensNext);
+                }
+
+                function tokensPreviousPage() {
+                    $ExceptionlessClient
+                        .createFeatureUsage(vm.source + "getTokens.tokensPreviousPage")
+                        .setProperty("tokensPrevious", vm.tokensPrevious)
+                        .submit();
+                    return getTokens(vm.tokensPrevious);
                 }
 
                 function getConfiguration() {
@@ -429,13 +459,20 @@
                             translateService.T("DELETE API KEY")
                         )
                         .then(function () {
+                            function onSuccess() {
+                                vm.tokens = vm.tokens.filter(function (t) {
+                                    return t.id !== token.id;
+                                });
+                                return vm.tokens;
+                            }
+
                             function onFailure() {
                                 notificationService.error(
                                     translateService.T("An error occurred while trying to delete the API Key.")
                                 );
                             }
 
-                            return tokenService.remove(token.id).catch(onFailure);
+                            return tokenService.remove(token.id).then(onSuccess, onFailure);
                         })
                         .catch(function (e) {});
                 }
@@ -801,6 +838,11 @@
                     vm.showChangePlanDialog = showChangePlanDialog;
                     vm.slackNotificationSettings = null;
                     vm.tokens = [];
+                    vm.tokensCurrentOptions = {};
+                    vm.tokensNext = null;
+                    vm.tokensNextPage = tokensNextPage;
+                    vm.tokensPrevious = null;
+                    vm.tokensPreviousPage = tokensPreviousPage;
                     vm.user_agents = null;
                     vm.user_namespaces = null;
                     vm.validateApiKeyNote = validateApiKeyNote;
