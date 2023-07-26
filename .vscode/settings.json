@@ -19,5 +19,6 @@
         "elasticsearch",
         "gitignore"
     ],
-    "powershell.codeFormatting.addWhitespaceAroundPipe": true
+    "powershell.codeFormatting.addWhitespaceAroundPipe": true,
+    "dotnet.defaultSolution": "Exceptionless.sln"
 }
