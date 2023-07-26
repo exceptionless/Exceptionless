@@ -17,6 +17,7 @@ Remove-Job $ELASTIC_JOB
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/allocation/explain?pretty
 curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*traces*?v=true&s=index"
+curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "transient": { "action.destructive_requires_name": false } }' https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/settings
 curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.09.01-000108"
 
 # connect to redis
@@ -76,9 +77,9 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/2.6.1/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/2.6.1/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.6.1/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/2.9.0/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.9.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.9.0/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml

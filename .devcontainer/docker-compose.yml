@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   app:
@@ -22,12 +22,12 @@ services:
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
   elasticsearch:
-    image: exceptionless/elasticsearch:8.8.0
+    image: exceptionless/elasticsearch:8.9.0
     environment:
       node.name: elasticsearch
       cluster.name: exceptionless
       discovery.type: single-node
-      xpack.security.enabled: 'false'
+      xpack.security.enabled: "false"
       action.destructive_requires_name: false
       ES_JAVA_OPTS: -Xms1g -Xmx1g
     ports:
@@ -38,9 +38,9 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:8.8.0
+    image: docker.elastic.co/kibana/kibana:8.9.0
     environment:
-        xpack.security.enabled: 'false'
+      xpack.security.enabled: "false"
     ports:
       - 5601:5601
 

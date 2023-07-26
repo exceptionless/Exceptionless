@@ -99,7 +99,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.8.0 AS exceptionless
+FROM exceptionless/elasticsearch:8.9.0 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -155,7 +155,7 @@ ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # completely self-contained 7.x
 
-FROM exceptionless/elasticsearch:7.17.10 AS exceptionless7
+FROM exceptionless/elasticsearch:7.17.12 AS exceptionless7
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./

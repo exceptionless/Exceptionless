@@ -4,8 +4,8 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.17.10
-  image: exceptionless/elasticsearch:7.17.10 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
+  version: 7.17.12
+  image: exceptionless/elasticsearch:7.17.12 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-prod-snapshots
   http:
@@ -13,46 +13,46 @@ spec:
       selfSignedCertificate:
         disabled: true
   nodeSets:
-  - name: main-v2
-    count: 4
-    config:
-      node.master: true
-      node.data: true
-      node.ingest: true
-      action.destructive_requires_name: true
-      # if not setting max_map_count in an init container, then use this setting
-      #node.store.allow_mmap: false
-    podTemplate:
-      spec:
-        containers:
-        - name: elasticsearch
-          env:
-          - name: ES_JAVA_OPTS
-            value: -Xms9g -Xmx9g
-          resources:
-            requests:
-              memory: 18Gi
-              cpu: 4
-            limits:
-              memory: 18Gi
-              cpu: 4
-        # related to "node.store.allow_mmap: false" setting above
-        initContainers:
-        - name: sysctl
-          securityContext:
-            privileged: true
-            runAsUser: 0
-          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
-    volumeClaimTemplates:
-    - metadata:
-        name: elasticsearch-data
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 600Gi
-        storageClassName: managed-csi-premium
+    - name: main-v2
+      count: 4
+      config:
+        node.master: true
+        node.data: true
+        node.ingest: true
+        action.destructive_requires_name: true
+        # if not setting max_map_count in an init container, then use this setting
+        #node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+                - name: ES_JAVA_OPTS
+                  value: -Xms9g -Xmx9g
+              resources:
+                requests:
+                  memory: 18Gi
+                  cpu: 4
+                limits:
+                  memory: 18Gi
+                  cpu: 4
+          # related to "node.store.allow_mmap: false" setting above
+          initContainers:
+            - name: sysctl
+              securityContext:
+                privileged: true
+                runAsUser: 0
+              command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 600Gi
+            storageClassName: managed-csi-premium
 
 ---
 apiVersion: kibana.k8s.elastic.co/v1
@@ -61,7 +61,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 7.17.10
+  version: 7.17.12
   count: 1
   elasticsearchRef:
     name: ex-prod
@@ -74,12 +74,11 @@ spec:
   podTemplate:
     spec:
       containers:
-      - name: kibana
-        resources:
-          requests:
-            memory: 500Mi
-            cpu: 100m
-          limits:
-            memory: 1Gi
-            cpu: 800m
-
+        - name: kibana
+          resources:
+            requests:
+              memory: 500Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 800m
