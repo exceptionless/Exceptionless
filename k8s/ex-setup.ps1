@@ -102,6 +102,9 @@ Remove-Job $ELASTIC_JOB
 # install kube-state-metrics
 helm install --namespace elastic-system kube-state-metrics prometheus-community/kube-state-metrics
 
+# install elastic monitor
+kubectl apply --namespace elastic-system -f elastic-monitor.yaml
+
 # install nginx ingress
 helm install --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx
 
