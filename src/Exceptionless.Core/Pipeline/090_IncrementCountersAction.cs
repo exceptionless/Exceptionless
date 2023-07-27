@@ -23,6 +23,8 @@ public class IncrementCountersAction : EventPipelineActionBase
 
             if (contexts.First().Organization.PlanId != _plans.FreePlan.Id)
                 AppDiagnostics.EventsPaidProcessed.Add(contexts.Count);
+            else
+                AppDiagnostics.EventsFreeProcessed.Add(contexts.Count);
         }
         catch (Exception ex)
         {
