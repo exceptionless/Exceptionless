@@ -12,7 +12,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
     /// </summary>
     public async Task<object> CreateFromEventAsync(WebHookDataContext context)
     {
-        string metricPrefix = String.Concat(_metricPrefix, nameof(CreateFromEventAsync).ToLower(), ".");
+        string metricPrefix = String.Concat(_metricPrefix, "ev-create", ".");
         foreach (var plugin in Plugins.Values)
         {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
@@ -42,7 +42,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
     /// </summary>
     public async Task<object> CreateFromStackAsync(WebHookDataContext context)
     {
-        string metricPrefix = String.Concat(_metricPrefix, nameof(CreateFromStackAsync).ToLower(), ".");
+        string metricPrefix = String.Concat(_metricPrefix, "st-create", ".");
         foreach (var plugin in Plugins.Values)
         {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());

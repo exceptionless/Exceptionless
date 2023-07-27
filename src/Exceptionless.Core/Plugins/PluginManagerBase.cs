@@ -14,7 +14,7 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin
     public PluginManagerBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null)
     {
         var type = GetType();
-        _metricPrefix = String.Concat("plugin.");
+        _metricPrefix = "";
         _logger = loggerFactory?.CreateLogger(type);
         _serviceProvider = serviceProvider;
         _options = options;
@@ -42,7 +42,7 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin
         {
             if (_options.DisabledPlugins.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase))
             {
-                _logger.LogWarning("Plugin {TypeName} is currently disabled and won't be executed.", type.Name);
+                _logger.LogWarning("Plugin {TypeName} is currently disabled and won't be executed", type.Name);
                 continue;
             }
 

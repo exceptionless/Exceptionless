@@ -12,6 +12,7 @@ choco install azure-cli
 choco install kubernetes-helm
 helm repo add "stable" "https://charts.helm.sh/stable" --force-update
 helm repo add jetstack https://charts.jetstack.io
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts                                                                                                                     ❮  3s 868ms   
 helm repo update
 
 ### setup
@@ -97,6 +98,9 @@ curl -X PUT -H "Content-Type: application/json" -k `
     http://elastic:$ELASTIC_PASSWORD@localhost:9200/_slm/policy/hourly
 
 Remove-Job $ELASTIC_JOB
+
+# install kube-state-metrics
+helm install --namespace elastic-system kube-state-metrics prometheus-community/kube-state-metrics
 
 # install nginx ingress
 helm install --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx

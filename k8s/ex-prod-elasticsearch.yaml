@@ -16,9 +16,7 @@ spec:
     - name: main-v2
       count: 4
       config:
-        node.master: true
-        node.data: true
-        node.ingest: true
+        node.roles: [data, ingest, master]
         action.destructive_requires_name: true
         # if not setting max_map_count in an init container, then use this setting
         #node.store.allow_mmap: false
