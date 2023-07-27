@@ -10,8 +10,8 @@ Remove-Job $ELASTIC_JOB
 curl -k https://elastic:$ELASTIC_PASSWORD@localhost:9260/_cluster/health?pretty
 
 # port forward monitoring elasticsearch
-$ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
-$ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-monitor-es-http 9280:9200 &
+$ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace elastic-system "elastic-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+$ELASTIC_JOB = kubectl port-forward --namespace elastic-system service/elastic-monitor-es-http 9280:9200 &
 Remove-Job $ELASTIC_JOB
 
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
@@ -84,8 +84,8 @@ kubectl apply -f https://download.elastic.co/downloads/eck/2.9.0/operator.yaml
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
-# upgrade monitor elasticsearch
-kubectl apply --namespace ex-prod -f ex-prod-monitor.yaml
+# upgrade elastic monitor
+kubectl apply --namespace elastic-system -f elastic-monitor.yaml
 
 # upgrade exceptionless app to a new docker image tag
 $VERSION="8.0.0"
