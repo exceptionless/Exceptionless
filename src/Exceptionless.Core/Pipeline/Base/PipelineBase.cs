@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Pipeline;
 /// </remarks>
 public abstract class PipelineBase<TContext, TAction> where TAction : class, IPipelineAction<TContext> where TContext : IPipelineContext
 {
-    protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
+    protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new();
     private readonly IServiceProvider _serviceProvider;
     private readonly AppOptions _options;
     private readonly IList<IPipelineAction<TContext>> _actions;
@@ -31,7 +31,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
         _options = options;
 
         var type = GetType();
-        _metricPrefix = String.Concat("pipeline.", type.Name.ToLower(), ".");
+        _metricPrefix = String.Concat(type.Name.ToLower(), ".");
         _logger = loggerFactory?.CreateLogger(type);
 
         _actions = LoadDefaultActions();
@@ -55,10 +55,9 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     {
         PipelineRunning(contexts);
 
-        string metricPrefix = String.Concat(_metricPrefix, nameof(RunAsync).ToLower(), ".");
         foreach (var action in _actions)
         {
-            string metricName = String.Concat(metricPrefix, action.Name.ToLower());
+            string metricName = String.Concat(_metricPrefix, action.Name.ToLower());
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
             if (contextsToProcess.All(c => c.IsCancelled || c.HasError))

@@ -12,12 +12,11 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     /// </summary>
     public async Task StartupAsync()
     {
-        string metricPrefix = String.Concat("events.startup.");
         foreach (var plugin in Plugins.Values.ToList())
         {
             try
             {
-                string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
+                string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
                 await AppDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
             }
             catch (Exception ex)
@@ -32,14 +31,13 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     /// </summary>
     public async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
-        string metricPrefix = String.Concat(_metricPrefix, "events.processing.");
         foreach (var plugin in Plugins.Values)
         {
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             if (contextsToProcess.Count == 0)
                 break;
 
-            string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
+            string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
             try
             {
                 await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
@@ -58,14 +56,13 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     /// </summary>
     public async Task EventBatchProcessedAsync(ICollection<EventContext> contexts)
     {
-        string metricPrefix = String.Concat("events.processed.");
         foreach (var plugin in Plugins.Values)
         {
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             if (contextsToProcess.Count == 0)
                 break;
 
-            string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
+            string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
             try
             {
                 await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
