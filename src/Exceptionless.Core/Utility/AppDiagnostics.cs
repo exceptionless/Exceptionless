@@ -83,6 +83,7 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsProcessed = Meter.CreateCounter<int>("ex.events.all.processed", description: "Events successfully processed by the pipeline");
     internal static readonly Histogram<double> EventsProcessingTime = Meter.CreateHistogram<double>("ex.events.processingtime", description: "Time to process an event", unit: "ms");
     internal static readonly Counter<int> EventsPaidProcessed = Meter.CreateCounter<int>("ex.events.paid.processed", description: "Paid events processed");
+    internal static readonly Counter<int> EventsFreeProcessed = Meter.CreateCounter<int>("ex.events.free.processed", description: "Free or trial events processed");
     internal static readonly Counter<int> EventsProcessErrors = Meter.CreateCounter<int>("ex.events.processing.errors", description: "Errors processing events");
     internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("ex.events.discarded", description: "Events that were discarded");
     internal static readonly Counter<int> EventsBlocked = Meter.CreateCounter<int>("ex.events.blocked", description: "Events that were blocked");
