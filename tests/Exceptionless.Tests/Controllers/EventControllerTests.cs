@@ -1288,4 +1288,33 @@ public class EventControllerTests : IntegrationTestsBase
         await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
         await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
     }
+
+    [Fact]
+    public async Task CanPageEventDataAsync()
+    {
+        await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+        });
+
+        Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+        Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+        Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        string[] links = response.Headers.GetValues(Headers.Link).ToArray();
+        Assert.Equal(3, links.Length);
+
+        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        Assert.Single(result);
+    }
 }

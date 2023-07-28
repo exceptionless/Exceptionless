@@ -50,10 +50,10 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
                 links = GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Content, IsDescending, HasMore, PagePropertyAccessor);
 
             if (links.Count > 0)
-                Headers.Add("Link", links.ToArray());
+                Headers.Add(Utility.Headers.Link, links.ToArray());
 
             if (Total.HasValue)
-                Headers.Add("X-Result-Count", Total.ToString());
+                Headers.Add(Utility.Headers.ResultCount, Total.ToString());
         }
 
         base.OnFormatting(context);

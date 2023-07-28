@@ -8,7 +8,8 @@ public static class Headers
     public const string Client = "X-Exceptionless-Client";
     public const string RateLimit = "X-RateLimit-Limit";
     public const string RateLimitRemaining = "X-RateLimit-Remaining";
-    public const string LimitedByPlan = "X-LimitedByPlan";
+    public const string ResultCount = "X-Result-Count";
+    public const string Link = "Link";
 
     public const string ContentEncoding = "Content-Encoding";
 }

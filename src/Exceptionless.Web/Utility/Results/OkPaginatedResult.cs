@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Web.Utility.Results;
@@ -22,7 +22,7 @@ public class OkPaginatedResult : ObjectWithHeadersResult
         AddPageLinkHeaders(context.HttpContext.Request);
 
         if (Total.HasValue)
-            Headers.Add("X-Result-Count", Total.ToString());
+            Headers.Add(Utility.Headers.ResultCount, Total.ToString());
 
         base.OnFormatting(context);
     }
@@ -35,13 +35,14 @@ public class OkPaginatedResult : ObjectWithHeadersResult
         if (!includePrevious && !includeNext)
             return;
 
+        var links = new List<string>(2);
         if (includePrevious)
         {
             var previousParameters = new Dictionary<string, StringValues>(request.Query)
             {
                 ["page"] = (Page - 1).ToString()
             };
-            Headers.Add("Link", String.Concat("<", request.Path, "?", String.Join('&', previousParameters.Values), ">; rel=\"previous\""));
+            links.Add(String.Concat("<", request.Path, "?", String.Join('&', previousParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")), ">; rel=\"previous\""));
         }
 
         if (includeNext)
@@ -51,7 +52,9 @@ public class OkPaginatedResult : ObjectWithHeadersResult
                 ["page"] = (Page + 1).ToString()
             };
 
-            Headers.Add("Link", String.Concat("<", request.Path, "?", String.Join('&', nextParameters.Values), ">; rel=\"next\""));
+            links.Add(String.Concat("<", request.Path, "?", String.Join('&', nextParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")), ">; rel=\"next\""));
         }
+
+        Headers.Add(Headers.Link, links.ToArray());
     }
 }
