@@ -22,6 +22,7 @@ using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
@@ -197,11 +198,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -209,7 +211,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
 
     private async Task<ActionResult<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string aggregations = null, string mode = null)
@@ -248,11 +250,29 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return Ok(result);
     }
 
-    private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10, string after = null, bool usesPremiumFeatures = false)
+    private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null, bool usesPremiumFeatures = false)
     {
-        page = GetPage(page);
+        using var _ = _logger.BeginScope(new ExceptionlessState()
+            .Property("Search Filter", new
+            {
+                Mode = mode,
+                SystemFilter = sf,
+                UserFilter = filter,
+                Time = ti,
+                Page = page,
+                Limit = limit,
+                Before = before,
+                After = after
+            })
+            .Tag("Search")
+            .Identity(CurrentUser.EmailAddress)
+            .Property("User", CurrentUser)
+            .SetHttpContext(HttpContext)
+        );
+
+        int resolvedPage = GetPage(page.GetValueOrDefault(1));
         limit = GetLimit(limit);
-        int skip = GetSkip(page, limit);
+        int skip = GetSkip(resolvedPage, limit);
         if (skip > MAXIMUM_SKIP)
             return Ok(EmptyModels);
 
@@ -261,7 +281,6 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             return BadRequest(pr.Message);
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
-        bool useSearchAfter = !String.IsNullOrEmpty(after);
 
         try
         {
@@ -269,7 +288,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             switch (mode)
             {
                 case "summary":
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, after, useSearchAfter);
+                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
                     return OkWithResourceLinks(events.Documents.Select(e =>
                     {
                         var summaryData = _formattingPluginManager.GetEventSummaryData(e);
@@ -280,7 +299,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Date = e.Date,
                             Data = summaryData.Data
                         };
-                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":
@@ -310,7 +329,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         .SystemFilter(systemFilter)
                         .FilterExpression(filter)
                         .EnforceEventStackFilter()
-                        .AggregationsExpression($"terms:(stack_id~{GetSkip(page + 1, limit) + 1} {stackAggregations})"));
+                        .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})"));
 
                     var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                     if (stackTerms == null || stackTerms.Buckets.Count == 0)
@@ -320,21 +339,19 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                     var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
-                    return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
+                    return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, resolvedPage);
                 default:
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, after, useSearchAfter);
-                    return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
+                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
+                    return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
             }
         }
         catch (ApplicationException ex)
         {
-            string message = "An error has occurred. Please check your search filter.";
+            string message = "An error has occurred: Please check your search filter.";
             if (ex is DocumentLimitExceededException)
-                message = $"An error has occurred. {ex.Message ?? "Please limit your search criteria."}";
+                message = $"An error has occurred: {ex.Message ?? "Please limit your search criteria."}";
 
-            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, message);
-
+            _logger.LogError(ex, message);
             return BadRequest(message);
         }
     }
@@ -373,15 +390,15 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return sb.ToString();
     }
 
-    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int page, int limit, string after, bool useSearchAfter)
+    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int? page, int limit, string before, string after)
     {
         if (String.IsNullOrEmpty(sort))
             sort = "-date";
 
         return _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).EnforceEventStackFilter().SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
-            o => useSearchAfter
-                ? o.SearchAfterPaging().SearchAfter(after).PageLimit(limit)
-                : o.PageNumber(page).PageLimit(limit));
+            o => page.HasValue
+                ? o.PageNumber(page).PageLimit(limit)
+                : o.SearchAfterPaging().SearchBefore(before).SearchAfter(after).PageLimit(limit));
     }
 
     /// <summary>
@@ -395,13 +412,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The organization could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization == null)
@@ -412,7 +430,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
 
     /// <summary>
@@ -426,13 +444,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -447,7 +466,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
 
     /// <summary>
@@ -461,13 +480,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The stack could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var stack = await GetStackAsync(stackId);
         if (stack == null)
@@ -482,7 +502,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack, _appOptions.MaximumRetentionDays));
         var sf = new AppFilter(stack, organization);
-        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, after);
+        return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
 
     /// <summary>
@@ -493,11 +513,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("by-ref/{referenceId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
         if (organizations.All(o => o.IsSuspended))
@@ -505,7 +526,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, after);
+        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after);
     }
 
     /// <summary>
@@ -517,13 +538,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -538,7 +560,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, after);
+        return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after);
     }
 
     /// <summary>
@@ -552,11 +574,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions/{sessionId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -564,7 +587,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, after, true);
+        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true);
     }
 
     /// <summary>
@@ -579,13 +602,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -600,7 +624,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, after, true);
+        return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true);
     }
 
     /// <summary>
@@ -613,11 +637,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -625,7 +650,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, after, true);
+        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
     }
 
     /// <summary>
@@ -639,13 +664,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization == null)
@@ -656,7 +682,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, after, true);
+        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
     }
 
     /// <summary>
@@ -670,13 +696,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results. Pass in the last event id in the previous call to fetch the next page of the list.</param>
+    /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
+    /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
     /// <response code="404">The project could not be found.</response>
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -691,7 +718,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, after, true);
+        return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
     }
 
     /// <summary>

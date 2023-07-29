@@ -39,7 +39,7 @@ public class Startup
             .SetIsOriginAllowed(isOriginAllowed: _ => true)
             .AllowCredentials()
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-            .WithExposedHeaders("ETag", Headers.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount, Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion)));
+            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, Headers.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {

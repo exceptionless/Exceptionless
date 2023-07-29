@@ -219,14 +219,9 @@ public abstract class ExceptionlessApiController : Controller
         return new OkWithHeadersContentResult<T>(content, headers);
     }
 
-    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IHeaderDictionary headers = null, bool isDescending = false) where TEntity : class
+    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, string before = null, string after = null) where TEntity : class
     {
-        return new OkWithResourceLinks<TEntity>(content, hasMore, null, pagePropertyAccessor, headers, isDescending);
-    }
-
-    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) where TEntity : class
-    {
-        return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, headers: headers);
+        return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, before, after);
     }
 
     protected string GetResourceLink(string url, string type)
@@ -234,8 +229,11 @@ public abstract class ExceptionlessApiController : Controller
         return url != null ? $"<{url}>; rel=\"{type}\"" : null;
     }
 
-    protected bool NextPageExceedsSkipLimit(int page, int limit)
+    protected bool NextPageExceedsSkipLimit(int? page, int limit)
     {
+        if (page is null)
+            return false;
+
         return (page + 1) * limit >= MAXIMUM_SKIP;
     }
 }

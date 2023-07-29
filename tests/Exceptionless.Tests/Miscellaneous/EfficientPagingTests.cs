@@ -9,18 +9,14 @@ public class EfficientPagingTests : TestWithServices
     public EfficientPagingTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
-    [InlineData("http://localhost", false, false, false)]
-    [InlineData("http://localhost", true, false, true)]
-    [InlineData("http://localhost?after=1", false, true, false)]
-    [InlineData("http://localhost?after=1", true, true, true)]
-    [InlineData("http://localhost?before=11", false, false, true)]
-    [InlineData("http://localhost?before=11", true, true, true)]
-    public void CanBeforeAndAfterLinks(string url, bool hasMore, bool expectPrevious, bool expectNext)
+    [InlineData("http://localhost", null, null, false, false)]
+    [InlineData("http://localhost?after=1", "1", null, true, false)]
+    [InlineData("http://localhost?after=1", "1", "2", true, true)]
+    [InlineData("http://localhost?before=11", null, "1", false, true)]
+    public void CanBeforeAndAfterLinks(string url, string before, string after, bool expectPrevious, bool expectNext)
     {
-        var data = new List<string> { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" };
-
-        var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), data, false, hasMore, s => s);
-        int expectedLinkCount = 0;
+        var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), before, after); ;
+        byte expectedLinkCount = 0;
         if (expectPrevious)
             expectedLinkCount++;
         if (expectNext)
@@ -31,9 +27,9 @@ public class EfficientPagingTests : TestWithServices
 
         Assert.Equal(expectedLinkCount, links.Count);
         if (expectPrevious)
-            Assert.Contains(links, l => l.Contains("previous"));
+            Assert.Contains(links, l => l.Contains("previous") && l.Contains("before"));
         if (expectNext)
-            Assert.Contains(links, l => l.Contains("next"));
+            Assert.Contains(links, l => l.Contains("next") && l.Contains("after"));
     }
 
     [Theory]
@@ -56,8 +52,8 @@ public class EfficientPagingTests : TestWithServices
 
         Assert.Equal(expectedLinkCount, links.Count);
         if (expectPrevious)
-            Assert.Contains(links, l => l.Contains("previous"));
+            Assert.Contains(links, l => l.Contains("previous") && l.Contains("page"));
         if (expectNext)
-            Assert.Contains(links, l => l.Contains("next"));
+            Assert.Contains(links, l => l.Contains("next") && l.Contains("page"));
     }
 }
