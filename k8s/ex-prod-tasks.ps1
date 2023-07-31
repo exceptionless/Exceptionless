@@ -20,10 +20,9 @@ curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*
 curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "transient": { "action.destructive_requires_name": false } }' https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/settings
 curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.09.01-000108"
 
-# connect to redis
-$REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis-ha -o go-template='{{index .data \"redis-password\" | base64decode }}')
-kubectl port-forward --namespace ex-prod service/ex-prod-redis-master 6379
-redis-cli -a $REDIS_PASSWORD
+# connect to redis OR use k9s to shell into a redis pod
+$REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis -o go-template='{{index .data "redis-password" | base64decode }}')
+kubectl exec --stdin --tty ex-prod-redis-node-0 -- /bin/bash -c "redis-cli -a $REDIS_PASSWORD"
 
 # open kubernetes dashboard
 $DASHBOARD_PASSWORD=$(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
@@ -114,49 +113,49 @@ helm upgrade `
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
+helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-prod --namespace ex-prod .\exceptionless
+
 # stop the entire app
+
 kubectl scale deployment/ex-prod-app --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-api --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-close-inactive-sessions --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-daily-summary --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-notifications --replicas=0 --namespace ex-prod
+kubectl scale deployment/ex-prod-jobs-event-usage --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-posts --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-user-descriptions --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-mail-message --replicas=0 --namespace ex-prod
-kubectl scale deployment/ex-prod-jobs-cleanup-data --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-stack-event-count --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-web-hooks --replicas=0 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-work-item --replicas=0 --namespace ex-prod
-kubectl scale deployment/ex-prod-statsd --replicas=0 --namespace ex-prod
 
-kubectl patch cronjob/ex-prod-jobs-cleanup-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-download-geoip-database -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-event-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-maintain-indexes -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-organization-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": true}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-cleanup-data -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-migration -p '{"spec":{"suspend": true}}' --namespace ex-prod
 
 # resume the app
+
 kubectl scale deployment/ex-prod-app --replicas=5 --namespace ex-prod
 kubectl scale deployment/ex-prod-api --replicas=5 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-close-inactive-sessions --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-daily-summary --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-notifications --replicas=2 --namespace ex-prod
+kubectl scale deployment/ex-prod-jobs-event-usage --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-posts --replicas=6 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-event-user-descriptions --replicas=2 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-mail-message --replicas=2 --namespace ex-prod
-kubectl scale deployment/ex-prod-jobs-cleanup-data --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-stack-event-count --replicas=1 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-web-hooks --replicas=4 --namespace ex-prod
 kubectl scale deployment/ex-prod-jobs-work-item --replicas=5 --namespace ex-prod
-kubectl scale deployment/ex-prod-statsd --replicas=1 --namespace ex-prod
 
-kubectl patch cronjob/ex-prod-jobs-cleanup-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-download-geoip-database -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-event-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-maintain-indexes -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-organization-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
-kubectl patch cronjob/ex-prod-jobs-stack-snapshot -p '{\"spec\":{\"suspend\": false}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-cleanup-data -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace ex-prod
+kubectl patch cronjob/ex-prod-jobs-migration -p '{"spec":{"suspend": false}}' --namespace ex-prod
 
 # get memory dump for running pod (https://pgroene.wordpress.com/2021/02/17/memory-dump-net-core-linux-container-aks/)
 
