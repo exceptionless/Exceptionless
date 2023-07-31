@@ -41,4 +41,4 @@ config:
   EX_Apm__EnableMetrics: "true"
   EX_Apm__EnableTracing: "true"
   EX_Apm__FullDetails: "true"
-  EX_Apm__Insecure: "false"
+  EX_Apm__Insecure: "true"

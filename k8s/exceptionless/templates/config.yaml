@@ -21,9 +21,7 @@ data:
     EX_ConnectionStrings__Storage: {{ default "provider=folder;path=/app/storage" .Values.storage.connectionString }}
     EX_ConnectionStrings__Cache: {{ default "provider=redis;" .Values.cache.connectionString }}
     EX_ConnectionStrings__MessageBus: {{ default "provider=redis;" .Values.messagebus.connectionString }}
-    {{- if .Values.statsd.token }}
-    EX_ConnectionStrings__Metrics: provider=statsd;server={{ template "exceptionless.fullname" . }}-statsd
-    {{- else if .Values.metrics.connectionString }}
+    {{- if .Values.metrics.connectionString }}
     EX_ConnectionStrings__Metrics: {{ .Values.metrics.connectionString }}
     {{- end }}
     EX_ConnectionStrings__Queue: {{ default "provider=redis;" .Values.queue.connectionString }}

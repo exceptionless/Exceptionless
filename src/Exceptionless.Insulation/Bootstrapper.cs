@@ -142,9 +142,7 @@ public class Bootstrapper
 
     private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options)
     {
-        // TODO: Remove this extra config parse step when sentinel bug is fixed
-        var config = ConfigurationOptions.Parse(options.GetString("server"));
-        return ConnectionMultiplexer.Connect(config);
+        return ConnectionMultiplexer.Connect(options.GetString("server"));
     }
 
     private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks)

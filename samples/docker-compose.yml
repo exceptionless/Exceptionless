@@ -11,7 +11,6 @@ services:
       EX_ConnectionStrings__Cache: provider=redis
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       EX_ConnectionStrings__MessageBus: provider=redis
-      #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
@@ -39,7 +38,6 @@ services:
       EX_ConnectionStrings__Elasticsearch: server=http://elasticsearch:9200
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
       EX_ConnectionStrings__MessageBus: provider=redis
-      #EX_ConnectionStrings__Metrics: provider=statsd;server=statsd;
       EX_ConnectionStrings__Queue: provider=redis
       EX_ConnectionStrings__Redis: server=redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
