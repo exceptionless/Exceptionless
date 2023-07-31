@@ -4,8 +4,8 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.17.12
-  image: exceptionless/elasticsearch:7.17.12 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
+  version: 8.9.0
+  image: exceptionless/elasticsearch:8.9.0 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-dev-snapshots
   http:
@@ -16,9 +16,7 @@ spec:
     - name: main
       count: 1
       config:
-        node.master: true
-        node.data: true
-        node.ingest: true
+        node.roles: [data, ingest, master]
         action.destructive_requires_name: false
       podTemplate:
         spec:
@@ -59,7 +57,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 7.17.12
+  version: 8.9.0
   count: 1
   elasticsearchRef:
     name: ex-dev
