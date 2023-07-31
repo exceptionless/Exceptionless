@@ -141,6 +141,7 @@ kubectl describe certificate -n tls-secret
 kubectl apply -f namespace-default-limits.yaml
 
 # install redis server
+# https://github.com/bitnami/charts/blob/main/bitnami/redis/README.md
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
