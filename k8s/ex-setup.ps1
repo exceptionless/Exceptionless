@@ -154,8 +154,6 @@ helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values
     --set "queue.connectionString=$QUEUE_CONNECTIONSTRING" `
     --set "redis.connectionString=$REDIS_CONNECTIONSTRING" `
     --set "storage.connectionString=$STORAGE_CONNECTIONSTRING" `
-    --set "statsd.token=$STATSD_TOKEN" `
-    --set "statsd.user=$STATSD_USER" `
     --set "config.EX_ApplicationInsightsKey=$EX_ApplicationInsightsKey" `
     --set "config.EX_ConnectionStrings__OAuth=$EX_ConnectionStrings__OAuth" `
     --set "config.EX_ExceptionlessApiKey=$EX_ExceptionlessApiKey" `
