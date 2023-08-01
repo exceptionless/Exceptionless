@@ -315,7 +315,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var invoiceService = new InvoiceService(client);
         var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
         var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
-        return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
+        return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit);
     }
 
     /// <summary>

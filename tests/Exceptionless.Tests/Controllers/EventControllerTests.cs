@@ -3,7 +3,10 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
@@ -1287,5 +1290,216 @@ public class EventControllerTests : IntegrationTestsBase
 
         await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
         await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
+    }
+
+    [Fact]
+    public async Task CanEventsWithPagingAsync()
+    {
+        await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+        });
+
+        Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+        Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+        Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("page", 1)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Single(links);
+
+        string nextPage = GetQueryStringValue(links["next"], "page");
+        Assert.Equal("2", nextPage);
+
+        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        string firstEventId = result.Single().Id;
+
+        // Go to second page
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("page", nextPage)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Equal(2, links.Count);
+
+        string previousPage = GetQueryStringValue(links["previous"], "page");
+        Assert.Equal("1", previousPage);
+
+        nextPage = GetQueryStringValue(links["next"], "page");
+        Assert.Equal("3", nextPage);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        string secondEventId = result.Single().Id;
+        Assert.NotEqual(firstEventId, secondEventId);
+
+        // Go to last page
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("page", nextPage)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Single(links);
+
+        previousPage = GetQueryStringValue(links["previous"], "page");
+        Assert.Equal("2", previousPage);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        string thirdEventId = result.Single().Id;
+        Assert.NotEqual(secondEventId, thirdEventId);
+
+        // go to previous page
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("page", previousPage)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Equal(2, links.Count);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        Assert.Equal(secondEventId, result.Single().Id);
+    }
+
+    [Fact]
+    public async Task CanEventsWithStablePagingAsync()
+    {
+        await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+            d.Event().TestProject().Type(Event.KnownTypes.Log);
+        });
+
+        Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+        Log.SetLogLevel<StackRepository>(LogLevel.Trace);
+        Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
+
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Single(links);
+
+        string after = GetQueryStringValue(links["next"], "after");
+        Assert.NotNull(after);
+
+        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        string firstEventId = result.Single().Id;
+
+        // Go to second page
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("after", after)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Equal(2, links.Count);
+
+        string before = GetQueryStringValue(links["previous"], "before");
+        Assert.NotNull(before);
+
+        after = GetQueryStringValue(links["next"], "after");
+        Assert.NotNull(after);
+        Assert.Equal(before, after);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        string secondEventId = result.Single().Id;
+        Assert.NotEqual(firstEventId, secondEventId);
+
+        // Go to last page
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("after", after)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Single(links);
+
+        before = GetQueryStringValue(links["previous"], "before");
+        Assert.NotNull(before);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        string thirdEventId = result.Single().Id;
+        Assert.NotEqual(secondEventId, thirdEventId);
+
+        // go to previous page
+        response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("limit", "1")
+            .QueryString("before", before)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        Assert.Equal(2, links.Count);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        Assert.Equal(secondEventId, result.Single().Id);
+    }
+
+    private string GetQueryStringValue(string url, string name)
+    {
+        var uri = new Uri(url);
+        var parameters = HttpUtility.ParseQueryString(uri.Query);
+        return parameters.GetValue(name);
+    }
+
+    private static IDictionary<string, string> ParseLinkHeaderValue(string[] links)
+    {
+        if (links is not { Length: > 0 })
+            return new Dictionary<string, string>(0);
+
+        var result = new Dictionary<string, string>();
+        foreach (string link in links)
+        {
+            var match = Regex.Match(link, @"<(?<url>[^>]*)>;\s+rel=""(?<rel>\w+)""");
+            if (!match.Success)
+                continue;
+
+            result.Add(match.Groups["rel"].Value, match.Groups["url"].Value);
+        }
+
+        return result;
     }
 }

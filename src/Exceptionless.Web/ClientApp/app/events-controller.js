@@ -214,6 +214,7 @@
                         header: "Events",
                         get: eventService.getAll,
                         options: {
+                            page: 1,
                             limit: 15,
                             mode: "summary",
                         },

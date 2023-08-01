@@ -739,6 +739,7 @@
                             );
                         },
                         options: {
+                            page: 1,
                             limit: 10,
                             mode: "summary",
                         },
