@@ -39,7 +39,7 @@ public class Startup
             .SetIsOriginAllowed(isOriginAllowed: _ => true)
             .AllowCredentials()
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-            .WithExposedHeaders("ETag", "Link", Headers.RateLimit, Headers.RateLimitRemaining, "X-Result-Count", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion)));
+            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, Headers.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {
@@ -291,7 +291,7 @@ public class Startup
         app.UseSwagger(c =>
         {
             c.RouteTemplate = "docs/{documentName}/swagger.json";
-            // TODO: Remove once 5.6.4+ is released 
+            // TODO: Remove once 5.6.4+ is released
             c.PreSerializeFilters.Add((doc, _) => doc.Servers?.Clear());
         });
         app.UseSwaggerUI(s =>

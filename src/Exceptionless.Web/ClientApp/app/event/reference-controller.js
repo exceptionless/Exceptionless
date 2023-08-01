@@ -16,6 +16,7 @@
                 });
             },
             options: {
+                page: 1,
                 limit: 20,
                 mode: "summary",
             },
