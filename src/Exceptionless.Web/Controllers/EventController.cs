@@ -393,12 +393,17 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int? page, int limit, string before, string after)
     {
         if (String.IsNullOrEmpty(sort))
-            sort = "-date";
+            sort = $"-{EventIndex.Alias.Date}";
 
-        return _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).EnforceEventStackFilter().SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
+        return _repository.FindAsync(
+            q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                .FilterExpression(filter)
+                .EnforceEventStackFilter()
+                .SortExpression(sort)
+                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchAfterPaging().SearchBefore(before).SearchAfter(after).PageLimit(limit));
+                : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
     }
 
     /// <summary>

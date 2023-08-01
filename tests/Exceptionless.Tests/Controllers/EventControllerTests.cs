@@ -1323,7 +1323,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("2", nextPage);
 
         var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
-        Assert.Single(result);
+        string firstEventId = result.Single().Id;
 
         // Go to second page
         response = await SendRequestAsync(r => r
@@ -1345,7 +1345,8 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("3", nextPage);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
-        Assert.Single(result);
+        string secondEventId = result.Single().Id;
+        Assert.NotEqual(firstEventId, secondEventId);
 
         // Go to last page
         response = await SendRequestAsync(r => r
@@ -1364,7 +1365,8 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("2", previousPage);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
-        Assert.Single(result);
+        string thirdEventId = result.Single().Id;
+        Assert.NotEqual(secondEventId, thirdEventId);
 
         // go to previous page
         response = await SendRequestAsync(r => r
@@ -1378,6 +1380,9 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
         links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
         Assert.Equal(2, links.Count);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        Assert.Equal(secondEventId, result.Single().Id);
     }
 
     [Fact]
@@ -1410,7 +1415,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(after);
 
         var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
-        Assert.Single(result);
+        string firstEventId = result.Single().Id;
 
         // Go to second page
         response = await SendRequestAsync(r => r
@@ -1430,10 +1435,11 @@ public class EventControllerTests : IntegrationTestsBase
 
         after = GetQueryStringValue(links["next"], "after");
         Assert.NotNull(after);
-        Assert.NotEqual(before, after);
+        Assert.Equal(before, after);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
-        Assert.Single(result);
+        string secondEventId = result.Single().Id;
+        Assert.NotEqual(firstEventId, secondEventId);
 
         // Go to last page
         response = await SendRequestAsync(r => r
@@ -1452,7 +1458,8 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(before);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
-        Assert.Single(result);
+        string thirdEventId = result.Single().Id;
+        Assert.NotEqual(secondEventId, thirdEventId);
 
         // go to previous page
         response = await SendRequestAsync(r => r
@@ -1466,6 +1473,9 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
         links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
         Assert.Equal(2, links.Count);
+
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        Assert.Equal(secondEventId, result.Single().Id);
     }
 
     private string GetQueryStringValue(string url, string name)
