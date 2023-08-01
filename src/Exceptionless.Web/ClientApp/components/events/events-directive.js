@@ -111,11 +111,13 @@
                             vm.previous = links.previous;
                             vm.next = links.next;
 
-                            vm.pageSummary = paginationService.getCurrentPageSummary(
-                                response.data,
-                                vm.currentOptions.page,
-                                vm.currentOptions.limit
-                            );
+                            if (vm.currentOptions.page) {
+                                vm.pageSummary = paginationService.getCurrentPageSummary(
+                                    response.data,
+                                    vm.currentOptions.page,
+                                    vm.currentOptions.limit
+                                );
+                            }
 
                             if (vm.events.length === 0 && vm.currentOptions.page && vm.currentOptions.page > 1) {
                                 return get();
@@ -227,6 +229,7 @@
                         vm.beforeRelativeText = beforeRelativeText;
                         vm.canRefresh = canRefresh;
                         vm.currentEventId = vm.settings.eventId;
+                        vm.currentOptions = null;
                         vm.events = [];
                         vm.get = get;
                         vm.hasFilter = filterService.hasFilter;
