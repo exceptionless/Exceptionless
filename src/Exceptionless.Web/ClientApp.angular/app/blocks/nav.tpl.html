@@ -1,0 +1,280 @@
+<ul class="nav">
+    <li ng-class="{active: appVm.isMenuActive.error}">
+        <a href="#" class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-warning fa-fw"></i>
+            <span>{{::'Exceptions' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'Exceptions' | translate}}</li>
+            <li>
+                <a ng-href="{{appVm.urls.frequent.error}}">
+                    <i class="fa fa-signal fa-fw"></i>
+                    <span>{{::'Most Frequent Exceptions' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.users.error}}">
+                    <i class="fa fa-users fa-fw"></i>
+                    <span>{{::'Most Users' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.new.error}}">
+                    <i class="fa fa-asterisk fa-fw"></i>
+                    <span>{{::'New Exception' |translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.events.error}}">
+                    <i class="fa fa-calendar fa-fw"></i>
+                    <span>{{::"Exception Events" | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li ng-class="{active: appVm.isMenuActive.log}">
+        <a href class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-file-text-o fa-fw"></i>
+            <span>{{::'Log Messages' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'Log Messages' | translate}}</li>
+            <li>
+                <a ng-href="{{appVm.urls.frequent.log}}">
+                    <i class="fa fa-signal fa-fw"></i>
+                    <span>{{::'Most Frequent Messages' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.users.log}}">
+                    <i class="fa fa-users fa-fw"></i>
+                    <span>{{::'Most Users' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.new.log}}">
+                    <i class="fa fa-asterisk fa-fw"></i>
+                    <span>{{::'New LogMessage' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.events.log}}">
+                    <i class="fa fa-calendar fa-fw"></i>
+                    <span>{{::'Message Events' | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li ng-class="{active: appVm.isMenuActive['404']}">
+        <a href class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-unlink fa-fw"></i>
+            <span>{{::'Broken Links' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'Broken Links' | translate}}</li>
+            <li>
+                <a ng-href="{{appVm.urls.frequent['404']}}">
+                    <i class="fa fa-signal fa-fw"></i>
+                    <span>{{::'Most Frequent Links' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.users['404']}}">
+                    <i class="fa fa-users fa-fw"></i>
+                    <span>{{::'Most Users' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.new['404']}}">
+                    <i class="fa fa-asterisk fa-fw"></i>
+                    <span>{{::'New BrokenLink' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.events['404']}}">
+                    <i class="fa fa-calendar fa-fw"></i>
+                    <span>{{::'Broken Links Events' | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li ng-class="{active: appVm.isMenuActive.usage}">
+        <a href class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-check-square-o fa-fw"></i>
+            <span>{{::'Feature Usages' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'Feature Usages' | translate}}</li>
+            <li>
+                <a ng-href="{{appVm.urls.frequent.usage}}">
+                    <i class="fa fa-signal fa-fw"></i>
+                    <span>{{::'Most Frequent Features' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.users.usage}}">
+                    <i class="fa fa-users fa-fw"></i>
+                    <span>{{::'Most Users' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.new.usage}}">
+                    <i class="fa fa-asterisk fa-fw"></i>
+                    <span>{{::'New FeatureUsage' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.events.usage}}">
+                    <i class="fa fa-calendar fa-fw"></i>
+                    <span>{{::'Feature Events' | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li ng-class="{active: appVm.isMenuActive.all}">
+        <a href class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-th-large fa-fw"></i>
+            <span>{{::'All' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'All' | translate}}</li>
+            <li>
+                <a ng-href="{{appVm.urls.frequent.all}}">
+                    <i class="fa fa-signal fa-fw"></i>
+                    <span>{{::'Most Frequent' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.users.all}}">
+                    <i class="fa fa-users fa-fw"></i>
+                    <span>{{::'Most Users' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.new.all}}">
+                    <i class="fa fa-asterisk fa-fw"></i>
+                    <span>{{::'New Stacks' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.events.all}}">
+                    <i class="fa fa-calendar fa-fw"></i>
+                    <span>{{::'Event Events' | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li role="separator" class="nav-sub-divider"></li>
+    <li ng-class="{active: appVm.isMenuActive.reports}">
+        <a href class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-book fa-fw"></i>
+            <span>{{::'Reports' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'Reports' | translate}}</li>
+            <li>
+                <a ng-href="{{appVm.urls.reports.sessions}}">
+                    <i class="fa fa-heartbeat fa-fw"></i>
+                    <span>{{::'Sessions' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.reports.regressed}}">
+                    <i class="fa fa-bug fa-fw"></i>
+                    <span>{{::'regressed' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.reports.fixed}}">
+                    <i class="fa fa-wrench fa-fw"></i>
+                    <span>{{::'fixed' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.reports.snoozed}}">
+                    <i class="fa fa-clock-o fa-fw"></i>
+                    <span>{{::'snoozed' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.reports.ignored}}">
+                    <i class="fa fa-trash-o fa-fw"></i>
+                    <span>{{::'ignored' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ng-href="{{appVm.urls.reports.discarded}}">
+                    <i class="fa fa-ban fa-fw"></i>
+                    <span>{{::'discarded' | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li ng-class="{active: appVm.isMenuActive.settings}">
+        <a href class="auto">
+            <span class="pull-right text-muted">
+                <i class="fa fa-fw fa-angle-right text"></i>
+                <i class="fa fa-fw fa-angle-down text-active"></i>
+            </span>
+            <i class="fa fa-cog fa-fw"></i>
+            <span>{{::'Settings' | translate}}</span>
+        </a>
+        <ul class="nav nav-sub dk" auto-active>
+            <li class="nav-sub-header">{{::'Settings' | translate}}</li>
+            <li>
+                <a ui-sref="app.organization.list">
+                    <i class="fa fa-group fa-fw"></i>
+                    <span>{{::'Organization Manager' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ui-sref="app.project.list">
+                    <i class="fa fa-briefcase fa-fw"></i>
+                    <span>{{::'Project Manager' | translate}}</span>
+                </a>
+            </li>
+            <li>
+                <a ui-sref="app.account.manage">
+                    <i class="fa fa-user fa-fw"></i>
+                    <span>{{::'My Account' | translate}}</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li>
+        <a href="https://exceptionless.com/docs/" target="_blank" title="{{::'Documentation' | translate}}">
+            <i class="fa fa-book fa-fw"></i>
+            <span>{{::'Documentation' | translate}}</span>
+        </a>
+    </li>
+    <li ng-if="appVm.isIntercomEnabled()">
+        <a ng-click="appVm.showIntercom()" title="{{::'Support' | translate}}">
+            <i class="fa fa-comment fa-fw"></i>
+            <span>{{::'Support' | translate}}</span>
+        </a>
+    </li>
+</ul>

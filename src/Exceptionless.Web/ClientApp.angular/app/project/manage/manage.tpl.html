@@ -1,0 +1,100 @@
+<organization-notifications organization-id="vm.project.organization_id"></organization-notifications>
+
+<div
+    class="hbox hbox-auto-xs hbox-auto-sm"
+    refresh-on="ProjectChanged"
+    refresh-action="vm.get(data)"
+    refresh-throttle="10000"
+>
+    <div class="col" refresh-on="TokenChanged" refresh-action="vm.getTokens()" refresh-throttle="10000">
+        <div class="wrapper-md" refresh-on="WebHookChanged" refresh-action="vm.getWebHooks()" refresh-throttle="10000">
+            <div
+                class="panel panel-default"
+                refresh-on="OrganizationChanged"
+                refresh-action="vm.getOrganization()"
+                refresh-debounce="10000"
+            >
+                <div class="panel-heading">
+                    <i class="fa fa-th-list"></i> {{::'Manage Project' | translate}} {{ vm.project.name ? ' "' +
+                    vm.project.name + '"' : ''}}
+                </div>
+                <div class="panel-body m-b-n">
+                    <uib-tabset class="tab-container">
+                        <uib-tab heading="{{::'General' | translate}}">
+                            <div ng-include="'app/project/manage/tabs/general.tpl.html'"></div>
+                        </uib-tab>
+                        <uib-tab heading="{{::'API Keys' | translate}}">
+                            <div ng-include="'app/project/manage/tabs/api-keys.tpl.html'"></div>
+                        </uib-tab>
+                        <uib-tab heading="{{::'Settings' | translate}}">
+                            <div ng-include="'app/project/manage/tabs/settings.tpl.html'"></div>
+                        </uib-tab>
+                        <uib-tab heading="{{::'Client Configuration' | translate}}">
+                            <div ng-include="'app/project/manage/tabs/client-configuration.tpl.html'"></div>
+                        </uib-tab>
+                        <uib-tab heading="{{::'Integrations' | translate}}">
+                            <div ng-include="'app/project/manage/tabs/integrations.tpl.html'"></div>
+                        </uib-tab>
+                    </uib-tabset>
+                </div>
+                <footer class="panel-footer">
+                    <div class="pull-right">
+                        <a
+                            ui-sref="app.project-frequent({ projectId: vm.project.id })"
+                            class="btn btn-default"
+                            role="button"
+                        >
+                            <span class="visible-xs" title="{{::'Go To Most Frequent' | translate}}"
+                                ><i class="fa fa-fw fa-signal"></i
+                            ></span>
+                            <span class="hidden-xs">{{::'Go To Most Frequent' | translate}}</span></a
+                        >
+                    </div>
+
+                    <a
+                        ui-sref="app.organization.manage({ id: vm.project.organization_id })"
+                        class="btn btn-primary"
+                        role="button"
+                        title="{{::'Manage Organization' | translate}}"
+                    >
+                        <i class="fa fa-fw fa-group"></i>
+                    </a>
+                    <a
+                        ui-sref="app.account.manage({ tab: 'notifications', projectId: vm.project.id })"
+                        class="btn btn-primary"
+                        role="button"
+                        title="{{::'Manage Notification Settings' | translate}}"
+                    >
+                        <i class="fa fa-fw fa-envelope"></i>
+                    </a>
+                    <a
+                        ui-sref="app.project.configure({ id: vm.project.id })"
+                        class="btn btn-primary"
+                        role="button"
+                        title="{{::'Download & Configure Client' | translate}}"
+                    >
+                        <i class="fa fa-fw fa-cloud-download"></i>
+                    </a>
+                    <div class="btn-group">
+                        <button
+                            type="button"
+                            role="button"
+                            class="btn btn-default dropdown-toggle"
+                            data-toggle="dropdown"
+                        >
+                            <i class="fa fa-fw fa-remove"></i> <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            <li>
+                                <a ng-click="vm.resetData()" role="button">{{::'Reset Project Data' | translate}}</a>
+                            </li>
+                            <li>
+                                <a ng-click="vm.removeProject()" role="button">{{::'Delete Project' | translate}}</a>
+                            </li>
+                        </ul>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+</div>

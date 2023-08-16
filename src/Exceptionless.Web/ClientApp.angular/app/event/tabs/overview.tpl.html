@@ -1,0 +1,136 @@
+<table class="table table-striped table-bordered table-fixed table-key-value b-t">
+    <tr
+        refresh-on="PersistentEventChanged"
+        refresh-if="vm.canRefresh(data)"
+        refresh-action="vm.getEvent()"
+        refresh-throttle="10000"
+    >
+        <th>{{::'Occurred On' | translate}}</th>
+        <td>{{::'DateTime' | translate:vm.event}} (<timeago date="vm.event.date"></timeago>)</td>
+    </tr>
+    <tr ng-if="vm.isSessionStart">
+        <th>{{::'Duration' | translate}}</th>
+        <td>
+            <span
+                ng-if="!vm.event.data.sessionend"
+                class="glyphicon glyphicon-one-fine-dot glyphicon-green"
+                title="{{::'Online' | translate}}"
+            ></span>
+            <abbr title="{{::'Seconds' | translate:{duration : vm.getDuration()} }}"
+                ><duration value="vm.getDuration()"></duration
+            ></abbr>
+            <span ng-if="vm.event.data.sessionend">
+                ({{::'ended' | translate}} <timeago date="vm.event.data.sessionend"></timeago>)
+            </span>
+        </td>
+    </tr>
+    <tr>
+        <th>{{::'Project' | translate}}</th>
+        <td><a ui-sref="app.project-frequent({ projectId: vm.project.id })">{{vm.project.name}}</a></td>
+    </tr>
+    <tr ng-if="vm.event.reference_id">
+        <th>{{::'Reference' | translate}}</th>
+        <td>
+            <a ng-if="vm.isSessionStart" ng-click="vm.activateSessionEventsTab()">{{vm.event.reference_id}}</a>
+            <span ng-if="!vm.isSessionStart">{{vm.event.reference_id}}</span>
+        </td>
+    </tr>
+    <tr ng-repeat="reference in vm.references | orderBy: 'name'">
+        <th>{{reference.name}}</th>
+        <td><a ui-sref="app.event-reference({ referenceId: reference.id })">{{reference.id}}</a></td>
+    </tr>
+    <tr ng-if="vm.level">
+        <th>{{::'Level' | translate}}</th>
+        <td>
+            <span
+                class="label label-default"
+                ng-class="{ 'label-success': vm.isLevelSuccess, 'label-info': vm.isLevelInfo, 'label-warning': vm.isLevelWarning, 'label-danger': vm.isLevelError }"
+                >{{::vm.level}}</span
+            >
+        </td>
+    </tr>
+    <tr ng-if="vm.event.type !== 'error'">
+        <th>{{::'Event Type' | translate}}</th>
+        <td><span truncate>{{::vm.event.type}}</span></td>
+    </tr>
+    <tr class="hidden-print" ng-if="vm.hasError">
+        <th>{{::'Error Type' | translate}}</th>
+        <td><span truncate>{{::vm.errorType}}</span></td>
+    </tr>
+    <tr ng-if="vm.event.source">
+        <th>{{::'Source' | translate}}</th>
+        <td><span truncate lines="2">{{::vm.event.source}}</span></td>
+    </tr>
+    <tr ng-if="!vm.isSessionStart && vm.event.value">
+        <th>{{::'Value' | translate}}</th>
+        <td>{{::vm.event.value}}</td>
+    </tr>
+    <tr class="hidden-print" ng-if="vm.event.message || vm.getMessage()">
+        <th>{{::'Message' | translate}}</th>
+        <td><span truncate lines="10">{{::vm.event.message || vm.message}}</span></td>
+    </tr>
+    <tr ng-if="vm.version">
+        <th>{{::'Version' | translate}}</th>
+        <td>{{::vm.version}}</td>
+    </tr>
+    <tr ng-if="vm.location">
+        <th>{{::'Geo' | translate}}</th>
+        <td><span truncate>{{::vm.location}}</span></td>
+    </tr>
+    <tr ng-if="vm.event.tags.length > 0">
+        <th>{{::'Tags' | translate}}</th>
+        <td><span class="label label-info" ng-repeat="tag in vm.event.tags track by tag">{{tag}}</span></td>
+    </tr>
+    <tr class="hidden-print" ng-if="vm.requestUrl">
+        <th>{{::'URL' | translate}}</th>
+        <td><a ng-href="{{::vm.requestUrl}}" target="_blank" truncate>{{::vm.requestUrl}}</a></td>
+    </tr>
+</table>
+
+<div ng-if="vm.userEmail || vm.userDescription || vm.userIdentity || vm.userEmail">
+    <h4>{{::'User Info' | translate}}</h4>
+    <table class="table table-striped table-bordered table-fixed table-key-value b-t">
+        <tr ng-if="vm.userEmail">
+            <th>{{::'User Email' | translate}}</th>
+            <td><a ng-href="mailto:{{::vm.userEmail}}" truncate>{{::vm.userEmail}}</a></td>
+        </tr>
+        <tr ng-if="vm.userIdentity">
+            <th>{{::'User Identity' | translate}}</th>
+            <td><span truncate>{{::vm.userIdentity}}</span></td>
+        </tr>
+        <tr ng-if="vm.userName">
+            <th>{{::'User Name' | translate}}</th>
+            <td><span truncate>{{::vm.userName}}</span></td>
+        </tr>
+        <tr ng-if="vm.userDescription">
+            <th>{{::'User Description' | translate}}</th>
+            <td><span truncate lines="2">{{::vm.userDescription}}</span></td>
+        </tr>
+    </table>
+</div>
+
+<div class="hidden-print" ng-if="vm.hasError">
+    <div class="pull-right">
+        <a
+            clipboard
+            text="vm.textStackTrace"
+            on-copied="vm.copied()"
+            supported="vm.clipboardSupported"
+            ng-show="vm.textStackTrace && vm.clipboardSupported"
+            class="btn btn-default btn-xs fa fa-code hidden-xs"
+            role="button"
+            title="{{::'Copy Stack Trace to Clipboard' | translate}}"
+        ></a>
+    </div>
+    <h4>{{::'Stack Trace' | translate}}</h4>
+    <stack-trace
+        class="stack-trace-mini"
+        exception="vm.event.data['@error']"
+        ng-if="vm.event.data['@error']"
+    ></stack-trace>
+    <simple-stack-trace
+        class="stack-trace-mini"
+        exception="vm.event.data['@simple_error']"
+        ng-if="vm.event.data['@simple_error']"
+    ></simple-stack-trace>
+</div>

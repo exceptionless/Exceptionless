@@ -1,0 +1,3 @@
+<span ng-if="showBadge" class="label label-default {{badgeClass}}">{{::source.status | translate}}</span>
+<span ng-if="showType"><strong>{{::'Session' | translate}}</strong>:&nbsp;</span
+><a ui-sref="app.stack({ id: source.id })" truncate lines="2">{{source.title}}</a>
