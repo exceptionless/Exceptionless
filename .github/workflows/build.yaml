@@ -50,9 +50,7 @@ jobs:
         run: npm ci
       - name: Lint Client
         working-directory: src/Exceptionless.Web/ClientApp
-        run: |
-          npm run lint
-          npm run prettier:check
+        run: npm run lint
       - name: Set up Docker Buildx
         if: "${{ env.DOCKER_USERNAME != '' }}"
         uses: docker/setup-buildx-action@v2

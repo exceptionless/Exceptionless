@@ -9,14 +9,15 @@
 		"test": "npm run test:integration && npm run test:unit",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write .",
+		"lint": "prettier --plugin prettier-plugin-svelte . --check . && eslint .",
+		"format": "prettier --plugin prettier-plugin-svelte . --write .",
+		"format:staged": "prettier --plugin prettier-plugin-svelte . --write --ignore-unknown",
 		"test:integration": "playwright test",
 		"test:unit": "vitest"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.37.0",
-		"@sveltejs/adapter-auto": "^2.1.0",
+		"@sveltejs/adapter-static": "^2.0.3",
 		"@sveltejs/kit": "^1.22.6",
 		"@typescript-eslint/eslint-plugin": "^6.4.0",
 		"@typescript-eslint/parser": "^6.4.0",
