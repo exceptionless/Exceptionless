@@ -3,6 +3,7 @@
 ## General
 
 -   <https://kit.svelte.dev/docs/project-structure>
+-   <https://github.com/laoshaw/sveltespa>
 
 ## Authentication
 
@@ -27,7 +28,7 @@
 ## Theming
 
 -   <https://svelte.dev/repl/03f0be0c4dc54eb4af5a168f644f5c31?version=3.19.1>
-
+-   <https://larainfo.com/blogs/tailwind-daisyui-registration-form-example>
 -   <https://sveltethemes.dev/resources>
 -   <https://tailwindui.com/components/application-ui/forms/sign-in-forms>
 -   <https://daisyui.com/components/drawer/>

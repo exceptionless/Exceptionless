@@ -1,5 +1,11 @@
 <script>
+	import { QueryClient, QueryClientProvider } from '@sveltestack/svelte-query';
 	import '../app.css';
+
+	// Create a client
+	const queryClient = new QueryClient();
 </script>
 
-<slot />
+<QueryClientProvider client={queryClient}>
+	<slot />
+</QueryClientProvider>
