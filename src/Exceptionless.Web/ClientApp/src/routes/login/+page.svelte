@@ -10,10 +10,10 @@
 	<title>Log in</title>
 </svelte:head>
 
-<div class="relative flex h-screen flex-col justify-center overflow-hidden">
+<div class="flex h-screen">
 	<div class="m-auto w-full rounded-md bg-white p-6 shadow-md lg:max-w-lg">
-		<img class="mx-auto w-auto" src={logo} alt="Exceptionless" />
-		<h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight">
+		<img class="mx-auto" src={logo} alt="Exceptionless" />
+		<h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">
 			Log in to your account
 		</h2>
 		<form class="space-y-4">

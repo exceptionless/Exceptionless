@@ -33,7 +33,7 @@
 					"background": {
 						"activeOnStart": true,
 						"beginsPattern": ".",
-						"endsPattern": "created"
+						"endsPattern": "ready in"
 					}
 				}
 			],
