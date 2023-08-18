@@ -45,7 +45,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <summary>
     /// The actual type of the entity for which the changes are tracked.
     /// </summary>
-    public Type EntityType => _entityType;
+    internal Type EntityType => _entityType;
 
     /// <summary>
     /// Clears the Delta and resets the underlying Entity.

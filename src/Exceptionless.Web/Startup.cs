@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
+using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
 
 namespace Exceptionless.Web;
 
@@ -136,7 +137,11 @@ public class Startup
 
             c.IgnoreObsoleteActions();
             c.OperationFilter<RequestBodyOperationFilter>();
+
+            c.AddEnumsWithValuesFixFilters();
+            c.SupportNonNullableReferenceTypes();
         });
+        services.AddSwaggerGenNewtonsoftSupport();
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
