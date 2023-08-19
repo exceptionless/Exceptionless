@@ -10,11 +10,11 @@
 	export let placeholder: string | undefined;
 
 	$: error = problem.errors?.[name];
-    $: label = label ?? name.charAt(0).toUpperCase() + name.slice(1);
+	$: label = label ?? name.charAt(0).toUpperCase() + name.slice(1);
 
-    function clearError() {
-        problem = problem.clear(name);
-    }
+	function clearError() {
+		problem = problem.clear(name);
+	}
 </script>
 
 <div class="form-control">
