@@ -1,6 +1,6 @@
 <script lang="ts">
-	import EmailInput from '$comp/EmailInput.svelte';
-	import PasswordInput from '$comp/PasswordInput.svelte';
+	import EmailInput from '$comp/form/EmailInput.svelte';
+	import PasswordInput from '$comp/form/PasswordInput.svelte';
 
 	import logo from '$lib/assets/exceptionless-350.png';
 	import IconMicrosoft from '~icons/mdi/microsoft';
@@ -27,7 +27,7 @@
 			accessToken.set(response.data.token);
 			goto('/');
 		} else if (response.status === 401) {
-			problem.errors.general = ['Invalid email or password.'];
+			problem.setErrorMessage('Invalid email or password.');
 		} else if (response.problem) {
 			problem = response.problem;
 		}
@@ -50,20 +50,20 @@
 				name="email"
 				bind:value={data.email}
 				required
-				label="Email"
 				{problem}
-				placeholder="Email address"
+				placeholder="Enter email address"
 			></EmailInput>
 			<PasswordInput
 				name="password"
 				bind:value={data.password}
 				required
-				label="Password"
 				{problem}
-				placeholder="Enter Password"
+				placeholder="Enter password"
 			>
 				<span slot="label" class="label-text-alt text-sm">
-					<a href="/forgot-password" class="link-secondary link">Forgot password?</a>
+					<a href="/forgot-password" class="link-secondary link" tabindex="-1"
+						>Forgot password?</a
+					>
 				</span>
 			</PasswordInput>
 			<div class="my-4">

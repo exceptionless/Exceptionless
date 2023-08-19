@@ -56,8 +56,14 @@ export class ProblemDetails implements Record<string, unknown> {
 	instance?: string;
 	errors: Record<string, string[] | undefined> = {};
 
-	clear(name: string) {
+	clear(name: string): ProblemDetails {
 		delete this.errors[name];
+		return this;
+	}
+
+	setErrorMessage(message: string): ProblemDetails {
+		this.errors.general = [message];
+		return this;
 	}
 }
 
@@ -255,13 +261,11 @@ export class FetchClient {
 
 		if (this.accessToken !== null) {
 			if (!init) init = {};
-			if (!init.headers) init.headers = new Headers();
-
-			const headers = init.headers as Headers;
-			headers.set('Authorization', `Bearer ${this.accessToken}`);
+			init.headers = Object.assign(init.headers || {}, {
+				Authorization: `Bearer ${this.accessToken}`
+			});
 		}
 
-		console.log(url);
 		const response = await this.fetch(url, init);
 
 		this.requestCount.decrement();
