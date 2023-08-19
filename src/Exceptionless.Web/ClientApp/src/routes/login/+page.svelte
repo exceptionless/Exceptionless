@@ -24,7 +24,8 @@
 
 	let errors: ValidationErrors<Login> = {};
 	const mutation = useMutation(
-		(model: Login) => client.postJSON<TokenResult>('/api/v2/auth/login', model),
+		(model: Login) =>
+			client.postJSON<TokenResult>('http://localhost:5200/api/v2/auth/login', model),
 		{
 			async onSuccess(data) {
 				// TODO: Fix up after nullable reference types.

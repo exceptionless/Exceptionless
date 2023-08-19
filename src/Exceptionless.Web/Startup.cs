@@ -2,12 +2,17 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Foundatio.Extensions.Hosting.Startup;
+using Foundatio.Repositories.Exceptions;
+using Hellang.Middleware.ProblemDetails;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -21,6 +26,7 @@ using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
 using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
+using ProblemDetailsOptions = Hellang.Middleware.ProblemDetails.ProblemDetailsOptions;
 
 namespace Exceptionless.Web;
 
@@ -63,6 +69,15 @@ public class Startup
             o.SerializerSettings.Formatting = Formatting.Indented;
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
+
+        services.AddFluentValidationAutoValidation(fvc =>
+        {
+            fvc.DisableDataAnnotationsValidation = true;
+        });
+
+        services.AddFluentValidationClientsideAdapters();
+        services.AddValidatorsFromAssemblyContaining<Program>();
+        services.AddProblemDetails(ConfigureProblemDetails);
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
         services.AddAuthorization(options =>
@@ -206,8 +221,7 @@ public class Startup
             csp.AllowFonts.FromSelf()
                 .From("https://fonts.gstatic.com")
                 .From("https://www.gravatar.com")
-                .From("https://fonts.intercomcdn.com")
-                .From("https://cdn.jsdelivr.net");
+                .From("https://fonts.intercomcdn.com");
             csp.AllowImages.FromSelf()
                 .From("data:")
                 .From("https://q.stripe.com")
@@ -222,14 +236,13 @@ public class Startup
                 .AllowUnsafeEval()
                 .From("https://js.stripe.com")
                 .From("https://widget.intercom.io")
-                .From("https://js.intercomcdn.com")
-                .From("https://cdn.jsdelivr.net");
+                .From("https://js.intercomcdn.com");
             csp.AllowStyles.FromSelf()
-                .AllowUnsafeInline()
-                .From("https://fonts.googleapis.com")
-                .From("https://cdn.jsdelivr.net");
+                .AllowUnsafeInline();
             csp.AllowConnections.ToSelf()
                 .To("https://collector.exceptionless.io")
+                .To("https://config.exceptionless.io")
+                .To("https://heartbeat.exceptionless.io")
                 .To("https://api-iam.intercom.io/")
                 .To("wss://nexus-websocket-a.intercom.io");
 
@@ -318,6 +331,38 @@ public class Startup
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
+    }
+
+    private static void ConfigureProblemDetails(ProblemDetailsOptions options)
+    {
+        options.IncludeExceptionDetails = (ctx, _) =>
+        {
+            var environment = ctx.RequestServices.GetRequiredService<IHostEnvironment>();
+            return environment.IsDevelopment();
+        };
+
+        options.Map<ValidationException>((ctx, ex) =>
+        {
+            var factory = ctx.RequestServices.GetRequiredService<ProblemDetailsFactory>();
+
+            // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
+            var errors = ex.Errors
+                .GroupBy(x => x.PropertyName)
+                .ToDictionary(
+                    x => x.Key.ToLowerUnderscoredWords(),
+                    x => x.Select(vf => vf.ErrorMessage).ToArray());
+
+            return factory.CreateValidationProblemDetails(ctx, errors);
+        });
+
+        options.Rethrow<NotSupportedException>();
+
+        options.MapToStatusCode<UnauthorizedAccessException>(StatusCodes.Status401Unauthorized);
+        options.MapToStatusCode<VersionConflictDocumentException>(StatusCodes.Status409Conflict);
+        options.MapToStatusCode<ApplicationException>(StatusCodes.Status500InternalServerError);
+        options.MapToStatusCode<NotImplementedException>(StatusCodes.Status501NotImplemented);
+        options.MapToStatusCode<HttpRequestException>(StatusCodes.Status503ServiceUnavailable);
+        options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)

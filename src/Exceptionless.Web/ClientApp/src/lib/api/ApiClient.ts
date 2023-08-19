@@ -13,7 +13,6 @@ function createCount() {
 }
 
 export const bearerToken = persisted<string | null>('bearer-token', null);
-export const base = 'api';
 
 type Fetch = typeof globalThis.fetch;
 
@@ -182,10 +181,6 @@ export class ApiClient {
 
 	private buildUrl(url: string, options?: RequestOptions): string {
 		const isAbsoluteUrl = url.startsWith('http');
-		if (!url.startsWith('http')) {
-			url = base + '/' + url;
-		}
-
 		const parsed = new URL(url, window.location.origin);
 		if (options?.params) {
 			for (const [key, value] of Object.entries(options?.params)) {
