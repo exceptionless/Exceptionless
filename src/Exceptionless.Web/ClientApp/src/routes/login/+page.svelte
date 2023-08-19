@@ -1,57 +1,37 @@
 <script lang="ts">
+	import EmailInput from '$comp/EmailInput.svelte';
+	import PasswordInput from '$comp/PasswordInput.svelte';
+
 	import logo from '$lib/assets/exceptionless-350.png';
 	import IconMicrosoft from '~icons/mdi/microsoft';
 	import IconGoogle from '~icons/mdi/google';
 	import IconFacebook from '~icons/mdi/facebook';
 	import IconGitHub from '~icons/mdi/github';
 
-	import { useMutation } from '@sveltestack/svelte-query';
-	import { bearerToken, client } from '$lib/api/ApiClient';
-
+	import { FetchClient, ProblemDetails, accessToken } from '$lib/api/FetchClient';
+	import { Login } from '$lib/models/api';
+	import type { TokenResult } from '$lib/models/api.generated';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-
-	import { Login } from '$lib/models/api';
-	import {
-		getResponseValidationErrors,
-		validate,
-		type ValidationErrors
-	} from '$lib/validation/validation';
-	import type { TokenResult } from '$lib/models/api.generated';
 
 	const data = new Login();
 	data.invite_token = $page.url.searchParams.get('token') as string;
 
-	let errors: ValidationErrors<Login> = {};
-	const mutation = useMutation(
-		(model: Login) =>
-			client.postJSON<TokenResult>('http://localhost:5200/api/v2/auth/login', model),
-		{
-			async onSuccess(data) {
-				// TODO: Fix up after nullable reference types.
-				bearerToken.set(data.token as string);
+	const api = new FetchClient();
+	const loading = api.loading;
+	let problem = new ProblemDetails();
 
-				// TODO: Referrer
-				await goto('/');
-			},
-			async onError(error) {
-				errors = await getResponseValidationErrors(error);
-			}
+	async function login() {
+		let response = await api.postJSON<TokenResult>('auth/login', data);
+		if (response.success && response.data?.token) {
+			accessToken.set(response.data.token);
+			goto('/');
+		} else if (response.status === 401) {
+			problem.errors.general = ['Invalid email or password.'];
+		} else if (response.problem) {
+			problem = response.problem;
 		}
-	);
-
-	const handleSubmit = async () => {
-		if ($mutation.isLoading) {
-			return;
-		}
-
-		errors = await validate(data);
-		if (Object.keys(errors).length) {
-			return;
-		}
-
-		await $mutation.mutateAsync(data);
-	};
+	}
 </script>
 
 <svelte:head>
@@ -64,58 +44,31 @@
 		<h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">
 			Log in to your account
 		</h2>
-		<form method="post" on:submit|preventDefault={handleSubmit}>
-			{#if errors?.general}<p class="text-error">{errors.general}</p>{/if}
-			<div class="form-control">
-				<label for="email" class="label">
-					<span class="label-text">Email</span>
-				</label>
-				<input
-					id="email"
-					type="email"
-					placeholder="Email Address"
-					class="input input-bordered input-primary w-full"
-					class:input-error={errors.email}
-					on:change={() => {
-						errors.email = undefined;
-					}}
-					bind:value={data.email}
-					required
-				/>
-				{#if errors.email}
-					<label for="email" class="label">
-						<span class="label-text text-error">{errors.email.join(' ')}</span>
-					</label>
-				{/if}
-			</div>
-			<div class="form-control">
-				<label for="password" class="label">
-					<span class="label-text">Password</span>
-					<span class="label-text-alt text-sm">
-						<a href="/forgot-password" class="link-secondary link">Forgot password?</a>
-					</span>
-				</label>
-				<input
-					id="password"
-					type="password"
-					placeholder="Enter Password"
-					class="input input-bordered input-primary w-full"
-					class:input-error={errors.password}
-					on:change={() => {
-						errors.password = undefined;
-					}}
-					bind:value={data.password}
-					required
-				/>
-				{#if errors.password}
-					<label for="password" class="label">
-						<span class="label-text text-error">{errors.password.join(' ')}</span>
-					</label>
-				{/if}
-			</div>
+		<form on:submit|preventDefault={login}>
+			{#if problem.errors?.general}<p class="text-error">{problem.errors.general}</p>{/if}
+			<EmailInput
+				name="email"
+				bind:value={data.email}
+				required
+				label="Email"
+				{problem}
+				placeholder="Email address"
+			></EmailInput>
+			<PasswordInput
+				name="password"
+				bind:value={data.password}
+				required
+				label="Password"
+				{problem}
+				placeholder="Enter Password"
+			>
+				<span slot="label" class="label-text-alt text-sm">
+					<a href="/forgot-password" class="link-secondary link">Forgot password?</a>
+				</span>
+			</PasswordInput>
 			<div class="my-4">
 				<button type="submit" class="btn btn-primary btn-block">
-					{#if $mutation.isLoading}
+					{#if $loading}
 						<span class="loading loading-spinner"></span> Logging in...
 					{:else}
 						Login

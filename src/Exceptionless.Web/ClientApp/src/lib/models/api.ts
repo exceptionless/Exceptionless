@@ -2,7 +2,7 @@ import { IsEmail, MinLength } from 'class-validator';
 import type { LoginModel } from './api.generated';
 
 export class Login implements LoginModel {
-	@IsEmail()
+	@IsEmail({ require_tld: false })
 	email!: string;
 
 	@MinLength(6)

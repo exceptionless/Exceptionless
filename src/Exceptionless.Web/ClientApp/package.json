@@ -3,7 +3,8 @@
 	"version": "8.0.0",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "cross-env NODE_OPTIONS=--trace-warnings vite dev",
+		"api-dev": "cross-env ASPNETCORE_URLS=http://be.exceptionless.io/ vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "npm run test:integration && npm run test:unit",
@@ -47,7 +48,8 @@
 		"tslib": "^2.6.1",
 		"typescript": "^5.1.6",
 		"vite": "^4.4.9",
-		"vitest": "^0.34.2"
+		"vitest": "^0.34.2",
+		"cross-env": "^7.0.3"
 	},
 	"type": "module"
 }

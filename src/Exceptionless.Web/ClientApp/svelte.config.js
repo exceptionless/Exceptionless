@@ -13,7 +13,11 @@ const config = {
 		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
 		adapter: adapter({
 			fallback: 'index.html'
-		})
+		}),
+		alias: {
+			$api: 'src/lib/api',
+			$comp: 'src/lib/components'
+		}
 	}
 };
 
