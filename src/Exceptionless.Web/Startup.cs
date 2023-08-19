@@ -1,24 +1,28 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using Amazon.Runtime;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Exceptions;
-using Hellang.Middleware.ProblemDetails;
 using Joonasw.AspNetCore.SecurityHeaders;
+using FluentValidation.AspNetCore;
+using HandlebarsDotNet;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -26,7 +30,6 @@ using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
 using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
-using ProblemDetailsOptions = Hellang.Middleware.ProblemDetails.ProblemDetailsOptions;
 
 namespace Exceptionless.Web;
 
@@ -176,6 +179,8 @@ public class Startup
         var options = app.ApplicationServices.GetRequiredService<AppOptions>();
         Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
         var apmConfig = app.ApplicationServices.GetRequiredService<ApmConfig>();
@@ -335,34 +340,56 @@ public class Startup
 
     private static void ConfigureProblemDetails(ProblemDetailsOptions options)
     {
-        options.IncludeExceptionDetails = (ctx, _) =>
+        void SetDetails(ProblemDetails details, int statusCode)
         {
-            var environment = ctx.RequestServices.GetRequiredService<IHostEnvironment>();
-            return environment.IsDevelopment();
+            details.Status = statusCode;
+            details.Type = GetDefaultType(statusCode);
+            details.Title = ReasonPhrases.GetReasonPhrase(statusCode);
+        }
+
+        string GetDefaultType(int statusCode)
+        {
+            return $"https://httpstatuses.io/{statusCode}";
+        }
+
+        options.CustomizeProblemDetails = context =>
+        {
+            var details = context.ProblemDetails;
+            details.Extensions["requestId"] = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+            var exception = context.HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+            switch (exception)
+            {
+                case ValidationException ve:
+                    SetDetails(details, StatusCodes.Status422UnprocessableEntity);
+
+                    var errors = ve.Errors
+                        .GroupBy(x => x.PropertyName)
+                        .ToDictionary(
+                            x => x.Key,
+                            x => x.Select(vf => vf.ErrorMessage).ToArray());
+
+                    break;
+                case UnauthorizedAccessException:
+                    SetDetails(details, StatusCodes.Status401Unauthorized);
+                    break;
+                case VersionConflictDocumentException:
+                    SetDetails(details, StatusCodes.Status409Conflict);
+                    break;
+                case ApplicationException:
+                    SetDetails(details, StatusCodes.Status500InternalServerError);
+                    break;
+                case NotImplementedException:
+                    SetDetails(details, StatusCodes.Status501NotImplemented);
+                    break;
+                case HttpRequestException:
+                    SetDetails(details, StatusCodes.Status503ServiceUnavailable);
+                    break;
+                case Exception:
+                    SetDetails(details, StatusCodes.Status500InternalServerError);
+                    break;
+            }
         };
-
-        options.Map<ValidationException>((ctx, ex) =>
-        {
-            var factory = ctx.RequestServices.GetRequiredService<ProblemDetailsFactory>();
-
-            // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
-            var errors = ex.Errors
-                .GroupBy(x => x.PropertyName)
-                .ToDictionary(
-                    x => x.Key.ToLowerUnderscoredWords(),
-                    x => x.Select(vf => vf.ErrorMessage).ToArray());
-
-            return factory.CreateValidationProblemDetails(ctx, errors);
-        });
-
-        options.Rethrow<NotSupportedException>();
-
-        options.MapToStatusCode<UnauthorizedAccessException>(StatusCodes.Status401Unauthorized);
-        options.MapToStatusCode<VersionConflictDocumentException>(StatusCodes.Status409Conflict);
-        options.MapToStatusCode<ApplicationException>(StatusCodes.Status500InternalServerError);
-        options.MapToStatusCode<NotImplementedException>(StatusCodes.Status501NotImplemented);
-        options.MapToStatusCode<HttpRequestException>(StatusCodes.Status503ServiceUnavailable);
-        options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
