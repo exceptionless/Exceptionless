@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+	import { FetchClient } from '$lib/api/FetchClient';
 	import type { PersistentEvent } from '$lib/models/api.generated';
 
 	const api = new FetchClient();

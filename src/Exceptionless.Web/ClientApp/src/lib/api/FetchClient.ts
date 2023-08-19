@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import { persisted } from 'svelte-local-storage-store';
 import { goto } from '$app/navigation';
 import { validate as classValidate } from 'class-validator';
 
@@ -18,7 +19,7 @@ export const globalLoading = derived(
 	globalRequestCount,
 	($globalRequestCount) => $globalRequestCount > 0
 );
-export const accessToken = writable<string | null>(null);
+export const accessToken = persisted<string | null>('access_token', null);
 export const base = 'api/v2';
 
 type Fetch = typeof globalThis.fetch;
@@ -310,8 +311,8 @@ export class FetchClient {
 		if (response.ok) return;
 
 		if (response.status === 401 && options?.unauthorizedShouldRedirect != false) {
-			const referrer = location.href;
-			goto('/login?referrer=' + referrer, { replaceState: true });
+			const returnUrl = location.href;
+			goto('/login?url=' + returnUrl, { replaceState: true });
 			return;
 		}
 

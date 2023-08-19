@@ -20,12 +20,13 @@
 	const api = new FetchClient();
 	const loading = api.loading;
 	let problem = new ProblemDetails();
+	let url = ($page.url.searchParams.get('url') as string) ?? '/';
 
 	async function login() {
 		let response = await api.postJSON<TokenResult>('auth/login', data);
 		if (response.success && response.data?.token) {
 			accessToken.set(response.data.token);
-			goto('/');
+			goto(url);
 		} else if (response.status === 401) {
 			problem.setErrorMessage('Invalid email or password.');
 		} else if (response.problem) {
