@@ -18,13 +18,27 @@ export async function validate<T extends object>(data: T): Promise<ValidationErr
 	return result;
 }
 
-export function getProblemDetailsValidationErrors<T extends object>(
-	responseError: unknown,
-	defaultMessage: string = 'Please try again'
-): ValidationErrors<T> {
-	if (responseError instanceof Error) {
-		return { general: [responseError.message] } as ValidationErrors<T>;
+export async function getResponseValidationErrors<T extends object>(
+	responseOrError: unknown,
+	defaultMessage: string = 'An error occurred, please try again.'
+): Promise<ValidationErrors<T>> {
+	let message;
+
+	if (responseOrError instanceof Error) {
+		message = responseOrError.message;
+	} else if (responseOrError instanceof Response) {
+		switch (responseOrError.status) {
+			case 400:
+				message = responseOrError.statusText;
+				break;
+			case 422:
+				// TODO: Problem details.
+				break;
+			default:
+				message = await responseOrError.text();
+				break;
+		}
 	}
 
-	return { general: [defaultMessage] } as ValidationErrors<T>;
+	return { general: [message || defaultMessage] } as ValidationErrors<T>;
 }

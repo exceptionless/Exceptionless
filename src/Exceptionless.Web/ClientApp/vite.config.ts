@@ -31,6 +31,11 @@ export default defineConfig({
 				target: aspNetConfig.wsUrl,
 				ws: true
 			},
+			'/docs': {
+				changeOrigin: true,
+				secure: false,
+				target: aspNetConfig.url
+			},
 			'/health': {
 				changeOrigin: true,
 				secure: false,

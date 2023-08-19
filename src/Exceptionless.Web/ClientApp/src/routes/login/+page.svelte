@@ -6,34 +6,35 @@
 	import IconGitHub from '~icons/mdi/github';
 
 	import { useMutation } from '@sveltestack/svelte-query';
-	import { FetchClient } from '$lib/api/FetchClient';
+	import { bearerToken, client } from '$lib/api/ApiClient';
+
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	import { Login } from '$lib/models/api';
 	import {
-		getProblemDetailsValidationErrors,
+		getResponseValidationErrors,
 		validate,
 		type ValidationErrors
 	} from '$lib/validation/validation';
-
-	// on mount for page params.
+	import type { TokenResult } from '$lib/models/api.generated';
 
 	const data = new Login();
-	let errors: ValidationErrors<Login> = {};
+	data.invite_token = $page.url.searchParams.get('token') as string;
 
-	const api = new FetchClient();
+	let errors: ValidationErrors<Login> = {};
 	const mutation = useMutation(
-		async (model: Login) => {
-			console.log({ source: 'mutation', model });
-			await new Promise((r) => setTimeout(r, 5000));
-			await api.postJSON('/api/v2/auth/login', model, { errorCallback: (e) => {} });
-		},
+		(model: Login) => client.postJSON<TokenResult>('/api/v2/auth/login', model),
 		{
-			onError(error, variables, context) {
-				console.log({ method: 'onError', error, variables, context });
-				errors = getProblemDetailsValidationErrors(error);
+			async onSuccess(data) {
+				// TODO: Fix up after nullable reference types.
+				bearerToken.set(data.token as string);
+
+				// TODO: Referrer
+				await goto('/');
 			},
-			onSuccess(data, variables, context) {
-				console.log({ method: 'onSuccess', data, variables, context });
+			async onError(error) {
+				errors = await getResponseValidationErrors(error);
 			}
 		}
 	);
