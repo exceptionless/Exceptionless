@@ -13,12 +13,28 @@
 			"preLaunchTask": "npm run dev"
 		},
 		{
+			"type": "msedge",
+			"request": "launch",
+			"name": "Web with Api (Edge)",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}",
+			"preLaunchTask": "npm run dev:api"
+		},
+		{
 			"type": "chrome",
 			"request": "launch",
 			"name": "Web (Chrome)",
 			"url": "http://localhost:5173",
 			"webRoot": "${workspaceFolder}",
 			"preLaunchTask": "npm run dev"
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Web with Api (Chrome)",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}",
+			"preLaunchTask": "npm run dev:api"
 		}
 	]
 }

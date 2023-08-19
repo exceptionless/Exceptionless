@@ -47,6 +47,50 @@
 		},
 		{
 			"type": "npm",
+			"label": "npm run dev:api",
+			"script": "dev:api",
+			"isBackground": true,
+			"problemMatcher": [
+				{
+					"owner": "typescript",
+					"fileLocation": "relative",
+					"pattern": {
+						"regexp": "^(?:\\[1] )([\\w\\/.]*)(\\([\\d,]*\\)).+(TS\\d+): (.+)$",
+						"file": 1,
+						"location": 2,
+						"severity": 3,
+						"code": 4,
+						"message": 5
+					},
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": ".",
+						"endsPattern": "\\d+:\\d+:\\d+"
+					}
+				},
+				{
+					"owner": "svelte",
+					"fileLocation": "relative",
+					"pattern": {
+						"regexp": ""
+					},
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": ".",
+						"endsPattern": "ready in"
+					}
+				}
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "never"
+			}
+		},
+		{
+			"type": "npm",
 			"label": "npm install",
 			"script": "install",
 			"problemMatcher": []
