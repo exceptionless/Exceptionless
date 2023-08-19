@@ -12,13 +12,14 @@
 		"lint": "prettier --plugin prettier-plugin-svelte . --check . && eslint .",
 		"format": "prettier --plugin prettier-plugin-svelte . --write .",
 		"format:staged": "prettier --plugin prettier-plugin-svelte . --write --ignore-unknown",
-		"generate-models": "swagger-typescript-api -p http://localhost:5200/docs/v2/swagger.json -o ./src/lib/models -n api.ts --no-client",
+		"generate-models": "swagger-typescript-api -p http://localhost:5200/docs/v2/swagger.json -o ./src/lib/models -n api.generated.ts --no-client",
 		"test:integration": "playwright test",
 		"test:unit": "vitest"
 	},
 	"dependencies": {
 		"@iconify-json/mdi": "^1.1.54",
 		"@sveltestack/svelte-query": "^1.6.0",
+		"class-validator": "^0.14.0",
 		"daisyui": "^3.5.1",
 		"oidc-client-ts": "^2.2.5",
 		"svelte-local-storage-store": "^0.6.0",

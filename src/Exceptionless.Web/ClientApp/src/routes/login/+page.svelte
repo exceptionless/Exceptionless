@@ -4,6 +4,52 @@
 	import IconGoogle from '~icons/mdi/google';
 	import IconFacebook from '~icons/mdi/facebook';
 	import IconGitHub from '~icons/mdi/github';
+
+	import { useMutation } from '@sveltestack/svelte-query';
+	import { FetchClient } from '$lib/api/FetchClient';
+
+	import { Login } from '$lib/models/api';
+	import {
+		getProblemDetailsValidationErrors,
+		validate,
+		type ValidationErrors
+	} from '$lib/validation/validation';
+
+	// on mount for page params.
+
+	const data = new Login();
+	let errors: ValidationErrors<Login> = {};
+
+	const api = new FetchClient();
+	const mutation = useMutation(
+		async (model: Login) => {
+			console.log({ source: 'mutation', model });
+			await new Promise((r) => setTimeout(r, 5000));
+			await api.postJSON('/api/v2/auth/login', model, { errorCallback: (e) => {} });
+		},
+		{
+			onError(error, variables, context) {
+				console.log({ method: 'onError', error, variables, context });
+				errors = getProblemDetailsValidationErrors(error);
+			},
+			onSuccess(data, variables, context) {
+				console.log({ method: 'onSuccess', data, variables, context });
+			}
+		}
+	);
+
+	const handleSubmit = async () => {
+		if ($mutation.isLoading) {
+			return;
+		}
+
+		errors = await validate(data);
+		if (Object.keys(errors).length) {
+			return;
+		}
+
+		await $mutation.mutateAsync(data);
+	};
 </script>
 
 <svelte:head>
@@ -16,8 +62,9 @@
 		<h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">
 			Log in to your account
 		</h2>
-		<form class="space-y-4">
-			<div>
+		<form method="post" on:submit|preventDefault={handleSubmit}>
+			{#if errors?.general}<p class="text-error">{errors.general}</p>{/if}
+			<div class="form-control">
 				<label for="email" class="label">
 					<span class="label-text">Email</span>
 				</label>
@@ -26,26 +73,52 @@
 					type="email"
 					placeholder="Email Address"
 					class="input input-bordered input-primary w-full"
+					class:input-error={errors.email}
+					on:change={() => {
+						errors.email = undefined;
+					}}
+					bind:value={data.email}
 					required
 				/>
+				{#if errors.email}
+					<label for="email" class="label">
+						<span class="label-text text-error">{errors.email.join(' ')}</span>
+					</label>
+				{/if}
 			</div>
-			<div>
+			<div class="form-control">
 				<label for="password" class="label">
 					<span class="label-text">Password</span>
-					<div class="text-sm">
-						<a href="/forgot-password" class="link link-secondary">Forgot password?</a>
-					</div>
+					<span class="label-text-alt text-sm">
+						<a href="/forgot-password" class="link-secondary link">Forgot password?</a>
+					</span>
 				</label>
 				<input
 					id="password"
 					type="password"
 					placeholder="Enter Password"
 					class="input input-bordered input-primary w-full"
+					class:input-error={errors.password}
+					on:change={() => {
+						errors.password = undefined;
+					}}
+					bind:value={data.password}
 					required
 				/>
+				{#if errors.password}
+					<label for="password" class="label">
+						<span class="label-text text-error">{errors.password.join(' ')}</span>
+					</label>
+				{/if}
 			</div>
-			<div>
-				<button class="btn btn-primary btn-block">Login</button>
+			<div class="my-4">
+				<button type="submit" class="btn btn-primary btn-block">
+					{#if $mutation.isLoading}
+						<span class="loading loading-spinner"></span> Logging in...
+					{:else}
+						Login
+					{/if}
+				</button>
 			</div>
 		</form>
 
@@ -71,7 +144,7 @@
 
 		<p class="mt-5 text-center text-sm">
 			Not a member?
-			<a href="/signup" class="link link-primary">Start a free trial</a>
+			<a href="/signup" class="link-primary link">Start a free trial</a>
 		</p>
 
 		<p class="mt-5 text-center text-sm">

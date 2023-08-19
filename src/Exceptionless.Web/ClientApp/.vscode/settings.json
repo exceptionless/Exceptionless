@@ -1,3 +1,5 @@
 {
-	"debug.allowBreakpointsEverywhere": true
+	"debug.allowBreakpointsEverywhere": true,
+	"prettier.documentSelectors": ["**/*.svelte"],
+	"cSpell.words": ["sveltestack"]
 }

@@ -5,11 +5,19 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"type": "chrome",
+			"type": "msedge",
 			"request": "launch",
+			"name": "Web (Edge)",
 			"url": "http://localhost:5173",
 			"webRoot": "${workspaceFolder}",
-			"name": "dev",
+			"preLaunchTask": "npm run dev"
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Web (Chrome)",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}",
 			"preLaunchTask": "npm run dev"
 		}
 	]

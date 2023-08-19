@@ -5,6 +5,16 @@
 -   <https://kit.svelte.dev/docs/project-structure>
 -   <https://github.com/laoshaw/sveltespa>
 
+## Forms
+
+-   <https://joyofcode.xyz/sveltekit-progressive-enhancement>
+-   <https://joyofcode.xyz/working-with-forms-in-sveltekit>
+
+## State
+
+-   <https://joyofcode.xyz/svelte-context-with-stores>
+-   <https://joyofcode.xyz/svelte-state-management>
+
 ## Authentication
 
 -   <https://github.com/sveltejs/realworld>
@@ -27,6 +37,8 @@
 
 ## Theming
 
+-   <https://joyofcode.xyz/make-a-svelte-component-library>
+-   <https://joyofcode.xyz/using-future-css-in-svelte>
 -   <https://svelte.dev/repl/03f0be0c4dc54eb4af5a168f644f5c31?version=3.19.1>
 -   <https://larainfo.com/blogs/tailwind-daisyui-registration-form-example>
 -   <https://sveltethemes.dev/resources>
