@@ -29,13 +29,13 @@
 		}
 
 		const response = await api.postJSON<TokenResult>('auth/login', data, {
-			unauthorizedShouldRedirect: false
+			expectedStatusCodes: [401]
 		});
 		if (response.success && response.data?.token) {
 			accessToken.set(response.data.token);
 			await goto(url);
 		} else if (response.status === 401) {
-			problem.setErrorMessage('Invalid email or password.');
+			problem = problem.setErrorMessage('Invalid email or password.');
 		} else if (response.problem) {
 			problem = response.problem;
 		}
@@ -53,7 +53,7 @@
 			Log in to your account
 		</h2>
 		<form on:submit|preventDefault={login}>
-			{#if problem.errors?.general}<p class="text-error">{problem.errors.general}</p>{/if}
+			{#if problem.errors.general}<p class="text-error">{problem.errors.general}</p>{/if}
 			<EmailInput
 				name="email"
 				bind:value={data.email}

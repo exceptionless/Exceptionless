@@ -38,7 +38,7 @@ export class JsonResponse<T extends object> {
 		this.status = response.status;
 		this.data = data;
 		this.success = success;
-		this.problem = problem ?? new ProblemDetails();
+		this.problem = Object.assign(new ProblemDetails(), problem);
 	}
 
 	success: boolean = false;
@@ -292,7 +292,11 @@ export class FetchClient {
 	private async getJSONResponse<T extends object>(response: Response): Promise<JsonResponse<T>> {
 		const data = await response.json();
 
-		if (response.headers.get('Content-Type')?.startsWith('application/problem+json'))
+		// HACK: https://github.com/dotnet/aspnetcore/issues/39802
+		if (
+			!response.ok ||
+			response.headers.get('Content-Type')?.startsWith('application/problem+json')
+		)
 			return new JsonResponse<T>(response, response.ok, null, data);
 
 		return new JsonResponse(response, response.ok, data);
@@ -327,13 +331,13 @@ export class FetchClient {
 			return;
 		}
 
-		if (response.status === 401 && options?.unauthorizedShouldRedirect != false) {
-			const returnUrl = location.href;
-			await goto(`/login?url=${returnUrl}`, { replaceState: true });
+		if (options?.expectedStatusCodes && options.expectedStatusCodes.includes(response.status)) {
 			return;
 		}
 
-		if (options?.expectedStatusCodes && options.expectedStatusCodes.includes(response.status)) {
+		if (response.status === 401 && options?.unauthorizedShouldRedirect != false) {
+			const returnUrl = location.href;
+			await goto(`/login?url=${returnUrl}`, { replaceState: true });
 			return;
 		}
 
