@@ -18,7 +18,7 @@
 </script>
 
 <div class="form-control">
-	<label for={name} class={label}>
+	<label for={name} class="label">
 		<span class="label-text">{label}</span>
 		<slot name="label" />
 	</label>

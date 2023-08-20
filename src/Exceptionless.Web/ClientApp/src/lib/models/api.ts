@@ -1,4 +1,5 @@
 import { IsEmail, MinLength } from 'class-validator';
+
 import type { LoginModel } from './api.generated';
 
 export class Login implements LoginModel {
