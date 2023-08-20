@@ -13,6 +13,7 @@ export async function logout() {
 	accessToken.set(null);
 }
 
+// TODO move client ids out to config
 export async function microsoftLogin() {
 	await oauthLogin({
 		provider: 'microsoft',
@@ -41,6 +42,7 @@ export async function googleLogin() {
 		authUrl: 'https://accounts.google.com/o/oauth2/auth/oauthchooseaccount',
 		scope: 'openid profile email',
 		extraParams: {
+			state: encodeURIComponent(Math.random().toString(36).substring(2)),
 			display: 'popup',
 			service: 'lso',
 			o2v: '1',
@@ -77,14 +79,12 @@ async function oauthLogin(options: {
 	};
 
 	const redirectUrl = window.location.origin;
-	const state = encodeURIComponent(Math.random().toString(36).substring(2));
 	const params = Object.assign(
 		{
 			response_type: 'code',
 			client_id: options.clientId,
 			redirect_uri: redirectUrl,
-			scope: options.scope,
-			state: state
+			scope: options.scope
 		},
 		options.extraParams
 	);
