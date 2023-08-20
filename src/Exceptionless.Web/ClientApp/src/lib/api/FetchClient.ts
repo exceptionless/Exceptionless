@@ -1,5 +1,4 @@
 import { validate as classValidate } from 'class-validator';
-import { persisted } from 'svelte-local-storage-store';
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { accessToken } from './Auth';
@@ -335,7 +334,11 @@ export class FetchClient {
 			return;
 		}
 
-		if (response.status === 401 && options?.unauthorizedShouldRedirect != false) {
+		if (
+			response.status === 401 &&
+			!location.pathname.startsWith('/login') &&
+			options?.unauthorizedShouldRedirect != false
+		) {
 			const returnUrl = location.href;
 			await goto(`/login?url=${returnUrl}`, { replaceState: true });
 			return;
