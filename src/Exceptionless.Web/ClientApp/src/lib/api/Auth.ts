@@ -14,28 +14,30 @@ export async function logout() {
 }
 
 // TODO move client ids out to config
-export async function microsoftLogin() {
+export async function liveLogin(redirectUrl?: string) {
 	await oauthLogin({
-		provider: 'microsoft',
+		provider: 'live',
 		clientId: '000000004C137E8B',
 		authUrl: 'https://login.live.com/oauth20_authorize.srf',
 		scope: 'wl.emails',
 		extraParams: {
 			display: 'popup'
-		}
+		},
+		redirectUrl
 	});
 }
 
-export async function facebookLogin() {
+export async function facebookLogin(redirectUrl?: string) {
 	await oauthLogin({
 		provider: 'facebook',
 		clientId: '395178683904310',
 		authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
-		scope: 'email'
+		scope: 'email',
+		redirectUrl
 	});
 }
 
-export async function googleLogin() {
+export async function googleLogin(redirectUrl?: string) {
 	await oauthLogin({
 		provider: 'google',
 		clientId: '809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com',
@@ -47,17 +49,19 @@ export async function googleLogin() {
 			service: 'lso',
 			o2v: '1',
 			flowName: 'GeneralOAuthFlow'
-		}
+		},
+		redirectUrl
 	});
 }
 
-export async function githubLogin() {
+export async function githubLogin(redirectUrl?: string) {
 	await oauthLogin({
 		provider: 'github',
 		clientId: '7ef1dd5bfbc4ccf7f5ef',
 		authUrl: 'https://github.com/login/oauth/authorize',
 		scope: 'user:email',
-		popupOptions: { width: 1020, height: 618 }
+		popupOptions: { width: 1020, height: 618 },
+		redirectUrl
 	});
 }
 
@@ -68,6 +72,7 @@ async function oauthLogin(options: {
 	scope: string;
 	popupOptions?: { width: number; height: number };
 	extraParams?: Record<string, string>;
+	redirectUrl?: string;
 }) {
 	const width = options.popupOptions?.width || 500;
 	const height = options.popupOptions?.height || 500;
@@ -95,10 +100,11 @@ async function oauthLogin(options: {
 	popup?.focus();
 
 	const data = await waitForUrl(popup!, redirectUrl);
-	if (data.state !== state) throw new Error('Invalid state');
+	if (options.extraParams?.state && data.state !== options.extraParams.state)
+		throw new Error('Invalid state');
 
 	const client = new FetchClient();
-	const response = await client.postJSON<TokenResult>('auth/google', {
+	const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
 		state: data.state,
 		code: data.code,
 		clientId: options.clientId,
@@ -107,7 +113,7 @@ async function oauthLogin(options: {
 
 	if (response.success && response.data?.token) {
 		accessToken.set(response.data.token);
-		await goto('/');
+		await goto(options.redirectUrl || '/');
 	}
 }
 

@@ -9,13 +9,7 @@
 
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import {
-		microsoftLogin,
-		facebookLogin,
-		googleLogin,
-		githubLogin,
-		accessToken
-	} from '$api/Auth';
+	import { liveLogin, facebookLogin, googleLogin, githubLogin, accessToken } from '$api/Auth';
 	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
 	import type { TokenResult } from '$lib/models/api.generated';
 	import { Login } from '$lib/models/api';
@@ -82,16 +76,20 @@
 	<hr class="w-full" />
 </div>
 <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
-	<button class="btn" aria-label="Login with Microsoft" on:click={microsoftLogin}>
+	<button class="btn" aria-label="Login with Microsoft" on:click={() => liveLogin(redirectUrl)}>
 		<IconMicrosoft /> Microsoft
 	</button>
-	<button class="btn" aria-label="Login with Google" on:click={googleLogin}>
+	<button class="btn" aria-label="Login with Google" on:click={() => googleLogin(redirectUrl)}>
 		<IconGoogle /> Google
 	</button>
-	<button class="btn" aria-label="Login with Facebook" on:click={facebookLogin}>
+	<button
+		class="btn"
+		aria-label="Login with Facebook"
+		on:click={() => facebookLogin(redirectUrl)}
+	>
 		<IconFacebook /> Facebook
 	</button>
-	<button class="btn" aria-label="Login with GitHub" on:click={githubLogin}>
+	<button class="btn" aria-label="Login with GitHub" on:click={() => githubLogin(redirectUrl)}>
 		<IconGitHub /> GitHub
 	</button>
 </div>
