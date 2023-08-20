@@ -2,7 +2,7 @@
 	import type { ProblemDetails } from '$lib/api/FetchClient';
 
 	export let name: string;
-	export let value: any;
+	export let value: unknown;
 	export let problem: ProblemDetails;
 	export let required: boolean = false;
 

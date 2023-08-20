@@ -44,7 +44,7 @@ export class JsonResponse<T extends object> {
 	status: number;
 	data?: T | null;
 	response: Response;
-	problem?: ProblemDetails;
+	problem: ProblemDetails;
 }
 
 export class ProblemDetails implements Record<string, unknown> {
