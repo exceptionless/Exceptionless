@@ -13,35 +13,85 @@ export async function logout() {
 	accessToken.set(null);
 }
 
-// TODO refactor this to be used with multiple providers
+export async function microsoftLogin() {
+	await oauthLogin({
+		provider: 'microsoft',
+		clientId: '000000004C137E8B',
+		authUrl: 'https://login.live.com/oauth20_authorize.srf',
+		scope: 'wl.emails',
+		extraParams: {
+			display: 'popup'
+		}
+	});
+}
+
+export async function facebookLogin() {
+	await oauthLogin({
+		provider: 'facebook',
+		clientId: '395178683904310',
+		authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
+		scope: 'email'
+	});
+}
+
 export async function googleLogin() {
-	const width = 500;
-	const height = 500;
-	const options = {
+	await oauthLogin({
+		provider: 'google',
+		clientId: '809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com',
+		authUrl: 'https://accounts.google.com/o/oauth2/auth/oauthchooseaccount',
+		scope: 'openid profile email',
+		extraParams: {
+			display: 'popup',
+			service: 'lso',
+			o2v: '1',
+			flowName: 'GeneralOAuthFlow'
+		}
+	});
+}
+
+export async function githubLogin() {
+	await oauthLogin({
+		provider: 'github',
+		clientId: '7ef1dd5bfbc4ccf7f5ef',
+		authUrl: 'https://github.com/login/oauth/authorize',
+		scope: 'user:email',
+		popupOptions: { width: 1020, height: 618 }
+	});
+}
+
+async function oauthLogin(options: {
+	provider: string;
+	clientId: string;
+	authUrl: string;
+	scope: string;
+	popupOptions?: { width: number; height: number };
+	extraParams?: Record<string, string>;
+}) {
+	const width = options.popupOptions?.width || 500;
+	const height = options.popupOptions?.height || 500;
+	const features = {
 		width: width,
 		height: height,
 		top: window.screenY + (window.outerHeight - height) / 2.5,
 		left: window.screenX + (window.outerWidth - width) / 2
 	};
 
-	// TODO move this to config
-	const clientId = '809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com';
-	const redirectUrl = 'http://localhost:5173';
+	const redirectUrl = window.location.origin;
 	const state = encodeURIComponent(Math.random().toString(36).substring(2));
-	const params = new URLSearchParams({
-		response_type: 'code',
-		client_id: clientId,
-		redirect_uri: redirectUrl,
-		scope: 'openid profile email',
-		display: 'popup',
-		state: state,
-		service: 'lso',
-		o2v: '1',
-		flowName: 'GeneralOAuthFlow'
-	});
-	const url = `https://accounts.google.com/o/oauth2/auth/oauthchooseaccount?${params.toString()}`;
+	const params = Object.assign(
+		{
+			response_type: 'code',
+			client_id: options.clientId,
+			redirect_uri: redirectUrl,
+			scope: options.scope,
+			state: state
+		},
+		options.extraParams
+	);
 
-	const popup = window.open(url, 'google', stringifyOptions(options));
+	const url = `${options.authUrl}?${new URLSearchParams(params).toString()}`;
+
+	const popup = window.open(url, options.provider, stringifyOptions(features));
 	popup?.focus();
 
 	const data = await waitForUrl(popup!, redirectUrl);
@@ -51,7 +101,7 @@ export async function googleLogin() {
 	const response = await client.postJSON<TokenResult>('auth/google', {
 		state: data.state,
 		code: data.code,
-		clientId: clientId,
+		clientId: options.clientId,
 		redirectUri: redirectUrl
 	});
 

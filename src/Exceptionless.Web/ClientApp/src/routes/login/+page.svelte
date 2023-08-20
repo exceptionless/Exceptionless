@@ -10,7 +10,13 @@
 
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { googleLogin, accessToken } from '$api/Auth';
+	import {
+		microsoftLogin,
+		facebookLogin,
+		googleLogin,
+		githubLogin,
+		accessToken
+	} from '$api/Auth';
 	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
 	import type { TokenResult } from '$lib/models/api.generated';
 	import { Login } from '$lib/models/api';
@@ -91,16 +97,16 @@
 			<hr class="w-full" />
 		</div>
 		<div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
-			<button class="btn" aria-label="Login with Microsoft">
+			<button class="btn" aria-label="Login with Microsoft" on:click={microsoftLogin}>
 				<IconMicrosoft /> Microsoft
 			</button>
 			<button class="btn" aria-label="Login with Google" on:click={googleLogin}>
 				<IconGoogle /> Google
 			</button>
-			<button class="btn" aria-label="Login with Facebook">
+			<button class="btn" aria-label="Login with Facebook" on:click={facebookLogin}>
 				<IconFacebook /> Facebook
 			</button>
-			<button class="btn" aria-label="Login with GitHub">
+			<button class="btn" aria-label="Login with GitHub" on:click={githubLogin}>
 				<IconGitHub /> GitHub
 			</button>
 		</div>
