@@ -278,16 +278,7 @@ public class Startup
             };
         });
 
-        app.UseStaticFiles(new StaticFileOptions
-        {
-            ContentTypeProvider = new FileExtensionContentTypeProvider
-            {
-                Mappings = {
-                        [".less"] = "plain/text"
-                    }
-            }
-        });
-
+        app.UseStaticFiles();
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
@@ -310,12 +301,7 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        app.UseSwagger(c =>
-        {
-            c.RouteTemplate = "docs/{documentName}/swagger.json";
-            // TODO: Remove once 5.6.4+ is released
-            c.PreSerializeFilters.Add((doc, _) => doc.Servers?.Clear());
-        });
+        app.UseSwagger(c => c.RouteTemplate = "docs/{documentName}/swagger.json");
         app.UseSwaggerUI(s =>
         {
             s.RoutePrefix = "docs";
