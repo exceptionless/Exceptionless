@@ -76,7 +76,7 @@ function getAspNetConfig() {
 		: 'localhost';
 	const hmrRemotePort = codespaceName ? 443 : serverPort;
 
-	let url = 'http://localhost:5292';
+	let url = 'http://localhost:5200';
 	if (aspnetHttpsPort) {
 		url = `https://localhost:${aspnetHttpsPort}`;
 	} else if (aspnetUrls) {

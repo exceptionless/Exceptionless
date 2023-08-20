@@ -8,7 +8,8 @@
 	import IconFacebook from '~icons/mdi/facebook';
 	import IconGitHub from '~icons/mdi/github';
 
-	import { FetchClient, ProblemDetails, accessToken } from '$lib/api/FetchClient';
+	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+	import { googleLogin, accessToken } from '$api/Auth';
 	import { Login } from '$lib/models/api';
 	import type { TokenResult } from '$lib/models/api.generated';
 	import { goto } from '$app/navigation';
@@ -87,7 +88,7 @@
 			<button class="btn" aria-label="Login with Microsoft">
 				<IconMicrosoft /> Microsoft
 			</button>
-			<button class="btn" aria-label="Login with Google">
+			<button class="btn" aria-label="Login with Google" on:click={googleLogin}>
 				<IconGoogle /> Google
 			</button>
 			<button class="btn" aria-label="Login with Facebook">

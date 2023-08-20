@@ -1,7 +1,7 @@
 import { writable, derived } from 'svelte/store';
-import { persisted } from 'svelte-local-storage-store';
 import { goto } from '$app/navigation';
 import { validate as classValidate } from 'class-validator';
+import { accessToken } from './Auth';
 
 function createCount() {
 	const { subscribe, set, update } = writable(0);
@@ -19,7 +19,6 @@ export const globalLoading = derived(
 	globalRequestCount,
 	($globalRequestCount) => $globalRequestCount > 0
 );
-export const accessToken = persisted<string | null>('access_token', null);
 export const base = 'api/v2';
 
 type Fetch = typeof globalThis.fetch;
