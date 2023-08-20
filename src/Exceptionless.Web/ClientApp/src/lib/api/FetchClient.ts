@@ -1,6 +1,7 @@
+import { validate as classValidate } from 'class-validator';
+import { persisted } from 'svelte-local-storage-store';
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
-import { validate as classValidate } from 'class-validator';
 import { accessToken } from './Auth';
 
 function createCount() {
@@ -73,10 +74,12 @@ export class FetchClient {
 
 	constructor(
 		private fetch: Fetch = window.fetch,
-		base?: string
+		baseUrl?: string
 	) {
 		accessToken.subscribe((token) => (this.accessToken = token));
-		if (base) this.baseUrl = base;
+		if (baseUrl) {
+			this.baseUrl = baseUrl;
+		}
 	}
 
 	requestCount = createCount();
@@ -107,7 +110,9 @@ export class FetchClient {
 
 	async post(url: string, body?: object | string, options?: RequestOptions): Promise<Response> {
 		const problem = await this.validate(body, options);
-		if (problem) return this.problemToResponse(problem, url);
+		if (problem) {
+			return this.problemToResponse(problem, url);
+		}
 
 		const response = await this.fetchInternal(
 			url,
@@ -135,7 +140,9 @@ export class FetchClient {
 
 	async put(url: string, body?: object | string, options?: RequestOptions): Promise<Response> {
 		const problem = await this.validate(body, options);
-		if (problem) return this.problemToResponse(problem, url);
+		if (problem) {
+			return this.problemToResponse(problem, url);
+		}
 
 		const response = await this.fetchInternal(
 			url,
@@ -163,7 +170,9 @@ export class FetchClient {
 
 	async patch(url: string, body?: object | string, options?: RequestOptions): Promise<Response> {
 		const problem = await this.validate(body, options);
-		if (problem) return this.problemToResponse(problem, url);
+		if (problem) {
+			return this.problemToResponse(problem, url);
+		}
 
 		const response = await this.fetchInternal(
 			url,
@@ -211,8 +220,9 @@ export class FetchClient {
 		if (typeof data !== 'object' || (options && options.shouldValidate === false)) return null;
 
 		const validationErrors = await classValidate(data as object);
-
-		if (validationErrors.length === 0) return null;
+		if (validationErrors.length === 0) {
+			return null;
+		}
 
 		const problem = new ProblemDetails();
 		for (const ve of validationErrors) {
@@ -230,8 +240,8 @@ export class FetchClient {
 
 		return {
 			url,
-			status: 400,
-			statusText: 'Bad Request',
+			status: 422,
+			statusText: 'Unprocessable Entity',
 			body: null,
 			bodyUsed: true,
 			ok: false,
@@ -260,7 +270,10 @@ export class FetchClient {
 		this.requestCount.increment();
 
 		if (this.accessToken !== null) {
-			if (!init) init = {};
+			if (!init) {
+				init = {};
+			}
+
 			init.headers = Object.assign(init.headers || {}, {
 				Authorization: `Bearer ${this.accessToken}`
 			});
@@ -271,7 +284,7 @@ export class FetchClient {
 		this.requestCount.decrement();
 		globalRequestCount.decrement();
 
-		this.validateResponse(response, options);
+		await this.validateResponse(response, options);
 
 		return response;
 	}
@@ -288,9 +301,13 @@ export class FetchClient {
 	private buildUrl(url: string, options: RequestOptions | undefined): string {
 		const isAbsoluteUrl = url.startsWith('http');
 
-		if (url.startsWith('/')) url = url.substring(1);
+		if (url.startsWith('/')) {
+			url = url.substring(1);
+		}
 
-		if (!url.startsWith('http')) url = this.baseUrl + '/' + url;
+		if (!url.startsWith('http')) {
+			url = this.baseUrl + '/' + url;
+		}
 
 		const parsed = new URL(url, window.location.origin);
 
@@ -298,27 +315,32 @@ export class FetchClient {
 			for (const [key, value] of Object.entries(options?.params)) {
 				parsed.searchParams.append(key, value as string);
 			}
+
 			url = parsed.toString();
 		}
 
-		if (isAbsoluteUrl) return url;
-
-		return parsed.pathname + parsed.search;
+		return isAbsoluteUrl ? url : `${parsed.pathname}${parsed.search}`;
 	}
 
-	private validateResponse(response: Response, options: RequestOptions | undefined) {
-		if (response.ok) return;
-
-		if (response.status === 401 && options?.unauthorizedShouldRedirect != false) {
-			const returnUrl = location.href;
-			goto('/login?url=' + returnUrl, { replaceState: true });
+	private async validateResponse(response: Response, options: RequestOptions | undefined) {
+		if (response.ok) {
 			return;
 		}
 
-		if (options?.expectedStatusCodes && options.expectedStatusCodes.includes(response.status))
+		if (response.status === 401 && options?.unauthorizedShouldRedirect != false) {
+			const returnUrl = location.href;
+			await goto(`/login?url=${returnUrl}`, { replaceState: true });
 			return;
+		}
 
-		if (options?.errorCallback) options.errorCallback(response);
-		else throw new Error(response.status.toString());
+		if (options?.expectedStatusCodes && options.expectedStatusCodes.includes(response.status)) {
+			return;
+		}
+
+		if (options?.errorCallback) {
+			options.errorCallback(response);
+		} else {
+			throw response;
+		}
 	}
 }

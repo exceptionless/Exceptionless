@@ -3,17 +3,17 @@
 	import PasswordInput from '$comp/form/PasswordInput.svelte';
 
 	import logo from '$lib/assets/exceptionless-350.png';
-	import IconMicrosoft from '~icons/mdi/microsoft';
-	import IconGoogle from '~icons/mdi/google';
 	import IconFacebook from '~icons/mdi/facebook';
 	import IconGitHub from '~icons/mdi/github';
+	import IconGoogle from '~icons/mdi/google';
+	import IconMicrosoft from '~icons/mdi/microsoft';
 
-	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
-	import { googleLogin, accessToken } from '$api/Auth';
-	import { Login } from '$lib/models/api';
-	import type { TokenResult } from '$lib/models/api.generated';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { googleLogin, accessToken } from '$api/Auth';
+	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+	import type { TokenResult } from '$lib/models/api.generated';
+	import { Login } from '$lib/models/api';
 
 	const data = new Login();
 	data.invite_token = $page.url.searchParams.get('token') as string;
@@ -24,10 +24,16 @@
 	let url = ($page.url.searchParams.get('url') as string) ?? '/';
 
 	async function login() {
-		let response = await api.postJSON<TokenResult>('auth/login', data);
+		if ($loading) {
+			return;
+		}
+
+		const response = await api.postJSON<TokenResult>('auth/login', data, {
+			unauthorizedShouldRedirect: false
+		});
 		if (response.success && response.data?.token) {
 			accessToken.set(response.data.token);
-			goto(url);
+			await goto(url);
 		} else if (response.status === 401) {
 			problem.setErrorMessage('Invalid email or password.');
 		} else if (response.problem) {
@@ -63,7 +69,7 @@
 				placeholder="Enter password"
 			>
 				<span slot="label" class="label-text-alt text-sm">
-					<a href="/forgot-password" class="link-secondary link" tabindex="-1"
+					<a href="/forgot-password" class="link link-secondary" tabindex="-1"
 						>Forgot password?</a
 					>
 				</span>
