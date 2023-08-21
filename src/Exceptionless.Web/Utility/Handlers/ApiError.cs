@@ -21,7 +21,7 @@ public class ApiError
 
     public ApiError(ModelStateDictionary modelState)
     {
-        if (modelState != null && modelState.Any(m => m.Value.Errors.Count > 0))
+        if (modelState is not null && modelState.Any(m => m.Value.Errors.Count > 0))
         {
             Message = "Please correct the specified errors and try again.";
             //errors = modelState.SelectMany(m => m.Value.Errors).ToDictionary(m => m.Key, m=> m.ErrorMessage);

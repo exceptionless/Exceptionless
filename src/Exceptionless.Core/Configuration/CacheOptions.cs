@@ -7,21 +7,19 @@ namespace Exceptionless.Core.Configuration;
 
 public class CacheOptions
 {
-    public string ConnectionString { get; internal set; }
-    public string Provider { get; internal set; }
-    public Dictionary<string, string> Data { get; internal set; }
+    public string? ConnectionString { get; internal set; }
+    public string? Provider { get; internal set; }
+    public Dictionary<string, string> Data { get; internal set; } = null!;
 
-    public string Scope { get; internal set; }
-    public string ScopePrefix { get; internal set; }
+    public string Scope { get; internal set; } = null!;
+    public string ScopePrefix { get; internal set; } = null!;
 
     public static CacheOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
     {
-        var options = new CacheOptions();
+        var options = new CacheOptions { Scope = appOptions.AppScope };
+        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
 
-        options.Scope = appOptions.AppScope;
-        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
-
-        string cs = config.GetConnectionString("Cache");
+        string? cs = config.GetConnectionString("Cache");
         options.Data = cs.ParseConnectionString();
         options.Provider = options.Data.GetString(nameof(options.Provider));
 

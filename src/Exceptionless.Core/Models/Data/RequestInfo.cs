@@ -4,14 +4,6 @@ namespace Exceptionless.Core.Models.Data;
 
 public class RequestInfo : IData
 {
-    public RequestInfo()
-    {
-        Data = new DataDictionary();
-        Headers = new Dictionary<string, string[]>();
-        Cookies = new Dictionary<string, string>();
-        QueryString = new Dictionary<string, string>();
-    }
-
     /// <summary>
     /// The user agent used for the request.
     /// </summary>
@@ -50,39 +42,39 @@ public class RequestInfo : IData
     /// <summary>
     /// The client's IP address when the error occurred.
     /// </summary>
-    public string ClientIpAddress { get; set; }
+    public string? ClientIpAddress { get; set; }
 
     /// <summary>
     /// The header values from the request.
     /// </summary>
-    public Dictionary<string, string[]> Headers { get; set; }
+    public Dictionary<string, string[]> Headers { get; set; } = new();
 
     /// <summary>
     /// The request cookies.
     /// </summary>
-    public Dictionary<string, string> Cookies { get; set; }
+    public Dictionary<string, string> Cookies { get; set; } = new();
 
     /// <summary>
     /// The data that was POSTed for the request.
     /// </summary>
-    public object PostData { get; set; }
+    public object? PostData { get; set; }
 
     /// <summary>
     /// The query string values from the request.
     /// </summary>
-    public Dictionary<string, string> QueryString { get; set; }
+    public Dictionary<string, string> QueryString { get; set; } = new();
 
     /// <summary>
     /// Extended data entries for this request.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary Data { get; set; } = new();
 
     protected bool Equals(RequestInfo other)
     {
         return String.Equals(UserAgent, other.UserAgent) && String.Equals(HttpMethod, other.HttpMethod) && IsSecure == other.IsSecure && String.Equals(Host, other.Host) && Port == other.Port && String.Equals(Path, other.Path) && String.Equals(Referrer, other.Referrer) && String.Equals(ClientIpAddress, other.ClientIpAddress) && Cookies.CollectionEquals(other.Cookies) && QueryString.CollectionEquals(other.QueryString) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;
@@ -93,7 +85,7 @@ public class RequestInfo : IData
         return Equals((RequestInfo)obj);
     }
 
-    private static readonly List<string> _cookieHashCodeExclusions = new List<string> { "__LastReferenceId" };
+    private static readonly List<string> _cookieHashCodeExclusions = new() { "__LastReferenceId" };
 
     public override int GetHashCode()
     {

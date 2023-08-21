@@ -32,7 +32,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
     private readonly JsonSerializerSettings _jsonSerializerSettings;
     private readonly AppOptions _appOptions;
 
-    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory)
+    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
     {
         _eventPostService = eventPostService;
         _eventParserPluginManager = eventParserPluginManager;
@@ -58,8 +58,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
         var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 
-        byte[] payload = await payloadTask.AnyContext();
-        if (payload == null)
+        byte[]? payload = await payloadTask.AnyContext();
+        if (payload is null)
         {
             await Task.WhenAll(AbandonEntryAsync(entry), projectTask, organizationTask).AnyContext();
             return JobResult.FailedWithMessage($"Unable to retrieve payload '{payloadPath}'.");
@@ -85,7 +85,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             }
 
             var project = await projectTask.AnyContext();
-            if (project == null)
+            if (project is null)
             {
                 if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {Project}", payloadPath, ep.ProjectId);
                 await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask).AnyContext();
@@ -135,7 +135,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
             var createdUtc = SystemClock.UtcNow;
             var events = ParseEventPost(ep, createdUtc, uncompressedData, entry.Id, isInternalProject);
-            if (events == null || events.Count == 0)
+            if (events is null || events.Count == 0)
             {
                 await Task.WhenAll(CompleteEntryAsync(entry, ep, createdUtc), organizationTask).AnyContext();
                 return JobResult.Success;
@@ -148,7 +148,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             }
 
             var organization = await organizationTask.AnyContext();
-            if (organization == null)
+            if (organization is null)
             {
                 if (!isInternalProject)
                     _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {OrganizationId}", payloadPath, project.OrganizationId);
@@ -246,14 +246,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
     }
 
-    private List<PersistentEvent> ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
+    private List<PersistentEvent>? ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
     {
         using (_logger.BeginScope(new ExceptionlessState().Tag("parsing")))
         {
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("Parsing EventPost: {QueueEntryId}", queueEntryId);
 
-            List<PersistentEvent> events = null;
+            List<PersistentEvent>? events = null;
             try
             {
                 var encoding = Encoding.UTF8;

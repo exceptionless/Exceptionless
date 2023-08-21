@@ -31,16 +31,16 @@ internal static class EventData
     public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string referenceId = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = -1, string semver = null, string source = null)
     {
         return GenerateEvent(
-            organizationId != null ? new[] { organizationId } : null,
-            projectId != null ? new[] { projectId } : null,
-            stackId != null ? new[] { stackId } : null,
+            organizationId is not null ? new[] { organizationId } : null,
+            projectId is not null ? new[] { projectId } : null,
+            stackId is not null ? new[] { stackId } : null,
             startDate,
             endDate,
             occurrenceDate,
             maxErrorNestingLevel,
             generateTags,
             generateData,
-            referenceId != null ? new[] { referenceId } : null,
+            referenceId is not null ? new[] { referenceId } : null,
             type,
             sessionId,
             userIdentity,
@@ -52,12 +52,12 @@ internal static class EventData
 
     public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null, decimal? value = -1)
     {
-        return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
+        return GenerateEvent(projectIds: Array.Empty<string>(), type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
     }
 
     public static PersistentEvent GenerateSessionEndEvent(DateTimeOffset occurrenceDate, string sessionId = null, string userIdentity = null)
     {
-        return GenerateEvent(projectIds: new string[0], type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
+        return GenerateEvent(projectIds: Array.Empty<string>(), type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
     }
 
     public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[] referenceIds = null, string type = null, string sessionId = null, string userIdentity = null, decimal? value = -1, string semver = null, string source = null)
@@ -108,7 +108,7 @@ internal static class EventData
             ev.Type = Event.KnownTypes.Error;
 
             // limit error variation so that stacking will occur
-            if (_randomErrors == null)
+            if (_randomErrors is null)
                 _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
 
             ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
@@ -172,7 +172,8 @@ internal static class EventData
             DeclaringType = TestConstants.TypeNames.Random(),
             Name = TestConstants.MethodNames.Random(),
             Parameters = new ParameterCollection {
-                    new Parameter {
+                    new()
+                    {
                         Type = "String",
                         Name = "path"
                     }

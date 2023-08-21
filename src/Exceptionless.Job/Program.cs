@@ -43,12 +43,9 @@ public class Program
     {
         var jobOptions = new JobRunnerOptions(args);
 
-        Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
+        Console.Title = jobOptions.JobName is not null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
 
-        string environment = Environment.GetEnvironmentVariable("EX_AppMode");
-        if (String.IsNullOrWhiteSpace(environment))
-            environment = "Production";
-
+        string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? "Production";
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
@@ -89,7 +86,7 @@ public class Program
                             o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
                             o.GetLevel = (context, duration, ex) =>
                             {
-                                if (ex != null || context.Response.StatusCode > 499)
+                                if (ex is not null || context.Response.StatusCode > 499)
                                     return LogEventLevel.Error;
 
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;

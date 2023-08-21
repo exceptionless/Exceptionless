@@ -14,7 +14,7 @@ public class MaintainIndexesJob : Foundatio.Repositories.Elasticsearch.Jobs.Main
 
     public MaintainIndexesJob(ExceptionlessElasticConfiguration configuration, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(configuration, lockProvider, loggerFactory) { }
 
-    public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new CancellationToken())
+    public override Task<JobResult> RunAsync(CancellationToken cancellationToken = new())
     {
         _lastRun = SystemClock.UtcNow;
         return base.RunAsync(cancellationToken);

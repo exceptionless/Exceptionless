@@ -39,7 +39,7 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
 
     public override void OnFormatting(ActionContext context)
     {
-        if (Content != null)
+        if (Content is not null)
         {
             var links = Page.HasValue
                 ? GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore)

@@ -12,7 +12,7 @@ public class MarkProjectConfiguredAction : EventPipelineActionBase
 {
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public MarkProjectConfiguredAction(IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _workItemQueue = workItemQueue;
         ContinueOnError = true;

@@ -4,12 +4,6 @@ namespace Exceptionless.Core.Models.Data;
 
 public class InnerError : IData
 {
-    public InnerError()
-    {
-        Data = new DataDictionary();
-        StackTrace = new StackFrameCollection();
-    }
-
     /// <summary>
     /// The error message.
     /// </summary>
@@ -28,7 +22,7 @@ public class InnerError : IData
     /// <summary>
     /// Extended data entries for this error.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary Data { get; set; } = new();
 
     /// <summary>
     /// An inner (nested) error.
@@ -38,7 +32,7 @@ public class InnerError : IData
     /// <summary>
     /// The stack trace for the error.
     /// </summary>
-    public StackFrameCollection StackTrace { get; set; }
+    public StackFrameCollection StackTrace { get; set; } = new();
 
     /// <summary>
     /// The target method.
@@ -50,7 +44,7 @@ public class InnerError : IData
         return String.Equals(Message, other.Message) && String.Equals(Type, other.Type) && String.Equals(Code, other.Code) && Equals(Data, other.Data) && Equals(Inner, other.Inner) && StackTrace.CollectionEquals(other.StackTrace) && Equals(TargetMethod, other.TargetMethod);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

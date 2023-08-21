@@ -1,10 +1,10 @@
 namespace Exceptionless.Core.Models.WorkItems;
 
-public class RemoveBotEventsWorkItem
+public record RemoveBotEventsWorkItem
 {
-    public string OrganizationId { get; set; }
-    public string ProjectId { get; set; }
-    public string ClientIpAddress { get; set; }
-    public DateTime UtcStartDate { get; set; }
-    public DateTime UtcEndDate { get; set; }
+    public required string OrganizationId { get; init; }
+    public required string ProjectId { get; init; }
+    public required string ClientIpAddress { get; init; }
+    public required DateTime UtcStartDate { get; init; }
+    public required DateTime UtcEndDate { get; init; }
 }

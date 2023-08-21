@@ -19,11 +19,6 @@ public abstract class ExceptionlessApiController : Controller
     protected const int MAXIMUM_LIMIT = 100;
     protected const int MAXIMUM_SKIP = 1000;
 
-    public ExceptionlessApiController()
-    {
-        AllowedDateFields = new List<string>();
-    }
-
     protected TimeSpan GetOffset(string offset)
     {
         if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out var value) && value.HasValue)
@@ -32,7 +27,7 @@ public abstract class ExceptionlessApiController : Controller
         return TimeSpan.Zero;
     }
 
-    protected ICollection<string> AllowedDateFields { get; private set; }
+    protected ICollection<string> AllowedDateFields { get; private set; } = new List<string>();
     protected string DefaultDateField { get; set; } = "created_utc";
 
     protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null)
@@ -123,24 +118,24 @@ public abstract class ExceptionlessApiController : Controller
             if (scope.IsScopable)
             {
                 Organization organization = null;
-                if (scope.OrganizationId != null)
+                if (scope.OrganizationId is not null)
                 {
                     organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, o => o.Cache());
                 }
-                else if (scope.ProjectId != null)
+                else if (scope.ProjectId is not null)
                 {
                     var project = await projectRepository.GetByIdAsync(scope.ProjectId, o => o.Cache());
-                    if (project != null)
+                    if (project is not null)
                         organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
                 }
-                else if (scope.StackId != null)
+                else if (scope.StackId is not null)
                 {
                     var stack = await stackRepository.GetByIdAsync(scope.StackId, o => o.Cache());
-                    if (stack != null)
+                    if (stack is not null)
                         organization = await organizationRepository.GetByIdAsync(stack.OrganizationId, o => o.Cache());
                 }
 
-                if (organization != null)
+                if (organization is not null)
                 {
                     if (associatedOrganizationIds.Contains(organization.Id) || Request.IsGlobalAdmin())
                         return new[] { organization }.ToList().AsReadOnly();
@@ -212,7 +207,7 @@ public abstract class ExceptionlessApiController : Controller
     protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links)
     {
         var headers = new HeaderDictionary();
-        string[] linksToAdd = links.Where(l => l != null).ToArray();
+        string[] linksToAdd = links.Where(l => l is not null).ToArray();
         if (linksToAdd.Length > 0)
             headers.Add("Link", linksToAdd);
 
@@ -226,7 +221,7 @@ public abstract class ExceptionlessApiController : Controller
 
     protected string GetResourceLink(string url, string type)
     {
-        return url != null ? $"<{url}>; rel=\"{type}\"" : null;
+        return url is not null ? $"<{url}>; rel=\"{type}\"" : null;
     }
 
     protected bool NextPageExceedsSkipLimit(int? page, int limit)

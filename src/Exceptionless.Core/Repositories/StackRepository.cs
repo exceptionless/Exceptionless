@@ -21,7 +21,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         AddPropertyRequiredForRemove(s => s.SignatureHash);
     }
 
-    public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null)
+    public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack>? options = null)
     {
         return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
     }
@@ -51,7 +51,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         // Only update the LastOccurrence if the new date is greater then the existing date.
         const string script = @"
 Instant parseDate(def dt) {
-  if (dt != null) {
+  if (dt is not null) {
     try {
       return Instant.parse(dt);
     } catch(DateTimeParseException e) {}
@@ -104,7 +104,7 @@ ctx._source.total_occurrences += params.count;";
         return hit?.Document;
     }
 
-    public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null)
+    public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack>? options = null)
     {
         return FindAsync(q => query.Configure().OnlyIds(), options);
     }

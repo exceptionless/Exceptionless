@@ -8,9 +8,9 @@ public class PermissionResult
 
     public int StatusCode { get; set; }
 
-    public static PermissionResult Allow = new PermissionResult { Allowed = true, StatusCode = StatusCodes.Status200OK };
+    public static PermissionResult Allow = new() { Allowed = true, StatusCode = StatusCodes.Status200OK };
 
-    public static PermissionResult Deny = new PermissionResult { Allowed = false, StatusCode = StatusCodes.Status400BadRequest };
+    public static PermissionResult Deny = new() { Allowed = false, StatusCode = StatusCodes.Status400BadRequest };
 
     public static PermissionResult DenyWithNotFound(string id = null)
     {

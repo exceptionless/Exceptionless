@@ -7,11 +7,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 [Priority(0)]
 public class GetVersion : PluginBase, IEventUpgraderPlugin
 {
-    public GetVersion(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public GetVersion(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public void Upgrade(EventUpgraderContext ctx)
     {
-        if (ctx.Version != null)
+        if (ctx.Version is not null)
             return;
 
         if (ctx.Documents.Count == 0 || !ctx.Documents.First().HasValues)
@@ -21,7 +21,7 @@ public class GetVersion : PluginBase, IEventUpgraderPlugin
         }
 
         var doc = ctx.Documents.First();
-        if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["Version"] == null)
+        if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["Version"] is null)
         {
             ctx.Version = new Version();
             return;

@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 [Priority(500)]
 public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin
 {
-    public V1R500EventUpgrade(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public V1R500EventUpgrade(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public void Upgrade(EventUpgraderContext ctx)
     {
@@ -19,7 +19,7 @@ public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin
 
         foreach (var doc in ctx.Documents)
         {
-            if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["InstallDate"] == null)
+            if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["InstallDate"] is null)
                 return;
 
             // This shouldn't hurt using DateTimeOffset to try and parse a date. It insures you won't lose any info.

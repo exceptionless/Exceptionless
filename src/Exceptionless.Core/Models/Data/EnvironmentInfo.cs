@@ -4,11 +4,6 @@ namespace Exceptionless.Core.Models.Data;
 
 public class EnvironmentInfo : IData
 {
-    public EnvironmentInfo()
-    {
-        Data = new DataDictionary();
-    }
-
     /// <summary>
     /// Gets the number of processors for the current machine.
     /// </summary>
@@ -81,12 +76,12 @@ public class EnvironmentInfo : IData
     /// <summary>
     /// The Ip Address of the machine that the error occurred on.
     /// </summary>
-    public string IpAddress { get; set; }
+    public string? IpAddress { get; set; }
 
     /// <summary>
     /// The name of the machine that the error occurred on.
     /// </summary>
-    public string MachineName { get; set; }
+    public string? MachineName { get; set; }
 
     /// <summary>
     /// A unique value identifying each Exceptionless client installation.
@@ -101,14 +96,14 @@ public class EnvironmentInfo : IData
     /// <summary>
     /// Extended data entries for this machine environment.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary Data { get; set; } = new();
 
     protected bool Equals(EnvironmentInfo other)
     {
         return ProcessorCount == other.ProcessorCount && TotalPhysicalMemory == other.TotalPhysicalMemory && AvailablePhysicalMemory == other.AvailablePhysicalMemory && String.Equals(CommandLine, other.CommandLine) && String.Equals(ProcessName, other.ProcessName) && String.Equals(ProcessId, other.ProcessId) && ProcessMemorySize == other.ProcessMemorySize && String.Equals(ThreadName, other.ThreadName) && String.Equals(ThreadId, other.ThreadId) && String.Equals(Architecture, other.Architecture) && String.Equals(OSName, other.OSName) && String.Equals(OSVersion, other.OSVersion) && String.Equals(IpAddress, other.IpAddress) && String.Equals(MachineName, other.MachineName) && String.Equals(InstallId, other.InstallId) && String.Equals(RuntimeVersion, other.RuntimeVersion) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

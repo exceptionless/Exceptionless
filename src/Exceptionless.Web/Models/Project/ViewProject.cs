@@ -29,7 +29,7 @@ public static class ViewProjectExtensions
     public static UsageHourInfo GetHourlyUsage(this ViewProject project, DateTime date)
     {
         var overage = project.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
-        if (overage != null)
+        if (overage is not null)
             return overage;
 
         overage = new UsageHourInfo
@@ -65,7 +65,7 @@ public static class ViewProjectExtensions
     public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
     {
         var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
-        if (usage != null)
+        if (usage is not null)
             return usage;
 
         usage = new UsageInfo

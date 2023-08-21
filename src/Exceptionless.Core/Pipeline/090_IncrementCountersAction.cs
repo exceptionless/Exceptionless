@@ -9,7 +9,7 @@ public class IncrementCountersAction : EventPipelineActionBase
 {
     private readonly BillingPlans _plans;
 
-    public IncrementCountersAction(BillingPlans plans, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public IncrementCountersAction(BillingPlans plans, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _plans = plans;
         ContinueOnError = true;

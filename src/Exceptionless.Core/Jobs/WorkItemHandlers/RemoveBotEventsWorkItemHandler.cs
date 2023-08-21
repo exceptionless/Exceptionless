@@ -14,13 +14,13 @@ public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
     private readonly IEventRepository _eventRepository;
     private readonly ILockProvider _lockProvider;
 
-    public RemoveBotEventsWorkItemHandler(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public RemoveBotEventsWorkItemHandler(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _eventRepository = eventRepository;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         var wi = (RemoveBotEventsWorkItem)workItem;
         string cacheKey = $"{nameof(RemoveBotEventsWorkItem)}:{wi.OrganizationId}:{wi.ProjectId}";

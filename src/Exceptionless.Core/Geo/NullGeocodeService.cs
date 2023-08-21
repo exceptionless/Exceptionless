@@ -2,8 +2,8 @@
 
 public class NullGeocodeService : IGeocodeService
 {
-    public Task<GeoResult> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default)
+    public Task<GeoResult?> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<GeoResult>(null);
+        return Task.FromResult<GeoResult?>(null);
     }
 }

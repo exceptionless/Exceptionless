@@ -6,7 +6,7 @@ namespace Exceptionless;
 
 public static class PersistentEventExtensions
 {
-    public static void CopyDataToIndex(this PersistentEvent ev, string[] keysToCopy = null)
+    public static void CopyDataToIndex(this PersistentEvent ev, string[]? keysToCopy = null)
     {
         keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
@@ -20,17 +20,20 @@ public static class PersistentEventExtensions
                 if (!field.IsValidFieldName())
                     continue;
 
-                ev.Idx[field + "-r"] = (string)ev.Data[key];
+                ev.Idx[field + "-r"] = ev.Data[key]?.ToString();
                 continue;
             }
 
-            if (field.StartsWith("@") || ev.Data[key] == null)
+            if (field.StartsWith("@") || ev.Data[key] is null)
                 continue;
 
             if (!field.IsValidFieldName())
                 continue;
 
-            var dataType = ev.Data[key].GetType();
+            var dataType = ev.Data[key]?.GetType();
+            if (dataType is null)
+                continue;
+
             if (dataType == typeof(bool))
             {
                 ev.Idx[field + "-b"] = ev.Data[key];
@@ -45,7 +48,7 @@ public static class PersistentEventExtensions
             }
             else if (dataType == typeof(string))
             {
-                string input = (string)ev.Data[key];
+                string? input = ev.Data[key]?.ToString();
                 if (String.IsNullOrEmpty(input) || input.Length >= 1000)
                     continue;
 
@@ -69,9 +72,9 @@ public static class PersistentEventExtensions
         }
     }
 
-    public static string GetEventReference(this PersistentEvent ev, string name)
+    public static string? GetEventReference(this PersistentEvent ev, string name)
     {
-        if (ev == null || String.IsNullOrEmpty(name))
+        if (String.IsNullOrEmpty(name))
             return null;
 
         return ev.Data.GetString($"@ref:{name}");
@@ -94,19 +97,13 @@ public static class PersistentEventExtensions
         ev.Data[$"@ref:{name}"] = id;
     }
 
-    public static string GetSessionId(this PersistentEvent ev)
+    public static string? GetSessionId(this PersistentEvent ev)
     {
-        if (ev == null)
-            return null;
-
         return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference("session");
     }
 
     public static void SetSessionId(this PersistentEvent ev, string sessionId)
     {
-        if (ev == null)
-            return;
-
         if (!IsValidIdentifier(sessionId) || String.IsNullOrEmpty(sessionId))
             throw new ArgumentException("Session Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(sessionId));
 
@@ -118,7 +115,7 @@ public static class PersistentEventExtensions
 
     public static bool HasSessionEndTime(this PersistentEvent ev)
     {
-        if (ev == null || !ev.IsSessionStart())
+        if (!ev.IsSessionStart())
             return false;
 
         return ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd);
@@ -126,10 +123,10 @@ public static class PersistentEventExtensions
 
     public static DateTime? GetSessionEndTime(this PersistentEvent ev)
     {
-        if (ev == null || !ev.IsSessionStart())
+        if (!ev.IsSessionStart())
             return null;
 
-        if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object sessionEnd))
+        if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object? sessionEnd))
         {
             if (sessionEnd is DateTimeOffset dto)
                 return dto.UtcDateTime;
@@ -143,7 +140,7 @@ public static class PersistentEventExtensions
 
     public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false)
     {
-        if (ev == null || !ev.IsSessionStart())
+        if (!ev.IsSessionStart())
             return false;
 
         decimal duration = ev.Value.GetValueOrDefault();
@@ -183,14 +180,16 @@ public static class PersistentEventExtensions
             Value = 0
         };
 
-        startEvent.SetSessionId(source.GetSessionId());
+        string? sessionId = source.GetSessionId();
+        if (sessionId is not null)
+            startEvent.SetSessionId(sessionId);
         if (includePrivateInformation)
             startEvent.SetUserIdentity(source.GetUserIdentity());
         startEvent.SetLocation(source.GetLocation());
         startEvent.SetVersion(source.GetVersion());
 
         var ei = source.GetEnvironmentInfo();
-        if (ei != null)
+        if (ei is not null)
         {
             startEvent.SetEnvironmentInfo(new EnvironmentInfo
             {
@@ -211,7 +210,7 @@ public static class PersistentEventExtensions
         }
 
         var ri = source.GetRequestInfo();
-        if (ri != null)
+        if (ri is not null)
         {
             startEvent.AddRequestInfo(new RequestInfo
             {
@@ -238,9 +237,6 @@ public static class PersistentEventExtensions
 
     public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev)
     {
-        if (ev == null)
-            yield break;
-
         if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
             yield return ev.Geo.Trim();
 
@@ -264,12 +260,12 @@ public static class PersistentEventExtensions
         return IsValidIdentifier(ev.ReferenceId);
     }
 
-    private static bool IsValidIdentifier(string value)
+    private static bool IsValidIdentifier(string? value)
     {
-        if (value == null)
+        if (value is null)
             return true;
 
-        if (value.Length < 8 || value.Length > 100)
+        if (value.Length is < 8 or > 100)
             return false;
 
         return value.IsValidIdentifier();

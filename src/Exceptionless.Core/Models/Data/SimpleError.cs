@@ -4,11 +4,6 @@ namespace Exceptionless.Core.Models.Data;
 
 public class SimpleError : IData
 {
-    public SimpleError()
-    {
-        Data = new DataDictionary();
-    }
-
     /// <summary>
     /// The error message.
     /// </summary>
@@ -27,7 +22,7 @@ public class SimpleError : IData
     /// <summary>
     /// Extended data entries for this error.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary Data { get; set; } = new();
 
     /// <summary>
     /// An inner (nested) error.
@@ -39,7 +34,7 @@ public class SimpleError : IData
         return String.Equals(Message, other.Message) && String.Equals(Type, other.Type) && String.Equals(StackTrace, other.StackTrace) && Equals(Data, other.Data) && Equals(Inner, other.Inner);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

@@ -18,7 +18,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     private readonly AssignToStackAction _assignToStack;
     private readonly LocationPlugin _locationPlugin;
 
-    public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cache = new ScopedCacheClient(cacheClient, "session");
         _eventRepository = eventRepository;
@@ -60,7 +60,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
 
             // sync the session start event with the first session event.
-            if (sessionStartEvent != null)
+            if (sessionStartEvent is not null)
                 sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
 
             // cancel duplicate end events (1 per session id)
@@ -72,7 +72,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             var sessionEndEvent = session.FirstOrDefault(ev => ev.Event.IsSessionEnd());
 
             // sync the session end event with the last session event.
-            if (sessionEndEvent != null)
+            if (sessionEndEvent is not null)
                 sessionEndEvent.Event.Date = lastSessionEvent.Event.Date;
 
             // discard the heartbeat events.
@@ -83,18 +83,18 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             });
 
             // try to update an existing session
-            string sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
+            string sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null).AnyContext();
 
             // do we already have a session start for this session id?
-            if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null)
+            if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent is not null)
             {
                 _logger.LogInformation("Discarding duplicate session start event for session: {SessionStartEventId}", sessionStartEventId);
                 sessionStartEvent.IsCancelled = true;
             }
-            else if (String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent != null)
+            else if (String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent is not null)
             {
                 // no existing session, session start is in the batch
-                sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null);
+                sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null);
                 sessionStartEvent.SetProperty("SetSessionStartEventId", true);
             }
             else if (String.IsNullOrEmpty(sessionStartEventId))
@@ -110,7 +110,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 }
 
                 // create a new session start event
-                await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent != null).AnyContext();
+                await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null).AnyContext();
             }
         }
     }
@@ -141,7 +141,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
 
                 // sync the session start event with the first session event.
-                if (sessionStartEvent != null)
+                if (sessionStartEvent is not null)
                     sessionStartEvent.Event.Date = firstSessionEvent.Event.Date;
 
                 // discard the heartbeat events.
@@ -172,7 +172,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
                 if (isNewSession)
                 {
-                    if (sessionStartEvent != null)
+                    if (sessionStartEvent is not null)
                     {
                         sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd());
                         sessionStartEvent.SetProperty("SetSessionStartEventId", true);
@@ -188,7 +188,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 else
                 {
                     // we already have a session start, cancel this one
-                    if (sessionStartEvent != null)
+                    if (sessionStartEvent is not null)
                     {
                         _logger.LogInformation("Discarding duplicate session start event.");
                         sessionStartEvent.IsCancelled = true;
@@ -202,7 +202,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
     public override Task EventProcessedAsync(EventContext context)
     {
-        if (context.GetProperty("SetSessionStartEventId") != null)
+        if (context.GetProperty("SetSessionStartEventId") is not null)
             return SetSessionStartEventIdAsync(context.Project.Id, context.Event.GetSessionId(), context.Event.Id);
 
         return Task.CompletedTask;
@@ -235,10 +235,10 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return String.Concat(projectId, ":start:", sessionId);
     }
 
-    private async Task<string> GetSessionStartEventIdAsync(string projectId, string sessionId)
+    private async Task<string?> GetSessionStartEventIdAsync(string projectId, string sessionId)
     {
         string cacheKey = GetSessionStartEventIdCacheKey(projectId, sessionId);
-        string eventId = await _cache.GetAsync<string>(cacheKey, null).AnyContext();
+        string? eventId = await _cache.GetAsync<string?>(cacheKey, null).AnyContext();
         if (!String.IsNullOrEmpty(eventId))
             await _cache.SetExpirationAsync(cacheKey, TimeSpan.FromDays(1)).AnyContext();
 
@@ -279,7 +279,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     {
         var startEvent = startContext.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
         var startEventContexts = new List<EventContext> {
-                new EventContext(startEvent, startContext.Organization, startContext.Project)
+                new(startEvent, startContext.Organization, startContext.Project)
             };
 
         if (_assignToStack.Enabled)
@@ -294,9 +294,9 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return startEvent;
     }
 
-    private async Task<string> UpdateSessionStartEventAsync(string projectId, string sessionId, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false)
+    private async Task<string?> UpdateSessionStartEventAsync(string projectId, string sessionId, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false)
     {
-        string sessionStartEventId = await GetSessionStartEventIdAsync(projectId, sessionId).AnyContext();
+        string? sessionStartEventId = await GetSessionStartEventIdAsync(projectId, sessionId).AnyContext();
         if (!String.IsNullOrEmpty(sessionStartEventId))
         {
             await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, lastActivityUtc, isSessionEnd, hasError).AnyContext();

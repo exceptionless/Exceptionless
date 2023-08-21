@@ -30,7 +30,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
     protected async Task<ActionResult<TViewModel>> GetByIdImplAsync(string id)
     {
         var model = await GetModelAsync(id);
-        if (model == null)
+        if (model is null)
             return NotFound();
 
         return await OkModelAsync(model);
@@ -47,7 +47,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
             return null;
 
         var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
-        if (model == null)
+        if (model is null)
             return null;
 
         if (_isOwnedByOrganization && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
@@ -58,7 +58,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
 
     protected virtual async Task<IReadOnlyCollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true)
     {
-        if (ids == null || ids.Length == 0)
+        if (ids is null || ids.Length == 0)
             return EmptyModels;
 
         var models = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));

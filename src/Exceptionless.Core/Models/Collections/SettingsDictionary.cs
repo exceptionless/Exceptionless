@@ -144,7 +144,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public void Apply(IEnumerable<KeyValuePair<string, string>> values)
     {
-        if (values == null)
+        if (values is null)
             return;
 
         foreach (var v in values)

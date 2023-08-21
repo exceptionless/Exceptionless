@@ -17,7 +17,7 @@ public class QueueNotificationAction : EventPipelineActionBase
     private readonly IWebHookRepository _webHookRepository;
     private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _notificationQueue = notificationQueue;
         _webHookNotificationQueue = webHookNotificationQueue;
@@ -50,7 +50,7 @@ public class QueueNotificationAction : EventPipelineActionBase
             if (!ShouldCallWebHook(hook, ctx))
                 continue;
 
-            var context = new WebHookDataContext(hook, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
+            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, ctx.IsNew, ctx.IsRegression);
             var notification = new WebHookNotification
             {
                 OrganizationId = ctx.Event.OrganizationId,

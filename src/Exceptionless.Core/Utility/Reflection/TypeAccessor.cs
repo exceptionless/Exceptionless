@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Reflection;
 /// </summary>
 internal class TypeAccessor
 {
-    private readonly ConcurrentDictionary<string, IMemberAccessor> _memberCache = new ConcurrentDictionary<string, IMemberAccessor>();
+    private readonly ConcurrentDictionary<string, IMemberAccessor?> _memberCache = new();
     private readonly Lazy<LateBoundConstructor> _lateBoundConstructor;
     private readonly Type _type;
 
@@ -35,7 +35,7 @@ internal class TypeAccessor
     public object Create()
     {
         var constructor = _lateBoundConstructor.Value;
-        if (constructor == null)
+        if (constructor is null)
             throw new InvalidOperationException($"Could not find constructor for '{Type.Name}'.");
 
         return constructor.Invoke();
@@ -47,7 +47,7 @@ internal class TypeAccessor
     /// </summary>
     /// <param name="name">The name of the property to find.</param>
     /// <returns>An <see cref="IMemberAccessor"/> instance for the property if found; otherwise <c>null</c>.</returns>
-    public IMemberAccessor FindProperty(string name)
+    public IMemberAccessor? FindProperty(string name)
     {
         return FindProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
     }
@@ -60,36 +60,36 @@ internal class TypeAccessor
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the property if found; otherwise <c>null</c>.
     /// </returns>
-    public IMemberAccessor FindProperty(string name, BindingFlags flags)
+    public IMemberAccessor? FindProperty(string name, BindingFlags flags)
     {
         return _memberCache.GetOrAdd(name, n => CreatePropertyAccessor(n, flags));
     }
 
-    private IMemberAccessor CreatePropertyAccessor(string name, BindingFlags flags)
+    private IMemberAccessor? CreatePropertyAccessor(string name, BindingFlags flags)
     {
         var info = FindProperty(Type, name, flags);
-        return info == null ? null : GetMemberAccessor(info);
+        return info is null ? null : GetMemberAccessor(info);
     }
 
-    private static PropertyInfo FindProperty(Type type, string name, BindingFlags flags)
+    private static PropertyInfo? FindProperty(Type type, string name, BindingFlags flags)
     {
-        if (type == null)
+        if (type is null)
             throw new ArgumentNullException(nameof(type));
-        if (name == null)
+        if (name is null)
             throw new ArgumentNullException(nameof(name));
 
         // first try GetProperty
         var property = type.GetProperty(name, flags);
-        if (property != null)
+        if (property is not null)
             return property;
 
         // if not found, search while ignoring case
         return type.GetProperties(flags).FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static IMemberAccessor GetMemberAccessor(PropertyInfo propertyInfo)
+    private static IMemberAccessor? GetMemberAccessor(PropertyInfo propertyInfo)
     {
-        return propertyInfo == null ? null : new PropertyAccessor(propertyInfo);
+        return propertyInfo is null ? null : new PropertyAccessor(propertyInfo);
     }
     #endregion
 
@@ -101,7 +101,7 @@ internal class TypeAccessor
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the field if found; otherwise <c>null</c>.
     /// </returns>
-    public IMemberAccessor FindField(string name)
+    public IMemberAccessor? FindField(string name)
     {
         return FindField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }
@@ -114,36 +114,36 @@ internal class TypeAccessor
     /// <returns>
     /// An <see cref="IMemberAccessor"/> instance for the field if found; otherwise <c>null</c>.
     /// </returns>
-    public IMemberAccessor FindField(string name, BindingFlags flags)
+    public IMemberAccessor? FindField(string name, BindingFlags flags)
     {
         return _memberCache.GetOrAdd(name, n => CreateFieldAccessor(n, flags));
     }
 
-    private IMemberAccessor CreateFieldAccessor(string name, BindingFlags flags)
+    private IMemberAccessor? CreateFieldAccessor(string name, BindingFlags flags)
     {
         var info = FindField(Type, name, flags);
-        return info == null ? null : GetMemberAccessor(info);
+        return info is null ? null : GetMemberAccessor(info);
     }
 
-    private static FieldInfo FindField(Type type, string name, BindingFlags flags)
+    private static FieldInfo? FindField(Type type, string name, BindingFlags flags)
     {
-        if (type == null)
+        if (type is null)
             throw new ArgumentNullException(nameof(type));
-        if (name == null)
+        if (name is null)
             throw new ArgumentNullException(nameof(name));
 
         // first try GetField
         var field = type.GetField(name, flags);
-        if (field != null)
+        if (field is not null)
             return field;
 
         // if not found, search while ignoring case
         return type.GetFields(flags).FirstOrDefault(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static IMemberAccessor GetMemberAccessor(FieldInfo fieldInfo)
+    private static IMemberAccessor? GetMemberAccessor(FieldInfo fieldInfo)
     {
-        return fieldInfo == null ? null : new FieldAccessor(fieldInfo);
+        return fieldInfo is null ? null : new FieldAccessor(fieldInfo);
     }
     #endregion
 }

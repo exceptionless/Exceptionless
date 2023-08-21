@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(20)]
 public sealed class ErrorPlugin : EventProcessorPluginBase
 {
-    public ErrorPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public ErrorPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task EventProcessingAsync(EventContext context)
     {
@@ -18,7 +18,7 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
             return Task.CompletedTask;
 
         var error = context.Event.GetError();
-        if (error == null)
+        if (error is null)
             return Task.CompletedTask;
 
         if (String.IsNullOrWhiteSpace(context.Event.Message))

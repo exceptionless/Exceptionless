@@ -59,7 +59,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10)
     {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         page = GetPage(page);
@@ -78,11 +78,11 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     public async Task<ActionResult<ViewToken>> GetDefaultTokenAsync(string projectId)
     {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, o => o.PageLimit(1))).Documents.FirstOrDefault();
-        if (token != null)
+        if (token is not null)
             return await OkModelAsync(token);
 
         return await PostImplAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId });
@@ -129,10 +129,10 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
     [Consumes("application/json")]
-    public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken token = null)
+    public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken? token = null)
     {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         if (token is null)
@@ -156,7 +156,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
     [Consumes("application/json")]
-    public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken token = null)
+    public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken? token = null)
     {
         if (token is null)
             token = new NewToken();
@@ -206,7 +206,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
             return null;
 
         var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
-        if (model == null)
+        if (model is null)
             return null;
 
         if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
@@ -266,7 +266,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             var project = await GetProjectAsync(value.ProjectId);
-            if (project == null)
+            if (project is null)
                 return PermissionResult.Deny;
 
             value.OrganizationId = project.OrganizationId;
@@ -276,7 +276,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (!String.IsNullOrEmpty(value.DefaultProjectId))
         {
             var project = await GetProjectAsync(value.DefaultProjectId);
-            if (project == null)
+            if (project is null)
                 return PermissionResult.Deny;
         }
 
@@ -317,7 +317,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
             return null;
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
-        if (project == null || !CanAccessOrganization(project.OrganizationId))
+        if (project is null || !CanAccessOrganization(project.OrganizationId))
             return null;
 
         return project;
@@ -326,6 +326,6 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     private async Task<bool> IsInProjectAsync(string projectId)
     {
         var project = await GetProjectAsync(projectId);
-        return project != null;
+        return project is not null;
     }
 }

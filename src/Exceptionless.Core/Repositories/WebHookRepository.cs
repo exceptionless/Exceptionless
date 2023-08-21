@@ -26,7 +26,7 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
     }
 
-    public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook> options = null)
+    public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook>? options = null)
     {
         if (String.IsNullOrEmpty(projectId))
             throw new ArgumentNullException(nameof(projectId));

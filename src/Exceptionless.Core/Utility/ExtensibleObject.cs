@@ -9,26 +9,21 @@ public interface IExtensibleObject
 {
     void SetProperty<T>(string name, T value);
 
-    T GetProperty<T>(string name);
+    T? GetProperty<T>(string name);
 
-    object GetProperty(string name);
+    object? GetProperty(string name);
 
     bool HasProperty(string name);
 
     void RemoveProperty(string name);
 
-    IEnumerable<KeyValuePair<string, object>> GetProperties();
+    IEnumerable<KeyValuePair<string, object?>> GetProperties();
 }
 
 public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
 {
-    public ExtensibleObject()
-    {
-        _extendedData = new Dictionary<string, object>();
-    }
-
     [JsonProperty]
-    private readonly Dictionary<string, object> _extendedData;
+    private readonly Dictionary<string, object?> _extendedData = new();
 
     public void SetProperty<T>(string name, T value)
     {
@@ -40,27 +35,27 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
         NotifyPropertyChanged(name);
     }
 
-    public T GetProperty<T>(string name)
+    public T? GetProperty<T>(string name)
     {
-        object value = GetProperty(name);
-        if (value == null)
+        object? value = GetProperty(name);
+        if (value is null)
             throw new InvalidOperationException($"Property value \"{name}\" is null.  Can't use generic method on null values.");
 
-        if (value is T)
-            return (T)value;
+        if (value is T tValue)
+            return tValue;
 
-        if (value is JContainer)
-            return ((JContainer)value).ToObject<T>();
+        if (value is JContainer container)
+            return container.ToObject<T>();
 
         return value.ToType<T>();
     }
 
-    public object GetProperty(string name)
+    public object? GetProperty(string name)
     {
-        return _extendedData.TryGetValue(name, out object value) ? value : null;
+        return _extendedData.TryGetValue(name, out object? value) ? value : null;
     }
 
-    public IEnumerable<KeyValuePair<string, object>> GetProperties()
+    public IEnumerable<KeyValuePair<string, object?>> GetProperties()
     {
         return _extendedData;
     }
@@ -79,7 +74,7 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
         }
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void NotifyPropertyChanged(string name)
     {

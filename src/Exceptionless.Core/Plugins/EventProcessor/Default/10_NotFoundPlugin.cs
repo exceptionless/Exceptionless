@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(10)]
 public sealed class NotFoundPlugin : EventProcessorPluginBase
 {
-    public NotFoundPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public NotFoundPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task EventProcessingAsync(EventContext context)
     {
@@ -19,7 +19,7 @@ public sealed class NotFoundPlugin : EventProcessorPluginBase
         context.Event.Data.Remove(Event.KnownDataKeys.TraceLog);
 
         var req = context.Event.GetRequestInfo();
-        if (req == null)
+        if (req is null)
             return Task.CompletedTask;
 
         if (String.IsNullOrWhiteSpace(context.Event.Source))

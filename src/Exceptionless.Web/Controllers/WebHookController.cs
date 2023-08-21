@@ -42,7 +42,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     public async Task<ActionResult<IReadOnlyCollection<WebHook>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10)
     {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         page = GetPage(page);
@@ -117,7 +117,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             return NotFound();
 
         string projectId = User.GetProjectId();
-        if (projectId != null)
+        if (projectId is not null)
             webHook.ProjectId = projectId;
         else
             webHook.OrganizationId = Request.GetDefaultOrganizationId();
@@ -177,7 +177,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             return null;
 
         var webHook = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
-        if (webHook == null)
+        if (webHook is null)
             return null;
 
         if (!String.IsNullOrEmpty(webHook.OrganizationId) && !IsInOrganization(webHook.OrganizationId))
@@ -191,7 +191,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
 
     protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true)
     {
-        if (ids == null || ids.Length == 0)
+        if (ids is null || ids.Length == 0)
             return EmptyModels;
 
         var webHooks = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
@@ -224,13 +224,13 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             project = await GetProjectAsync(value.ProjectId);
-            if (project == null)
+            if (project is null)
                 return PermissionResult.DenyWithMessage("Invalid project id specified.");
 
             value.OrganizationId = project.OrganizationId;
         }
 
-        if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId))
+        if (!await _billingManager.HasPremiumFeaturesAsync(project is not null ? project.OrganizationId : value.OrganizationId))
             return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
         return PermissionResult.Allow;
@@ -261,7 +261,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             return null;
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
-        if (project == null || !CanAccessOrganization(project.OrganizationId))
+        if (project is null || !CanAccessOrganization(project.OrganizationId))
             return null;
 
         return project;
@@ -270,7 +270,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     private async Task<bool> IsInProjectAsync(string projectId)
     {
         var project = await GetProjectAsync(projectId);
-        return project != null;
+        return project is not null;
     }
 
     private bool IsValidWebHookVersion(string version)

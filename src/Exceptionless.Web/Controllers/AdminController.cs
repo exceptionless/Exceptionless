@@ -88,11 +88,11 @@ public class AdminController : ExceptionlessApiController
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
         var plan = _billingManager.GetBillingPlan(planId);
-        if (plan == null)
+        if (plan is null)
             return Ok(new { Success = false, Message = "Invalid PlanId." });
 
         organization.BillingStatus = !String.Equals(plan.Id, _plans.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
@@ -116,7 +116,7 @@ public class AdminController : ExceptionlessApiController
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
         _billingManager.ApplyBonus(organization, bonusEvents, expires);
@@ -126,7 +126,7 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpGet("requeue")]
-    public async Task<IActionResult> RequeueAsync(string path = null, bool archive = false)
+    public async Task<IActionResult> RequeueAsync(string? path = null, bool archive = false)
     {
         if (String.IsNullOrEmpty(path))
             path = @"q\*";

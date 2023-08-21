@@ -20,7 +20,7 @@ public static class PathHelper
         if (!path.StartsWith(DATA_DIRECTORY, StringComparison.OrdinalIgnoreCase))
             return Path.GetFullPath(path);
 
-        string dataDirectory = GetDataDirectory();
+        string? dataDirectory = GetDataDirectory();
         if (String.IsNullOrEmpty(dataDirectory))
             return path;
 
@@ -45,9 +45,9 @@ public static class PathHelper
     /// Gets the data directory for the |DataDirectory| macro.
     /// </summary>
     /// <returns>The DataDirectory path.</returns>
-    public static string GetDataDirectory()
+    public static string? GetDataDirectory()
     {
-        string dataDirectory = Environment.GetEnvironmentVariable("WEBROOT_PATH");
+        string? dataDirectory = Environment.GetEnvironmentVariable("WEBROOT_PATH");
         if (!String.IsNullOrEmpty(dataDirectory))
             dataDirectory = Path.Combine(dataDirectory, "App_Data");
 

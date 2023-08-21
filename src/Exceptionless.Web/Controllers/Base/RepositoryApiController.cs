@@ -19,7 +19,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
 
     protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value)
     {
-        if (value == null)
+        if (value is null)
             return BadRequest();
 
         var mapped = await MapAsync<TModel>(value);
@@ -48,10 +48,10 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
     protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc)
     {
         var model = await GetModelAsync(id);
-        if (model == null)
+        if (model is null)
             return NotFound();
 
-        if (modelUpdateFunc != null)
+        if (modelUpdateFunc is not null)
             model = await modelUpdateFunc(model);
 
         await _repository.SaveAsync(model, o => o.Cache());
@@ -66,10 +66,10 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
     protected async Task<ActionResult<TViewModel>> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc)
     {
         var models = await GetModelsAsync(ids, false);
-        if (models == null || models.Count == 0)
+        if (models is null || models.Count == 0)
             return NotFound();
 
-        if (modelUpdateFunc != null)
+        if (modelUpdateFunc is not null)
             foreach (var model in models)
                 await modelUpdateFunc(model);
 
@@ -144,11 +144,11 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
     protected async Task<ActionResult<TViewModel>> PatchImplAsync(string id, Delta<TUpdateModel> changes)
     {
         var original = await GetModelAsync(id, false);
-        if (original == null)
+        if (original is null)
             return NotFound();
 
         // if there are no changes in the delta, then ignore the request
-        if (changes == null || !changes.GetChangedPropertyNames().Any())
+        if (changes is null || !changes.GetChangedPropertyNames().Any())
             return await OkModelAsync(original);
 
         var permission = await CanUpdateAsync(original, changes);

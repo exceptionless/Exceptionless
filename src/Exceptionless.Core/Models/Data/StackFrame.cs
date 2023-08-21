@@ -11,7 +11,7 @@ public class StackFrame : Method
         return base.Equals(other) && String.Equals(FileName, other.FileName);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

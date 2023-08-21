@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Plugins.EventParser;
 
 public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
 {
-    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
@@ -20,9 +20,9 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
 
             try
             {
-                List<PersistentEvent> events = null;
+                List<PersistentEvent>? events = null;
                 AppDiagnostics.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
-                if (events == null)
+                if (events is null)
                     continue;
 
                 // Set required event properties

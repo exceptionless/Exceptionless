@@ -5,18 +5,13 @@ namespace Exceptionless.Core.Models.Data;
 
 public class Module : IData
 {
-    public Module()
-    {
-        Data = new DataDictionary();
-    }
-
     public int ModuleId { get; set; }
     public string Name { get; set; }
     public string Version { get; set; }
     public bool IsEntry { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime ModifiedDate { get; set; }
-    public DataDictionary Data { get; set; }
+    public DataDictionary Data { get; set; } = new();
 
     public override string ToString()
     {
@@ -35,7 +30,7 @@ public class Module : IData
         return ModuleId == other.ModuleId && String.Equals(Name, other.Name) && String.Equals(Version, other.Version) && IsEntry == other.IsEntry && CreatedDate.Equals(other.CreatedDate) && ModifiedDate.Equals(other.ModifiedDate) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

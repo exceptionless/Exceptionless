@@ -19,17 +19,17 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Unique id that identifies the organization.
     /// </summary>
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
 
     /// <summary>
     /// Name of the organization.
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// Stripe customer id that will be charged.
     /// </summary>
-    public string StripeCustomerId { get; set; }
+    public string? StripeCustomerId { get; set; }
 
     /// <summary>
     /// Billing plan id that the organization belongs to.
@@ -49,7 +49,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Last 4 digits of the credit card used for billing.
     /// </summary>
-    public string CardLast4 { get; set; }
+    public string? CardLast4 { get; set; }
 
     /// <summary>
     /// Date the organization first subscribed to a paid plan.
@@ -64,7 +64,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// User id that the billing information was last changed by.
     /// </summary>
-    public string BillingChangedByUserId { get; set; }
+    public string? BillingChangedByUserId { get; set; }
 
     /// <summary>
     /// Organization's current billing status.
@@ -109,7 +109,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Any notes on why the account was suspended.
     /// </summary>
-    public string SuspensionNotes { get; set; }
+    public string? SuspensionNotes { get; set; }
 
     /// <summary>
     /// The reason the account was suspended.
@@ -119,7 +119,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// User id that suspended the account.
     /// </summary>
-    public string SuspendedByUserId { get; set; }
+    public string? SuspendedByUserId { get; set; }
 
     /// <summary>
     /// If true, premium features will be enabled.

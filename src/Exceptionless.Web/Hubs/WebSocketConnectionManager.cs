@@ -8,8 +8,8 @@ namespace Exceptionless.Web.Hubs;
 
 public class WebSocketConnectionManager : IDisposable
 {
-    private static readonly ArraySegment<byte> _keepAliveMessage = new ArraySegment<byte>(Encoding.ASCII.GetBytes("{}"), 0, 2);
-    private readonly ConcurrentDictionary<string, WebSocket> _connections = new ConcurrentDictionary<string, WebSocket>();
+    private static readonly ArraySegment<byte> _keepAliveMessage = new(Encoding.ASCII.GetBytes("{}"), 0, 2);
+    private readonly ConcurrentDictionary<string, WebSocket> _connections = new();
     private readonly Timer _timer;
     private readonly JsonSerializerSettings _serializerSettings;
     private readonly ILogger _logger;
@@ -175,7 +175,7 @@ public class WebSocketConnectionManager : IDisposable
 
     private bool CanSendWebSocketMessage(WebSocket socket)
     {
-        return socket != null && socket.State != WebSocketState.Aborted && socket.State != WebSocketState.Closed && socket.State != WebSocketState.CloseSent;
+        return socket is not null && socket.State != WebSocketState.Aborted && socket.State != WebSocketState.Closed && socket.State != WebSocketState.CloseSent;
     }
 
     public void Dispose()

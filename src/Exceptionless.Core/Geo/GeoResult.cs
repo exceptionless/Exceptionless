@@ -11,22 +11,23 @@ public class GeoResult
 
     public double? Longitude { get; set; }
 
-    public string Country { get; set; }
+    public string? Country { get; set; }
 
     /// <summary>
     /// State / Province
     /// </summary>
-    public string Level1 { get; set; }
+    public string? Level1 { get; set; }
 
     /// <summary>
     /// County
     /// </summary>
-    public string Level2 { get; set; }
+    public string? Level2 { get; set; }
 
     /// <summary>
     /// City
     /// </summary>
-    public string Locality { get; set; }
+    public string? Locality { get; set; }
+
 
     public bool IsValid()
     {
@@ -39,7 +40,7 @@ public class GeoResult
         return true;
     }
 
-    public static bool TryParse(string input, out GeoResult result)
+    public static bool TryParse(string? input, out GeoResult? result)
     {
         result = null;
         if (String.IsNullOrEmpty(input))
@@ -59,7 +60,7 @@ public class GeoResult
         return true;
     }
 
-    public override string ToString()
+    public override string? ToString()
     {
         if (!Latitude.HasValue || !Longitude.HasValue)
             return null;
@@ -70,11 +71,8 @@ public class GeoResult
 
 public static class GeoResultExtensions
 {
-    public static Location ToLocation(this GeoResult result)
+    public static Location? ToLocation(this GeoResult result)
     {
-        if (result == null)
-            return null;
-
         if (String.IsNullOrEmpty(result.Country) && String.IsNullOrEmpty(result.Level1) && String.IsNullOrEmpty(result.Level2) && String.IsNullOrEmpty(result.Locality))
             return null;
 

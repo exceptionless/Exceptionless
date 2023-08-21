@@ -17,9 +17,9 @@ namespace Exceptionless.Core.Repositories
     {
         internal const string SystemFilterKey = "@AppFilter";
 
-        public static T AppFilter<T>(this T query, AppFilter filter) where T : IRepositoryQuery
+        public static T AppFilter<T>(this T query, AppFilter? filter) where T : IRepositoryQuery
         {
-            if (filter != null)
+            if (filter is not null)
                 return query.BuildOption(SystemFilterKey, filter);
 
             return query;
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Repositories.Queries
     {
         public AppFilter(Organization organization) : this(new List<Organization> { organization })
         {
-            if (organization == null)
+            if (organization is null)
                 throw new ArgumentNullException(nameof(organization));
         }
 
@@ -60,10 +60,10 @@ namespace Exceptionless.Core.Repositories.Queries
 
         public AppFilter(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization })
         {
-            if (organization == null)
+            if (organization is null)
                 throw new ArgumentNullException(nameof(organization));
 
-            if (project == null)
+            if (project is null)
                 throw new ArgumentNullException(nameof(project));
         }
 
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Repositories.Queries
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
         {
             var sfq = ctx.Source.GetAppFilter();
-            if (sfq == null)
+            if (sfq is null)
                 return Task.CompletedTask;
 
             var allowedOrganizations = sfq.Organizations.Where(o => o.HasPremiumFeatures || (!o.HasPremiumFeatures && !sfq.UsesPremiumFeatures)).ToList();
@@ -118,13 +118,13 @@ namespace Exceptionless.Core.Repositories.Queries
 
             var index = ctx.Options.GetElasticIndex();
             bool shouldApplyRetentionFilter = ShouldApplyRetentionFilter(index, ctx);
-            string field = shouldApplyRetentionFilter ? GetDateField(index) : null;
+            string? field = shouldApplyRetentionFilter ? GetDateField(index) : null;
 
-            if (sfq.Stack != null)
+            if (sfq.Stack is not null)
             {
                 string stackIdFieldName = typeof(T) == typeof(Stack) ? "id" : _stackIdFieldName;
                 var organization = allowedOrganizations.SingleOrDefault(o => o.Id == sfq.Stack.OrganizationId);
-                if (organization != null)
+                if (organization is not null)
                 {
                     if (shouldApplyRetentionFilter)
                         ctx.Filter &= (Query<T>.Term(stackIdFieldName, sfq.Stack.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays, sfq.Stack.FirstOccurrence));
@@ -141,10 +141,10 @@ namespace Exceptionless.Core.Repositories.Queries
                 return Task.CompletedTask;
             }
 
-            QueryContainer container = null;
+            QueryContainer? container = null;
             if (sfq.Projects?.Count > 0)
             {
-                var allowedProjects = sfq.Projects.ToDictionary(p => p, p => allowedOrganizations.SingleOrDefault(o => o.Id == p.OrganizationId)).Where(kvp => kvp.Value != null).ToList();
+                var allowedProjects = sfq.Projects.ToDictionary(p => p, p => allowedOrganizations.SingleOrDefault(o => o.Id == p.OrganizationId)).Where(kvp => kvp.Value is not null).ToList();
                 if (allowedProjects.Count > 0)
                 {
                     foreach (var project in allowedProjects)
@@ -177,7 +177,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
         private QueryContainer GetRetentionFilter<T>(string field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
         {
-            if (field == null)
+            if (field is null)
                 throw new ArgumentNullException(nameof(field));
 
             var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge);
@@ -187,7 +187,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
         private bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
         {
-            if (index == null)
+            if (index is null)
                 throw new ArgumentNullException(nameof(index));
 
             var indexType = index.GetType();
@@ -200,9 +200,9 @@ namespace Exceptionless.Core.Repositories.Queries
             return false;
         }
 
-        private string GetDateField(IIndex index)
+        private string? GetDateField(IIndex index)
         {
-            if (index == null)
+            if (index is null)
                 throw new ArgumentNullException(nameof(index));
 
             var indexType = index.GetType();

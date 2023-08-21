@@ -56,7 +56,7 @@
                     (this.machine = Number("0x" + arguments[0].substr(8, 6))),
                     (this.pid = Number("0x" + arguments[0].substr(14, 4))),
                     (this.increment = Number("0x" + arguments[0].substr(18, 6)));
-            } else if (arguments.length == 4 && arguments[0] != null) {
+            } else if (arguments.length == 4 && arguments[0] is not null) {
                 this.timestamp = arguments[0];
                 this.machine = arguments[1];
                 this.pid = arguments[2];

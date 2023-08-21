@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 
 public class EventContext : ExtensibleObject, IPipelineContext
 {
-    public EventContext(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null)
+    public EventContext(PersistentEvent ev, Organization organization, Project project, EventPostInfo? epi = null)
     {
         Organization = organization;
         Project = project;
@@ -20,7 +20,7 @@ public class EventContext : ExtensibleObject, IPipelineContext
     }
 
     public PersistentEvent Event { get; set; }
-    public EventPostInfo EventPostInfo { get; set; }
+    public EventPostInfo? EventPostInfo { get; set; }
     public Stack Stack { get; set; }
     public Project Project { get; set; }
     public Organization Organization { get; set; }
@@ -34,14 +34,14 @@ public class EventContext : ExtensibleObject, IPipelineContext
     public bool IsCancelled { get; set; }
     public bool IsProcessed { get; set; }
 
-    public bool HasError => ErrorMessage != null || Exception != null;
+    public bool HasError => ErrorMessage is not null || Exception is not null;
 
-    public void SetError(string message, Exception ex = null)
+    public void SetError(string message, Exception? ex = null)
     {
         ErrorMessage = message;
         Exception = ex;
     }
 
-    public string ErrorMessage { get; private set; }
-    public Exception Exception { get; private set; }
+    public string? ErrorMessage { get; private set; }
+    public Exception? Exception { get; private set; }
 }

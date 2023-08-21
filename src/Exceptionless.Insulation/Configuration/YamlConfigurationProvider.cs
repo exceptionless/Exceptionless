@@ -50,6 +50,6 @@ public class YamlConfigurationProvider : FileConfigurationProvider
         {
             line = streamReader.ReadLine();
             yield return line;
-        } while (line != null);
+        } while (line is not null);
     }
 }

@@ -69,7 +69,7 @@ public sealed class MessageBusBroker : IStartupAction
 
     private async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default)
     {
-        if (ec == null)
+        if (ec is null)
             return;
 
         var entityChanged = ExtendedEntityChanged.Create(ec);
@@ -94,7 +94,7 @@ public sealed class MessageBusBroker : IStartupAction
         if (TokenTypeName == entityChanged.Type)
         {
             string userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
-            if (userId != null)
+            if (userId is not null)
             {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
                 _logger.LogTrace("Sending {TokenTypeName} message for added user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
@@ -122,7 +122,7 @@ public sealed class MessageBusBroker : IStartupAction
 
     private Task OnPlanOverageAsync(PlanOverage planOverage, CancellationToken cancellationToken = default)
     {
-        if (planOverage != null)
+        if (planOverage is not null)
         {
             _logger.LogTrace("Sending plan overage message to organization: {organization}", planOverage.OrganizationId);
             return GroupSendAsync(planOverage.OrganizationId, planOverage);
@@ -133,7 +133,7 @@ public sealed class MessageBusBroker : IStartupAction
 
     private Task OnPlanChangedAsync(PlanChanged planChanged, CancellationToken cancellationToken = default)
     {
-        if (planChanged != null)
+        if (planChanged is not null)
         {
             _logger.LogTrace("Sending plan changed message to organization: {organization}", planChanged.OrganizationId);
             return GroupSendAsync(planChanged.OrganizationId, planChanged);

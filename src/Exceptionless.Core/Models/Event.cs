@@ -6,21 +6,15 @@ namespace Exceptionless.Core.Models;
 [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
 public class Event : IData
 {
-    public Event()
-    {
-        Tags = new TagSet();
-        Data = new DataDictionary();
-    }
-
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
     /// </summary>
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     /// <summary>
     /// The event source (ie. machine name, log name, feature name).
     /// </summary>
-    public string Source { get; set; }
+    public string? Source { get; set; }
 
     /// <summary>
     /// The date that the event occurred on.
@@ -30,17 +24,17 @@ public class Event : IData
     /// <summary>
     /// A list of tags used to categorize this event.
     /// </summary>
-    public TagSet Tags { get; set; }
+    public TagSet Tags { get; set; } = new();
 
     /// <summary>
     /// The event message.
     /// </summary>
-    public string Message { get; set; }
+    public string? Message { get; set; }
 
     /// <summary>
     /// The geo coordinates where the event happened.
     /// </summary>
-    public string Geo { get; set; }
+    public string? Geo { get; set; }
 
     /// <summary>
     /// The value of the event if any.
@@ -55,19 +49,19 @@ public class Event : IData
     /// <summary>
     /// Optional data entries that contain additional information about this event.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary Data { get; set; } = new();
 
     /// <summary>
     /// An optional identifier to be used for referencing this event instance at a later time.
     /// </summary>
-    public string ReferenceId { get; set; }
+    public string? ReferenceId { get; set; }
 
     protected bool Equals(Event other)
     {
         return String.Equals(Type, other.Type) && String.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && String.Equals(Message, other.Message) && String.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;
@@ -78,7 +72,7 @@ public class Event : IData
         return Equals((Event)obj);
     }
 
-    private static readonly List<string> _exclusions = new List<string> { KnownDataKeys.TraceLog };
+    private static readonly List<string> _exclusions = new() { KnownDataKeys.TraceLog };
     public override int GetHashCode()
     {
         unchecked

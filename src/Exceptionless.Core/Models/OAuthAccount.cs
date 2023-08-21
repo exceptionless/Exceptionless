@@ -2,18 +2,13 @@
 
 public class OAuthAccount : IEquatable<OAuthAccount>
 {
-    public OAuthAccount()
-    {
-        ExtraData = new SettingsDictionary();
-    }
-
     public string Provider { get; set; }
     public string ProviderUserId { get; set; }
     public string Username { get; set; }
 
-    public SettingsDictionary ExtraData { get; private set; }
+    public SettingsDictionary ExtraData { get; private set; } = new();
 
-    public bool Equals(OAuthAccount other)
+    public bool Equals(OAuthAccount? other)
     {
         if (other is null)
             return false;
@@ -22,7 +17,7 @@ public class OAuthAccount : IEquatable<OAuthAccount>
         return other.Provider.Equals(Provider) && other.ProviderUserId.Equals(ProviderUserId);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;
@@ -38,15 +33,15 @@ public class OAuthAccount : IEquatable<OAuthAccount>
         unchecked
         {
             int hash = 2153;
-            if (Provider != null)
+            if (Provider is not null)
                 hash = hash * 9929 + Provider.GetHashCode();
-            if (ProviderUserId != null)
+            if (ProviderUserId is not null)
                 hash = hash * 9929 + ProviderUserId.GetHashCode();
             return hash;
         }
     }
 
-    public string EmailAddress()
+    public string? EmailAddress()
     {
         if (!String.IsNullOrEmpty(Username) && Username.Contains("@"))
             return Username;
@@ -60,7 +55,7 @@ public class OAuthAccount : IEquatable<OAuthAccount>
         return null;
     }
 
-    public string FullName()
+    public string? FullName()
     {
         foreach (var kvp in ExtraData.Where(kvp => String.Equals(kvp.Key, "name") && !String.IsNullOrEmpty(kvp.Value)))
             return kvp.Value;

@@ -10,7 +10,7 @@ public class UpdateStatsAction : EventPipelineActionBase
 {
     private readonly StackService _stackService;
 
-    public UpdateStatsAction(StackService stackService, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public UpdateStatsAction(StackService stackService, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _stackService = stackService;
     }

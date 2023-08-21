@@ -5,11 +5,11 @@ namespace Exceptionless.Core.Pipeline;
 
 public abstract class EventPipelineActionBase : PipelineActionBase<EventContext>
 {
-    public EventPipelineActionBase(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public EventPipelineActionBase(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     protected virtual bool IsCritical => false;
-    protected virtual string[] ErrorTags => new string[0];
-    protected virtual string ErrorMessage => null;
+    protected virtual string[] ErrorTags => Array.Empty<string>();
+    protected virtual string? ErrorMessage => null;
 
     public override bool HandleError(Exception ex, EventContext ctx)
     {

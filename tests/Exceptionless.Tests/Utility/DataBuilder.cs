@@ -36,7 +36,7 @@ public class EventDataBuilder
     private readonly ISerializer _serializer;
     private readonly ICollection<Action<Stack>> _stackMutations;
     private int _additionalEventsToCreate = 0;
-    private readonly PersistentEvent _event = new PersistentEvent();
+    private readonly PersistentEvent _event = new();
     private Stack _stack = null;
     private EventDataBuilder _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
@@ -464,7 +464,7 @@ public class EventDataBuilder
 
         _event.CopyDataToIndex();
 
-        if (_stackEventBuilder != null)
+        if (_stackEventBuilder is not null)
         {
             _stack = _stackEventBuilder.GetStack();
 
@@ -481,7 +481,7 @@ public class EventDataBuilder
 
             _stack.Tags.AddRange(_event.Tags ?? new TagSet());
         }
-        else if (_stack == null)
+        else if (_stack is null)
         {
             string title = _formattingPluginManager.GetStackTitle(_event);
             _stack = new Stack
@@ -528,7 +528,7 @@ public class EventDataBuilder
             _event.IsFirstOccurrence = false;
 
         var msi = _event.GetManualStackingInfo();
-        if (msi != null)
+        if (msi is not null)
         {
             _stack.Title = msi.Title;
             _stack.SignatureInfo.Clear();

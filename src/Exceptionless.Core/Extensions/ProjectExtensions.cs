@@ -10,7 +10,7 @@ public static class ProjectExtensions
     /// <summary>
     /// These are the default settings for the integration or user who created the project.
     /// </summary>
-    public static void AddDefaultNotificationSettings(this Project project, string userIdOrIntegration, NotificationSettings settings = null)
+    public static void AddDefaultNotificationSettings(this Project project, string userIdOrIntegration, NotificationSettings? settings = null)
     {
         if (project.NotificationSettings.ContainsKey(userIdOrIntegration))
             return;
@@ -49,9 +49,9 @@ public static class ProjectExtensions
     /// <summary>
     /// Gets the slack token from extended data.
     /// </summary>
-    public static SlackToken GetSlackToken(this Project project)
+    public static SlackToken? GetSlackToken(this Project project)
     {
-        return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object value) ? value as SlackToken : null;
+        return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object? value) ? value as SlackToken : null;
     }
 
     public static bool HasHourlyUsage(this Project project, DateTime date)
@@ -62,7 +62,7 @@ public static class ProjectExtensions
     public static UsageHourInfo GetHourlyUsage(this Project project, DateTime date)
     {
         var usage = project.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
-        if (usage != null)
+        if (usage is not null)
             return usage;
 
         usage = new UsageHourInfo
@@ -100,7 +100,7 @@ public static class ProjectExtensions
     public static UsageInfo GetUsage(this Project project, DateTime date)
     {
         var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
-        if (usage != null)
+        if (usage is not null)
             return usage;
 
         usage = new UsageInfo

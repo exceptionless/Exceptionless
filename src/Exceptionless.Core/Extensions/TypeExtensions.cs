@@ -40,7 +40,7 @@ public static class TypeExtensions
 
     public static T ToType<T>(this object value)
     {
-        if (value == null)
+        if (value is null)
             throw new ArgumentNullException(nameof(value));
 
         var targetType = typeof(T);
@@ -55,21 +55,22 @@ public static class TypeExtensions
             // attempt to match enum by name.
             if (EnumHelper.TryEnumIsDefined(targetType, value.ToString()))
             {
-                object parsedValue = Enum.Parse(targetType, value.ToString(), false);
+                object parsedValue = Enum.Parse(targetType, value.ToString()!, false);
                 return (T)parsedValue;
             }
 
             string message = $"The Enum value of '{value}' is not defined as a valid value for '{targetType.FullName}'.";
-            throw new ArgumentException(message);
+            throw new ArgumentException(message, nameof(value));
         }
 
         if (valueType.IsNumeric() && targetType.IsEnum)
             return (T)Enum.ToObject(targetType, value);
 
-        if (converter != null && converter.CanConvertFrom(valueType))
+        if (converter is not null && converter.CanConvertFrom(valueType))
         {
-            object convertedValue = converter.ConvertFrom(value);
-            return (T)convertedValue;
+            object? convertedValue = converter.ConvertFrom(value);
+            return (convertedValue is T convertedValue1 ? convertedValue1 : default)
+                   ?? throw new ArgumentException($"An incompatible value specified.  Target Type: {targetType.FullName} Value Type: {value.GetType().FullName}", nameof(value));
         }
 
         if (value is IConvertible)

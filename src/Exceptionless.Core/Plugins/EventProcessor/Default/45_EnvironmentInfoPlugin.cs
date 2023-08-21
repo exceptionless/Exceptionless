@@ -8,12 +8,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 [Priority(45)]
 public sealed class EnvironmentInfoPlugin : EventProcessorPluginBase
 {
-    public EnvironmentInfoPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public EnvironmentInfoPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task EventProcessingAsync(EventContext context)
     {
         var environment = context.Event.GetEnvironmentInfo();
-        if (environment == null)
+        if (environment is null)
             return Task.CompletedTask;
 
         if (context.IncludePrivateInformation)

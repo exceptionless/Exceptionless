@@ -10,7 +10,7 @@ public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBas
 {
     private readonly ICacheClient _cacheClient;
 
-    public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public CheckForDuplicateReferenceIdPlugin(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cacheClient = cacheClient;
     }
@@ -32,7 +32,7 @@ public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBas
 
     public override Task EventBatchProcessedAsync(ICollection<EventContext> contexts)
     {
-        var values = contexts.Where(c => !String.IsNullOrEmpty(c.Event.ReferenceId) && c.GetProperty("AddedReferenceId") == null).ToDictionary(GetCacheKey, v => true);
+        var values = contexts.Where(c => !String.IsNullOrEmpty(c.Event.ReferenceId) && c.GetProperty("AddedReferenceId") is null).ToDictionary(GetCacheKey, v => true);
         if (values.Count == 0)
             return Task.CompletedTask;
 

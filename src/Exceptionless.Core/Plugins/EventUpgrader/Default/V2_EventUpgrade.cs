@@ -49,7 +49,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             }
 
             doc.RenameOrRemoveIfNullOrEmpty("RequestInfo", "@request");
-            bool hasRequestInfo = doc["@request"] != null;
+            bool hasRequestInfo = doc["@request"] is not null;
 
             if (!isNotFound)
                 doc.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "@environment");
@@ -58,8 +58,8 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
 
             doc.RenameAll("ExtendedData", "Data");
 
-            var extendedData = doc.Property("Data") != null ? doc.Property("Data").Value as JObject : null;
-            if (extendedData != null)
+            var extendedData = doc.Property("Data") is not null ? doc.Property("Data").Value as JObject : null;
+            if (extendedData is not null)
             {
                 if (!isNotFound)
                     extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "@trace");
@@ -70,7 +70,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             if (isNotFound && hasRequestInfo)
             {
                 doc.RemoveAll("Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
-                if (extendedData?["__ExceptionInfo"] != null)
+                if (extendedData?["__ExceptionInfo"] is not null)
                     extendedData.Remove("__ExceptionInfo");
 
                 doc.Add("Type", new JValue("404"));
@@ -85,7 +85,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                 // Copy the exception info from root extended data to the current errors extended data.
-                if (extendedData?["__ExceptionInfo"] != null)
+                if (extendedData?["__ExceptionInfo"] is not null)
                 {
                     error.Add("Data", new JObject());
                     ((JObject)error["Data"]).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
@@ -96,7 +96,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 RenameAndValidateExtraExceptionProperties(id, error);
 
                 var inner = error["Inner"] as JObject;
-                while (inner != null)
+                while (inner is not null)
                 {
                     RenameAndValidateExtraExceptionProperties(id, inner);
                     inner = inner["Inner"] as JObject;
@@ -122,7 +122,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
     private void RenameAndValidateExtraExceptionProperties(string id, JObject error)
     {
         var extendedData = error?["Data"] as JObject;
-        if (extendedData?["__ExceptionInfo"] == null)
+        if (extendedData?["__ExceptionInfo"] is null)
             return;
 
         string json = extendedData["__ExceptionInfo"].ToString();
@@ -147,7 +147,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                     continue;
 
                 string dataKey = property.Name;
-                if (extendedData[dataKey] != null)
+                if (extendedData[dataKey] is not null)
                     dataKey = "_" + dataKey;
 
                 ext.Add(dataKey, property.Value);

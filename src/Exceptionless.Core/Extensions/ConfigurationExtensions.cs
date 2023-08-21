@@ -37,22 +37,20 @@ public static class ConfigurationExtensions
         return String.Empty;
     }
 
-    public static List<string> GetValueList(this IConfiguration config, string key, char[] separators = null)
+    public static List<string> GetValueList(this IConfiguration config, string key, char[]? separators = null)
     {
-        string value = config.GetValue<string>(key);
+        string? value = config.GetValue<string>(key);
         if (String.IsNullOrEmpty(value))
             return new List<string>();
 
-        if (separators == null)
-            separators = new[] { ',' };
-
+        separators ??= new[] { ',' };
         return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
     }
 
     public static Dictionary<string, object> ToDictionary(this IConfiguration section, params string[] sectionsToSkip)
     {
-        if (sectionsToSkip == null)
-            sectionsToSkip = new string[0];
+        if (sectionsToSkip is null)
+            sectionsToSkip = Array.Empty<string>();
 
         var dict = new Dictionary<string, object>();
         foreach (var value in section.GetChildren())
@@ -64,7 +62,7 @@ public static class ConfigurationExtensions
             if (String.IsNullOrEmpty(value.Key) || sectionsToSkip.Contains(value.Key, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            if (value.Value != null)
+            if (value.Value is not null)
                 dict[value.Key] = value.Value;
 
             var subDict = ToDictionary(value);

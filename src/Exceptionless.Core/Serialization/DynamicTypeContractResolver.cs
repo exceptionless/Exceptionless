@@ -6,13 +6,13 @@ namespace Exceptionless.Serializer;
 
 public class DynamicTypeContractResolver : IContractResolver
 {
-    private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
-    private readonly HashSet<Type> _types = new HashSet<Type>();
+    private readonly HashSet<Assembly> _assemblies = new();
+    private readonly HashSet<Type> _types = new();
 
     private readonly IContractResolver _defaultResolver;
     private readonly IContractResolver _resolver;
 
-    public DynamicTypeContractResolver(IContractResolver resolver, IContractResolver defaultResolver = null)
+    public DynamicTypeContractResolver(IContractResolver resolver, IContractResolver? defaultResolver = null)
     {
         _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
         _defaultResolver = defaultResolver ?? new DefaultContractResolver();

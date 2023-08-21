@@ -1,43 +1,45 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook;
 
 [Priority(10)]
 public sealed class VersionOnePlugin : WebHookDataPluginBase
 {
-    public VersionOnePlugin(AppOptions options) : base(options) { }
+    public VersionOnePlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
-    public override Task<object> CreateFromEventAsync(WebHookDataContext ctx)
+    public override Task<object?> CreateFromEventAsync(WebHookDataContext ctx)
     {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
-            return Task.FromResult<object>(null);
+            return Task.FromResult<object?>(null);
 
-        var error = ctx.Event.GetError();
-        if (error == null)
-            return Task.FromResult<object>(null);
+        var error = ctx.Event?.GetError();
+        if (error is null)
+            return Task.FromResult<object?>(null);
 
-        var requestInfo = ctx.Event.GetRequestInfo();
-        var environmentInfo = ctx.Event.GetEnvironmentInfo();
+        var ev = ctx.Event!;
+        var requestInfo = ev.GetRequestInfo();
+        var environmentInfo = ev.GetEnvironmentInfo();
 
-        return Task.FromResult<object>(new VersionOneWebHookEvent(_options.BaseURL)
+        return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL)
         {
-            Id = ctx.Event.Id,
-            OccurrenceDate = ctx.Event.Date,
-            Tags = ctx.Event.Tags,
+            Id = ev.Id,
+            OccurrenceDate = ev.Date,
+            Tags = ev.Tags,
             MachineName = environmentInfo?.MachineName,
             RequestPath = requestInfo?.GetFullPath(),
-            IpAddress = requestInfo != null ? requestInfo.ClientIpAddress : environmentInfo?.IpAddress,
+            IpAddress = requestInfo is not null ? requestInfo.ClientIpAddress : environmentInfo?.IpAddress,
             Message = error.Message,
             Type = error.Type,
             Code = error.Code,
             TargetMethod = error.TargetMethod?.GetFullName(),
-            ProjectId = ctx.Event.ProjectId,
+            ProjectId = ev.ProjectId,
             ProjectName = ctx.Project.Name,
-            OrganizationId = ctx.Event.OrganizationId,
+            OrganizationId = ev.OrganizationId,
             OrganizationName = ctx.Organization.Name,
-            ErrorStackId = ctx.Event.StackId,
+            ErrorStackId = ev.StackId,
             ErrorStackStatus = ctx.Stack.Status,
             ErrorStackTitle = ctx.Stack.Title,
             ErrorStackDescription = ctx.Stack.Description,
@@ -51,12 +53,12 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         });
     }
 
-    public override Task<object> CreateFromStackAsync(WebHookDataContext ctx)
+    public override Task<object?> CreateFromStackAsync(WebHookDataContext ctx)
     {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
-            return Task.FromResult<object>(null);
+            return Task.FromResult<object?>(null);
 
-        return Task.FromResult<object>(new VersionOneWebHookStack(_options.BaseURL)
+        return Task.FromResult<object?>(new VersionOneWebHookStack(_options.BaseURL)
         {
             Id = ctx.Stack.Id,
             Status = ctx.Stack.Status,
@@ -75,12 +77,12 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
             LastOccurrence = ctx.Stack.LastOccurrence,
             DateFixed = ctx.Stack.DateFixed,
             IsRegression = ctx.Stack.Status == StackStatus.Regressed,
-            IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags != null && ctx.Stack.Tags.Contains("Critical"),
+            IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags is not null && ctx.Stack.Tags.Contains("Critical"),
             FixedInVersion = ctx.Stack.FixedInVersion
         });
     }
 
-    public class VersionOneWebHookEvent
+    public record VersionOneWebHookEvent
     {
         private readonly string _baseUrl;
 
@@ -89,37 +91,37 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
             _baseUrl = baseUrl;
         }
 
-        public string Id { get; set; }
+        public string Id { get; init; } = null!;
         public string Url => String.Concat(_baseUrl, "/event/", Id);
-        public DateTimeOffset OccurrenceDate { get; set; }
-        public TagSet Tags { get; set; }
-        public string MachineName { get; set; }
-        public string RequestPath { get; set; }
-        public string IpAddress { get; set; }
-        public string Message { get; set; }
-        public string Type { get; set; }
-        public string Code { get; set; }
-        public string TargetMethod { get; set; }
-        public string ProjectId { get; set; }
-        public string ProjectName { get; set; }
-        public string OrganizationId { get; set; }
-        public string OrganizationName { get; set; }
-        public string ErrorStackId { get; set; }
-        public StackStatus ErrorStackStatus { get; set; }
+        public DateTimeOffset OccurrenceDate { get; init; }
+        public TagSet Tags { get; init; } = null!;
+        public string? MachineName { get; init; }
+        public string? RequestPath { get; init; }
+        public string? IpAddress { get; init; }
+        public string Message { get; init; } = null!;
+        public string Type { get; init; } = null!;
+        public string Code { get; init; } = null!;
+        public string? TargetMethod { get; init; }
+        public string ProjectId { get; init; } = null!;
+        public string ProjectName { get; init; } = null!;
+        public string OrganizationId { get; init; } = null!;
+        public string OrganizationName { get; init; } = null!;
+        public string ErrorStackId { get; init; } = null!;
+        public StackStatus ErrorStackStatus { get; init; }
         public string ErrorStackUrl => String.Concat(_baseUrl, "/stack/", ErrorStackId);
-        public string ErrorStackTitle { get; set; }
-        public string ErrorStackDescription { get; set; }
-        public TagSet ErrorStackTags { get; set; }
-        public int TotalOccurrences { get; set; }
-        public DateTime FirstOccurrence { get; set; }
-        public DateTime LastOccurrence { get; set; }
-        public DateTime? DateFixed { get; set; }
-        public bool IsNew { get; set; }
-        public bool IsRegression { get; set; }
-        public bool IsCritical => Tags != null && Tags.Contains("Critical");
+        public string ErrorStackTitle { get; init; } = null!;
+        public string ErrorStackDescription { get; init; } = null!;
+        public TagSet ErrorStackTags { get; init; } = null!;
+        public int TotalOccurrences { get; init; }
+        public DateTime FirstOccurrence { get; init; }
+        public DateTime LastOccurrence { get; init; }
+        public DateTime? DateFixed { get; init; }
+        public bool IsNew { get; init; }
+        public bool IsRegression { get; init; }
+        public bool IsCritical => Tags is not null && Tags.Contains("Critical");
     }
 
-    public class VersionOneWebHookStack
+    public record VersionOneWebHookStack
     {
         private readonly string _baseUrl;
 
@@ -128,26 +130,26 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
             _baseUrl = baseUrl;
         }
 
-        public string Id { get; set; }
-        public StackStatus Status { get; set; }
+        public string Id { get; init; } = null!;
+        public StackStatus Status { get; init; }
         public string Url => String.Concat(_baseUrl, "/stack/", Id);
-        public string Title { get; set; }
-        public string Description { get; set; }
+        public string Title { get; init; } = null!;
+        public string Description { get; init; } = null!;
 
-        public TagSet Tags { get; set; }
-        public string RequestPath { get; set; }
-        public string Type { get; set; }
-        public string TargetMethod { get; set; }
-        public string ProjectId { get; set; }
-        public string ProjectName { get; set; }
-        public string OrganizationId { get; set; }
-        public string OrganizationName { get; set; }
-        public int TotalOccurrences { get; set; }
-        public DateTime FirstOccurrence { get; set; }
-        public DateTime LastOccurrence { get; set; }
-        public DateTime? DateFixed { get; set; }
-        public string FixedInVersion { get; set; }
-        public bool IsRegression { get; set; }
-        public bool IsCritical { get; set; }
+        public TagSet Tags { get; init; } = null!;
+        public string? RequestPath { get; init; }
+        public string? Type { get; init; }
+        public string? TargetMethod { get; init; }
+        public string ProjectId { get; init; } = null!;
+        public string ProjectName { get; init; } = null!;
+        public string OrganizationId { get; init; } = null!;
+        public string OrganizationName { get; init; } = null!;
+        public int TotalOccurrences { get; init; }
+        public DateTime FirstOccurrence { get; init; }
+        public DateTime LastOccurrence { get; init; }
+        public DateTime? DateFixed { get; init; }
+        public string? FixedInVersion { get; init; }
+        public bool IsRegression { get; init; }
+        public bool IsCritical { get; init; }
     }
 }

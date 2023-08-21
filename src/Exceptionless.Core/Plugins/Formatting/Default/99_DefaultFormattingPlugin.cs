@@ -1,13 +1,14 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(99)]
 public sealed class DefaultFormattingPlugin : FormattingPluginBase
 {
-    public DefaultFormattingPlugin(AppOptions options) : base(options) { }
+    public DefaultFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override string GetStackTitle(PersistentEvent ev)
     {
@@ -21,7 +22,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
     {
         var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
-        if (stack.SignatureInfo.TryGetValue("Source", out string value))
+        if (stack.SignatureInfo.TryGetValue("Source", out string? value))
             data.Add("Source", value);
 
         return new SummaryData { TemplateKey = "stack-summary", Data = data };
@@ -64,7 +65,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
             data.Add("Source", ev.Source.Truncate(60));
 
         var requestInfo = ev.GetRequestInfo();
-        if (requestInfo != null)
+        if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
         return new MailMessageData { Subject = subject, Data = data };

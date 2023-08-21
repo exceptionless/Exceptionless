@@ -11,11 +11,11 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin
     protected readonly string _metricPrefix;
     protected readonly ILogger _logger;
 
-    public PluginManagerBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null)
+    public PluginManagerBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory)
     {
         var type = GetType();
         _metricPrefix = "";
-        _logger = loggerFactory?.CreateLogger(type);
+        _logger = loggerFactory.CreateLogger(type);
         _serviceProvider = serviceProvider;
         _options = options;
 
@@ -30,8 +30,8 @@ public abstract class PluginManagerBase<TPlugin> where TPlugin : class, IPlugin
         var attr = pluginType.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
         int priority = attr?.Priority ?? 0;
 
-        var plugin = (TPlugin)_serviceProvider.GetService(pluginType);
-        Plugins.Add(priority, plugin);
+        var plugin = _serviceProvider.GetService(pluginType) as TPlugin;
+        Plugins.Add(priority, plugin ?? throw new ArgumentException($"Unable to resolve service for plugin type: {pluginType.Name}"));
     }
 
     private void LoadDefaultPlugins()

@@ -35,10 +35,10 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
         else if (ev.Type.Length > 100)
             result.Errors.Add(new ValidationFailure("Type", "Type cannot be longer than 100 characters."));
 
-        if (ev.Message != null && (ev.Message.Length < 1 || ev.Message.Length > 2000))
+        if (ev.Message is not null && ev.Message.Length is < 1 or > 2000)
             result.Errors.Add(new ValidationFailure("Message", "Message cannot be longer than 2000 characters."));
 
-        if (ev.Source != null && (ev.Source.Length < 1 || ev.Source.Length > 2000))
+        if (ev.Source is not null && ev.Source.Length is < 1 or > 2000)
             result.Errors.Add(new ValidationFailure("Source", "Source cannot be longer than 2000 characters."));
 
         if (!ev.HasValidReferenceId())
@@ -59,12 +59,12 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
         return result;
     }
 
-    public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new CancellationToken())
+    public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new())
     {
         return Task.FromResult(Validate(context.InstanceToValidate));
     }
 
-    private bool IsObjectId(string value)
+    private bool IsObjectId(string? value)
     {
         if (String.IsNullOrEmpty(value))
             return false;

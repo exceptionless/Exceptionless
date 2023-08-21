@@ -46,7 +46,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
     {
         var currentUser = await GetModelAsync(CurrentUser.Id);
-        if (currentUser == null)
+        if (currentUser is null)
             return NotFound();
 
         return Ok(new ViewCurrentUser(currentUser, _intercomOptions));
@@ -77,7 +77,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return NotFound();
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         page = GetPage(page);
@@ -157,7 +157,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         email = email.Trim().ToLowerInvariant();
@@ -214,10 +214,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> VerifyAsync(string token)
     {
         var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
-        if (user == null)
+        if (user is null)
         {
             // The user may already be logged in and verified.
-            if (CurrentUser != null && CurrentUser.IsEmailAddressVerified)
+            if (CurrentUser is not null && CurrentUser.IsEmailAddressVerified)
                 return Ok();
 
             return NotFound();
@@ -241,7 +241,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> ResendVerificationEmailAsync(string id)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         if (!user.IsEmailAddressVerified)
@@ -287,7 +287,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> AddAdminRoleAsync(string id)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
@@ -305,7 +305,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> DeleteAdminRoleAsync(string id)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
@@ -323,10 +323,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return false;
 
         email = email.Trim().ToLowerInvariant();
-        if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (CurrentUser is not null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return true;
 
-        return await _repository.GetByEmailAddressAsync(email) == null;
+        return await _repository.GetByEmailAddressAsync(email) is null;
     }
 
     protected override async Task<User> GetModelAsync(string id, bool useCache = true)

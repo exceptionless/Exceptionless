@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Extensions;
 
 public static class StringExtensions
 {
-    public static bool IsLocalHost(this string ip)
+    public static bool IsLocalHost(this string? ip)
     {
         if (String.IsNullOrEmpty(ip))
             return false;
@@ -32,7 +32,7 @@ public static class StringExtensions
         return ip;
     }
 
-    public static bool IsPrivateNetwork(this string ip)
+    public static bool IsPrivateNetwork(this string? ip)
     {
         if (String.IsNullOrEmpty(ip))
             return false;
@@ -58,7 +58,7 @@ public static class StringExtensions
         return ip.StartsWith("192.168.");
     }
 
-    public static string TrimScript(this string script)
+    public static string? TrimScript(this string? script)
     {
         if (String.IsNullOrEmpty(script))
             return script;
@@ -80,12 +80,12 @@ public static class StringExtensions
             throw new ArgumentOutOfRangeException(nameof(length), "length cannot be less than zero.");
 
         if (String.IsNullOrEmpty(allowedChars))
-            throw new ArgumentException("allowedChars may not be empty.");
+            throw new ArgumentException("allowedChars may not be empty", nameof(allowedChars));
 
         const int byteSize = 0x100;
         char[] allowedCharSet = new HashSet<char>(allowedChars).ToArray();
         if (byteSize < allowedCharSet.Length)
-            throw new ArgumentException($"allowedChars may contain no more than {byteSize} characters.");
+            throw new ArgumentException($"allowedChars may contain no more than {byteSize} characters", nameof(allowedChars));
 
         var result = new StringBuilder();
         byte[] buf = new byte[128];
@@ -106,7 +106,7 @@ public static class StringExtensions
     }
 
     // TODO: Add support for detecting the culture number separators as well as suffix (Ex. 100d)
-    public static bool IsNumeric(this string value)
+    public static bool IsNumeric(this string? value)
     {
         if (String.IsNullOrEmpty(value))
             return false;
@@ -125,17 +125,17 @@ public static class StringExtensions
         return true;
     }
 
-    public static bool IsValidFieldName(this string value)
+    public static bool IsValidFieldName(this string? value)
     {
-        if (value == null || value.Length > 25)
+        if (value is null || value.Length > 25)
             return false;
 
         return IsValidIdentifier(value);
     }
 
-    public static bool IsValidIdentifier(this string value)
+    public static bool IsValidIdentifier(this string? value)
     {
-        if (value == null)
+        if (value is null)
             return false;
 
         for (int index = 0; index < value.Length; index++)
@@ -195,7 +195,7 @@ public static class StringExtensions
         return sb.ToString();
     }
 
-    public static string[] FromDelimitedString(this string value, string delimiter = ",")
+    public static string[]? FromDelimitedString(this string? value, string delimiter = ",")
     {
         if (String.IsNullOrEmpty(value))
             return null;
@@ -208,8 +208,8 @@ public static class StringExtensions
 
     public static string ToLowerUnderscoredWords(this string value, char delimiter = '_')
     {
-        if (value == null)
-            return null;
+        if (String.IsNullOrEmpty(value))
+            return value;
 
         var builder = new StringBuilder(value.Length + 10);
         for (int index = 0; index < value.Length; index++)
@@ -269,7 +269,7 @@ public static class StringExtensions
         return values.ToConcatenatedString(stringSelector, String.Empty);
     }
 
-    public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> action, string separator)
+    public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string?> action, string separator)
     {
         var sb = new StringBuilder();
         foreach (var item in values)
@@ -307,7 +307,7 @@ public static class StringExtensions
         return s.Replace("\r\n", " ").Replace('\n', ' ').Replace('\t', ' ');
     }
 
-    public static string NormalizeLineEndings(this string text, string lineEnding = null)
+    public static string NormalizeLineEndings(this string text, string? lineEnding = null)
     {
         if (String.IsNullOrEmpty(lineEnding))
             lineEnding = Environment.NewLine;
@@ -331,7 +331,7 @@ public static class StringExtensions
         return String.Concat(buffer.Substring(0, keep - 3), "...");
     }
 
-    public static string TypeName(this string typeFullName)
+    public static string? TypeName(this string? typeFullName)
     {
         return typeFullName?.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
     }
@@ -381,7 +381,7 @@ public static class StringExtensions
         return String.IsNullOrEmpty(item);
     }
 
-    private static readonly Regex _entityResolver = new Regex("([&][#](?'decimal'[0-9]+);)|([&][#][(x|X)](?'hex'[0-9a-fA-F]+);)|([&](?'html'\\w+);)");
+    private static readonly Regex _entityResolver = new("([&][#](?'decimal'[0-9]+);)|([&][#][(x|X)](?'hex'[0-9a-fA-F]+);)|([&](?'html'\\w+);)");
 
     public static string HtmlEntityDecode(this string encodedText)
     {

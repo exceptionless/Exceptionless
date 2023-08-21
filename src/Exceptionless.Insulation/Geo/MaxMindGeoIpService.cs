@@ -26,7 +26,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         _logger = loggerFactory.CreateLogger<MaxMindGeoIpService>();
     }
 
-    public async Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = new CancellationToken())
+    public async Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = new())
     {
         if (String.IsNullOrEmpty(ip) || (!ip.Contains(".") && !ip.Contains(":")))
             return null;
@@ -41,12 +41,12 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
         GeoResult result = null;
         var database = await GetDatabaseAsync(cancellationToken).AnyContext();
-        if (database == null)
+        if (database is null)
             return null;
 
         try
         {
-            if (database.TryCity(ip, out var city) && city?.Location != null)
+            if (database.TryCity(ip, out var city) && city?.Location is not null)
             {
                 result = new GeoResult
                 {
@@ -80,13 +80,13 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
     private async Task<DatabaseReader> GetDatabaseAsync(CancellationToken cancellationToken)
     {
         // Try to load the new database from disk if the current one is a day old.
-        if (_database != null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < SystemClock.UtcNow.SubtractDays(1))
+        if (_database is not null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < SystemClock.UtcNow.SubtractDays(1))
         {
             _database.Dispose();
             _database = null;
         }
 
-        if (_database != null)
+        if (_database is not null)
             return _database;
 
         if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= SystemClock.UtcNow.SubtractSeconds(30))
@@ -116,7 +116,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
     public void Dispose()
     {
-        if (_database == null)
+        if (_database is null)
             return;
 
         _database.Dispose();

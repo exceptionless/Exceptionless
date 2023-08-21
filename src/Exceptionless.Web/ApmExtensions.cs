@@ -117,7 +117,7 @@ namespace OpenTelemetry
                                     if (!String.IsNullOrEmpty(config.ApiKey))
                                         c.Headers = $"api-key={config.ApiKey}";
 
-                                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") != null;
+                                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") is not null;
                                 });
                             }
                             else
@@ -261,16 +261,16 @@ namespace OpenTelemetry
 
         public override void OnEnd(Activity activity)
         {
-            if (_filter == null || _filter(activity))
+            if (_filter is null || _filter(activity))
                 base.OnEnd(activity);
         }
     }
 
     public static class CustomFilterProcessorExtensions
     {
-        public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions> configure = null)
+        public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions>? configure = null)
         {
-            if (builder == null)
+            if (builder is null)
                 throw new ArgumentNullException(nameof(builder));
 
             if (builder is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
@@ -290,7 +290,7 @@ namespace OpenTelemetry
             FilteredOtlpExporterOptions exporterOptions,
             Action<FilteredOtlpExporterOptions> configure,
             IServiceProvider serviceProvider,
-            Func<BaseExporter<Activity>, BaseExporter<Activity>> configureExporterInstance = null)
+            Func<BaseExporter<Activity>, BaseExporter<Activity>>? configureExporterInstance = null)
         {
 
             configure?.Invoke(exporterOptions);
@@ -299,7 +299,7 @@ namespace OpenTelemetry
 
             BaseExporter<Activity> otlpExporter = new OtlpTraceExporter(exporterOptions);
 
-            if (configureExporterInstance != null)
+            if (configureExporterInstance is not null)
                 otlpExporter = configureExporterInstance(otlpExporter);
 
             if (exporterOptions.ExportProcessorType == ExportProcessorType.Simple)
@@ -322,7 +322,6 @@ namespace OpenTelemetry
         public static void TryEnableIHttpClientFactoryIntegration(this OtlpExporterOptions options, IServiceProvider serviceProvider, string httpClientName)
         {
             // use reflection to call the method
-
             var exporterExtensionsType = typeof(OtlpExporterOptions).Assembly.GetType("OpenTelemetry.Exporter.OtlpExporterOptionsExtensions");
             exporterExtensionsType
                 .GetMethod("TryEnableIHttpClientFactoryIntegration")

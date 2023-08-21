@@ -18,10 +18,10 @@ public class ThrottlingMiddleware
     private readonly ICacheClient _cacheClient;
     private readonly ThrottlingOptions _options;
     private readonly RequestDelegate _next;
-    private static readonly PathString _v1ProjectConfigPath = new PathString("/api/v1/project/config");
-    private static readonly PathString _v2ProjectConfigPath = new PathString("/api/v2/projects/config");
-    private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
-    private static readonly PathString _webSocketPath = new PathString("/api/v2/push");
+    private static readonly PathString _v1ProjectConfigPath = new("/api/v1/project/config");
+    private static readonly PathString _v2ProjectConfigPath = new("/api/v2/projects/config");
+    private static readonly PathString _heartbeatPath = new("/api/v2/events/session/heartbeat");
+    private static readonly PathString _webSocketPath = new("/api/v2/push");
 
 
     public ThrottlingMiddleware(RequestDelegate next, ICacheClient cacheClient, ThrottlingOptions options)
@@ -40,7 +40,7 @@ public class ThrottlingMiddleware
         if (authType == AuthType.User)
         {
             var user = request.GetUser();
-            if (user != null)
+            if (user is not null)
                 return user.Id;
         }
 

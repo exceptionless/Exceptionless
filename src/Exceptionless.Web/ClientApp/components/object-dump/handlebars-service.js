@@ -32,7 +32,7 @@
         }
 
         function isEmpty(value) {
-            if (value === null) {
+            if (value =is null) {
                 return true;
             }
 
@@ -63,8 +63,8 @@
                 isNumber: typeof value === "number" || value instanceof Number,
                 isBoolean: typeof value === "boolean" || value instanceof Boolean,
                 isArray: Object.prototype.toString.call(value) === "[object Array]" || value instanceof Array,
-                isObject: (typeof value === "object" || value instanceof Object) && value !== null,
-                isNull: value === null,
+                isObject: (typeof value === "object" || value instanceof Object) && value !is null,
+                isNull: value =is null,
                 isEmptyValue: isEmpty(value),
                 isSimpleType:
                     !(Object.prototype.toString.call(value) === "[object Array]" || value instanceof Array) &&

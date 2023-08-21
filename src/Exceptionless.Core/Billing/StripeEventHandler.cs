@@ -59,7 +59,7 @@ public class StripeEventHandler
     private async Task SubscriptionUpdatedAsync(Subscription sub)
     {
         var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId).AnyContext();
-        if (org == null)
+        if (org is null)
         {
             _logger.LogError("Unknown customer id in updated subscription: {CustomerId}", sub.CustomerId);
             return;
@@ -121,7 +121,7 @@ public class StripeEventHandler
     private async Task SubscriptionDeletedAsync(Subscription sub)
     {
         var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId).AnyContext();
-        if (org == null)
+        if (org is null)
         {
             _logger.LogError("Unknown customer id in deleted subscription: {CustomerId}", sub.CustomerId);
             return;
@@ -143,14 +143,14 @@ public class StripeEventHandler
     private async Task InvoicePaymentSucceededAsync(Invoice inv)
     {
         var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
-        if (org == null)
+        if (org is null)
         {
             _logger.LogError("Unknown customer id in payment succeeded notification: {CustomerId}", inv.CustomerId);
             return;
         }
 
         var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
-        if (user == null)
+        if (user is null)
         {
             _logger.LogError("Unable to find billing user: {User}", org.BillingChangedByUserId);
             return;
@@ -162,14 +162,14 @@ public class StripeEventHandler
     private async Task InvoicePaymentFailedAsync(Invoice inv)
     {
         var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId).AnyContext();
-        if (org == null)
+        if (org is null)
         {
             _logger.LogError("Unknown customer id in payment failed notification: {CustomerId}", inv.CustomerId);
             return;
         }
 
         var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId).AnyContext();
-        if (user == null)
+        if (user is null)
         {
             _logger.LogError("Unable to find billing user: {0}", org.BillingChangedByUserId);
             return;

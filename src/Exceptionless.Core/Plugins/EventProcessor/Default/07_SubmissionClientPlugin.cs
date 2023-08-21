@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 [Priority(7)]
 public sealed class SubmissionClientPlugin : EventProcessorPluginBase
 {
-    public SubmissionClientPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public SubmissionClientPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
@@ -17,7 +17,7 @@ public sealed class SubmissionClientPlugin : EventProcessorPluginBase
 
         var firstContext = contexts.FirstOrDefault();
         var epi = firstContext?.EventPostInfo;
-        if (epi == null)
+        if (epi is null)
             return Task.CompletedTask;
 
         bool hasIpAddress = firstContext.IncludePrivateInformation && !String.IsNullOrEmpty(epi.IpAddress);

@@ -13,25 +13,25 @@ public class EmailOptions
     /// <summary>
     /// All emails that do not match the AllowedOutboundAddresses will be sent to this address in QA mode
     /// </summary>
-    public string TestEmailAddress { get; internal set; }
+    public string? TestEmailAddress { get; internal set; }
 
     /// <summary>
     /// Email addresses that match this comma delimited list of domains and email addresses will be allowed to be sent out in QA mode
     /// </summary>
-    public List<string> AllowedOutboundAddresses { get; internal set; }
+    public List<string> AllowedOutboundAddresses { get; internal set; } = null!;
 
-    public string SmtpFrom { get; internal set; }
+    public string? SmtpFrom { get; internal set; }
 
-    public string SmtpHost { get; internal set; }
+    public string? SmtpHost { get; internal set; }
 
     public int SmtpPort { get; internal set; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public SmtpEncryption SmtpEncryption { get; internal set; }
 
-    public string SmtpUser { get; internal set; }
+    public string? SmtpUser { get; internal set; }
 
-    public string SmtpPassword { get; internal set; }
+    public string? SmtpPassword { get; internal set; }
 
     public static EmailOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
     {
@@ -39,9 +39,9 @@ public class EmailOptions
 
         options.EnableDailySummary = config.GetValue(nameof(options.EnableDailySummary), appOptions.AppMode == AppMode.Production);
         options.AllowedOutboundAddresses = config.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
-        options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "test@localhost" : "");
+        options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "test@localhost" : null);
 
-        string emailConnectionString = config.GetConnectionString("Email");
+        string? emailConnectionString = config.GetConnectionString("Email");
         if (!String.IsNullOrEmpty(emailConnectionString))
         {
             var uri = new SmtpUri(emailConnectionString);
@@ -51,7 +51,7 @@ public class EmailOptions
             options.SmtpPassword = uri.Password;
         }
 
-        options.SmtpFrom = config.GetValue(nameof(options.SmtpFrom), appOptions.AppMode == AppMode.Development ? "Exceptionless <noreply@localhost>" : "");
+        options.SmtpFrom = config.GetValue(nameof(options.SmtpFrom), appOptions.AppMode == AppMode.Development ? "Exceptionless <noreply@localhost>" : null);
         options.SmtpEncryption = config.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
 
         if (String.IsNullOrWhiteSpace(options.SmtpUser) != String.IsNullOrWhiteSpace(options.SmtpPassword))

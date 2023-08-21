@@ -1,20 +1,21 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(40)]
 public sealed class UsageFormattingPlugin : FormattingPluginBase
 {
-    public UsageFormattingPlugin(AppOptions options) : base(options) { }
+    public UsageFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
         return ev.IsFeatureUsage();
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack)
+    public override SummaryData? GetStackSummaryData(Stack stack)
     {
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.FeatureUsage))
             return null;
@@ -22,7 +23,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         return new SummaryData { TemplateKey = "stack-feature-summary", Data = new Dictionary<string, object>() };
     }
 
-    public override string GetStackTitle(PersistentEvent ev)
+    public override string? GetStackTitle(PersistentEvent ev)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -30,7 +31,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Unknown)";
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    public override SummaryData? GetEventSummaryData(PersistentEvent ev)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -41,7 +42,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         return new SummaryData { TemplateKey = "event-feature-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -54,7 +55,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    public override SlackMessage? GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -62,7 +63,8 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         var attachment = new SlackMessage.SlackAttachment(ev)
         {
             Fields = new List<SlackMessage.SlackAttachmentFields> {
-                    new SlackMessage.SlackAttachmentFields {
+                    new()
+                    {
                         Title = "Source",
                         Value = ev.Source.Truncate(60)
                     }

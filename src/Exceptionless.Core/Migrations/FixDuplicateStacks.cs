@@ -57,8 +57,8 @@ public sealed class FixDuplicateStacks : MigrationBase
 
             foreach (var duplicateSignature in buckets)
             {
-                string projectId = null;
-                string signature = null;
+                string? projectId = null;
+                string? signature = null;
                 try
                 {
                     var parts = duplicateSignature.Key.Split(':');

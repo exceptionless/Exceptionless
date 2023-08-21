@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 [Priority(90)]
 public sealed class RemovePrivateInformationPlugin : EventProcessorPluginBase
 {
-    public RemovePrivateInformationPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public RemovePrivateInformationPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task EventProcessingAsync(EventContext context)
     {
@@ -17,7 +17,7 @@ public sealed class RemovePrivateInformationPlugin : EventProcessorPluginBase
         context.Event.Data.Remove(Event.KnownDataKeys.UserInfo);
         var description = context.Event.GetUserDescription();
 
-        if (description != null)
+        if (description is not null)
         {
             description.EmailAddress = null;
             if (!String.IsNullOrEmpty(description.Description))

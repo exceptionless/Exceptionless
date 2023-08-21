@@ -13,7 +13,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
     [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
     public async Task CanBuildStackFilter(FilterScenario scenario)
     {
-        Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
+        Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
         var stackFilter = await eventStackFilter.GetStackFilterAsync(scenario.Source);
@@ -24,7 +24,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
     [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
     public async Task CanBuildInvertedStackFilter(FilterScenario scenario)
     {
-        Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
+        Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
         var stackFilter = await eventStackFilter.GetStackFilterAsync(scenario.Source);
@@ -35,7 +35,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
     [MemberData(nameof(FilterData.TestCases), MemberType = typeof(FilterData))]
     public async Task CanBuildEventFilter(FilterScenario scenario)
     {
-        Log.SetLogLevel<EventStackFilterQueryBuilder>(Microsoft.Extensions.Logging.LogLevel.Trace);
+        Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
         var stackFilter = await eventStackFilter.GetEventFilterAsync(scenario.Source);

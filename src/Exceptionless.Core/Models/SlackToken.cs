@@ -30,7 +30,7 @@ public class SlackMessage
     [JsonProperty("text")]
     public string Text { get; set; }
     [JsonProperty("attachments")]
-    public List<SlackAttachment> Attachments { get; set; } = new List<SlackAttachment>();
+    public List<SlackAttachment> Attachments { get; set; } = new();
 
     public class SlackAttachment
     {
@@ -42,7 +42,7 @@ public class SlackMessage
             var ui = ev.GetUserIdentity();
             Text = ud?.Description;
 
-            string displayName = null;
+            string? displayName = null;
             if (!String.IsNullOrEmpty(ui?.Identity))
                 displayName = ui.Identity;
 
@@ -79,7 +79,7 @@ public class SlackMessage
         [JsonProperty("color")]
         public string Color { get; set; } = "#5E9A00";
         [JsonProperty("fields")]
-        public List<SlackAttachmentFields> Fields { get; set; } = new List<SlackAttachmentFields>();
+        public List<SlackAttachmentFields> Fields { get; set; } = new();
         [JsonProperty("mrkdwn_in")]
         public string[] SupportedMarkdownFields { get; set; } = { "text", "fields" };
         [JsonProperty("ts")]

@@ -31,7 +31,7 @@ public class UserDescription : IData
         return String.Equals(EmailAddress, other.EmailAddress) && String.Equals(Description, other.Description) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

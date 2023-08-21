@@ -12,15 +12,15 @@ public class ErrorSignature
     private static readonly string[] _defaultNonUserNamespaces = { "System", "Microsoft" };
     // TODO: Add support for user public key token on signed assemblies
 
-    public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true)
+    public ErrorSignature(Error error, IEnumerable<string>? userNamespaces = null, IEnumerable<string>? userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true)
     {
         Error = error ?? throw new ArgumentNullException(nameof(error));
 
-        _userNamespaces = userNamespaces == null
+        _userNamespaces = userNamespaces is null
             ? new HashSet<string>()
             : new HashSet<string>(userNamespaces);
 
-        _userCommonMethods = userCommonMethods == null
+        _userCommonMethods = userCommonMethods is null
             ? new HashSet<string>()
             : new HashSet<string>(userCommonMethods);
 
@@ -42,7 +42,7 @@ public class ErrorSignature
 
     public SettingsDictionary SignatureInfo { get; private set; }
 
-    public string SignatureHash { get; private set; }
+    public string? SignatureHash { get; private set; }
 
     public bool IsUser { get; private set; }
     public bool ShouldFlagSignatureTarget { get; private set; }
@@ -54,7 +54,7 @@ public class ErrorSignature
         // start at the inner most exception and work our way out until we find a user method
         InnerError current = Error;
         var errorStack = new List<InnerError> { current };
-        while (current.Inner != null)
+        while (current.Inner is not null)
         {
             current = current.Inner;
             errorStack.Add(current);
@@ -69,7 +69,7 @@ public class ErrorSignature
         foreach (var e in errorStack)
         {
             var stackTrace = e.StackTrace;
-            if (stackTrace == null)
+            if (stackTrace is null)
                 continue;
 
             foreach (var stackFrame in stackTrace.Where(IsUserFrame))
@@ -87,7 +87,7 @@ public class ErrorSignature
         // We haven't found a user method yet, try some alternatives with the inner most error.
         var innerMostError = errorStack[0];
 
-        if (innerMostError.TargetMethod != null)
+        if (innerMostError.TargetMethod is not null)
         {
             // Use the target method if it exists.
             SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
@@ -95,7 +95,7 @@ public class ErrorSignature
             if (ShouldFlagSignatureTarget)
                 innerMostError.TargetMethod.IsSignatureTarget = true;
         }
-        else if (innerMostError.StackTrace != null && innerMostError.StackTrace.Count > 0)
+        else if (innerMostError.StackTrace is not null && innerMostError.StackTrace.Count > 0)
         {
             // Use the topmost stack frame.
             SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
@@ -124,14 +124,14 @@ public class ErrorSignature
 
     public void RecalculateHash()
     {
-        SignatureHash = SignatureInfo.Values.Any(v => v != null) ? SignatureInfo.Values.ToSHA1() : null;
+        SignatureHash = SignatureInfo.Values.Any(v => v is not null) ? SignatureInfo.Values.ToSHA1() : null;
     }
 
     private string GetStackFrameSignature(Method method)
     {
         var builder = new StringBuilder(255);
 
-        if (method == null)
+        if (method is null)
             return builder.ToString();
 
         builder.Append(method.GetSignature());
@@ -141,10 +141,10 @@ public class ErrorSignature
 
     private bool IsUserFrame(StackFrame frame)
     {
-        if (frame == null)
+        if (frame is null)
             throw new ArgumentNullException(nameof(frame));
 
-        if (frame.Name == null)
+        if (frame.Name is null)
             return false;
 
         // Assume user method if no namespace
@@ -165,7 +165,7 @@ public class ErrorSignature
             return false;
 
         // if no user namespaces were set, return any non-system namespace as true
-        if (UserNamespaces == null || _userNamespaces.Count == 0)
+        if (UserNamespaces is null || _userNamespaces.Count == 0)
             return !_defaultNonUserNamespaces.Any(ns.StartsWith);
 
         return UserNamespaces.Any(ns.StartsWith);
@@ -177,16 +177,16 @@ public class ErrorSignature
             return;
 
         var extraProperties = error.Data.GetValue<Dictionary<string, object>>(Error.KnownDataKeys.ExtraProperties);
-        if (extraProperties == null)
+        if (extraProperties is null)
         {
             error.Data.Remove(Error.KnownDataKeys.ExtraProperties);
             return;
         }
 
-        if (extraProperties.TryGetValue("Number", out object value) && value is not null)
-            SignatureInfo.Add("Number", value.ToString());
+        if (extraProperties.TryGetValue("Number", out object? value) && value is not null)
+            SignatureInfo.Add("Number", value.ToString()!);
 
         if (extraProperties.TryGetValue("ErrorCode", out value) && value is not null)
-            SignatureInfo.Add("ErrorCode", value.ToString());
+            SignatureInfo.Add("ErrorCode", value.ToString()!);
     }
 }

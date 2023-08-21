@@ -15,7 +15,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 {
     private readonly IEventRepository _eventRepository;
 
-    public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory)
+    public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
     {
         _eventRepository = eventRepository;
     }
@@ -46,7 +46,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
     private async Task ProcessUserDescriptionAsync(EventUserDescription description)
     {
         var ev = (await _eventRepository.GetByReferenceIdAsync(description.ProjectId, description.ReferenceId).AnyContext()).Documents.FirstOrDefault();
-        if (ev == null)
+        if (ev is null)
             throw new DocumentNotFoundException(description.ReferenceId);
 
         var ud = new UserDescription

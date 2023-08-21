@@ -80,7 +80,7 @@ public class EventStackFilter
         _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
     }
 
-    public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext context = null)
+    public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
@@ -88,7 +88,7 @@ public class EventStackFilter
         return result.ToString();
     }
 
-    public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext context = null)
+    public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
@@ -110,15 +110,15 @@ public class EventStackFilter
 
 public class StackFilterQueryVisitor : ChainableQueryVisitor
 {
-    public override Task<IQueryNode> VisitAsync(TermNode node, IQueryVisitorContext context)
+    public override Task<IQueryNode?> VisitAsync(TermNode node, IQueryVisitorContext context)
     {
         IQueryNode result = node;
 
         // don't include terms without fields
-        if (node.Field == null)
+        if (node.Field is null)
         {
             node.RemoveSelf();
-            return Task.FromResult<IQueryNode>(null);
+            return Task.FromResult<IQueryNode?>(null);
         }
 
         // process special stack fields

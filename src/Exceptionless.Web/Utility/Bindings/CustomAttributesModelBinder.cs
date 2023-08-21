@@ -16,7 +16,7 @@ public class CustomAttributesModelBinder : IModelBinder
 
     public Task BindModelAsync(ModelBindingContext bindingContext)
     {
-        if (bindingContext == null)
+        if (bindingContext is null)
             throw new ArgumentNullException(nameof(bindingContext));
 
         if (!(bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) is ControllerParameterDescriptor parameter))
@@ -88,7 +88,7 @@ public class CustomAttributesModelBinderProvider : IModelBinderProvider
 {
     public IModelBinder GetBinder(ModelBinderProviderContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         if (context.Metadata.ModelType == typeof(string) || context.Metadata.ModelType == typeof(IQueryCollection))

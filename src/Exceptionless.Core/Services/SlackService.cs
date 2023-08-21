@@ -11,14 +11,14 @@ namespace Exceptionless.Core.Services;
 
 public class SlackService
 {
-    private readonly HttpClient _client = new HttpClient();
+    private readonly HttpClient _client = new();
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly ISerializer _serializer;
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
 
-    public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, ILoggerFactory loggerFactory = null)
+    public SlackService(IQueue<WebHookNotification> webHookNotificationQueue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, ILoggerFactory loggerFactory)
     {
         _webHookNotificationQueue = webHookNotificationQueue;
         _pluginManager = pluginManager;
@@ -53,13 +53,13 @@ public class SlackService
         var token = new SlackToken
         {
             AccessToken = result.access_token,
-            Scopes = result.scope?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0],
+            Scopes = result.scope?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>(),
             UserId = result.user_id,
             TeamId = result.team_id,
             TeamName = result.team_name
         };
 
-        if (result.incoming_webhook != null)
+        if (result.incoming_webhook is not null)
         {
             token.IncomingWebhook = new SlackToken.IncomingWebHook
             {
@@ -101,7 +101,7 @@ public class SlackService
         if (String.IsNullOrEmpty(url))
             throw new ArgumentNullException(nameof(url));
 
-        if (message == null)
+        if (message is null)
             throw new ArgumentNullException(nameof(message));
 
         var notification = new WebHookNotification
@@ -119,12 +119,12 @@ public class SlackService
     public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression)
     {
         var token = project.GetSlackToken();
-        if (token?.IncomingWebhook?.Url == null)
+        if (token?.IncomingWebhook?.Url is null)
             return false;
 
         bool isCritical = ev.IsCritical();
         var message = _pluginManager.GetSlackEventNotificationMessage(ev, project, isCritical, isNew, isRegression);
-        if (message == null)
+        if (message is null)
         {
             _logger.LogWarning("Unable to create event notification slack message for event {id}.", ev.Id);
             return false;

@@ -11,7 +11,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 public sealed class RequestInfoPlugin : EventProcessorPluginBase
 {
     public const int MAX_VALUE_LENGTH = 1000;
-    public static readonly List<string> DefaultExclusions = new List<string> {
+    public static readonly List<string> DefaultExclusions = new()
+    {
             "*VIEWSTATE*",
             "*EVENTVALIDATION*",
             "*ASPX*",
@@ -24,7 +25,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
 
     private readonly UserAgentParser _parser;
 
-    public RequestInfoPlugin(UserAgentParser parser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public RequestInfoPlugin(UserAgentParser parser, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _parser = parser;
     }
@@ -36,7 +37,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         foreach (var context in contexts)
         {
             var request = context.Event.GetRequestInfo();
-            if (request == null)
+            if (request is null)
                 continue;
 
             if (context.IncludePrivateInformation)
@@ -57,7 +58,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         }
     }
 
-    private void AddClientIpAddress(RequestInfo request, SubmissionClient submissionClient)
+    private void AddClientIpAddress(RequestInfo request, SubmissionClient? submissionClient)
     {
         var ips = (request.ClientIpAddress ?? String.Empty)
             .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -77,7 +78,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
     private async Task SetBrowserOsAndDeviceFromUserAgent(RequestInfo request, EventContext context)
     {
         var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
-        if (info != null)
+        if (info is not null)
         {
             if (!String.Equals(info.UA.Family, "Other"))
             {

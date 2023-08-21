@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Core.Models.WorkItems;
 
-public class SetProjectIsConfiguredWorkItem
+public record SetProjectIsConfiguredWorkItem
 {
-    public string ProjectId { get; set; }
-    public bool IsConfigured { get; set; }
+    public required string ProjectId { get; init; }
+    public bool IsConfigured { get; init; }
 }

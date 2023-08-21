@@ -50,7 +50,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
         var configuredFactory = factory.Factories.Count > 0 ? factory.Factories[0] : null;
-        if (configuredFactory == null)
+        if (configuredFactory is null)
         {
             configuredFactory = factory.WithWebHostBuilder(builder =>
             {

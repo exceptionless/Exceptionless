@@ -27,7 +27,7 @@ public class AppQueryValidator : IAppQueryValidator
     public AppQueryValidator(IQueryParser parser, ILoggerFactory loggerFactory)
     {
         _parser = parser;
-        _logger = loggerFactory?.CreateLogger(GetType());
+        _logger = loggerFactory.CreateLogger(GetType());
     }
 
     public async Task<QueryProcessResult> ValidateQueryAsync(string query)

@@ -22,21 +22,21 @@ public class ExtendedEntityChanged : EntityChanged
             Data = entityChanged.Data
         };
 
-        if (model.Data.TryGetValue(KnownKeys.OrganizationId, out object organizationId))
+        if (model.Data.TryGetValue(KnownKeys.OrganizationId, out object? organizationId))
         {
             model.OrganizationId = organizationId.ToString();
             if (removeWhenSettingProperties)
                 model.Data.Remove(KnownKeys.OrganizationId);
         }
 
-        if (model.Data.TryGetValue(KnownKeys.ProjectId, out object projectId))
+        if (model.Data.TryGetValue(KnownKeys.ProjectId, out object? projectId))
         {
             model.ProjectId = projectId.ToString();
             if (removeWhenSettingProperties)
                 model.Data.Remove(KnownKeys.ProjectId);
         }
 
-        if (model.Data.TryGetValue(KnownKeys.StackId, out object stackId))
+        if (model.Data.TryGetValue(KnownKeys.StackId, out object? stackId))
         {
             model.StackId = stackId.ToString();
             if (removeWhenSettingProperties)

@@ -13,7 +13,7 @@ public class RawRequestBodyFormatter : InputFormatter
 
     public override bool CanRead(InputFormatterContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         MediaTypeHeaderValue.TryParse(context.HttpContext.Request.ContentType, out var contentTypeHeader);

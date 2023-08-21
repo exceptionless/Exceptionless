@@ -31,7 +31,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     private readonly ICacheClient _cache;
     private readonly UserAgentParser _parser;
 
-    public EventNotificationsJob(IQueue<EventNotification> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory)
+    public EventNotificationsJob(IQueue<EventNotification> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
     {
         _slackService = slackService;
         _mailer = mailer;
@@ -48,7 +48,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     {
         var wi = context.QueueEntry.Value;
         var ev = await _eventRepository.GetByIdAsync(wi.EventId).AnyContext();
-        if (ev == null)
+        if (ev is null)
             return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
         bool shouldLog = ev.ProjectId != _appOptions.InternalProjectId;
@@ -56,7 +56,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         if (shouldLog) _logger.LogTrace("Process notification: project={project} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
         var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache()).AnyContext();
-        if (project == null)
+        if (project is null)
             return JobResult.SuccessWithMessage($"Could not load project: {ev.ProjectId}.");
 
         using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id)))
@@ -109,7 +109,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     var botPatterns = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
 
                     var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
-                    if (info != null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
+                    if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
                     {
                         shouldReport = false;
                         if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}.", request.UserAgent);

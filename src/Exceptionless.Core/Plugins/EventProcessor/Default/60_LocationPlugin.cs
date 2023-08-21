@@ -16,7 +16,7 @@ public sealed class LocationPlugin : EventProcessorPluginBase
     private readonly ICacheClient _cacheClient;
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public LocationPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cacheClient = new ScopedCacheClient(cacheClient, "Geo");
         _workItemQueue = workItemQueue;
@@ -47,7 +47,7 @@ public sealed class LocationPlugin : EventProcessorPluginBase
     private async Task GetGeoLocationFromCacheAsync(IGrouping<string, EventContext> geoGroup)
     {
         var location = await _cacheClient.GetAsync<Location>(geoGroup.Key, null).AnyContext();
-        if (location == null)
+        if (location is null)
             return;
 
         await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3)).AnyContext();

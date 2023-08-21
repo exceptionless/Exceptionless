@@ -1,20 +1,21 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(60)]
 public sealed class LogFormattingPlugin : FormattingPluginBase
 {
-    public LogFormattingPlugin(AppOptions options) : base(options) { }
+    public LogFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
         return ev.IsLog();
     }
 
-    public override SummaryData GetStackSummaryData(Stack stack)
+    public override SummaryData? GetStackSummaryData(Stack stack)
     {
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
             return null;
@@ -34,7 +35,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         return new SummaryData { TemplateKey = "stack-log-summary", Data = data };
     }
 
-    public override string GetStackTitle(PersistentEvent ev)
+    public override string? GetStackTitle(PersistentEvent ev)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -42,7 +43,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
     }
 
-    public override SummaryData GetEventSummaryData(PersistentEvent ev)
+    public override SummaryData? GetEventSummaryData(PersistentEvent ev)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -59,14 +60,14 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
                 data.Add("SourceShortName", parts.Last());
         }
 
-        string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object temp) ? temp as string : null;
+        string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object? temp) ? temp as string : null;
         if (!String.IsNullOrWhiteSpace(level))
             data.Add("Level", level.Trim());
 
         return new SummaryData { TemplateKey = "event-log-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -91,13 +92,13 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             data.Add("Level", level.Truncate(60));
 
         var requestInfo = ev.GetRequestInfo();
-        if (requestInfo != null)
+        if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
         return new MailMessageData { Subject = subject, Data = data };
     }
 
-    public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
+    public override SlackMessage? GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -115,7 +116,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         var attachment = new SlackMessage.SlackAttachment(ev)
         {
             Fields = new List<SlackMessage.SlackAttachmentFields> {
-                    new SlackMessage.SlackAttachmentFields {
+                    new()
+                    {
                         Title = "Source",
                         Value = source.Truncate(60)
                     }
@@ -150,7 +152,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         }
 
         var requestInfo = ev.GetRequestInfo();
-        if (requestInfo != null)
+        if (requestInfo is not null)
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 
         AddDefaultSlackFields(ev, attachment.Fields);

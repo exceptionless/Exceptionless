@@ -10,19 +10,19 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
     public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
     {
         var childTerms = new List<string>();
-        if (node.Left is TermNode leftTermNode && leftTermNode.Field == null)
+        if (node.Left is TermNode leftTermNode && leftTermNode.Field is null)
             childTerms.Add(leftTermNode.Term);
 
-        if (node.Left is TermRangeNode leftTermRangeNode && leftTermRangeNode.Field == null)
+        if (node.Left is TermRangeNode leftTermRangeNode && leftTermRangeNode.Field is null)
         {
             childTerms.Add(leftTermRangeNode.Min);
             childTerms.Add(leftTermRangeNode.Max);
         }
 
-        if (node.Right is TermNode rightTermNode && rightTermNode.Field == null)
+        if (node.Right is TermNode rightTermNode && rightTermNode.Field is null)
             childTerms.Add(rightTermNode.Term);
 
-        if (node.Right is TermRangeNode rightTermRangeNode && rightTermRangeNode.Field == null)
+        if (node.Right is TermRangeNode rightTermRangeNode && rightTermRangeNode.Field is null)
         {
             childTerms.Add(rightTermRangeNode.Min);
             childTerms.Add(rightTermRangeNode.Max);
@@ -63,7 +63,7 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return Task.CompletedTask;
     }
 
-    private string GetCustomFieldName(string field, string[] terms)
+    private string? GetCustomFieldName(string field, string[] terms)
     {
         if (String.IsNullOrEmpty(field))
             return null;
@@ -96,7 +96,7 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
     {
         string termType = "s";
 
-        var trimmedTerms = terms.Where(t => t != null).Distinct().ToList();
+        var trimmedTerms = terms.Where(t => t is not null).Distinct().ToList();
         foreach (string term in trimmedTerms)
         {
             if (term.StartsWith("*"))
@@ -119,12 +119,12 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return termType;
     }
 
-    public static Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext context = null)
+    public static Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext? context = null)
     {
         return new EventFieldsQueryVisitor().AcceptAsync(node, context);
     }
 
-    public static IQueryNode Run(IQueryNode node, IQueryVisitorContext context = null)
+    public static IQueryNode Run(IQueryNode node, IQueryVisitorContext? context = null)
     {
         return RunAsync(node, context).GetAwaiter().GetResult();
     }

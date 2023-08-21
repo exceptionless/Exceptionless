@@ -5,7 +5,7 @@ namespace Exceptionless.Insulation.Configuration;
 
 internal class YamlConfigurationFileParser
 {
-    private readonly Stack<string> _context = new Stack<string>();
+    private readonly Stack<string> _context = new();
 
     private readonly IDictionary<string, string> _data =
         new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);

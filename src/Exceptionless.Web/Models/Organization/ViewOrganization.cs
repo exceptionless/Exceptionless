@@ -49,7 +49,7 @@ public static class ViewOrganizationExtensions
     {
         var startOfHour = date.ToUniversalTime().StartOfMonth();
         var overage = organization.UsageHours.FirstOrDefault(o => o.Date.Equals(startOfHour));
-        if (overage != null)
+        if (overage is not null)
             return overage;
 
         overage = new UsageHourInfo
@@ -86,7 +86,7 @@ public static class ViewOrganizationExtensions
     {
         var startOfMonth = date.ToUniversalTime().StartOfMonth();
         var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
-        if (usage != null)
+        if (usage is not null)
             return usage;
 
         usage = new UsageInfo

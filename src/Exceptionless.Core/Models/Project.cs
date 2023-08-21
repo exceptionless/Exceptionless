@@ -20,11 +20,11 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     /// <summary>
     /// Unique id that identifies an project.
     /// </summary>
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
 
-    public string OrganizationId { get; set; }
+    public string OrganizationId { get; set; } = null!;
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// Returns true if we've detected that the project has received data.
@@ -53,7 +53,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
 
     public HashSet<string> PromotedTabs { get; set; }
 
-    public string CustomContent { get; set; }
+    public string CustomContent { get; set; } = null!;
 
     public bool DeleteBotDataEnabled { get; set; }
 

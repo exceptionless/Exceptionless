@@ -195,7 +195,7 @@ public class Startup
         });
 
         var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-        bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
+        bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
 
         if (ssl)
             app.UseHttpsRedirection();
@@ -248,7 +248,7 @@ public class Startup
             o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
             o.GetLevel = (context, duration, ex) =>
             {
-                if (ex != null || context.Response.StatusCode > 499)
+                if (ex is not null || context.Response.StatusCode > 499)
                     return LogEventLevel.Error;
 
                 if (context.Response.StatusCode > 399)

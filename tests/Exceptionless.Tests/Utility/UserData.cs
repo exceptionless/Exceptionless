@@ -54,7 +54,7 @@ internal static class UserData
 
         user.OrganizationIds.Add(organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId);
 
-        if (roles != null)
+        if (roles is not null)
             user.Roles.AddRange(roles);
 
         return user;

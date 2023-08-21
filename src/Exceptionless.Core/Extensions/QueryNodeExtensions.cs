@@ -4,21 +4,20 @@ namespace Exceptionless.Core.Extensions;
 
 public static class QueryNodeExtensions
 {
-    public static GroupNode GetParent(this IQueryNode node, Func<GroupNode, bool> condition)
+    public static GroupNode? GetParent(this IQueryNode? node, Func<GroupNode, bool> condition)
     {
-        if (node == null)
+        if (node is null)
             return null;
 
         IQueryNode queryNode = node;
         do
         {
-            GroupNode groupNode = queryNode as GroupNode;
-            if (groupNode != null && condition(groupNode))
+            if (queryNode is GroupNode groupNode && condition(groupNode))
                 return groupNode;
 
             queryNode = queryNode.Parent;
         }
-        while (queryNode != null);
+        while (queryNode is not null);
 
         return null;
     }

@@ -67,7 +67,7 @@ public class UsageService
                 foreach (var organizationId in organizationIdsValue.Value)
                 {
                     var organization = await _organizationRepository.GetByIdAsync(organizationId);
-                    if (organization == null)
+                    if (organization is null)
                         continue;
 
                     _logger.LogInformation("Saving org ({OrganizationId}-{OrganizationName}) event usage for time bucket: {BucketUtc}...", organizationId, organization.Name, bucketUtc);
@@ -143,7 +143,7 @@ public class UsageService
                 foreach (var projectId in projectIdsValue.Value)
                 {
                     var project = await _projectRepository.GetByIdAsync(projectId);
-                    if (project == null)
+                    if (project is null)
                         continue;
 
                     _logger.LogInformation("Saving project ({ProjectId}-{ProjectName}) event usage for time bucket: {BucketUtc}...", projectId, project.Name, bucketUtc);
@@ -155,7 +155,7 @@ public class UsageService
 
                     project.LastEventDateUtc = SystemClock.UtcNow;
 
-                    var context = (OrganizationId: project.OrganizationId, Organization: (Organization)null);
+                    (string OrganizationId, Organization? Organization) context = (OrganizationId: project.OrganizationId, Organization: null);
                     int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
 
                     var usage = project.GetUsage(bucketUtc);
@@ -235,7 +235,7 @@ public class UsageService
         return GetMaxEventsPerMonthAsync((organizationId, null));
     }
 
-    private async ValueTask<int> GetMaxEventsPerMonthAsync((string OrganizationId, Organization Organization) context)
+    private async ValueTask<int> GetMaxEventsPerMonthAsync((string OrganizationId, Organization? Organization) context)
     {
         // maybe use an in memory cache for this
         int maxEventsPerMonth = 0;
@@ -246,10 +246,10 @@ public class UsageService
         }
         else
         {
-            if (context.Organization == null)
+            if (context.Organization is null)
                 context.Organization = await _organizationRepository.GetByIdAsync(context.OrganizationId, o => o.Cache());
 
-            if (context.Organization != null)
+            if (context.Organization is not null)
             {
                 maxEventsPerMonth = context.Organization.GetMaxEventsPerMonthWithBonus();
                 await _cache.SetAsync($"usage:limits:{context.OrganizationId}", maxEventsPerMonth, TimeSpan.FromDays(1));
@@ -259,7 +259,7 @@ public class UsageService
         return maxEventsPerMonth;
     }
 
-    public async Task<UsageInfoResponse> GetUsageAsync(string organizationId, string projectId = null)
+    public async Task<UsageInfoResponse> GetUsageAsync(string organizationId, string? projectId = null)
     {
         var utcNow = SystemClock.UtcNow;
 
@@ -267,7 +267,7 @@ public class UsageService
         var lastUsageSave = utcNow.Subtract(_bucketSize).Floor(_bucketSize);
 
         // last usage save is the last time we processed usage
-        var lastUsageSaveCache = await _cache.GetAsync<DateTime>(projectId == null ? "usage:last-organization-save" : "usage:last-project-save");
+        var lastUsageSaveCache = await _cache.GetAsync<DateTime>(projectId is null ? "usage:last-organization-save" : "usage:last-project-save");
         if (lastUsageSaveCache.HasValue)
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
 
@@ -276,7 +276,7 @@ public class UsageService
         var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(currentBucketUtc, organizationId));
 
         UsageInfoResponse usage;
-        if (projectId == null)
+        if (projectId is null)
         {
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
             organization.TrimUsage();
@@ -330,7 +330,7 @@ public class UsageService
     {
         var utcNow = SystemClock.UtcNow;
 
-        var context = (OrganizationId: organizationId, Organization: (Organization)null);
+        (string OrganizationId, Organization? Organization) context = (OrganizationId: organizationId, Organization: null);
         int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
 
         // check for unlimited (-1) events
@@ -470,7 +470,7 @@ public class UsageService
         return (int)Math.Ceiling((maxEventsPerMonth / bucketsLeftInMonth) * 10);
     }
 
-    private string GetTotalCacheKey(DateTime utcTime, string organizationId, string projectId = null)
+    private string GetTotalCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
     {
         int bucket = GetTotalBucket(utcTime);
 
@@ -480,7 +480,7 @@ public class UsageService
         return $"usage:total:{bucket}:{organizationId}:{projectId}:total";
     }
 
-    private string GetBucketTotalCacheKey(DateTime utcTime, string organizationId, string projectId = null)
+    private string GetBucketTotalCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
     {
         int bucket = GetCurrentBucket(utcTime);
 
@@ -490,7 +490,7 @@ public class UsageService
         return $"usage:{bucket}:{organizationId}:{projectId}:total";
     }
 
-    private string GetBucketBlockedCacheKey(DateTime utcTime, string organizationId, string projectId = null)
+    private string GetBucketBlockedCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
     {
         int bucket = GetCurrentBucket(utcTime);
 
@@ -500,7 +500,7 @@ public class UsageService
         return $"usage:{bucket}:{organizationId}:{projectId}:blocked";
     }
 
-    private string GetBucketDiscardedCacheKey(DateTime utcTime, string organizationId, string projectId = null)
+    private string GetBucketDiscardedCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
     {
         int bucket = GetCurrentBucket(utcTime);
 
@@ -510,7 +510,7 @@ public class UsageService
         return $"usage:{bucket}:{organizationId}:{projectId}:discarded";
     }
 
-    private string GetBucketTooBigCacheKey(DateTime utcTime, string organizationId, string projectId = null)
+    private string GetBucketTooBigCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
     {
         int bucket = GetCurrentBucket(utcTime);
 

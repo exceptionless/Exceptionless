@@ -19,14 +19,14 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
     private readonly BillingManager _billingManager;
     private readonly ILockProvider _lockProvider;
 
-    public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, BillingManager billingManager, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, BillingManager billingManager, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _billingManager = billingManager;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
@@ -73,7 +73,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
     private void UpgradePlan(Organization organization)
     {
         var plan = _billingManager.GetBillingPlan(organization.PlanId);
-        if (plan == null)
+        if (plan is null)
         {
             Log.LogError("Unable to find a valid plan for organization: {organization}", organization.Id);
             return;

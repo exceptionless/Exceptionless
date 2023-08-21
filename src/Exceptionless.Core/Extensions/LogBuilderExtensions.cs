@@ -2,8 +2,6 @@
 
 public class ExceptionlessState : Dictionary<string, object>
 {
-    public ExceptionlessState() { }
-
     public ExceptionlessState Project(string projectId)
     {
         if (!String.IsNullOrEmpty(projectId))
@@ -29,11 +27,11 @@ public class ExceptionlessState : Dictionary<string, object>
         if (String.IsNullOrEmpty(tag))
             return this;
 
-        HashSet<string> tagList = null;
-        if (TryGetValue(Tags, out object v) && v is HashSet<string> t)
+        HashSet<string>? tagList = null;
+        if (TryGetValue(Tags, out object? v) && v is HashSet<string> t)
             tagList = t;
 
-        if (tagList == null)
+        if (tagList is null)
             tagList = new HashSet<string>();
 
         tagList.Add(tag);
@@ -59,17 +57,8 @@ public class ExceptionlessState : Dictionary<string, object>
     /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
     /// </summary>
     /// <param name="identity">The user's identity that the event happened to.</param>
-    public ExceptionlessState Identity(string identity)
-    {
-        return Identity(identity, null);
-    }
-
-    /// <summary>
-    /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
-    /// </summary>
-    /// <param name="identity">The user's identity that the event happened to.</param>
     /// <param name="name">The user's friendly name that the event happened to.</param>
-    public ExceptionlessState Identity(string identity, string name)
+    public ExceptionlessState Identity(string identity, string? name = null)
     {
         if (String.IsNullOrWhiteSpace(identity) && String.IsNullOrWhiteSpace(name))
             return this;
@@ -88,7 +77,7 @@ public class ExceptionlessState : Dictionary<string, object>
     /// Marks the event as being a unhandled occurrence and sets the submission method.
     /// </summary>
     /// <param name="submissionMethod">The submission method.</param>
-    public ExceptionlessState MarkUnhandled(string submissionMethod = null)
+    public ExceptionlessState MarkUnhandled(string? submissionMethod = null)
     {
         return MarkAsUnhandledError().SetSubmissionMethod(submissionMethod);
     }
@@ -105,9 +94,13 @@ public class ExceptionlessState : Dictionary<string, object>
     /// <summary>
     /// Sets the submission method that created the event (E.G., UnobservedTaskException)
     /// </summary>
-    public ExceptionlessState SetSubmissionMethod(string submissionMethod)
+    public ExceptionlessState SetSubmissionMethod(string? submissionMethod)
     {
-        base[SubmissionMethod] = submissionMethod;
+        if (String.IsNullOrEmpty(submissionMethod))
+            Remove(SubmissionMethod);
+        else
+            base[SubmissionMethod] = submissionMethod;
+
         return this;
     }
 

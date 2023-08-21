@@ -7,8 +7,8 @@ namespace Exceptionless.Core.Repositories;
 
 public interface IOrganizationRepository : ISearchableRepository<Organization>
 {
-    Task<Organization> GetByInviteTokenAsync(string token);
-    Task<Organization> GetByStripeCustomerIdAsync(string customerId);
+    Task<Organization?> GetByInviteTokenAsync(string token);
+    Task<Organization?> GetByStripeCustomerIdAsync(string customerId);
     Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
     Task<BillingPlanStats> GetBillingPlanStatsAsync();
 }

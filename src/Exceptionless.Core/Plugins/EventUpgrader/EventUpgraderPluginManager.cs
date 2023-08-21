@@ -4,7 +4,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 
 public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin>
 {
-    public EventUpgraderPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public EventUpgraderPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs all of the event upgrade plugins upgrade method.

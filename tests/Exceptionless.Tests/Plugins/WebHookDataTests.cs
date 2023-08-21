@@ -48,7 +48,7 @@ public sealed class WebHookDataTests : TestWithServices
     {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
-        object data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
+        object? data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
         if (expectData)
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
@@ -87,19 +87,23 @@ public sealed class WebHookDataTests : TestWithServices
             CreatedUtc = SystemClock.UtcNow
         };
 
+        var organization = OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>());
+        var project = ProjectData.GenerateSampleProject();
+
         var ev = JsonConvert.DeserializeObject<PersistentEvent>(json, settings);
+        Assert.NotNull(ev);
         ev.OrganizationId = TestConstants.OrganizationId;
         ev.ProjectId = TestConstants.ProjectId;
         ev.StackId = TestConstants.StackId;
         ev.Id = TestConstants.EventId;
 
-        var context = new WebHookDataContext(hook, ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject())
-        {
-            Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc")
-        };
-        context.Stack.Tags = new TagSet { "Test" };
-        context.Stack.FirstOccurrence = context.Stack.LastOccurrence = ev.Date.UtcDateTime;
+        var stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev),
+            signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
 
-        return context;
+        stack.Tags.Add("Test");
+        stack.FirstOccurrence = stack.LastOccurrence = ev.Date.UtcDateTime;
+
+        return new WebHookDataContext(hook, organization, project, stack, ev);
     }
 }

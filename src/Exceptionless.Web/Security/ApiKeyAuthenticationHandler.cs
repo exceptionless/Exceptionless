@@ -35,21 +35,21 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        string authHeaderValue = Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
-        AuthenticationHeaderValue authHeader = null;
+        string? authHeaderValue = Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
+        AuthenticationHeaderValue? authHeader = null;
         if (!String.IsNullOrEmpty(authHeaderValue) && !AuthenticationHeaderValue.TryParse(authHeaderValue, out authHeader))
             return AuthenticateResult.Fail("Unable to parse header");
 
-        string scheme = authHeader?.Scheme.ToLower();
-        string token = null;
-        if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme))
+        string? scheme = authHeader?.Scheme.ToLower();
+        string? token = null;
+        if (authHeader is not null && (scheme == BearerScheme || scheme == TokenScheme))
         {
             token = authHeader.Parameter;
         }
-        else if (authHeader != null && scheme == BasicScheme)
+        else if (authHeader is not null && scheme == BasicScheme)
         {
             var authInfo = Request.GetBasicAuth();
-            if (authInfo != null)
+            if (authInfo is not null)
             {
                 if (authInfo.Username.ToLower() == "client")
                     token = authInfo.Password;
@@ -57,7 +57,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                     token = authInfo.Username;
                 else
                 {
-                    User user;
+                    User? user;
                     try
                     {
                         user = await _userRepository.GetByEmailAddressAsync(authInfo.Username);
@@ -67,7 +67,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                         return AuthenticateResult.Fail(ex);
                     }
 
-                    if (user == null || !user.IsActive)
+                    if (user is not { IsActive: true })
                         return AuthenticateResult.Fail("User is not valid");
 
                     if (String.IsNullOrEmpty(user.Salt))
@@ -96,7 +96,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         Request.HttpContext.Items["ApiKey"] = token;
         var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
-        if (tokenRecord == null)
+        if (tokenRecord is null)
         {
             Logger.LogInformation("Token {Token} for {Path} not found.", token, Request.Path);
 
@@ -121,7 +121,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!String.IsNullOrEmpty(tokenRecord.UserId))
         {
             var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
-            if (user == null)
+            if (user is null)
             {
                 Logger.LogInformation("Could not find user for token {Token} with user {UserId} for {Path}.", token, tokenRecord.UserId, Request.Path);
 
@@ -134,7 +134,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         return AuthenticateResult.Success(CreateTokenAuthenticationTicket(tokenRecord));
     }
 
-    private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token token = null)
+    private AuthenticationTicket CreateUserAuthenticationTicket(User user, Token? token = null)
     {
         Request.SetUser(user);
 

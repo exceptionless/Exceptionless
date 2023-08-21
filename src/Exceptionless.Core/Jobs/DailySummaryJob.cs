@@ -32,7 +32,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _emailOptions = emailOptions;
         _projectRepository = projectRepository;
@@ -54,7 +54,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
     {
         _lastRun = SystemClock.UtcNow;
 
-        if (!_emailOptions.EnableDailySummary || _mailer == null)
+        if (!_emailOptions.EnableDailySummary || _mailer is null)
             return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
         var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
@@ -139,7 +139,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
 
         // TODO: What should we do about suspended organizations.
         var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
-        if (organization == null)
+        if (organization is null)
         {
             _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
             return false;
@@ -166,12 +166,12 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         int blockedTotal = usages.Sum(u => u.Blocked);
         int tooBigTotal = usages.Sum(u => u.TooBig);
 
-        IReadOnlyCollection<Stack> mostFrequent = null;
+        IReadOnlyCollection<Stack>? mostFrequent = null;
         var stackTerms = result.Aggregations.Terms<string>("terms_stack_id");
         if (stackTerms?.Buckets.Count > 0)
             mostFrequent = await _stackRepository.GetByIdsAsync(stackTerms.Buckets.Select(b => b.Key).ToArray()).AnyContext();
 
-        IReadOnlyCollection<Stack> newest = null;
+        IReadOnlyCollection<Stack>? newest = null;
         if (newTotal > 0)
             newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3)).AnyContext()).Documents;
 

@@ -90,7 +90,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     public async Task<ActionResult<Stack>> GetAsync(string id, string offset = null)
     {
         var stack = await GetModelAsync(id);
-        if (stack == null)
+        if (stack is null)
             return NotFound();
 
         return Ok(stack.ApplyOffset(GetOffset(offset)));
@@ -113,7 +113,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (!String.IsNullOrEmpty(version))
         {
             semanticVersion = _semanticVersionParser.Parse(version);
-            if (semanticVersion == null)
+            if (semanticVersion is null)
                 return BadRequest("Invalid semantic version");
         }
 
@@ -208,7 +208,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return BadRequest();
 
         var stack = await GetModelAsync(id, false);
-        if (stack == null)
+        if (stack is null)
             return NotFound();
 
         if (!stack.References.Contains(url.Value.Trim()))
@@ -264,7 +264,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return BadRequest();
 
         var stack = await GetModelAsync(id, false);
-        if (stack == null)
+        if (stack is null)
             return NotFound();
 
         if (stack.References.Contains(url.Value.Trim()))
@@ -386,7 +386,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return NotFound();
 
         var stack = await _stackRepository.GetByIdAsync(id);
-        if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+        if (stack is null || !CanAccessOrganization(stack.OrganizationId))
             return NotFound();
 
         if (!await _billingManager.HasPremiumFeaturesAsync(stack.OrganizationId))
@@ -404,6 +404,13 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext));
 
+        var organization = await GetOrganizationAsync(stack.OrganizationId);
+        if (organization is null)
+            return NotFound();
+        var project = await GetProjectAsync(stack.ProjectId);
+        if (project is null)
+            return NotFound();
+
         foreach (var hook in promotedProjectHooks)
         {
             if (!hook.IsEnabled)
@@ -412,7 +419,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
                 continue;
             }
 
-            var context = new WebHookDataContext(hook, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.Status == StackStatus.Regressed);
+            var context = new WebHookDataContext(hook, organization, project, stack, null, stack.TotalOccurrences == 1, stack.Status == StackStatus.Regressed);
             var data = await _webHookDataPluginManager.CreateFromStackAsync(context);
             if (data is null)
             {
@@ -526,7 +533,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
     {
         var organization = await GetOrganizationAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -556,11 +563,11 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
     {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(project.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -585,7 +592,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return null;
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
-        if (project == null || !CanAccessOrganization(project.OrganizationId))
+        if (project is null || !CanAccessOrganization(project.OrganizationId))
             return null;
 
         return project;

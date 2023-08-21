@@ -3,16 +3,16 @@
 namespace Exceptionless.Core.Models.Billing;
 
 [DebuggerDisplay("Id: {Id} Name: {Name} Price: {Price}")]
-public class BillingPlan
+public record BillingPlan
 {
-    public string Id { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public decimal Price { get; set; }
-    public int MaxProjects { get; set; }
-    public int MaxUsers { get; set; }
-    public int RetentionDays { get; set; }
-    public int MaxEventsPerMonth { get; set; }
-    public bool HasPremiumFeatures { get; set; }
-    public bool IsHidden { get; set; }
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string Description { get; init; }
+    public decimal Price { get; init; }
+    public int MaxProjects { get; init; }
+    public int MaxUsers { get; init; }
+    public int RetentionDays { get; init; }
+    public int MaxEventsPerMonth { get; init; }
+    public bool HasPremiumFeatures { get; init; }
+    public bool IsHidden { get; init; }
 }

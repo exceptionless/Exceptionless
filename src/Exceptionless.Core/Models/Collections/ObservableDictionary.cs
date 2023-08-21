@@ -1,8 +1,9 @@
 ﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Exceptionless.Core.Models.Collections;
 
-public class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+public class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue> where TKey : notnull
 {
     private readonly IDictionary<TKey, TValue> _dictionary;
 
@@ -42,10 +43,10 @@ public class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 
     public bool Remove(TKey key)
     {
+        _dictionary.TryGetValue(key, out var value);
         bool success = _dictionary.Remove(key);
-
         if (success)
-            OnChanged(new ChangedEventArgs<KeyValuePair<TKey, TValue>>(new KeyValuePair<TKey, TValue>(key, default), ChangedAction.Remove));
+            OnChanged(new ChangedEventArgs<KeyValuePair<TKey, TValue>>(new KeyValuePair<TKey, TValue>(key, value!), ChangedAction.Remove));
 
         return success;
     }
@@ -77,7 +78,7 @@ public class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
         return _dictionary.Contains(item);
     }
 
-    public bool TryGetValue(TKey key, out TValue value)
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
         return _dictionary.TryGetValue(key, out value);
     }
@@ -117,7 +118,7 @@ public class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
         return GetEnumerator();
     }
 
-    public event EventHandler<ChangedEventArgs<KeyValuePair<TKey, TValue>>> Changed;
+    public event EventHandler<ChangedEventArgs<KeyValuePair<TKey, TValue>>>? Changed;
 
     private void OnChanged(ChangedEventArgs<KeyValuePair<TKey, TValue>> args)
     {

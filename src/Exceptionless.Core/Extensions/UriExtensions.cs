@@ -9,21 +9,21 @@ public static class UriExtensions
         return collection.AsKeyValuePairs().ToQueryString();
     }
 
-    public static string ToQueryString(this IEnumerable<KeyValuePair<string, string>> collection)
+    public static string ToQueryString(this IEnumerable<KeyValuePair<string?, string?>> collection)
     {
-        return collection.ToConcatenatedString(pair => pair.Key == null ? pair.Value : $"{pair.Key}={Uri.EscapeDataString(pair.Value)}", "&");
+        return collection.ToConcatenatedString(pair => pair.Key is null ? pair.Value : $"{pair.Key}={Uri.EscapeDataString(pair.Value ?? String.Empty)}", "&");
     }
 
     /// <summary>
     /// Converts the legacy NameValueCollection into a strongly-typed KeyValuePair sequence.
     /// </summary>
-    private static IEnumerable<KeyValuePair<string, string>> AsKeyValuePairs(this NameValueCollection collection)
+    private static IEnumerable<KeyValuePair<string?, string?>> AsKeyValuePairs(this NameValueCollection collection)
     {
-        return collection.AllKeys.Select(key => new KeyValuePair<string, string>(key, collection.Get(key)));
+        return collection.AllKeys.Select(key => new KeyValuePair<string?, string?>(key, collection.Get(key)));
     }
 
     public static string GetBaseUrl(this Uri uri)
     {
-        return uri.Scheme + "://" + uri.Authority + uri.AbsolutePath;
+        return $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}";
     }
 }

@@ -227,7 +227,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Empty(events);
     }
 
-    private readonly List<Tuple<string, DateTime>> _ids = new List<Tuple<string, DateTime>>();
+    private readonly List<Tuple<string, DateTime>> _ids = new();
 
     private async Task CreateDataAsync()
     {

@@ -91,7 +91,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .AddDataDictionaryAliases()
         );
 
-        if (Options != null && Options.EnableMapperSizePlugin)
+        if (Options is not null && Options.EnableMapperSizePlugin)
             return mapping.SizeField(s => s.Enabled());
 
         return mapping;
@@ -160,7 +160,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
             });
     }
 
-    public ElasticsearchOptions Options => (Configuration as ExceptionlessElasticConfiguration)?.Options;
+    public ElasticsearchOptions Options => _configuration.Options;
 
     private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad)
     {
@@ -235,7 +235,7 @@ def messages = [];
 def codes = [];
 def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];
 def curr = err;
-while (curr != null) {
+while (curr is not null) {
   if (curr.containsKey('type'))
     types.add(curr.type);
   if (curr.containsKey('message'))
@@ -245,7 +245,7 @@ while (curr != null) {
   curr = curr.inner;
 }
 
-if (ctx.error == null)
+if (ctx.error is null)
   ctx.error = new HashMap();
 
 ctx.error.type = types;
@@ -333,23 +333,23 @@ internal static class EventIndexExtensions
     public static PropertiesDescriptor<PersistentEvent> AddDataDictionaryAliases(this PropertiesDescriptor<PersistentEvent> descriptor)
     {
         return descriptor
-            .FieldAlias(a => a.Name(EventIndex.Alias.Version).Path(f => (string)f.Data[Event.KnownDataKeys.Version]))
-            .FieldAlias(a => a.Name(EventIndex.Alias.Level).Path(f => (string)f.Data[Event.KnownDataKeys.Level]))
-            .FieldAlias(a => a.Name(EventIndex.Alias.SubmissionMethod).Path(f => (string)f.Data[Event.KnownDataKeys.SubmissionMethod]))
-            .FieldAlias(a => a.Name(EventIndex.Alias.ClientUserAgent).Path(f => ((SubmissionClient)f.Data[Event.KnownDataKeys.SubmissionClient]).UserAgent))
-            .FieldAlias(a => a.Name(EventIndex.Alias.ClientVersion).Path(f => ((SubmissionClient)f.Data[Event.KnownDataKeys.SubmissionClient]).Version))
-            .FieldAlias(a => a.Name(EventIndex.Alias.LocationCountry).Path(f => ((Location)f.Data[Event.KnownDataKeys.Location]).Country))
-            .FieldAlias(a => a.Name(EventIndex.Alias.LocationLevel1).Path(f => ((Location)f.Data[Event.KnownDataKeys.Location]).Level1))
-            .FieldAlias(a => a.Name(EventIndex.Alias.LocationLevel2).Path(f => ((Location)f.Data[Event.KnownDataKeys.Location]).Level2))
-            .FieldAlias(a => a.Name(EventIndex.Alias.LocationLocality).Path(f => ((Location)f.Data[Event.KnownDataKeys.Location]).Locality))
-            .FieldAlias(a => a.Name(EventIndex.Alias.Browser).Path(f => ((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]).Data[RequestInfo.KnownDataKeys.Browser]))
-            .FieldAlias(a => a.Name(EventIndex.Alias.Device).Path(f => ((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]).Data[RequestInfo.KnownDataKeys.Device]))
-            .FieldAlias(a => a.Name(EventIndex.Alias.RequestIsBot).Path(f => ((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]).Data[RequestInfo.KnownDataKeys.IsBot]))
-            .FieldAlias(a => a.Name(EventIndex.Alias.RequestPath).Path(f => ((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]).Path))
-            .FieldAlias(a => a.Name(EventIndex.Alias.RequestUserAgent).Path(f => ((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]).UserAgent))
-            .FieldAlias(a => a.Name(EventIndex.Alias.CommandLine).Path(f => ((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]).CommandLine))
-            .FieldAlias(a => a.Name(EventIndex.Alias.MachineArchitecture).Path(f => ((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]).Architecture))
-            .FieldAlias(a => a.Name(EventIndex.Alias.MachineName).Path(f => ((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]).MachineName));
+            .FieldAlias(a => a.Name(EventIndex.Alias.Version).Path(f => (string)f.Data[Event.KnownDataKeys.Version]!))
+            .FieldAlias(a => a.Name(EventIndex.Alias.Level).Path(f => (string)f.Data[Event.KnownDataKeys.Level]!))
+            .FieldAlias(a => a.Name(EventIndex.Alias.SubmissionMethod).Path(f => (string)f.Data[Event.KnownDataKeys.SubmissionMethod]!))
+            .FieldAlias(a => a.Name(EventIndex.Alias.ClientUserAgent).Path(f => (((SubmissionClient)f.Data[Event.KnownDataKeys.SubmissionClient]!)!).UserAgent))
+            .FieldAlias(a => a.Name(EventIndex.Alias.ClientVersion).Path(f => (((SubmissionClient)f.Data[Event.KnownDataKeys.SubmissionClient]!)!).Version))
+            .FieldAlias(a => a.Name(EventIndex.Alias.LocationCountry).Path(f => (((Location)f.Data[Event.KnownDataKeys.Location]!)!).Country))
+            .FieldAlias(a => a.Name(EventIndex.Alias.LocationLevel1).Path(f => (((Location)f.Data[Event.KnownDataKeys.Location]!)!).Level1))
+            .FieldAlias(a => a.Name(EventIndex.Alias.LocationLevel2).Path(f => (((Location)f.Data[Event.KnownDataKeys.Location]!)!).Level2))
+            .FieldAlias(a => a.Name(EventIndex.Alias.LocationLocality).Path(f => (((Location)f.Data[Event.KnownDataKeys.Location]!)!).Locality))
+            .FieldAlias(a => a.Name(EventIndex.Alias.Browser).Path(f => (((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]!)!).Data[RequestInfo.KnownDataKeys.Browser]))
+            .FieldAlias(a => a.Name(EventIndex.Alias.Device).Path(f => (((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]!)!).Data[RequestInfo.KnownDataKeys.Device]))
+            .FieldAlias(a => a.Name(EventIndex.Alias.RequestIsBot).Path(f => (((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]!)!).Data[RequestInfo.KnownDataKeys.IsBot]))
+            .FieldAlias(a => a.Name(EventIndex.Alias.RequestPath).Path(f => (((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]!)!).Path))
+            .FieldAlias(a => a.Name(EventIndex.Alias.RequestUserAgent).Path(f => (((RequestInfo)f.Data[Event.KnownDataKeys.RequestInfo]!)!).UserAgent))
+            .FieldAlias(a => a.Name(EventIndex.Alias.CommandLine).Path(f => (((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]!)!).CommandLine))
+            .FieldAlias(a => a.Name(EventIndex.Alias.MachineArchitecture).Path(f => (((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]!)!).Architecture))
+            .FieldAlias(a => a.Name(EventIndex.Alias.MachineName).Path(f => (((EnvironmentInfo)f.Data[Event.KnownDataKeys.EnvironmentInfo]!)!).MachineName));
     }
 
     public static PropertiesDescriptor<DataDictionary> AddVersionMapping(this PropertiesDescriptor<DataDictionary> descriptor)

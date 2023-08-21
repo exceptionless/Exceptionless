@@ -16,7 +16,7 @@ public static class UserExtensions
 
     public static void ResetVerifyEmailAddressToken(this User user)
     {
-        if (user == null)
+        if (user is null)
             return;
 
         user.VerifyEmailAddressToken = null;
@@ -25,7 +25,7 @@ public static class UserExtensions
 
     public static void CreateVerifyEmailAddressToken(this User user)
     {
-        if (user == null)
+        if (user is null)
             return;
 
         user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
@@ -34,7 +34,7 @@ public static class UserExtensions
 
     public static bool HasValidVerifyEmailAddressTokenExpiration(this User user)
     {
-        if (user == null)
+        if (user is null)
             return false;
 
         return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= SystemClock.UtcNow;
@@ -42,7 +42,7 @@ public static class UserExtensions
 
     public static void MarkEmailAddressVerified(this User user)
     {
-        if (user == null)
+        if (user is null)
             return;
 
         user.IsEmailAddressVerified = true;
@@ -52,7 +52,7 @@ public static class UserExtensions
 
     public static void ResetPasswordResetToken(this User user)
     {
-        if (user == null)
+        if (user is null)
             return;
 
         user.PasswordResetToken = null;
@@ -61,7 +61,7 @@ public static class UserExtensions
 
     public static void CreatePasswordResetToken(this User user)
     {
-        if (user == null)
+        if (user is null)
             return;
 
         user.PasswordResetToken = StringExtensions.GetNewToken();
@@ -70,13 +70,13 @@ public static class UserExtensions
 
     public static bool HasValidPasswordResetTokenExpiration(this User user)
     {
-        if (user == null)
+        if (user is null)
             return false;
 
         return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= SystemClock.UtcNow;
     }
 
-    public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary data = null)
+    public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)
     {
         var account = new OAuthAccount
         {
@@ -85,7 +85,7 @@ public static class UserExtensions
             Username = username
         };
 
-        if (data != null)
+        if (data is not null)
             account.ExtraData.Apply(data);
 
         user.OAuthAccounts.Add(account);
@@ -97,7 +97,7 @@ public static class UserExtensions
             return false;
 
         var account = user.OAuthAccounts.FirstOrDefault(o => o.Provider == providerName.ToLowerInvariant() && o.ProviderUserId == providerUserId);
-        if (account == null)
+        if (account is null)
             return true;
 
         return user.OAuthAccounts.Remove(account);

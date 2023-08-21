@@ -16,7 +16,7 @@ public static class JsonExtensions
 {
     public static bool IsNullOrEmpty(this JToken target)
     {
-        if (target == null || target.Type == JTokenType.Null)
+        if (target is null || target.Type == JTokenType.Null)
             return true;
 
         if (target.Type == JTokenType.Object || target.Type == JTokenType.Array)
@@ -34,10 +34,11 @@ public static class JsonExtensions
 
     public static bool IsPropertyNullOrEmpty(this JObject target, string name)
     {
-        if (target[name] == null)
+        var property = target.Property(name);
+        if (property is null)
             return true;
 
-        return target.Property(name).Value.IsNullOrEmpty();
+        return property.Value.IsNullOrEmpty();
     }
 
     public static bool RemoveIfNullOrEmpty(this JObject target, string name)
@@ -73,29 +74,31 @@ public static class JsonExtensions
         if (String.Equals(currentName, newName))
             return true;
 
-        if (target[currentName] == null)
+        var property = target.Property(currentName);
+        if (property is null)
             return false;
 
-        var p = target.Property(currentName);
-        p.Replace(new JProperty(newName, p.Value));
-
+        property.Replace(new JProperty(newName, property.Value));
         return true;
     }
 
     public static bool RenameOrRemoveIfNullOrEmpty(this JObject target, string currentName, string newName)
     {
-        if (target[currentName] == null)
+        if (target[currentName] is null)
+            return false;
+
+        var property = target.Property(currentName);
+        if (property is null)
             return false;
 
         bool isNullOrEmpty = target.IsPropertyNullOrEmpty(currentName);
-        var p = target.Property(currentName);
         if (isNullOrEmpty)
         {
-            target.Remove(p.Name);
+            target.Remove(property.Name);
             return false;
         }
 
-        p.Replace(new JProperty(newName, p.Value));
+        property.Replace(new JProperty(newName, property.Value));
         return true;
     }
 
@@ -103,17 +106,16 @@ public static class JsonExtensions
     {
         foreach (string name in names)
         {
-            if (source[name] == null)
+            var property = source.Property(name);
+            if (property is null)
                 continue;
 
+            source.Remove(property.Name);
             bool isNullOrEmpty = source.IsPropertyNullOrEmpty(name);
-            var p = source.Property(name);
-            source.Remove(p.Name);
-
             if (isNullOrEmpty)
                 continue;
 
-            target.Add(name, p.Value);
+            target.Add(name, property.Value);
         }
     }
 
@@ -129,18 +131,18 @@ public static class JsonExtensions
         return true;
     }
 
-    public static string GetPropertyStringValue(this JObject target, string name)
+    public static string? GetPropertyStringValue(this JObject target, string name)
     {
         if (target.IsPropertyNullOrEmpty(name))
             return null;
 
-        return target.Property(name).Value.ToString();
+        return target.Property(name)?.Value.ToString();
     }
 
 
-    public static string GetPropertyStringValueAndRemove(this JObject target, string name)
+    public static string? GetPropertyStringValueAndRemove(this JObject target, string name)
     {
-        string value = target.GetPropertyStringValue(name);
+        string? value = target.GetPropertyStringValue(name);
         target.Remove(name);
         return value;
     }
@@ -172,9 +174,9 @@ public static class JsonExtensions
         return JsonType.None;
     }
 
-    public static string ToJson<T>(this T data, Formatting formatting = Formatting.None, JsonSerializerSettings settings = null)
+    public static string ToJson<T>(this T data, Formatting formatting = Formatting.None, JsonSerializerSettings? settings = null)
     {
-        var serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+        var serializer = settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
         serializer.Formatting = formatting;
 
         using (var sw = new StringWriter())
@@ -184,22 +186,22 @@ public static class JsonExtensions
         }
     }
 
-    public static List<T> FromJson<T>(this JArray data, JsonSerializerSettings settings = null)
+    public static List<T>? FromJson<T>(this JArray data, JsonSerializerSettings? settings = null)
     {
-        var serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+        var serializer = settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
         return data.ToObject<List<T>>(serializer);
     }
 
-    public static T FromJson<T>(this string data, JsonSerializerSettings settings = null)
+    public static T? FromJson<T>(this string data, JsonSerializerSettings? settings = null)
     {
-        var serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+        var serializer = settings is null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
 
         using (var sw = new StringReader(data))
         using (var sr = new JsonTextReader(sw))
             return serializer.Deserialize<T>(sr);
     }
 
-    public static bool TryFromJson<T>(this string data, out T value, JsonSerializerSettings settings = null)
+    public static bool TryFromJson<T>(this string data, out T? value, JsonSerializerSettings? settings = null)
     {
         try
         {
@@ -213,22 +215,25 @@ public static class JsonExtensions
         }
     }
 
-    private static readonly ConcurrentDictionary<Type, IMemberAccessor> _countAccessors = new ConcurrentDictionary<Type, IMemberAccessor>();
+    private static readonly ConcurrentDictionary<Type, IMemberAccessor?> _countAccessors = new();
     public static bool IsValueEmptyCollection(this JsonProperty property, object target)
     {
-        object value = property.ValueProvider.GetValue(target);
-        if (value == null)
+        object? value = property.ValueProvider?.GetValue(target);
+        if (value is null)
             return true;
 
         if (value is ICollection collection)
             return collection.Count == 0;
+
+        if (property.PropertyType is null)
+            return false;
 
         if (!_countAccessors.ContainsKey(property.PropertyType))
         {
             if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType))
             {
                 var countProperty = property.PropertyType.GetProperty("Count");
-                if (countProperty != null)
+                if (countProperty is not null)
                     _countAccessors.AddOrUpdate(property.PropertyType, LateBinder.GetPropertyAccessor(countProperty));
                 else
                     _countAccessors.AddOrUpdate(property.PropertyType, null);
@@ -240,10 +245,10 @@ public static class JsonExtensions
         }
 
         var countAccessor = _countAccessors[property.PropertyType];
-        if (countAccessor == null)
+        if (countAccessor is null)
             return false;
 
-        int count = (int)countAccessor.GetValue(value);
+        int count = (int)(countAccessor.GetValue(value) ?? 0);
         return count == 0;
     }
 

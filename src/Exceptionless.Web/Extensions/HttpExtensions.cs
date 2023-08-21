@@ -9,17 +9,17 @@ namespace Exceptionless.Web.Extensions;
 
 public static class HttpExtensions
 {
-    public static User GetUser(this HttpRequest request)
+    public static User? GetUser(this HttpRequest request)
     {
         return request.HttpContext.Items.TryGetAndReturn("User") as User;
     }
 
     public static void SetUser(this HttpRequest request, User user)
     {
-        if (request == null)
+        if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        if (user != null)
+        if (user is not null)
             request.HttpContext.Items["User"] = user;
     }
 
@@ -30,7 +30,7 @@ public static class HttpExtensions
 
     public static void SetProject(this HttpRequest request, Project project)
     {
-        if (project != null)
+        if (project is not null)
             request.HttpContext.Items["Project"] = project;
     }
 
@@ -56,7 +56,7 @@ public static class HttpExtensions
     public static bool IsGlobalAdmin(this HttpRequest request)
     {
         var principal = request.GetClaimsPrincipal();
-        return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
+        return principal is not null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
     }
 
     public static bool IsInOrganization(this HttpRequest request, string organizationId)
@@ -115,7 +115,7 @@ public static class HttpExtensions
     public static AuthInfo GetBasicAuth(this HttpRequest request)
     {
         string authHeader = request.Headers.TryGetAndReturn("Authorization");
-        if (authHeader == null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
+        if (authHeader is null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
             return null;
 
         string token = authHeader.Substring(6).Trim();
@@ -153,7 +153,7 @@ public static class HttpExtensions
 
     private static bool IsSet(IPAddress address)
     {
-        return address != null && address.ToString() != NullIpAddress;
+        return address is not null && address.ToString() != NullIpAddress;
     }
 
     public static bool IsEventPost(this HttpRequest request)

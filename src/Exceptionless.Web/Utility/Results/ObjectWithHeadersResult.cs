@@ -15,7 +15,7 @@ public class ObjectWithHeadersResult : ObjectResult
     {
         base.OnFormatting(context);
 
-        if (Headers == null)
+        if (Headers is null)
             return;
 
         foreach (var header in Headers)

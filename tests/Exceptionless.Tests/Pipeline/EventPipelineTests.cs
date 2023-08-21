@@ -666,8 +666,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     {
         string source = Guid.NewGuid().ToString();
         var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
             };
 
         await _pipeline.RunAsync(contexts);
@@ -682,7 +682,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     public async Task EnsureSingleGlobalErrorStackAsync()
     {
         var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent {
+                new(new PersistentEvent {
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
@@ -690,7 +690,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception", Type = "Error" } } }
                 }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(new PersistentEvent {
+                new(new PersistentEvent {
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
@@ -728,8 +728,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         await _stackRepository.SaveAsync(stack, o => o.Cache());
 
         var contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             };
 
         await RefreshDataAsync();
@@ -739,8 +739,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(2, contexts.Count(c => !c.IsRegression));
 
         contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             };
 
         await RefreshDataAsync();
@@ -750,8 +750,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
         contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             };
 
         await RefreshDataAsync();
@@ -783,9 +783,9 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         await _stackRepository.SaveAsync(stack, o => o.Cache());
 
         var contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), organization, project),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0-beta2"), organization, project)
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), organization, project),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0-beta2"), organization, project)
             };
 
         await RefreshDataAsync();
@@ -795,10 +795,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(3, contexts.Count(c => !c.IsRegression));
 
         contexts = new List<EventContext> {
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc1"), organization, project),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc3"), organization, project),
-                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.1-rc3"), organization, project)
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc1"), organization, project),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc3"), organization, project),
+                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.1-rc3"), organization, project)
             };
 
         await RefreshDataAsync();
@@ -821,7 +821,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         project.Configuration.Settings.Add(SettingsDictionary.KnownKeys.IncludePrivateInformation, includePrivateInformation.ToString());
 
         var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent {
+                new(new PersistentEvent {
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
@@ -1018,7 +1018,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                 ev.OrganizationId = null;
                 ev.StackId = null;
 
-                if (ev.Message != null)
+                if (ev.Message is not null)
                     ev.Message = RandomData.GetSentence();
 
                 var keysToRemove = ev.Data.Keys.Where(k => !k.StartsWith("@") && k != "MachineName" && k != "job" && k != "host" && k != "process").ToList();
@@ -1027,7 +1027,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
                 ev.Data.Remove(Event.KnownDataKeys.UserDescription);
                 var identity = ev.GetUserIdentity();
-                if (identity != null)
+                if (identity is not null)
                 {
                     if (!mappedUsers.ContainsKey(identity.Identity))
                         mappedUsers.Add(identity.Identity, new UserInfo(Guid.NewGuid().ToString(), currentBatchCount.ToString()));
@@ -1036,7 +1036,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                 }
 
                 var request = ev.GetRequestInfo();
-                if (request != null)
+                if (request is not null)
                 {
                     request.Cookies?.Clear();
                     request.PostData = null;
@@ -1046,7 +1046,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     request.Path = $"/{RandomData.GetWord(false)}/{RandomData.GetWord(false)}";
                     request.Data.Clear();
 
-                    if (request.ClientIpAddress != null)
+                    if (request.ClientIpAddress is not null)
                     {
                         if (!mappedIPs.ContainsKey(request.ClientIpAddress))
                             mappedIPs.Add(request.ClientIpAddress, RandomData.GetIp4Address());
@@ -1056,7 +1056,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                 }
 
                 InnerError error = ev.GetError();
-                while (error != null)
+                while (error is not null)
                 {
                     error.Message = RandomData.GetSentence();
                     error.Data.Clear();

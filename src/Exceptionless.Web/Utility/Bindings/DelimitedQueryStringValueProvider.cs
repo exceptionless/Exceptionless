@@ -22,7 +22,7 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
 
     public override ValueProviderResult GetValue(string key)
     {
-        if (key == null)
+        if (key is null)
             throw new ArgumentNullException(nameof(key));
 
         var values = _queryCollection[key];
@@ -47,7 +47,7 @@ public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
 
     public DelimitedQueryStringValueProviderFactory(params char[] delimiters)
     {
-        if (delimiters == null || delimiters.Length == 0)
+        if (delimiters is null || delimiters.Length == 0)
             _delimiters = DefaultDelimiters;
         else
             _delimiters = delimiters;
@@ -55,7 +55,7 @@ public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
 
     public Task CreateValueProviderAsync(ValueProviderFactoryContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         var valueProvider = new DelimitedQueryStringValueProvider(BindingSource.Query, context.ActionContext.HttpContext.Request.Query, CultureInfo.InvariantCulture, _delimiters);
@@ -78,13 +78,13 @@ public class DelimitedQueryStringAttribute : Attribute, IResourceFilter
 
     public void OnResourceExecuted(ResourceExecutedContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
     }
 
     public void OnResourceExecuting(ResourceExecutingContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         context.ValueProviderFactories.AddDelimitedValueProviderFactory(_delimiters);
@@ -97,7 +97,7 @@ public static class ValueProviderFactoriesExtensions
     {
         var queryStringValueProviderFactory = valueProviderFactories.OfType<QueryStringValueProviderFactory>().FirstOrDefault();
 
-        if (queryStringValueProviderFactory == null)
+        if (queryStringValueProviderFactory is null)
         {
             valueProviderFactories.Insert(0, new DelimitedQueryStringValueProviderFactory(delimiters));
         }

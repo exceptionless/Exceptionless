@@ -9,21 +9,21 @@ namespace Exceptionless.Core.Pipeline;
 
 public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
 {
-    public EventPipeline(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public EventPipeline(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
-    public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo epi = null)
+    public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo? epi = null)
     {
         return RunAsync(new EventContext(ev, organization, project, epi));
     }
 
-    public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo epi = null)
+    public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo? epi = null)
     {
         return RunAsync(events.Select(ev => new EventContext(ev, organization, project, epi)).ToList());
     }
 
     public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts)
     {
-        if (contexts == null || contexts.Count == 0)
+        if (contexts is null || contexts.Count == 0)
             return contexts ?? new List<EventContext>();
 
         AppDiagnostics.EventsSubmitted.Add(contexts.Count);
