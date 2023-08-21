@@ -2,9 +2,9 @@
 
 public class StackFrame : Method
 {
-    public string FileName { get; set; }
-    public int LineNumber { get; set; }
-    public int Column { get; set; }
+    public string? FileName { get; set; }
+    public int? LineNumber { get; set; }
+    public int? Column { get; set; }
 
     protected bool Equals(StackFrame other)
     {

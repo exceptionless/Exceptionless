@@ -30,12 +30,17 @@ public static class HashExtensions
     /// <summary>Compute SHA1 hash on a collection of input string</summary>
     /// <param name="inputs">The collection of strings to compute hash on.</param>
     /// <returns>The hash as a hexadecimal String.</returns>
-    public static string ToSHA1(this IEnumerable<string> inputs)
+    public static string ToSHA1(this IEnumerable<string?> inputs)
     {
         var builder = new StringBuilder();
 
-        foreach (string input in inputs)
+        foreach (string? input in inputs)
+        {
+            if (input is null)
+                continue;
+
             builder.Append(input);
+        }
 
         return builder.ToString().ToSHA1();
     }

@@ -81,7 +81,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Information))
             {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
-                    _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={project} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
+                    _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={ProjectId} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
             }
 
             var project = await projectTask.AnyContext();
@@ -253,7 +253,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("Parsing EventPost: {QueueEntryId}", queueEntryId);
 
-            List<PersistentEvent>? events = null;
+            var events = new List<PersistentEvent>();
             try
             {
                 var encoding = Encoding.UTF8;
@@ -275,7 +275,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                             ev.ReferenceId = ev.Id;
 
                         // the event id and stack id should never be set for posted events
-                        ev.Id = ev.StackId = null;
+                        ev.Id = ev.StackId = null!;
                     }
                 });
                 AppDiagnostics.PostsParsed.Add(1);

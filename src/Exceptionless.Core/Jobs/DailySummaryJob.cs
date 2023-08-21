@@ -145,7 +145,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
             return false;
         }
 
-        _logger.LogInformation("Sending daily summary: users={UserCount} project={project}", users.Count, project.Id);
+        _logger.LogInformation("Sending daily summary: users={UserCount} project={ProjectId}", users.Count, project.Id);
         var sf = new AppFilter(project, organization);
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
         string filter = "type:error (status:open OR status:regressed)";

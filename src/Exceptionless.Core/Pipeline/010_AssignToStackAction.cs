@@ -85,9 +85,9 @@ public class AssignToStackAction : EventPipelineActionBase
                             SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                             SignatureHash = signatureHash,
                             DuplicateSignature = ctx.Event.ProjectId + ":" + signatureHash,
-                            Title = title?.Truncate(1000),
+                            Title = title.Truncate(1000),
                             Tags = ctx.Event.Tags ?? new TagSet(),
-                            Type = ctx.Event.Type,
+                            Type = ctx.Event.Type ?? Event.KnownTypes.Log,
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
                             LastOccurrence = ctx.Event.Date.UtcDateTime
@@ -126,7 +126,7 @@ public class AssignToStackAction : EventPipelineActionBase
                     stacks[ctx.Stack.SignatureHash].Stack = ctx.Stack;
             }
 
-            if (ctx.Stack.Status == StackStatus.Discarded)
+            if (ctx.Stack!.Status == StackStatus.Discarded)
             {
                 ctx.IsDiscarded = true;
                 ctx.IsCancelled = true;
@@ -135,9 +135,7 @@ public class AssignToStackAction : EventPipelineActionBase
 
             if (!ctx.IsNew && ctx.Event.Tags is not null && ctx.Event.Tags.Count > 0)
             {
-                if (ctx.Stack.Tags is null)
-                    ctx.Stack.Tags = new TagSet();
-
+                ctx.Stack.Tags ??= new TagSet();
                 var newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
                 if (newTags.Count > 0 || ctx.Stack.Tags.Count > 50 || ctx.Stack.Tags.Any(t => t.Length > 100))
                 {
@@ -163,9 +161,9 @@ public class AssignToStackAction : EventPipelineActionBase
                 Type = StackTypeName,
                 Id = addedStacks.Count == 1 ? addedStacks.First().Id : null,
                 Data = {
-                        { ExtendedEntityChanged.KnownKeys.OrganizationId, contexts.First().Organization.Id },
-                        { ExtendedEntityChanged.KnownKeys.ProjectId, contexts.First().Project.Id }
-                    }
+                    { ExtendedEntityChanged.KnownKeys.OrganizationId, contexts.First().Organization.Id },
+                    { ExtendedEntityChanged.KnownKeys.ProjectId, contexts.First().Project.Id }
+                }
             }).AnyContext();
         }
 
@@ -176,7 +174,7 @@ public class AssignToStackAction : EventPipelineActionBase
         // Set stack ids after they have been saved and created
         contexts.ForEach(ctx =>
         {
-            ctx.Event.StackId = ctx.Stack?.Id;
+            ctx.Event.StackId = ctx.Stack!.Id;
         });
     }
 
@@ -185,10 +183,10 @@ public class AssignToStackAction : EventPipelineActionBase
         return Task.CompletedTask;
     }
 
-    private class StackInfo
+    private record StackInfo
     {
-        public bool IsNew { get; set; }
-        public bool ShouldSave { get; set; }
-        public Stack Stack { get; set; }
+        public required bool IsNew { get; init; }
+        public required bool ShouldSave { get; set; }
+        public required Stack Stack { get; set; }
     }
 }

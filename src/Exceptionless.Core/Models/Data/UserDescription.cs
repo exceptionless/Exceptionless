@@ -18,13 +18,13 @@ public class UserDescription : IData
             Description = description.Trim();
     }
 
-    public string EmailAddress { get; set; }
-    public string Description { get; set; }
+    public string? EmailAddress { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// Extended data entries for this user description.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary? Data { get; set; }
 
     protected bool Equals(UserDescription other)
     {

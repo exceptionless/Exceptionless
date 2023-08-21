@@ -40,7 +40,7 @@ public class Mailer : IMailer
         if (String.IsNullOrEmpty(result.Subject))
             result.Subject = ev.Message ?? ev.Source ?? "(Global)";
 
-        var messageData = new Dictionary<string, object> {
+        var messageData = new Dictionary<string, object?> {
                 { "Subject", result.Subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "ProjectName", project.Name },
@@ -67,7 +67,7 @@ public class Mailer : IMailer
         return true;
     }
 
-    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data)
+    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data)
     {
         var ud = ev.GetUserDescription();
         var ui = ev.GetUserIdentity();
@@ -97,7 +97,7 @@ public class Mailer : IMailer
 
     private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data)
     {
-        if (ev.Tags.Count > 0)
+        if (ev.Tags?.Count > 0)
             data["Tags"] = String.Join(", ", ev.Tags);
 
         decimal value = ev.Value.GetValueOrDefault();
@@ -113,7 +113,7 @@ public class Mailer : IMailer
     {
         const string template = "organization-added";
         string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
@@ -132,7 +132,7 @@ public class Mailer : IMailer
     {
         const string template = "organization-invited";
         string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "InviteToken", invite.Token }
@@ -154,7 +154,7 @@ public class Mailer : IMailer
                 ? $"[{organization.Name}] Monthly plan limit exceeded."
                 : $"[{organization.Name}] Events are currently being throttled.";
 
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
@@ -176,7 +176,7 @@ public class Mailer : IMailer
     {
         const string template = "organization-payment-failed";
         string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interruption!";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
@@ -191,18 +191,18 @@ public class Mailer : IMailer
         }, template);
     }
 
-    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
+    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         const string template = "project-daily-summary";
         string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", project.OrganizationId },
                 { "ProjectId", project.Id },
                 { "ProjectName", project.Name },
-                { "MostFrequent", GetStackTemplateData(mostFrequent) },
-                { "Newest", GetStackTemplateData(newest) },
+                { "MostFrequent", mostFrequent is not null ? GetStackTemplateData(mostFrequent) : null },
+                { "Newest", newest is not null ? GetStackTemplateData(newest) : null },
                 { "StartDate", startDate.ToLongDateString() },
                 { "HasSubmittedEvents", hasSubmittedEvents },
                 { "Count", count },
@@ -229,7 +229,7 @@ public class Mailer : IMailer
             StackId = s.Id,
             Title = s.Title.Truncate(50),
             TypeName = s.GetTypeName()?.Truncate(50),
-            s.Status,
+            s.Status
         });
     }
 
@@ -240,7 +240,7 @@ public class Mailer : IMailer
 
         const string template = "user-email-verify";
         const string subject = "Exceptionless Account Confirmation";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "UserFullName", user.FullName },
@@ -262,7 +262,7 @@ public class Mailer : IMailer
 
         const string template = "user-password-reset";
         const string subject = "Exceptionless Password Reset";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "UserFullName", user.FullName },
@@ -277,7 +277,7 @@ public class Mailer : IMailer
         }, template);
     }
 
-    private string RenderTemplate(string name, IDictionary<string, object> data)
+    private string RenderTemplate(string name, IDictionary<string, object?> data)
     {
         var template = GetCompiledTemplate(name);
         return template(data);

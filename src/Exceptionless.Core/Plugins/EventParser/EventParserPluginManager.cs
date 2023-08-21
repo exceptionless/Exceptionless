@@ -32,7 +32,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
                         e.Date = SystemClock.OffsetNow;
 
                     if (String.IsNullOrWhiteSpace(e.Type))
-                        e.Type = e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
+                        e.Type = e.Data is not null && (e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError)) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
                 });
 
                 return events;

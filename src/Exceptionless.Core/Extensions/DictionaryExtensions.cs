@@ -25,7 +25,7 @@ public static class DictionaryExtensions
         }
     }
 
-    public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string value)
+    public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string? value)
     {
         if (key is null)
             throw new ArgumentNullException(nameof(key));
@@ -75,8 +75,14 @@ public static class DictionaryExtensions
         return obj;
     }
 
-    public static bool CollectionEquals<TValue>(this IDictionary<string, TValue> source, IDictionary<string, TValue> other)
+    public static bool CollectionEquals<TValue>(this IDictionary<string, TValue>? source, IDictionary<string, TValue>? other)
     {
+        if (source is null && other is null)
+            return true;
+
+        if (source is null || other is null)
+            return false;
+
         if (source.Count != other.Count)
             return false;
 

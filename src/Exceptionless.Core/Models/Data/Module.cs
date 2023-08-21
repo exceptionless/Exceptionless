@@ -5,13 +5,13 @@ namespace Exceptionless.Core.Models.Data;
 
 public class Module : IData
 {
-    public int ModuleId { get; set; }
-    public string Name { get; set; }
-    public string Version { get; set; }
-    public bool IsEntry { get; set; }
-    public DateTime CreatedDate { get; set; }
-    public DateTime ModifiedDate { get; set; }
-    public DataDictionary Data { get; set; } = new();
+    public int? ModuleId { get; set; }
+    public string? Name { get; set; }
+    public string? Version { get; set; }
+    public bool? IsEntry { get; set; }
+    public DateTime? CreatedDate { get; set; }
+    public DateTime? ModifiedDate { get; set; }
+    public DataDictionary? Data { get; set; } = new();
 
     public override string ToString()
     {
@@ -45,7 +45,7 @@ public class Module : IData
     {
         unchecked
         {
-            int hashCode = ModuleId;
+            int hashCode = ModuleId.GetValueOrDefault();
             hashCode = (hashCode * 397) ^ (Name?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Version?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ IsEntry.GetHashCode();

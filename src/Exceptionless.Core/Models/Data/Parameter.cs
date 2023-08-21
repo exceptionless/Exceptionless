@@ -4,12 +4,12 @@ namespace Exceptionless.Core.Models.Data;
 
 public class Parameter : IData
 {
-    public string Name { get; set; }
-    public string Type { get; set; }
-    public string TypeNamespace { get; set; }
+    public string? Name { get; set; }
+    public string? Type { get; set; }
+    public string? TypeNamespace { get; set; }
 
-    public DataDictionary Data { get; set; } = new();
-    public GenericArguments GenericArguments { get; set; } = new();
+    public DataDictionary? Data { get; set; } = new();
+    public GenericArguments? GenericArguments { get; set; } = new();
 
     protected bool Equals(Parameter other)
     {

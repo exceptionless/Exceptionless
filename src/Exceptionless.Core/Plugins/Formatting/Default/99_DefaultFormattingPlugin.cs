@@ -30,7 +30,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override SummaryData GetEventSummaryData(PersistentEvent ev)
     {
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Message", GetStackTitle(ev) },
                 { "Source", ev.Source },
                 { "Type", ev.Type }
@@ -43,9 +43,9 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
     {
-        string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
+        string? messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
-            return null;
+            throw new ArgumentException("Event must contain message or source");
 
         string notificationType = "Occurrence event";
         if (isNew)
@@ -73,9 +73,9 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
-        string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
+        string? messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
-            return null;
+            throw new ArgumentException("Event must contain message or source");
 
         string notificationType = "Occurrence event";
         if (isNew)

@@ -61,9 +61,14 @@ public class QueueNotificationAction : EventPipelineActionBase
                 Data = await _webHookDataPluginManager.CreateFromEventAsync(context).AnyContext()
             };
 
+            if (notification.Data is null)
+            {
+                _logger.LogTrace("Skipping Web hook: invalid data payload: project={ProjectId} url={Url}", ctx.Event.ProjectId, hook.Url);
+                continue;
+            }
+
             await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
-            using (_logger.BeginScope(new Dictionary<string, object> { { "Web Hook Notification", notification } }))
-                _logger.LogTrace("Web hook queued: project={project} url={Url}", ctx.Event.ProjectId, hook.Url);
+            _logger.LogTrace("Web hook queued: project={ProjectId} url={Url}", ctx.Event.ProjectId, hook.Url);
         }
     }
 

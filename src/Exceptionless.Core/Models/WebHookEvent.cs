@@ -11,11 +11,11 @@ public record WebHookEvent
 
     public string Id { get; init; } = null!;
     public string Url => String.Concat(_baseUrl, "/event/", Id);
-    public DateTimeOffset OccurrenceDate { get; init; }
-    public TagSet Tags { get; init; } = null!;
-    public string Type { get; init; }
-    public string Source { get; init; }
-    public string Message { get; init; }
+    public DateTimeOffset? OccurrenceDate { get; init; }
+    public TagSet? Tags { get; init; }
+    public string? Type { get; init; }
+    public string? Source { get; init; }
+    public string? Message { get; init; }
     public string ProjectId { get; init; } = null!;
     public string ProjectName { get; init; } = null!;
     public string OrganizationId { get; init; } = null!;

@@ -12,14 +12,14 @@ public class SettingsDictionary : ObservableDictionary<string, string>
             Add(kvp.Key, kvp.Value);
     }
 
-    public string GetString(string name)
+    public string? GetString(string name)
     {
         return GetString(name, String.Empty);
     }
 
-    public string GetString(string name, string @default)
+    public string? GetString(string name, string? @default)
     {
-        if (TryGetValue(name, out string value))
+        if (TryGetValue(name, out string? value))
             return value;
 
         return @default;
@@ -32,7 +32,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public bool GetBoolean(string name, bool @default)
     {
-        bool result = TryGetValue(name, out string temp);
+        bool result = TryGetValue(name, out string? temp);
         if (!result)
             return @default;
 
@@ -47,7 +47,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public int GetInt32(string name, int @default)
     {
-        bool result = TryGetValue(name, out string temp);
+        bool result = TryGetValue(name, out string? temp);
         if (!result)
             return @default;
 
@@ -62,7 +62,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public long GetInt64(string name, long @default)
     {
-        bool result = TryGetValue(name, out string temp);
+        bool result = TryGetValue(name, out string? temp);
         if (!result)
             return @default;
 
@@ -72,7 +72,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public double GetDouble(string name, double @default = 0d)
     {
-        bool result = TryGetValue(name, out string temp);
+        bool result = TryGetValue(name, out string? temp);
         if (!result)
             return @default;
 
@@ -87,7 +87,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public DateTime GetDateTime(string name, DateTime @default)
     {
-        bool result = TryGetValue(name, out string temp);
+        bool result = TryGetValue(name, out string? temp);
         if (!result)
             return @default;
 
@@ -102,7 +102,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public DateTimeOffset GetDateTimeOffset(string name, DateTimeOffset @default)
     {
-        bool result = TryGetValue(name, out string temp);
+        bool result = TryGetValue(name, out string? temp);
         if (!result)
             return @default;
 
@@ -117,8 +117,8 @@ public class SettingsDictionary : ObservableDictionary<string, string>
 
     public Guid GetGuid(string name, Guid @default)
     {
-        bool result = TryGetValue(name, out string temp);
-        return result ? new Guid(temp) : @default;
+        bool result = TryGetValue(name, out string? temp);
+        return result && temp is not null ? new Guid(temp) : @default;
     }
 
     public IEnumerable<string> GetStringCollection(string name)
@@ -126,10 +126,9 @@ public class SettingsDictionary : ObservableDictionary<string, string>
         return GetStringCollection(name, null);
     }
 
-    public IEnumerable<string> GetStringCollection(string name, string @default)
+    public IEnumerable<string> GetStringCollection(string name, string? @default)
     {
-        string value = GetString(name, @default);
-
+        string? value = GetString(name, @default);
         if (String.IsNullOrEmpty(value))
             return Enumerable.Empty<string>();
 

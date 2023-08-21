@@ -30,7 +30,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling create from event {id} in plugin {PluginName}: {Message}", context.Event.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling create from event {EventId} in plugin {PluginName}: {Message}", context.Event?.Id, plugin.Name, ex.Message);
             }
         }
 
@@ -60,7 +60,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling create from stack {stack} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling create from stack {StackId} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
             }
         }
 

@@ -24,7 +24,7 @@ public class Event : IData
     /// <summary>
     /// A list of tags used to categorize this event.
     /// </summary>
-    public TagSet Tags { get; set; } = new();
+    public TagSet? Tags { get; set; } = new();
 
     /// <summary>
     /// The event message.
@@ -49,7 +49,7 @@ public class Event : IData
     /// <summary>
     /// Optional data entries that contain additional information about this event.
     /// </summary>
-    public DataDictionary Data { get; set; } = new();
+    public DataDictionary? Data { get; set; } = new();
 
     /// <summary>
     /// An optional identifier to be used for referencing this event instance at a later time.

@@ -5,15 +5,22 @@ namespace Exceptionless.Core.Extensions;
 
 public static class ErrorExtensions
 {
+
+    public static void SetTargetInfo(this Error error, SettingsDictionary targetInfo)
+    {
+        error.Data ??= new DataDictionary();
+        error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
+    }
+
     public static StackingTarget GetStackingTarget(this Error error)
     {
         if (error is null)
             throw new ArgumentNullException(nameof(error));
 
-        InnerError targetError = error;
+        InnerError? targetError = error;
         while (targetError is not null)
         {
-            var frame = targetError.StackTrace?.FirstOrDefault(st => st.IsSignatureTarget);
+            var frame = targetError.StackTrace?.FirstOrDefault(st => st.IsSignatureTarget.GetValueOrDefault());
             if (frame is not null)
                 return new StackingTarget
                 {
@@ -21,7 +28,7 @@ public static class ErrorExtensions
                     Method = frame
                 };
 
-            if (targetError.TargetMethod is not null && targetError.TargetMethod.IsSignatureTarget)
+            if (targetError.TargetMethod is not null && targetError.TargetMethod.IsSignatureTarget.GetValueOrDefault())
                 return new StackingTarget
                 {
                     Error = targetError,

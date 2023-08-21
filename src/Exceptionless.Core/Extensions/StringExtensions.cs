@@ -376,7 +376,7 @@ public static class StringExtensions
 
     }
 
-    public static bool IsNullOrEmpty(this string item)
+    public static bool IsNullOrEmpty(this string? item)
     {
         return String.IsNullOrEmpty(item);
     }

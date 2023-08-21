@@ -256,8 +256,8 @@ public record ReindexWorkItem
     public string DateField { get; init; }
     public Func<Task>? CreateIndex { get; init; }
     public string? Script { get; init; }
-    public TaskId TaskId { get; init; }
-    public TaskInfo LastTaskInfo { get; init; }
-    public int ConsecutiveStatusErrors { get; init; }
-    public int Attempts { get; init; }
+    public TaskId? TaskId { get; set; }
+    public TaskInfo LastTaskInfo { get; set; } = null!;
+    public int ConsecutiveStatusErrors { get; set; }
+    public int Attempts { get; set; }
 }

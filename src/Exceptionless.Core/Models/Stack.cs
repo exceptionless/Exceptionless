@@ -43,7 +43,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The signature used for stacking future occurrences.
     /// </summary>
-    public string SignatureHash { get; set; }
+    public string SignatureHash { get; set; } = null!;
 
     /// <summary>
     /// The collection of information that went into creating the signature hash for the stack.
@@ -63,7 +63,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack title.
     /// </summary>
-    public string Title { get; set; }
+    public string Title { get; set; } = null!;
 
     /// <summary>
     /// The total number of occurrences in the stack.
@@ -83,7 +83,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack description.
     /// </summary>
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// If true, all future occurrences will be marked as critical.
@@ -103,7 +103,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The signature used for finding duplicate stacks. (ProjectId, SignatureHash)
     /// </summary>
-    public string DuplicateSignature { get; set; }
+    public string DuplicateSignature { get; set; } = null!;
 
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }

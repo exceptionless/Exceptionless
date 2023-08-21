@@ -31,5 +31,5 @@ public class ManualStackingInfo
     /// <summary>
     /// Key value pair that determines how the event is stacked.
     /// </summary>
-    public IDictionary<string, string> SignatureData { get; set; }
+    public IDictionary<string, string>? SignatureData { get; set; }
 }

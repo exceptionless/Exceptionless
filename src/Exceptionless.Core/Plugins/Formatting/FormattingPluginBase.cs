@@ -73,7 +73,7 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         return $"<{String.Join(String.Empty, parts)}>";
     }
 
-    protected void AddUserIdentitySummaryData(Dictionary<string, object> data, UserInfo identity)
+    protected void AddUserIdentitySummaryData(Dictionary<string, object?> data, UserInfo? identity)
     {
         if (identity is null)
             return;

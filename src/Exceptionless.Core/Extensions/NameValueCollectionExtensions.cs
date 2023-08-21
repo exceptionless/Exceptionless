@@ -11,7 +11,7 @@ public static class NameValueCollectionExtensions
 
     public static int? GetInt(this NameValueCollection collection, string name)
     {
-        string value = collection[name];
+        string? value = collection[name];
         if (value is null)
             return null;
 
@@ -33,7 +33,7 @@ public static class NameValueCollectionExtensions
 
     public static long? GetInt64(this NameValueCollection collection, string name)
     {
-        string value = collection[name];
+        string? value = collection[name];
         if (value is null)
             return null;
 
@@ -45,7 +45,7 @@ public static class NameValueCollectionExtensions
 
     public static bool? GetBool(this NameValueCollection collection, string name)
     {
-        string value = collection[name];
+        string? value = collection[name];
         if (value is null)
             return null;
 
@@ -62,7 +62,7 @@ public static class NameValueCollectionExtensions
 
     public static T GetEnum<T>(this NameValueCollection collection, string name, T? defaultValue = null) where T : struct
     {
-        string value = GetValue(collection, name);
+        string? value = GetValue(collection, name);
         if (value is null)
         {
             if (defaultValue.HasValue && defaultValue is T)
@@ -85,9 +85,9 @@ public static class NameValueCollectionExtensions
         }
     }
 
-    public static List<string> GetStringList(this NameValueCollection collection, string name, string? defaultValues = null, char[]? separators = null)
+    public static List<string>? GetStringList(this NameValueCollection collection, string name, string? defaultValues = null, char[]? separators = null)
     {
-        string value = collection[name];
+        string? value = collection[name];
         if (value is null && defaultValues is null)
             return null;
 
@@ -97,7 +97,7 @@ public static class NameValueCollectionExtensions
         if (separators is null)
             separators = new[] { ',' };
 
-        return value
+        return value?
             .Split(separators, StringSplitOptions.RemoveEmptyEntries)
             .Select(s => s.Trim())
             .ToList();

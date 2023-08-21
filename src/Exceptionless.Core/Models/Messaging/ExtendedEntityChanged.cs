@@ -8,9 +8,9 @@ public class ExtendedEntityChanged : EntityChanged
 {
     private ExtendedEntityChanged() { } // Ensure create is used.
 
-    public string OrganizationId { get; private set; }
-    public string ProjectId { get; private set; }
-    public string StackId { get; private set; }
+    public string? OrganizationId { get; private set; }
+    public string? ProjectId { get; private set; }
+    public string? StackId { get; private set; }
 
     public static ExtendedEntityChanged Create(EntityChanged entityChanged, bool removeWhenSettingProperties = true)
     {
@@ -24,21 +24,21 @@ public class ExtendedEntityChanged : EntityChanged
 
         if (model.Data.TryGetValue(KnownKeys.OrganizationId, out object? organizationId))
         {
-            model.OrganizationId = organizationId.ToString();
+            model.OrganizationId = organizationId?.ToString();
             if (removeWhenSettingProperties)
                 model.Data.Remove(KnownKeys.OrganizationId);
         }
 
         if (model.Data.TryGetValue(KnownKeys.ProjectId, out object? projectId))
         {
-            model.ProjectId = projectId.ToString();
+            model.ProjectId = projectId?.ToString();
             if (removeWhenSettingProperties)
                 model.Data.Remove(KnownKeys.ProjectId);
         }
 
         if (model.Data.TryGetValue(KnownKeys.StackId, out object? stackId))
         {
-            model.StackId = stackId.ToString();
+            model.StackId = stackId?.ToString();
             if (removeWhenSettingProperties)
                 model.Data.Remove(KnownKeys.StackId);
         }

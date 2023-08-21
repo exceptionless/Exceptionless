@@ -26,17 +26,17 @@ public class UserInfo : IData
     /// <summary>
     /// Uniquely identifies the user.
     /// </summary>
-    public string Identity { get; set; }
+    public string? Identity { get; set; }
 
     /// <summary>
     /// The Friendly name of the user.
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// Extended data entries for this user.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary? Data { get; set; }
 
     protected bool Equals(UserInfo other)
     {

@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
 
@@ -27,6 +28,7 @@ public class TruncateFieldsAction : EventPipelineActionBase
 
         if (!ctx.Event.HasValidReferenceId())
         {
+            ctx.Event.Data ??= new DataDictionary();
             ctx.Event.Data["InvalidReferenceId"] = ctx.Event.ReferenceId;
             ctx.Event.ReferenceId = "invalid-reference-id";
         }

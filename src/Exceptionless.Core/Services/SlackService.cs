@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
@@ -27,10 +28,13 @@ public class SlackService
         _logger = loggerFactory.CreateLogger<SlackService>();
     }
 
-    public async Task<SlackToken> GetAccessTokenAsync(string code)
+    public async Task<SlackToken?> GetAccessTokenAsync(string code)
     {
         if (String.IsNullOrEmpty(code))
             throw new ArgumentNullException(nameof(code));
+
+        if (String.IsNullOrEmpty(_appOptions.SlackOptions.SlackId) || String.IsNullOrEmpty(_appOptions.SlackOptions.SlackSecret))
+            throw new Exception("SlackId or SlackSecret requires configuration");
 
         var data = new Dictionary<string, string> {
                 { "client_id", _appOptions.SlackOptions.SlackId },
@@ -39,7 +43,7 @@ public class SlackService
                 { "redirect_uri", new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority) }
             };
 
-        string url = $"https://slack.com/api/oauth.access?{data.ToQueryString()}";
+        string url = $"https://slack.com/api/oauth.access?{data!.ToQueryString()}";
         var response = await _client.PostAsync(url).AnyContext();
         byte[] body = await response.Content.ReadAsByteArrayAsync().AnyContext();
         var result = _serializer.Deserialize<OAuthAccessResponse>(body);
@@ -52,11 +56,11 @@ public class SlackService
 
         var token = new SlackToken
         {
-            AccessToken = result.access_token,
+            AccessToken = result.access_token!,
             Scopes = result.scope?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>(),
-            UserId = result.user_id,
-            TeamId = result.team_id,
-            TeamName = result.team_name
+            UserId = result.user_id!,
+            TeamId = result.team_id!,
+            TeamName = result.team_name!
         };
 
         if (result.incoming_webhook is not null)
@@ -134,33 +138,33 @@ public class SlackService
         return true;
     }
 
-    private class Response
+    private record Response
     {
-        public bool ok { get; set; }
-        public string warning { get; set; }
-        public string error { get; set; }
+        public bool ok { get; init; }
+        public string? warning { get; init; }
+        public string? error { get; init; }
     }
 
-    private class AuthRevokeResponse : Response
+    private record AuthRevokeResponse : Response
     {
-        public bool revoked { get; set; }
+        public bool revoked { get; init; }
     }
 
-    private class OAuthAccessResponse : Response
+    private record OAuthAccessResponse : Response
     {
-        public string access_token { get; set; }
-        public string scope { get; set; }
-        public string user_id { get; set; }
-        public string team_id { get; set; }
-        public string team_name { get; set; }
-        public IncomingWebHook incoming_webhook { get; set; }
+        public string access_token { get; init; } = null!;
+        public string scope { get; init; } = null!;
+        public string user_id { get; init; } = null!;
+        public string team_id { get; init; } = null!;
+        public string team_name { get; init; } = null!;
+        public IncomingWebHook? incoming_webhook { get; init; }
 
-        public class IncomingWebHook
+        public record IncomingWebHook
         {
-            public string channel { get; set; }
-            public string channel_id { get; set; }
-            public string configuration_url { get; set; }
-            public string url { get; set; }
+            public string channel { get; init; } = null!;
+            public string channel_id { get; init; } = null!;
+            public string configuration_url { get; init; } = null!;
+            public string url { get; init; } = null!;
         }
     }
 }

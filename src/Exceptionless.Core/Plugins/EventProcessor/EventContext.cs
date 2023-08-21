@@ -21,14 +21,14 @@ public class EventContext : ExtensibleObject, IPipelineContext
 
     public PersistentEvent Event { get; set; }
     public EventPostInfo? EventPostInfo { get; set; }
-    public Stack Stack { get; set; }
+    public Stack? Stack { get; set; }
     public Project Project { get; set; }
     public Organization Organization { get; set; }
     public bool IsDiscarded { get; set; }
     public bool IsNew { get; set; }
     public bool IsRegression { get; set; }
     public bool IncludePrivateInformation { get; set; }
-    public string SignatureHash { get; set; }
+    public string? SignatureHash { get; set; }
     public IDictionary<string, string> StackSignatureData { get; private set; }
 
     public bool IsCancelled { get; set; }

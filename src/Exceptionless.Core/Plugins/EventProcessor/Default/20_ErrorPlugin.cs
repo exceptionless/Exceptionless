@@ -27,15 +27,15 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (context.StackSignatureData.Count > 0)
             return Task.CompletedTask;
 
-        string[] commonUserMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
+        string[]? userCommonMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
         if (context.HasProperty("CommonMethods"))
-            commonUserMethods = context.GetProperty<string>("CommonMethods").SplitAndTrim(new[] { ',' });
+            userCommonMethods = context.GetProperty<string>("CommonMethods")?.SplitAndTrim(new[] { ',' });
 
-        string[] userNamespaces = null;
+        string[]? userNamespaces = null;
         if (context.HasProperty("UserNamespaces"))
-            userNamespaces = context.GetProperty<string>("UserNamespaces").SplitAndTrim(new[] { ',' });
+            userNamespaces = context.GetProperty<string>("UserNamespaces")?.SplitAndTrim(new[] { ',' });
 
-        var signature = new ErrorSignature(error, userCommonMethods: commonUserMethods, userNamespaces: userNamespaces);
+        var signature = new ErrorSignature(error, userNamespaces, userCommonMethods);
         if (signature.SignatureInfo.Count <= 0)
             return Task.CompletedTask;
 
@@ -44,8 +44,7 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (stackingTarget?.Error?.StackTrace?.Count > 0 && !targetInfo.ContainsKey("Message"))
             targetInfo["Message"] = stackingTarget.Error.Message;
 
-        error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
-
+        error.SetTargetInfo(targetInfo);
         foreach (string key in signature.SignatureInfo.Keys)
             context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 

@@ -19,7 +19,7 @@ public abstract class ExceptionlessApiController : Controller
     protected const int MAXIMUM_LIMIT = 100;
     protected const int MAXIMUM_SKIP = 1000;
 
-    protected TimeSpan GetOffset(string offset)
+    protected TimeSpan GetOffset(string? offset)
     {
         if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out var value) && value.HasValue)
             return value.Value;
@@ -30,7 +30,7 @@ public abstract class ExceptionlessApiController : Controller
     protected ICollection<string> AllowedDateFields { get; private set; } = new List<string>();
     protected string DefaultDateField { get; set; } = "created_utc";
 
-    protected virtual TimeInfo GetTimeInfo(string time, string offset, DateTime? minimumUtcStartDate = null)
+    protected virtual TimeInfo GetTimeInfo(string? time, string? offset, DateTime? minimumUtcStartDate = null)
     {
         string field = DefaultDateField;
         if (!String.IsNullOrEmpty(time) && time.Contains("|"))

@@ -21,7 +21,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object>();
-        string source = stack.SignatureInfo?.GetString("Source");
+        string? source = stack.SignatureInfo.GetString("Source");
         if (!String.IsNullOrWhiteSpace(source) && String.Equals(source, stack.Title))
         {
             string[] parts = source.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
@@ -48,7 +48,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var data = new Dictionary<string, object> { { "Message", ev.Message } };
+        var data = new Dictionary<string, object?> { { "Message", ev.Message } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
         if (!String.IsNullOrWhiteSpace(ev.Source))
@@ -60,7 +60,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
                 data.Add("SourceShortName", parts.Last());
         }
 
-        string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object? temp) ? temp as string : null;
+        string? level = ev.GetLevel();
         if (!String.IsNullOrWhiteSpace(level))
             data.Add("Level", level.Trim());
 
@@ -87,7 +87,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(ev.Message))
             data.Add("Message", ev.Message.Truncate(60));
 
-        string level = ev.GetLevel();
+        string? level = ev.GetLevel();
         if (!String.IsNullOrEmpty(level))
             data.Add("Level", level.Truncate(60));
 
@@ -127,7 +127,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(ev.Message))
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
 
-        string level = ev.GetLevel();
+        string? level = ev.GetLevel();
         if (!String.IsNullOrEmpty(level))
         {
             switch (level.ToLower())

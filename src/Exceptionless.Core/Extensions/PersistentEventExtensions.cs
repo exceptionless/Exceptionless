@@ -8,6 +8,9 @@ public static class PersistentEventExtensions
 {
     public static void CopyDataToIndex(this PersistentEvent ev, string[]? keysToCopy = null)
     {
+        if (ev.Data is null)
+            return;
+
         keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
         foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k)))
@@ -74,7 +77,7 @@ public static class PersistentEventExtensions
 
     public static string? GetEventReference(this PersistentEvent ev, string name)
     {
-        if (String.IsNullOrEmpty(name))
+        if (String.IsNullOrEmpty(name) || ev.Data is null)
             return null;
 
         return ev.Data.GetString($"@ref:{name}");
@@ -94,6 +97,7 @@ public static class PersistentEventExtensions
         if (!IsValidIdentifier(id) || String.IsNullOrEmpty(id))
             throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));
 
+        ev.Data ??= new DataDictionary();
         ev.Data[$"@ref:{name}"] = id;
     }
 
@@ -118,7 +122,7 @@ public static class PersistentEventExtensions
         if (!ev.IsSessionStart())
             return false;
 
-        return ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd);
+        return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.SessionEnd);
     }
 
     public static DateTime? GetSessionEndTime(this PersistentEvent ev)
@@ -126,7 +130,7 @@ public static class PersistentEventExtensions
         if (!ev.IsSessionStart())
             return null;
 
-        if (ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object? sessionEnd))
+        if (ev.Data is not null && ev.Data.TryGetValue(Event.KnownDataKeys.SessionEnd, out object? sessionEnd))
         {
             if (sessionEnd is DateTimeOffset dto)
                 return dto.UtcDateTime;
@@ -154,6 +158,8 @@ public static class PersistentEventExtensions
             duration = newDuration;
 
         ev.Value = duration;
+
+        ev.Data ??= new DataDictionary();
         if (isSessionEnd)
         {
             ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;

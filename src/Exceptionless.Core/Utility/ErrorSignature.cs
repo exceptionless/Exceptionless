@@ -64,7 +64,7 @@ public class ErrorSignature
 
         // reset all flags before we figure out which method to tag as the new target.
         if (ShouldFlagSignatureTarget)
-            errorStack.ForEach(es => es.StackTrace.ForEach(st => st.IsSignatureTarget = false));
+            errorStack.ForEach(es => es.StackTrace?.ForEach(st => st.IsSignatureTarget = false));
 
         foreach (var e in errorStack)
         {
@@ -130,7 +130,6 @@ public class ErrorSignature
     private string GetStackFrameSignature(Method method)
     {
         var builder = new StringBuilder(255);
-
         if (method is null)
             return builder.ToString();
 
@@ -159,13 +158,13 @@ public class ErrorSignature
         return !UserCommonMethods.Any(frame.GetSignature().Contains);
     }
 
-    private bool IsUserNamespace(string ns)
+    private bool IsUserNamespace(string? ns)
     {
         if (String.IsNullOrEmpty(ns))
             return false;
 
         // if no user namespaces were set, return any non-system namespace as true
-        if (UserNamespaces is null || _userNamespaces.Count == 0)
+        if (_userNamespaces.Count == 0)
             return !_defaultNonUserNamespaces.Any(ns.StartsWith);
 
         return UserNamespaces.Any(ns.StartsWith);
@@ -173,6 +172,9 @@ public class ErrorSignature
 
     private void AddSpecialCaseDetails(InnerError error)
     {
+        if (error.Data is null)
+            return;
+
         if (!error.Data.ContainsKey(Error.KnownDataKeys.ExtraProperties))
             return;
 

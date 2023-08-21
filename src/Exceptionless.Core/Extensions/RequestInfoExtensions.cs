@@ -37,9 +37,9 @@ public static class RequestInfoExtensions
         return dictionary is not null ? ApplyExclusions(dictionary, exclusions, maxLength) : data;
     }
 
-    private static Dictionary<string, string> ApplyExclusions(Dictionary<string, string> dictionary, IEnumerable<string> exclusions, int maxLength)
+    private static Dictionary<string, string>? ApplyExclusions(Dictionary<string, string>? dictionary, IEnumerable<string> exclusions, int maxLength)
     {
-        if (dictionary.Count == 0)
+        if (dictionary is null || dictionary.Count == 0)
             return dictionary;
 
         foreach (string key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
@@ -57,21 +57,24 @@ public static class RequestInfoExtensions
     public static string GetFullPath(this RequestInfo requestInfo, bool includeHttpMethod = false, bool includeHost = true, bool includeQueryString = true)
     {
         var sb = new StringBuilder();
-        if (includeHttpMethod)
+        if (includeHttpMethod && !String.IsNullOrEmpty(requestInfo.HttpMethod))
             sb.Append(requestInfo.HttpMethod).Append(" ");
 
-        if (includeHost)
+        if (includeHost && !String.IsNullOrEmpty(requestInfo.Host))
         {
-            sb.Append(requestInfo.IsSecure ? "https://" : "http://");
+            sb.Append(requestInfo.IsSecure.GetValueOrDefault() ? "https://" : "http://");
             sb.Append(requestInfo.Host);
-            if (requestInfo.Port != 80 && requestInfo.Port != 443)
+            if (requestInfo.Port.HasValue && requestInfo.Port != 80 && requestInfo.Port != 443)
                 sb.Append(":").Append(requestInfo.Port);
         }
 
-        if (!requestInfo.Path.StartsWith("/"))
-            sb.Append("/");
+        if (requestInfo.Path is not null)
+        {
+            if (!requestInfo.Path.StartsWith("/"))
+                sb.Append("/");
 
-        sb.Append(requestInfo.Path);
+            sb.Append(requestInfo.Path);
+        }
 
         if (includeQueryString && requestInfo.QueryString is not null && requestInfo.QueryString.Count > 0)
             sb.Append("?").Append(CreateQueryString(requestInfo.QueryString));

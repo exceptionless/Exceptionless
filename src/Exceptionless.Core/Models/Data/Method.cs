@@ -4,16 +4,16 @@ namespace Exceptionless.Core.Models.Data;
 
 public class Method : IData
 {
-    public bool IsSignatureTarget { get; set; }
-    public string DeclaringNamespace { get; set; }
-    public string DeclaringType { get; set; }
+    public bool? IsSignatureTarget { get; set; }
+    public string? DeclaringNamespace { get; set; }
+    public string? DeclaringType { get; set; }
 
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
-    public int ModuleId { get; set; }
-    public DataDictionary Data { get; set; } = new();
-    public GenericArguments GenericArguments { get; set; } = new();
-    public ParameterCollection Parameters { get; set; } = new();
+    public int? ModuleId { get; set; }
+    public DataDictionary? Data { get; set; } = new();
+    public GenericArguments? GenericArguments { get; set; } = new();
+    public ParameterCollection? Parameters { get; set; } = new();
 
     protected bool Equals(Method other)
     {

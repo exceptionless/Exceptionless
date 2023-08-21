@@ -53,7 +53,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         bool shouldLog = ev.ProjectId != _appOptions.InternalProjectId;
         int sent = 0;
-        if (shouldLog) _logger.LogTrace("Process notification: project={project} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
+        if (shouldLog) _logger.LogTrace("Process notification: project={ProjectId} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
         var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache()).AnyContext();
         if (project is null)
@@ -168,7 +168,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         if (!user.OrganizationIds.Contains(project.OrganizationId))
         {
-            if (shouldLog) _logger.LogError("Unauthorized user: project={project} user={UserId} organization={organization} event={id}", project.Id, userId, project.OrganizationId, ev.Id);
+            if (shouldLog) _logger.LogError("Unauthorized user: project={ProjectId} user={UserId} organization={organization} event={id}", project.Id, userId, project.OrganizationId, ev.Id);
             return false;
         }
 

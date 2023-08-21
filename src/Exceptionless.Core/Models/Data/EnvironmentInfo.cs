@@ -8,70 +8,70 @@ public class EnvironmentInfo : IData
     /// Gets the number of processors for the current machine.
     /// </summary>
     /// <value>The number of processors for the current machine.</value>
-    public int ProcessorCount { get; set; }
+    public int? ProcessorCount { get; set; }
 
     /// <summary>
     /// Gets the amount of physical memory for the current machine.
     /// </summary>
     /// <value>The amount of physical memory for the current machine.</value>
-    public long TotalPhysicalMemory { get; set; }
+    public long? TotalPhysicalMemory { get; set; }
 
     /// <summary>
     /// Gets the amount of physical memory mapped to the process context.
     /// </summary>
     /// <value>The amount of physical memory mapped to the process context.</value>
-    public long AvailablePhysicalMemory { get; set; }
+    public long? AvailablePhysicalMemory { get; set; }
 
     /// <summary>
     /// Gets the command line information used to start the process.
     /// </summary>
     /// <value>The command line information used to start the process.</value>
-    public string CommandLine { get; set; }
+    public string? CommandLine { get; set; }
 
     /// <summary>
     /// The name of the process that the error occurred in.
     /// </summary>
-    public string ProcessName { get; set; }
+    public string? ProcessName { get; set; }
 
     /// <summary>
     /// Gets the process id.
     /// </summary>
     /// <value>The process id.</value>
-    public string ProcessId { get; set; }
+    public string? ProcessId { get; set; }
 
     /// <summary>
     /// Gets the amount of physical memory used by the process.
     /// </summary>
     /// <value>The amount of physical memory used by the process.</value>
-    public long ProcessMemorySize { get; set; }
+    public long? ProcessMemorySize { get; set; }
 
     /// <summary>
     /// Gets the name of the thread.
     /// </summary>
     /// <value>The name of the thread.</value>
-    public string ThreadName { get; set; }
+    public string? ThreadName { get; set; }
 
     /// <summary>
     /// Gets the win32 thread id.
     /// </summary>
     /// <value>The win32 thread id.</value>
-    public string ThreadId { get; set; }
+    public string? ThreadId { get; set; }
 
     /// <summary>
     /// Gets the OS architecture.
     /// </summary>
     /// <value>The OS architecture.</value>
-    public string Architecture { get; set; }
+    public string? Architecture { get; set; }
 
     /// <summary>
     /// The OS name that the error occurred on.
     /// </summary>
-    public string OSName { get; set; }
+    public string? OSName { get; set; }
 
     /// <summary>
     /// The OS version that the error occurred on.
     /// </summary>
-    public string OSVersion { get; set; }
+    public string? OSVersion { get; set; }
 
     /// <summary>
     /// The Ip Address of the machine that the error occurred on.
@@ -86,17 +86,17 @@ public class EnvironmentInfo : IData
     /// <summary>
     /// A unique value identifying each Exceptionless client installation.
     /// </summary>
-    public string InstallId { get; set; }
+    public string? InstallId { get; set; }
 
     /// <summary>
     /// The runtime version the application was running under when the error occurred.
     /// </summary>
-    public string RuntimeVersion { get; set; }
+    public string? RuntimeVersion { get; set; }
 
     /// <summary>
     /// Extended data entries for this machine environment.
     /// </summary>
-    public DataDictionary Data { get; set; } = new();
+    public DataDictionary? Data { get; set; } = new();
 
     protected bool Equals(EnvironmentInfo other)
     {
@@ -118,8 +118,8 @@ public class EnvironmentInfo : IData
     {
         unchecked
         {
-            int hashCode = ProcessorCount;
-            hashCode = (hashCode * 397) ^ TotalPhysicalMemory.GetHashCode();
+            int hashCode = ProcessorCount.GetValueOrDefault();
+            hashCode = (hashCode * 397) ^ TotalPhysicalMemory.GetValueOrDefault().GetHashCode();
             hashCode = (hashCode * 397) ^ (CommandLine?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (ProcessName?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (ProcessId?.GetHashCode() ?? 0);
