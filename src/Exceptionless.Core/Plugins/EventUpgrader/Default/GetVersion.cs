@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Pipeline;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -21,27 +22,32 @@ public class GetVersion : PluginBase, IEventUpgraderPlugin
         }
 
         var doc = ctx.Documents.First();
-        if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["Version"] is null)
+        if (!(doc["ExceptionlessClientInfo"] is JObject { HasValues: true } clientInfo) || clientInfo["Version"] is null)
         {
             ctx.Version = new Version();
             return;
         }
 
-        if (clientInfo["Version"].ToString().Contains(" "))
+        string? version = clientInfo.GetPropertyStringValue("Version");
+        if (String.IsNullOrEmpty(version))
         {
-            string version = clientInfo["Version"].ToString().Split(' ').First();
-            ctx.Version = new Version(version);
+            ctx.Version = new Version();
             return;
         }
 
-        if (clientInfo["Version"].ToString().Contains("-"))
+        if (version.Contains(" "))
         {
-            string version = clientInfo["Version"].ToString().Split('-').First();
-            ctx.Version = new Version(version);
+            ctx.Version = new Version(version.Split(' ').First());
+            return;
+        }
+
+        if (version.Contains("-"))
+        {
+            ctx.Version = new Version(version.Split('-').First());
             return;
         }
 
         // old version format
-        ctx.Version = new Version(clientInfo["Version"].ToString());
+        ctx.Version = new Version(version);
     }
 }

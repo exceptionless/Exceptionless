@@ -14,13 +14,12 @@ public abstract class EventPipelineActionBase : PipelineActionBase<EventContext>
     public override bool HandleError(Exception ex, EventContext ctx)
     {
         var ev = new { ctx.Event.Date, ctx.Event.StackId, ctx.Event.Type, ctx.Event.Source, ctx.Event.Message, ctx.Event.Value, ctx.Event.Geo, ctx.Event.ReferenceId, ctx.Event.Tags };
-        using (_logger.BeginScope(new Dictionary<string, object> { { "Event", ev }, { "Tags", ErrorTags } }))
-        {
-            if (IsCritical)
-                _logger.LogCritical(ex, "Error processing action: {TypeName} Message: {Message}", GetType().Name, ex.Message);
-            else
-                _logger.LogError(ex, "Error processing action: {TypeName} Message: {Message}", GetType().Name, ex.Message);
-        }
+
+        using var _ = _logger.BeginScope(new Dictionary<string, object> { { "Event", ev }, { "Tags", ErrorTags } });
+        if (IsCritical)
+            _logger.LogCritical(ex, "Error processing action: {TypeName} Message: {Message}", GetType().Name, ex.Message);
+        else
+            _logger.LogError(ex, "Error processing action: {TypeName} Message: {Message}", GetType().Name, ex.Message);
 
         return ContinueOnError;
     }

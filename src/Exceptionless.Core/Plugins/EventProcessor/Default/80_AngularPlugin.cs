@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -19,14 +20,14 @@ public sealed class AngularPlugin : EventProcessorPluginBase
         if (error is null)
             return Task.CompletedTask;
 
-        string submissionMethod = context.Event.GetSubmissionMethod();
+        string? submissionMethod = context.Event.GetSubmissionMethod();
         if (submissionMethod is null || !String.Equals("$exceptionHandler", submissionMethod))
             return Task.CompletedTask;
 
         if (context.StackSignatureData.Count != 1 || !context.StackSignatureData.ContainsKey("NoStackingInformation"))
             return Task.CompletedTask;
 
-        string cause = context.Event.Message;
+        string? cause = context.Event.Message;
         if (String.IsNullOrEmpty(cause))
             return Task.CompletedTask;
 
@@ -36,7 +37,7 @@ public sealed class AngularPlugin : EventProcessorPluginBase
             context.StackSignatureData.Add("ExceptionType", error.Type ?? "Error");
             context.StackSignatureData.Add("Source", "unhandledRejection");
 
-            error.Data[Error.KnownDataKeys.TargetInfo] = new SettingsDictionary(context.StackSignatureData);
+            error.SetTargetInfo(new SettingsDictionary(context.StackSignatureData));
         }
 
         return Task.CompletedTask;

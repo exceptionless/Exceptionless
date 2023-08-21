@@ -33,7 +33,7 @@ public sealed class SimpleErrorPlugin : EventProcessorPluginBase
         if (!String.IsNullOrEmpty(error.StackTrace))
             context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
 
-        error.Data[Error.KnownDataKeys.TargetInfo] = new SettingsDictionary(context.StackSignatureData);
+        error.SetTargetInfo(new SettingsDictionary(context.StackSignatureData));
         return Task.CompletedTask;
     }
 }

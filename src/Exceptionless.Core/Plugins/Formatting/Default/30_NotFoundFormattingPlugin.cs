@@ -36,7 +36,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var data = new Dictionary<string, object> { { "Source", ev.Source } };
+        var data = new Dictionary<string, object?> { { "Source", ev.Source } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
         var ips = ev.GetIpAddresses().ToList();
@@ -62,8 +62,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
 
         string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
         var requestInfo = ev.GetRequestInfo();
-        var data = new Dictionary<string, object> {
-                { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source.Truncate(60) }
+        var data = new Dictionary<string, object?> {
+                { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source?.Truncate(60) }
             };
 
         return new MailMessageData { Subject = subject, Data = data };
@@ -91,13 +91,13 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
                     new()
                     {
                         Title = "Url",
-                        Value = requestInfo is not null ? requestInfo.GetFullPath(true, true, true) : ev.Source.Truncate(60)
+                        Value = requestInfo is not null ? requestInfo.GetFullPath(true, true, true) : ev.Source?.Truncate(60)
                     }
                 }
         };
 
         AddDefaultSlackFields(ev, attachment.Fields, false);
-        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source.Truncate(120))}*";
+        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }

@@ -23,7 +23,10 @@ public class CheckForRegressionAction : EventPipelineActionBase
 
     public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
     {
-        var stacks = contexts.Where(c => c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue).OrderBy(c => c.Event.Date).GroupBy(c => c.Event.StackId);
+        var stacks = contexts
+            .Where(c => c.Stack is not null && c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue)
+            .OrderBy(c => c.Event.Date)
+            .GroupBy(c => c.Event.StackId);
 
         // more than one event in this batch, likely to be the same version
         Dictionary<string, SemanticVersion>? versionCache = null;
@@ -38,7 +41,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
 
                 EventContext? regressedContext = null;
                 SemanticVersion? regressedVersion = null;
-                if (String.IsNullOrEmpty(stack.FixedInVersion))
+                if (String.IsNullOrEmpty(stack!.FixedInVersion))
                 {
                     regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
                 }

@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Core.Messaging.Models;
 
-public class SystemNotification
+public record SystemNotification
 {
-    public DateTime Date { get; set; }
-    public string Message { get; set; }
+    public required DateTime Date { get; set; }
+    public required string Message { get; set; }
 }

@@ -95,7 +95,7 @@ public class RequestInfo : IData
             hashCode = (hashCode * 397) ^ (HttpMethod?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ IsSecure.GetHashCode();
             hashCode = (hashCode * 397) ^ (Host?.GetHashCode() ?? 0);
-            hashCode = (hashCode * 397) ^ Port;
+            hashCode = (hashCode * 397) ^ (Port?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Path?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Referrer?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (ClientIpAddress?.GetHashCode() ?? 0);

@@ -1,45 +1,12 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class OAuthAccount : IEquatable<OAuthAccount>
+public record OAuthAccount
 {
-    public string Provider { get; set; }
-    public string ProviderUserId { get; set; }
-    public string Username { get; set; }
+    public required string Provider { get; init; }
+    public required string ProviderUserId { get; init; }
+    public required string Username { get; init; }
 
-    public SettingsDictionary ExtraData { get; private set; } = new();
-
-    public bool Equals(OAuthAccount? other)
-    {
-        if (other is null)
-            return false;
-        if (ReferenceEquals(this, other))
-            return true;
-        return other.Provider.Equals(Provider) && other.ProviderUserId.Equals(ProviderUserId);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is null)
-            return false;
-        if (ReferenceEquals(this, obj))
-            return true;
-        if (obj.GetType() != typeof(OAuthAccount))
-            return false;
-        return Equals((OAuthAccount)obj);
-    }
-
-    public override int GetHashCode()
-    {
-        unchecked
-        {
-            int hash = 2153;
-            if (Provider is not null)
-                hash = hash * 9929 + Provider.GetHashCode();
-            if (ProviderUserId is not null)
-                hash = hash * 9929 + ProviderUserId.GetHashCode();
-            return hash;
-        }
-    }
+    public SettingsDictionary ExtraData { get; } = new();
 
     public string? EmailAddress()
     {

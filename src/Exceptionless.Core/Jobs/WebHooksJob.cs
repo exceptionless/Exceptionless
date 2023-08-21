@@ -113,7 +113,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 }
                 else if (response is not null && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.Gone))
                 {
-                    _logger.WebHookDisabledStatusCode(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId, response.StatusCode, body.OrganizationId, body.ProjectId, body.Url);
+                    _logger.WebHookDisabledStatusCode(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId!, response.StatusCode, body.OrganizationId, body.ProjectId, body.Url);
                     await DisableIntegrationAsync(body).AnyContext();
                     await cache.RemoveAllAsync(_cacheKeys).AnyContext();
                 }
@@ -141,7 +141,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                         // disable if more than 10 consecutive errors over the course of multiple days
                         if (firstAttempt.IsBefore(now.SubtractDays(2)))
                         {
-                            _logger.WebHookDisabledTooManyErrors(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId);
+                            _logger.WebHookDisabledTooManyErrors(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId!);
                             await DisableIntegrationAsync(body).AnyContext();
                             await cache.RemoveAllAsync(_cacheKeys).AnyContext();
                         }
@@ -174,7 +174,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         switch (body.Type)
         {
             case WebHookType.General:
-                await _webHookRepository.MarkDisabledAsync(body.WebHookId).AnyContext();
+                await _webHookRepository.MarkDisabledAsync(body.WebHookId!).AnyContext();
                 break;
             case WebHookType.Slack:
                 var project = await _projectRepository.GetByIdAsync(body.ProjectId).AnyContext();
@@ -182,10 +182,12 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 if (token is null)
                     return;
 
-                Debug.Assert(project is not null);
-
                 await _slackService.RevokeAccessTokenAsync(token.AccessToken).AnyContext();
-                if (project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack) | project.Data.Remove(Project.KnownDataKeys.SlackToken))
+                bool shouldSave = project!.NotificationSettings.Remove(Project.NotificationIntegrations.Slack);
+                if (project.Data is not null && project.Data.Remove(Project.KnownDataKeys.SlackToken))
+                    shouldSave = true;
+
+                if (shouldSave)
                     await _projectRepository.SaveAsync(project, o => o.Cache());
 
                 break;

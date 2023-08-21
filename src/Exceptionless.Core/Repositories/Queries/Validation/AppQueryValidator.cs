@@ -98,10 +98,10 @@ public class AppQueryValidator : IAppQueryValidator
         return new QueryProcessResult { IsValid = result.IsValid };
     }
 
-    public class QueryProcessResult
+    public record QueryProcessResult
     {
-        public bool IsValid { get; set; }
-        public string Message { get; set; }
+        public bool IsValid { get; init; }
+        public string? Message { get; set; }
         public bool UsesPremiumFeatures { get; set; }
     }
 }

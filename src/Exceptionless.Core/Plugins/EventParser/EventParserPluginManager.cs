@@ -11,7 +11,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
     /// </summary>
-    public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent)
+    public List<PersistentEvent> ParseEvents(string input, int apiVersion, string? userAgent)
     {
         string metricPrefix = String.Concat("events.parse.");
         foreach (var plugin in Plugins.Values.ToList())
@@ -32,7 +32,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
                         e.Date = SystemClock.OffsetNow;
 
                     if (String.IsNullOrWhiteSpace(e.Type))
-                        e.Type = e.Data is not null && (e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError)) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
+                        e.Type = e.HasError() || e.HasSimpleError() ? Event.KnownTypes.Error : Event.KnownTypes.Log;
                 });
 
                 return events;

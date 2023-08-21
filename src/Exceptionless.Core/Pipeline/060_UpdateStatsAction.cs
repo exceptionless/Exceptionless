@@ -25,7 +25,6 @@ public class UpdateStatsAction : EventPipelineActionBase
     public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
     {
         var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
-
         foreach (var stackGroup in stacks)
             await IncrementEventCountersAsync(stackGroup).AnyContext();
     }
@@ -44,6 +43,9 @@ public class UpdateStatsAction : EventPipelineActionBase
             // Update stacks in memory since they are used in notifications.
             foreach (var ctx in stackContexts)
             {
+                if (ctx.Stack is null)
+                    continue;
+
                 if (ctx.Stack.FirstOccurrence > minDate)
                     ctx.Stack.FirstOccurrence = minDate;
 
@@ -62,7 +64,10 @@ public class UpdateStatsAction : EventPipelineActionBase
                 {
                     cont = HandleError(ex, context);
                 }
-                catch { }
+                catch (Exception handlerException)
+                {
+                    _logger.LogInformation(handlerException, "Error in HandleError: {Message}", ex.Message);
+                }
 
                 if (!cont)
                     context.SetError(ex.Message, ex);

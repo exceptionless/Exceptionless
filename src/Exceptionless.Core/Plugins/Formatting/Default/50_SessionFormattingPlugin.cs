@@ -39,7 +39,7 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var data = new Dictionary<string, object> { { "SessionId", ev.GetSessionId() }, { "Type", ev.Type } };
+        var data = new Dictionary<string, object?> { { "SessionId", ev.GetSessionId() }, { "Type", ev.Type } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
         if (ev.IsSessionStart())

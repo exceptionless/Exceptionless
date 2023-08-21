@@ -37,7 +37,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             if (!doc.RemoveIfNullOrEmpty("Tags"))
             {
                 var tags = doc.GetValue("Tags");
-                if (tags.Type == JTokenType.Array)
+                if (tags is not null && tags.Type == JTokenType.Array)
                 {
                     foreach (var tag in tags.ToList())
                     {
@@ -58,7 +58,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
 
             doc.RenameAll("ExtendedData", "Data");
 
-            var extendedData = doc.Property("Data") is not null ? doc.Property("Data").Value as JObject : null;
+            var extendedData = doc.Property("Data") is not null ? doc.Property("Data")!.Value as JObject : null;
             if (extendedData is not null)
             {
                 if (!isNotFound)
@@ -80,7 +80,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 var error = new JObject();
 
                 if (!doc.RemoveIfNullOrEmpty("Message"))
-                    error.Add("Message", doc["Message"].Value<string>());
+                    error.Add("Message", doc["Message"]!.Value<string>());
 
                 error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
@@ -88,11 +88,10 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 if (extendedData?["__ExceptionInfo"] is not null)
                 {
                     error.Add("Data", new JObject());
-                    ((JObject)error["Data"]).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
+                    ((JObject)error["Data"]!).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
                 }
 
-                string id = doc["Id"]?.Value<string>();
-                string projectId = doc["ProjectId"]?.Value<string>();
+                string? id = doc["Id"]?.Value<string>();
                 RenameAndValidateExtraExceptionProperties(id, error);
 
                 var inner = error["Inner"] as JObject;
@@ -106,12 +105,12 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 doc.Add("@error", error);
             }
 
-            string emailAddress = doc.GetPropertyStringValueAndRemove("UserEmail");
-            string userDescription = doc.GetPropertyStringValueAndRemove("UserDescription");
+            string? emailAddress = doc.GetPropertyStringValueAndRemove("UserEmail");
+            string? userDescription = doc.GetPropertyStringValueAndRemove("UserDescription");
             if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
                 doc.Add("@user_description", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
 
-            string identity = doc.GetPropertyStringValueAndRemove("UserName");
+            string? identity = doc.GetPropertyStringValueAndRemove("UserName");
             if (!String.IsNullOrWhiteSpace(identity))
                 doc.Add("@user", JObject.FromObject(new UserInfo(identity)));
 
@@ -119,13 +118,13 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
         }
     }
 
-    private void RenameAndValidateExtraExceptionProperties(string id, JObject error)
+    private void RenameAndValidateExtraExceptionProperties(string? id, JObject error)
     {
         var extendedData = error?["Data"] as JObject;
         if (extendedData?["__ExceptionInfo"] is null)
             return;
 
-        string json = extendedData["__ExceptionInfo"].ToString();
+        string json = extendedData["__ExceptionInfo"]!.ToString();
         extendedData.Remove("__ExceptionInfo");
 
         if (String.IsNullOrWhiteSpace(json))

@@ -22,7 +22,7 @@ public class ExceptionlessState : Dictionary<string, object>
     /// Adds one or more tags to the event.
     /// </summary>
     /// <param name="tag">The tag to be added to the event.</param>
-    public ExceptionlessState Tag(string tag)
+    public ExceptionlessState Tag(string? tag)
     {
         if (String.IsNullOrEmpty(tag))
             return this;

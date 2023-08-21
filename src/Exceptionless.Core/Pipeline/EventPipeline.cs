@@ -41,12 +41,14 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
 
             // load organization settings into the context
             var organization = contexts.First().Organization;
-            foreach (string key in organization.Data.Keys)
-                contexts.ForEach(c => c.SetProperty(key, organization.Data[key]));
+            if (organization.Data is not null)
+                foreach (string key in organization.Data.Keys)
+                    contexts.ForEach(c => c.SetProperty(key, organization.Data[key]));
 
             // load project settings into the context, overriding any organization settings with the same name
-            foreach (string key in project.Data.Keys)
-                contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
+            if (project.Data is not null)
+                foreach (string key in project.Data.Keys)
+                    contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
             await AppDiagnostics.EventsProcessingTime.TimeAsync(() => base.RunAsync(contexts)).AnyContext();
 

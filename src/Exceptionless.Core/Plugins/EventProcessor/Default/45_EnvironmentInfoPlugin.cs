@@ -31,7 +31,7 @@ public sealed class EnvironmentInfoPlugin : EventProcessorPluginBase
         return Task.CompletedTask;
     }
 
-    private void AddClientIpAddress(EnvironmentInfo environment, SubmissionClient submissionClient)
+    private void AddClientIpAddress(EnvironmentInfo environment, SubmissionClient? submissionClient)
     {
         var ips = (environment.IpAddress ?? String.Empty)
             .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)

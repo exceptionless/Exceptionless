@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Core.Messaging.Models;
 
-public class PlanOverage
+public record PlanOverage
 {
-    public string OrganizationId { get; set; }
+    public required string OrganizationId { get; set; }
     public bool IsHourly { get; set; }
 }

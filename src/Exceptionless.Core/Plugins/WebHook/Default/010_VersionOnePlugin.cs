@@ -94,13 +94,13 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         public string Id { get; init; } = null!;
         public string Url => String.Concat(_baseUrl, "/event/", Id);
         public DateTimeOffset OccurrenceDate { get; init; }
-        public TagSet Tags { get; init; } = null!;
+        public TagSet? Tags { get; init; } = null!;
         public string? MachineName { get; init; }
         public string? RequestPath { get; init; }
         public string? IpAddress { get; init; }
-        public string Message { get; init; } = null!;
-        public string Type { get; init; } = null!;
-        public string Code { get; init; } = null!;
+        public string? Message { get; init; } = null!;
+        public string? Type { get; init; } = null!;
+        public string? Code { get; init; } = null!;
         public string? TargetMethod { get; init; }
         public string ProjectId { get; init; } = null!;
         public string ProjectName { get; init; } = null!;
@@ -110,7 +110,7 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         public StackStatus ErrorStackStatus { get; init; }
         public string ErrorStackUrl => String.Concat(_baseUrl, "/stack/", ErrorStackId);
         public string ErrorStackTitle { get; init; } = null!;
-        public string ErrorStackDescription { get; init; } = null!;
+        public string? ErrorStackDescription { get; init; } = null!;
         public TagSet ErrorStackTags { get; init; } = null!;
         public int TotalOccurrences { get; init; }
         public DateTime FirstOccurrence { get; init; }
@@ -134,7 +134,7 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         public StackStatus Status { get; init; }
         public string Url => String.Concat(_baseUrl, "/stack/", Id);
         public string Title { get; init; } = null!;
-        public string Description { get; init; } = null!;
+        public string? Description { get; init; } = null!;
 
         public TagSet Tags { get; init; } = null!;
         public string? RequestPath { get; init; }

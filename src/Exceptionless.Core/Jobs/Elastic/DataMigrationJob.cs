@@ -229,7 +229,7 @@ public class DataMigrationJob : JobBase
     {
         var elasticOptions = _configuration.Options.ElasticsearchToMigrate;
         if (elasticOptions is null)
-            throw new ArgumentNullException("ElasticsearchToMigrate options cannot be null");
+            throw new ArgumentException("ElasticsearchToMigrate options cannot be null");
 
         if (!String.IsNullOrEmpty(elasticOptions.UserName) && !String.IsNullOrEmpty(elasticOptions.Password))
             rsd.Username(elasticOptions.UserName).Password(elasticOptions.Password);

@@ -773,7 +773,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         Request.SetProject(project);
 
         var eventUserDescription = await MapAsync<EventUserDescription>(description);
-        eventUserDescription.ProjectId = projectId;
+        eventUserDescription.ProjectId = project.Id;
         eventUserDescription.ReferenceId = referenceId;
 
         await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);

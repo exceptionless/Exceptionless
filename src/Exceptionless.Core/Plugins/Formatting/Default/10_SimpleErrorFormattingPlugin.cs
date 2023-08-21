@@ -12,16 +12,16 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
 
     private bool ShouldHandle(PersistentEvent ev)
     {
-        return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
+        return ev.IsError() && ev.HasSimpleError();
     }
 
     public override SummaryData? GetStackSummaryData(Stack stack)
     {
-        if (stack.SignatureInfo is null || !stack.SignatureInfo.ContainsKey("StackTrace"))
+        if (stack.SignatureInfo.Count is 0 || !stack.SignatureInfo.ContainsKey("StackTrace"))
             return null;
 
         var data = new Dictionary<string, object>();
-        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string value))
+        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string? value))
         {
             data.Add("Type", value.TypeName());
             data.Add("TypeFullName", value);
@@ -51,7 +51,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (error is null)
             return null;
 
-        var data = new Dictionary<string, object> { { "Message", ev.Message } };
+        var data = new Dictionary<string, object?> { { "Message", ev.Message } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
         if (!String.IsNullOrEmpty(error.Type))
@@ -76,7 +76,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (error is null)
             return null;
 
-        string errorTypeName = null;
+        string? errorTypeName = null;
         if (!String.IsNullOrEmpty(error.Type))
             errorTypeName = error.Type.TypeName().Truncate(60);
 
@@ -91,7 +91,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType);
 
         string subject = String.Concat(notificationType, ": ", error.Message).Truncate(120);
-        var data = new Dictionary<string, object> { { "Message", error.Message.Truncate(60) } };
+        var data = new Dictionary<string, object?> { { "Message", error.Message?.Truncate(60) } };
         if (!String.IsNullOrEmpty(errorTypeName))
             data.Add("Type", errorTypeName);
 
@@ -111,7 +111,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (error is null)
             return null;
 
-        string errorTypeName = null;
+        string? errorTypeName = null;
         if (!String.IsNullOrEmpty(error.Type))
             errorTypeName = error.Type.TypeName().Truncate(60);
 
@@ -132,7 +132,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
                     new()
                     {
                         Title = "Message",
-                        Value = error.Message.Truncate(60)
+                        Value = error.Message?.Truncate(60)
                     }
                 }
         };
@@ -140,8 +140,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(errorTypeName))
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Type", Value = errorTypeName });
 
-        var lines = error.StackTrace.SplitLines().ToList();
-        if (lines.Count > 0)
+        var lines = error.StackTrace?.SplitLines().ToList();
+        if (lines is { Count: > 0 })
         {
             var frames = lines.Take(3).ToList();
             if (lines.Count > 3)
@@ -151,7 +151,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         }
 
         AddDefaultSlackFields(ev, attachment.Fields);
-        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, error.Message.Truncate(120))}*";
+        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, error.Message?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
             Attachments = new List<SlackMessage.SlackAttachment> { attachment }

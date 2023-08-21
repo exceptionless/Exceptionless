@@ -70,7 +70,7 @@ public sealed class GeoPlugin : EventProcessorPluginBase
         if (result is not null && isValidLocation)
             ev.SetLocation(result.ToLocation());
         else
-            ev.Data.Remove(Event.KnownDataKeys.Location);
+            ev.SetLocation(null);
     }
 
     private async Task<GeoResult?> GetGeoFromIpAddressesAsync(IEnumerable<string?> ips)

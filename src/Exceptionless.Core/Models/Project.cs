@@ -49,7 +49,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     /// <summary>
     /// Optional data entries that contain additional configuration information for this project.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary? Data { get; set; }
 
     public HashSet<string> PromotedTabs { get; set; }
 

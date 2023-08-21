@@ -12,7 +12,7 @@ public record WebHookStack
     public required string Id { get; set; }
     public string Url => String.Concat(_baseUrl, "/stack/", Id);
     public required string Title { get; set; }
-    public required string Description { get; set; }
+    public required string? Description { get; set; }
 
     public required TagSet Tags { get; set; }
     public string? RequestPath { get; set; }

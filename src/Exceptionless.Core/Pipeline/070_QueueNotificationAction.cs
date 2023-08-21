@@ -32,7 +32,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (!ctx.Organization.HasPremiumFeatures)
             return;
 
-        if (!ctx.Stack.AllowNotifications)
+        if (ctx.Stack is null || !ctx.Stack.AllowNotifications)
             return;
 
         if (ShouldQueueNotification(ctx))

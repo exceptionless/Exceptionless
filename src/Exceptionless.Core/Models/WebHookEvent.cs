@@ -23,7 +23,7 @@ public record WebHookEvent
     public string StackId { get; init; } = null!;
     public string StackUrl => String.Concat(_baseUrl, "/stack/", StackId);
     public string StackTitle { get; init; } = null!;
-    public string StackDescription { get; init; }
+    public string? StackDescription { get; init; }
     public TagSet StackTags { get; init; } = null!;
     public int TotalOccurrences { get; init; }
     public DateTime FirstOccurrence { get; init; }

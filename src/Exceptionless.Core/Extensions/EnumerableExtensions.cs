@@ -49,8 +49,14 @@ public static class EnumerableExtensions
             action(item);
     }
 
-    public static bool CollectionEquals<T>(this IEnumerable<T> source, IEnumerable<T> other)
+    public static bool CollectionEquals<T>(this IEnumerable<T>? source, IEnumerable<T>? other)
     {
+        if (source is null && other is null)
+            return true;
+
+        if (source is null || other is null)
+            return false;
+
         using var sourceEnumerator = source.GetEnumerator();
         using var otherEnumerator = other.GetEnumerator();
 

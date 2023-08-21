@@ -5,8 +5,13 @@ namespace Exceptionless.Core.Extensions;
 
 public static class ErrorExtensions
 {
-
     public static void SetTargetInfo(this Error error, SettingsDictionary targetInfo)
+    {
+        error.Data ??= new DataDictionary();
+        error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
+    }
+
+    public static void SetTargetInfo(this SimpleError error, SettingsDictionary targetInfo)
     {
         error.Data ??= new DataDictionary();
         error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
@@ -43,7 +48,7 @@ public static class ErrorExtensions
         var defaultMethod = defaultError.StackTrace?.FirstOrDefault();
         if (defaultMethod is null && error.StackTrace is not null)
         {
-            defaultMethod = error.StackTrace.FirstOrDefault();
+            defaultMethod = error.StackTrace?.FirstOrDefault();
             defaultError = error;
         }
 

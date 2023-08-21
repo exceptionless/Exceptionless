@@ -41,8 +41,8 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
 
         var targetInfo = new SettingsDictionary(signature.SignatureInfo);
         var stackingTarget = error.GetStackingTarget();
-        if (stackingTarget?.Error?.StackTrace?.Count > 0 && !targetInfo.ContainsKey("Message"))
-            targetInfo["Message"] = stackingTarget.Error.Message;
+        if (stackingTarget.Error.StackTrace?.Count > 0 && !targetInfo.ContainsKey("Message"))
+            targetInfo.AddItemIfNotEmpty("Message", stackingTarget.Error.Message);
 
         error.SetTargetInfo(targetInfo);
         foreach (string key in signature.SignatureInfo.Keys)

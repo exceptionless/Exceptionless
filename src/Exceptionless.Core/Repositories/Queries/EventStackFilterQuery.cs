@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Repositories.Queries
             var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
             systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
 
-            FindResults<Stack> results = null;
+            FindResults<Stack>? results = null;
             var tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
             if (tooManyStacksCheck.HasValue)
             {

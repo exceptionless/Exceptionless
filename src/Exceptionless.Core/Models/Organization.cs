@@ -34,17 +34,17 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Billing plan id that the organization belongs to.
     /// </summary>
-    public string PlanId { get; set; }
+    public string PlanId { get; set; } = null!;
 
     /// <summary>
     /// Billing plan name that the organization belongs to.
     /// </summary>
-    public string PlanName { get; set; }
+    public string PlanName { get; set; } = null!;
 
     /// <summary>
     /// Billing plan description that the organization belongs to.
     /// </summary>
-    public string PlanDescription { get; set; }
+    public string PlanDescription { get; set; } = null!;
 
     /// <summary>
     /// Last 4 digits of the credit card used for billing.
@@ -59,7 +59,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Date the billing information was last changed.
     /// </summary>
-    public DateTime? BillingChangeDate { get; set; }
+    public DateTime BillingChangeDate { get; set; }
 
     /// <summary>
     /// User id that the billing information was last changed by.
@@ -155,7 +155,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Optional data entries that contain additional configuration information for this organization.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary? Data { get; set; }
 
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }

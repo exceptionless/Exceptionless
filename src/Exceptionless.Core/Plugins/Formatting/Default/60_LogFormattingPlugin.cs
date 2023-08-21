@@ -83,7 +83,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
 
         string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
         string subject = String.Concat(notificationType, ": ", source).Truncate(120);
-        var data = new Dictionary<string, object> { { "Source", source.Truncate(60) } };
+        var data = new Dictionary<string, object?> { { "Source", source.Truncate(60) } };
         if (!String.IsNullOrEmpty(ev.Message))
             data.Add("Message", ev.Message.Truncate(60));
 

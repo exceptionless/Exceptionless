@@ -40,14 +40,14 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         if (requestInfo is not null && includeUrl)
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 
-        if (ev.Tags.Count > 0)
+        if (ev.Tags is not null && ev.Tags.Count > 0)
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Tags", Value = String.Join(", ", ev.Tags), Short = true });
 
         decimal value = ev.Value.GetValueOrDefault();
         if (value != 0)
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Value", Value = value.ToString(), Short = true });
 
-        string version = ev.GetVersion();
+        string? version = ev.GetVersion();
         if (!String.IsNullOrEmpty(version))
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
 

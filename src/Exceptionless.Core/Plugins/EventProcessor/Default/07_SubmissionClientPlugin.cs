@@ -13,25 +13,25 @@ public sealed class SubmissionClientPlugin : EventProcessorPluginBase
 
     public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
-        contexts.ForEach(c => c.Event.Data.Remove(Event.KnownDataKeys.SubmissionClient));
+        contexts.ForEach(c => c.Event.Data?.Remove(Event.KnownDataKeys.SubmissionClient));
 
         var firstContext = contexts.FirstOrDefault();
         var epi = firstContext?.EventPostInfo;
         if (epi is null)
             return Task.CompletedTask;
 
-        bool hasIpAddress = firstContext.IncludePrivateInformation && !String.IsNullOrEmpty(epi.IpAddress);
+        bool hasIpAddress = firstContext!.IncludePrivateInformation && !String.IsNullOrEmpty(epi.IpAddress);
         bool hasUserAgent = !String.IsNullOrEmpty(epi.UserAgent);
         if (!hasIpAddress && !hasUserAgent)
             return Task.CompletedTask;
 
         var submissionClient = new SubmissionClient();
         if (hasIpAddress)
-            submissionClient.IpAddress = !epi.IpAddress.IsLocalHost() ? epi.IpAddress.Trim() : "127.0.0.1";
+            submissionClient.IpAddress = !epi.IpAddress.IsLocalHost() ? epi.IpAddress!.Trim() : "127.0.0.1";
 
         if (hasUserAgent)
         {
-            string[] parts = epi.UserAgent.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = epi.UserAgent!.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2 && Version.TryParse(parts[1], out var version))
             {
                 submissionClient.UserAgent = parts[0].Trim().ToLowerInvariant();

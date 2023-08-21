@@ -51,7 +51,7 @@ public static class ProjectExtensions
     /// </summary>
     public static SlackToken? GetSlackToken(this Project project)
     {
-        return project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object? value) ? value as SlackToken : null;
+        return project.Data is not null && project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object? value) ? value as SlackToken : null;
     }
 
     public static bool HasHourlyUsage(this Project project, DateTime date)

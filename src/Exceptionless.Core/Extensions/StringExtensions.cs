@@ -331,9 +331,9 @@ public static class StringExtensions
         return String.Concat(buffer.Substring(0, keep - 3), "...");
     }
 
-    public static string? TypeName(this string? typeFullName)
+    public static string TypeName(this string typeFullName)
     {
-        return typeFullName?.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+        return typeFullName.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
     }
 
     public static string ToLowerFiltered(this string value, char[] charsToRemove)

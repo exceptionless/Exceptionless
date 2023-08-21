@@ -12,7 +12,7 @@ public sealed class NotFoundPlugin : EventProcessorPluginBase
 
     public override Task EventProcessingAsync(EventContext context)
     {
-        if (context.Event.Type != Event.KnownTypes.NotFound)
+        if (context.Event.Type != Event.KnownTypes.NotFound || context.Event.Data is null)
             return Task.CompletedTask;
 
         context.Event.Data.Remove(Event.KnownDataKeys.EnvironmentInfo);

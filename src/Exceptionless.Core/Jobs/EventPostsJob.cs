@@ -263,7 +263,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 AppDiagnostics.PostsParsingTime.Time(() =>
                 {
                     string input = encoding.GetString(uncompressedData);
-                    events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent) ?? new List<PersistentEvent>(0);
+                    events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent);
                     foreach (var ev in events)
                     {
                         ev.CreatedUtc = createdUtc;

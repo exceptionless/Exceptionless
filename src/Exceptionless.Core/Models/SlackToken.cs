@@ -9,7 +9,7 @@ public record SlackToken
     public string UserId { get; init; } = null!;
     public string TeamId { get; init; } = null!;
     public string TeamName { get; init; } = null!;
-    public IncomingWebHook? IncomingWebhook { get; init; }
+    public IncomingWebHook? IncomingWebhook { get; set; }
 
     public record IncomingWebHook
     {

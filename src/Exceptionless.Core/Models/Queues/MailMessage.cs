@@ -1,9 +1,9 @@
 ﻿namespace Exceptionless.Core.Queues.Models;
 
-public class MailMessage
+public record MailMessage
 {
-    public string To { get; set; }
-    public string From { get; set; }
-    public string Subject { get; set; }
-    public string Body { get; set; }
+    public required string To { get; set; }
+    public string? From { get; set; }
+    public required string Subject { get; set; }
+    public required string Body { get; set; }
 }

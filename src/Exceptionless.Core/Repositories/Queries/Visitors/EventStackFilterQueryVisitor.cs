@@ -194,7 +194,7 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
             }
         }
 
-        return Task.FromResult<IQueryNode>(result);
+        return Task.FromResult<IQueryNode?>(result);
     }
 
     public override Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
@@ -203,11 +203,11 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
     }
 }
 
-public class StackFilter
+public record StackFilter
 {
-    public string Filter { get; set; }
-    public string InvertedFilter { get; set; }
-    public bool HasStatus { get; set; }
-    public bool HasStatusOpen { get; set; }
-    public bool HasStackIds { get; set; }
+    public required string Filter { get; set; }
+    public required string InvertedFilter { get; set; }
+    public required bool HasStatus { get; set; }
+    public required bool HasStatusOpen { get; set; }
+    public required bool HasStackIds { get; set; }
 }

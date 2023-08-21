@@ -57,7 +57,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
         string subject = String.Concat(notificationType, ": ", messageOrSource).Truncate(120);
-        var data = new Dictionary<string, object>();
+        var data = new Dictionary<string, object?>();
         if (!String.IsNullOrEmpty(ev.Message))
             data.Add("Message", ev.Message.Truncate(60));
 

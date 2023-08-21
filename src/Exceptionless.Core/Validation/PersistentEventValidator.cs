@@ -48,12 +48,15 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
         //if (ev.Tags.Count > 50)
         //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
 
-        foreach (string tag in ev.Tags)
+        if (ev.Tags is not null)
         {
-            if (String.IsNullOrEmpty(tag))
-                result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
-            else if (tag.Length > 255)
-                result.Errors.Add(new ValidationFailure("Tags", "A tag cannot be longer than 255 characters."));
+            foreach (string tag in ev.Tags)
+            {
+                if (String.IsNullOrEmpty(tag))
+                    result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
+                else if (tag.Length > 255)
+                    result.Errors.Add(new ValidationFailure("Tags", "A tag cannot be longer than 255 characters."));
+            }
         }
 
         return result;

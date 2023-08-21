@@ -95,7 +95,7 @@ public class Mailer : IMailer
         data["HasUserInfo"] = ud is not null || ui is not null;
     }
 
-    private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data)
+    private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object?> data)
     {
         if (ev.Tags?.Count > 0)
             data["Tags"] = String.Join(", ", ev.Tags);

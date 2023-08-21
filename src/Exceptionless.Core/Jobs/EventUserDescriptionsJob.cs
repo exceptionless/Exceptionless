@@ -55,7 +55,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
             Description = description.Description
         };
 
-        if (description.Data.Count > 0)
+        if (description.Data is not null && description.Data.Count > 0)
             ev.Data.AddRange(description.Data);
 
         ev.SetUserDescription(ud);

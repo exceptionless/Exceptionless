@@ -264,6 +264,7 @@ public class SampleDataService
             Id = INTERNAL_API_KEY,
             OrganizationId = organization.Id,
             ProjectId = project.Id,
+            CreatedBy = userId,
             CreatedUtc = SystemClock.UtcNow,
             UpdatedUtc = SystemClock.UtcNow,
             Type = TokenType.Access

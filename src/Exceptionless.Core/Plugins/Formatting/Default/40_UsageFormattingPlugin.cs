@@ -36,7 +36,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var data = new Dictionary<string, object> { { "Source", ev.Source } };
+        var data = new Dictionary<string, object?> { { "Source", ev.Source } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
         return new SummaryData { TemplateKey = "event-feature-summary", Data = data };
@@ -48,8 +48,8 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
             return null;
 
         string subject = String.Concat("Feature: ", ev.Source).Truncate(120);
-        var data = new Dictionary<string, object> {
-                { "Source", ev.Source.Truncate(60) }
+        var data = new Dictionary<string, object?> {
+                { "Source", ev.Source?.Truncate(60) }
             };
 
         return new MailMessageData { Subject = subject, Data = data };
@@ -66,7 +66,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
                     new()
                     {
                         Title = "Source",
-                        Value = ev.Source.Truncate(60)
+                        Value = ev.Source?.Truncate(60)
                     }
                 }
         };

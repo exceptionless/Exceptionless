@@ -23,7 +23,7 @@ public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin
                 return;
 
             // This shouldn't hurt using DateTimeOffset to try and parse a date. It insures you won't lose any info.
-            if (DateTimeOffset.TryParse(clientInfo["InstallDate"].ToString(), out var date))
+            if (DateTimeOffset.TryParse(clientInfo["InstallDate"]!.ToString(), out var date))
             {
                 clientInfo.Remove("InstallDate");
                 clientInfo.Add("InstallDate", new JValue(date));

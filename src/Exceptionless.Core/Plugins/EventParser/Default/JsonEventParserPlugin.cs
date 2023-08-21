@@ -16,7 +16,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
         _settings = settings;
     }
 
-    public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string userAgent)
+    public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
     {
         if (apiVersion < 2)
             return null;

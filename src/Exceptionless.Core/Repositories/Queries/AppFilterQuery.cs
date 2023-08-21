@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Repositories.Options
             return query.SafeHasOption(AppFilterQueryExtensions.SystemFilterKey);
         }
 
-        public static AppFilter GetAppFilter(this IRepositoryQuery query)
+        public static AppFilter? GetAppFilter(this IRepositoryQuery query)
         {
             return query.SafeGetOption<AppFilter>(AppFilterQueryExtensions.SystemFilterKey);
         }
@@ -78,8 +78,8 @@ namespace Exceptionless.Core.Repositories.Queries
         }
 
         public IReadOnlyCollection<Organization> Organizations { get; }
-        public IReadOnlyCollection<Project> Projects { get; }
-        public Stack Stack { get; }
+        public IReadOnlyCollection<Project>? Projects { get; }
+        public Stack? Stack { get; }
         public bool UsesPremiumFeatures { get; set; }
         public bool IsUserOrganizationsFilter { get; set; }
     }
@@ -150,7 +150,7 @@ namespace Exceptionless.Core.Repositories.Queries
                     foreach (var project in allowedProjects)
                     {
                         if (shouldApplyRetentionFilter)
-                            container |= (Query<T>.Term(_projectIdFieldName, project.Key.Id) && GetRetentionFilter<T>(field, project.Value, _options.MaximumRetentionDays, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
+                            container |= (Query<T>.Term(_projectIdFieldName, project.Key.Id) && GetRetentionFilter<T>(field, project.Value!, _options.MaximumRetentionDays, project.Key.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3))));
                         else
                             container |= Query<T>.Term(_projectIdFieldName, project.Key.Id);
                     }
@@ -175,10 +175,10 @@ namespace Exceptionless.Core.Repositories.Queries
             return Task.CompletedTask;
         }
 
-        private QueryContainer GetRetentionFilter<T>(string field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
+        private QueryContainer GetRetentionFilter<T>(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
         {
             if (field is null)
-                throw new ArgumentNullException(nameof(field));
+                throw new ArgumentNullException(nameof(field), "Retention field not specified for this index");
 
             var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge);
             double retentionDays = Math.Max(Math.Round(Math.Abs(SystemClock.UtcNow.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);

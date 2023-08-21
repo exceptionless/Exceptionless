@@ -14,16 +14,13 @@ public sealed class RemovePrivateInformationPlugin : EventProcessorPluginBase
         if (context.IncludePrivateInformation)
             return Task.CompletedTask;
 
-        context.Event.Data.Remove(Event.KnownDataKeys.UserInfo);
-        var description = context.Event.GetUserDescription();
+        context.Event.RemoveUserIdentity();
 
+        var description = context.Event.GetUserDescription();
         if (description is not null)
         {
             description.EmailAddress = null;
-            if (!String.IsNullOrEmpty(description.Description))
-                context.Event.SetUserDescription(description);
-            else
-                context.Event.Data.Remove(Event.KnownDataKeys.UserDescription);
+            context.Event.SetUserDescription(description);
         }
 
         return Task.CompletedTask;

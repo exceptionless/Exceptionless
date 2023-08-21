@@ -19,7 +19,7 @@ public class Module : IData
         sb.Append(Name);
         sb.Append(", Version=");
         sb.Append(Version);
-        if (Data.ContainsKey("PublicKeyToken"))
+        if (Data is not null && Data.ContainsKey("PublicKeyToken"))
             sb.Append(", PublicKeyToken=").Append(Data["PublicKeyToken"]);
 
         return sb.ToString();

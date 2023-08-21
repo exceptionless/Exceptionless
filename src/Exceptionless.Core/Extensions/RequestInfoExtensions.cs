@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Extensions;
 
 public static class RequestInfoExtensions
 {
-    public static RequestInfo? ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000)
+    public static RequestInfo ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000)
     {
         request.Cookies = ApplyExclusions(request.Cookies, exclusions, maxLength);
         request.QueryString = ApplyExclusions(request.QueryString, exclusions, maxLength);

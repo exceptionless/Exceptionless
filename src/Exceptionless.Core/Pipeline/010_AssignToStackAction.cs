@@ -133,7 +133,7 @@ public class AssignToStackAction : EventPipelineActionBase
                 continue;
             }
 
-            if (!ctx.IsNew && ctx.Event.Tags is not null && ctx.Event.Tags.Count > 0)
+            if (ctx is { IsNew: false, Event.Tags.Count: > 0 })
             {
                 ctx.Stack.Tags ??= new TagSet();
                 var newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();

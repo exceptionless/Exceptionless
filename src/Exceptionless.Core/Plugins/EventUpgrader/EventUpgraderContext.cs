@@ -2,6 +2,7 @@
 using Exceptionless.Core.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Stripe;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -13,12 +14,18 @@ public class EventUpgraderContext : ExtensibleObject
         if (jsonType == JsonType.Object)
         {
             var doc = JsonConvert.DeserializeObject<JObject>(json);
-            Documents = doc is not null ? new JArray(doc) : null;
+            if (doc is not null)
+                Documents = new JArray(doc);
+            else
+                throw new ArgumentException("Invalid json object specified", nameof(json));
         }
         else if (jsonType == JsonType.Array)
         {
             var docs = JsonConvert.DeserializeObject<JArray>(json);
-            Documents = docs;
+            if (docs is not null)
+                Documents = docs;
+            else
+                throw new ArgumentException("Invalid json array specified", nameof(json));
         }
         else
         {
@@ -43,7 +50,7 @@ public class EventUpgraderContext : ExtensibleObject
         IsMigration = isMigration;
     }
 
-    public JArray? Documents { get; set; }
+    public JArray Documents { get; set; }
     public Version? Version { get; set; }
     public bool IsMigration { get; set; }
 }

@@ -8,28 +8,38 @@ namespace Exceptionless;
 
 public static class EventExtensions
 {
+    public static bool HasError(this Event ev)
+    {
+        return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
+    }
+
     public static Error? GetError(this Event ev)
     {
-        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.Error))
+        if (!ev.HasError())
             return null;
 
         try
         {
-            return ev.Data.GetValue<Error>(Event.KnownDataKeys.Error);
+            return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error);
         }
         catch (Exception) { }
 
         return null;
     }
+    public static bool HasSimpleError(this Event ev)
+    {
+        return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
+    }
+
 
     public static SimpleError? GetSimpleError(this Event ev)
     {
-        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
+        if (!ev.HasSimpleError())
             return null;
 
         try
         {
-            return ev.Data.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError);
+            return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError);
         }
         catch (Exception) { }
 
@@ -342,6 +352,12 @@ public static class EventExtensions
             ev.Data.Remove(Event.KnownDataKeys.UserInfo);
         else
             ev.Data[Event.KnownDataKeys.UserInfo] = userInfo;
+    }
+
+    public static void RemoveUserIdentity(this Event ev)
+    {
+        if (ev.Data is not null)
+            ev.Data.Remove(Event.KnownDataKeys.UserInfo);
     }
 
     /// <summary>
