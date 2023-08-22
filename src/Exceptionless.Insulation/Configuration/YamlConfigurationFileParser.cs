@@ -7,12 +7,11 @@ internal class YamlConfigurationFileParser
 {
     private readonly Stack<string> _context = new();
 
-    private readonly IDictionary<string, string> _data =
-        new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private readonly IDictionary<string, string?> _data = new SortedDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-    private string _currentPath;
+    private string? _currentPath;
 
-    public IDictionary<string, string> Parse(Stream stream)
+    public IDictionary<string, string?> Parse(Stream stream)
     {
         _data.Clear();
 
@@ -27,8 +26,9 @@ internal class YamlConfigurationFileParser
 
         foreach (var nodePair in mappingNode.Children)
         {
-            string context = ((YamlScalarNode)nodePair.Key).Value;
-            VisitYamlNode(context, nodePair.Value);
+            string? context = ((YamlScalarNode)nodePair.Key).Value;
+            if (context is not null)
+                VisitYamlNode(context, nodePair.Value);
         }
 
         return _data;
@@ -58,7 +58,10 @@ internal class YamlConfigurationFileParser
     private void VisitYamlScalarNode(string context, YamlScalarNode scalarNode)
     {
         EnterContext(context);
-        string currentKey = _currentPath;
+
+        string? currentKey = _currentPath;
+        if (currentKey is null)
+            throw new ArgumentException("key cannot be null");
 
         if (_data.ContainsKey(currentKey))
             throw new FormatException($"A duplicate key '{currentKey}' was found.");
@@ -73,8 +76,9 @@ internal class YamlConfigurationFileParser
 
         foreach (var nodePair in mappingNode.Children)
         {
-            string innerContext = ((YamlScalarNode)nodePair.Key).Value;
-            VisitYamlNode(innerContext, nodePair.Value);
+            string? innerContext = ((YamlScalarNode)nodePair.Key).Value;
+            if (innerContext is not null)
+                VisitYamlNode(innerContext, nodePair.Value);
         }
 
         ExitContext();

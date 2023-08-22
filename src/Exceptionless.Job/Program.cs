@@ -43,8 +43,7 @@ public class Program
     {
         var jobOptions = new JobRunnerOptions(args);
 
-        Console.Title = jobOptions.JobName is not null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
-
+        Console.Title = $"Exceptionless {jobOptions.JobName} Job";
         string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? "Production";
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -56,7 +55,7 @@ public class Program
             .Build();
 
         var options = AppOptions.ReadFromConfiguration(config);
-        var apmConfig = new ApmConfig(config, "job-" + jobOptions.JobName.ToLowerUnderscoredWords('-'), options.InformationalVersion, options.CacheOptions.Provider == "redis");
+        var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
         Log.Logger = loggerConfig.CreateLogger();
@@ -93,7 +92,7 @@ public class Program
                             };
                         });
 
-                        Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetService<ILogger<Program>>());
+                        Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetRequiredService<ILogger<Program>>());
 
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                             app.UseExceptionless(ExceptionlessClient.Default);

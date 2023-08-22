@@ -11,7 +11,7 @@ public class ExtensionsProtocolLogger : IProtocolLogger
 
     private readonly ILogger _logger;
 
-    public IAuthenticationSecretDetector AuthenticationSecretDetector { get; set; }
+    public IAuthenticationSecretDetector AuthenticationSecretDetector { get; set; } = null!;
 
     public ExtensionsProtocolLogger(ILogger logger)
     {
