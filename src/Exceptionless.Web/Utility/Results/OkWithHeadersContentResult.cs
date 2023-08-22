@@ -1,7 +1,6 @@
 ﻿using System.Collections.Specialized;
 using System.Web;
 using Exceptionless.Core.Extensions;
-using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,18 +8,18 @@ namespace Exceptionless.Web.Utility.Results;
 
 public class OkWithHeadersContentResult<T> : ObjectWithHeadersResult
 {
-    public OkWithHeadersContentResult(T content, IHeaderDictionary headers = null) : base(content, headers)
+    public OkWithHeadersContentResult(T? content, IHeaderDictionary? headers = null) : base(content, headers)
     {
         StatusCode = StatusCodes.Status200OK;
     }
 }
 
-public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerable<TEntity>> where TEntity : class
+public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollection<TEntity>> where TEntity : class
 {
-    public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, string before = null, string after = null)
+    public OkWithResourceLinks(ICollection<TEntity> content, bool hasMore, int? page = null, string? before = null, string? after = null)
         : this(content, hasMore, page, null, before, after) { }
 
-    public OkWithResourceLinks(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, string before = null, string after = null) : base(content)
+    public OkWithResourceLinks(ICollection<TEntity> content, bool hasMore, int? page = null, long? total = null, string? before = null, string? after = null) : base(content)
     {
         Content = content;
         HasMore = hasMore;
@@ -30,26 +29,23 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
         Total = total;
     }
 
-    public IEnumerable<TEntity> Content { get; }
+    public ICollection<TEntity> Content { get; }
     public bool HasMore { get; }
-    public string Before { get; }
-    public string After { get; }
+    public string? Before { get; }
+    public string? After { get; }
     public int? Page { get; }
     public long? Total { get; }
 
     public override void OnFormatting(ActionContext context)
     {
-        if (Content is not null)
-        {
-            var links = Page.HasValue
-                ? GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore)
-                : GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Before, After);
-            if (links.Count > 0)
-                Headers.Add(Utility.Headers.Link, links.ToArray());
+        var links = Page.HasValue
+            ? GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore)
+            : GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Before, After);
+        if (links.Count > 0)
+            Headers.Add(Utility.Headers.Link, links.ToArray());
 
-            if (Total.HasValue)
-                Headers.Add(Utility.Headers.ResultCount, Total.ToString());
-        }
+        if (Total.HasValue)
+            Headers.Add(Utility.Headers.ResultCount, Total.ToString());
 
         base.OnFormatting(context);
     }
@@ -77,7 +73,7 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerab
         return links;
     }
 
-    public static List<string> GetBeforeAndAfterLinks(Uri url, string before, string after)
+    public static List<string> GetBeforeAndAfterLinks(Uri url, string? before, string? after)
     {
         var previousParameters = HttpUtility.ParseQueryString(url.Query);
         previousParameters.Remove("before");

@@ -293,7 +293,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <response code="404">The organization was not found.</response>
     [HttpGet]
     [Route("{id:objectid}/invoices")]
-    public async Task<ActionResult<IReadOnlyCollection<InvoiceGridModel>>> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12)
+    public async Task<ActionResult<IReadOnlyCollection<InvoiceGridModel>>> GetInvoicesAsync(string id, string? before = null, string? after = null, int limit = 12)
     {
         if (!_options.StripeOptions.EnableBilling)
             return NotFound();

@@ -106,7 +106,7 @@ public abstract class ExceptionlessApiController : Controller
     }
 
     private static readonly IReadOnlyCollection<Organization> EmptyOrganizations = new List<Organization>(0).AsReadOnly();
-    protected async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string filter = null)
+    protected async Task<IReadOnlyCollection<Organization>> GetSelectedOrganizationsAsync(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, string? filter = null)
     {
         var associatedOrganizationIds = GetAssociatedOrganizationIds();
         if (associatedOrganizationIds.Count == 0)
@@ -149,7 +149,7 @@ public abstract class ExceptionlessApiController : Controller
         return organizations.ToList().AsReadOnly();
     }
 
-    protected bool ShouldApplySystemFilter(AppFilter sf, string filter)
+    protected bool ShouldApplySystemFilter(AppFilter sf, string? filter)
     {
         // Apply filter to non admin user.
         if (!Request.IsGlobalAdmin())
@@ -209,7 +209,7 @@ public abstract class ExceptionlessApiController : Controller
         return new OkWithHeadersContentResult<T>(content, headers);
     }
 
-    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, string before = null, string after = null) where TEntity : class
+    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, string? before = null, string? after = null) where TEntity : class
     {
         return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, before, after);
     }

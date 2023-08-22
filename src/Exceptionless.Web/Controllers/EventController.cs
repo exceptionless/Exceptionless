@@ -313,7 +313,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
                         .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
 
-                    string stackAggregations = mode switch
+                    string? stackAggregations = mode switch
                     {
                         "stack_recent" => "cardinality:user sum:count~1 min:date -max:date",
                         "stack_frequent" => "cardinality:user -sum:count~1 min:date max:date",
@@ -356,7 +356,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
     }
 
-    private string AddFirstOccurrenceFilter(DateTimeRange timeRange, string filter)
+    private string AddFirstOccurrenceFilter(DateTimeRange timeRange, string? filter)
     {
         bool inverted = false;
         if (filter is not null && filter.StartsWith("@!"))
@@ -390,7 +390,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return sb.ToString();
     }
 
-    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int? page, int limit, string before, string after)
+    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after)
     {
         if (String.IsNullOrEmpty(sort))
             sort = $"-{EventIndex.Alias.Date}";

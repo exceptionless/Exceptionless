@@ -10,11 +10,11 @@ namespace Exceptionless.Core.Queries.Validation;
 
 public interface IAppQueryValidator
 {
-    Task<AppQueryValidator.QueryProcessResult> ValidateQueryAsync(string query);
+    Task<AppQueryValidator.QueryProcessResult> ValidateQueryAsync(string? query);
 
     Task<AppQueryValidator.QueryProcessResult> ValidateQueryAsync(IQueryNode query);
 
-    Task<AppQueryValidator.QueryProcessResult> ValidateAggregationsAsync(string aggs);
+    Task<AppQueryValidator.QueryProcessResult> ValidateAggregationsAsync(string? aggs);
 
     Task<AppQueryValidator.QueryProcessResult> ValidateAggregationsAsync(IQueryNode query);
 }
@@ -30,7 +30,7 @@ public class AppQueryValidator : IAppQueryValidator
         _logger = loggerFactory.CreateLogger(GetType());
     }
 
-    public async Task<QueryProcessResult> ValidateQueryAsync(string query)
+    public async Task<QueryProcessResult> ValidateQueryAsync(string? query)
     {
         if (String.IsNullOrWhiteSpace(query))
             return new QueryProcessResult { IsValid = true };
@@ -64,7 +64,7 @@ public class AppQueryValidator : IAppQueryValidator
         return new QueryProcessResult { IsValid = result.IsValid };
     }
 
-    public async Task<QueryProcessResult> ValidateAggregationsAsync(string aggs)
+    public async Task<QueryProcessResult> ValidateAggregationsAsync(string? aggs)
     {
         if (String.IsNullOrWhiteSpace(aggs))
             return new QueryProcessResult { IsValid = true };

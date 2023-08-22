@@ -91,7 +91,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         });
     }
 
-    protected virtual string GetEntityResourceLink(string id, string type)
+    protected virtual string GetEntityResourceLink(string? id, string type)
     {
         return GetResourceLink(Url.Link($"Get{typeof(TModel).Name}ById", new
         {
