@@ -5,11 +5,11 @@ using Foundatio.Utility;
 namespace Exceptionless.Web.Controllers;
 
 [DebuggerDisplay("Range: {Range} Offset: {Offset} Field: {Field}")]
-public class TimeInfo
+public record TimeInfo
 {
-    public string Field { get; set; }
-    public DateTimeRange Range { get; set; }
-    public TimeSpan Offset { get; set; }
+    public required string Field { get; set; }
+    public required DateTimeRange Range { get; set; }
+    public required TimeSpan Offset { get; set; }
 }
 
 public static class TimeInfoExtensions

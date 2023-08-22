@@ -48,7 +48,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByProjectIdAsync(projectId, o => o.PageNumber(page).PageLimit(limit));
-        return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+        return OkWithResourceLinks(results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
     }
 
     /// <summary>
@@ -106,21 +106,30 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1)
     {
+        string? eventType = data.GetValue("event")?.Value<string>();
+        string? url = data.GetValue("target_url")?.Value<string>();
+        if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
+            return BadRequest();
+
+        string? projectId = User.GetProjectId();
+        if (projectId is null)
+            return BadRequest();
+
+        string? organizationId = Request.GetDefaultOrganizationId();
+        if (organizationId is null)
+            return BadRequest();
+
         var webHook = new NewWebHook
         {
-            EventTypes = new[] { data.GetValue("event").Value<string>() },
-            Url = data.GetValue("target_url").Value<string>(),
+            OrganizationId = organizationId,
+            ProjectId = projectId,
+            EventTypes = new[] { eventType },
+            Url = url,
             Version = new Version(apiVersion >= 0 ? apiVersion : 0, 0)
         };
 
         if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
             return NotFound();
-
-        string projectId = User.GetProjectId();
-        if (projectId is not null)
-            webHook.ProjectId = projectId;
-        else
-            webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
         return await PostImplAsync(webHook);
     }
@@ -135,10 +144,10 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> UnsubscribeAsync(JObject data)
     {
-        string targetUrl = data.GetValue("target_url").Value<string>();
+        string? targetUrl = data.GetValue("target_url")?.Value<string>();
 
         // don't let this anon method delete non-zapier hooks
-        if (!targetUrl.StartsWith("https://hooks.zapier.com"))
+        if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com"))
             return NotFound();
 
         var results = await _repository.GetByUrlAsync(targetUrl);
@@ -171,7 +180,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             });
     }
 
-    protected override async Task<WebHook> GetModelAsync(string id, bool useCache = true)
+    protected override async Task<WebHook?> GetModelAsync(string id, bool useCache = true)
     {
         if (String.IsNullOrEmpty(id))
             return null;
@@ -220,7 +229,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
             return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
-        Project project = null;
+        Project? project = null;
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             project = await GetProjectAsync(value.ProjectId);
@@ -255,7 +264,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return PermissionResult.Allow;
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;

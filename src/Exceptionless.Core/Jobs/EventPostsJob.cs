@@ -312,7 +312,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     IpAddress = ep.IpAddress,
                     MediaType = ep.MediaType,
                     OrganizationId = ep.OrganizationId ?? project.OrganizationId,
-                    ProjectId = ep.ProjectId,
+                    ProjectId = ep.ProjectId ?? project.Id,
                     UserAgent = ep.UserAgent
                 }, stream).AnyContext();
             }

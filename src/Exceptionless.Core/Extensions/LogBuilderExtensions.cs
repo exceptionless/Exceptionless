@@ -1,6 +1,6 @@
 ﻿namespace Microsoft.Extensions.Logging;
 
-public class ExceptionlessState : Dictionary<string, object>
+public class ExceptionlessState : Dictionary<string, object?>
 {
     public ExceptionlessState Project(string projectId)
     {
@@ -59,7 +59,7 @@ public class ExceptionlessState : Dictionary<string, object>
         return this;
     }
 
-    public ExceptionlessState Property(string key, object value)
+    public ExceptionlessState Property(string key, object? value)
     {
         base[key] = value;
         return this;

@@ -212,7 +212,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
             return null;
 
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser?.Id)
             return null;
 
         if (model.Type != TokenType.Access)
@@ -232,7 +232,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 
         bool hasUserRole = User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin);
-        if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser.Id)
+        if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser?.Id)
             return PermissionResult.Deny;
 
         if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
@@ -302,7 +302,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 
     protected override async Task<PermissionResult> CanDeleteAsync(Token value)
     {
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser?.Id)
             return PermissionResult.DenyWithMessage("Can only delete tokens created by you.");
 
         if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))

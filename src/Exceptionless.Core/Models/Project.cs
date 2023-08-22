@@ -51,7 +51,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     /// </summary>
     public DataDictionary? Data { get; set; }
 
-    public HashSet<string> PromotedTabs { get; set; }
+    public HashSet<string>? PromotedTabs { get; set; }
 
     public string CustomContent { get; set; } = null!;
 

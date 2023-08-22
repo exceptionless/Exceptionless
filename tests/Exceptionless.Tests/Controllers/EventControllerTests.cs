@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -27,9 +26,11 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
+using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 using Run = Exceptionless.Tests.Utility.Run;
 
 namespace Exceptionless.Tests.Controllers;
@@ -1316,7 +1317,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
 
-        var links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Single(links);
 
         string nextPage = GetQueryStringValue(links["next"], "page");
@@ -1335,7 +1336,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
-        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
         string previousPage = GetQueryStringValue(links["previous"], "page");
@@ -1358,7 +1359,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
-        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Single(links);
 
         previousPage = GetQueryStringValue(links["previous"], "page");
@@ -1378,7 +1379,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
-        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
@@ -1408,7 +1409,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
 
-        var links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Single(links);
 
         string after = GetQueryStringValue(links["next"], "after");
@@ -1427,7 +1428,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
-        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
         string before = GetQueryStringValue(links["previous"], "before");
@@ -1451,7 +1452,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
-        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Single(links);
 
         before = GetQueryStringValue(links["previous"], "before");
@@ -1471,7 +1472,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
-        links = ParseLinkHeaderValue(response.Headers.GetValues(Headers.Link).ToArray());
+        links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();

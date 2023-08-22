@@ -45,7 +45,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpGet("me")]
     public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
     {
-        var currentUser = await GetModelAsync(CurrentUser.Id);
+        var currentUser = await GetModelAsync(CurrentUser?.Id);
         if (currentUser is null)
             return NotFound();
 
@@ -127,7 +127,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        return DeleteImplAsync(new[] { CurrentUser.Id });
+        return DeleteImplAsync(new[] { CurrentUser?.Id });
     }
 
     /// <summary>
@@ -161,11 +161,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return NotFound();
 
         email = email.Trim().ToLowerInvariant();
-        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
         // Only allow 3 email address updates per hour period by a single user.
-        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser.Id}:attempts";
+        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser?.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
             return BadRequest("Update email address rate limit reached. Please try updating later.");
@@ -217,7 +217,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
         {
             // The user may already be logged in and verified.
-            if (CurrentUser is not null && CurrentUser.IsEmailAddressVerified)
+            if (CurrentUser is not null && CurrentUser?.IsEmailAddressVerified)
                 return Ok();
 
             return NotFound();
@@ -323,13 +323,13 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return false;
 
         email = email.Trim().ToLowerInvariant();
-        if (CurrentUser is not null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (CurrentUser is not null && String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return true;
 
         return await _repository.GetByEmailAddressAsync(email) is null;
     }
 
-    protected override async Task<User> GetModelAsync(string id, bool useCache = true)
+    protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
     {
         if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
             return await base.GetModelAsync(id, useCache);
@@ -350,7 +350,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (value.OrganizationIds.Count > 0)
             return PermissionResult.DenyWithMessage("Please delete or leave any organizations before deleting your account.");
 
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser?.Id)
             return PermissionResult.Deny;
 
         return await base.CanDeleteAsync(value);

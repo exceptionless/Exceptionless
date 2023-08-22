@@ -1,6 +1,6 @@
 namespace Exceptionless.Web.Models;
 
-public class SignupModel : LoginModel
+public record SignupModel : LoginModel
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }

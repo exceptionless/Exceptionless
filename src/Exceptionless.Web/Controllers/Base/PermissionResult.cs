@@ -1,12 +1,12 @@
 ﻿namespace Exceptionless.Web.Controllers;
 
-public class PermissionResult
+public record PermissionResult
 {
     public bool Allowed { get; set; }
 
-    public string Id { get; set; }
+    public string? Id { get; set; }
 
-    public string Message { get; set; }
+    public string? Message { get; set; }
 
     public int StatusCode { get; set; }
 

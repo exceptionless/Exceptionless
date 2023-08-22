@@ -199,8 +199,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     {
         foreach (var project in projects)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.UserDeletingProject(CurrentUser.Id, project.Name);
+            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                _logger.UserDeletingProject(CurrentUser?.Id, project.Name);
 
             await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
         }
@@ -403,7 +403,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
+        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser?.Id, userId))
             return NotFound();
 
         if (settings is null)
@@ -645,7 +645,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "Error getting slack access token: {Message}", ex.Message);
         }
 
@@ -682,7 +682,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             }
             catch (Exception ex)
             {
-                using (_logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "Error revoking slack access token: {Message}", ex.Message);
             }
         }
@@ -756,7 +756,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     {
         value.IsConfigured = false;
         value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-        value.AddDefaultNotificationSettings(CurrentUser.Id);
+        value.AddDefaultNotificationSettings(CurrentUser?.Id);
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
 

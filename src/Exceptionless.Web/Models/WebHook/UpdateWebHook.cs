@@ -1,6 +1,6 @@
 namespace Exceptionless.Web.Models;
 
-public class UpdateWebHook : NewWebHook
+public record UpdateWebHook : NewWebHook
 {
     public bool IsEnabled { get; set; }
 }

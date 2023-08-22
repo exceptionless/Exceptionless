@@ -241,7 +241,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
 
             return BadRequest("An error has occurred. Please check your search filter.");
@@ -265,7 +265,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 After = after
             })
             .Tag("Search")
-            .Identity(CurrentUser.EmailAddress)
+            .Identity(CurrentUser?.EmailAddress)
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext)
         );
@@ -342,7 +342,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, resolvedPage);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
-                    return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
+                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
             }
         }
         catch (ApplicationException ex)
@@ -424,7 +424,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string? organizationId = null, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -742,7 +742,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string? projectId = null)
     {
-        string claimProjectId = Request.GetProjectId();
+        string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
@@ -814,7 +814,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (_appOptions.EventSubmissionDisabled || String.IsNullOrEmpty(id))
             return Ok();
 
-        string projectId = Request.GetDefaultProjectId();
+        string? projectId = Request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
             return BadRequest("No project id specified and no default project was found.");
 
@@ -967,7 +967,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
     private async Task<ActionResult> GetSubmitEventAsync(string? projectId = null, int apiVersion = 2, string? type = null, string? userAgent = null, IQueryCollection? parameters = null)
     {
-        string claimProjectId = Request.GetProjectId();
+        string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
@@ -1055,7 +1055,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             }
         }
 
-        ev.SetUserIdentity(identity, identityName);
+        if (identity != null)
+            ev.SetUserIdentity(identity, identityName);
 
         try
         {
@@ -1235,7 +1236,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
     private async Task<IActionResult> PostAsync(string? projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string? userAgent = null)
     {
-        string claimProjectId = Request.GetProjectId();
+        string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
@@ -1316,7 +1317,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
     }
 
     private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)
@@ -1382,7 +1383,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             return totals;
 
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
-        var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
+        var projects = cachedTotals
+            .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
+            .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })
+            .ToList();
         var countResult = await _repository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).EnforceEventStackFilter().AggregationsExpression("terms:(project_id cardinality:user)"));
 
         // Cache all projects that have more than 10 users for 5 minutes.

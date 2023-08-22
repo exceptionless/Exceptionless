@@ -83,7 +83,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return Ok(await MapAsync<TViewModel>(models, true));
     }
 
-    protected virtual string GetEntityLink(string id)
+    protected virtual string? GetEntityLink(string id)
     {
         return Url.Link($"Get{typeof(TModel).Name}ById", new
         {
@@ -91,7 +91,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         });
     }
 
-    protected virtual string GetEntityResourceLink(string? id, string type)
+    protected virtual string? GetEntityResourceLink(string? id, string type)
     {
         return GetResourceLink(Url.Link($"Get{typeof(TModel).Name}ById", new
         {
@@ -99,7 +99,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         }), type);
     }
 
-    protected virtual string GetEntityLink<TEntityType>(string id)
+    protected virtual string? GetEntityLink<TEntityType>(string id)
     {
         return Url.Link($"Get{typeof(TEntityType).Name}ById", new
         {
@@ -220,7 +220,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, ex.Message);
             return StatusCode(StatusCodes.Status500InternalServerError);
         }

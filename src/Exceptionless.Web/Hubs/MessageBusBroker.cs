@@ -190,8 +190,8 @@ public sealed class MessageBusBroker : IStartupAction
     }
 }
 
-public class TypedMessage
+public record TypedMessage
 {
-    public string Type { get; set; }
-    public object Message { get; set; }
+    public required string Type { get; set; }
+    public required object Message { get; set; }
 }

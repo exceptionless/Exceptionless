@@ -227,12 +227,12 @@ public class EventPostJobTests : IntegrationTestsBase
         }
     }
 
-    private Task<string> EnqueueEventPostAsync(PersistentEvent ev)
+    private Task<string?> EnqueueEventPostAsync(PersistentEvent ev)
     {
         return EnqueueEventPostAsync(new List<PersistentEvent> { ev });
     }
 
-    private Task<string> EnqueueEventPostAsync(List<PersistentEvent> ev)
+    private Task<string?> EnqueueEventPostAsync(List<PersistentEvent> ev)
     {
         var first = ev.First();
 

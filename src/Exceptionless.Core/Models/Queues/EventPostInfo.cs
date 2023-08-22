@@ -2,8 +2,8 @@
 
 public record EventPostInfo
 {
-    public string? OrganizationId { get; init; }
-    public string? ProjectId { get; init; }
+    public string OrganizationId { get; init; } = null!;
+    public string ProjectId { get; init; } = null!;
     public string? CharSet { get; init; }
     public string? MediaType { get; init; }
     public int ApiVersion { get; init; }
@@ -20,5 +20,5 @@ public record EventPost : EventPostInfo
     }
 
     public bool ShouldArchive { get; init; }
-    public required string FilePath { get; set; }
+    public string FilePath { get; set; } = null!;
 }

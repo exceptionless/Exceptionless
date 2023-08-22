@@ -185,10 +185,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     {
         foreach (var organization in organizations)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
             {
-                _logger.UserDeletingOrganization(CurrentUser.Id, organization.Name, organization.Id);
-                await _organizationService.SoftDeleteOrganizationAsync(organization, CurrentUser.Id);
+                _logger.UserDeletingOrganization(CurrentUser?.Id, organization.Name, organization.Id);
+                await _organizationService.SoftDeleteOrganizationAsync(organization, CurrentUser?.Id);
             }
         }
 
@@ -221,7 +221,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
         }
 
@@ -241,7 +241,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             Paid = stripeInvoice.Paid,
             Total = stripeInvoice.Total / 100.0m
         };
-
 
         foreach (var line in stripeInvoice.Lines.Data)
         {
@@ -433,7 +432,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Source = stripeToken,
                     Plan = planId,
                     Description = organization.Name,
-                    Email = CurrentUser.EmailAddress
+                    Email = CurrentUser?.EmailAddress
                 };
 
                 if (!String.IsNullOrWhiteSpace(couponId))
@@ -454,7 +453,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
                 if (!Request.IsGlobalAdmin())
-                    customerUpdateOptions.Email = CurrentUser.EmailAddress;
+                    customerUpdateOptions.Email = CurrentUser?.EmailAddress;
 
                 if (!String.IsNullOrEmpty(stripeToken))
                 {
@@ -490,7 +489,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
 
             return Ok(ChangePlanResult.FailWithMessage(ex.Message));
@@ -626,7 +625,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         organization.IsSuspended = true;
         organization.SuspensionDate = SystemClock.UtcNow;
-        organization.SuspendedByUserId = CurrentUser.Id;
+        organization.SuspendedByUserId = CurrentUser?.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
         await _repository.SaveAsync(organization, o => o.Cache().Originals());
@@ -745,11 +744,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         var organization = await base.AddModelAsync(value);
 
-        CurrentUser.OrganizationIds.Add(organization.Id);
+        CurrentUser?.OrganizationIds.Add(organization.Id);
         await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
         await _messagePublisher.PublishAsync(new UserMembershipChanged
         {
-            UserId = CurrentUser.Id,
+            UserId = CurrentUser?.Id,
             OrganizationId = organization.Id,
             ChangeType = ChangeType.Added
         });

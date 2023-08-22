@@ -7,14 +7,14 @@ namespace Exceptionless.Web.Models;
 
 public class ViewProject : IIdentity, IData, IHaveCreatedDate
 {
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
     public DateTime CreatedUtc { get; set; }
-    public string OrganizationId { get; set; }
-    public string OrganizationName { get; set; }
-    public string Name { get; set; }
+    public string OrganizationId { get; set; } = null!;
+    public string OrganizationName { get; set; } = null!;
+    public string Name { get; set; } = null!;
     public bool DeleteBotDataEnabled { get; set; }
-    public Core.Models.DataDictionary Data { get; set; }
-    public HashSet<string> PromotedTabs { get; set; }
+    public Core.Models.DataDictionary? Data { get; set; }
+    public HashSet<string> PromotedTabs { get; set; } = null!;
     public bool? IsConfigured { get; set; }
     public long StackCount { get; set; }
     public long EventCount { get; set; }

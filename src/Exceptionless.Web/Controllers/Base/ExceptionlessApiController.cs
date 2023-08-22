@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
@@ -7,6 +8,8 @@ using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -85,7 +88,10 @@ public abstract class ExceptionlessApiController : Controller
         return skip;
     }
 
-    protected User? CurrentUser => Request.GetUser();
+    [MemberNotNullWhen(true, nameof(CurrentUser))]
+    protected bool IsAuthenticated => User.Identity is not null && User.Identity.IsAuthenticated;
+
+    protected virtual User? CurrentUser => Request.GetUser();
 
     protected bool CanAccessOrganization(string organizationId)
     {
@@ -169,8 +175,11 @@ public abstract class ExceptionlessApiController : Controller
         return !hasOrganizationOrProjectOrStackFilter;
     }
 
-    protected ObjectResult Permission(PermissionResult permission)
+    protected IStatusCodeActionResult Permission(PermissionResult permission)
     {
+        if (String.IsNullOrEmpty(permission.Message))
+            return StatusCode(permission.StatusCode);
+
         return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
     }
 
@@ -199,22 +208,22 @@ public abstract class ExceptionlessApiController : Controller
         return OkWithLinks(content, new[] { link });
     }
 
-    protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string[] links)
+    protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string?[] links)
     {
         var headers = new HeaderDictionary();
-        string[] linksToAdd = links.Where(l => l is not null).ToArray();
+        string[] linksToAdd = links.Where(l => !String.IsNullOrEmpty(l)).ToArray()!;
         if (linksToAdd.Length > 0)
-            headers.Add("Link", linksToAdd);
+            headers.Add(HeaderNames.Link, linksToAdd);
 
         return new OkWithHeadersContentResult<T>(content, headers);
     }
 
-    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, int? page = null, long? total = null, string? before = null, string? after = null) where TEntity : class
+    protected OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int? page = null, long? total = null, string? before = null, string? after = null) where TEntity : class
     {
         return new OkWithResourceLinks<TEntity>(content, hasMore, page, total, before, after);
     }
 
-    protected string GetResourceLink(string url, string type)
+    protected string? GetResourceLink(string? url, string type)
     {
         return url is not null ? $"<{url}>; rel=\"{type}\"" : null;
     }

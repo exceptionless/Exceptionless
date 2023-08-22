@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using OpenTelemetry;
@@ -40,7 +41,7 @@ public class Startup
             .SetIsOriginAllowed(isOriginAllowed: _ => true)
             .AllowCredentials()
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, Headers.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
+            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {
@@ -243,7 +244,7 @@ public class Startup
         {
             o.EnrichDiagnosticContext = (context, httpContext) =>
             {
-                context.Set("ActivityId", Activity.Current.Id);
+                context.Set("ActivityId", Activity.Current?.Id);
             };
             o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
             o.GetLevel = (context, duration, ex) =>

@@ -1,15 +1,11 @@
 ﻿namespace Exceptionless.Web.Utility.Results;
 
-public record MessageContent
+public record MessageContent(string? Id, string Message)
 {
-    public MessageContent(string message) : this(null, message) { }
-
-    public MessageContent(string id, string message)
+    public MessageContent(string message) : this(null, message)
     {
-        Id = id;
-        Message = message;
     }
 
-    public string Id { get; private set; }
-    public string Message { get; private set; }
+    public string? Id { get; private set; } = Id;
+    public string Message { get; private set; } = Message;
 }
