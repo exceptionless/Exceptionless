@@ -80,7 +80,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// </summary>
     /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
-    public async Task<ActionResult<ViewOrganization>> GetAsync(string mode = null)
+    public async Task<ActionResult<ViewOrganization>> GetAsync(string? mode = null)
     {
         var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
         var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
@@ -94,7 +94,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [HttpGet("~/" + API_PREFIX + "/admin/organizations")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, string mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest)
+    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetForAdminsAsync(string? criteria = null, bool? paid = null, bool? suspended = null, string? mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest)
     {
         page = GetPage(page);
         limit = GetLimit(limit);
@@ -122,7 +122,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
-    public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string mode = null)
+    public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string? mode = null)
     {
         var organization = await GetModelAsync(id);
         if (organization is null)
@@ -375,7 +375,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [HttpPost]
     [Consumes("application/json")]
     [Route("{id:objectid}/change-plan")]
-    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null)
+    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string? stripeToken = null, string? last4 = null, string? couponId = null)
     {
         if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
             return NotFound();
@@ -618,7 +618,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> SuspendAsync(string id, SuspensionCode code, string notes = null)
+    public async Task<IActionResult> SuspendAsync(string id, SuspensionCode code, string? notes = null)
     {
         var organization = await GetModelAsync(id, false);
         if (organization is null)

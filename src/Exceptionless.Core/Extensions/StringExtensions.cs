@@ -195,10 +195,10 @@ public static class StringExtensions
         return sb.ToString();
     }
 
-    public static string[]? FromDelimitedString(this string? value, string delimiter = ",")
+    public static string[] FromDelimitedString(this string value, string delimiter = ",")
     {
         if (String.IsNullOrEmpty(value))
-            return null;
+            return Array.Empty<string>();
 
         if (String.IsNullOrEmpty(delimiter))
             delimiter = ",";

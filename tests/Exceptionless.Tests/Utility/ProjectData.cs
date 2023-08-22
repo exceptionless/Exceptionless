@@ -7,7 +7,7 @@ namespace Exceptionless.Tests.Utility;
 
 internal static class ProjectData
 {
-    public static IEnumerable<Project> GenerateProjects(int count = 10, bool generateId = false, string id = null, string organizationId = null, long? nextSummaryEndOfDayTicks = null)
+    public static IEnumerable<Project> GenerateProjects(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, long? nextSummaryEndOfDayTicks = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateProject(generateId, id, organizationId, nextSummaryEndOfDayTicks: nextSummaryEndOfDayTicks);
@@ -27,7 +27,7 @@ internal static class ProjectData
         return GenerateProject(id: TestConstants.ProjectId, name: "Disintegrating Pistol", organizationId: TestConstants.OrganizationId);
     }
 
-    public static Project GenerateProject(bool generateId = false, string id = null, string organizationId = null, string name = null, long? nextSummaryEndOfDayTicks = null)
+    public static Project GenerateProject(bool generateId = false, string? id = null, string? organizationId = null, string? name = null, long? nextSummaryEndOfDayTicks = null)
     {
         var project = new Project
         {

@@ -41,7 +41,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return Ok(await MapAsync<TViewModel>(model, true));
     }
 
-    protected virtual async Task<TModel> GetModelAsync(string id, bool useCache = true)
+    protected virtual async Task<TModel?> GetModelAsync(string id, bool useCache = true)
     {
         if (String.IsNullOrEmpty(id))
             return null;
@@ -58,7 +58,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
 
     protected virtual async Task<IReadOnlyCollection<TModel>> GetModelsAsync(string[] ids, bool useCache = true)
     {
-        if (ids is null || ids.Length == 0)
+        if (ids.Length == 0)
             return EmptyModels;
 
         var models = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
@@ -92,7 +92,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
     protected virtual Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models)
     {
         foreach (var model in models.OfType<IData>())
-            model.Data.RemoveSensitiveData();
+            model.Data?.RemoveSensitiveData();
 
         return Task.CompletedTask;
     }

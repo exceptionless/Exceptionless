@@ -200,7 +200,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 
     #endregion
 
-    protected override async Task<Token> GetModelAsync(string id, bool useCache = true)
+    protected override async Task<Token?> GetModelAsync(string id, bool useCache = true)
     {
         if (String.IsNullOrEmpty(id))
             return null;
@@ -311,7 +311,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         return await base.CanDeleteAsync(value);
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;

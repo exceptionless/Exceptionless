@@ -87,7 +87,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="404">The stack could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetStackById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<Stack>> GetAsync(string id, string offset = null)
+    public async Task<ActionResult<Stack>> GetAsync(string id, string? offset = null)
     {
         var stack = await GetModelAsync(id);
         if (stack is null)
@@ -106,9 +106,9 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult> MarkFixedAsync(string ids, string version = null)
+    public async Task<ActionResult> MarkFixedAsync(string ids, string? version = null)
     {
-        SemanticVersion semanticVersion = null;
+        SemanticVersion? semanticVersion = null;
 
         if (!String.IsNullOrEmpty(version))
         {
@@ -141,7 +141,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<ActionResult> MarkFixedAsync(JObject data)
     {
-        string id = null;
+        string? id = null;
         if (data.TryGetValue("ErrorStack", out var value))
             id = value.Value<string>();
 
@@ -229,7 +229,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> AddLinkAsync(JObject data)
     {
-        string id = null;
+        string? id = null;
         if (data.TryGetValue("ErrorStack", out var value))
             id = value.Value<string>();
 
@@ -470,7 +470,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="400">Invalid filter.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.Count(o => !o.IsSuspended) == 0)
@@ -481,7 +481,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
 
-    private async Task<ActionResult<IReadOnlyCollection<Stack>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int page = 1, int limit = 10)
+    private async Task<ActionResult<IReadOnlyCollection<Stack>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? sort = null, string? mode = null, int page = 1, int limit = 10)
     {
         page = GetPage(page);
         limit = GetLimit(limit);
@@ -530,7 +530,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByOrganizationAsync(string? organizationId = null, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -560,7 +560,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="426">Unable to view stack occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string projectId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10)
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetByProjectAsync(string? projectId = null, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -578,15 +578,15 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
 
-    private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true)
+    private Task<Organization?> GetOrganizationAsync(string? organizationId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-            return null;
+            return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    private async Task<Project?> GetProjectAsync(string? projectId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;

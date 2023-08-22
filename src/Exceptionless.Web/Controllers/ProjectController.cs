@@ -77,7 +77,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.Count == 0)
@@ -108,7 +108,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organizationId, string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -134,7 +134,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetProjectById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<ViewProject>> GetAsync(string id, string mode = null)
+    public async Task<ActionResult<ViewProject>> GetAsync(string id, string? mode = null)
     {
         var project = await GetModelAsync(id);
         if (project is null)
@@ -237,7 +237,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="304">The client configuration version is the current version.</response>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}/config")]
-    public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string id = null, int? v = null)
+    public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string? id = null, int? v = null)
     {
         if (String.IsNullOrEmpty(id))
             id = User.GetProjectId();
@@ -545,7 +545,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> IsNameAvailableAsync(string name, string organizationId = null)
+    public async Task<IActionResult> IsNameAvailableAsync(string name, string? organizationId = null)
     {
         if (await IsProjectNameAvailableInternalAsync(organizationId, name))
             return StatusCode(StatusCodes.Status204NoContent);

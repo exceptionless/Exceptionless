@@ -442,7 +442,7 @@ public sealed class EventIndexTests : IntegrationTestsBase
         Assert.Equal(count, result.Total);
     }
 
-    private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter, string search = null)
+    private async Task<FindResults<PersistentEvent>> GetByFilterAsync(string filter, string? search = null)
     {
         var result = await _validator.ValidateQueryAsync(filter);
         Assert.True(result.IsValid);

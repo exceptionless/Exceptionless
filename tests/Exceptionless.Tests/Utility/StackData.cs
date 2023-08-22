@@ -12,7 +12,7 @@ namespace Exceptionless.Tests.Utility;
 
 internal static class StackData
 {
-    public static IEnumerable<Stack> GenerateStacks(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null)
+    public static IEnumerable<Stack> GenerateStacks(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateStack(generateId, id, organizationId, projectId, type: type);
@@ -32,7 +32,7 @@ internal static class StackData
         return GenerateStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
     }
 
-    public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null, string title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string signatureHash = null)
+    public static Stack GenerateStack(bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null, string? title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string? signatureHash = null)
     {
         var utcNow = SystemClock.UtcNow;
         var stack = new Stack

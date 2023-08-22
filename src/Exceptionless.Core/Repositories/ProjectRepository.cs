@@ -24,7 +24,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             project.Value.TrimUsage();
     }
 
-    public async Task<Project?> GetConfigAsync(string projectId)
+    public async Task<Project?> GetConfigAsync(string? projectId)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;
@@ -61,7 +61,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         return FindAsync(q => q.Organization(organizationIds).SortAscending(p => p.Name.Suffix("keyword")), options);
     }
 
-    public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project>? options = null)
+    public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Project>? options = null)
     {
         IRepositoryQuery<Project> query = new RepositoryQuery<Project>()
             .AppFilter(systemFilter)
