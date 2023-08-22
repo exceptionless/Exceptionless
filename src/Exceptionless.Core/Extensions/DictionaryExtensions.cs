@@ -6,9 +6,6 @@ public static class DictionaryExtensions
 {
     public static void Trim(this HashSet<string> items, Predicate<string> itemsToRemove, Predicate<string> itemsToAlwaysInclude, int maxLength)
     {
-        if (items is null)
-            return;
-
         items.RemoveWhere(itemsToRemove);
         if (maxLength > 0 && items.Count > maxLength)
         {
@@ -44,7 +41,7 @@ public static class DictionaryExtensions
 
     public static bool ContainsKeyWithValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, params TValue[] values)
     {
-        if (dictionary is null || values is null || values.Length == 0)
+        if (values.Length == 0)
             return false;
 
         TValue? temp;

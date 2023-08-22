@@ -18,31 +18,6 @@ public static class EnumerableExtensions
         return !Equals(a, b);
     }
 
-    public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-    {
-        return source.DistinctBy(keySelector, EqualityComparer<TKey>.Default);
-    }
-
-    public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
-    {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
-        if (keySelector is null)
-            throw new ArgumentNullException(nameof(keySelector));
-        if (comparer is null)
-            throw new ArgumentNullException(nameof(comparer));
-
-        return DistinctByImpl(source, keySelector, comparer);
-    }
-
-    private static IEnumerable<TSource> DistinctByImpl<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
-    {
-        var knownKeys = new HashSet<TKey>(comparer);
-        foreach (var element in source)
-            if (knownKeys.Add(keySelector(element)))
-                yield return element;
-    }
-
     public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
     {
         foreach (var item in collection ?? new List<T>())
@@ -106,10 +81,6 @@ public static class EnumerableExtensions
     /// <returns>a collection of sub-collections by page size</returns>
     public static IEnumerable<ReadOnlyCollection<T>> Page<T>(this IEnumerable<T> source, int pageSize)
     {
-        Contract.Requires(source is not null);
-        Contract.Requires(pageSize > 0);
-        Contract.Ensures(Contract.Result<IEnumerable<IEnumerable<T>>>() is not null);
-
         if (source is null)
             throw new ArgumentNullException(nameof(source));
 

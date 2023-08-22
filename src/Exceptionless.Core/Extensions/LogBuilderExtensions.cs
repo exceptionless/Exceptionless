@@ -45,20 +45,12 @@ public class ExceptionlessState : Dictionary<string, object>
         return this;
     }
 
-    public ExceptionlessState ManualStackingKey(string stackingKey)
-    {
-        if (!String.IsNullOrEmpty(stackingKey))
-            base["@stack"] = stackingKey;
-
-        return this;
-    }
-
     /// <summary>
     /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
     /// </summary>
     /// <param name="identity">The user's identity that the event happened to.</param>
     /// <param name="name">The user's friendly name that the event happened to.</param>
-    public ExceptionlessState Identity(string identity, string? name = null)
+    public ExceptionlessState Identity(string? identity, string? name = null)
     {
         if (String.IsNullOrWhiteSpace(identity) && String.IsNullOrWhiteSpace(name))
             return this;

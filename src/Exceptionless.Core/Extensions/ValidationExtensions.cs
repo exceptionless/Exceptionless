@@ -6,9 +6,9 @@ namespace Exceptionless.Core.Extensions;
 
 public static class ValidationExtensions
 {
-    public static string? ToErrorMessage(this IEnumerable<ValidationFailure> failures)
+    public static string ToErrorMessage(this IEnumerable<ValidationFailure> failures)
     {
-        return failures is null ? null : String.Join(Environment.NewLine, failures.Select(f => f.ErrorMessage));
+        return String.Join(Environment.NewLine, failures.Select(f => f.ErrorMessage));
     }
 
     public static IRuleBuilderOptions<T, TProperty> IsObjectId<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder)

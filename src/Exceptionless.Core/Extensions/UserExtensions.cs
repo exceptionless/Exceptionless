@@ -16,35 +16,23 @@ public static class UserExtensions
 
     public static void ResetVerifyEmailAddressToken(this User user)
     {
-        if (user is null)
-            return;
-
         user.VerifyEmailAddressToken = null;
         user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
     }
 
     public static void CreateVerifyEmailAddressToken(this User user)
     {
-        if (user is null)
-            return;
-
         user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
         user.VerifyEmailAddressTokenExpiration = SystemClock.UtcNow.AddMinutes(1440);
     }
 
     public static bool HasValidVerifyEmailAddressTokenExpiration(this User user)
     {
-        if (user is null)
-            return false;
-
         return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= SystemClock.UtcNow;
     }
 
     public static void MarkEmailAddressVerified(this User user)
     {
-        if (user is null)
-            return;
-
         user.IsEmailAddressVerified = true;
         user.VerifyEmailAddressToken = null;
         user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
@@ -52,27 +40,18 @@ public static class UserExtensions
 
     public static void ResetPasswordResetToken(this User user)
     {
-        if (user is null)
-            return;
-
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiration = DateTime.MinValue;
     }
 
     public static void CreatePasswordResetToken(this User user)
     {
-        if (user is null)
-            return;
-
         user.PasswordResetToken = StringExtensions.GetNewToken();
         user.PasswordResetTokenExpiration = SystemClock.UtcNow.AddMinutes(1440);
     }
 
     public static bool HasValidPasswordResetTokenExpiration(this User user)
     {
-        if (user is null)
-            return false;
-
         return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= SystemClock.UtcNow;
     }
 

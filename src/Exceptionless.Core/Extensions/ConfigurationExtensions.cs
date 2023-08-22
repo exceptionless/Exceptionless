@@ -49,9 +49,6 @@ public static class ConfigurationExtensions
 
     public static Dictionary<string, object> ToDictionary(this IConfiguration section, params string[] sectionsToSkip)
     {
-        if (sectionsToSkip is null)
-            sectionsToSkip = Array.Empty<string>();
-
         var dict = new Dictionary<string, object>();
         foreach (var value in section.GetChildren())
         {
