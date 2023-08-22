@@ -85,7 +85,7 @@ public abstract class ExceptionlessApiController : Controller
         return skip;
     }
 
-    protected User CurrentUser => Request.GetUser();
+    protected User? CurrentUser => Request.GetUser();
 
     protected bool CanAccessOrganization(string organizationId)
     {
@@ -117,7 +117,7 @@ public abstract class ExceptionlessApiController : Controller
             var scope = GetFilterScopeVisitor.Run(filter);
             if (scope.IsScopable)
             {
-                Organization organization = null;
+                Organization? organization = null;
                 if (scope.OrganizationId is not null)
                 {
                     organization = await organizationRepository.GetByIdAsync(scope.OrganizationId, o => o.Cache());
@@ -172,11 +172,6 @@ public abstract class ExceptionlessApiController : Controller
     protected ObjectResult Permission(PermissionResult permission)
     {
         return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
-    }
-
-    protected ObjectResult StatusCodeWithMessage(int statusCode, string message, string reason = null)
-    {
-        return StatusCode(statusCode, new MessageContent(message, reason));
     }
 
     protected ActionResult<WorkInProgressResult> WorkInProgress(IEnumerable<string> workers)

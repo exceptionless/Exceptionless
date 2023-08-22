@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
-public class ApiError
+public record ApiError
 {
-    public string Message { get; set; }
-    public string ReferenceId { get; set; }
+    public string? Message { get; set; }
+    public string? ReferenceId { get; set; }
     public bool IsError => true;
-    public string Detail { get; set; }
-    public ICollection<ApiErrorItem> Errors { get; set; }
+    public string? Detail { get; set; }
+    public ICollection<ApiErrorItem>? Errors { get; set; }
 
     public ApiError(string message, string referenceId)
     {
@@ -18,10 +18,9 @@ public class ApiError
         Errors = new List<ApiErrorItem>();
     }
 
-
     public ApiError(ModelStateDictionary modelState)
     {
-        if (modelState is not null && modelState.Any(m => m.Value.Errors.Count > 0))
+        if (modelState.Any(m => m.Value is { Errors.Count: > 0 }))
         {
             Message = "Please correct the specified errors and try again.";
             //errors = modelState.SelectMany(m => m.Value.Errors).ToDictionary(m => m.Key, m=> m.ErrorMessage);
@@ -29,6 +28,7 @@ public class ApiError
             //errors = modelState.SelectMany(m => m.Value.Errors.Select(me => new ModelError { FieldName = m.Key, ErrorMessage = me.ErrorMessage }));
         }
     }
+
     public ApiError(ValidationException ex, string referenceId)
     {
         Message = "Please correct the specified errors and try again.";
@@ -42,9 +42,9 @@ public class ApiError
     }
 }
 
-public class ApiErrorItem
+public record ApiErrorItem
 {
-    public string PropertyName { get; set; }
-    public string Message { get; set; }
-    public object AttemptedValue { get; set; }
+    public required string PropertyName { get; set; }
+    public required string Message { get; set; }
+    public required object AttemptedValue { get; set; }
 }

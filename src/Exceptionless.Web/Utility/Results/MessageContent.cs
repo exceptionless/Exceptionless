@@ -1,6 +1,6 @@
 ﻿namespace Exceptionless.Web.Utility.Results;
 
-public class MessageContent
+public record MessageContent
 {
     public MessageContent(string message) : this(null, message) { }
 

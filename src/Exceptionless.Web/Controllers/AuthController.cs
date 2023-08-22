@@ -72,7 +72,7 @@ public class AuthController : ExceptionlessApiController
     [HttpPost("login")]
     public async Task<ActionResult<TokenResult>> LoginAsync(LoginModel model)
     {
-        string email = model?.Email?.Trim().ToLowerInvariant();
+        string? email = model.Email?.Trim().ToLowerInvariant();
         using (_logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext)))
         {
             if (String.IsNullOrEmpty(email))
@@ -107,7 +107,7 @@ public class AuthController : ExceptionlessApiController
                 return Unauthorized();
             }
 
-            User user;
+            User? user;
             try
             {
                 user = await _userRepository.GetByEmailAddressAsync(email);
@@ -177,7 +177,7 @@ public class AuthController : ExceptionlessApiController
         if (User.IsTokenAuthType())
             return Ok();
 
-        string id = User.GetLoggedInUsersTokenId();
+        string? id = User.GetLoggedInUsersTokenId();
         if (String.IsNullOrEmpty(id))
             return Ok();
 

@@ -148,7 +148,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         return new AuthenticationTicket(principal, CreateAuthenticationProperties(token), Options.AuthenticationScheme);
     }
 
-    private AuthenticationProperties CreateAuthenticationProperties(Token token)
+    private AuthenticationProperties CreateAuthenticationProperties(Token? token)
     {
         var utcNow = Foundatio.Utility.SystemClock.UtcNow;
         return new AuthenticationProperties

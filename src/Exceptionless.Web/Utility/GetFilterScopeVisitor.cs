@@ -37,7 +37,7 @@ public class GetFilterScopeVisitor : QueryNodeVisitorWithResultBase<FilterScope>
         }
     }
 
-    public override Task<FilterScope> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
+    public override Task<FilterScope> AcceptAsync(IQueryNode node, IQueryVisitorContext? context)
     {
         node.AcceptAsync(this, context);
         return Task.FromResult(_scope);
@@ -50,11 +50,11 @@ public class GetFilterScopeVisitor : QueryNodeVisitorWithResultBase<FilterScope>
     }
 }
 
-public class FilterScope
+public record FilterScope
 {
-    public string OrganizationId { get; set; }
-    public string ProjectId { get; set; }
-    public string StackId { get; set; }
+    public string? OrganizationId { get; set; }
+    public string? ProjectId { get; set; }
+    public string? StackId { get; set; }
     public bool IsScopable { get; set; } = true;
     public bool HasScope => OrganizationId is not null || ProjectId is not null || StackId is not null;
 }

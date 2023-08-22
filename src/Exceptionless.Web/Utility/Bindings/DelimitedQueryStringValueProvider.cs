@@ -18,8 +18,6 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
         _delimiters = delimiters;
     }
 
-    public char[] Delimiters => _delimiters;
-
     public override ValueProviderResult GetValue(string key)
     {
         if (key is null)
@@ -29,11 +27,10 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
         if (values.Count == 0)
             return ValueProviderResult.None;
 
-        if (!values.Any(x => _delimiters.Any(x.Contains)))
+        if (!values.Any(x => x != null && _delimiters.Any(x.Contains)))
             return new ValueProviderResult(values, _culture);
 
-        var stringValues = new StringValues(values.SelectMany(x => x.Split(_delimiters, StringSplitOptions.RemoveEmptyEntries)).ToArray());
-
+        var stringValues = new StringValues(values.SelectMany(x => x?.Split(_delimiters, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>()).ToArray());
         return new ValueProviderResult(stringValues, _culture);
     }
 }
@@ -47,10 +44,7 @@ public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
 
     public DelimitedQueryStringValueProviderFactory(params char[] delimiters)
     {
-        if (delimiters is null || delimiters.Length == 0)
-            _delimiters = DefaultDelimiters;
-        else
-            _delimiters = delimiters;
+        _delimiters = delimiters.Length == 0 ? DefaultDelimiters : delimiters;
     }
 
     public Task CreateValueProviderAsync(ValueProviderFactoryContext context)

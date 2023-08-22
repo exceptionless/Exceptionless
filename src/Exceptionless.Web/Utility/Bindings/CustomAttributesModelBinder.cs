@@ -26,7 +26,7 @@ public class CustomAttributesModelBinder : IModelBinder
         {
             if (parameter.ParameterInfo.GetCustomAttributes(typeof(IpAddressAttribute), false).Any())
             {
-                bindingContext.Result = ModelBindingResult.Success(bindingContext.HttpContext.Connection.RemoteIpAddress.ToString());
+                bindingContext.Result = ModelBindingResult.Success(bindingContext.HttpContext.Connection.RemoteIpAddress?.ToString());
                 return Task.CompletedTask;
             }
 
@@ -39,7 +39,7 @@ public class CustomAttributesModelBinder : IModelBinder
 
             if (parameter.ParameterInfo.GetCustomAttributes(typeof(UserAgentAttribute), false).Any())
             {
-                string userAgent;
+                string? userAgent;
                 if (bindingContext.HttpContext.Request.Headers.TryGetValue(Headers.Client, out var values) && values.Count > 0)
                     userAgent = values;
                 else
@@ -86,13 +86,13 @@ public sealed class ContentTypeAttribute : Attribute { }
 
 public class CustomAttributesModelBinderProvider : IModelBinderProvider
 {
-    public IModelBinder GetBinder(ModelBinderProviderContext context)
+    public IModelBinder? GetBinder(ModelBinderProviderContext context)
     {
         if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         if (context.Metadata.ModelType == typeof(string) || context.Metadata.ModelType == typeof(IQueryCollection))
-            return new CustomAttributesModelBinder(context.Metadata.ModelType, context.Services.GetService<ILoggerFactory>());
+            return new CustomAttributesModelBinder(context.Metadata.ModelType, context.Services.GetRequiredService<ILoggerFactory>());
 
         return null;
     }
