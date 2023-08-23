@@ -249,6 +249,6 @@ public sealed class SlackServiceTests : TestWithServices
             return ex;
         }
 
-        return null;
+        throw new InvalidOperationException("Should never reach here");
     }
 }

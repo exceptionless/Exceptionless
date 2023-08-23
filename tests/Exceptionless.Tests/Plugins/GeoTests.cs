@@ -67,7 +67,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent { Geo = GREEN_BAY_COORDINATES };
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
@@ -87,7 +87,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent { Geo = geo };
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
@@ -102,7 +102,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent { Geo = GREEN_BAY_IP };
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
@@ -122,7 +122,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent();
         ev.AddRequestInfo(new RequestInfo { ClientIpAddress = GREEN_BAY_IP });
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
@@ -142,7 +142,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent();
         ev.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = $"127.0.0.1,{GREEN_BAY_IP}" });
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
@@ -162,7 +162,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
 
         var contexts = new List<EventContext> {
                 new(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
@@ -189,7 +189,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
 
         var ev = new PersistentEvent();
         var greenBayEvent = new PersistentEvent { Geo = GREEN_BAY_IP };
@@ -235,7 +235,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
 
         var ev = new PersistentEvent();
         var greenBayEvent = new PersistentEvent();

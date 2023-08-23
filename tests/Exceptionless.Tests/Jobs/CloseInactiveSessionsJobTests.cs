@@ -171,7 +171,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         }
     }
 
-    private async Task CreateDataAsync(BillingPlan plan = null)
+    private async Task CreateDataAsync(BillingPlan? plan = null)
     {
         foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
         {

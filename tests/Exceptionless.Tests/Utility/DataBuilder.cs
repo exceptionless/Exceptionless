@@ -24,7 +24,7 @@ public class DataBuilder
 
     public EventDataBuilder Event()
     {
-        var eventBuilder = _serviceProvider.GetService<EventDataBuilder>();
+        var eventBuilder = _serviceProvider.GetRequiredService<EventDataBuilder>();
         _eventBuilders.Add(eventBuilder);
         return eventBuilder;
     }
@@ -37,8 +37,8 @@ public class EventDataBuilder
     private readonly ICollection<Action<Stack>> _stackMutations;
     private int _additionalEventsToCreate = 0;
     private readonly PersistentEvent _event = new();
-    private Stack _stack = null;
-    private EventDataBuilder _stackEventBuilder;
+    private Stack? _stack = null;
+    private EventDataBuilder? _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
 
     public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer)
@@ -50,7 +50,7 @@ public class EventDataBuilder
 
     public EventDataBuilder Mutate(Action<PersistentEvent> mutation)
     {
-        mutation?.Invoke(_event);
+        mutation(_event);
 
         return this;
     }
@@ -215,7 +215,7 @@ public class EventDataBuilder
         return this;
     }
 
-    public EventDataBuilder RequestInfoSample(Action<RequestInfo> requestMutator = null)
+    public EventDataBuilder RequestInfoSample(Action<RequestInfo>? requestMutator = null)
     {
         var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo);
         requestMutator?.Invoke(requestInfo);
@@ -437,7 +437,7 @@ public class EventDataBuilder
         return this;
     }
 
-    public Stack GetStack()
+    public Stack? GetStack()
     {
         Build();
         return _stack;
@@ -564,7 +564,7 @@ public class EventDataBuilder
         for (int index = 0; index < stack.TotalOccurrences - 1; index++)
         {
             var clone = ev.DeepClone();
-            clone.Id = null;
+            clone.Id = null!;
             if (interval > 0)
                 clone.Date = new DateTimeOffset(stack.FirstOccurrence.AddMilliseconds(interval * index), ev.Date.Offset);
 
