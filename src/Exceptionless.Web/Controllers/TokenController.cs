@@ -288,7 +288,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         value.Id = StringExtensions.GetNewToken();
         value.CreatedUtc = value.UpdatedUtc = SystemClock.UtcNow;
         value.Type = TokenType.Access;
-        value.CreatedBy = Request.GetUser().Id;
+        value.CreatedBy = CurrentUser?.Id ?? throw new InvalidOperationException();
 
         // add implied scopes
         if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !value.Scopes.Contains(AuthorizationRoles.User))

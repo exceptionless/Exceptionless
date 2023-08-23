@@ -409,7 +409,7 @@ public class UsageService
         }
     }
 
-    public async Task IncrementBlockedAsync(string organizationId, string projectId, int eventCount = 1)
+    public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
             return;
@@ -441,7 +441,7 @@ public class UsageService
         AppDiagnostics.EventsDiscarded.Add(eventCount);
     }
 
-    public async Task IncrementTooBigAsync(string organizationId, string projectId)
+    public async Task IncrementTooBigAsync(string organizationId, string? projectId)
     {
         var utcNow = SystemClock.UtcNow;
 

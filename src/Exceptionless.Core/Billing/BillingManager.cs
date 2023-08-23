@@ -21,7 +21,7 @@ public class BillingManager
         _plans = plans;
     }
 
-    public async Task<bool> CanAddOrganizationAsync(User user)
+    public async Task<bool> CanAddOrganizationAsync(User? user)
     {
         if (user is null)
             return false;
@@ -61,7 +61,7 @@ public class BillingManager
         return organization.HasPremiumFeatures;
     }
 
-    public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User user)
+    public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User? user)
     {
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return ChangePlanResult.FailWithMessage("Invalid Organization");

@@ -32,6 +32,13 @@ public sealed class OverageMiddleware
             return;
         }
 
+        string? organizationId = context.Request.GetDefaultOrganizationId();
+        if (String.IsNullOrEmpty(organizationId))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
         if (_appOptions.EventSubmissionDisabled)
         {
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
@@ -63,13 +70,12 @@ public sealed class OverageMiddleware
                 tooBig = true;
             }
         }
-
-        string organizationId = context.Request.GetDefaultOrganizationId();
+        
 
         // block large submissions, client should break them up or remove some of the data.
         if (tooBig)
         {
-            string projectId = context.Request.GetDefaultProjectId();
+            string? projectId = context.Request.GetDefaultProjectId();
             await _usageService.IncrementTooBigAsync(organizationId, projectId).AnyContext();
             context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
             return;
@@ -78,7 +84,7 @@ public sealed class OverageMiddleware
         int eventsLeft = await _usageService.GetEventsLeftAsync(organizationId).AnyContext();
         if (eventsLeft <= 0)
         {
-            string projectId = context.Request.GetDefaultProjectId();
+            string? projectId = context.Request.GetDefaultProjectId();
             await _usageService.IncrementBlockedAsync(organizationId, projectId);
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
             return;

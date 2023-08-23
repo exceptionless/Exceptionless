@@ -202,7 +202,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpPost("{id:objectid}/add-link")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string> url)
+    public async Task<IActionResult> AddLinkAsync(string id, ValueFromBody<string?> url)
     {
         if (String.IsNullOrWhiteSpace(url?.Value))
             return BadRequest();
@@ -242,8 +242,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (id.StartsWith("http"))
             id = id.Substring(id.LastIndexOf('/') + 1);
 
-        string url = data.GetValue("Link").Value<string>();
-        return await AddLinkAsync(id, new ValueFromBody<string>(url));
+        string? url = data.GetValue("Link")?.Value<string>();
+        return await AddLinkAsync(id, new ValueFromBody<string?>(url));
     }
 
     /// <summary>
@@ -647,7 +647,10 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return totals;
 
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
-        var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
+        var projects = cachedTotals
+            .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
+            .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })
+            .ToList();
         var countResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).AggregationsExpression("terms:(project_id cardinality:user)"));
 
         // Cache all projects that have more than 10 users for 5 minutes.

@@ -88,9 +88,6 @@ public abstract class ExceptionlessApiController : Controller
         return skip;
     }
 
-    [MemberNotNullWhen(true, nameof(CurrentUser))]
-    protected bool IsAuthenticated => User.Identity is not null && User.Identity.IsAuthenticated;
-
     protected virtual User? CurrentUser => Request.GetUser();
 
     protected bool CanAccessOrganization(string organizationId)
@@ -98,7 +95,8 @@ public abstract class ExceptionlessApiController : Controller
         return Request.CanAccessOrganization(organizationId);
     }
 
-    protected bool IsInOrganization(string organizationId)
+
+    protected bool IsInOrganization([NotNullWhen(true)] string? organizationId)
     {
         if (String.IsNullOrEmpty(organizationId))
             return false;
@@ -175,10 +173,10 @@ public abstract class ExceptionlessApiController : Controller
         return !hasOrganizationOrProjectOrStackFilter;
     }
 
-    protected IStatusCodeActionResult Permission(PermissionResult permission)
+    protected ObjectResult Permission(PermissionResult permission)
     {
         if (String.IsNullOrEmpty(permission.Message))
-            return StatusCode(permission.StatusCode);
+            return StatusCode(permission.StatusCode, null);
 
         return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
     }

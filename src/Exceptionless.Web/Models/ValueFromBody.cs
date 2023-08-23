@@ -3,10 +3,8 @@
 namespace Exceptionless.Web.Models;
 
 [DebuggerDisplay("{Value}")]
-public class ValueFromBody<T>
+public record ValueFromBody<T>
 {
-    private ValueFromBody() { }
-
     public ValueFromBody(T value)
     {
         Value = value;

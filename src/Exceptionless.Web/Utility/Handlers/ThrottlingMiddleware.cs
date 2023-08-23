@@ -6,10 +6,10 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
-public class ThrottlingOptions
+public record ThrottlingOptions
 {
-    public Func<string, long> MaxRequestsForUserIdentifierFunc { get; set; }
-    public TimeSpan Period { get; set; }
+    public required Func<string, long> MaxRequestsForUserIdentifierFunc { get; set; }
+    public required TimeSpan Period { get; set; }
     public string Message { get; set; } = "The allowed number of requests has been exceeded.";
 }
 
@@ -31,7 +31,7 @@ public class ThrottlingMiddleware
         _options = options;
     }
 
-    protected virtual string GetUserIdentifier(HttpRequest request)
+    protected virtual string? GetUserIdentifier(HttpRequest request)
     {
         var authType = request.GetAuthType();
         if (authType == AuthType.Token)
@@ -45,7 +45,7 @@ public class ThrottlingMiddleware
         }
 
         // fallback to using the IP address
-        string ip = request.GetClientIpAddress();
+        string? ip = request.GetClientIpAddress();
         if (String.IsNullOrEmpty(ip) || ip == "::1")
             ip = "127.0.0.1";
 
@@ -65,7 +65,7 @@ public class ThrottlingMiddleware
             return;
         }
 
-        string identifier = GetUserIdentifier(context.Request);
+        string? identifier = GetUserIdentifier(context.Request);
         if (String.IsNullOrEmpty(identifier))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;

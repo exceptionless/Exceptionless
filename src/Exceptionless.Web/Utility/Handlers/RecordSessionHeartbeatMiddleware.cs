@@ -38,7 +38,7 @@ public sealed class RecordSessionHeartbeatMiddleware
             return;
         }
 
-        string projectId = context.Request.GetDefaultProjectId();
+        string? projectId = context.Request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;

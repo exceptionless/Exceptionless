@@ -24,8 +24,8 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
 
         var mapped = await MapAsync<TModel>(value);
         // if no organization id is specified, default to the user's 1st associated org.
-        if (!_isOrganization && mapped is IOwnedByOrganization orgModel && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
-            orgModel.OrganizationId = Request.GetDefaultOrganizationId();
+        if (!_isOrganization && mapped is IOwnedByOrganization orgModel && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Count > 0)
+            orgModel.OrganizationId = Request.GetDefaultOrganizationId()!;
 
         var permission = await CanAddAsync(mapped);
         if (!permission.Allowed)
@@ -42,7 +42,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             return BadRequest(ex.Errors.ToErrorMessage());
         }
 
-        return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true));
+        return Created(new Uri(GetEntityLink(model.Id) ?? throw new InvalidOperationException()), await MapAsync<TViewModel>(model, true));
     }
 
     protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc)
@@ -107,7 +107,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         });
     }
 
-    protected virtual string GetEntityResourceLink<TEntityType>(string id, string type)
+    protected virtual string? GetEntityResourceLink<TEntityType>(string id, string type)
     {
         return GetResourceLink(Url.Link($"Get{typeof(TEntityType).Name}ById", new
         {

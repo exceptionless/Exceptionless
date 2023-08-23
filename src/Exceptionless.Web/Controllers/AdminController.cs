@@ -74,7 +74,7 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpGet("assemblies")]
-    public ActionResult<IReadOnlyCollection<AssemblyDetail>> Assemblies()
+    public ActionResult<IEnumerable<AssemblyDetail>> Assemblies()
     {
         var details = AssemblyDetail.ExtractAll();
         return Ok(details);

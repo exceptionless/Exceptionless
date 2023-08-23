@@ -45,7 +45,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpGet("me")]
     public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
     {
-        var currentUser = await GetModelAsync(CurrentUser?.Id);
+        if (CurrentUser is null)
+            return NotFound();
+
+        var currentUser = await GetModelAsync(CurrentUser.Id);
         if (currentUser is null)
             return NotFound();
 
@@ -127,7 +130,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        return DeleteImplAsync(new[] { CurrentUser?.Id });
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? new[] { CurrentUser.Id } : Array.Empty<string>();
+        return DeleteImplAsync(userIds);
     }
 
     /// <summary>
@@ -217,7 +221,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
         {
             // The user may already be logged in and verified.
-            if (CurrentUser is not null && CurrentUser?.IsEmailAddressVerified)
+            if (CurrentUser is not null && CurrentUser.IsEmailAddressVerified)
                 return Ok();
 
             return NotFound();
@@ -331,6 +335,9 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
     {
+        if (CurrentUser is null)
+            return null;
+
         if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
             return await base.GetModelAsync(id, useCache);
 
@@ -339,10 +346,13 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
     {
+        if (CurrentUser is null)
+            return base.GetModelsAsync(Array.Empty<string>());
+
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);
 
-        return base.GetModelsAsync(ids.Where(id => String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
+        return base.GetModelsAsync(ids.Where(id =>  String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
     }
 
     protected override async Task<PermissionResult> CanDeleteAsync(User value)

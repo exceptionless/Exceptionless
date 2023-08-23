@@ -84,9 +84,14 @@ public static class IdentityUtils
         return new ClaimsIdentity(claims, UserAuthenticationType);
     }
 
+    public static bool IsAuthenticated(this ClaimsPrincipal principal)
+    {
+        return principal.Identity is not null && principal.Identity.IsAuthenticated;
+    }
+
     public static AuthType GetAuthType(this ClaimsPrincipal principal)
     {
-        if (principal?.Identity is null || !principal.Identity.IsAuthenticated)
+        if (!principal.IsAuthenticated())
             return AuthType.Anonymous;
 
         return IsTokenAuthType(principal) ? AuthType.Token : AuthType.User;
@@ -112,7 +117,7 @@ public static class IdentityUtils
 
     public static ClaimsIdentity? GetClaimsIdentity(this ClaimsPrincipal principal)
     {
-        return principal?.Identity as ClaimsIdentity;
+        return principal.Identity as ClaimsIdentity;
     }
 
     public static string? GetUserId(this ClaimsPrincipal principal)

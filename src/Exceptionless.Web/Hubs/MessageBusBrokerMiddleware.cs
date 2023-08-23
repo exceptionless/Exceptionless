@@ -22,57 +22,57 @@ public class MessageBusBrokerMiddleware
 
     public async Task Invoke(HttpContext context)
     {
-        if (!context.WebSockets.IsWebSocketRequest || !context.User.Identity.IsAuthenticated)
+        if (!context.WebSockets.IsWebSocketRequest || !context.User.IsAuthenticated())
         {
             await _next(context);
             return;
         }
 
-        using (var socket = await context.WebSockets.AcceptWebSocketAsync())
+        using var socket = await context.WebSockets.AcceptWebSocketAsync();
+        string connectionId = _connectionManager.AddWebSocket(socket);
+        await OnConnected(context, socket, connectionId);
+        bool disconnected = false;
+
+        try
         {
-            string connectionId = _connectionManager.AddWebSocket(socket);
-            await OnConnected(context, socket, connectionId);
-            bool disconnected = false;
-
-            try
+            await ReceiveAsync(socket, async (result, data) =>
             {
-                await ReceiveAsync(socket, async (result, data) =>
+                switch (result.MessageType)
                 {
-                    switch (result.MessageType)
-                    {
-                        case WebSocketMessageType.Text:
-                            _logger.LogTrace("WebSocket got message {ConnectionId}", connectionId);
-                            // ignore incoming messages
-                            return;
-                        case WebSocketMessageType.Close:
-                            await OnDisconnected(context, socket, connectionId);
-                            await _connectionManager.RemoveWebSocketAsync(connectionId);
-                            disconnected = true;
-                            return;
-                    }
-                });
-            }
-            catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }
+                    case WebSocketMessageType.Text:
+                        _logger.LogTrace("WebSocket got message {ConnectionId}", connectionId);
+                        // ignore incoming messages
+                        return;
+                    case WebSocketMessageType.Close:
+                        await OnDisconnected(context, socket, connectionId);
+                        await _connectionManager.RemoveWebSocketAsync(connectionId);
+                        disconnected = true;
+                        return;
+                }
+            });
+        }
+        catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }
 
-            // This will be hit when the connection is lost.
-            if (!disconnected)
-            {
-                await OnDisconnected(context, socket, connectionId);
-                await _connectionManager.RemoveWebSocketAsync(connectionId);
-            }
+        // This will be hit when the connection is lost.
+        if (!disconnected)
+        {
+            await OnDisconnected(context, socket, connectionId);
+            await _connectionManager.RemoveWebSocketAsync(connectionId);
         }
     }
 
     private async Task OnConnected(HttpContext context, WebSocket socket, string connectionId)
     {
-        _logger.LogTrace("WebSocket connected {ConnectionId} ({State})", connectionId, socket?.State);
+        _logger.LogTrace("WebSocket connected {ConnectionId} ({State})", connectionId, socket.State);
 
         try
         {
             foreach (string organizationId in context.User.GetOrganizationIds())
                 await _connectionMapping.GroupAddAsync(organizationId, connectionId);
 
-            await _connectionMapping.UserIdAddAsync(context.User.GetUserId(), connectionId);
+            string? userId = context.User.GetUserId();
+            if (!String.IsNullOrEmpty(userId))
+                await _connectionMapping.UserIdAddAsync(userId, connectionId);
         }
         catch (Exception ex)
         {
@@ -83,14 +83,16 @@ public class MessageBusBrokerMiddleware
 
     private async Task OnDisconnected(HttpContext context, WebSocket socket, string connectionId)
     {
-        _logger.LogTrace("WebSocket disconnected {ConnectionId} ({State})", connectionId, socket?.State);
+        _logger.LogTrace("WebSocket disconnected {ConnectionId} ({State})", connectionId, socket.State);
 
         try
         {
             foreach (string organizationId in context.User.GetOrganizationIds())
                 await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
 
-            await _connectionMapping.UserIdRemoveAsync(context.User.GetUserId(), connectionId);
+            string? userId = context.User.GetUserId();
+            if (!String.IsNullOrEmpty(userId))
+                await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
         }
         catch (Exception ex)
         {
@@ -116,7 +118,8 @@ public class MessageBusBrokerMiddleware
                     result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                     LogFrame(result, buffer.Array);
 
-                    await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count);
+                    if (buffer.Array is not null)
+                        await ms.WriteAsync(buffer.Array, buffer.Offset, result.Count);
                 } while (!result.EndOfMessage);
 
                 ms.Seek(0, SeekOrigin.Begin);
@@ -129,7 +132,7 @@ public class MessageBusBrokerMiddleware
         }
     }
 
-    private void LogFrame(WebSocketReceiveResult frame, byte[] buffer)
+    private void LogFrame(WebSocketReceiveResult frame, byte[]? buffer)
     {
         if (!_logger.IsEnabled(LogLevel.Debug))
             return;
@@ -140,9 +143,9 @@ public class MessageBusBrokerMiddleware
         }
         else
         {
-            string content = "<<binary>>";
+            string? content = "<<binary>>";
             if (frame.MessageType == WebSocketMessageType.Text)
-                content = Encoding.UTF8.GetString(buffer, 0, frame.Count);
+                content = buffer is not null ? Encoding.UTF8.GetString(buffer, 0, frame.Count) : null;
 
             _logger.LogDebug("Received Frame {MessageType}: length={FrameCount}, end={FrameEndOfMessage}: {Content}", frame.MessageType, frame.Count, frame.EndOfMessage, content);
         }

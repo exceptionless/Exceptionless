@@ -47,7 +47,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return hit?.Document;
     }
 
-    public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
+    public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
         var filter = Query<Organization>.MatchAll();
         if (!String.IsNullOrWhiteSpace(criteria))

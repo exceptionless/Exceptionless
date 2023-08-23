@@ -19,6 +19,7 @@ using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -197,10 +198,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects)
     {
+        var user = CurrentUser ?? throw new InvalidOperationException();
         foreach (var project in projects)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.UserDeletingProject(CurrentUser?.Id, project.Name);
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+            _logger.UserDeletingProject(user.Id, project.Name);
 
             await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
         }
@@ -358,7 +360,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
+        var user = CurrentUser ?? throw new InvalidOperationException();
+        if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
             return NotFound();
 
         return Ok(project.NotificationSettings.TryGetValue(userId, out var settings) ? settings : new NotificationSettings());
@@ -466,7 +469,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
+        var user = CurrentUser ?? throw new InvalidOperationException();
+        if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
             return NotFound();
 
         if (project.NotificationSettings.ContainsKey(userId))
@@ -498,6 +502,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
+        project.PromotedTabs ??= new HashSet<string>();
         if (!project.PromotedTabs.Contains(name.Trim()))
         {
             project.PromotedTabs.Add(name.Trim());
@@ -525,11 +530,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (project.PromotedTabs.Contains(name.Trim()))
-        {
-            project.PromotedTabs.Remove(name.Trim());
+        if (project.PromotedTabs is not null && project.PromotedTabs.Remove(name.Trim()))
             await _repository.SaveAsync(project, o => o.Cache());
-        }
 
         return Ok();
     }
@@ -553,7 +555,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         return StatusCode(StatusCodes.Status201Created);
     }
 
-    private async Task<bool> IsProjectNameAvailableInternalAsync(string organizationId, string name)
+    private async Task<bool> IsProjectNameAvailableInternalAsync(string? organizationId, string name)
     {
         if (String.IsNullOrWhiteSpace(name))
             return false;
@@ -585,6 +587,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
+        project.Data ??= new DataDictionary();
         project.Data[key.Trim()] = value.Value.Trim();
         await _repository.SaveAsync(project, o => o.Cache());
 
@@ -609,7 +612,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (project.Data.Remove(key.Trim()))
+        if (project.Data is not null && project.Data.Remove(key.Trim()))
             await _repository.SaveAsync(project, o => o.Cache());
 
         return Ok();
@@ -635,7 +638,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
+        if (project.Data is not null && project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
             return StatusCode(StatusCodes.Status304NotModified);
 
         SlackToken? token = null;
@@ -653,6 +656,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         project.AddDefaultNotificationSettings(Project.NotificationIntegrations.Slack);
+
+        project.Data ??= new DataDictionary();
         project.Data[Project.KnownDataKeys.SlackToken] = token;
         await _repository.SaveAsync(project, o => o.Cache());
 
@@ -687,7 +692,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             }
         }
 
-        if (project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack) | project.Data.Remove(Project.KnownDataKeys.SlackToken))
+        bool shouldSave = project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack);
+        if (project.Data is not null && project.Data.Remove(Project.KnownDataKeys.SlackToken))
+            shouldSave = true;
+
+        if (shouldSave)
             await _repository.SaveAsync(project, o => o.Cache());
 
         return Ok();
@@ -702,13 +711,6 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
         foreach (var viewProject in viewProjects)
         {
-            var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
-            if (organization is not null)
-            {
-                viewProject.OrganizationName = organization.Name;
-                viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
-            }
-
             if (!viewProject.IsConfigured.HasValue)
             {
                 viewProject.IsConfigured = true;
@@ -718,8 +720,14 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
                 });
             }
 
-            var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
+            var organization = organizations.SingleOrDefault(o => o.Id == viewProject.OrganizationId);
+            if (organization is null)
+                continue;
 
+            viewProject.OrganizationName = organization.Name;
+            viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
+
+            var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
             viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus());
             viewProject.TrimUsage();
 
@@ -754,9 +762,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     protected override Task<Project> AddModelAsync(Project value)
     {
+        var user = CurrentUser ?? throw new InvalidOperationException();
+
         value.IsConfigured = false;
         value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-        value.AddDefaultNotificationSettings(CurrentUser?.Id);
+        value.AddDefaultNotificationSettings(user.Id);
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
 
@@ -777,7 +787,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
     }
 
     private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project)
