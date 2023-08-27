@@ -51,7 +51,7 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Hello", "test@domain.com", null))
+            .Content(new SignupModel("Hello", "test@domain.com", null!))
             .StatusCodeShouldBeBadRequest()
         );
     }
@@ -359,7 +359,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Random Name", email, null))
+            .Content(new SignupModel("Random Name", email, null!))
             .StatusCodeShouldBeBadRequest()
         );
 
