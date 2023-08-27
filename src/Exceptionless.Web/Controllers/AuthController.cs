@@ -72,102 +72,89 @@ public class AuthController : ExceptionlessApiController
     [HttpPost("login")]
     public async Task<ActionResult<TokenResult>> LoginAsync(LoginModel model)
     {
-        string? email = model?.Email?.Trim().ToLowerInvariant();
-        using (_logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext)))
+        string email = model.Email.Trim().ToLowerInvariant();
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext));
+
+        // Only allow 5 password attempts per 15 minute period.
+        string userLoginAttemptsCacheKey = $"user:{email}:attempts";
+        long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+
+        // Only allow 15 login attempts per 15 minute period by a single ip.
+        string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
+        long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+
+        if (userLoginAttempts > 5)
         {
-            if (String.IsNullOrEmpty(email))
-            {
-                _logger.LogError("Login failed: Email Address is required.");
-                return BadRequest("Email Address is required.");
-            }
-
-            if (String.IsNullOrWhiteSpace(model!.Password))
-            {
-                _logger.LogError("Login failed for {EmailAddress}: Password is required.", email);
-                return BadRequest("Password is required.");
-            }
-
-            // Only allow 5 password attempts per 15 minute period.
-            string userLoginAttemptsCacheKey = $"user:{email}:attempts";
-            long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
-
-            // Only allow 15 login attempts per 15 minute period by a single ip.
-            string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-            long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
-
-            if (userLoginAttempts > 5)
-            {
-                _logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time.", email, userLoginAttempts);
-                return Unauthorized();
-            }
-
-            if (ipLoginAttempts > 15)
-            {
-                _logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time.", Request.GetClientIpAddress(), ipLoginAttempts);
-                return Unauthorized();
-            }
-
-            User? user;
-            try
-            {
-                user = await _userRepository.GetByEmailAddressAsync(email);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
-                return Unauthorized();
-            }
-
-            if (user is null)
-            {
-                _logger.LogError("Login failed for {EmailAddress}: User not found.", email);
-                return Unauthorized();
-            }
-
-            if (!user.IsActive)
-            {
-                _logger.LogError("Login failed for {EmailAddress}: The user is inactive.", user.EmailAddress);
-                return Unauthorized();
-            }
-
-            if (!_authOptions.EnableActiveDirectoryAuth)
-            {
-                if (String.IsNullOrEmpty(user.Salt))
-                {
-                    _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined.", user.EmailAddress);
-                    return Unauthorized();
-                }
-
-                if (!user.IsCorrectPassword(model.Password))
-                {
-                    _logger.LogError("Login failed for {EmailAddress}: Invalid Password.", user.EmailAddress);
-                    return Unauthorized();
-                }
-
-                if (!PasswordMeetsRequirements(model.Password))
-                {
-                    _logger.LogError("Login denied for {EmailAddress} for invalid password.", email);
-                    return StatusCode(423, "Password requirements have changed. Password needs to be reset to meet the new requirements.");
-                }
-            }
-            else
-            {
-                if (!IsValidActiveDirectoryLogin(email, model.Password))
-                {
-                    _logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account.", user.EmailAddress);
-                    return Unauthorized();
-                }
-            }
-
-            if (!String.IsNullOrEmpty(model.InviteToken))
-                await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
-
-            await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-            await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
-
-            _logger.UserLoggedIn(user.EmailAddress);
-            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+            _logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time.", email, userLoginAttempts);
+            return Unauthorized();
         }
+
+        if (ipLoginAttempts > 15)
+        {
+            _logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time.", Request.GetClientIpAddress(), ipLoginAttempts);
+            return Unauthorized();
+        }
+
+        User? user;
+        try
+        {
+            user = await _userRepository.GetByEmailAddressAsync(email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
+            return Unauthorized();
+        }
+
+        if (user is null)
+        {
+            _logger.LogError("Login failed for {EmailAddress}: User not found.", email);
+            return Unauthorized();
+        }
+
+        if (!user.IsActive)
+        {
+            _logger.LogError("Login failed for {EmailAddress}: The user is inactive.", user.EmailAddress);
+            return Unauthorized();
+        }
+
+        if (!_authOptions.EnableActiveDirectoryAuth)
+        {
+            if (String.IsNullOrEmpty(user.Salt))
+            {
+                _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined.", user.EmailAddress);
+                return Unauthorized();
+            }
+
+            if (!user.IsCorrectPassword(model.Password))
+            {
+                _logger.LogError("Login failed for {EmailAddress}: Invalid Password.", user.EmailAddress);
+                return Unauthorized();
+            }
+
+            if (!PasswordMeetsRequirements(model.Password))
+            {
+                _logger.LogError("Login denied for {EmailAddress} for invalid password.", email);
+                return StatusCode(423, "Password requirements have changed. Password needs to be reset to meet the new requirements.");
+            }
+        }
+        else
+        {
+            if (!IsValidActiveDirectoryLogin(email, model.Password))
+            {
+                _logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account.", user.EmailAddress);
+                return Unauthorized();
+            }
+        }
+
+        if (!String.IsNullOrEmpty(model.InviteToken))
+            await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
+
+        await _cache.RemoveAsync(userLoginAttemptsCacheKey);
+        await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+
+        _logger.UserLoggedIn(user.EmailAddress);
+        return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
     }
 
     [ApiExplorerSettings(IgnoreApi = true)]

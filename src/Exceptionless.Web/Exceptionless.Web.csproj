@@ -15,6 +15,7 @@
     <EmbeddedResource Include="wwwroot\docs.css" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MicroElements.Swashbuckle.FluentValidation" Version="6.0.0-beta.3" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.10" />
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.0.2" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />

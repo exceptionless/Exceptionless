@@ -52,7 +52,7 @@ public class StackValidator : AbstractValidator<Stack>
         return Task.FromResult(Validate(context.InstanceToValidate));
     }
 
-    private bool IsObjectId(string value)
+    private static bool IsObjectId(string value)
     {
         if (String.IsNullOrEmpty(value))
             return false;

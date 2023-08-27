@@ -13,6 +13,7 @@ using FluentValidation.AspNetCore;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
+using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -159,6 +160,7 @@ public class Startup
             c.SupportNonNullableReferenceTypes();
         });
         services.AddSwaggerGenNewtonsoftSupport();
+        services.AddFluentValidationRulesToSwagger();
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
