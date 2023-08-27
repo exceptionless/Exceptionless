@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Exceptionless.Web.Models;
 
-public record LoginModel(string Email, string Password, string InviteToken = null);
+public record LoginModel(string Email, string Password, string? InviteToken = null);
 
 public class LoginModelValidator : AbstractValidator<LoginModel>
 {
