@@ -67,9 +67,9 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent { Geo = GREEN_BAY_COORDINATES };
-        await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
+        await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
         Assert.Equal(GREEN_BAY_COORDINATES, ev.Geo);
         Assert.Null(ev.GetLocation());
@@ -87,9 +87,9 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent { Geo = geo };
-        await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
+        await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
         Assert.Null(ev.Geo);
         Assert.Null(ev.GetLocation());
@@ -102,9 +102,9 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent { Geo = GREEN_BAY_IP };
-        await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
+        await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
         Assert.NotNull(ev.Geo);
         Assert.NotEqual(GREEN_BAY_IP, ev.Geo);
@@ -122,10 +122,10 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent();
         ev.AddRequestInfo(new RequestInfo { ClientIpAddress = GREEN_BAY_IP });
-        await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
+        await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
         Assert.NotNull(ev.Geo);
 
@@ -142,10 +142,10 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
         var ev = new PersistentEvent();
         ev.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = $"127.0.0.1,{GREEN_BAY_IP}" });
-        await plugin.EventBatchProcessingAsync(new List<EventContext> { new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
+        await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()) });
 
         Assert.NotNull(ev.Geo);
 
@@ -162,11 +162,11 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
 
         var contexts = new List<EventContext> {
-                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
+                new(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(new PersistentEvent { Geo = GREEN_BAY_IP }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             };
 
         await plugin.EventBatchProcessingAsync(contexts);
@@ -189,15 +189,15 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
 
         var ev = new PersistentEvent();
         var greenBayEvent = new PersistentEvent { Geo = GREEN_BAY_IP };
         var irvingEvent = new PersistentEvent { Geo = IRVING_IP };
         await plugin.EventBatchProcessingAsync(new List<EventContext> {
-                new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
+                new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
         AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
@@ -235,7 +235,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options);
+        var plugin = new GeoPlugin(resolver, _options, Log);
 
         var ev = new PersistentEvent();
         var greenBayEvent = new PersistentEvent();
@@ -243,9 +243,9 @@ public sealed class GeoTests : TestWithServices
         var irvingEvent = new PersistentEvent();
         irvingEvent.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = IRVING_IP });
         await plugin.EventBatchProcessingAsync(new List<EventContext> {
-                new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new EventContext(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
+                new(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(greenBayEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(irvingEvent, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
             });
 
         AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
@@ -297,11 +297,12 @@ public sealed class GeoTests : TestWithServices
     /// <summary>
     /// Takes in 32.8489,-96.9667 and only checks to one decimal place.
     /// </summary>
-    private void AssertCoordinatesAreEqual(string expected, string actual)
+    private void AssertCoordinatesAreEqual(string expected, string? actual)
     {
         if (String.Equals(actual, expected))
             return;
 
+        Assert.NotNull(actual);
         string[] actualParts = actual.Split(',');
         string[] expectedParts = expected.Split(',');
         if (actualParts.Length != expectedParts.Length || actualParts.Length != 2)
@@ -314,15 +315,15 @@ public sealed class GeoTests : TestWithServices
         Assert.Equal(Math.Round(Double.Parse(expectedParts[1]), 1), Math.Round(Double.Parse(actualParts[1]), 1));
     }
 
-    public static IEnumerable<object[]> IPData => new List<object[]> {
-            new object[] { null, false },
-            new object[] { "::1", false },
-            new object[] { "127.0.0.1", false },
-            new object[] { "10.0.0.0", false },
-            new object[] { "172.16.0.0", false },
-            new object[] { "172.31.255.255", false },
-            new object[] { "192.168.0.0", false },
-            new object[] { "8.8.4.4", true },
-            new object[] { "2001:4860:4860::8844", true }
+    public static IEnumerable<object?[]> IPData => new List<object?[]> {
+            new object?[] { null, false },
+            new object?[] { "::1", false },
+            new object?[] { "127.0.0.1", false },
+            new object?[] { "10.0.0.0", false },
+            new object?[] { "172.16.0.0", false },
+            new object?[] { "172.31.255.255", false },
+            new object?[] { "192.168.0.0", false },
+            new object?[] { "8.8.4.4", true },
+            new object?[] { "2001:4860:4860::8844", true }
         }.ToArray();
 }

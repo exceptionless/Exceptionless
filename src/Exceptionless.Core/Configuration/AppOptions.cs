@@ -9,26 +9,26 @@ namespace Exceptionless.Core;
 
 public class AppOptions
 {
-    public string BaseURL { get; internal set; }
+    public string BaseURL { get; internal set; } = null!;
 
     /// <summary>
     /// Internal project id keeps us from recursively logging to our self
     /// </summary>
-    public string InternalProjectId { get; internal set; }
+    public string InternalProjectId { get; internal set; } = null!;
 
     /// <summary>
     /// Configures the exceptionless client api key, which logs all internal errors and log messages.
     /// </summary>
-    public string ExceptionlessApiKey { get; internal set; }
+    public string? ExceptionlessApiKey { get; internal set; }
 
     /// <summary>
     /// Configures the exceptionless client server url, which logs all internal errors and log messages.
     /// </summary>
-    public string ExceptionlessServerUrl { get; internal set; }
+    public string? ExceptionlessServerUrl { get; internal set; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public AppMode AppMode { get; internal set; }
-    public string AppScope { get; internal set; }
+    public string AppScope { get; internal set; } = null!;
 
     public bool RunJobsInProcess { get; internal set; }
 
@@ -44,8 +44,8 @@ public class AppOptions
 
     public bool EventSubmissionDisabled { get; internal set; }
 
-    internal List<string> DisabledPipelineActions { get; set; }
-    internal List<string> DisabledPlugins { get; set; }
+    internal List<string> DisabledPipelineActions { get; set; } = null!;
+    internal List<string> DisabledPlugins { get; set; } = null!;
 
     /// <summary>
     /// In bytes
@@ -58,37 +58,37 @@ public class AppOptions
 
     public bool EnableWebSockets { get; internal set; }
 
-    public string Version { get; internal set; }
+    public string? Version { get; internal set; }
 
-    public string InformationalVersion { get; internal set; }
+    public string? InformationalVersion { get; internal set; }
 
-    public string GoogleGeocodingApiKey { get; internal set; }
+    public string? GoogleGeocodingApiKey { get; internal set; }
 
-    public string MaxMindGeoIpKey { get; internal set; }
+    public string? MaxMindGeoIpKey { get; internal set; }
 
     public int BulkBatchSize { get; internal set; }
 
-    public CacheOptions CacheOptions { get; internal set; }
-    public MessageBusOptions MessageBusOptions { get; internal set; }
-    public QueueOptions QueueOptions { get; internal set; }
-    public StorageOptions StorageOptions { get; internal set; }
-    public EmailOptions EmailOptions { get; internal set; }
-    public ElasticsearchOptions ElasticsearchOptions { get; internal set; }
-    public IntercomOptions IntercomOptions { get; internal set; }
-    public SlackOptions SlackOptions { get; internal set; }
-    public StripeOptions StripeOptions { get; internal set; }
-    public AuthOptions AuthOptions { get; internal set; }
+    public CacheOptions CacheOptions { get; internal set; } = null!;
+    public MessageBusOptions MessageBusOptions { get; internal set; } = null!;
+    public QueueOptions QueueOptions { get; internal set; } = null!;
+    public StorageOptions StorageOptions { get; internal set; } = null!;
+    public EmailOptions EmailOptions { get; internal set; } = null!;
+    public ElasticsearchOptions ElasticsearchOptions { get; internal set; } = null!;
+    public IntercomOptions IntercomOptions { get; internal set; } = null!;
+    public SlackOptions SlackOptions { get; internal set; } = null!;
+    public StripeOptions StripeOptions { get; internal set; } = null!;
+    public AuthOptions AuthOptions { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new AppOptions();
-        options.BaseURL = config.GetValue<string>(nameof(options.BaseURL))?.TrimEnd('/');
-        options.InternalProjectId = config.GetValue(nameof(options.InternalProjectId), "54b56e480ef9605a88a13153");
+        options.BaseURL = config.GetValue<string>(nameof(options.BaseURL))?.TrimEnd('/') ?? throw new ApplicationException("BaseURL is a required configuration setting");
+        options.InternalProjectId = config.GetValue(nameof(options.InternalProjectId), "54b56e480ef9605a88a13153")!;
         options.ExceptionlessApiKey = config.GetValue<string>(nameof(options.ExceptionlessApiKey));
         options.ExceptionlessServerUrl = config.GetValue<string>(nameof(options.ExceptionlessServerUrl));
 
         options.AppMode = config.GetValue(nameof(options.AppMode), AppMode.Production);
-        options.AppScope = config.GetValue(nameof(options.AppScope), options.AppMode.ToScope());
+        options.AppScope = config.GetValue(nameof(options.AppScope), options.AppMode.ToScope())!;
         options.RunJobsInProcess = config.GetValue(nameof(options.RunJobsInProcess), options.AppMode == AppMode.Development);
         options.JobsIterationLimit = config.GetValue(nameof(options.JobsIterationLimit), -1);
         options.BotThrottleLimit = config.GetValue(nameof(options.BotThrottleLimit), 25).NormalizeValue();
@@ -113,8 +113,8 @@ public class AppOptions
         try
         {
             var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);
-            options.Version = versionInfo.FileVersion;
-            options.InformationalVersion = versionInfo.ProductVersion;
+            options.Version = versionInfo?.FileVersion;
+            options.InformationalVersion = versionInfo?.ProductVersion;
         }
         catch { }
 

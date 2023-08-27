@@ -13,7 +13,7 @@ public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwn
         AddPropertyRequiredForRemove(o => o.ProjectId);
     }
 
-    public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T> options = null)
+    public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T>? options = null)
     {
         if (String.IsNullOrEmpty(projectId))
             throw new ArgumentNullException(nameof(projectId));

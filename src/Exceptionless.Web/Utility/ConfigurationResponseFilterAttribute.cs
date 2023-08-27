@@ -8,18 +8,18 @@ public class ConfigurationResponseFilterAttribute : ActionFilterAttribute
 {
     public override void OnActionExecuted(ActionExecutedContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
-        if (context.HttpContext.Response == null || (context.HttpContext.Response.StatusCode != StatusCodes.Status200OK && context.HttpContext.Response.StatusCode != StatusCodes.Status202Accepted))
+        if (context.HttpContext.Response.StatusCode != StatusCodes.Status200OK && context.HttpContext.Response.StatusCode != StatusCodes.Status202Accepted)
             return;
 
-        var project = context.HttpContext.Request?.GetProject();
-        if (project == null)
+        var project = context.HttpContext.Request.GetProject();
+        if (project is null)
             return;
 
         string headerName = Headers.ConfigurationVersion;
-        if (context.HttpContext.Request.Path.Value.StartsWith("/api/v1"))
+        if (context.HttpContext.Request.Path.Value is not null && context.HttpContext.Request.Path.Value.StartsWith("/api/v1"))
             headerName = Headers.LegacyConfigurationVersion;
 
         // add the current configuration version to the response headers so the client will know if it should update its config.

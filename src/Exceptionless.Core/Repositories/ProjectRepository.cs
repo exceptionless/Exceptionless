@@ -24,7 +24,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             project.Value.TrimUsage();
     }
 
-    public async Task<Project> GetConfigAsync(string projectId)
+    public async Task<Project?> GetConfigAsync(string? projectId)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;
@@ -34,7 +34,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             return configCacheValue.Value;
 
         var project = await FindOneAsync(q => q.Id(projectId).Include(p => p.Configuration, p => p.OrganizationId));
-        if (project?.Document == null)
+        if (project?.Document is null)
             return null;
 
         await Cache.AddAsync($"config:{projectId}", project.Document);
@@ -50,9 +50,9 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         return CountAsync(q => q.Organization(organizationId), o => o.Cache(String.Concat("Organization:", organizationId)));
     }
 
-    public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project> options = null)
+    public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project>? options = null)
     {
-        if (organizationIds == null)
+        if (organizationIds is null)
             throw new ArgumentNullException(nameof(organizationIds));
 
         if (organizationIds.Count == 0)
@@ -61,7 +61,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         return FindAsync(q => q.Organization(organizationIds).SortAscending(p => p.Name.Suffix("keyword")), options);
     }
 
-    public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string userFilter, string sort, CommandOptionsDescriptor<Project> options = null)
+    public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Project>? options = null)
     {
         IRepositoryQuery<Project> query = new RepositoryQuery<Project>()
             .AppFilter(systemFilter)
@@ -79,7 +79,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
 
     public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects)
     {
-        if (projects == null)
+        if (projects is null)
             throw new ArgumentNullException(nameof(projects));
 
         if (projects.Count == 0)

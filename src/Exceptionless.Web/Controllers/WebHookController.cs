@@ -42,13 +42,13 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     public async Task<ActionResult<IReadOnlyCollection<WebHook>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10)
     {
         var project = await GetProjectAsync(projectId);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByProjectIdAsync(projectId, o => o.PageNumber(page).PageLimit(limit));
-        return OkWithResourceLinks(results.Documents, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+        return OkWithResourceLinks(results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
     }
 
     /// <summary>
@@ -106,21 +106,30 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1)
     {
+        string? eventType = data.GetValue("event")?.Value<string>();
+        string? url = data.GetValue("target_url")?.Value<string>();
+        if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
+            return BadRequest();
+
+        string? projectId = User.GetProjectId();
+        if (projectId is null)
+            return BadRequest();
+
+        string? organizationId = Request.GetDefaultOrganizationId();
+        if (organizationId is null)
+            return BadRequest();
+
         var webHook = new NewWebHook
         {
-            EventTypes = new[] { data.GetValue("event").Value<string>() },
-            Url = data.GetValue("target_url").Value<string>(),
+            OrganizationId = organizationId,
+            ProjectId = projectId,
+            EventTypes = new[] { eventType },
+            Url = url,
             Version = new Version(apiVersion >= 0 ? apiVersion : 0, 0)
         };
 
         if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
             return NotFound();
-
-        string projectId = User.GetProjectId();
-        if (projectId != null)
-            webHook.ProjectId = projectId;
-        else
-            webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
         return await PostImplAsync(webHook);
     }
@@ -135,10 +144,10 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> UnsubscribeAsync(JObject data)
     {
-        string targetUrl = data.GetValue("target_url").Value<string>();
+        string? targetUrl = data.GetValue("target_url")?.Value<string>();
 
         // don't let this anon method delete non-zapier hooks
-        if (!targetUrl.StartsWith("https://hooks.zapier.com"))
+        if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com"))
             return NotFound();
 
         var results = await _repository.GetByUrlAsync(targetUrl);
@@ -171,13 +180,13 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
             });
     }
 
-    protected override async Task<WebHook> GetModelAsync(string id, bool useCache = true)
+    protected override async Task<WebHook?> GetModelAsync(string id, bool useCache = true)
     {
         if (String.IsNullOrEmpty(id))
             return null;
 
         var webHook = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
-        if (webHook == null)
+        if (webHook is null)
             return null;
 
         if (!String.IsNullOrEmpty(webHook.OrganizationId) && !IsInOrganization(webHook.OrganizationId))
@@ -191,7 +200,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
 
     protected override async Task<IReadOnlyCollection<WebHook>> GetModelsAsync(string[] ids, bool useCache = true)
     {
-        if (ids == null || ids.Length == 0)
+        if (ids is null || ids.Length == 0)
             return EmptyModels;
 
         var webHooks = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
@@ -220,17 +229,17 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
             return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
-        Project project = null;
+        Project? project = null;
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             project = await GetProjectAsync(value.ProjectId);
-            if (project == null)
+            if (project is null)
                 return PermissionResult.DenyWithMessage("Invalid project id specified.");
 
             value.OrganizationId = project.OrganizationId;
         }
 
-        if (!await _billingManager.HasPremiumFeaturesAsync(project != null ? project.OrganizationId : value.OrganizationId))
+        if (!await _billingManager.HasPremiumFeaturesAsync(project is not null ? project.OrganizationId : value.OrganizationId))
             return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
         return PermissionResult.Allow;
@@ -255,13 +264,13 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         return PermissionResult.Allow;
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
-        if (project == null || !CanAccessOrganization(project.OrganizationId))
+        if (project is null || !CanAccessOrganization(project.OrganizationId))
             return null;
 
         return project;
@@ -270,7 +279,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     private async Task<bool> IsInProjectAsync(string projectId)
     {
         var project = await GetProjectAsync(projectId);
-        return project != null;
+        return project is not null;
     }
 
     private bool IsValidWebHookVersion(string version)

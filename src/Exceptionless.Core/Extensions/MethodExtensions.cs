@@ -5,11 +5,8 @@ namespace Exceptionless.Core.Extensions;
 
 public static class MethodExtensions
 {
-    public static string GetFullName(this Method method)
+    public static string? GetFullName(this Method method)
     {
-        if (method == null)
-            return null;
-
         var sb = new StringBuilder();
         AppendMethod(method, sb, includeParameters: false);
         return sb.ToString();
@@ -17,15 +14,12 @@ public static class MethodExtensions
 
     public static string GetSignature(this Method method)
     {
-        if (method == null)
-            return null;
-
         var sb = new StringBuilder();
         AppendMethod(method, sb);
         return sb.ToString();
     }
 
-    internal static void AppendMethod(Method method, StringBuilder sb, bool includeParameters = true)
+    internal static void AppendMethod(Method? method, StringBuilder sb, bool includeParameters = true)
     {
         if (String.IsNullOrEmpty(method?.Name))
         {

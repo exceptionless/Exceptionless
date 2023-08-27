@@ -28,14 +28,14 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         return _validator.ValidateAndThrowAsync(document);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object> data = null, TimeSpan? delay = null)
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
     {
         if (!NotificationsEnabled)
             return Task.CompletedTask;
 
-        string organizationId = (document as IOwnedByOrganization)?.OrganizationId;
-        string projectId = (document as IOwnedByProject)?.ProjectId;
-        string stackId = (document as IOwnedByStack)?.StackId;
+        string? organizationId = (document as IOwnedByOrganization)?.OrganizationId;
+        string? projectId = (document as IOwnedByProject)?.ProjectId;
+        string? stackId = (document as IOwnedByStack)?.StackId;
         return PublishMessageAsync(CreateEntityChanged(changeType, organizationId, projectId, stackId, document?.Id, data), delay);
     }
 
@@ -51,11 +51,11 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         var ids = query.GetIds();
         var tasks = new List<Task>();
 
-        string organizationId = organizations.Count == 1 ? organizations.Single() : null;
+        string? organizationId = organizations.Count == 1 ? organizations.Single() : null;
         if (ids.Count > 0)
         {
-            string projectId = projects.Count == 1 ? projects.Single() : null;
-            string stackId = stacks.Count == 1 ? stacks.Single() : null;
+            string? projectId = projects.Count == 1 ? projects.Single() : null;
+            string? stackId = stacks.Count == 1 ? stacks.Single() : null;
 
             foreach (string id in ids)
                 tasks.Add(PublishMessageAsync(CreateEntityChanged(changeType, organizationId, projectId, stackId, id), delay));
@@ -65,7 +65,7 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
 
         if (stacks.Count > 0)
         {
-            string projectId = projects.Count == 1 ? projects.Single() : null;
+            string? projectId = projects.Count == 1 ? projects.Single() : null;
             foreach (string stackId in stacks)
                 tasks.Add(PublishMessageAsync(CreateEntityChanged(changeType, organizationId, projectId, stackId), delay));
 
@@ -95,7 +95,7 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         }, delay);
     }
 
-    protected EntityChanged CreateEntityChanged(ChangeType changeType, string organizationId = null, string projectId = null, string stackId = null, string id = null, IDictionary<string, object> data = null)
+    protected EntityChanged CreateEntityChanged(ChangeType changeType, string? organizationId = null, string? projectId = null, string? stackId = null, string? id = null, IDictionary<string, object>? data = null)
     {
         var model = new EntityChanged
         {
@@ -104,19 +104,19 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
             Id = id
         };
 
-        if (data != null)
+        if (data is not null)
         {
             foreach (var kvp in data)
                 model.Data[kvp.Key] = kvp.Value;
         }
 
-        if (organizationId != null)
+        if (organizationId is not null)
             model.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = organizationId;
 
-        if (projectId != null)
+        if (projectId is not null)
             model.Data[ExtendedEntityChanged.KnownKeys.ProjectId] = projectId;
 
-        if (stackId != null)
+        if (stackId is not null)
             model.Data[ExtendedEntityChanged.KnownKeys.StackId] = stackId;
 
         return model;

@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 [Priority(844)]
 public class V1R844EventUpgrade : PluginBase, IEventUpgraderPlugin
 {
-    public V1R844EventUpgrade(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public V1R844EventUpgrade(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public void Upgrade(EventUpgraderContext ctx)
     {
@@ -17,22 +17,22 @@ public class V1R844EventUpgrade : PluginBase, IEventUpgraderPlugin
         foreach (var doc in ctx.Documents)
         {
 
-            if (!(doc["RequestInfo"] is JObject requestInfo) || !requestInfo.HasValues)
+            if (!(doc["RequestInfo"] is JObject { HasValues: true } requestInfo))
                 return;
 
-            if (requestInfo["Cookies"] != null && requestInfo["Cookies"].HasValues)
+            if (requestInfo["Cookies"] is not null && requestInfo["Cookies"]!.HasValues)
             {
                 if (requestInfo["Cookies"] is JObject cookies)
                     cookies.Remove("");
             }
 
-            if (requestInfo["Form"] != null && requestInfo["Form"].HasValues)
+            if (requestInfo["Form"] is not null && requestInfo["Form"]!.HasValues)
             {
                 if (requestInfo["Form"] is JObject form)
                     form.Remove("");
             }
 
-            if (requestInfo["QueryString"] != null && requestInfo["QueryString"].HasValues)
+            if (requestInfo["QueryString"] is not null && requestInfo["QueryString"]!.HasValues)
             {
                 if (requestInfo["QueryString"] is JObject queryString)
                     queryString.Remove("");

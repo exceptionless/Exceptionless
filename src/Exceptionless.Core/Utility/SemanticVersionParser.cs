@@ -13,14 +13,14 @@ public class SemanticVersionParser
         _logger = loggerFactory.CreateLogger<SemanticVersionParser>();
     }
 
-    public SemanticVersion Default { get; } = new SemanticVersion(0, 0);
+    public SemanticVersion Default { get; } = new(0, 0);
 
-    public SemanticVersion Parse(string version, IDictionary<string, SemanticVersion> versionCache = null)
+    public SemanticVersion? Parse(string? version, IDictionary<string, SemanticVersion>? versionCache = null)
     {
-        if (version == null || version.Length == 0)
+        if (string.IsNullOrEmpty(version))
             return null;
 
-        if (versionCache != null && versionCache.TryGetValue(version, out var cachedVersion))
+        if (versionCache is not null && versionCache.TryGetValue(version, out var cachedVersion))
             return cachedVersion;
 
         int wildCardIndex = version.IndexOf('*');
@@ -29,7 +29,7 @@ public class SemanticVersionParser
 
         if (version.Length >= 5 && SemanticVersion.TryParse(version, out var semanticVersion))
         {
-            if (versionCache != null)
+            if (versionCache is not null)
                 versionCache[version] = semanticVersion;
 
             return semanticVersion;
@@ -41,7 +41,7 @@ public class SemanticVersionParser
 
         if (SemanticVersion.TryParse(version, ParseMode.Lenient, out semanticVersion))
         {
-            if (versionCache != null)
+            if (versionCache is not null)
                 versionCache[version] = semanticVersion;
 
             return semanticVersion;
@@ -54,7 +54,7 @@ public class SemanticVersionParser
         else
             _logger.LogInformation("Unable to parse version: {Version}", version);
 
-        if (versionCache != null)
+        if (versionCache is not null)
             versionCache[version] = semanticVersion;
 
         return semanticVersion;

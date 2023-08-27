@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(30)]
 public sealed class SimpleErrorPlugin : EventProcessorPluginBase
 {
-    public SimpleErrorPlugin(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public SimpleErrorPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task EventProcessingAsync(EventContext context)
     {
@@ -17,7 +17,7 @@ public sealed class SimpleErrorPlugin : EventProcessorPluginBase
             return Task.CompletedTask;
 
         var error = context.Event.GetSimpleError();
-        if (error == null)
+        if (error is null)
             return Task.CompletedTask;
 
         if (String.IsNullOrWhiteSpace(context.Event.Message))
@@ -33,7 +33,7 @@ public sealed class SimpleErrorPlugin : EventProcessorPluginBase
         if (!String.IsNullOrEmpty(error.StackTrace))
             context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
 
-        error.Data[Error.KnownDataKeys.TargetInfo] = new SettingsDictionary(context.StackSignatureData);
+        error.SetTargetInfo(new SettingsDictionary(context.StackSignatureData));
         return Task.CompletedTask;
     }
 }

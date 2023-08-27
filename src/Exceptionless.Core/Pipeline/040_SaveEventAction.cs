@@ -10,7 +10,7 @@ public class SaveEventAction : EventPipelineActionBase
 {
     private readonly IEventRepository _eventRepository;
 
-    public SaveEventAction(IEventRepository eventRepository, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public SaveEventAction(IEventRepository eventRepository, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _eventRepository = eventRepository;
     }

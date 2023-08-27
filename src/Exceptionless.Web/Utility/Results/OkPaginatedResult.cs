@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Utility.Results;
 
 public class OkPaginatedResult : ObjectWithHeadersResult
 {
-    public OkPaginatedResult(object content, bool hasMore, int page, long? total = null, IHeaderDictionary headers = null) : base(content, headers)
+    public OkPaginatedResult(object? content, bool hasMore, int page, long? total = null, IHeaderDictionary? headers = null) : base(content, headers)
     {
         StatusCode = StatusCodes.Status200OK;
         HasMore = hasMore;
@@ -55,6 +56,6 @@ public class OkPaginatedResult : ObjectWithHeadersResult
             links.Add(String.Concat("<", request.Path, "?", String.Join('&', nextParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")), ">; rel=\"next\""));
         }
 
-        Headers.Add(Headers.Link, links.ToArray());
+        Headers.Add(HeaderNames.Link, links.ToArray());
     }
 }

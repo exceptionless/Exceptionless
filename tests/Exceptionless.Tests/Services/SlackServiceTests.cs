@@ -6,6 +6,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Services;
 
@@ -18,6 +19,7 @@ public sealed class SlackServiceTests : TestWithServices
     {
         _slackService = GetService<SlackService>();
         _project = ProjectData.GenerateSampleProject();
+        _project.Data ??= new DataDictionary();
         _project.Data[Project.KnownDataKeys.SlackToken] = new SlackToken
         {
             AccessToken = "MY KEY",
@@ -249,6 +251,6 @@ public sealed class SlackServiceTests : TestWithServices
             return ex;
         }
 
-        return null;
+        throw new InvalidOperationException("Should never reach here");
     }
 }

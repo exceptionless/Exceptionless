@@ -67,7 +67,7 @@ public class Bootstrapper
             });
 
             CreateMap<NewProject, Project>();
-            CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));
+            CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data is not null && p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));
 
             CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
             CreateMap<Token, ViewToken>();

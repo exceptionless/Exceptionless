@@ -4,25 +4,19 @@ namespace Exceptionless.Core.Models.Data;
 
 public class Parameter : IData
 {
-    public Parameter()
-    {
-        Data = new DataDictionary();
-        GenericArguments = new GenericArguments();
-    }
+    public string? Name { get; set; }
+    public string? Type { get; set; }
+    public string? TypeNamespace { get; set; }
 
-    public string Name { get; set; }
-    public string Type { get; set; }
-    public string TypeNamespace { get; set; }
-
-    public DataDictionary Data { get; set; }
-    public GenericArguments GenericArguments { get; set; }
+    public DataDictionary? Data { get; set; } = new();
+    public GenericArguments? GenericArguments { get; set; } = new();
 
     protected bool Equals(Parameter other)
     {
         return String.Equals(Name, other.Name) && String.Equals(Type, other.Type) && String.Equals(TypeNamespace, other.TypeNamespace) && Equals(Data, other.Data) && GenericArguments.CollectionEquals(other.GenericArguments);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

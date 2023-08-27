@@ -21,60 +21,48 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
 
     public bool Login(string username, string password)
     {
-        using (var de = new DirectoryEntry(_authOptions.LdapConnectionString, username, password, AuthenticationTypes.Secure))
+        using var de = new DirectoryEntry(_authOptions.LdapConnectionString, username, password, AuthenticationTypes.Secure);
+        using var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME });
+        try
         {
-            using (var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME }))
-            {
-                try
-                {
-                    var result = ds.FindOne();
-                    return result != null;
-                }
-                // Catch "username and password are invalid"
-                catch (DirectoryServicesCOMException ex) when (ex.ErrorCode == -2147023570)
-                {
-                    return false;
-                }
-            }
+            var result = ds.FindOne();
+            return result is not null;
+        }
+        catch (DirectoryServicesCOMException ex) when (ex.ErrorCode == -2147023570)
+        {
+            // Catch "username and password are invalid"
+            return false;
         }
     }
 
-    public string GetUsernameFromEmailAddress(string email)
+    public string? GetUsernameFromEmailAddress(string email)
     {
-        using (var entry = new DirectoryEntry(_authOptions.LdapConnectionString))
-        {
-            using (var searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", new[] { AD_USERNAME }))
-            {
-                var result = searcher.FindOne();
-                return result?.Properties[AD_USERNAME][0].ToString();
-            }
-        }
+        using var entry = new DirectoryEntry(_authOptions.LdapConnectionString);
+        using var searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", new[] { AD_USERNAME });
+        var result = searcher.FindOne();
+        return result?.Properties[AD_USERNAME][0].ToString();
     }
 
-    public string GetEmailAddressFromUsername(string username)
+    public string? GetEmailAddressFromUsername(string username)
     {
         var result = FindUser(username);
         return result?.Properties[AD_EMAIL][0].ToString();
     }
 
-    public string GetUserFullName(string username)
+    public string? GetUserFullName(string username)
     {
         var result = FindUser(username);
-        if (result == null)
+        if (result is null)
             return null;
 
         return $"{result.Properties[AD_FIRSTNAME][0]} {result.Properties[AD_LASTNAME]}";
     }
 
-    private SearchResult FindUser(string username)
+    private SearchResult? FindUser(string username)
     {
-        using (var entry = new DirectoryEntry(_authOptions.LdapConnectionString))
-        {
-            using (var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", new[] { AD_FIRSTNAME, AD_LASTNAME, AD_EMAIL }))
-            {
-                return searcher.FindOne();
-            }
-        }
+        using var entry = new DirectoryEntry(_authOptions.LdapConnectionString);
+        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", new[] { AD_FIRSTNAME, AD_LASTNAME, AD_EMAIL });
+        return searcher.FindOne();
     }
 }
 #pragma warning restore CA1416

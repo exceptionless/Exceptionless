@@ -9,11 +9,10 @@ internal static class EventSourceEventFormatter
 
     public static string Format(EventWrittenEventArgs eventData)
     {
-        var payloadCollection = eventData.Payload.ToArray() ?? EmptyPayload;
+        var payloadCollection = eventData.Payload?.ToArray() ?? EmptyPayload;
+        ProcessPayloadArray(payloadCollection!);
 
-        ProcessPayloadArray(payloadCollection);
-
-        if (eventData.Message != null)
+        if (eventData.Message is not null)
         {
             try
             {
@@ -36,7 +35,7 @@ internal static class EventSourceEventFormatter
                 stringBuilder.Append(nameof(eventData.Message)).Append(" = ").Append(eventData.Message);
             }
 
-            if (eventData.PayloadNames != null)
+            if (eventData.PayloadNames is not null)
             {
                 for (int i = 0; i < eventData.PayloadNames.Count; i++)
                 {

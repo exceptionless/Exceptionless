@@ -10,37 +10,30 @@ namespace Exceptionless.Core.Models;
 [DebuggerDisplay("Id={Id} Type={Type} Status={Status} IsDeleted={IsDeleted} Title={Title} TotalOccurrences={TotalOccurrences}")]
 public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes
 {
-    public Stack()
-    {
-        Tags = new TagSet();
-        References = new Collection<string>();
-        SignatureInfo = new SettingsDictionary();
-    }
-
     /// <summary>
     /// Unique id that identifies a stack.
     /// </summary>
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
 
     /// <summary>
     /// The organization that the stack belongs to.
     /// </summary>
-    public string OrganizationId { get; set; }
+    public string OrganizationId { get; set; } = null!;
 
     /// <summary>
     /// The project that the stack belongs to.
     /// </summary>
-    public string ProjectId { get; set; }
+    public string ProjectId { get; set; } = null!;
 
     /// <summary>
     /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
     /// </summary>
-    public string Type { get; set; }
+    public string Type { get; set; } = null!;
 
     /// <summary>
-    /// The stack status (ie. open, fixed, regressed, 
+    /// The stack status (ie. open, fixed, regressed,
     /// </summary>
-    public StackStatus Status { get; set; }
+    public StackStatus Status { get; set; } = StackStatus.Open;
 
     /// <summary>
     /// The date that the stack should be snoozed until.
@@ -50,17 +43,17 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The signature used for stacking future occurrences.
     /// </summary>
-    public string SignatureHash { get; set; }
+    public string SignatureHash { get; set; } = null!;
 
     /// <summary>
     /// The collection of information that went into creating the signature hash for the stack.
     /// </summary>
-    public SettingsDictionary SignatureInfo { get; set; }
+    public SettingsDictionary SignatureInfo { get; set; } = new();
 
     /// <summary>
     /// The version the stack was fixed in.
     /// </summary>
-    public string FixedInVersion { get; set; }
+    public string? FixedInVersion { get; set; }
 
     /// <summary>
     /// The date the stack was fixed.
@@ -70,7 +63,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack title.
     /// </summary>
-    public string Title { get; set; }
+    public string Title { get; set; } = null!;
 
     /// <summary>
     /// The total number of occurrences in the stack.
@@ -90,7 +83,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack description.
     /// </summary>
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// If true, all future occurrences will be marked as critical.
@@ -100,17 +93,17 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// A list of references.
     /// </summary>
-    public ICollection<string> References { get; set; }
+    public ICollection<string> References { get; set; } = new Collection<string>();
 
     /// <summary>
     /// A list of tags used to categorize this stack.
     /// </summary>
-    public TagSet Tags { get; set; }
+    public TagSet Tags { get; set; } = new();
 
     /// <summary>
     /// The signature used for finding duplicate stacks. (ProjectId, SignatureHash)
     /// </summary>
-    public string DuplicateSignature { get; set; }
+    public string DuplicateSignature { get; set; } = null!;
 
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }

@@ -311,6 +311,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(user);
         Assert.Equal("Test", user.FullName);
         Assert.NotEmpty(user.OrganizationIds);
+        Assert.NotNull(user.Salt);
         Assert.True(user.IsEmailAddressVerified);
         Assert.Equal(password.ToSaltedHash(user.Salt), user.Password);
         Assert.Contains(organization.Id, user.OrganizationIds);
@@ -324,6 +325,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.Equal(TokenType.Authentication, token.Type);
 
         var mailQueue = GetService<IQueue<MailMessage>>() as InMemoryQueue<MailMessage>;
+        Assert.NotNull(mailQueue);
         Assert.Equal(0, (await mailQueue.GetQueueStatsAsync()).Enqueued);
     }
 

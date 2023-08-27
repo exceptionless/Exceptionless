@@ -92,7 +92,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<CountResult>> GetCountAsync(string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null)
+    public async Task<ActionResult<CountResult>> GetCountAsync(string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -115,10 +115,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<CountResult>> GetCountByOrganizationAsync(string organizationId, string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null)
+    public async Task<ActionResult<CountResult>> GetCountByOrganizationAsync(string organizationId, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -141,7 +141,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string filter = null, string aggregations = null, string time = null, string offset = null, string mode = null)
+    public async Task<ActionResult<CountResult>> GetCountByProjectAsync(string projectId, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -169,14 +169,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrence due to plan limits.</response>
     [HttpGet("{id:objectid}", Name = "GetPersistentEventById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string time = null, string offset = null)
+    public async Task<ActionResult<PersistentEvent>> GetAsync(string id, string? time = null, string? offset = null)
     {
         var model = await GetModelAsync(id, false);
-        if (model == null)
+        if (model is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(model.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < SystemClock.UtcNow.SubtractDays(organization.RetentionDays))
@@ -203,7 +203,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -214,7 +214,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
 
-    private async Task<ActionResult<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string aggregations = null, string mode = null)
+    private async Task<ActionResult<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? aggregations = null, string? mode = null)
     {
         var pr = await _validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
@@ -241,7 +241,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations.");
 
             return BadRequest("An error has occurred. Please check your search filter.");
@@ -250,7 +250,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return Ok(result);
     }
 
-    private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string filter = null, string sort = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null, bool usesPremiumFeatures = false)
+    private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false)
     {
         using var _ = _logger.BeginScope(new ExceptionlessState()
             .Property("Search Filter", new
@@ -265,7 +265,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 After = after
             })
             .Tag("Search")
-            .Identity(CurrentUser.EmailAddress)
+            .Identity(CurrentUser?.EmailAddress)
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext)
         );
@@ -313,7 +313,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
                         .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
 
-                    string stackAggregations = mode switch
+                    string? stackAggregations = mode switch
                     {
                         "stack_recent" => "cardinality:user sum:count~1 min:date -max:date",
                         "stack_frequent" => "cardinality:user -sum:count~1 min:date max:date",
@@ -332,7 +332,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})"));
 
                     var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
-                    if (stackTerms == null || stackTerms.Buckets.Count == 0)
+                    if (stackTerms is null || stackTerms.Buckets.Count == 0)
                         return Ok(EmptyModels);
 
                     string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
@@ -342,7 +342,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, resolvedPage);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
-                    return OkWithResourceLinks(events.Documents, events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
+                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
             }
         }
         catch (ApplicationException ex)
@@ -356,10 +356,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
     }
 
-    private string AddFirstOccurrenceFilter(DateTimeRange timeRange, string filter)
+    private string AddFirstOccurrenceFilter(DateTimeRange timeRange, string? filter)
     {
         bool inverted = false;
-        if (filter != null && filter.StartsWith("@!"))
+        if (filter is not null && filter.StartsWith("@!"))
         {
             inverted = true;
             filter = filter.Substring(2);
@@ -390,7 +390,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return sb.ToString();
     }
 
-    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string filter, string sort, int? page, int limit, string before, string after)
+    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after)
     {
         if (String.IsNullOrEmpty(sort))
             sort = $"-{EventIndex.Alias.Date}";
@@ -424,10 +424,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -456,7 +456,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -492,14 +492,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByStackAsync(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByStackAsync(string stackId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var stack = await GetStackAsync(stackId);
-        if (stack == null)
+        if (stack is null)
             return NotFound();
 
         var organization = await GetOrganizationAsync(stack.OrganizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -523,7 +523,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("by-ref/{referenceId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
         if (organizations.All(o => o.IsSuspended))
@@ -550,7 +550,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -584,7 +584,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions/{sessionId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -614,7 +614,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -647,7 +647,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -676,10 +676,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (organization.IsSuspended)
@@ -708,7 +708,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int? page = null, int limit = 10, string before = null, string after = null)
+    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -740,9 +740,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Consumes("application/json")]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null)
+    public async Task<IActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string? projectId = null)
     {
-        string claimProjectId = Request.GetProjectId();
+        string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
@@ -752,7 +752,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (String.IsNullOrEmpty(referenceId))
             return NotFound();
 
-        if (description == null)
+        if (description is null)
             return BadRequest("Description must be specified.");
 
         projectId ??= claimProjectId ?? Request.GetDefaultProjectId();
@@ -773,7 +773,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         Request.SetProject(project);
 
         var eventUserDescription = await MapAsync<EventUserDescription>(description);
-        eventUserDescription.ProjectId = projectId;
+        eventUserDescription.ProjectId = project.Id;
         eventUserDescription.ReferenceId = referenceId;
 
         await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
@@ -786,10 +786,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ConfigurationResponseFilter]
     public async Task<IActionResult> LegacyPatchAsync(string id, Delta<UpdateEvent> changes)
     {
-        if (changes == null)
+        if (changes is null)
             return Ok();
 
-        if (changes.UnknownProperties.TryGetValue("UserEmail", out object value))
+        if (changes.UnknownProperties.TryGetValue("UserEmail", out object? value))
             changes.TrySetPropertyValue("EmailAddress", value);
         if (changes.UnknownProperties.TryGetValue("UserDescription", out value))
             changes.TrySetPropertyValue("Description", value);
@@ -809,12 +809,12 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">No project id specified and no default project was found.</response>
     /// <response code="404">No project was found.</response>
     [HttpGet("session/heartbeat")]
-    public async Task<IActionResult> RecordHeartbeatAsync(string id = null, bool close = false)
+    public async Task<IActionResult> RecordHeartbeatAsync(string? id = null, bool close = false)
     {
         if (_appOptions.EventSubmissionDisabled || String.IsNullOrEmpty(id))
             return Ok();
 
-        string projectId = Request.GetDefaultProjectId();
+        string? projectId = Request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
             return BadRequest("No project id specified and no default project was found.");
 
@@ -847,7 +847,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
     [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
     [ConfigurationResponseFilter]
-    public Task<ActionResult> GetSubmitEventV1Async(string projectId = null, string type = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null)
+    public Task<ActionResult> GetSubmitEventV1Async(string? projectId = null, string? type = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(projectId, 1, type, userAgent, parameters);
     }
@@ -882,9 +882,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">No project was found.</response>
     [HttpGet("submit")]
     [ConfigurationResponseFilter]
-    public Task<ActionResult> GetSubmitEventV2Async(string type = null, string source = null, string message = null, string reference = null,
-        string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
-        string identityname = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null)
+    public Task<ActionResult> GetSubmitEventV2Async(string? type = null, string? source = null, string? message = null, string? reference = null,
+        string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
+        string? identityname = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(null, 2, null, userAgent, parameters);
     }
@@ -919,9 +919,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">No project was found.</response>
     [HttpGet("submit/{type:minlength(1)}")]
     [ConfigurationResponseFilter]
-    public Task<ActionResult> GetSubmitEventByTypeV2Async(string type, string source = null, string message = null, string reference = null,
-        string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
-        string identityname = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null)
+    public Task<ActionResult> GetSubmitEventByTypeV2Async(string type, string? source = null, string? message = null, string? reference = null,
+        string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
+        string? identityname = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(null, 2, type, userAgent, parameters);
     }
@@ -958,16 +958,16 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit")]
     [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
     [ConfigurationResponseFilter]
-    public Task<ActionResult> GetSubmitEventByProjectV2Async(string projectId, string type = null, string source = null, string message = null, string reference = null,
-        string date = null, int? count = null, decimal? value = null, string geo = null, string tags = null, string identity = null,
-        string identityname = null, [FromHeader][UserAgent] string userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection parameters = null)
+    public Task<ActionResult> GetSubmitEventByProjectV2Async(string projectId, string? type = null, string? source = null, string? message = null, string? reference = null,
+        string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
+        string? identityname = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(projectId, 2, type, userAgent, parameters);
     }
 
-    private async Task<ActionResult> GetSubmitEventAsync(string projectId = null, int apiVersion = 2, string type = null, string userAgent = null, IQueryCollection parameters = null)
+    private async Task<ActionResult> GetSubmitEventAsync(string? projectId = null, int apiVersion = 2, string? type = null, string? userAgent = null, IQueryCollection? parameters = null)
     {
-        string claimProjectId = Request.GetProjectId();
+        string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
@@ -975,7 +975,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
 
         var filteredParameters = parameters?.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
-        if (filteredParameters == null || filteredParameters.Count == 0)
+        if (filteredParameters is null || filteredParameters.Count == 0)
             return Ok();
 
         projectId ??= claimProjectId ?? Request.GetDefaultProjectId();
@@ -991,11 +991,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         // Set the project for the configuration response filter.
         Request.SetProject(project);
 
-        string contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
-        var ev = new Event { Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log };
+        string? contentEncoding = Request.Headers.TryGetAndReturn(Headers.ContentEncoding);
+        var ev = new Event
+        {
+            Type = !String.IsNullOrEmpty(type) ? type : Event.KnownTypes.Log
+        };
 
-        string identity = null;
-        string identityName = null;
+        string? identity = null;
+        string? identityName = null;
 
         var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
         foreach (var kvp in filteredParameters)
@@ -1028,10 +1031,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     break;
                 case "geo":
                     if (GeoResult.TryParse(kvp.Value.FirstOrDefault(), out var geo))
-                        ev.Geo = geo.ToString();
+                        ev.Geo = geo?.ToString();
                     break;
                 case "tags":
-                    ev.Tags.AddRange(kvp.Value.SelectMany(t => t.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).Distinct());
+                    ev.Tags.AddRange(kvp.Value.SelectMany(t => t?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>()).Distinct());
                     break;
                 case "identity":
                     identity = kvp.Value.FirstOrDefault();
@@ -1044,21 +1047,22 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         continue;
 
                     if (kvp.Value.Count > 1)
-                        ev.Data[kvp.Key] = kvp.Value;
+                        ev.Data![kvp.Key] = kvp.Value;
                     else
-                        ev.Data[kvp.Key] = kvp.Value.FirstOrDefault();
+                        ev.Data![kvp.Key] = kvp.Value.FirstOrDefault();
 
                     break;
             }
         }
 
-        ev.SetUserIdentity(identity, identityName);
+        if (identity != null)
+            ev.SetUserIdentity(identity, identityName);
 
         try
         {
             string mediaType = String.Empty;
             string charSet = String.Empty;
-            if (Request.ContentType != null && MediaTypeHeaderValue.TryParse(Request.ContentType, out var contentTypeHeader))
+            if (Request.ContentType is not null && MediaTypeHeaderValue.TryParse(Request.ContentType, out var contentTypeHeader))
             {
                 mediaType = contentTypeHeader.MediaType.ToString();
                 charSet = contentTypeHeader.Charset.ToString();
@@ -1096,7 +1100,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [Consumes("application/json", "text/plain")]
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
-    public Task<IActionResult> LegacyPostAsync([FromHeader][UserAgent] string userAgent = null)
+    public Task<IActionResult> LegacyPostAsync([FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(null, 1, userAgent);
     }
@@ -1108,7 +1112,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<IActionResult> PostV1Async(string projectId = null, [FromHeader][UserAgent] string userAgent = null)
+    public Task<IActionResult> PostV1Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(projectId, 1, userAgent);
     }
@@ -1166,7 +1170,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<IActionResult> PostV2Async([FromHeader][UserAgent] string userAgent = null)
+    public Task<IActionResult> PostV2Async([FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(null, 2, userAgent);
     }
@@ -1225,14 +1229,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [RequestBodyContentAttribute]
     [ConfigurationResponseFilter]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<IActionResult> PostByProjectV2Async(string projectId = null, [FromHeader][UserAgent] string userAgent = null)
+    public Task<IActionResult> PostByProjectV2Async(string? projectId = null, [FromHeader][UserAgent] string? userAgent = null)
     {
         return PostAsync(projectId, 2, userAgent);
     }
 
-    private async Task<IActionResult> PostAsync(string projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string userAgent = null)
+    private async Task<IActionResult> PostAsync(string? projectId = null, int apiVersion = 2, [FromHeader][UserAgent] string? userAgent = null)
     {
-        string claimProjectId = Request.GetProjectId();
+        string? claimProjectId = Request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, projectId);
@@ -1259,7 +1263,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         {
             string mediaType = String.Empty;
             string charSet = String.Empty;
-            if (Request.ContentType != null)
+            if (Request.ContentType is not null)
             {
                 var contentType = MediaTypeHeaderValue.Parse(Request.ContentType);
                 mediaType = contentType.MediaType.ToString();
@@ -1308,33 +1312,33 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return DeleteImplAsync(ids.FromDelimitedString());
     }
 
-    private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true)
+    private Task<Organization?> GetOrganizationAsync(string organizationId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-            return Task.FromResult<Organization>(null);
+            return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
     }
 
-    private async Task<Project> GetProjectAsync(string projectId, bool useCache = true)
+    private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(projectId))
             return null;
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache(useCache));
-        if (project == null || !CanAccessOrganization(project.OrganizationId))
+        if (project is null || !CanAccessOrganization(project.OrganizationId))
             return null;
 
         return project;
     }
 
-    private async Task<Stack> GetStackAsync(string stackId, bool useCache = true)
+    private async Task<Stack?> GetStackAsync(string stackId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(stackId))
             return null;
 
         var stack = await _stackRepository.GetByIdAsync(stackId, o => o.Cache(useCache));
-        if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+        if (stack is null || !CanAccessOrganization(stack.OrganizationId))
             return null;
 
         return stack;
@@ -1379,7 +1383,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             return totals;
 
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
-        var projects = cachedTotals.Where(kvp => !kvp.Value.HasValue).Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.FirstOrDefault(s => s.ProjectId == kvp.Key)?.OrganizationId }).ToList();
+        var projects = cachedTotals
+            .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
+            .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })
+            .ToList();
         var countResult = await _repository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).EnforceEventStackFilter().AggregationsExpression("terms:(project_id cardinality:user)"));
 
         // Cache all projects that have more than 10 users for 5 minutes.

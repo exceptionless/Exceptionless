@@ -50,7 +50,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 
         var configuredFactory = factory.Factories.Count > 0 ? factory.Factories[0] : null;
-        if (configuredFactory == null)
+        if (configuredFactory is null)
         {
             configuredFactory = factory.WithWebHostBuilder(builder =>
             {
@@ -83,7 +83,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     private IServiceProvider ServiceProvider { get; }
 
-    protected TService GetService<TService>()
+    protected TService GetService<TService>() where TService : notnull
     {
         return ServiceProvider.GetRequiredService<TService>();
     }
@@ -119,7 +119,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         {
             var data = builder.Build();
             events.AddRange(data.Events);
-            stacks.Add(data.Stack);
+            stacks.Add(data.Stack ?? throw new InvalidOperationException());
         }
 
         await stackRepository.AddAsync(stacks, o => o.ImmediateConsistency());
@@ -178,7 +178,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         }
     }
 
-    protected async Task RefreshDataAsync(Indices indices = null)
+    protected async Task RefreshDataAsync(Indices? indices = null)
     {
         var configuration = GetService<ExceptionlessElasticConfiguration>();
         var response = await configuration.Client.Indices.RefreshAsync(indices ?? Indices.All);

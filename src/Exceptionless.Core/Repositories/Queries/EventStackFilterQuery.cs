@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Repositories.Queries
             var softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
             systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
 
-            FindResults<Stack> results = null;
+            FindResults<Stack>? results = null;
             var tooManyStacksCheck = await _cacheClient.GetAsync<long>(GetQueryHash(systemFilterQuery));
             if (tooManyStacksCheck.HasValue)
             {
@@ -157,7 +157,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 throw new DocumentLimitExceededException($"Event filter resulted in too many matching stacks ({stackTotal} of {stackIdLimit} max). Please limit your search criteria (possibly by reducing number of days being searched).");
             }
 
-            if (results?.Hits != null)
+            if (results?.Hits is not null)
             {
                 do
                 {
@@ -190,7 +190,7 @@ namespace Exceptionless.Core.Repositories.Queries
             var builderContext = context as IQueryBuilderContext;
             var systemFilter = builderContext?.Source.GetSystemFilter();
             var systemFilterQuery = systemFilter?.GetQuery().Clone();
-            if (systemFilterQuery == null)
+            if (systemFilterQuery is null)
             {
                 systemFilterQuery = new RepositoryQuery<Stack>();
                 foreach (var range in builderContext?.Source.GetDateRanges() ?? Enumerable.Empty<DateRange>())
@@ -222,10 +222,10 @@ namespace Exceptionless.Core.Repositories.Queries
 
             var appFilter = query.GetAppFilter();
             var projectIds = query.GetProjects();
-            if (projectIds.Count == 0 && appFilter?.Projects != null)
+            if (projectIds.Count == 0 && appFilter?.Projects is not null)
                 projectIds.AddRange(appFilter.Projects.Select(p => p.Id));
             var organizationIds = query.GetOrganizations();
-            if (organizationIds.Count == 0 && appFilter?.Organizations != null)
+            if (organizationIds.Count == 0 && appFilter?.Organizations is not null)
                 organizationIds.AddRange(appFilter.Organizations.Select(o => o.Id));
 
             var hashCode = new HashCode();

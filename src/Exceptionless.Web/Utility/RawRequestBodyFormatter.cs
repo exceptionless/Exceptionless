@@ -13,11 +13,11 @@ public class RawRequestBodyFormatter : InputFormatter
 
     public override bool CanRead(InputFormatterContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         MediaTypeHeaderValue.TryParse(context.HttpContext.Request.ContentType, out var contentTypeHeader);
-        string contentType = contentTypeHeader?.MediaType.ToString();
+        string? contentType = contentTypeHeader?.MediaType.ToString();
         if (String.IsNullOrEmpty(contentType) || contentType == "text/plain" || contentType == "application/octet-stream")
             return true;
 
@@ -29,7 +29,7 @@ public class RawRequestBodyFormatter : InputFormatter
         var request = context.HttpContext.Request;
 
         MediaTypeHeaderValue.TryParse(request.ContentType, out var contentTypeHeader);
-        string contentType = contentTypeHeader?.MediaType.ToString();
+        string? contentType = contentTypeHeader?.MediaType.ToString();
 
         if (String.IsNullOrEmpty(contentType) || contentType == "text/plain")
         {

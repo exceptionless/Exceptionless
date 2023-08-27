@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Utility;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Helpers;
 
@@ -41,6 +42,9 @@ public class RandomEventGenerator
 
     public void PopulateEvent(Event ev, bool setUserIdentity = true)
     {
+        ev.Data ??= new DataDictionary();
+        ev.Tags ??= new TagSet();
+
         if (MinDate.HasValue || MaxDate.HasValue)
             ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
 
@@ -54,7 +58,7 @@ public class RandomEventGenerator
             ev.Source = LogSources.Random();
             ev.Message = RandomData.GetString();
 
-            string level = LogLevels.Random();
+            string? level = LogLevels.Random();
             if (!String.IsNullOrEmpty(level))
                 ev.Data[Event.KnownDataKeys.Level] = level;
         }
@@ -66,7 +70,11 @@ public class RandomEventGenerator
             ev.Value = RandomData.GetInt(0, 10000);
 
         if (setUserIdentity)
-            ev.SetUserIdentity(Identities.Random());
+        {
+            string? identity = Identities.Random();
+            if (!String.IsNullOrEmpty(identity))
+                ev.SetUserIdentity(identity);
+        }
 
         ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));
 
@@ -94,8 +102,8 @@ public class RandomEventGenerator
         int tagCount = RandomData.GetInt(1, 3);
         for (int i = 0; i < tagCount; i++)
         {
-            string tag = EventTags.Random();
-            if (!ev.Tags.Contains(tag))
+            string? tag = EventTags.Random();
+            if (tag != null)
                 ev.Tags.Add(tag);
         }
 
@@ -104,7 +112,7 @@ public class RandomEventGenerator
             if (RandomData.GetBool())
             {
                 // limit error variation so that stacking will occur
-                if (_randomErrors == null)
+                if (_randomErrors is null)
                     _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
 
                 ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
@@ -112,7 +120,7 @@ public class RandomEventGenerator
             else
             {
                 // limit error variation so that stacking will occur
-                if (_randomSimpleErrors == null)
+                if (_randomSimpleErrors is null)
                     _randomSimpleErrors = new List<SimpleError>(Enumerable.Range(1, 25).Select(i => GenerateSimpleError()));
 
                 ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
@@ -120,7 +128,7 @@ public class RandomEventGenerator
         }
     }
 
-    private List<Error> _randomErrors;
+    private List<Error>? _randomErrors;
 
     public Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
     {
@@ -130,6 +138,7 @@ public class RandomEventGenerator
 
         if (generateData)
         {
+            error.Data ??= new DataDictionary();
             for (int i = 0; i < RandomData.GetInt(1, 5); i++)
             {
                 string key = RandomData.GetWord();
@@ -151,13 +160,14 @@ public class RandomEventGenerator
         return error;
     }
 
-    private List<SimpleError> _randomSimpleErrors;
+    private List<SimpleError>? _randomSimpleErrors;
 
     public SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
     {
         var error = new SimpleError { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
         if (generateData)
         {
+            error.Data ??= new DataDictionary();
             for (int i = 0; i < RandomData.GetInt(1, 5); i++)
             {
                 string key = RandomData.GetWord();
@@ -184,7 +194,8 @@ public class RandomEventGenerator
             DeclaringType = TypeNames.Random(),
             Name = MethodNames.Random(),
             Parameters = new ParameterCollection {
-                    new Parameter {
+                    new()
+                    {
                         Type = "String",
                         Name = "path"
                     }
@@ -194,13 +205,15 @@ public class RandomEventGenerator
 
     #region Sample Data
 
-    public readonly List<string> Identities = new List<string> {
+    public readonly List<string> Identities = new()
+    {
             "eric@exceptionless.io",
             "blake@exceptionless.io",
             "marylou@exceptionless.io"
         };
 
-    public readonly List<string> MachineIpAddresses = new List<string> {
+    public readonly List<string> MachineIpAddresses = new()
+    {
             "127.34.36.89",
             "45.66.89.98",
             "10.12.18.193",
@@ -208,7 +221,8 @@ public class RandomEventGenerator
             "43.10.99.234"
         };
 
-    public readonly List<string> ClientIpAddresses = new List<string> {
+    public readonly List<string> ClientIpAddresses = new()
+    {
             "77.23.23.78",
             "45.66.89.98",
             "10.12.18.193",
@@ -216,14 +230,16 @@ public class RandomEventGenerator
             "231.23.34.1"
         };
 
-    public readonly List<string> LogSources = new List<string> {
+    public readonly List<string> LogSources = new()
+    {
             "Some.Class",
             "MyClass",
             "CodeGenerator",
             "Exceptionless.Core.Parser.SomeClass"
         };
 
-    public readonly List<string> LogLevels = new List<string> {
+    public readonly List<string> LogLevels = new()
+    {
             "Trace",
             "Info",
             "Debug",
@@ -232,28 +248,32 @@ public class RandomEventGenerator
             "Custom"
         };
 
-    public readonly List<string> FeatureNames = new List<string> {
+    public readonly List<string> FeatureNames = new()
+    {
             "Feature1",
             "Feature2",
             "Feature3",
             "Feature4"
         };
 
-    public readonly List<string> MachineNames = new List<string> {
+    public readonly List<string> MachineNames = new()
+    {
             "machine1",
             "machine2",
             "machine3",
             "machine4"
         };
 
-    public readonly List<string> PageNames = new List<string> {
+    public readonly List<string> PageNames = new()
+    {
             "/page1",
             "/page2",
             "/page3",
             "/page4"
         };
 
-    public readonly List<string> EventTypes = new List<string> {
+    public readonly List<string> EventTypes = new()
+    {
             Event.KnownTypes.Error,
             Event.KnownTypes.FeatureUsage,
             Event.KnownTypes.Log,
@@ -262,7 +282,8 @@ public class RandomEventGenerator
             Event.KnownTypes.SessionEnd
         };
 
-    public readonly List<string> ExceptionTypes = new List<string> {
+    public readonly List<string> ExceptionTypes = new()
+    {
             "System.NullReferenceException",
             "System.ApplicationException",
             "System.AggregateException",
@@ -270,7 +291,8 @@ public class RandomEventGenerator
             "System.InvalidOperationException"
         };
 
-    public readonly List<string> EventTags = new List<string> {
+    public readonly List<string> EventTags = new()
+    {
             "Tag1",
             "Tag2",
             "Tag3",
@@ -283,7 +305,8 @@ public class RandomEventGenerator
             "Tag10"
         };
 
-    public readonly List<string> Namespaces = new List<string> {
+    public readonly List<string> Namespaces = new()
+    {
             "System",
             "System.IO",
             "CodeSmith",
@@ -291,13 +314,15 @@ public class RandomEventGenerator
             "SomeOther.Blah"
         };
 
-    public readonly List<string> TypeNames = new List<string> {
+    public readonly List<string> TypeNames = new()
+    {
             "DateTime",
             "SomeType",
             "ProjectGenerator"
         };
 
-    public readonly List<string> MethodNames = new List<string> {
+    public readonly List<string> MethodNames = new()
+    {
             "SomeMethod",
             "GenerateCode"
         };

@@ -19,6 +19,7 @@ using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -77,7 +78,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.Count == 0)
@@ -108,10 +109,10 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organizationId, string filter = null, string sort = null, int page = 1, int limit = 10, string mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         page = GetPage(page);
@@ -134,10 +135,10 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetProjectById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<ViewProject>> GetAsync(string id, string mode = null)
+    public async Task<ActionResult<ViewProject>> GetAsync(string id, string? mode = null)
     {
         var project = await GetModelAsync(id);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var viewProject = await MapAsync<ViewProject>(project, true);
@@ -197,10 +198,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects)
     {
+        var user = CurrentUser ?? throw new InvalidOperationException();
         foreach (var project in projects)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.UserDeletingProject(CurrentUser.Id, project.Name);
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+            _logger.UserDeletingProject(user.Id, project.Name);
 
             await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
         }
@@ -237,13 +239,13 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="304">The client configuration version is the current version.</response>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}/config")]
-    public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string id = null, int? v = null)
+    public async Task<ActionResult<ClientConfiguration>> GetConfigAsync(string? id = null, int? v = null)
     {
         if (String.IsNullOrEmpty(id))
             id = User.GetProjectId();
 
         var project = await _repository.GetConfigAsync(id);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         if (_isOwnedByOrganization && !CanAccessOrganization(project.OrganizationId))
@@ -272,7 +274,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         project.Configuration.Settings[key.Trim()] = value.Value.Trim();
@@ -297,7 +299,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         if (project.Configuration.Settings.Remove(key.Trim()))
@@ -320,7 +322,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<ActionResult<WorkInProgressResult>> ResetDataAsync(string id)
     {
         var project = await GetModelAsync(id);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         string workItemId = await _workItemQueue.EnqueueAsync(new RemoveStacksWorkItem
@@ -338,7 +340,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<ActionResult<IDictionary<string, NotificationSettings>>> GetNotificationSettingsAsync(string id)
     {
         var project = await GetModelAsync(id);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         return Ok(project.NotificationSettings);
@@ -355,10 +357,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<ActionResult<NotificationSettings>> GetNotificationSettingsAsync(string id, string userId)
     {
         var project = await GetModelAsync(id);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
+        var user = CurrentUser ?? throw new InvalidOperationException();
+        if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
             return NotFound();
 
         return Ok(project.NotificationSettings.TryGetValue(userId, out var settings) ? settings : new NotificationSettings());
@@ -377,7 +380,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<ActionResult<NotificationSettings>> GetIntegrationNotificationSettingsAsync(string id, string integration)
     {
         var project = await GetModelAsync(id);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
@@ -400,13 +403,13 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings settings)
     {
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
+        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser?.Id, userId))
             return NotFound();
 
-        if (settings == null)
+        if (settings is null)
             project.NotificationSettings.Remove(userId);
         else
             project.NotificationSettings[userId] = settings;
@@ -433,17 +436,17 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return NotFound();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (!organization.HasPremiumFeatures)
             return PlanLimitReached($"Please upgrade your plan to enable {integration.TrimStart('@')} integration.");
 
-        if (settings == null)
+        if (settings is null)
             project.NotificationSettings.Remove(integration);
         else
             project.NotificationSettings[integration] = settings;
@@ -463,10 +466,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<IActionResult> DeleteNotificationSettingsAsync(string id, string userId)
     {
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
+        var user = CurrentUser ?? throw new InvalidOperationException();
+        if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
             return NotFound();
 
         if (project.NotificationSettings.ContainsKey(userId))
@@ -495,9 +499,10 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
+        project.PromotedTabs ??= new HashSet<string>();
         if (!project.PromotedTabs.Contains(name.Trim()))
         {
             project.PromotedTabs.Add(name.Trim());
@@ -522,14 +527,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
-        if (project.PromotedTabs.Contains(name.Trim()))
-        {
-            project.PromotedTabs.Remove(name.Trim());
+        if (project.PromotedTabs is not null && project.PromotedTabs.Remove(name.Trim()))
             await _repository.SaveAsync(project, o => o.Cache());
-        }
 
         return Ok();
     }
@@ -545,7 +547,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects/check-name")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> IsNameAvailableAsync(string name, string organizationId = null)
+    public async Task<IActionResult> IsNameAvailableAsync(string name, string? organizationId = null)
     {
         if (await IsProjectNameAvailableInternalAsync(organizationId, name))
             return StatusCode(StatusCodes.Status204NoContent);
@@ -553,7 +555,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         return StatusCode(StatusCodes.Status201Created);
     }
 
-    private async Task<bool> IsProjectNameAvailableInternalAsync(string organizationId, string name)
+    private async Task<bool> IsProjectNameAvailableInternalAsync(string? organizationId, string name)
     {
         if (String.IsNullOrWhiteSpace(name))
             return false;
@@ -582,9 +584,10 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
+        project.Data ??= new DataDictionary();
         project.Data[key.Trim()] = value.Value.Trim();
         await _repository.SaveAsync(project, o => o.Cache());
 
@@ -606,10 +609,10 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
-        if (project.Data.Remove(key.Trim()))
+        if (project.Data is not null && project.Data.Remove(key.Trim()))
             await _repository.SaveAsync(project, o => o.Cache());
 
         return Ok();
@@ -632,27 +635,29 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
-        if (project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
+        if (project.Data is not null && project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
             return StatusCode(StatusCodes.Status304NotModified);
 
-        SlackToken token = null;
+        SlackToken? token = null;
         try
         {
             token = await _slackService.GetAccessTokenAsync(code);
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "Error getting slack access token: {Message}", ex.Message);
         }
 
-        if (token == null)
+        if (token is null)
             return BadRequest();
 
         project.AddDefaultNotificationSettings(Project.NotificationIntegrations.Slack);
+
+        project.Data ??= new DataDictionary();
         project.Data[Project.KnownDataKeys.SlackToken] = token;
         await _repository.SaveAsync(project, o => o.Cache());
 
@@ -670,11 +675,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     public async Task<IActionResult> RemoveSlackAsync(string id)
     {
         var project = await GetModelAsync(id, false);
-        if (project == null)
+        if (project is null)
             return NotFound();
 
         var token = project.GetSlackToken();
-        if (token != null)
+        if (token is not null)
         {
             try
             {
@@ -682,12 +687,16 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             }
             catch (Exception ex)
             {
-                using (_logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "Error revoking slack access token: {Message}", ex.Message);
             }
         }
 
-        if (project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack) | project.Data.Remove(Project.KnownDataKeys.SlackToken))
+        bool shouldSave = project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack);
+        if (project.Data is not null && project.Data.Remove(Project.KnownDataKeys.SlackToken))
+            shouldSave = true;
+
+        if (shouldSave)
             await _repository.SaveAsync(project, o => o.Cache());
 
         return Ok();
@@ -702,13 +711,6 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
         foreach (var viewProject in viewProjects)
         {
-            var organization = organizations.FirstOrDefault(o => o.Id == viewProject.OrganizationId);
-            if (organization != null)
-            {
-                viewProject.OrganizationName = organization.Name;
-                viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
-            }
-
             if (!viewProject.IsConfigured.HasValue)
             {
                 viewProject.IsConfigured = true;
@@ -718,8 +720,14 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
                 });
             }
 
-            var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
+            var organization = organizations.SingleOrDefault(o => o.Id == viewProject.OrganizationId);
+            if (organization is null)
+                continue;
 
+            viewProject.OrganizationName = organization.Name;
+            viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
+
+            var realTimeUsage = await _usageService.GetUsageAsync(organization.Id, viewProject.Id);
             viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus());
             viewProject.TrimUsage();
 
@@ -754,9 +762,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     protected override Task<Project> AddModelAsync(Project value)
     {
+        var user = CurrentUser ?? throw new InvalidOperationException();
+
         value.IsConfigured = false;
         value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-        value.AddDefaultNotificationSettings(CurrentUser.Id);
+        value.AddDefaultNotificationSettings(user.Id);
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
 
@@ -772,17 +782,17 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         return await base.CanUpdateAsync(original, changes);
     }
 
-    private Task<Organization> GetOrganizationAsync(string organizationId, bool useCache = true)
+    private Task<Organization?> GetOrganizationAsync(string organizationId, bool useCache = true)
     {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-            return Task.FromResult<Organization>(null);
+            return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
     }
 
     private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project)
     {
-        return (await PopulateProjectStatsAsync(new List<ViewProject> { project })).FirstOrDefault();
+        return (await PopulateProjectStatsAsync(new List<ViewProject> { project })).Single();
     }
 
     private async Task<List<ViewProject>> PopulateProjectStatsAsync(List<ViewProject> viewProjects)

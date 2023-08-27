@@ -21,7 +21,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         AddPropertyRequiredForRemove(s => s.SignatureHash);
     }
 
-    public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack> options = null)
+    public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack>? options = null)
     {
         return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
     }
@@ -97,14 +97,14 @@ ctx._source.total_occurrences += params.count;";
         return true;
     }
 
-    public async Task<Stack> GetStackBySignatureHashAsync(string projectId, string signatureHash)
+    public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
         string key = GetStackSignatureCacheKey(projectId, signatureHash);
         var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key)).AnyContext();
         return hit?.Document;
     }
 
-    public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack> options = null)
+    public Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack>? options = null)
     {
         return FindAsync(q => query.Configure().OnlyIds(), options);
     }

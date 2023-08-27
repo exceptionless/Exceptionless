@@ -59,7 +59,7 @@ public class SampleDataService
 
     public async Task CreateDataAsync()
     {
-        if (await _userRepository.GetByEmailAddressAsync(TEST_USER_EMAIL).AnyContext() != null)
+        if (await _userRepository.GetByEmailAddressAsync(TEST_USER_EMAIL).AnyContext() is not null)
             return;
 
         var user = new User
@@ -86,7 +86,7 @@ public class SampleDataService
 
     public async Task CreateOrganizationAdminUserAsync()
     {
-        if (await _userRepository.GetByEmailAddressAsync(TEST_ORG_USER_EMAIL).AnyContext() != null)
+        if (await _userRepository.GetByEmailAddressAsync(TEST_ORG_USER_EMAIL).AnyContext() is not null)
             return;
 
         var user = new User
@@ -142,7 +142,8 @@ public class SampleDataService
 
         await _tokenRepository.AddAsync(new List<Token>()
         {
-                new Token {
+                new()
+                {
                     Id = TEST_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = disintegratingPistolProject.Id,
@@ -150,7 +151,8 @@ public class SampleDataService
                     UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
-                new Token {
+                new()
+                {
                     Id = TEST_ROCKET_SHIP_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = rocketShipProject.Id,
@@ -158,7 +160,8 @@ public class SampleDataService
                     UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
-                new Token {
+                new()
+                {
                     Id = TEST_USER_API_KEY,
                     UserId = user.Id,
                     CreatedUtc = SystemClock.UtcNow,
@@ -174,7 +177,7 @@ public class SampleDataService
 
     public async Task CreateFreeOrganizationAndProjectAsync()
     {
-        if (await _userRepository.GetByEmailAddressAsync(FREE_USER_EMAIL).AnyContext() != null)
+        if (await _userRepository.GetByEmailAddressAsync(FREE_USER_EMAIL).AnyContext() is not null)
             return;
 
         var user = new User
@@ -212,7 +215,8 @@ public class SampleDataService
 
         await _tokenRepository.AddAsync(new List<Token>()
         {
-                new Token {
+                new()
+                {
                     Id = FREE_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = project.Id,
@@ -220,7 +224,8 @@ public class SampleDataService
                     UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
-                    new Token {
+                    new()
+                    {
                     Id = FREE_USER_API_KEY,
                     UserId = user.Id,
                     CreatedUtc = SystemClock.UtcNow,
@@ -236,7 +241,7 @@ public class SampleDataService
 
     public async Task CreateInternalOrganizationAndProjectAsync(string userId)
     {
-        if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() != null)
+        if (await _tokenRepository.GetByIdAsync(INTERNAL_API_KEY).AnyContext() is not null)
             return;
 
         var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
@@ -259,6 +264,7 @@ public class SampleDataService
             Id = INTERNAL_API_KEY,
             OrganizationId = organization.Id,
             ProjectId = project.Id,
+            CreatedBy = userId,
             CreatedUtc = SystemClock.UtcNow,
             UpdatedUtc = SystemClock.UtcNow,
             Type = TokenType.Access

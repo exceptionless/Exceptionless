@@ -8,7 +8,7 @@ public static class UsageExtensions
     public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null)
     {
         var usageInfo = usages.FirstOrDefault(o => o.Date == dateUtc);
-        if (usageInfo == null)
+        if (usageInfo is null)
         {
             usageInfo = new UsageInfo
             {

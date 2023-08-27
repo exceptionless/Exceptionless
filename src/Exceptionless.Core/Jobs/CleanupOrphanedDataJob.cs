@@ -28,7 +28,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _config = config;
         _elasticClient = config.Client;
@@ -219,8 +219,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             foreach (var duplicateSignature in buckets)
             {
-                string projectId = null;
-                string signature = null;
+                string? projectId = null;
+                string? signature = null;
                 try
                 {
                     string[] parts = duplicateSignature.Key.Split(':');

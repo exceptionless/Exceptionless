@@ -10,11 +10,11 @@ public class RequestBodyOperationFilter : IOperationFilter
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         var attributes = context.MethodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).FirstOrDefault();
-        if (attributes == null)
+        if (attributes is null)
             return;
 
         var consumesAttribute = context.MethodInfo.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute;
-        if (consumesAttribute == null)
+        if (consumesAttribute is null)
             return;
 
         operation.RequestBody = new OpenApiRequestBody { Required = true };

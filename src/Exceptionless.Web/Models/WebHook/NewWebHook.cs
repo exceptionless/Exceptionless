@@ -2,15 +2,15 @@
 
 namespace Exceptionless.Web.Models;
 
-public class NewWebHook : IOwnedByOrganizationAndProject
+public record NewWebHook : IOwnedByOrganizationAndProject
 {
-    public string OrganizationId { get; set; }
-    public string ProjectId { get; set; }
-    public string Url { get; set; }
-    public string[] EventTypes { get; set; }
+    public string OrganizationId { get; set; } = null!;
+    public string ProjectId { get; set; } = null!;
+    public string Url { get; set; } = null!;
+    public string[] EventTypes { get; set; } = null!;
 
     /// <summary>
     /// The schema version that should be used.
     /// </summary>
-    public Version Version { get; set; }
+    public Version Version { get; set; } = null!;
 }

@@ -4,85 +4,77 @@ namespace Exceptionless.Core.Models.Data;
 
 public class RequestInfo : IData
 {
-    public RequestInfo()
-    {
-        Data = new DataDictionary();
-        Headers = new Dictionary<string, string[]>();
-        Cookies = new Dictionary<string, string>();
-        QueryString = new Dictionary<string, string>();
-    }
-
     /// <summary>
     /// The user agent used for the request.
     /// </summary>
-    public string UserAgent { get; set; }
+    public string? UserAgent { get; set; }
 
     /// <summary>
     /// The HTTP method for the request.
     /// </summary>
-    public string HttpMethod { get; set; }
+    public string? HttpMethod { get; set; }
 
     /// <summary>
     /// Whether the request was secure or not.
     /// </summary>
-    public bool IsSecure { get; set; }
+    public bool? IsSecure { get; set; }
 
     /// <summary>
     /// The host of the request.
     /// </summary>
-    public string Host { get; set; }
+    public string? Host { get; set; }
 
     /// <summary>
     /// The port of the request.
     /// </summary>
-    public int Port { get; set; }
+    public int? Port { get; set; }
 
     /// <summary>
     /// The path of the request.
     /// </summary>
-    public string Path { get; set; }
+    public string? Path { get; set; }
 
     /// <summary>
     /// The referring url for the request.
     /// </summary>
-    public string Referrer { get; set; }
+    public string? Referrer { get; set; }
 
     /// <summary>
     /// The client's IP address when the error occurred.
     /// </summary>
-    public string ClientIpAddress { get; set; }
+    public string? ClientIpAddress { get; set; }
 
     /// <summary>
     /// The header values from the request.
     /// </summary>
-    public Dictionary<string, string[]> Headers { get; set; }
+    public Dictionary<string, string[]>? Headers { get; set; } = new();
 
     /// <summary>
     /// The request cookies.
     /// </summary>
-    public Dictionary<string, string> Cookies { get; set; }
+    public Dictionary<string, string>? Cookies { get; set; } = new();
 
     /// <summary>
     /// The data that was POSTed for the request.
     /// </summary>
-    public object PostData { get; set; }
+    public object? PostData { get; set; }
 
     /// <summary>
     /// The query string values from the request.
     /// </summary>
-    public Dictionary<string, string> QueryString { get; set; }
+    public Dictionary<string, string>? QueryString { get; set; } = new();
 
     /// <summary>
     /// Extended data entries for this request.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary? Data { get; set; } = new();
 
     protected bool Equals(RequestInfo other)
     {
         return String.Equals(UserAgent, other.UserAgent) && String.Equals(HttpMethod, other.HttpMethod) && IsSecure == other.IsSecure && String.Equals(Host, other.Host) && Port == other.Port && String.Equals(Path, other.Path) && String.Equals(Referrer, other.Referrer) && String.Equals(ClientIpAddress, other.ClientIpAddress) && Cookies.CollectionEquals(other.Cookies) && QueryString.CollectionEquals(other.QueryString) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;
@@ -93,7 +85,7 @@ public class RequestInfo : IData
         return Equals((RequestInfo)obj);
     }
 
-    private static readonly List<string> _cookieHashCodeExclusions = new List<string> { "__LastReferenceId" };
+    private static readonly List<string> _cookieHashCodeExclusions = new() { "__LastReferenceId" };
 
     public override int GetHashCode()
     {
@@ -103,7 +95,7 @@ public class RequestInfo : IData
             hashCode = (hashCode * 397) ^ (HttpMethod?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ IsSecure.GetHashCode();
             hashCode = (hashCode * 397) ^ (Host?.GetHashCode() ?? 0);
-            hashCode = (hashCode * 397) ^ Port;
+            hashCode = (hashCode * 397) ^ (Port?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Path?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (Referrer?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ (ClientIpAddress?.GetHashCode() ?? 0);

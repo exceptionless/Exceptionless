@@ -7,14 +7,14 @@ namespace Exceptionless.Web.Models;
 
 public class ViewProject : IIdentity, IData, IHaveCreatedDate
 {
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
     public DateTime CreatedUtc { get; set; }
-    public string OrganizationId { get; set; }
-    public string OrganizationName { get; set; }
-    public string Name { get; set; }
+    public string OrganizationId { get; set; } = null!;
+    public string OrganizationName { get; set; } = null!;
+    public string Name { get; set; } = null!;
     public bool DeleteBotDataEnabled { get; set; }
-    public Core.Models.DataDictionary Data { get; set; }
-    public HashSet<string> PromotedTabs { get; set; }
+    public Core.Models.DataDictionary? Data { get; set; }
+    public HashSet<string> PromotedTabs { get; set; } = null!;
     public bool? IsConfigured { get; set; }
     public long StackCount { get; set; }
     public long EventCount { get; set; }
@@ -29,7 +29,7 @@ public static class ViewProjectExtensions
     public static UsageHourInfo GetHourlyUsage(this ViewProject project, DateTime date)
     {
         var overage = project.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
-        if (overage != null)
+        if (overage is not null)
             return overage;
 
         overage = new UsageHourInfo
@@ -65,7 +65,7 @@ public static class ViewProjectExtensions
     public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
     {
         var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
-        if (usage != null)
+        if (usage is not null)
             return usage;
 
         usage = new UsageInfo

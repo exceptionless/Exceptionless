@@ -15,11 +15,11 @@ public class GoogleGeocodeService : IGeocodeService
         _geocoder = new GoogleGeocoder(apiKey);
     }
 
-    public async Task<GeoResult> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default)
+    public async Task<GeoResult?> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default)
     {
         var addresses = await _geocoder.ReverseGeocodeAsync(latitude, longitude).AnyContext();
         var address = addresses.FirstOrDefault();
-        if (address == null)
+        if (address is null)
             return null;
 
         return new GeoResult

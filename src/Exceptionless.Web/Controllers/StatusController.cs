@@ -111,7 +111,7 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
     {
-        var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message?.Value };
+        var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message.Value };
         await _messagePublisher.PublishAsync(notification);
         return Ok(notification);
     }

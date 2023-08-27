@@ -22,7 +22,7 @@ public class AssignToStackAction : EventPipelineActionBase
     private readonly IMessagePublisher _publisher;
     private readonly ILockProvider _lockProvider;
 
-    public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, AppOptions options, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher, AppOptions options, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _stackRepository = stackRepository ?? throw new ArgumentNullException(nameof(stackRepository));
         _formattingPluginManager = formattingPluginManager ?? throw new ArgumentNullException(nameof(formattingPluginManager));
@@ -57,18 +57,18 @@ public class AssignToStackAction : EventPipelineActionBase
                 else
                 {
                     ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();
-                    if (ctx.Stack != null)
+                    if (ctx.Stack is not null)
                         stacks.Add(signatureHash, new StackInfo { IsNew = false, ShouldSave = false, Stack = ctx.Stack });
                 }
 
                 // create new stack in distributed lock
-                if (ctx.Stack == null)
+                if (ctx.Stack is null)
                 {
                     var success = await _lockProvider.TryUsingAsync($"new-stack:{ctx.Event.ProjectId}:{signatureHash}", async () =>
                     {
                         // double check in case another process just created the stack
                         var newStack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();
-                        if (newStack != null)
+                        if (newStack is not null)
                         {
                             ctx.Stack = newStack;
                             return;
@@ -85,9 +85,9 @@ public class AssignToStackAction : EventPipelineActionBase
                             SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                             SignatureHash = signatureHash,
                             DuplicateSignature = ctx.Event.ProjectId + ":" + signatureHash,
-                            Title = title?.Truncate(1000),
+                            Title = title.Truncate(1000),
                             Tags = ctx.Event.Tags ?? new TagSet(),
-                            Type = ctx.Event.Type,
+                            Type = ctx.Event.Type ?? Event.KnownTypes.Log,
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
                             LastOccurrence = ctx.Event.Date.UtcDateTime
@@ -112,7 +112,7 @@ public class AssignToStackAction : EventPipelineActionBase
             else
             {
                 ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache()).AnyContext();
-                if (ctx.Stack == null || ctx.Stack.ProjectId != ctx.Event.ProjectId)
+                if (ctx.Stack is null || ctx.Stack.ProjectId != ctx.Event.ProjectId)
                 {
                     ctx.SetError("Invalid StackId.");
                     continue;
@@ -126,18 +126,16 @@ public class AssignToStackAction : EventPipelineActionBase
                     stacks[ctx.Stack.SignatureHash].Stack = ctx.Stack;
             }
 
-            if (ctx.Stack.Status == StackStatus.Discarded)
+            if (ctx.Stack!.Status == StackStatus.Discarded)
             {
                 ctx.IsDiscarded = true;
                 ctx.IsCancelled = true;
                 continue;
             }
 
-            if (!ctx.IsNew && ctx.Event.Tags != null && ctx.Event.Tags.Count > 0)
+            if (ctx is { IsNew: false, Event.Tags.Count: > 0 })
             {
-                if (ctx.Stack.Tags == null)
-                    ctx.Stack.Tags = new TagSet();
-
+                ctx.Stack.Tags ??= new TagSet();
                 var newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
                 if (newTags.Count > 0 || ctx.Stack.Tags.Count > 50 || ctx.Stack.Tags.Any(t => t.Length > 100))
                 {
@@ -163,9 +161,9 @@ public class AssignToStackAction : EventPipelineActionBase
                 Type = StackTypeName,
                 Id = addedStacks.Count == 1 ? addedStacks.First().Id : null,
                 Data = {
-                        { ExtendedEntityChanged.KnownKeys.OrganizationId, contexts.First().Organization.Id },
-                        { ExtendedEntityChanged.KnownKeys.ProjectId, contexts.First().Project.Id }
-                    }
+                    { ExtendedEntityChanged.KnownKeys.OrganizationId, contexts.First().Organization.Id },
+                    { ExtendedEntityChanged.KnownKeys.ProjectId, contexts.First().Project.Id }
+                }
             }).AnyContext();
         }
 
@@ -176,7 +174,7 @@ public class AssignToStackAction : EventPipelineActionBase
         // Set stack ids after they have been saved and created
         contexts.ForEach(ctx =>
         {
-            ctx.Event.StackId = ctx.Stack?.Id;
+            ctx.Event.StackId = ctx.Stack!.Id;
         });
     }
 
@@ -185,10 +183,10 @@ public class AssignToStackAction : EventPipelineActionBase
         return Task.CompletedTask;
     }
 
-    private class StackInfo
+    private record StackInfo
     {
-        public bool IsNew { get; set; }
-        public bool ShouldSave { get; set; }
-        public Stack Stack { get; set; }
+        public required bool IsNew { get; init; }
+        public required bool ShouldSave { get; set; }
+        public required Stack Stack { get; set; }
     }
 }

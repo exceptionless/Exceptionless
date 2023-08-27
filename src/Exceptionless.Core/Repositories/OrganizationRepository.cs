@@ -27,7 +27,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             organization.Value.TrimUsage();
     }
 
-    public async Task<Organization> GetByInviteTokenAsync(string token)
+    public async Task<Organization?> GetByInviteTokenAsync(string token)
     {
         if (String.IsNullOrEmpty(token))
             throw new ArgumentNullException(nameof(token));
@@ -37,7 +37,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return hit?.Document;
     }
 
-    public async Task<Organization> GetByStripeCustomerIdAsync(string customerId)
+    public async Task<Organization?> GetByStripeCustomerIdAsync(string customerId)
     {
         if (String.IsNullOrEmpty(customerId))
             throw new ArgumentNullException(nameof(customerId));
@@ -47,7 +47,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return hit?.Document;
     }
 
-    public Task<FindResults<Organization>> GetByCriteriaAsync(string criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
+    public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
         var filter = Query<Organization>.MatchAll();
         if (!String.IsNullOrWhiteSpace(criteria))

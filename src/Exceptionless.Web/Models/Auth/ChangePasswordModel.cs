@@ -1,7 +1,7 @@
 namespace Exceptionless.Web.Models;
 
-public class ChangePasswordModel
+public record ChangePasswordModel
 {
-    public string CurrentPassword { get; set; }
-    public string Password { get; set; }
+    public string? CurrentPassword { get; set; }
+    public string? Password { get; set; }
 }

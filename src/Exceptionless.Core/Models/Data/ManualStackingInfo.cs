@@ -9,15 +9,15 @@ public class ManualStackingInfo
         SignatureData = new Dictionary<string, string>();
     }
 
-    public ManualStackingInfo(string title) : this()
+    public ManualStackingInfo(string? title) : this()
     {
         if (!String.IsNullOrWhiteSpace(title))
             Title = title.Trim();
     }
 
-    public ManualStackingInfo(string title, IDictionary<string, string> signatureData) : this(title)
+    public ManualStackingInfo(string? title, IDictionary<string, string> signatureData) : this(title)
     {
-        if (signatureData != null && signatureData.Count > 0)
+        if (signatureData is not null && signatureData.Count > 0)
             SignatureData.AddRange(signatureData);
     }
 
@@ -26,10 +26,10 @@ public class ManualStackingInfo
     /// <summary>
     /// Stack Title (defaults to the event message)
     /// </summary>
-    public string Title { get; set; }
+    public string? Title { get; set; }
 
     /// <summary>
     /// Key value pair that determines how the event is stacked.
     /// </summary>
-    public IDictionary<string, string> SignatureData { get; set; }
+    public IDictionary<string, string>? SignatureData { get; set; }
 }

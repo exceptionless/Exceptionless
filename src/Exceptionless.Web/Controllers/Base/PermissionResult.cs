@@ -1,20 +1,20 @@
 ﻿namespace Exceptionless.Web.Controllers;
 
-public class PermissionResult
+public record PermissionResult
 {
     public bool Allowed { get; set; }
 
-    public string Id { get; set; }
+    public string? Id { get; set; }
 
-    public string Message { get; set; }
+    public string? Message { get; set; }
 
     public int StatusCode { get; set; }
 
-    public static PermissionResult Allow = new PermissionResult { Allowed = true, StatusCode = StatusCodes.Status200OK };
+    public static PermissionResult Allow = new() { Allowed = true, StatusCode = StatusCodes.Status200OK };
 
-    public static PermissionResult Deny = new PermissionResult { Allowed = false, StatusCode = StatusCodes.Status400BadRequest };
+    public static PermissionResult Deny = new() { Allowed = false, StatusCode = StatusCodes.Status400BadRequest };
 
-    public static PermissionResult DenyWithNotFound(string id = null)
+    public static PermissionResult DenyWithNotFound(string? id = null)
     {
         return new PermissionResult
         {
@@ -24,7 +24,7 @@ public class PermissionResult
         };
     }
 
-    public static PermissionResult DenyWithMessage(string message, string id = null)
+    public static PermissionResult DenyWithMessage(string message, string? id = null)
     {
         return new PermissionResult
         {
@@ -35,7 +35,7 @@ public class PermissionResult
         };
     }
 
-    public static PermissionResult DenyWithStatus(int statusCode, string message = null, string id = null)
+    public static PermissionResult DenyWithStatus(int statusCode, string? message = null, string? id = null)
     {
         return new PermissionResult
         {
@@ -46,7 +46,7 @@ public class PermissionResult
         };
     }
 
-    public static PermissionResult DenyWithPlanLimitReached(string message, string id = null)
+    public static PermissionResult DenyWithPlanLimitReached(string message, string? id = null)
     {
         return new PermissionResult
         {

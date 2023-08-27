@@ -14,7 +14,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
     private readonly IStackRepository _stackRepository;
     private readonly SemanticVersionParser _semanticVersionParser;
 
-    public CheckForRegressionAction(IStackRepository stackRepository, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public CheckForRegressionAction(IStackRepository stackRepository, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _stackRepository = stackRepository;
         _semanticVersionParser = semanticVersionParser;
@@ -23,10 +23,13 @@ public class CheckForRegressionAction : EventPipelineActionBase
 
     public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
     {
-        var stacks = contexts.Where(c => c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue).OrderBy(c => c.Event.Date).GroupBy(c => c.Event.StackId);
+        var stacks = contexts
+            .Where(c => c.Stack is not null && c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue)
+            .OrderBy(c => c.Event.Date)
+            .GroupBy(c => c.Event.StackId);
 
         // more than one event in this batch, likely to be the same version
-        Dictionary<string, SemanticVersion> versionCache = null;
+        Dictionary<string, SemanticVersion>? versionCache = null;
         if (contexts.Count > 1)
             versionCache = new Dictionary<string, SemanticVersion>();
 
@@ -36,9 +39,9 @@ public class CheckForRegressionAction : EventPipelineActionBase
             {
                 var stack = stackGroup.First().Stack;
 
-                EventContext regressedContext = null;
-                SemanticVersion regressedVersion = null;
-                if (String.IsNullOrEmpty(stack.FixedInVersion))
+                EventContext? regressedContext = null;
+                SemanticVersion? regressedVersion = null;
+                if (String.IsNullOrEmpty(stack!.FixedInVersion))
                 {
                     regressedContext = stackGroup.FirstOrDefault(c => stack.DateFixed < c.Event.Date.UtcDateTime);
                 }
@@ -58,7 +61,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
                     }
                 }
 
-                if (regressedContext == null)
+                if (regressedContext is null)
                     return;
 
                 _logger.LogTrace("Marking stack and events as regressed in version: {Version}", regressedVersion);

@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Extensions;
 
 public static class StackExtensions
 {
-    public static void MarkFixed(this Stack stack, SemanticVersion version = null)
+    public static void MarkFixed(this Stack stack, SemanticVersion? version = null)
     {
         stack.Status = StackStatus.Fixed;
         stack.DateFixed = SystemClock.UtcNow;
@@ -24,9 +24,6 @@ public static class StackExtensions
 
     public static Stack ApplyOffset(this Stack stack, TimeSpan offset)
     {
-        if (stack == null)
-            return null;
-
         if (stack.DateFixed.HasValue)
             stack.DateFixed = stack.DateFixed.Value.Add(offset);
 
@@ -39,9 +36,9 @@ public static class StackExtensions
         return stack;
     }
 
-    public static string GetTypeName(this Stack stack)
+    public static string? GetTypeName(this Stack stack)
     {
-        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string type) && !String.IsNullOrEmpty(type))
+        if (stack.SignatureInfo.TryGetValue("ExceptionType", out string? type) && !String.IsNullOrEmpty(type))
             return type.TypeName();
 
         return type;
@@ -49,7 +46,7 @@ public static class StackExtensions
 
     public static bool IsFixed(this Stack stack)
     {
-        if (stack == null)
+        if (stack is null)
             return false;
 
         return stack.Status == StackStatus.Fixed;
@@ -57,7 +54,7 @@ public static class StackExtensions
 
     public static bool Is404(this Stack stack)
     {
-        if (stack?.SignatureInfo == null)
+        if (stack?.SignatureInfo is null)
             return false;
 
         return stack.SignatureInfo.ContainsKey("HttpMethod") && stack.SignatureInfo.ContainsKey("Path");

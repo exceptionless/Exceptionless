@@ -218,7 +218,7 @@ public sealed class AggregationTests : IntegrationTestsBase
             await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
     }
 
-    private async Task CreateEventsAsync(int eventCount, string[] projectIds, decimal? value = -1)
+    private async Task CreateEventsAsync(int eventCount, string[]? projectIds, decimal? value = -1)
     {
         var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(3), endDate: SystemClock.OffsetUtcNow, value: value);
         foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))

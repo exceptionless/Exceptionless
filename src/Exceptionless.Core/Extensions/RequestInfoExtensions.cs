@@ -8,9 +8,6 @@ public static class RequestInfoExtensions
 {
     public static RequestInfo ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000)
     {
-        if (request == null)
-            return null;
-
         request.Cookies = ApplyExclusions(request.Cookies, exclusions, maxLength);
         request.QueryString = ApplyExclusions(request.QueryString, exclusions, maxLength);
         request.PostData = ApplyPostDataExclusions(request.PostData, exclusions, maxLength);
@@ -18,13 +15,13 @@ public static class RequestInfoExtensions
         return request;
     }
 
-    private static object ApplyPostDataExclusions(object data, IEnumerable<string> exclusions, int maxLength)
+    private static object? ApplyPostDataExclusions(object? data, IEnumerable<string> exclusions, int maxLength)
     {
-        if (data == null)
+        if (data is null)
             return null;
 
         var dictionary = data as Dictionary<string, string>;
-        if (dictionary == null && data is string)
+        if (dictionary is null && data is string)
         {
             string json = (string)data;
             if (!json.IsJson())
@@ -37,18 +34,18 @@ public static class RequestInfoExtensions
             catch (Exception) { }
         }
 
-        return dictionary != null ? ApplyExclusions(dictionary, exclusions, maxLength) : data;
+        return dictionary is not null ? ApplyExclusions(dictionary, exclusions, maxLength) : data;
     }
 
-    private static Dictionary<string, string> ApplyExclusions(Dictionary<string, string> dictionary, IEnumerable<string> exclusions, int maxLength)
+    private static Dictionary<string, string>? ApplyExclusions(Dictionary<string, string>? dictionary, IEnumerable<string> exclusions, int maxLength)
     {
-        if (dictionary == null || dictionary.Count == 0)
+        if (dictionary is null || dictionary.Count == 0)
             return dictionary;
 
         foreach (string key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
             dictionary.Remove(key);
 
-        foreach (string key in dictionary.Where(kvp => kvp.Value != null && kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())
+        foreach (string key in dictionary.Where(kvp => kvp.Value is not null && kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())
             dictionary[key] = String.Format("Value is too large to be included.");
 
         return dictionary;
@@ -60,23 +57,26 @@ public static class RequestInfoExtensions
     public static string GetFullPath(this RequestInfo requestInfo, bool includeHttpMethod = false, bool includeHost = true, bool includeQueryString = true)
     {
         var sb = new StringBuilder();
-        if (includeHttpMethod)
+        if (includeHttpMethod && !String.IsNullOrEmpty(requestInfo.HttpMethod))
             sb.Append(requestInfo.HttpMethod).Append(" ");
 
-        if (includeHost)
+        if (includeHost && !String.IsNullOrEmpty(requestInfo.Host))
         {
-            sb.Append(requestInfo.IsSecure ? "https://" : "http://");
+            sb.Append(requestInfo.IsSecure.GetValueOrDefault() ? "https://" : "http://");
             sb.Append(requestInfo.Host);
-            if (requestInfo.Port != 80 && requestInfo.Port != 443)
+            if (requestInfo.Port.HasValue && requestInfo.Port != 80 && requestInfo.Port != 443)
                 sb.Append(":").Append(requestInfo.Port);
         }
 
-        if (!requestInfo.Path.StartsWith("/"))
-            sb.Append("/");
+        if (requestInfo.Path is not null)
+        {
+            if (!requestInfo.Path.StartsWith("/"))
+                sb.Append("/");
 
-        sb.Append(requestInfo.Path);
+            sb.Append(requestInfo.Path);
+        }
 
-        if (includeQueryString && requestInfo.QueryString != null && requestInfo.QueryString.Count > 0)
+        if (includeQueryString && requestInfo.QueryString is not null && requestInfo.QueryString.Count > 0)
             sb.Append("?").Append(CreateQueryString(requestInfo.QueryString));
 
         return sb.ToString();
@@ -84,7 +84,7 @@ public static class RequestInfoExtensions
 
     private static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args)
     {
-        if (args == null)
+        if (args is null)
             return String.Empty;
 
         if (!args.Any())
@@ -94,7 +94,7 @@ public static class RequestInfoExtensions
 
         foreach (var p in args)
         {
-            if (String.IsNullOrEmpty(p.Key) && p.Value == null)
+            if (String.IsNullOrEmpty(p.Key) && p.Value is null)
                 continue;
 
             if (!String.IsNullOrEmpty(p.Key))
@@ -102,7 +102,7 @@ public static class RequestInfoExtensions
                 sb.Append(Uri.EscapeDataString(p.Key));
                 sb.Append('=');
             }
-            if (p.Value != null)
+            if (p.Value is not null)
                 sb.Append(p.Value);
             sb.Append('&');
         }

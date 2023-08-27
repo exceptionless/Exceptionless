@@ -1,8 +1,8 @@
 ﻿namespace Exceptionless.Web.Models;
 
-public class InvoiceLineItem
+public record InvoiceLineItem
 {
-    public string Description { get; set; }
-    public string Date { get; set; }
-    public decimal Amount { get; set; }
+    public required string Description { get; set; }
+    public string? Date { get; set; }
+    public required decimal Amount { get; set; }
 }

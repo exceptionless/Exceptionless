@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 [Priority(850)]
 public class V1R850EventUpgrade : PluginBase, IEventUpgraderPlugin
 {
-    public V1R850EventUpgrade(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public V1R850EventUpgrade(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public void Upgrade(EventUpgraderContext ctx)
     {
@@ -18,17 +18,17 @@ public class V1R850EventUpgrade : PluginBase, IEventUpgraderPlugin
         foreach (var doc in ctx.Documents.OfType<JObject>())
         {
             var current = doc;
-            while (current != null)
+            while (current is not null)
             {
                 if (doc["ExtendedData"] is JObject extendedData)
                 {
-                    if (extendedData["ExtraExceptionProperties"] != null)
+                    if (extendedData["ExtraExceptionProperties"] is not null)
                         extendedData.Rename("ExtraExceptionProperties", "__ExceptionInfo");
 
-                    if (extendedData["ExceptionInfo"] != null)
+                    if (extendedData["ExceptionInfo"] is not null)
                         extendedData.Rename("ExceptionInfo", "__ExceptionInfo");
 
-                    if (extendedData["TraceInfo"] != null)
+                    if (extendedData["TraceInfo"] is not null)
                         extendedData.Rename("TraceInfo", "TraceLog");
                 }
 

@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Web.Models;
 
-public class UpdateProject
+public record UpdateProject
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
     public bool DeleteBotDataEnabled { get; set; }
 }

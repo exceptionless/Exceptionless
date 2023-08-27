@@ -5,12 +5,12 @@ namespace Exceptionless.Core.Plugins.WebHook;
 
 public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
 {
-    public WebHookDataPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public WebHookDataPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs all of the event plugins create method.
     /// </summary>
-    public async Task<object> CreateFromEventAsync(WebHookDataContext context)
+    public async Task<object?> CreateFromEventAsync(WebHookDataContext context)
     {
         string metricPrefix = String.Concat(_metricPrefix, "ev-create", ".");
         foreach (var plugin in Plugins.Values)
@@ -18,19 +18,19 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try
             {
-                object data = null;
+                object? data = null;
                 await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
                 if (context.IsCancelled)
                     break;
 
-                if (data == null)
+                if (data is null)
                     continue;
 
                 return data;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling create from event {id} in plugin {PluginName}: {Message}", context.Event.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling create from event {EventId} in plugin {PluginName}: {Message}", context.Event?.Id, plugin.Name, ex.Message);
             }
         }
 
@@ -40,7 +40,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
     /// <summary>
     /// Runs all of the event plugins create method.
     /// </summary>
-    public async Task<object> CreateFromStackAsync(WebHookDataContext context)
+    public async Task<object?> CreateFromStackAsync(WebHookDataContext context)
     {
         string metricPrefix = String.Concat(_metricPrefix, "st-create", ".");
         foreach (var plugin in Plugins.Values)
@@ -48,19 +48,19 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try
             {
-                object data = null;
+                object? data = null;
                 await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
                 if (context.IsCancelled)
                     break;
 
-                if (data == null)
+                if (data is null)
                     continue;
 
                 return data;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling create from stack {stack} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling create from stack {StackId} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
             }
         }
 

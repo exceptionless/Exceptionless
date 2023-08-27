@@ -138,7 +138,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         for (int i = 0; i < sortedIds.Count; i++)
         {
             _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
-            string nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
+            string? nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
             if (i == sortedIds.Count - 1)
                 Assert.Null(nextId);
             else
@@ -227,7 +227,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Empty(events);
     }
 
-    private readonly List<Tuple<string, DateTime>> _ids = new List<Tuple<string, DateTime>>();
+    private readonly List<Tuple<string, DateTime>> _ids = new();
 
     private async Task CreateDataAsync()
     {

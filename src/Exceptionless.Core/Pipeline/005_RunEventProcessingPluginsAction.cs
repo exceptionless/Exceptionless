@@ -8,7 +8,7 @@ public class RunEventProcessingPluginsAction : EventPipelineActionBase
 {
     private readonly EventPluginManager _pluginManager;
 
-    public RunEventProcessingPluginsAction(EventPluginManager pluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public RunEventProcessingPluginsAction(EventPluginManager pluginManager, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _pluginManager = pluginManager;
         ContinueOnError = true;

@@ -1,8 +1,8 @@
 ﻿namespace Exceptionless.Core.Queues.Models;
 
-public class SummaryNotification
+public record SummaryNotification
 {
-    public string Id { get; set; }
-    public DateTime UtcStartTime { get; set; }
-    public DateTime UtcEndTime { get; set; }
+    public required string Id { get; set; }
+    public required DateTime UtcStartTime { get; set; }
+    public required DateTime UtcEndTime { get; set; }
 }

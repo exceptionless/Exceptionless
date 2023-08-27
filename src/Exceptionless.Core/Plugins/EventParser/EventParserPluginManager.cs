@@ -6,12 +6,12 @@ namespace Exceptionless.Core.Plugins.EventParser;
 
 public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
 {
-    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
     /// </summary>
-    public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent)
+    public List<PersistentEvent> ParseEvents(string input, int apiVersion, string? userAgent)
     {
         string metricPrefix = String.Concat("events.parse.");
         foreach (var plugin in Plugins.Values.ToList())
@@ -20,9 +20,9 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
 
             try
             {
-                List<PersistentEvent> events = null;
+                List<PersistentEvent>? events = null;
                 AppDiagnostics.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
-                if (events == null)
+                if (events is null)
                     continue;
 
                 // Set required event properties
@@ -32,7 +32,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
                         e.Date = SystemClock.OffsetNow;
 
                     if (String.IsNullOrWhiteSpace(e.Type))
-                        e.Type = e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
+                        e.Type = e.HasError() || e.HasSimpleError() ? Event.KnownTypes.Error : Event.KnownTypes.Log;
                 });
 
                 return events;

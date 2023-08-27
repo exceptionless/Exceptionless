@@ -8,37 +8,47 @@ namespace Exceptionless;
 
 public static class EventExtensions
 {
-    public static Error GetError(this Event ev)
+    public static bool HasError(this Event ev)
     {
-        if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.Error))
+        return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
+    }
+
+    public static Error? GetError(this Event ev)
+    {
+        if (!ev.HasError())
             return null;
 
         try
         {
-            return ev.Data.GetValue<Error>(Event.KnownDataKeys.Error);
+            return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error);
+        }
+        catch (Exception) { }
+
+        return null;
+    }
+    public static bool HasSimpleError(this Event ev)
+    {
+        return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
+    }
+
+
+    public static SimpleError? GetSimpleError(this Event ev)
+    {
+        if (!ev.HasSimpleError())
+            return null;
+
+        try
+        {
+            return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError);
         }
         catch (Exception) { }
 
         return null;
     }
 
-    public static SimpleError GetSimpleError(this Event ev)
+    public static RequestInfo? GetRequestInfo(this Event ev)
     {
-        if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
-            return null;
-
-        try
-        {
-            return ev.Data.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError);
-        }
-        catch (Exception) { }
-
-        return null;
-    }
-
-    public static RequestInfo GetRequestInfo(this Event ev)
-    {
-        if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
             return null;
 
         try
@@ -50,9 +60,9 @@ public static class EventExtensions
         return null;
     }
 
-    public static EnvironmentInfo GetEnvironmentInfo(this Event ev)
+    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev)
     {
-        if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
             return null;
 
         try
@@ -66,7 +76,7 @@ public static class EventExtensions
 
     public static TagSet RemoveExcessTags(this TagSet tags)
     {
-        tags?.Trim(
+        tags.Trim(
             t => String.IsNullOrEmpty(t) || t.Length > 100,
             t => String.Equals(t, Event.KnownTags.Critical, StringComparison.OrdinalIgnoreCase) || String.Equals(t, Event.KnownTags.Internal, StringComparison.OrdinalIgnoreCase),
             50);
@@ -79,7 +89,7 @@ public static class EventExtensions
     /// </summary>
     public static bool IsCritical(this Event ev)
     {
-        return ev.Tags != null && ev.Tags.Contains(Event.KnownTags.Critical);
+        return ev.Tags is not null && ev.Tags.Contains(Event.KnownTags.Critical);
     }
 
     /// <summary>
@@ -87,9 +97,7 @@ public static class EventExtensions
     /// </summary>
     public static void MarkAsCritical(this Event ev)
     {
-        if (ev.Tags == null)
-            ev.Tags = new TagSet();
-
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(Event.KnownTags.Critical);
         ev.Tags.RemoveExcessTags();
     }
@@ -155,23 +163,21 @@ public static class EventExtensions
     /// </summary>
     public static void AddRequestInfo(this Event ev, RequestInfo request)
     {
-        if (request == null)
-            return;
-
+        ev.Data ??= new DataDictionary();
         ev.Data[Event.KnownDataKeys.RequestInfo] = request;
     }
 
     /// <summary>
     /// Gets the user info object from extended data.
     /// </summary>
-    public static UserInfo GetUserIdentity(this Event ev)
+    public static UserInfo? GetUserIdentity(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out object value) ? value as UserInfo : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out object? value) ? value as UserInfo : null;
     }
 
-    public static string GetVersion(this Event ev)
+    public static string? GetVersion(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.Version, out object value) ? value as string : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.Version, out object? value) ? value as string : null;
     }
 
     /// <summary>
@@ -179,69 +185,76 @@ public static class EventExtensions
     /// </summary>
     /// <param name="ev">The event</param>
     /// <param name="version">The version.</param>
-    public static void SetVersion(this Event ev, string version)
+    public static void SetVersion(this Event ev, string? version)
     {
+        ev.Data ??= new DataDictionary();
         if (String.IsNullOrWhiteSpace(version))
-            return;
-
-        ev.Data[Event.KnownDataKeys.Version] = version.Trim();
+            ev.Data.Remove(Event.KnownDataKeys.Version);
+        else
+            ev.Data[Event.KnownDataKeys.Version] = version.Trim();
     }
 
-    public static SubmissionClient GetSubmissionClient(this Event ev)
+    public static SubmissionClient? GetSubmissionClient(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionClient, out object value) ? value as SubmissionClient : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionClient, out object? value) ? value as SubmissionClient : null;
     }
 
-    public static Location GetLocation(this Event ev)
+    public static bool HasLocation(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.Location, out object value) ? value as Location : null;
+        return ev.Data != null && ev.Data.ContainsKey(Event.KnownDataKeys.Location);
     }
 
-    public static string GetLevel(this Event ev)
+    public static Location? GetLocation(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object value) ? value as string : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.Location, out object? value) ? value as Location : null;
+    }
+
+    public static string? GetLevel(this Event ev)
+    {
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.Level, out object? value) ? value as string : null;
     }
 
     public static void SetLevel(this Event ev, string level)
     {
+        ev.Data ??= new DataDictionary();
         ev.Data[Event.KnownDataKeys.Level] = level;
     }
 
-    public static string GetSubmissionMethod(this Event ev)
+    public static string? GetSubmissionMethod(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionMethod, out object value) ? value as string : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionMethod, out object? value) ? value as string : null;
     }
 
     public static void SetSubmissionClient(this Event ev, SubmissionClient client)
     {
-        if (client == null)
-            return;
-
+        ev.Data ??= new DataDictionary();
         ev.Data[Event.KnownDataKeys.SubmissionClient] = client;
     }
 
-    public static void SetLocation(this Event ev, Location location)
+    public static void SetLocation(this Event ev, Location? location)
     {
-        if (location == null)
-            return;
-
-        ev.Data[Event.KnownDataKeys.Location] = location;
+        ev.Data ??= new DataDictionary();
+        if (location is null)
+            ev.Data.Remove(Event.KnownDataKeys.Location);
+        else
+            ev.Data[Event.KnownDataKeys.Location] = location;
     }
 
-    public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo environmentInfo)
+    public static void SetEnvironmentInfo(this Event ev, EnvironmentInfo? environmentInfo)
     {
-        if (environmentInfo == null)
-            return;
-
-        ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
+        ev.Data ??= new DataDictionary();
+        if (environmentInfo is null)
+            ev.Data.Remove(Event.KnownDataKeys.EnvironmentInfo);
+        else
+            ev.Data[Event.KnownDataKeys.EnvironmentInfo] = environmentInfo;
     }
 
     /// <summary>
     /// Gets the stacking info from extended data.
     /// </summary>
-    public static ManualStackingInfo GetManualStackingInfo(this Event ev)
+    public static ManualStackingInfo? GetManualStackingInfo(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out object value) ? value as ManualStackingInfo : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out object? value) ? value as ManualStackingInfo : null;
     }
 
     /// <summary>
@@ -251,10 +264,11 @@ public static class EventExtensions
     /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
     public static void SetManualStackingInfo(this Event ev, IDictionary<string, string> signatureData)
     {
-        if (signatureData == null || signatureData.Count == 0)
-            return;
-
-        ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(signatureData);
+        ev.Data ??= new DataDictionary();
+        if (signatureData.Count == 0)
+            ev.Data.Remove(Event.KnownDataKeys.ManualStackingInfo);
+        else
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(signatureData);
     }
 
     /// <summary>
@@ -265,10 +279,11 @@ public static class EventExtensions
     /// <param name="signatureData">Key value pair that determines how the event is stacked.</param>
     public static void SetManualStackingInfo(this Event ev, string title, IDictionary<string, string> signatureData)
     {
-        if (String.IsNullOrWhiteSpace(title) || signatureData == null || signatureData.Count == 0)
-            return;
-
-        ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, signatureData);
+        ev.Data ??= new DataDictionary();
+        if (String.IsNullOrWhiteSpace(title) || signatureData is null || signatureData.Count == 0)
+            ev.Data.Remove(Event.KnownDataKeys.ManualStackingInfo);
+        else
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, signatureData);
     }
 
     /// <summary>
@@ -278,10 +293,11 @@ public static class EventExtensions
     /// <param name="manualStackingKey">The manual stacking key.</param>
     public static void SetManualStackingKey(this Event ev, string manualStackingKey)
     {
+        ev.Data ??= new DataDictionary();
         if (String.IsNullOrWhiteSpace(manualStackingKey))
-            return;
-
-        ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+            ev.Data.Remove(Event.KnownDataKeys.ManualStackingInfo);
+        else
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(null, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
     }
 
     /// <summary>
@@ -292,10 +308,11 @@ public static class EventExtensions
     /// <param name="manualStackingKey">The manual stacking key.</param>
     public static void SetManualStackingKey(this Event ev, string title, string manualStackingKey)
     {
+        ev.Data ??= new DataDictionary();
         if (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(manualStackingKey))
-            return;
-
-        ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
+            ev.Data.Remove(Event.KnownDataKeys.ManualStackingInfo);
+        else
+            ev.Data[Event.KnownDataKeys.ManualStackingInfo] = new ManualStackingInfo(title, new Dictionary<string, string> { { "ManualStackingKey", manualStackingKey } });
     }
 
     /// <summary>
@@ -314,12 +331,13 @@ public static class EventExtensions
     /// <param name="ev">The event</param>
     /// <param name="identity">The user's identity that the event happened to.</param>
     /// <param name="name">The user's friendly name that the event happened to.</param>
-    public static void SetUserIdentity(this Event ev, string identity, string name)
+    public static void SetUserIdentity(this Event ev, string identity, string? name)
     {
+        ev.Data ??= new DataDictionary();
         if (String.IsNullOrWhiteSpace(identity) && String.IsNullOrWhiteSpace(name))
-            return;
-
-        ev.SetUserIdentity(new UserInfo(identity, name));
+            ev.Data.Remove(Event.KnownDataKeys.UserInfo);
+        else
+            ev.SetUserIdentity(new UserInfo(identity, name));
     }
 
     /// <summary>
@@ -327,20 +345,27 @@ public static class EventExtensions
     /// </summary>
     /// <param name="ev">The event</param>
     /// <param name="userInfo">The user's identity that the event happened to.</param>
-    public static void SetUserIdentity(this Event ev, UserInfo userInfo)
+    public static void SetUserIdentity(this Event ev, UserInfo? userInfo)
     {
-        if (userInfo == null)
-            return;
+        ev.Data ??= new DataDictionary();
+        if (userInfo is null)
+            ev.Data.Remove(Event.KnownDataKeys.UserInfo);
+        else
+            ev.Data[Event.KnownDataKeys.UserInfo] = userInfo;
+    }
 
-        ev.Data[Event.KnownDataKeys.UserInfo] = userInfo;
+    public static void RemoveUserIdentity(this Event ev)
+    {
+        if (ev.Data is not null)
+            ev.Data.Remove(Event.KnownDataKeys.UserInfo);
     }
 
     /// <summary>
     /// Gets the user description from extended data.
     /// </summary>
-    public static UserDescription GetUserDescription(this Event ev)
+    public static UserDescription? GetUserDescription(this Event ev)
     {
-        return ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out object value) ? value as UserDescription : null;
+        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out object? value) ? value as UserDescription : null;
     }
 
     /// <summary>
@@ -351,10 +376,11 @@ public static class EventExtensions
     /// <param name="description">The user's description of the event.</param>
     public static void SetUserDescription(this Event ev, string emailAddress, string description)
     {
+        ev.Data ??= new DataDictionary();
         if (String.IsNullOrWhiteSpace(emailAddress) && String.IsNullOrWhiteSpace(description))
-            return;
-
-        ev.Data[Event.KnownDataKeys.UserDescription] = new UserDescription(emailAddress, description);
+            ev.Data.Remove(Event.KnownDataKeys.UserDescription);
+        else
+            ev.Data[Event.KnownDataKeys.UserDescription] = new UserDescription(emailAddress, description);
     }
 
     /// <summary>
@@ -364,10 +390,11 @@ public static class EventExtensions
     /// <param name="description">The user's description.</param>
     public static void SetUserDescription(this Event ev, UserDescription description)
     {
-        if (description == null || (String.IsNullOrWhiteSpace(description.EmailAddress) && String.IsNullOrWhiteSpace(description.Description)))
-            return;
-
-        ev.Data[Event.KnownDataKeys.UserDescription] = description;
+        ev.Data ??= new DataDictionary();
+        if (String.IsNullOrWhiteSpace(description.EmailAddress) && String.IsNullOrWhiteSpace(description.Description))
+            ev.Data.Remove(Event.KnownDataKeys.UserDescription);
+        else
+            ev.Data[Event.KnownDataKeys.UserDescription] = description;
     }
 
     public static byte[] GetBytes(this Event ev, JsonSerializerSettings settings)

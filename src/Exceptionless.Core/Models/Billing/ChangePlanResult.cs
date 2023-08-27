@@ -1,9 +1,9 @@
 ﻿namespace Exceptionless.Core.Models.Billing;
 
-public class ChangePlanResult
+public record ChangePlanResult
 {
-    public bool Success { get; set; }
-    public string Message { get; set; }
+    public bool Success { get; init; }
+    public string? Message { get; init; }
 
     public static ChangePlanResult FailWithMessage(string message)
     {

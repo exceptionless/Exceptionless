@@ -17,12 +17,12 @@ internal class TestDomainLoginProvider : IDomainLoginProvider
         return $"{username}@domain.com";
     }
 
-    public string GetUserFullName(string username)
+    public string? GetUserFullName(string username)
     {
         return $"{username} {username.ToUpperInvariant()}";
     }
 
-    public string GetUsernameFromEmailAddress(string email)
+    public string? GetUsernameFromEmailAddress(string email)
     {
         return email == GetEmailAddressFromUsername(ValidUsername) ? ValidUsername : null;
     }

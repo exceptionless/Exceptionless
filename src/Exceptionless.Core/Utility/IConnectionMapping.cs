@@ -12,11 +12,11 @@ public interface IConnectionMapping
 
 public class ConnectionMapping : IConnectionMapping
 {
-    private readonly ConcurrentDictionary<string, HashSet<string>> _connections = new ConcurrentDictionary<string, HashSet<string>>();
+    private readonly ConcurrentDictionary<string, HashSet<string>> _connections = new();
 
     public Task AddAsync(string key, string connectionId)
     {
-        if (key == null)
+        if (key is null)
             return Task.CompletedTask;
 
         _connections.AddOrUpdate(key, new HashSet<string>(new[] { connectionId }), (_, hs) =>
@@ -30,7 +30,7 @@ public class ConnectionMapping : IConnectionMapping
 
     public Task<ICollection<string>> GetConnectionsAsync(string key)
     {
-        if (key == null)
+        if (key is null)
             return Task.FromResult<ICollection<string>>(new List<string>());
 
         return Task.FromResult<ICollection<string>>(_connections.GetOrAdd(key, new HashSet<string>()));
@@ -38,7 +38,7 @@ public class ConnectionMapping : IConnectionMapping
 
     public Task<int> GetConnectionCountAsync(string key)
     {
-        if (key == null)
+        if (key is null)
             return Task.FromResult(0);
 
         if (_connections.TryGetValue(key, out var connections))
@@ -49,7 +49,7 @@ public class ConnectionMapping : IConnectionMapping
 
     public Task RemoveAsync(string key, string connectionId)
     {
-        if (key == null)
+        if (key is null)
             return Task.CompletedTask;
 
         bool shouldRemove = false;

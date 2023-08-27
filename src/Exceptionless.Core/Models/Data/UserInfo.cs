@@ -17,7 +17,7 @@ public class UserInfo : IData
             Identity = identity.Trim();
     }
 
-    public UserInfo(string identity, string name) : this(identity)
+    public UserInfo(string identity, string? name) : this(identity)
     {
         if (!String.IsNullOrWhiteSpace(name))
             Name = name.Trim();
@@ -26,24 +26,24 @@ public class UserInfo : IData
     /// <summary>
     /// Uniquely identifies the user.
     /// </summary>
-    public string Identity { get; set; }
+    public string? Identity { get; set; }
 
     /// <summary>
     /// The Friendly name of the user.
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     /// Extended data entries for this user.
     /// </summary>
-    public DataDictionary Data { get; set; }
+    public DataDictionary? Data { get; set; }
 
     protected bool Equals(UserInfo other)
     {
         return String.Equals(Identity, other.Identity) && String.Equals(Name, other.Name) && Equals(Data, other.Data);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

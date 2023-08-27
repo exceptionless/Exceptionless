@@ -17,7 +17,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-    public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cache = cacheClient;
         _workItemQueue = workItemQueue;
@@ -56,7 +56,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             if (requestCount < _options.BotThrottleLimit)
                 continue;
 
-            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {project}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
+            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {ProjectId}", clientIpAddressGroup.Key, SystemClock.UtcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
 
             // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             await _workItemQueue.EnqueueAsync(new RemoveBotEventsWorkItem

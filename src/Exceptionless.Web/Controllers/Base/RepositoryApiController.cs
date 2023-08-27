@@ -19,13 +19,13 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
 
     protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value)
     {
-        if (value == null)
+        if (value is null)
             return BadRequest();
 
         var mapped = await MapAsync<TModel>(value);
         // if no organization id is specified, default to the user's 1st associated org.
-        if (!_isOrganization && mapped is IOwnedByOrganization orgModel && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
-            orgModel.OrganizationId = Request.GetDefaultOrganizationId();
+        if (!_isOrganization && mapped is IOwnedByOrganization orgModel && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Count > 0)
+            orgModel.OrganizationId = Request.GetDefaultOrganizationId()!;
 
         var permission = await CanAddAsync(mapped);
         if (!permission.Allowed)
@@ -42,16 +42,16 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             return BadRequest(ex.Errors.ToErrorMessage());
         }
 
-        return Created(new Uri(GetEntityLink(model.Id)), await MapAsync<TViewModel>(model, true));
+        return Created(new Uri(GetEntityLink(model.Id) ?? throw new InvalidOperationException()), await MapAsync<TViewModel>(model, true));
     }
 
     protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc)
     {
         var model = await GetModelAsync(id);
-        if (model == null)
+        if (model is null)
             return NotFound();
 
-        if (modelUpdateFunc != null)
+        if (modelUpdateFunc is not null)
             model = await modelUpdateFunc(model);
 
         await _repository.SaveAsync(model, o => o.Cache());
@@ -66,10 +66,10 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
     protected async Task<ActionResult<TViewModel>> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc)
     {
         var models = await GetModelsAsync(ids, false);
-        if (models == null || models.Count == 0)
+        if (models is null || models.Count == 0)
             return NotFound();
 
-        if (modelUpdateFunc != null)
+        if (modelUpdateFunc is not null)
             foreach (var model in models)
                 await modelUpdateFunc(model);
 
@@ -83,7 +83,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return Ok(await MapAsync<TViewModel>(models, true));
     }
 
-    protected virtual string GetEntityLink(string id)
+    protected virtual string? GetEntityLink(string id)
     {
         return Url.Link($"Get{typeof(TModel).Name}ById", new
         {
@@ -91,7 +91,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         });
     }
 
-    protected virtual string GetEntityResourceLink(string id, string type)
+    protected virtual string? GetEntityResourceLink(string? id, string type)
     {
         return GetResourceLink(Url.Link($"Get{typeof(TModel).Name}ById", new
         {
@@ -99,7 +99,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         }), type);
     }
 
-    protected virtual string GetEntityLink<TEntityType>(string id)
+    protected virtual string? GetEntityLink<TEntityType>(string id)
     {
         return Url.Link($"Get{typeof(TEntityType).Name}ById", new
         {
@@ -107,7 +107,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         });
     }
 
-    protected virtual string GetEntityResourceLink<TEntityType>(string id, string type)
+    protected virtual string? GetEntityResourceLink<TEntityType>(string id, string type)
     {
         return GetResourceLink(Url.Link($"Get{typeof(TEntityType).Name}ById", new
         {
@@ -144,11 +144,11 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
     protected async Task<ActionResult<TViewModel>> PatchImplAsync(string id, Delta<TUpdateModel> changes)
     {
         var original = await GetModelAsync(id, false);
-        if (original == null)
+        if (original is null)
             return NotFound();
 
         // if there are no changes in the delta, then ignore the request
-        if (changes == null || !changes.GetChangedPropertyNames().Any())
+        if (changes is null || !changes.GetChangedPropertyNames().Any())
             return await OkModelAsync(original);
 
         var permission = await CanUpdateAsync(original, changes);
@@ -220,7 +220,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, ex.Message);
             return StatusCode(StatusCodes.Status500InternalServerError);
         }

@@ -7,21 +7,21 @@ namespace Exceptionless.Core.Configuration;
 
 public class StorageOptions
 {
-    public string ConnectionString { get; internal set; }
-    public string Provider { get; internal set; }
-    public Dictionary<string, string> Data { get; internal set; }
+    public string? ConnectionString { get; internal set; }
+    public string? Provider { get; internal set; }
+    public Dictionary<string, string> Data { get; internal set; } = null!;
 
-    public string Scope { get; internal set; }
-    public string ScopePrefix { get; internal set; }
+    public string Scope { get; internal set; } = null!;
+    public string ScopePrefix { get; internal set; } = null!;
 
     public static StorageOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
     {
         var options = new StorageOptions();
 
         options.Scope = appOptions.AppScope;
-        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
+        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
 
-        string cs = config.GetConnectionString("Storage");
+        string? cs = config.GetConnectionString("Storage");
         options.Data = cs.ParseConnectionString();
         options.Provider = options.Data.GetString(nameof(options.Provider));
 

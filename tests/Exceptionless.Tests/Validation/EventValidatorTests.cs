@@ -47,6 +47,7 @@ public sealed class EventValidatorTests : TestWithServices
     public void ValidateTag(string tag, bool isValid)
     {
         var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(tag);
 
         var result = _validator.Validate(ev);
@@ -61,6 +62,7 @@ public sealed class EventValidatorTests : TestWithServices
     public async Task ValidateTagAsync(string tag, bool isValid)
     {
         var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(tag);
 
         var result = await _validator.ValidateAsync(ev);

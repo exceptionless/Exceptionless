@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -30,21 +31,24 @@ public class SerializerTests : TestWithServices
         settings.Converters.Add(new DataObjectConverter<Error>(_logger));
 
         var ev = json.FromJson<Event>(settings);
+        Assert.NotNull(ev?.Data);
+
         Assert.Equal(8, ev.Data.Count);
-        Assert.Equal("Hi", ev.Data["SomeString"]);
-        Assert.False((bool)ev.Data["SomeBool"]);
+        Assert.Equal("Hi", ev.Data.GetString("SomeString"));
+        Assert.False(ev.Data.GetBoolean("SomeBool"));
         Assert.Equal(1L, ev.Data["SomeNum"]);
-        Assert.Equal(typeof(JObject), ev.Data["UnknownProp"].GetType());
-        Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"].GetType());
-        Assert.Equal("SomeVal", (string)((dynamic)ev.Data["UnknownProp"]).Blah);
-        Assert.Equal(typeof(SomeModel), ev.Data["Some"].GetType());
-        Assert.Equal(typeof(SomeModel), ev.Data["Some2"].GetType());
-        Assert.Equal("SomeVal", ((SomeModel)ev.Data["Some"]).Blah);
-        Assert.Equal(typeof(Error), ev.Data[Event.KnownDataKeys.Error].GetType());
-        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]).Message);
-        Assert.Single(((Error)ev.Data[Event.KnownDataKeys.Error]).Data);
-        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]).Data["SomeProp"]);
+        Assert.Equal(typeof(JObject), ev.Data["UnknownProp"]?.GetType());
+        Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"]?.GetType());
+        Assert.Equal("SomeVal", (string)((dynamic)ev.Data["UnknownProp"]!)?.Blah!);
+        Assert.Equal(typeof(SomeModel), ev.Data["Some"]?.GetType());
+        Assert.Equal(typeof(SomeModel), ev.Data["Some2"]?.GetType());
+        Assert.Equal("SomeVal", (ev.Data["Some"] as SomeModel)?.Blah);
+        Assert.Equal(typeof(Error), ev.Data[Event.KnownDataKeys.Error]?.GetType());
+        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Message);
+        Assert.Single(((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Data!);
+        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Data?["SomeProp"]);
         Assert.Equal("Hello", ev.Message);
+        Assert.NotNull(ev.Tags);
         Assert.Equal(2, ev.Tags.Count);
         Assert.Contains("One", ev.Tags);
         Assert.Contains("Two", ev.Tags);
@@ -71,13 +75,15 @@ public class SerializerTests : TestWithServices
         settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
 
         var ev = json.FromJson<Event>(settings);
+        Assert.NotNull(ev?.Data);
         Assert.Equal(2, ev.Data.Count);
         Assert.True(ev.Data.ContainsKey("Some"));
-        Assert.Equal("SomeVal", ((SomeModel)ev.Data["Some"]).Blah);
+        Assert.Equal("SomeVal", (ev.Data["Some"] as SomeModel)?.Blah);
         Assert.True(ev.Data.ContainsKey("@Some"));
-        Assert.Equal("SomeVal", ((SomeModel)ev.Data["@Some"]).Blah);
+        Assert.Equal("SomeVal", (ev.Data["@Some"] as SomeModel)?.Blah);
 
         ev = jsonWithInvalidDataType.FromJson<Event>(settings);
+        Assert.NotNull(ev?.Data);
         Assert.Equal(2, ev.Data.Count);
         Assert.True(ev.Data.ContainsKey("_@Some1"));
         Assert.Equal("Testing", ev.Data["_@Some1"] as string);
@@ -93,6 +99,7 @@ public class SerializerTests : TestWithServices
         settings.Converters.Add(new DataObjectConverter<Event>(_logger));
 
         var ev = json.FromJson<Event>(settings);
+        Assert.NotNull(ev?.Data);
         Assert.Single(ev.Data);
         Assert.Equal("Hello", ev.Message);
         Assert.Equal("SomeVal", ev.Data["Blah"]);
@@ -125,14 +132,15 @@ public class SerializerTests : TestWithServices
 
         var serializer = GetService<ITextSerializer>();
         var model = serializer.Deserialize<Project>(json);
-        Assert.NotNull(model?.LastEventDateUtc);
+        Assert.NotNull(model);
+        Assert.NotNull(model.LastEventDateUtc);
         Assert.NotEqual(DateTime.MinValue, model.LastEventDateUtc);
         Assert.Equal(DateTime.MinValue, model.CreatedUtc);
         Assert.NotEqual(DateTime.MinValue, model.UpdatedUtc);
     }
 }
 
-public class SomeModel
+public record SomeModel
 {
-    public string Blah { get; set; }
+    public required string Blah { get; set; }
 }

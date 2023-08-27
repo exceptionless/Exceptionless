@@ -1,13 +1,14 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 [Priority(99)]
 public sealed class DefaultFormattingPlugin : FormattingPluginBase
 {
-    public DefaultFormattingPlugin(AppOptions options) : base(options) { }
+    public DefaultFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override string GetStackTitle(PersistentEvent ev)
     {
@@ -21,7 +22,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
     {
         var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
-        if (stack.SignatureInfo.TryGetValue("Source", out string value))
+        if (stack.SignatureInfo.TryGetValue("Source", out string? value))
             data.Add("Source", value);
 
         return new SummaryData { TemplateKey = "stack-summary", Data = data };
@@ -29,7 +30,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override SummaryData GetEventSummaryData(PersistentEvent ev)
     {
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Message", GetStackTitle(ev) },
                 { "Source", ev.Source },
                 { "Type", ev.Type }
@@ -42,9 +43,9 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
     {
-        string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
+        string? messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
-            return null;
+            throw new ArgumentException("Event must contain message or source");
 
         string notificationType = "Occurrence event";
         if (isNew)
@@ -56,7 +57,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
         string subject = String.Concat(notificationType, ": ", messageOrSource).Truncate(120);
-        var data = new Dictionary<string, object>();
+        var data = new Dictionary<string, object?>();
         if (!String.IsNullOrEmpty(ev.Message))
             data.Add("Message", ev.Message.Truncate(60));
 
@@ -64,7 +65,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
             data.Add("Source", ev.Source.Truncate(60));
 
         var requestInfo = ev.GetRequestInfo();
-        if (requestInfo != null)
+        if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
         return new MailMessageData { Subject = subject, Data = data };
@@ -72,9 +73,9 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override SlackMessage GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
-        string messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
+        string? messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
-            return null;
+            throw new ArgumentException("Event must contain message or source");
 
         string notificationType = "Occurrence event";
         if (isNew)

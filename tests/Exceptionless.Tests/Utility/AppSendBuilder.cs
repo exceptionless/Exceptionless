@@ -6,7 +6,7 @@ namespace Exceptionless.Tests.Utility;
 
 public class AppSendBuilder : PostBuilder<AppSendBuilder>
 {
-    internal static readonly HttpMethod HttpPatch = new HttpMethod("PATCH");
+    internal static readonly HttpMethod HttpPatch = new("PATCH");
 
     public AppSendBuilder(HttpRequestMessage request) : base(request) { }
 
@@ -96,5 +96,5 @@ public class AppSendBuilder : PostBuilder<AppSendBuilder>
         return this;
     }
 
-    public static readonly HttpRequestOptionsKey<HttpStatusCode> ExpectedStatusKey = new HttpRequestOptionsKey<HttpStatusCode>("ExpectedStatus");
+    public static readonly HttpRequestOptionsKey<HttpStatusCode> ExpectedStatusKey = new("ExpectedStatus");
 }

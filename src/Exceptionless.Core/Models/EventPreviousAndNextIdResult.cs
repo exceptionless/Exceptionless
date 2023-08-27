@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class PreviousAndNextEventIdResult
+public record PreviousAndNextEventIdResult
 {
-    public string Previous { get; set; }
-    public string Next { get; set; }
+    public string? Previous { get; init; }
+    public string? Next { get; init; }
 }

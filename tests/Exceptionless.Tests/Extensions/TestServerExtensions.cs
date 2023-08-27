@@ -21,8 +21,8 @@ public static class TestServerExtensions
         var startTime = DateTime.UtcNow;
         do
         {
-            if (startupContext != null && startupContext.IsStartupComplete && startupContext.Result.Success == false)
-                throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed");
+            if (startupContext is not null && startupContext.IsStartupComplete && startupContext.Result.Success == false)
+                throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed: {startupContext.Result.ErrorMessage}");
 
             var response = await client.GetAsync("/ready");
             if (response.IsSuccessStatusCode)

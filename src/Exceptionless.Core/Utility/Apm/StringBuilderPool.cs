@@ -7,10 +7,10 @@ namespace OpenTelemetry.Internal;
 // https://github.com/dotnet/aspnetcore/blob/main/src/ObjectPool/src/DefaultObjectPool.cs
 internal class StringBuilderPool
 {
-    internal static StringBuilderPool Instance = new StringBuilderPool();
+    internal static StringBuilderPool Instance = new();
 
     private protected readonly ObjectWrapper[] items;
-    private protected StringBuilder firstItem;
+    private protected StringBuilder? firstItem;
 
     public StringBuilderPool()
         : this(Environment.ProcessorCount * 2)
@@ -20,7 +20,7 @@ internal class StringBuilderPool
     public StringBuilderPool(int maximumRetained)
     {
         // -1 due to _firstItem
-        this.items = new ObjectWrapper[maximumRetained - 1];
+        items = new ObjectWrapper[maximumRetained - 1];
     }
 
     public int MaximumRetainedCapacity { get; set; } = 4 * 1024;
@@ -29,20 +29,20 @@ internal class StringBuilderPool
 
     public StringBuilder Get()
     {
-        var item = this.firstItem;
-        if (item == null || Interlocked.CompareExchange(ref this.firstItem, null, item) != item)
+        var item = firstItem;
+        if (item is null || Interlocked.CompareExchange(ref firstItem, null, item) != item)
         {
             var items = this.items;
             for (var i = 0; i < items.Length; i++)
             {
                 item = items[i].Element;
-                if (item != null && Interlocked.CompareExchange(ref items[i].Element, null, item) == item)
+                if (item is not null && Interlocked.CompareExchange(ref items[i].Element!, null, item) == item)
                 {
                     return item;
                 }
             }
 
-            item = new StringBuilder(this.InitialCapacity);
+            item = new StringBuilder(InitialCapacity);
         }
 
         return item;
@@ -50,7 +50,7 @@ internal class StringBuilderPool
 
     public bool Return(StringBuilder item)
     {
-        if (item.Capacity > this.MaximumRetainedCapacity)
+        if (item.Capacity > MaximumRetainedCapacity)
         {
             // Too big. Discard this one.
             return false;
@@ -58,10 +58,10 @@ internal class StringBuilderPool
 
         item.Clear();
 
-        if (this.firstItem != null || Interlocked.CompareExchange(ref this.firstItem, item, null) != null)
+        if (firstItem is not null || Interlocked.CompareExchange(ref firstItem, item, null) is not null)
         {
             var items = this.items;
-            for (var i = 0; i < items.Length && Interlocked.CompareExchange(ref items[i].Element, item, null) != null; ++i)
+            for (var i = 0; i < items.Length && Interlocked.CompareExchange(ref items[i].Element, item, null) is not null; ++i)
             {
             }
         }

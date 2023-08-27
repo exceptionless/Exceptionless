@@ -38,13 +38,13 @@ public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> w
     private readonly AppOptions _options;
     protected readonly ILogger _logger;
 
-    public PipelineActionBase(AppOptions options, ILoggerFactory loggerFactory = null)
+    public PipelineActionBase(AppOptions options, ILoggerFactory loggerFactory)
     {
         _options = options;
         var type = GetType();
         Name = type.Name;
         Enabled = !_options.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase);
-        _logger = loggerFactory?.CreateLogger(type);
+        _logger = loggerFactory.CreateLogger(type);
     }
 
     public string Name { get; }

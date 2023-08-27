@@ -28,7 +28,7 @@ public static class TypeHelper
     public static readonly Type UInt64Type = typeof(ulong);
     public static readonly Type DoubleType = typeof(double);
 
-    public static string GetTypeName(string assemblyQualifiedName)
+    public static string? GetTypeName(string assemblyQualifiedName)
     {
         if (String.IsNullOrEmpty(assemblyQualifiedName))
             return null;
@@ -53,7 +53,7 @@ public static class TypeHelper
         }
 
         if (a is JToken && b is JToken)
-            return a.ToString().Equals(b.ToString());
+            return String.Equals(a.ToString(), b.ToString());
 
         if (a != b && !a.Equals(b))
             return false;
@@ -69,11 +69,11 @@ public static class TypeHelper
     public static object ChangeType(object v, Type desiredType)
     {
         var currentType = v.GetType();
-
         if (desiredType == currentType)
             return v;
+
         if (desiredType.IsEnum && currentType == typeof(string))
-            return Enum.Parse(desiredType, v.ToString());
+            return Enum.Parse(desiredType, v.ToString() ?? throw new ArgumentNullException(nameof(v)));
         if (desiredType == typeof(bool))
             return ToBoolean(v);
 
@@ -97,9 +97,9 @@ public static class TypeHelper
         return GetDerivedTypes(typeof(TAction));
     }
 
-    public static IEnumerable<Type> GetDerivedTypes(Type type, IEnumerable<Assembly> assemblies = null)
+    public static IEnumerable<Type> GetDerivedTypes(Type type, IEnumerable<Assembly>? assemblies = null)
     {
-        if (assemblies == null)
+        if (assemblies is null)
             assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
         var types = new List<Type>();
@@ -111,7 +111,7 @@ public static class TypeHelper
             }
             catch (ReflectionTypeLoadException ex)
             {
-                string loaderMessages = String.Join(", ", ex.LoaderExceptions.ToList().Select(le => le.Message));
+                string loaderMessages = String.Join(", ", ex.LoaderExceptions.Select(le => le?.Message).Where(m => !String.IsNullOrEmpty(m)));
                 Trace.TraceInformation("Unable to search types from assembly '{0}' for plugins of type '{1}': {2}", assembly.FullName, type.Name, loaderMessages);
             }
         }
@@ -119,9 +119,9 @@ public static class TypeHelper
         return types;
     }
 
-    public static IEnumerable<Type> GetAllTypesImplementingOpenGenericType(Type openGenericType, IEnumerable<Assembly> assemblies = null)
+    public static IEnumerable<Type> GetAllTypesImplementingOpenGenericType(Type openGenericType, IEnumerable<Assembly>? assemblies = null)
     {
-        if (assemblies == null)
+        if (assemblies is null)
             assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
         var implementingTypes = new List<Type>();
@@ -131,7 +131,7 @@ public static class TypeHelper
                 from z in x.GetInterfaces()
                 let y = x.BaseType
                 where
-                    (y != null && y.IsGenericType && openGenericType.IsAssignableFrom(y.GetGenericTypeDefinition()))
+                    (y is not null && y.IsGenericType && openGenericType.IsAssignableFrom(y.GetGenericTypeDefinition()))
                     || (z.IsGenericType && openGenericType.IsAssignableFrom(z.GetGenericTypeDefinition()))
                 select x
             );

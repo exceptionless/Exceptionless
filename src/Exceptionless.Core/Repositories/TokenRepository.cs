@@ -17,13 +17,13 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
         DefaultConsistency = Consistency.Immediate;
     }
 
-    public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token> options = null)
+    public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token>? options = null)
     {
         var filter = Query<Token>.Term(e => e.UserId, userId) && Query<Token>.Term(t => t.Type, type);
         return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
-    public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token> options = null)
+    public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
@@ -31,7 +31,7 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
             .Sort(f => f.CreatedUtc), options);
     }
 
-    public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token> options = null)
+    public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
         var filter = (
                 Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId)
@@ -40,18 +40,18 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
         return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
-    public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token> options = null)
+    public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
         var filter = (Query<Token>.Term(t => t.ProjectId, projectId) || Query<Token>.Term(t => t.DefaultProjectId, projectId));
         return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
-    public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token> options = null)
+    public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token>? options = null)
     {
         return RemoveAllAsync(q => q.ElasticFilter(Query<Token>.Term(t => t.UserId, userId)), options);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token document, IDictionary<string, object> data = null, TimeSpan? delay = null)
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
     {
         var items = new Foundatio.Utility.DataDictionary(data ?? new Dictionary<string, object>()) {
                 { ExtendedEntityChanged.KnownKeys.IsAuthenticationToken, TokenType.Authentication == document?.Type },

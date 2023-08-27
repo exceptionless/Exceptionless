@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using OpenTelemetry;
@@ -40,7 +41,7 @@ public class Startup
             .SetIsOriginAllowed(isOriginAllowed: _ => true)
             .AllowCredentials()
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, Headers.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
+            .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {
@@ -195,7 +196,7 @@ public class Startup
         });
 
         var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-        bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature != null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
+        bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
 
         if (ssl)
             app.UseHttpsRedirection();
@@ -243,12 +244,12 @@ public class Startup
         {
             o.EnrichDiagnosticContext = (context, httpContext) =>
             {
-                context.Set("ActivityId", Activity.Current.Id);
+                context.Set("ActivityId", Activity.Current?.Id);
             };
             o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
             o.GetLevel = (context, duration, ex) =>
             {
-                if (ex != null || context.Response.StatusCode > 499)
+                if (ex is not null || context.Response.StatusCode > 499)
                     return LogEventLevel.Error;
 
                 if (context.Response.StatusCode > 399)

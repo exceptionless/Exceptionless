@@ -87,6 +87,7 @@ public class StackControllerTests : IntegrationTestsBase
     private async Task<PersistentEvent> SubmitErrorEventAsync()
     {
         const string message = "simple string";
+
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
@@ -95,7 +96,7 @@ public class StackControllerTests : IntegrationTestsBase
             {
                 Message = message,
                 Type = Event.KnownTypes.Error,
-                Data = {{ Event.KnownDataKeys.SimpleError, new SimpleError {
+                Data = new DataDictionary {{ Event.KnownDataKeys.SimpleError, new SimpleError {
                         Message = message,
                         Type = "Error",
                         StackTrace = "test",

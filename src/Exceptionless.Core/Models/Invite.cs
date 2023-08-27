@@ -1,8 +1,8 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class Invite
+public record Invite
 {
-    public string Token { get; set; }
-    public string EmailAddress { get; set; }
-    public DateTime DateAdded { get; set; }
+    public required string Token { get; init; }
+    public required string EmailAddress { get; init; }
+    public required DateTime DateAdded { get; init; }
 }

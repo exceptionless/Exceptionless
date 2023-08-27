@@ -14,7 +14,7 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _usageService = usageService;
         _lockProvider = lockProvider;

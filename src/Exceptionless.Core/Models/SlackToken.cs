@@ -2,25 +2,25 @@
 
 namespace Exceptionless.Core.Models;
 
-public class SlackToken
+public record SlackToken
 {
-    public string AccessToken { get; set; }
-    public string[] Scopes { get; set; }
-    public string UserId { get; set; }
-    public string TeamId { get; set; }
-    public string TeamName { get; set; }
-    public IncomingWebHook IncomingWebhook { get; set; }
+    public string AccessToken { get; init; } = null!;
+    public string[] Scopes { get; init; } = null!;
+    public string UserId { get; init; } = null!;
+    public string TeamId { get; init; } = null!;
+    public string TeamName { get; init; } = null!;
+    public IncomingWebHook? IncomingWebhook { get; set; }
 
-    public class IncomingWebHook
+    public record IncomingWebHook
     {
-        public string Channel { get; set; }
-        public string ChannelId { get; set; }
-        public string ConfigurationUrl { get; set; }
-        public string Url { get; set; }
+        public string Channel { get; init; } = null!;
+        public string ChannelId { get; init; } = null!;
+        public string ConfigurationUrl { get; init; } = null!;
+        public string Url { get; init; } = null!;
     }
 }
 
-public class SlackMessage
+public record SlackMessage
 {
     public SlackMessage(string text)
     {
@@ -28,9 +28,9 @@ public class SlackMessage
     }
 
     [JsonProperty("text")]
-    public string Text { get; set; }
+    public string Text { get; init; }
     [JsonProperty("attachments")]
-    public List<SlackAttachment> Attachments { get; set; } = new List<SlackAttachment>();
+    public List<SlackAttachment> Attachments { get; init; } = new();
 
     public class SlackAttachment
     {
@@ -42,7 +42,7 @@ public class SlackMessage
             var ui = ev.GetUserIdentity();
             Text = ud?.Description;
 
-            string displayName = null;
+            string? displayName = null;
             if (!String.IsNullOrEmpty(ui?.Identity))
                 displayName = ui.Identity;
 
@@ -67,32 +67,33 @@ public class SlackMessage
         }
 
         [JsonProperty("title")]
-        public string Title { get; set; }
+        public string? Title { get; init; }
         [JsonProperty("text")]
-        public string Text { get; set; }
+        public string? Text { get; init; }
         [JsonProperty("author_name")]
-        public string AuthorName { get; set; }
+        public string? AuthorName { get; init; }
         [JsonProperty("author_link")]
-        public string AuthorLink { get; set; }
+        public string? AuthorLink { get; init; }
         [JsonProperty("author_icon")]
-        public string AuthorIcon { get; set; }
+        public string? AuthorIcon { get; init; }
         [JsonProperty("color")]
         public string Color { get; set; } = "#5E9A00";
         [JsonProperty("fields")]
-        public List<SlackAttachmentFields> Fields { get; set; } = new List<SlackAttachmentFields>();
+        public List<SlackAttachmentFields> Fields { get; init; } = new();
         [JsonProperty("mrkdwn_in")]
-        public string[] SupportedMarkdownFields { get; set; } = { "text", "fields" };
+        public string[] SupportedMarkdownFields { get; init; } = { "text", "fields" };
         [JsonProperty("ts")]
-        public long TimeStamp { get; set; }
+        public long TimeStamp { get; init; }
     }
 
-    public class SlackAttachmentFields
+    public record SlackAttachmentFields
     {
         [JsonProperty("title")]
-        public string Title { get; set; }
+        public string Title { get; init; } = null!;
+
         [JsonProperty("value")]
-        public string Value { get; set; }
+        public string? Value { get; init; }
         [JsonProperty("short")]
-        public bool Short { get; set; }
+        public bool Short { get; init; }
     }
 }

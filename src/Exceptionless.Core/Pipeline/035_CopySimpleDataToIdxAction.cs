@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Pipeline;
 [Priority(40)]
 public class CopySimpleDataToIdxAction : EventPipelineActionBase
 {
-    public CopySimpleDataToIdxAction(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public CopySimpleDataToIdxAction(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public override Task ProcessAsync(EventContext ctx)
     {

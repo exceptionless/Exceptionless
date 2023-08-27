@@ -8,7 +8,7 @@ public class IntercomOptions
 {
     public bool EnableIntercom => !String.IsNullOrEmpty(IntercomSecret);
 
-    public string IntercomSecret { get; internal set; }
+    public string? IntercomSecret { get; internal set; }
 
     public static IntercomOptions ReadFromConfiguration(IConfiguration config)
     {

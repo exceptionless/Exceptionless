@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Mail;
 
 public class Mailer : IMailer
 {
-    private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new ConcurrentDictionary<string, HandlebarsTemplate<object, object>>();
+    private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new();
     private readonly IQueue<MailMessage> _queue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
@@ -31,7 +31,7 @@ public class Mailer : IMailer
     {
         bool isCritical = ev.IsCritical();
         var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
-        if (result == null || result.Data.Count == 0)
+        if (result is null || result.Data.Count == 0)
         {
             _logger.LogWarning("Unable to create event notification mail message for event \"{UserId}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);
             return false;
@@ -40,7 +40,7 @@ public class Mailer : IMailer
         if (String.IsNullOrEmpty(result.Subject))
             result.Subject = ev.Message ?? ev.Source ?? "(Global)";
 
-        var messageData = new Dictionary<string, object> {
+        var messageData = new Dictionary<string, object?> {
                 { "Subject", result.Subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "ProjectName", project.Name },
@@ -67,7 +67,7 @@ public class Mailer : IMailer
         return true;
     }
 
-    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object> data)
+    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data)
     {
         var ud = ev.GetUserDescription();
         var ui = ev.GetUserIdentity();
@@ -77,7 +77,7 @@ public class Mailer : IMailer
         if (!String.IsNullOrEmpty(ud?.EmailAddress))
             data["UserEmail"] = ud.EmailAddress;
 
-        string displayName = null;
+        string? displayName = null;
         if (!String.IsNullOrEmpty(ui?.Identity))
             data["UserIdentity"] = displayName = ui.Identity;
 
@@ -92,18 +92,19 @@ public class Mailer : IMailer
         if (!String.IsNullOrEmpty(displayName))
             data["UserDisplayName"] = displayName;
 
-        data["HasUserInfo"] = ud != null || ui != null;
+        data["HasUserInfo"] = ud is not null || ui is not null;
     }
 
-    private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object> data)
+    private void AddDefaultFields(PersistentEvent ev, Dictionary<string, object?> data)
     {
-        if (ev.Tags.Count > 0)
+        if (ev.Tags?.Count > 0)
             data["Tags"] = String.Join(", ", ev.Tags);
 
-        if (ev.Value.GetValueOrDefault() != 0)
-            data["Value"] = ev.Value;
+        decimal value = ev.Value.GetValueOrDefault();
+        if (value != 0)
+            data["Value"] = value;
 
-        string version = ev.GetVersion();
+        string? version = ev.GetVersion();
         if (!String.IsNullOrEmpty(version))
             data["Version"] = version;
     }
@@ -112,7 +113,7 @@ public class Mailer : IMailer
     {
         const string template = "organization-added";
         string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
@@ -131,7 +132,7 @@ public class Mailer : IMailer
     {
         const string template = "organization-invited";
         string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "InviteToken", invite.Token }
@@ -153,7 +154,7 @@ public class Mailer : IMailer
                 ? $"[{organization.Name}] Monthly plan limit exceeded."
                 : $"[{organization.Name}] Events are currently being throttled.";
 
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
@@ -175,7 +176,7 @@ public class Mailer : IMailer
     {
         const string template = "organization-payment-failed";
         string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interruption!";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", organization.Id },
@@ -190,18 +191,18 @@ public class Mailer : IMailer
         }, template);
     }
 
-    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack> mostFrequent, IEnumerable<Stack> newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
+    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         const string template = "project-daily-summary";
         string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "OrganizationId", project.OrganizationId },
                 { "ProjectId", project.Id },
                 { "ProjectName", project.Name },
-                { "MostFrequent", GetStackTemplateData(mostFrequent) },
-                { "Newest", GetStackTemplateData(newest) },
+                { "MostFrequent", mostFrequent is not null ? GetStackTemplateData(mostFrequent) : null },
+                { "Newest", newest is not null ? GetStackTemplateData(newest) : null },
                 { "StartDate", startDate.ToLongDateString() },
                 { "HasSubmittedEvents", hasSubmittedEvents },
                 { "Count", count },
@@ -223,12 +224,12 @@ public class Mailer : IMailer
 
     private static IEnumerable<object> GetStackTemplateData(IEnumerable<Stack> stacks)
     {
-        return stacks?.Select(s => new
+        return stacks.Select(s => new
         {
             StackId = s.Id,
             Title = s.Title.Truncate(50),
-            TypeName = s.GetTypeName().Truncate(50),
-            s.Status,
+            TypeName = s.GetTypeName()?.Truncate(50),
+            s.Status
         });
     }
 
@@ -239,7 +240,7 @@ public class Mailer : IMailer
 
         const string template = "user-email-verify";
         const string subject = "Exceptionless Account Confirmation";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "UserFullName", user.FullName },
@@ -261,7 +262,7 @@ public class Mailer : IMailer
 
         const string template = "user-password-reset";
         const string subject = "Exceptionless Password Reset";
-        var data = new Dictionary<string, object> {
+        var data = new Dictionary<string, object?> {
                 { "Subject", subject },
                 { "BaseUrl", _appOptions.BaseURL },
                 { "UserFullName", user.FullName },
@@ -276,11 +277,10 @@ public class Mailer : IMailer
         }, template);
     }
 
-    private string RenderTemplate(string name, IDictionary<string, object> data)
+    private string RenderTemplate(string name, IDictionary<string, object?> data)
     {
         var template = GetCompiledTemplate(name);
-        var result = template(data);
-        return result?.ToString();
+        return template(data);
     }
 
     private HandlebarsTemplate<object, object> GetCompiledTemplate(string name)
@@ -290,15 +290,12 @@ public class Mailer : IMailer
             var assembly = typeof(Mailer).Assembly;
             string resourceName = $"Exceptionless.Core.Mail.Templates.{templateName}.html";
 
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                using (var reader = new StreamReader(stream))
-                {
-                    string template = reader.ReadToEnd();
-                    var compiledTemplateFunc = Handlebars.Compile(template);
-                    return compiledTemplateFunc;
-                }
-            }
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            using var reader = new StreamReader(stream ?? throw new InvalidOperationException());
+
+            string template = reader.ReadToEnd();
+            var compiledTemplateFunc = Handlebars.Compile(template);
+            return compiledTemplateFunc;
         });
     }
 
@@ -319,6 +316,6 @@ public class Mailer : IMailer
             return;
 
         message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();
-        message.To = _appOptions.EmailOptions.TestEmailAddress;
+        message.To = _appOptions.EmailOptions.TestEmailAddress ?? throw new ArgumentException("TestEmailAddress is not configured");
     }
 }

@@ -40,12 +40,16 @@ namespace OpenTelemetry
             Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} EnableTracing={EnableTracing} EnableLogs={EnableLogs} FullDetails={FullDetails} EnableRedis={EnableRedis} SampleRate={SampleRate}",
                 config.Endpoint, apiKey, config.EnableTracing, config.EnableLogs, config.FullDetails, config.EnableRedis, config.SampleRate);
 
-            var resourceBuilder = ResourceBuilder.CreateDefault().AddService(config.ServiceName).AddAttributes(new[] {
-                new KeyValuePair<string, object>("service.namespace", config.ServiceNamespace),
-                new KeyValuePair<string, object>("service.environment", config.ServiceEnvironment),
-                new KeyValuePair<string, object>("service.version", config.ServiceVersion)
-            });
+            var attributes = new Dictionary<string, object>()
+            {
+                { "service.namespace", config.ServiceNamespace },
+                { "service.environment", config.ServiceEnvironment }
+            };
 
+            if (!String.IsNullOrEmpty(config.ServiceVersion))
+                attributes.Add("service.version", config.ServiceVersion);
+
+            var resourceBuilder = ResourceBuilder.CreateDefault().AddService(config.ServiceName).AddAttributes(attributes);
             builder.ConfigureServices(services =>
             {
                 services.AddSingleton(config);
@@ -117,7 +121,7 @@ namespace OpenTelemetry
                                     if (!String.IsNullOrEmpty(config.ApiKey))
                                         c.Headers = $"api-key={config.ApiKey}";
 
-                                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") != null;
+                                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") is not null;
                                 });
                             }
                             else
@@ -214,7 +218,7 @@ namespace OpenTelemetry
     {
         private readonly IConfiguration _apmConfig;
 
-        public ApmConfig(IConfigurationRoot config, string processName, string serviceVersion, bool enableRedis)
+        public ApmConfig(IConfigurationRoot config, string processName, string? serviceVersion, bool enableRedis)
         {
             _apmConfig = config.GetSection("Apm");
             processName = processName.StartsWith("-") ? processName : "-" + processName;
@@ -223,8 +227,8 @@ namespace OpenTelemetry
             if (ServiceName.StartsWith("-"))
                 ServiceName = ServiceName.Substring(1);
 
-            ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "");
-            ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName);
+            ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "") ?? throw new InvalidOperationException();
+            ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName) ?? throw new InvalidOperationException();
             ServiceVersion = serviceVersion;
             EnableRedis = enableRedis;
         }
@@ -235,13 +239,13 @@ namespace OpenTelemetry
         public bool EnableMetrics => _apmConfig.GetValue("EnableMetrics", true);
         public bool EnableTracing => _apmConfig.GetValue("EnableTracing", _apmConfig.GetValue("Enabled", false));
         public bool Insecure => _apmConfig.GetValue("Insecure", false);
-        public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty);
+        public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty) ?? throw new InvalidOperationException();
         public string ServiceName { get; }
         public string ServiceEnvironment { get; }
         public string ServiceNamespace { get; }
-        public string ServiceVersion { get; }
-        public string Endpoint => _apmConfig.GetValue("Endpoint", String.Empty);
-        public string ApiKey => _apmConfig.GetValue("ApiKey", String.Empty);
+        public string? ServiceVersion { get; }
+        public string Endpoint => _apmConfig.GetValue("Endpoint", String.Empty) ?? throw new InvalidOperationException();
+        public string ApiKey => _apmConfig.GetValue("ApiKey", String.Empty) ?? throw new InvalidOperationException();
         public bool FullDetails => _apmConfig.GetValue("FullDetails", false);
         public double SampleRate => _apmConfig.GetValue("SampleRate", 1.0);
         public int MinDurationMs => _apmConfig.GetValue<int>("MinDurationMs", -1);
@@ -252,25 +256,25 @@ namespace OpenTelemetry
 
     public sealed class CustomFilterProcessor : CompositeProcessor<Activity>
     {
-        private readonly Func<Activity, bool> _filter;
+        private readonly Func<Activity, bool>? _filter;
 
-        public CustomFilterProcessor(BaseProcessor<Activity> processor, Func<Activity, bool> filter) : base(new[] { processor })
+        public CustomFilterProcessor(BaseProcessor<Activity> processor, Func<Activity, bool>? filter) : base(new[] { processor })
         {
             _filter = filter;
         }
 
         public override void OnEnd(Activity activity)
         {
-            if (_filter == null || _filter(activity))
+            if (_filter is null || _filter(activity))
                 base.OnEnd(activity);
         }
     }
 
     public static class CustomFilterProcessorExtensions
     {
-        public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions> configure = null)
+        public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions>? configure = null)
         {
-            if (builder == null)
+            if (builder is null)
                 throw new ArgumentNullException(nameof(builder));
 
             if (builder is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
@@ -288,9 +292,9 @@ namespace OpenTelemetry
         internal static TracerProviderBuilder AddFilteredOtlpExporter(
             TracerProviderBuilder builder,
             FilteredOtlpExporterOptions exporterOptions,
-            Action<FilteredOtlpExporterOptions> configure,
-            IServiceProvider serviceProvider,
-            Func<BaseExporter<Activity>, BaseExporter<Activity>> configureExporterInstance = null)
+            Action<FilteredOtlpExporterOptions>? configure,
+            IServiceProvider? serviceProvider,
+            Func<BaseExporter<Activity>, BaseExporter<Activity>>? configureExporterInstance = null)
         {
 
             configure?.Invoke(exporterOptions);
@@ -299,7 +303,7 @@ namespace OpenTelemetry
 
             BaseExporter<Activity> otlpExporter = new OtlpTraceExporter(exporterOptions);
 
-            if (configureExporterInstance != null)
+            if (configureExporterInstance is not null)
                 otlpExporter = configureExporterInstance(otlpExporter);
 
             if (exporterOptions.ExportProcessorType == ExportProcessorType.Simple)
@@ -319,19 +323,16 @@ namespace OpenTelemetry
             }
         }
 
-        public static void TryEnableIHttpClientFactoryIntegration(this OtlpExporterOptions options, IServiceProvider serviceProvider, string httpClientName)
+        public static void TryEnableIHttpClientFactoryIntegration(this OtlpExporterOptions options, IServiceProvider? serviceProvider, string httpClientName)
         {
             // use reflection to call the method
-
             var exporterExtensionsType = typeof(OtlpExporterOptions).Assembly.GetType("OpenTelemetry.Exporter.OtlpExporterOptionsExtensions");
-            exporterExtensionsType
-                .GetMethod("TryEnableIHttpClientFactoryIntegration")
-                .Invoke(null, new object[] { options, serviceProvider, httpClientName });
+            exporterExtensionsType?.GetMethod("TryEnableIHttpClientFactoryIntegration")?.Invoke(null, new object[] { options, serviceProvider!, httpClientName });
         }
     }
 
     public class FilteredOtlpExporterOptions : OtlpExporterOptions
     {
-        public Func<Activity, bool> Filter { get; set; }
+        public Func<Activity, bool>? Filter { get; set; }
     }
 }

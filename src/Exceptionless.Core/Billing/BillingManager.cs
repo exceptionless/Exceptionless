@@ -21,9 +21,9 @@ public class BillingManager
         _plans = plans;
     }
 
-    public async Task<bool> CanAddOrganizationAsync(User user)
+    public async Task<bool> CanAddOrganizationAsync(User? user)
     {
-        if (user == null)
+        if (user is null)
             return false;
 
         var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()).AnyContext()).Where(o => o.PlanId == _plans.FreePlan.Id);
@@ -45,7 +45,7 @@ public class BillingManager
             return false;
 
         var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId).AnyContext();
-        if (organization == null)
+        if (organization is null)
             return false;
 
         long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(project.OrganizationId).AnyContext();
@@ -55,13 +55,13 @@ public class BillingManager
     public async Task<bool> HasPremiumFeaturesAsync(string organizationId)
     {
         var organization = await _organizationRepository.GetByIdAsync(organizationId).AnyContext();
-        if (organization == null)
+        if (organization is null)
             return false;
 
         return organization.HasPremiumFeatures;
     }
 
-    public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User user)
+    public async Task<ChangePlanResult> CanDownGradeAsync(Organization organization, BillingPlan plan, User? user)
     {
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return ChangePlanResult.FailWithMessage("Invalid Organization");
@@ -77,23 +77,23 @@ public class BillingManager
             return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");
 
         // Ensure the user can't be apart of more than one free plan.
-        if (String.Equals(plan.Id, _plans.FreePlan.Id) && user != null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()).AnyContext()).Any(o => String.Equals(o.PlanId, _plans.FreePlan.Id)))
+        if (String.Equals(plan.Id, _plans.FreePlan.Id) && user is not null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()).AnyContext()).Any(o => String.Equals(o.PlanId, _plans.FreePlan.Id)))
             return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
 
         return new ChangePlanResult { Success = true };
     }
 
-    public BillingPlan GetBillingPlan(string planId)
+    public BillingPlan? GetBillingPlan(string planId)
     {
         return _plans.Plans.FirstOrDefault(p => String.Equals(p.Id, planId, StringComparison.OrdinalIgnoreCase));
     }
 
-    public BillingPlan GetBillingPlanByUpsellingRetentionPeriod(int retentionDays)
+    public BillingPlan? GetBillingPlanByUpsellingRetentionPeriod(int retentionDays)
     {
         return _plans.Plans.Where(p => p.RetentionDays > retentionDays && p.Price > 0).OrderBy(p => p.RetentionDays).ThenBy(p => p.Price).FirstOrDefault();
     }
 
-    public void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true)
+    public void ApplyBillingPlan(Organization organization, BillingPlan plan, User? user = null, bool updateBillingPrice = true)
     {
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
@@ -103,7 +103,7 @@ public class BillingManager
         if (updateBillingPrice)
             organization.BillingPrice = plan.Price;
 
-        if (user != null)
+        if (user is not null)
             organization.BillingChangedByUserId = user.Id;
 
         organization.MaxUsers = plan.MaxUsers;

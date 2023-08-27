@@ -15,14 +15,14 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
 
-    public RemoveStacksWorkItemHandler(IStackRepository stackRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public RemoveStacksWorkItemHandler(IStackRepository stackRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _stackRepository = stackRepository;
         _cacheClient = cacheClient;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         string cacheKey = $"{nameof(RemoveStacksWorkItem)}:{((RemoveStacksWorkItem)workItem).ProjectId}";
         return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));

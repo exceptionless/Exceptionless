@@ -33,7 +33,7 @@ public class SetStackDuplicateSignatureMigrationTests : TestWithServices
     public async Task WillSetStackDuplicateSignature()
     {
         var stack = StackData.GenerateStack();
-        stack.DuplicateSignature = null;
+        stack.DuplicateSignature = null!;
         stack = await _repository.AddAsync(stack, o => o.ImmediateConsistency());
         Assert.NotEmpty(stack.ProjectId);
         Assert.NotEmpty(stack.SignatureHash);
