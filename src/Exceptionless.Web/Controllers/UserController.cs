@@ -352,7 +352,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);
 
-        return base.GetModelsAsync(ids.Where(id =>  String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
+        return base.GetModelsAsync(ids.Where(id => String.Equals(CurrentUser.Id, id)).ToArray(), useCache);
     }
 
     protected override async Task<PermissionResult> CanDeleteAsync(User value)

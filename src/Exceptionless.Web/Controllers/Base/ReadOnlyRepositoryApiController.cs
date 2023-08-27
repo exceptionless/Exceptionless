@@ -62,7 +62,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
             return EmptyModels;
 
         var models = await _repository.GetByIdsAsync(ids, o => o.Cache(useCache));
-        
+
         if (_isOwnedByOrganization)
             models = models.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
 
