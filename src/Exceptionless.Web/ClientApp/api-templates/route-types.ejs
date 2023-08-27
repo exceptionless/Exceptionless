@@ -1,0 +1,32 @@
+<%
+const { utils, config, routes, modelTypes } = it;
+const { _, pascalCase } = utils;
+const dataContracts = config.modular ? _.map(modelTypes, "name") : [];
+%>
+
+<% if (dataContracts.length) { %>
+import { <%~ dataContracts.join(", ") %> } from "./<%~ config.fileNames.dataContracts %>"
+<% } %>
+
+<%
+/* TODO: outOfModule, combined should be attributes of route, which will allow to avoid duplication of code */
+%>
+
+<% if (routes.outOfModule) { %>
+ <% for (const { routes: outOfModuleRoutes = [] } of routes.outOfModule) { %>
+   <% for (const route of outOfModuleRoutes) { %>
+     <%~ includeFile('./route-type.ejs', { ...it, route }) %>
+   <% } %>
+ <% } %>
+<% } %>
+
+<% if (routes.combined) { %>
+ <% for (const { routes: combinedRoutes = [], moduleName } of routes.combined) { %>
+   export namespace <%~ pascalCase(moduleName) %> {
+   <% for (const route of combinedRoutes) { %>
+     <%~ includeFile('./route-type.ejs', { ...it, route }) %>
+   <% } %>
+   }
+
+ <% } %>
+<% } %>

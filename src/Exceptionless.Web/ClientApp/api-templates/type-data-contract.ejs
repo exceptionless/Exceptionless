@@ -1,0 +1,15 @@
+<%
+const { contract, utils } = it;
+const { formatDescription, require, _ } = utils;
+
+%>
+<% if (contract.$content.length) { %>
+export type <%~ contract.name %> = {
+  <% for (const field of contract.$content) { %>
+    <%~ includeFile('./object-field-jsdoc.ejs', { ...it, field }) %>
+    <%~ field.field %>;
+  <% } %>
+}<%~ utils.isNeedToAddNull(contract) ? ' | null' : ''%>
+<% } else { %>
+export type <%~ contract.name %> = Record<string, any>;
+<% } %>
