@@ -798,7 +798,7 @@ public class AuthController : ExceptionlessApiController
         if (String.IsNullOrWhiteSpace(token))
             return;
 
-        using var  _ = _logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
         var organization = await _organizationRepository.GetByInviteTokenAsync(token);
         var invite = organization?.GetInvite(token);
         if (organization is null || invite is null)
