@@ -101,6 +101,7 @@ public sealed class WebHookDataTests : TestWithServices
             projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev),
             signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
 
+        stack.Tags.Clear();
         stack.Tags.Add("Test");
         stack.FirstOccurrence = stack.LastOccurrence = ev.Date.UtcDateTime;
 

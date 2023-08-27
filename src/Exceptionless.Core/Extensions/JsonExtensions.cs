@@ -84,9 +84,6 @@ public static class JsonExtensions
 
     public static bool RenameOrRemoveIfNullOrEmpty(this JObject target, string currentName, string newName)
     {
-        if (target[currentName] is null)
-            return false;
-
         var property = target.Property(currentName);
         if (property is null)
             return false;
@@ -110,8 +107,9 @@ public static class JsonExtensions
             if (property is null)
                 continue;
 
-            source.Remove(property.Name);
             bool isNullOrEmpty = source.IsPropertyNullOrEmpty(name);
+            source.Remove(property.Name);
+
             if (isNullOrEmpty)
                 continue;
 
