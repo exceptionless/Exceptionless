@@ -4,7 +4,7 @@
 
     angular.module("exceptionless.link", []).factory("linkService", function () {
         function getLinks(linkHeader) {
-            if (linkHeader is null) return {};
+            if (linkHeader == null) return {};
 
             return li.parse(linkHeader || {});
         }

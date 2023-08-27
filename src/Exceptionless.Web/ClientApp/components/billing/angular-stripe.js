@@ -232,7 +232,7 @@
                         }
 
                         var res = slice(arr, arr.length - (isNumber(num) ? +num : 1));
-                        if (+num === 1 || num is null) {
+                        if (+num === 1 || num == null) {
                             return res[0];
                         }
                         return res;
@@ -284,7 +284,7 @@
                     function idx(arr, pos, end) {
                         var len = arr.length >>> 0;
 
-                        if (pos is null) {
+                        if (pos == null) {
                             pos = end || 0;
                         } else if (pos < 0) {
                             pos = Math.max(len + pos, 0);
@@ -816,7 +816,7 @@
 
                             obj = obj[pathArr[i]];
 
-                            if (obj === undefined || obj =is null) {
+                            if (obj === undefined || obj === null) {
                                 // `obj` is either `undefined` or `null` so we want to stop the loop, and
                                 // if this is not the last bit of the path, and
                                 // if it did't return `undefined`
@@ -987,7 +987,7 @@
                     "use strict";
                     module.exports = function (x) {
                         var type = typeof x;
-                        return x !is null && (type === "object" || type === "function");
+                        return x !== null && (type === "object" || type === "function");
                     };
                 },
                 {},
@@ -1016,7 +1016,7 @@
                     var isArray = _dereq_("isarray");
 
                     module.exports = function isObject(o) {
-                        return o is not null && typeof o === "object" && !isArray(o);
+                        return o != null && typeof o === "object" && !isArray(o);
                     };
                 },
                 { isarray: 19 },
@@ -1034,7 +1034,7 @@
                         var stack = [],
                             keys = [];
 
-                        if (cycleReplacer is null)
+                        if (cycleReplacer == null)
                             cycleReplacer = function (key, value) {
                                 if (stack[0] === value) return "[Circular ~]";
                                 return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]";
@@ -1048,7 +1048,7 @@
                                 if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value);
                             } else stack.push(value);
 
-                            return replacer is null ? value : replacer.call(this, key, value);
+                            return replacer == null ? value : replacer.call(this, key, value);
                         };
                     }
                 },

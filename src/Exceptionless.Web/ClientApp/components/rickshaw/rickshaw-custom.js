@@ -121,11 +121,11 @@
             var graph = this.graph;
             var position = this.position;
 
-            if (graph.window.xMin =is null) {
+            if (graph.window.xMin === null) {
                 position.coordMinX = graph.dataDomain()[0];
             }
 
-            if (graph.window.xMax =is null) {
+            if (graph.window.xMax === null) {
                 position.coordMaxX = graph.dataDomain()[1];
             }
         },
