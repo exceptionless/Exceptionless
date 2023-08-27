@@ -9,20 +9,22 @@
  * ---------------------------------------------------------------
  */
 
-export interface BillingPlan {
+import { IsDate, IsEmail, IsNumber } from 'class-validator';
+
+export class BillingPlan {
 	id?: string;
 	name?: string;
 	description?: string;
 	/** @format double */
-	price?: number;
+	@IsNumber() price?: number;
 	/** @format int32 */
-	max_projects?: number;
+	@IsNumber() max_projects?: number;
 	/** @format int32 */
-	max_users?: number;
+	@IsNumber() max_users?: number;
 	/** @format int32 */
-	retention_days?: number;
+	@IsNumber() retention_days?: number;
 	/** @format int32 */
-	max_events_per_month?: number;
+	@IsNumber() max_events_per_month?: number;
 	has_premium_features?: boolean;
 	is_hidden?: boolean;
 }
@@ -48,95 +50,99 @@ export enum BillingStatus {
 	Canceled = 3,
 	Unpaid = 4
 }
-
-export interface ChangePasswordModel {
+export class ChangePasswordModel {
 	current_password?: string | null;
 	password?: string | null;
 }
 
-export interface ChangePlanResult {
+export class ChangePlanResult {
 	success?: boolean;
 	message?: string | null;
 }
 
-export interface ClientConfiguration {
+export class ClientConfiguration {
 	/** @format int32 */
-	version?: number;
+	@IsNumber() version?: number;
 	settings?: Record<string, string>;
 }
 
-export interface CountResult {
+export class CountResult {
 	/** @format int64 */
-	total?: number;
+	@IsNumber() total?: number;
 	aggregations?: Record<string, IAggregate>;
 	data?: Record<string, any>;
 }
 
-export interface IAggregate {
+export class IAggregate {
 	data?: Record<string, any>;
 }
 
-export interface Invite {
+export class Invite {
 	token?: string;
 	email_address?: string;
 	/** @format date-time */
-	date_added?: string;
+	@IsDate() date_added?: string;
 }
 
-export interface Invoice {
+export class Invoice {
 	id?: string;
 	organization_id?: string;
 	organization_name?: string;
 	/** @format date-time */
-	date?: string;
+	@IsDate() date?: string;
 	paid?: boolean;
 	/** @format double */
-	total?: number;
+	@IsNumber() total?: number;
 	items?: InvoiceLineItem[];
 }
 
-export interface InvoiceGridModel {
+export class InvoiceGridModel {
 	id?: string;
 	/** @format date-time */
-	date?: string;
+	@IsDate() date?: string;
 	paid?: boolean;
 }
 
-export interface InvoiceLineItem {
+export class InvoiceLineItem {
 	description?: string;
 	date?: string | null;
 	/** @format double */
-	amount?: number;
+	@IsNumber() amount?: number;
 }
 
-export interface LoginModel {
-	email?: string;
-	password?: string;
+export class LoginModel {
+	constructor(email: string, password: string) {
+		this.email = email;
+		this.password = password;
+	}
+
+	/** @format email */
+	@IsEmail({ require_tld: false }) email: string;
+	password: string;
 	invite_token?: string | null;
 }
 
-export interface NewOrganization {
+export class NewOrganization {
 	name?: string;
 }
 
-export interface NewProject {
+export class NewProject {
 	organization_id?: string;
 	name?: string;
 	delete_bot_data_enabled?: boolean;
 }
 
-export interface NewToken {
+export class NewToken {
 	organization_id?: string;
 	project_id?: string;
 	default_project_id?: string | null;
-	/** @uniqueItems true */
 	scopes?: string[];
 	/** @format date-time */
-	expires_utc?: string | null;
+	@IsDate() expires_utc?: string | null;
 	notes?: string | null;
 }
 
-export interface NewWebHook {
+export class NewWebHook {
 	organization_id?: string;
 	project_id?: string;
 	url?: string;
@@ -145,7 +151,7 @@ export interface NewWebHook {
 	version?: string;
 }
 
-export interface NotificationSettings {
+export class NotificationSettings {
 	send_daily_summary?: boolean;
 	report_new_errors?: boolean;
 	report_critical_errors?: boolean;
@@ -154,95 +160,93 @@ export interface NotificationSettings {
 	report_critical_events?: boolean;
 }
 
-export interface OAuthAccount {
+export class OAuthAccount {
 	provider?: string;
 	provider_user_id?: string;
 	username?: string;
 	extra_data?: Record<string, string>;
 }
 
-export interface PersistentEvent {
+export class PersistentEvent {
 	id?: string;
 	organization_id?: string;
 	project_id?: string;
 	stack_id?: string;
 	is_first_occurrence?: boolean;
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 	idx?: Record<string, any>;
 	type?: string | null;
 	source?: string | null;
 	/** @format date-time */
-	date?: string;
-	/** @uniqueItems true */
+	@IsDate() date?: string;
 	tags?: string[] | null;
 	message?: string | null;
 	geo?: string | null;
 	/** @format double */
-	value?: number | null;
+	@IsNumber() value?: number | null;
 	/** @format int32 */
-	count?: number | null;
+	@IsNumber() count?: number | null;
 	data?: Record<string, any>;
 	reference_id?: string | null;
 }
 
-export interface ResetPasswordModel {
+export class ResetPasswordModel {
 	password_reset_token?: string | null;
 	password?: string | null;
 }
 
-export interface SignupModel {
+export class SignupModel {
+	constructor(email: string, password: string) {
+		this.email = email;
+		this.password = password;
+	}
+
 	name?: string;
-	email?: string;
-	password?: string;
+	/** @format email */
+	@IsEmail({ require_tld: false }) email: string;
+	password: string;
 	invite_token?: string | null;
 }
 
-export interface Stack {
+export class Stack {
 	id?: string;
 	organization_id?: string;
 	project_id?: string;
 	type?: string;
 	/**
 	 *
-	 *
 	 * open
-	 *
 	 * fixed
-	 *
 	 * regressed
-	 *
 	 * snoozed
-	 *
 	 * ignored
-	 *
 	 * discarded
 	 */
 	status?: StackStatus;
 	/** @format date-time */
-	snooze_until_utc?: string | null;
+	@IsDate() snooze_until_utc?: string | null;
 	signature_hash?: string;
 	signature_info?: Record<string, string>;
 	fixed_in_version?: string | null;
 	/** @format date-time */
-	date_fixed?: string | null;
+	@IsDate() date_fixed?: string | null;
 	title?: string;
 	/** @format int32 */
-	total_occurrences?: number;
+	@IsNumber() total_occurrences?: number;
 	/** @format date-time */
-	first_occurrence?: string;
+	@IsDate() first_occurrence?: string;
 	/** @format date-time */
-	last_occurrence?: string;
+	@IsDate() last_occurrence?: string;
 	description?: string | null;
 	occurrences_are_critical?: boolean;
 	references?: string[];
-	/** @uniqueItems true */
 	tags?: string[];
 	duplicate_signature?: string;
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 	/** @format date-time */
-	updated_utc?: string;
+	@IsDate() updated_utc?: string;
 	is_deleted?: boolean;
 	allow_notifications?: boolean;
 }
@@ -270,136 +274,140 @@ export enum StackStatus {
 	Ignored = 'ignored',
 	Discarded = 'discarded'
 }
-
-export interface StringStringValuesKeyValuePair {
+export class StringStringValuesKeyValuePair {
 	key?: string;
 	value?: string[];
 }
 
-export interface StringValueFromBody {
+export class StringValueFromBody {
 	value?: string;
 }
 
-export interface TokenResult {
+export class TokenResult {
 	token?: string;
 }
 
-export interface UpdateEmailAddressResult {
+export class UpdateEmailAddressResult {
 	is_verified?: boolean;
 }
 
-export interface UsageHourInfo {
+export class UsageHourInfo {
 	/** @format date-time */
-	date?: string;
+	@IsDate() date?: string;
 	/** @format int32 */
-	total?: number;
+	@IsNumber() total?: number;
 	/** @format int32 */
-	blocked?: number;
+	@IsNumber() blocked?: number;
 	/** @format int32 */
-	discarded?: number;
+	@IsNumber() discarded?: number;
 	/** @format int32 */
-	too_big?: number;
+	@IsNumber() too_big?: number;
 }
 
-export interface UsageInfo {
+export class UsageInfo {
 	/** @format date-time */
-	date?: string;
+	@IsDate() date?: string;
 	/** @format int32 */
-	limit?: number;
+	@IsNumber() limit?: number;
 	/** @format int32 */
-	total?: number;
+	@IsNumber() total?: number;
 	/** @format int32 */
-	blocked?: number;
+	@IsNumber() blocked?: number;
 	/** @format int32 */
-	discarded?: number;
+	@IsNumber() discarded?: number;
 	/** @format int32 */
-	too_big?: number;
+	@IsNumber() too_big?: number;
 }
 
-export interface User {
+export class User {
+	constructor(full_name: string, email_address: string) {
+		this.full_name = full_name;
+		this.email_address = email_address;
+	}
+
 	id?: string;
 	organization_ids?: string[];
 	password?: string | null;
 	salt?: string | null;
 	password_reset_token?: string | null;
 	/** @format date-time */
-	password_reset_token_expiration?: string;
+	@IsDate() password_reset_token_expiration?: string;
 	o_auth_accounts?: OAuthAccount[];
-	full_name?: string;
-	email_address?: string;
+	full_name: string;
+	/** @format email */
+	@IsEmail({ require_tld: false }) email_address: string;
 	email_notifications_enabled?: boolean;
 	is_email_address_verified?: boolean;
 	verify_email_address_token?: string | null;
 	/** @format date-time */
-	verify_email_address_token_expiration?: string;
+	@IsDate() verify_email_address_token_expiration?: string;
 	is_active?: boolean;
 	roles?: string[];
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 	/** @format date-time */
-	updated_utc?: string;
+	@IsDate() updated_utc?: string;
 }
 
-export interface UserDescription {
+export class UserDescription {
+	constructor(description: string) {
+		this.description = description;
+	}
+
 	email_address?: string | null;
-	description?: string | null;
+	description: string;
 	data?: Record<string, any>;
 }
 
-export interface ViewOrganization {
+export class ViewOrganization {
 	id?: string;
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 	name?: string;
 	plan_id?: string;
 	plan_name?: string;
 	plan_description?: string;
-	card_last4?: string | null;
+	'card_last4'?: string | null;
 	/** @format date-time */
-	subscribe_date?: string | null;
+	@IsDate() subscribe_date?: string | null;
 	/** @format date-time */
-	billing_change_date?: string | null;
+	@IsDate() billing_change_date?: string | null;
 	billing_changed_by_user_id?: string | null;
 	/**
 	 *
-	 *
 	 * 0 = Trialing
-	 *
 	 * 1 = Active
-	 *
 	 * 2 = PastDue
-	 *
 	 * 3 = Canceled
-	 *
 	 * 4 = Unpaid
 	 */
 	billing_status?: BillingStatus;
 	/** @format double */
-	billing_price?: number;
+	@IsNumber() billing_price?: number;
 	/** @format int32 */
-	max_events_per_month?: number;
+	@IsNumber() max_events_per_month?: number;
 	/** @format int32 */
-	bonus_events_per_month?: number;
+	@IsNumber() bonus_events_per_month?: number;
 	/** @format date-time */
-	bonus_expiration?: string | null;
+	@IsDate() bonus_expiration?: string | null;
 	/** @format int32 */
-	retention_days?: number;
+	@IsNumber() retention_days?: number;
 	is_suspended?: boolean;
 	suspension_code?: string | null;
 	suspension_notes?: string | null;
 	/** @format date-time */
-	suspension_date?: string | null;
+	@IsDate() suspension_date?: string | null;
 	has_premium_features?: boolean;
 	/** @format int32 */
-	max_users?: number;
+	@IsNumber() max_users?: number;
 	/** @format int32 */
-	max_projects?: number;
+	@IsNumber() max_projects?: number;
 	/** @format int64 */
-	project_count?: number;
+	@IsNumber() project_count?: number;
 	/** @format int64 */
-	stack_count?: number;
+	@IsNumber() stack_count?: number;
 	/** @format int64 */
-	event_count?: number;
+	@IsNumber() event_count?: number;
 	invites?: Invite[];
 	usage_hours?: UsageHourInfo[];
 	usage?: UsageInfo[];
@@ -409,48 +417,46 @@ export interface ViewOrganization {
 	is_over_request_limit?: boolean;
 }
 
-export interface ViewProject {
+export class ViewProject {
 	id?: string;
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 	organization_id?: string;
 	organization_name?: string;
 	name?: string;
 	delete_bot_data_enabled?: boolean;
 	data?: Record<string, any>;
-	/** @uniqueItems true */
 	promoted_tabs?: string[];
 	is_configured?: boolean | null;
 	/** @format int64 */
-	stack_count?: number;
+	@IsNumber() stack_count?: number;
 	/** @format int64 */
-	event_count?: number;
+	@IsNumber() event_count?: number;
 	has_premium_features?: boolean;
 	has_slack_integration?: boolean;
 	usage_hours?: UsageHourInfo[];
 	usage?: UsageInfo[];
 }
 
-export interface ViewToken {
+export class ViewToken {
 	id?: string;
 	organization_id?: string;
 	project_id?: string;
 	user_id?: string | null;
 	default_project_id?: string | null;
-	/** @uniqueItems true */
 	scopes?: string[];
 	/** @format date-time */
-	expires_utc?: string | null;
+	@IsDate() expires_utc?: string | null;
 	notes?: string | null;
 	is_disabled?: boolean;
 	is_suspended?: boolean;
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 	/** @format date-time */
-	updated_utc?: string;
+	@IsDate() updated_utc?: string;
 }
 
-export interface ViewUser {
+export class ViewUser {
 	id?: string;
 	organization_ids?: string[];
 	full_name?: string;
@@ -462,14 +468,20 @@ export interface ViewUser {
 	roles?: string[];
 }
 
-export interface WebHook {
+export class WebHook {
+	constructor(url: string, event_types: string[], version: string) {
+		this.url = url;
+		this.event_types = event_types;
+		this.version = version;
+	}
+
 	id?: string;
 	organization_id?: string;
 	project_id?: string;
-	url?: string;
-	event_types?: string[];
+	url: string;
+	event_types: string[];
 	is_enabled?: boolean;
-	version?: string;
+	version: string;
 	/** @format date-time */
-	created_utc?: string;
+	@IsDate() created_utc?: string;
 }

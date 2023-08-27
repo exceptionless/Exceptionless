@@ -13,7 +13,8 @@
 		"lint": "prettier --plugin prettier-plugin-svelte . --check . && eslint .",
 		"format": "prettier --plugin prettier-plugin-svelte . --write .",
 		"format:staged": "prettier --plugin prettier-plugin-svelte . --write --ignore-unknown",
-		"generate-models": "swagger-typescript-api -p http://localhost:5200/docs/v2/swagger.json -o ./src/lib/models -n api.generated.ts --no-client",
+		"generate-models": "swagger-typescript-api -p http://localhost:5200/docs/v2/swagger.json -o ./src/lib/models -n api.generated.ts --no-client --templates api-templates",
+		"generate-templates": "swagger-typescript-api generate-templates -o api-templates",
 		"test:integration": "playwright test",
 		"test:unit": "vitest"
 	},

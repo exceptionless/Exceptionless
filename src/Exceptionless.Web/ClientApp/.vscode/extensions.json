@@ -1,3 +1,7 @@
 {
-	"recommendations": ["svelte.svelte-vscode", "bradlc.vscode-tailwindcss"]
+	"recommendations": [
+		"svelte.svelte-vscode",
+		"bradlc.vscode-tailwindcss",
+		"digitalbrainstem.javascript-ejs-support"
+	]
 }

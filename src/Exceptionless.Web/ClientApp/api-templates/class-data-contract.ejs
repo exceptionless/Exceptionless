@@ -1,0 +1,22 @@
+<%
+const { contract, utils } = it;
+const { formatDescription, require, _ } = utils;
+%>
+export class <%~ contract.name %> {
+  <%
+  const requiredFields = contract.$content.filter(field => field.isRequired);
+  if (requiredFields.length > 0) { %>
+    constructor(<% for (const field of requiredFields) { %><%~ field.name %>: <%~ field.value %>,<% } %>) {
+      <% for (const field of requiredFields) { %>
+        this.<%~ field.name %> = <%~ field.name %>;
+      <% } %>
+    }
+  <% } %>
+
+  <% for (const field of contract.$content) { %>
+    <%~ includeFile('./object-field-jsdoc.ejs', { ...it, field }) %>
+    <%~ includeFile('./object-field-class-validator.ejs', { ...it, field }) %>
+    <%~ field.name %><%~ field.isRequired ? '' : '?' %>: <%~ field.value %>;
+  <% } %>
+}
+

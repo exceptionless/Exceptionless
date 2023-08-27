@@ -1,0 +1,38 @@
+<%
+const { field, utils } = it;
+const { require, _ } = utils;
+
+function getFormatValidation(field) {
+    switch (field.format) {
+        case "date-time":
+            return "@IsDate()\n";
+        case "double":
+        case "int32":
+        case "int64":
+            return "@IsNumber()\n";
+        case "email":
+            return "@IsEmail({ require_tld: false })\n";
+        default:
+            return `TODO_CLASS_@format ${field.format}\n`;
+    }
+}
+
+const validationLines = _.uniq(
+    _.compact([
+        field.deprecated && `TODO_CLASS_ * @deprecated`,
+        !_.isUndefined(field.format) && getFormatValidation(field),
+        !_.isUndefined(field.minimum) && `TODO_CLASS_@min ${field.minimum}`,
+        !_.isUndefined(field.maximum) && `TODO_CLASS_@max ${field.maximum}`,
+        !_.isUndefined(field.pattern) && `TODO_CLASS_@pattern ${field.pattern}`,
+        !_.isUndefined(field.example) &&
+        `TODO_CLASS_@example ${_.isObject(field.example) ? JSON.stringify(field.example) : field.example}`,
+    ]).reduce((acc, validation) => [...acc, ...validation.split(/\n/g)], []),
+);
+%>
+<% if (validationLines.length === 1) { %>
+  <%~ validationLines[0] %>
+<% } else if (validationLines.length) { %>
+  <% validationLines.forEach(validation => { %>
+  <%~ validation %>
+  <% }) %>
+<% } %>
