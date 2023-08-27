@@ -20,6 +20,10 @@ const dataContractTemplates = {
     return `enum ${contract.name} {\r\n${contract.content} \r\n }`;
   },
   interface: (contract) => {
+    if (contract.name.match(/^[I]{1}[A-Z]{1}/)) {
+        return `interface ${contract.name}${buildGenerics(contract)} {\r\n${contract.content}}`;
+    }
+
     return includeFile('./class-data-contract.ejs', { ...it, contract });
   },
   type: (contract) => {
@@ -32,7 +36,15 @@ const dataContractTemplates = {
 type <%~ config.Ts.CodeGenKeyword.UtilRequiredKeys %><T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
 <% } %>
 
-import { IsNumber, IsDate, IsEmail } from "class-validator";
+import {
+    IsDate,
+    IsDefined,
+    IsEmail,
+    IsOptional,
+    IsNumber,
+    IsMongoId,
+    IsUrl
+} from "class-validator";
 
 <% for (const contract of modelTypes) { %>
   <%~ includeFile('./data-contract-jsdoc.ejs', { ...it, data: { ...contract, ...contract.typeData } }) %>

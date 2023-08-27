@@ -20,6 +20,10 @@ function getFormatValidation(field) {
 const validationLines = _.uniq(
     _.compact([
         field.deprecated && `TODO_CLASS_ * @deprecated`,
+        field.isRequired && "@IsDefined()",
+        !field.isRequired && "@IsOptional()",
+        (field.name === "id" || field.name.endsWith("_id")) && "@IsMongoId()",
+        field.name === "url" && "@IsUrl()",
         !_.isUndefined(field.format) && getFormatValidation(field),
         !_.isUndefined(field.minimum) && `TODO_CLASS_@min ${field.minimum}`,
         !_.isUndefined(field.maximum) && `TODO_CLASS_@max ${field.maximum}`,
