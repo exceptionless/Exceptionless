@@ -10,9 +10,9 @@
  */
 
 export interface BillingPlan {
-	id?: string | null;
-	name?: string | null;
-	description?: string | null;
+	id?: string;
+	name?: string;
+	description?: string;
 	/** @format double */
 	price?: number;
 	/** @format int32 */
@@ -77,72 +77,72 @@ export interface IAggregate {
 }
 
 export interface Invite {
-	token?: string | null;
-	email_address?: string | null;
+	token?: string;
+	email_address?: string;
 	/** @format date-time */
 	date_added?: string;
 }
 
 export interface Invoice {
-	id?: string | null;
-	organization_id?: string | null;
-	organization_name?: string | null;
+	id?: string;
+	organization_id?: string;
+	organization_name?: string;
 	/** @format date-time */
 	date?: string;
 	paid?: boolean;
 	/** @format double */
 	total?: number;
-	items?: InvoiceLineItem[] | null;
+	items?: InvoiceLineItem[];
 }
 
 export interface InvoiceGridModel {
-	id?: string | null;
+	id?: string;
 	/** @format date-time */
 	date?: string;
 	paid?: boolean;
 }
 
 export interface InvoiceLineItem {
-	description?: string | null;
+	description?: string;
 	date?: string | null;
 	/** @format double */
 	amount?: number;
 }
 
 export interface LoginModel {
-	email?: string | null;
-	password?: string | null;
+	email?: string;
+	password?: string;
 	invite_token?: string | null;
 }
 
 export interface NewOrganization {
-	name?: string | null;
+	name?: string;
 }
 
 export interface NewProject {
-	organization_id?: string | null;
-	name?: string | null;
+	organization_id?: string;
+	name?: string;
 	delete_bot_data_enabled?: boolean;
 }
 
 export interface NewToken {
-	organization_id?: string | null;
-	project_id?: string | null;
+	organization_id?: string;
+	project_id?: string;
 	default_project_id?: string | null;
 	/** @uniqueItems true */
-	scopes?: string[] | null;
+	scopes?: string[];
 	/** @format date-time */
 	expires_utc?: string | null;
 	notes?: string | null;
 }
 
 export interface NewWebHook {
-	organization_id?: string | null;
-	project_id?: string | null;
-	url?: string | null;
-	event_types?: string[] | null;
+	organization_id?: string;
+	project_id?: string;
+	url?: string;
+	event_types?: string[];
 	/** The schema version that should be used. */
-	version?: string | null;
+	version?: string;
 }
 
 export interface NotificationSettings {
@@ -155,17 +155,17 @@ export interface NotificationSettings {
 }
 
 export interface OAuthAccount {
-	provider?: string | null;
-	provider_user_id?: string | null;
-	username?: string | null;
+	provider?: string;
+	provider_user_id?: string;
+	username?: string;
 	extra_data?: Record<string, string>;
 }
 
 export interface PersistentEvent {
-	id?: string | null;
-	organization_id?: string | null;
-	project_id?: string | null;
-	stack_id?: string | null;
+	id?: string;
+	organization_id?: string;
+	project_id?: string;
+	stack_id?: string;
 	is_first_occurrence?: boolean;
 	/** @format date-time */
 	created_utc?: string;
@@ -192,17 +192,17 @@ export interface ResetPasswordModel {
 }
 
 export interface SignupModel {
-	name?: string | null;
-	email?: string | null;
-	password?: string | null;
+	name?: string;
+	email?: string;
+	password?: string;
 	invite_token?: string | null;
 }
 
 export interface Stack {
-	id?: string | null;
-	organization_id?: string | null;
-	project_id?: string | null;
-	type?: string | null;
+	id?: string;
+	organization_id?: string;
+	project_id?: string;
+	type?: string;
 	/**
 	 *
 	 *
@@ -221,12 +221,12 @@ export interface Stack {
 	status?: StackStatus;
 	/** @format date-time */
 	snooze_until_utc?: string | null;
-	signature_hash?: string | null;
+	signature_hash?: string;
 	signature_info?: Record<string, string>;
 	fixed_in_version?: string | null;
 	/** @format date-time */
 	date_fixed?: string | null;
-	title?: string | null;
+	title?: string;
 	/** @format int32 */
 	total_occurrences?: number;
 	/** @format date-time */
@@ -235,10 +235,10 @@ export interface Stack {
 	last_occurrence?: string;
 	description?: string | null;
 	occurrences_are_critical?: boolean;
-	references?: string[] | null;
+	references?: string[];
 	/** @uniqueItems true */
-	tags?: string[] | null;
-	duplicate_signature?: string | null;
+	tags?: string[];
+	duplicate_signature?: string;
 	/** @format date-time */
 	created_utc?: string;
 	/** @format date-time */
@@ -277,11 +277,11 @@ export interface StringStringValuesKeyValuePair {
 }
 
 export interface StringValueFromBody {
-	value?: string | null;
+	value?: string;
 }
 
 export interface TokenResult {
-	token?: string | null;
+	token?: string;
 }
 
 export interface UpdateEmailAddressResult {
@@ -317,23 +317,23 @@ export interface UsageInfo {
 }
 
 export interface User {
-	id?: string | null;
-	organization_ids?: string[] | null;
+	id?: string;
+	organization_ids?: string[];
 	password?: string | null;
 	salt?: string | null;
 	password_reset_token?: string | null;
 	/** @format date-time */
 	password_reset_token_expiration?: string;
-	o_auth_accounts?: OAuthAccount[] | null;
-	full_name?: string | null;
-	email_address?: string | null;
+	o_auth_accounts?: OAuthAccount[];
+	full_name?: string;
+	email_address?: string;
 	email_notifications_enabled?: boolean;
 	is_email_address_verified?: boolean;
 	verify_email_address_token?: string | null;
 	/** @format date-time */
 	verify_email_address_token_expiration?: string;
 	is_active?: boolean;
-	roles?: string[] | null;
+	roles?: string[];
 	/** @format date-time */
 	created_utc?: string;
 	/** @format date-time */
@@ -347,13 +347,13 @@ export interface UserDescription {
 }
 
 export interface ViewOrganization {
-	id?: string | null;
+	id?: string;
 	/** @format date-time */
 	created_utc?: string;
-	name?: string | null;
-	plan_id?: string | null;
-	plan_name?: string | null;
-	plan_description?: string | null;
+	name?: string;
+	plan_id?: string;
+	plan_name?: string;
+	plan_description?: string;
 	card_last4?: string | null;
 	/** @format date-time */
 	subscribe_date?: string | null;
@@ -400,9 +400,9 @@ export interface ViewOrganization {
 	stack_count?: number;
 	/** @format int64 */
 	event_count?: number;
-	invites?: Invite[] | null;
-	usage_hours?: UsageHourInfo[] | null;
-	usage?: UsageInfo[] | null;
+	invites?: Invite[];
+	usage_hours?: UsageHourInfo[];
+	usage?: UsageInfo[];
 	data?: Record<string, any>;
 	is_throttled?: boolean;
 	is_over_monthly_limit?: boolean;
@@ -410,16 +410,16 @@ export interface ViewOrganization {
 }
 
 export interface ViewProject {
-	id?: string | null;
+	id?: string;
 	/** @format date-time */
 	created_utc?: string;
-	organization_id?: string | null;
-	organization_name?: string | null;
-	name?: string | null;
+	organization_id?: string;
+	organization_name?: string;
+	name?: string;
 	delete_bot_data_enabled?: boolean;
 	data?: Record<string, any>;
 	/** @uniqueItems true */
-	promoted_tabs?: string[] | null;
+	promoted_tabs?: string[];
 	is_configured?: boolean | null;
 	/** @format int64 */
 	stack_count?: number;
@@ -427,18 +427,18 @@ export interface ViewProject {
 	event_count?: number;
 	has_premium_features?: boolean;
 	has_slack_integration?: boolean;
-	usage_hours?: UsageHourInfo[] | null;
-	usage?: UsageInfo[] | null;
+	usage_hours?: UsageHourInfo[];
+	usage?: UsageInfo[];
 }
 
 export interface ViewToken {
-	id?: string | null;
-	organization_id?: string | null;
-	project_id?: string | null;
+	id?: string;
+	organization_id?: string;
+	project_id?: string;
 	user_id?: string | null;
 	default_project_id?: string | null;
 	/** @uniqueItems true */
-	scopes?: string[] | null;
+	scopes?: string[];
 	/** @format date-time */
 	expires_utc?: string | null;
 	notes?: string | null;
@@ -451,25 +451,25 @@ export interface ViewToken {
 }
 
 export interface ViewUser {
-	id?: string | null;
-	organization_ids?: string[] | null;
-	full_name?: string | null;
-	email_address?: string | null;
+	id?: string;
+	organization_ids?: string[];
+	full_name?: string;
+	email_address?: string;
 	email_notifications_enabled?: boolean;
 	is_email_address_verified?: boolean;
 	is_active?: boolean;
 	is_invite?: boolean;
-	roles?: string[] | null;
+	roles?: string[];
 }
 
 export interface WebHook {
-	id?: string | null;
-	organization_id?: string | null;
-	project_id?: string | null;
-	url?: string | null;
-	event_types?: string[] | null;
+	id?: string;
+	organization_id?: string;
+	project_id?: string;
+	url?: string;
+	event_types?: string[];
 	is_enabled?: boolean;
-	version?: string | null;
+	version?: string;
 	/** @format date-time */
 	created_utc?: string;
 }
