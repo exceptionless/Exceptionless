@@ -31,7 +31,7 @@ internal static class ProjectData
     {
         var project = new Project
         {
-            Id = !id.IsNullOrEmpty() ? id : generateId ? ObjectId.GenerateNewId().ToString() : null,
+            Id = !id.IsNullOrEmpty() ? id : generateId ? ObjectId.GenerateNewId().ToString() : null!,
             OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
             Name = name ?? $"Project{id}"
         };

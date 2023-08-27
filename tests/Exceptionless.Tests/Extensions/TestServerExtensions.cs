@@ -22,7 +22,7 @@ public static class TestServerExtensions
         do
         {
             if (startupContext is not null && startupContext.IsStartupComplete && startupContext.Result.Success == false)
-                throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed");
+                throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed: {startupContext.Result.ErrorMessage}");
 
             var response = await client.GetAsync("/ready");
             if (response.IsSuccessStatusCode)

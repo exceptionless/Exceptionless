@@ -24,9 +24,9 @@ public class ManualStackingTests : TestWithServices
         Assert.Equal(willAddManualStackSignature, context.StackSignatureData.Count > 0);
     }
 
-    public static IEnumerable<object[]> StackingData => new List<object[]> {
-            new object[] { "ManualStackData", true },
-            new object[] { null, false },
-            new object[] { String.Empty, false }
+    public static IEnumerable<object?[]> StackingData => new List<object?[]> {
+            new object?[] { "ManualStackData", true },
+            new object?[] { null, false },
+            new object?[] { String.Empty, false }
         }.ToArray();
 }

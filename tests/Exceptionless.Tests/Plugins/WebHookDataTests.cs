@@ -28,7 +28,7 @@ public sealed class WebHookDataTests : TestWithServices
     {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
-        object data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
+        object? data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
         if (expectData)
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));

@@ -23,11 +23,11 @@ internal static class TokenData
         {
             Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.ApiKey : id,
             UserId = userId,
-            OrganizationId = organizationId,
-            ProjectId = projectId,
+            OrganizationId = organizationId!,
+            ProjectId = projectId!,
             CreatedUtc = SystemClock.UtcNow,
             UpdatedUtc = SystemClock.UtcNow,
-            CreatedBy = userId,
+            CreatedBy = userId ?? TestConstants.UserId,
             Type = type,
             Notes = notes
         };

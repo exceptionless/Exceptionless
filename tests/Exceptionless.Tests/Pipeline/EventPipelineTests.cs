@@ -215,18 +215,18 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(9, results.Total);
         Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
         Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity()?.Identity == "blake@exceptionless.io"));
-        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity().Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
+        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity()?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
         Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.GetSessionId())));
         Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
         var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
         Assert.Equal(2, sessionStarts.Count);
 
-        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity().Identity == "blake@exceptionless.io");
+        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity()?.Identity == "blake@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, firstUserSessionStartEvents.Value);
         Assert.True(firstUserSessionStartEvents.HasSessionEndTime());
 
-        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity().Identity == "eric@exceptionless.io");
+        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity()?.Identity == "eric@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, secondUserSessionStartEvents.Value);
         Assert.False(secondUserSessionStartEvents.HasSessionEndTime());
     }
@@ -534,6 +534,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     public void CanIndexExtendedData()
     {
         var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: SystemClock.UtcNow);
+        ev.Data ??= new DataDictionary();
         ev.Data.Add("First Name", "Eric"); // invalid field name
         ev.Data.Add("IsVerified", true);
         ev.Data.Add("IsVerified1", true.ToString());
@@ -574,6 +575,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         const string Tag2_Lowercase = "tag two";
 
         var ev = GenerateEvent(SystemClock.UtcNow);
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(Tag1);
 
         var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -587,6 +589,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(new[] { Tag1 }, stack.Tags.ToArray());
 
         ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(Tag2);
 
         await RefreshDataAsync();
@@ -596,6 +599,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(new[] { Tag1, Tag2 }, stack.Tags.ToArray());
 
         ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(Tag2_Lowercase);
 
         await RefreshDataAsync();
@@ -611,6 +615,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         string LargeRemovedTags = new('x', 150);
 
         var ev = GenerateEvent(SystemClock.UtcNow);
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(LargeRemovedTags);
 
         var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -619,6 +624,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         ev = await _eventRepository.GetByIdAsync(ev.Id);
         Assert.NotNull(ev);
         Assert.NotNull(ev.StackId);
+        Assert.NotNull(ev.Tags);
         Assert.Empty(ev.Tags);
 
         var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
@@ -634,12 +640,14 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         ev = await _eventRepository.GetByIdAsync(ev.Id);
         Assert.NotNull(ev);
         Assert.NotNull(ev.StackId);
+        Assert.NotNull(ev.Tags);
         Assert.Equal(50, ev.Tags.Count);
 
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
         Assert.Equal(50, stack.Tags.Count);
 
         ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev.Tags ??= new TagSet();
         ev.Tags.Add(new string('x', 150));
         ev.Tags.AddRange(Enumerable.Range(100, 200).Select(i => i.ToString()));
         ev.Tags.Add(Event.KnownTags.Critical);
@@ -651,6 +659,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         ev = await _eventRepository.GetByIdAsync(ev.Id);
         Assert.NotNull(ev);
         Assert.NotNull(ev.StackId);
+        Assert.NotNull(ev.Tags);
         Assert.Equal(50, ev.Tags.Count);
         Assert.DoesNotContain(new string('x', 150), ev.Tags);
         Assert.Contains(Event.KnownTags.Critical, ev.Tags);
@@ -672,7 +681,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         await _pipeline.RunAsync(contexts);
         Assert.True(contexts.All(c => !c.HasError));
-        Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
+        Assert.True(contexts.All(c => c.Stack?.Id == contexts.First().Stack?.Id));
         Assert.Equal(1, contexts.Count(c => c.IsNew));
         Assert.Equal(1, contexts.Count(c => !c.IsNew));
         Assert.Equal(2, contexts.Count(c => !c.IsRegression));
@@ -702,7 +711,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         await _pipeline.RunAsync(contexts);
         Assert.True(contexts.All(c => !c.HasError));
-        Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
+        Assert.True(contexts.All(c => c.Stack?.Id == contexts.First().Stack?.Id));
         Assert.Equal(1, contexts.Count(c => c.IsNew));
         Assert.Equal(1, contexts.Count(c => !c.IsNew));
         Assert.Equal(2, contexts.Count(c => !c.IsRegression));
@@ -852,8 +861,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         if (includePrivateInformation)
         {
             Assert.NotNull(requestInfo?.ClientIpAddress);
+            Assert.NotNull(requestInfo.Cookies);
             Assert.Single(requestInfo.Cookies);
             Assert.NotNull(requestInfo.PostData);
+            Assert.NotNull(requestInfo.QueryString);
             Assert.Single(requestInfo.QueryString);
 
             Assert.NotNull(environmentInfo?.IpAddress);
@@ -865,9 +876,11 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         else
         {
             Assert.Null(requestInfo?.ClientIpAddress);
-            Assert.Empty(requestInfo?.Cookies);
-            Assert.Null(requestInfo?.PostData);
-            Assert.Empty(requestInfo?.QueryString);
+            Assert.NotNull(requestInfo?.Cookies);
+            Assert.Empty(requestInfo.Cookies);
+            Assert.Null(requestInfo.PostData);
+            Assert.NotNull(requestInfo?.QueryString);
+            Assert.Empty(requestInfo.QueryString);
 
             Assert.Null(environmentInfo?.IpAddress);
             Assert.Null(environmentInfo?.MachineName);
@@ -892,6 +905,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         var stack = context.Stack;
+        Assert.NotNull(stack);
         Assert.Equal(StackStatus.Open, stack.Status);
 
         stack.Status = StackStatus.Discarded;
@@ -1014,20 +1028,21 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             foreach (var ev in events)
             {
                 ev.Date = new DateTimeOffset(new DateTime(2020, 1, 1));
-                ev.ProjectId = null;
-                ev.OrganizationId = null;
-                ev.StackId = null;
+                ev.ProjectId = null!;
+                ev.OrganizationId = null!;
+                ev.StackId = null!;
 
                 if (ev.Message is not null)
                     ev.Message = RandomData.GetSentence();
 
+                ev.Data ??= new DataDictionary();
                 var keysToRemove = ev.Data.Keys.Where(k => !k.StartsWith("@") && k != "MachineName" && k != "job" && k != "host" && k != "process").ToList();
                 foreach (string key in keysToRemove)
                     ev.Data.Remove(key);
 
                 ev.Data.Remove(Event.KnownDataKeys.UserDescription);
                 var identity = ev.GetUserIdentity();
-                if (identity is not null)
+                if (identity?.Identity is not null)
                 {
                     if (!mappedUsers.ContainsKey(identity.Identity))
                         mappedUsers.Add(identity.Identity, new UserInfo(Guid.NewGuid().ToString(), currentBatchCount.ToString()));
@@ -1044,7 +1059,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     request.Referrer = null;
                     request.Host = RandomData.GetIp4Address();
                     request.Path = $"/{RandomData.GetWord(false)}/{RandomData.GetWord(false)}";
-                    request.Data.Clear();
+                    request.Data?.Clear();
 
                     if (request.ClientIpAddress is not null)
                     {
@@ -1055,18 +1070,18 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     }
                 }
 
-                InnerError error = ev.GetError();
+                InnerError? error = ev.GetError();
                 while (error is not null)
                 {
                     error.Message = RandomData.GetSentence();
-                    error.Data.Clear();
+                    error.Data?.Clear();
                     (error as Error)?.Modules.Clear();
 
                     error = error.Inner;
                 }
 
                 var environment = ev.GetEnvironmentInfo();
-                environment?.Data.Clear();
+                environment?.Data?.Clear();
             }
 
             // inject random session start events.
@@ -1089,7 +1104,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         }
     }
 
-    private async Task CreateProjectDataAsync(BillingPlan plan = null)
+    private async Task CreateProjectDataAsync(BillingPlan? plan = null)
     {
         foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
         {

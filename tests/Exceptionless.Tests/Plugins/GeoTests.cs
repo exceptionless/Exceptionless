@@ -297,11 +297,12 @@ public sealed class GeoTests : TestWithServices
     /// <summary>
     /// Takes in 32.8489,-96.9667 and only checks to one decimal place.
     /// </summary>
-    private void AssertCoordinatesAreEqual(string expected, string actual)
+    private void AssertCoordinatesAreEqual(string expected, string? actual)
     {
         if (String.Equals(actual, expected))
             return;
 
+        Assert.NotNull(actual);
         string[] actualParts = actual.Split(',');
         string[] expectedParts = expected.Split(',');
         if (actualParts.Length != expectedParts.Length || actualParts.Length != 2)
@@ -314,15 +315,15 @@ public sealed class GeoTests : TestWithServices
         Assert.Equal(Math.Round(Double.Parse(expectedParts[1]), 1), Math.Round(Double.Parse(actualParts[1]), 1));
     }
 
-    public static IEnumerable<object[]> IPData => new List<object[]> {
-            new object[] { null, false },
-            new object[] { "::1", false },
-            new object[] { "127.0.0.1", false },
-            new object[] { "10.0.0.0", false },
-            new object[] { "172.16.0.0", false },
-            new object[] { "172.31.255.255", false },
-            new object[] { "192.168.0.0", false },
-            new object[] { "8.8.4.4", true },
-            new object[] { "2001:4860:4860::8844", true }
+    public static IEnumerable<object?[]> IPData => new List<object?[]> {
+            new object?[] { null, false },
+            new object?[] { "::1", false },
+            new object?[] { "127.0.0.1", false },
+            new object?[] { "10.0.0.0", false },
+            new object?[] { "172.16.0.0", false },
+            new object?[] { "172.31.255.255", false },
+            new object?[] { "192.168.0.0", false },
+            new object?[] { "8.8.4.4", true },
+            new object?[] { "2001:4860:4860::8844", true }
         }.ToArray();
 }

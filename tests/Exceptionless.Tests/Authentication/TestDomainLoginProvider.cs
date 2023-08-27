@@ -12,7 +12,7 @@ internal class TestDomainLoginProvider : IDomainLoginProvider
         return username == ValidUsername && password == ValidPassword;
     }
 
-    public string? GetEmailAddressFromUsername(string username)
+    public string GetEmailAddressFromUsername(string username)
     {
         return $"{username}@domain.com";
     }

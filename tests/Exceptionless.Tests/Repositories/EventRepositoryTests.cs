@@ -138,7 +138,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         for (int i = 0; i < sortedIds.Count; i++)
         {
             _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
-            string nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
+            string? nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
             if (i == sortedIds.Count - 1)
                 Assert.Null(nextId);
             else

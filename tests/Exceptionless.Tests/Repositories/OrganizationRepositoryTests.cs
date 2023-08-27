@@ -18,7 +18,7 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
     public OrganizationRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Trace);
-        _cache = GetService<ICacheClient>() as InMemoryCacheClient;
+        _cache = GetService<ICacheClient>() as InMemoryCacheClient ?? throw new InvalidOperationException();
         _repository = GetService<IOrganizationRepository>();
         _plans = GetService<BillingPlans>();
     }

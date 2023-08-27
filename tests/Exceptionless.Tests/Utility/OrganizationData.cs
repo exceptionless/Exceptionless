@@ -36,7 +36,7 @@ internal static class OrganizationData
         return GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail, plan: plan);
     }
 
-    public static Organization GenerateOrganization(BillingManager billingManager, BillingPlans plans, bool generateId = false, string? name = null, string? id = null, string? inviteEmail = null, bool isSuspended = false, BillingPlan plan = null)
+    public static Organization GenerateOrganization(BillingManager billingManager, BillingPlans plans, bool generateId = false, string? name = null, string? id = null, string? inviteEmail = null, bool isSuspended = false, BillingPlan? plan = null)
     {
         var organization = new Organization
         {
@@ -59,7 +59,8 @@ internal static class OrganizationData
             organization.Invites.Add(new Invite
             {
                 EmailAddress = inviteEmail,
-                Token = Guid.NewGuid().ToString()
+                Token = Guid.NewGuid().ToString(),
+                DateAdded = SystemClock.UtcNow
             });
         }
 

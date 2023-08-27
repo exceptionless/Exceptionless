@@ -6,12 +6,13 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
 using Foundatio.Utility;
 using Xunit;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Utility;
 
 internal static class EventData
 {
-    public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, string[] referenceIds = null, decimal? value = -1, string? semver = null)
+    public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, decimal? value = -1, string? semver = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds, value: value, semver: semver);
@@ -60,7 +61,7 @@ internal static class EventData
         return GenerateEvent(projectIds: Array.Empty<string>(), type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
     }
 
-    public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[] referenceIds = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
+    public static PersistentEvent GenerateEvent(string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
     {
         if (!startDate.HasValue || startDate > SystemClock.OffsetNow.AddHours(1))
             startDate = SystemClock.OffsetNow.AddDays(-30);
@@ -74,7 +75,7 @@ internal static class EventData
             ReferenceId = referenceIds.Random(),
             Date = occurrenceDate ?? RandomData.GetDateTimeOffset(startDate, endDate),
             Value = value.GetValueOrDefault() >= 0 ? value : RandomData.GetDecimal(0, Int32.MaxValue),
-            StackId = stackIds.Random(),
+            StackId = stackIds.Random()!,
             Source = source
         };
 
@@ -83,6 +84,7 @@ internal static class EventData
 
         if (generateData)
         {
+            ev.Data ??= new DataDictionary();
             for (int i = 0; i < RandomData.GetInt(1, 5); i++)
             {
                 string key = RandomData.GetWord();
@@ -95,10 +97,11 @@ internal static class EventData
 
         if (generateTags)
         {
+            ev.Tags ??= new TagSet();
             for (int i = 0; i < RandomData.GetInt(1, 3); i++)
             {
-                string tag = TestConstants.EventTags.Random();
-                if (!ev.Tags.Contains(tag))
+                string? tag = TestConstants.EventTags.Random();
+                if (tag is not null)
                     ev.Tags.Add(tag);
             }
         }
@@ -111,6 +114,7 @@ internal static class EventData
             if (_randomErrors is null)
                 _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
 
+            ev.Data ??= new DataDictionary();
             ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
         }
         else
@@ -128,7 +132,7 @@ internal static class EventData
         return ev;
     }
 
-    private static List<Error> _randomErrors;
+    private static List<Error>? _randomErrors;
 
     internal static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
     {
@@ -143,6 +147,7 @@ internal static class EventData
 
         if (generateData)
         {
+            error.Data ??= new DataDictionary();
             for (int i = 0; i < RandomData.GetInt(1, 5); i++)
             {
                 string key = RandomData.GetWord();

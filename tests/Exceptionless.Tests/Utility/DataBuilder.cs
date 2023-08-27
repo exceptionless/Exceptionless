@@ -444,7 +444,7 @@ public class EventDataBuilder
     }
 
     private bool _isBuilt = false;
-    public (Stack Stack, PersistentEvent[] Events) Build()
+    public (Stack? Stack, PersistentEvent[] Events) Build()
     {
         if (_isBuilt)
             return (_stack, BuildEvents(_stack, _event));
@@ -466,7 +466,7 @@ public class EventDataBuilder
 
         if (_stackEventBuilder is not null)
         {
-            _stack = _stackEventBuilder.GetStack();
+            _stack = _stackEventBuilder.GetStack() ?? throw new InvalidOperationException();
 
             _stack.TotalOccurrences++;
             if (_event.Date.UtcDateTime < _stack.FirstOccurrence)
@@ -488,7 +488,7 @@ public class EventDataBuilder
             {
                 OrganizationId = _event.OrganizationId,
                 ProjectId = _event.ProjectId,
-                Title = title?.Truncate(1000),
+                Title = title.Truncate(1000),
                 Tags = _event.Tags ?? new TagSet(),
                 Type = _event.Type,
                 TotalOccurrences = 1,
@@ -530,7 +530,7 @@ public class EventDataBuilder
         var msi = _event.GetManualStackingInfo();
         if (msi is not null)
         {
-            _stack.Title = msi.Title;
+            _stack.Title = msi.Title!;
             _stack.SignatureInfo.Clear();
             _stack.SignatureInfo.AddRange(msi.SignatureData);
         }
@@ -554,10 +554,10 @@ public class EventDataBuilder
         return (_stack, BuildEvents(_stack, _event));
     }
 
-    private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev)
+    private PersistentEvent[] BuildEvents(Stack? stack, PersistentEvent ev)
     {
         var events = new List<PersistentEvent>(_additionalEventsToCreate) { ev };
-        if (_additionalEventsToCreate <= 0)
+        if (stack is null || _additionalEventsToCreate <= 0)
             return events.ToArray();
 
         int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / _additionalEventsToCreate;

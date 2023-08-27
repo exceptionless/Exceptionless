@@ -148,7 +148,7 @@ public class FilterScenario : IXunitSerializable
 
     public void Deserialize(IXunitSerializationInfo info)
     {
-        var value = JsonConvert.DeserializeObject<FilterScenario>(info.GetValue<string>("objValue"));
+        var value = JsonConvert.DeserializeObject<FilterScenario>(info.GetValue<string>("objValue")) ?? throw new InvalidOperationException();
         Source = value.Source;
         Stack = value.Stack;
         InvertedStack = value.InvertedStack;

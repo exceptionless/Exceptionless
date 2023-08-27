@@ -127,11 +127,13 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         };
 
         var project = ProjectData.GenerateSampleProject();
+        project.Data ??= new DataDictionary();
         project.Data[Project.KnownDataKeys.SlackToken] = token;
 
         await _repository.AddAsync(project, o => o.ImmediateConsistency());
         var actual = await _repository.GetByIdAsync(project.Id, o => o.Cache());
-        Assert.Equal(project.Name, actual?.Name);
+        Assert.NotNull(actual);
+        Assert.Equal(project.Name, actual.Name);
         var actualToken = actual.GetSlackToken();
         Assert.Equal(token.AccessToken, actualToken?.AccessToken);
 

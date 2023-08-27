@@ -37,9 +37,9 @@ internal static class StackData
         var utcNow = SystemClock.UtcNow;
         var stack = new Stack
         {
-            Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
+            Id = (id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id)!,
             OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
-            ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
+            ProjectId = (projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId)!,
             Title = title ?? RandomData.GetTitleWords(),
             Type = type ?? Stack.KnownTypes.Error,
             DateFixed = dateFixed,
@@ -54,7 +54,7 @@ internal static class StackData
         stack.DuplicateSignature = String.Concat(stack.ProjectId, ":", stack.SignatureHash);
 
         if (type == Event.KnownTypes.Error)
-            stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random());
+            stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random()!);
 
         for (int i = 0; i < RandomData.GetInt(0, 5); i++)
         {

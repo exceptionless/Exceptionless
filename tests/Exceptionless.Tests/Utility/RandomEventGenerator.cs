@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Utility;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Helpers;
 
@@ -41,6 +42,9 @@ public class RandomEventGenerator
 
     public void PopulateEvent(Event ev, bool setUserIdentity = true)
     {
+        ev.Data ??= new DataDictionary();
+        ev.Tags ??= new TagSet();
+
         if (MinDate.HasValue || MaxDate.HasValue)
             ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
 
@@ -54,7 +58,7 @@ public class RandomEventGenerator
             ev.Source = LogSources.Random();
             ev.Message = RandomData.GetString();
 
-            string level = LogLevels.Random();
+            string? level = LogLevels.Random();
             if (!String.IsNullOrEmpty(level))
                 ev.Data[Event.KnownDataKeys.Level] = level;
         }
@@ -66,7 +70,11 @@ public class RandomEventGenerator
             ev.Value = RandomData.GetInt(0, 10000);
 
         if (setUserIdentity)
-            ev.SetUserIdentity(Identities.Random());
+        {
+            string? identity = Identities.Random();
+            if (!String.IsNullOrEmpty(identity))
+                ev.SetUserIdentity(identity);
+        }
 
         ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));
 
@@ -94,8 +102,8 @@ public class RandomEventGenerator
         int tagCount = RandomData.GetInt(1, 3);
         for (int i = 0; i < tagCount; i++)
         {
-            string tag = EventTags.Random();
-            if (!ev.Tags.Contains(tag))
+            string? tag = EventTags.Random();
+            if (tag != null)
                 ev.Tags.Add(tag);
         }
 
@@ -120,7 +128,7 @@ public class RandomEventGenerator
         }
     }
 
-    private List<Error> _randomErrors;
+    private List<Error>? _randomErrors;
 
     public Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
     {
@@ -130,6 +138,7 @@ public class RandomEventGenerator
 
         if (generateData)
         {
+            error.Data ??= new DataDictionary();
             for (int i = 0; i < RandomData.GetInt(1, 5); i++)
             {
                 string key = RandomData.GetWord();
@@ -151,13 +160,14 @@ public class RandomEventGenerator
         return error;
     }
 
-    private List<SimpleError> _randomSimpleErrors;
+    private List<SimpleError>? _randomSimpleErrors;
 
     public SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
     {
         var error = new SimpleError { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
         if (generateData)
         {
+            error.Data ??= new DataDictionary();
             for (int i = 0; i < RandomData.GetInt(1, 5); i++)
             {
                 string key = RandomData.GetWord();

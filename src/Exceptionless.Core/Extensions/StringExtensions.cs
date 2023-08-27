@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -376,7 +377,7 @@ public static class StringExtensions
 
     }
 
-    public static bool IsNullOrEmpty(this string? item)
+    public static bool IsNullOrEmpty([NotNullWhen(false)] this string? item)
     {
         return String.IsNullOrEmpty(item);
     }

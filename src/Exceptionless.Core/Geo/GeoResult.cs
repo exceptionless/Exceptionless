@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Exceptionless.Core.Models.Data;
 
@@ -40,7 +41,7 @@ public class GeoResult
         return true;
     }
 
-    public static bool TryParse(string? input, out GeoResult? result)
+    public static bool TryParse(string? input, [NotNullWhen(true)] out GeoResult? result)
     {
         result = null;
         if (String.IsNullOrEmpty(input))

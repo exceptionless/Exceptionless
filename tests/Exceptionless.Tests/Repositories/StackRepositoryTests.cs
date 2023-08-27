@@ -22,7 +22,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
 
     public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        _cache = GetService<ICacheClient>() as InMemoryCacheClient;
+        _cache = GetService<ICacheClient>() as InMemoryCacheClient ?? throw new InvalidOperationException();
         _repository = GetService<IStackRepository>();
     }
 

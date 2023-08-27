@@ -235,7 +235,7 @@ def messages = [];
 def codes = [];
 def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];
 def curr = err;
-while (curr is not null) {
+while (curr != null) {
   if (curr.containsKey('type'))
     types.add(curr.type);
   if (curr.containsKey('message'))
@@ -245,7 +245,7 @@ while (curr is not null) {
   curr = curr.inner;
 }
 
-if (ctx.error is null)
+if (ctx.error == null)
   ctx.error = new HashMap();
 
 ctx.error.type = types;
