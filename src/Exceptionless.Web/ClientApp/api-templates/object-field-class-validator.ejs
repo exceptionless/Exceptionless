@@ -9,7 +9,7 @@ function getFormatValidation(field) {
         case "double":
         case "int32":
         case "int64":
-            return "@IsNumber()\n";
+            return field.value === "string" && "@IsNumber()\n";
         case "email":
             return "@IsEmail({ require_tld: false })\n";
         default:

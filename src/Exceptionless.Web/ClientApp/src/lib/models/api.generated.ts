@@ -9,22 +9,22 @@
  * ---------------------------------------------------------------
  */
 
-import { IsDate, IsEmail, IsNumber } from 'class-validator';
+import { IsDate, IsEmail } from 'class-validator';
 
 export class BillingPlan {
 	id?: string;
 	name?: string;
 	description?: string;
 	/** @format double */
-	@IsNumber() price?: number;
+	price?: number;
 	/** @format int32 */
-	@IsNumber() max_projects?: number;
+	max_projects?: number;
 	/** @format int32 */
-	@IsNumber() max_users?: number;
+	max_users?: number;
 	/** @format int32 */
-	@IsNumber() retention_days?: number;
+	retention_days?: number;
 	/** @format int32 */
-	@IsNumber() max_events_per_month?: number;
+	max_events_per_month?: number;
 	has_premium_features?: boolean;
 	is_hidden?: boolean;
 }
@@ -50,6 +50,7 @@ export enum BillingStatus {
 	Canceled = 3,
 	Unpaid = 4
 }
+
 export class ChangePasswordModel {
 	current_password?: string | null;
 	password?: string | null;
@@ -62,19 +63,19 @@ export class ChangePlanResult {
 
 export class ClientConfiguration {
 	/** @format int32 */
-	@IsNumber() version?: number;
+	version?: number;
 	settings?: Record<string, string>;
 }
 
 export class CountResult {
 	/** @format int64 */
-	@IsNumber() total?: number;
+	total?: number;
 	aggregations?: Record<string, IAggregate>;
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 }
 
 export class IAggregate {
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 }
 
 export class Invite {
@@ -92,7 +93,7 @@ export class Invoice {
 	@IsDate() date?: string;
 	paid?: boolean;
 	/** @format double */
-	@IsNumber() total?: number;
+	total?: number;
 	items?: InvoiceLineItem[];
 }
 
@@ -107,7 +108,7 @@ export class InvoiceLineItem {
 	description?: string;
 	date?: string | null;
 	/** @format double */
-	@IsNumber() amount?: number;
+	amount?: number;
 }
 
 export class LoginModel {
@@ -175,7 +176,7 @@ export class PersistentEvent {
 	is_first_occurrence?: boolean;
 	/** @format date-time */
 	@IsDate() created_utc?: string;
-	idx?: Record<string, any>;
+	idx?: Record<string, unknown>;
 	type?: string | null;
 	source?: string | null;
 	/** @format date-time */
@@ -184,10 +185,10 @@ export class PersistentEvent {
 	message?: string | null;
 	geo?: string | null;
 	/** @format double */
-	@IsNumber() value?: number | null;
+	value?: number | null;
 	/** @format int32 */
-	@IsNumber() count?: number | null;
-	data?: Record<string, any>;
+	count?: number | null;
+	data?: Record<string, unknown>;
 	reference_id?: string | null;
 }
 
@@ -233,7 +234,7 @@ export class Stack {
 	@IsDate() date_fixed?: string | null;
 	title?: string;
 	/** @format int32 */
-	@IsNumber() total_occurrences?: number;
+	total_occurrences?: number;
 	/** @format date-time */
 	@IsDate() first_occurrence?: string;
 	/** @format date-time */
@@ -274,6 +275,7 @@ export enum StackStatus {
 	Ignored = 'ignored',
 	Discarded = 'discarded'
 }
+
 export class StringStringValuesKeyValuePair {
 	key?: string;
 	value?: string[];
@@ -295,28 +297,28 @@ export class UsageHourInfo {
 	/** @format date-time */
 	@IsDate() date?: string;
 	/** @format int32 */
-	@IsNumber() total?: number;
+	total?: number;
 	/** @format int32 */
-	@IsNumber() blocked?: number;
+	blocked?: number;
 	/** @format int32 */
-	@IsNumber() discarded?: number;
+	discarded?: number;
 	/** @format int32 */
-	@IsNumber() too_big?: number;
+	too_big?: number;
 }
 
 export class UsageInfo {
 	/** @format date-time */
 	@IsDate() date?: string;
 	/** @format int32 */
-	@IsNumber() limit?: number;
+	limit?: number;
 	/** @format int32 */
-	@IsNumber() total?: number;
+	total?: number;
 	/** @format int32 */
-	@IsNumber() blocked?: number;
+	blocked?: number;
 	/** @format int32 */
-	@IsNumber() discarded?: number;
+	discarded?: number;
 	/** @format int32 */
-	@IsNumber() too_big?: number;
+	too_big?: number;
 }
 
 export class User {
@@ -356,7 +358,7 @@ export class UserDescription {
 
 	email_address?: string | null;
 	description: string;
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 }
 
 export class ViewOrganization {
@@ -383,15 +385,15 @@ export class ViewOrganization {
 	 */
 	billing_status?: BillingStatus;
 	/** @format double */
-	@IsNumber() billing_price?: number;
+	billing_price?: number;
 	/** @format int32 */
-	@IsNumber() max_events_per_month?: number;
+	max_events_per_month?: number;
 	/** @format int32 */
-	@IsNumber() bonus_events_per_month?: number;
+	bonus_events_per_month?: number;
 	/** @format date-time */
 	@IsDate() bonus_expiration?: string | null;
 	/** @format int32 */
-	@IsNumber() retention_days?: number;
+	retention_days?: number;
 	is_suspended?: boolean;
 	suspension_code?: string | null;
 	suspension_notes?: string | null;
@@ -399,19 +401,19 @@ export class ViewOrganization {
 	@IsDate() suspension_date?: string | null;
 	has_premium_features?: boolean;
 	/** @format int32 */
-	@IsNumber() max_users?: number;
+	max_users?: number;
 	/** @format int32 */
-	@IsNumber() max_projects?: number;
+	max_projects?: number;
 	/** @format int64 */
-	@IsNumber() project_count?: number;
+	project_count?: number;
 	/** @format int64 */
-	@IsNumber() stack_count?: number;
+	stack_count?: number;
 	/** @format int64 */
-	@IsNumber() event_count?: number;
+	event_count?: number;
 	invites?: Invite[];
 	usage_hours?: UsageHourInfo[];
 	usage?: UsageInfo[];
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 	is_throttled?: boolean;
 	is_over_monthly_limit?: boolean;
 	is_over_request_limit?: boolean;
@@ -425,13 +427,13 @@ export class ViewProject {
 	organization_name?: string;
 	name?: string;
 	delete_bot_data_enabled?: boolean;
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 	promoted_tabs?: string[];
 	is_configured?: boolean | null;
 	/** @format int64 */
-	@IsNumber() stack_count?: number;
+	stack_count?: number;
 	/** @format int64 */
-	@IsNumber() event_count?: number;
+	event_count?: number;
 	has_premium_features?: boolean;
 	has_slack_integration?: boolean;
 	usage_hours?: UsageHourInfo[];

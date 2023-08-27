@@ -6,7 +6,7 @@ export class <%~ contract.name %> {
   <%
   const requiredFields = contract.$content.filter(field => field.isRequired);
   if (requiredFields.length > 0) { %>
-    constructor(<% for (const field of requiredFields) { %><%~ field.name %>: <%~ field.value %>,<% } %>) {
+    constructor(<% for (const field of requiredFields) { %><%~ field.name %>: <%~ field.value.replaceAll('any', 'unknown') %>,<% } %>) {
       <% for (const field of requiredFields) { %>
         this.<%~ field.name %> = <%~ field.name %>;
       <% } %>
@@ -16,7 +16,7 @@ export class <%~ contract.name %> {
   <% for (const field of contract.$content) { %>
     <%~ includeFile('./object-field-jsdoc.ejs', { ...it, field }) %>
     <%~ includeFile('./object-field-class-validator.ejs', { ...it, field }) %>
-    <%~ field.name %><%~ field.isRequired ? '' : '?' %>: <%~ field.value %>;
+    <%~ field.name %><%~ field.isRequired ? '' : '?' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
   <% } %>
 }
 
