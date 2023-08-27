@@ -51,7 +51,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         // Only update the LastOccurrence if the new date is greater then the existing date.
         const string script = @"
 Instant parseDate(def dt) {
-  if (dt is not null) {
+  if (dt != null) {
     try {
       return Instant.parse(dt);
     } catch(DateTimeParseException e) {}
