@@ -35,10 +35,10 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
         else if (ev.Type.Length > 100)
             result.Errors.Add(new ValidationFailure("Type", "Type cannot be longer than 100 characters."));
 
-        if (ev.Message != null && (ev.Message.Length < 1 || ev.Message.Length > 2000))
+        if (ev.Message is not null && ev.Message.Length is < 1 or > 2000)
             result.Errors.Add(new ValidationFailure("Message", "Message cannot be longer than 2000 characters."));
 
-        if (ev.Source != null && (ev.Source.Length < 1 || ev.Source.Length > 2000))
+        if (ev.Source is not null && ev.Source.Length is < 1 or > 2000)
             result.Errors.Add(new ValidationFailure("Source", "Source cannot be longer than 2000 characters."));
 
         if (!ev.HasValidReferenceId())
@@ -48,23 +48,26 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
         //if (ev.Tags.Count > 50)
         //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
 
-        foreach (string tag in ev.Tags)
+        if (ev.Tags is not null)
         {
-            if (String.IsNullOrEmpty(tag))
-                result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
-            else if (tag.Length > 255)
-                result.Errors.Add(new ValidationFailure("Tags", "A tag cannot be longer than 255 characters."));
+            foreach (string tag in ev.Tags)
+            {
+                if (String.IsNullOrEmpty(tag))
+                    result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
+                else if (tag.Length > 255)
+                    result.Errors.Add(new ValidationFailure("Tags", "A tag cannot be longer than 255 characters."));
+            }
         }
 
         return result;
     }
 
-    public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new CancellationToken())
+    public override Task<ValidationResult> ValidateAsync(ValidationContext<PersistentEvent> context, CancellationToken cancellation = new())
     {
         return Task.FromResult(Validate(context.InstanceToValidate));
     }
 
-    private bool IsObjectId(string value)
+    private bool IsObjectId(string? value)
     {
         if (String.IsNullOrEmpty(value))
             return false;

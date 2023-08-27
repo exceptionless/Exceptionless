@@ -12,8 +12,8 @@ internal class PropertyAccessor : MemberAccessor
     private readonly bool _hasGetter;
     private readonly bool _hasSetter;
     private readonly Type _memberType;
-    private readonly Lazy<LateBoundGet> _lateBoundGet;
-    private readonly Lazy<LateBoundSet> _lateBoundSet;
+    private readonly Lazy<LateBoundGet>? _lateBoundGet;
+    private readonly Lazy<LateBoundSet>? _lateBoundSet;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PropertyAccessor"/> class.
@@ -25,11 +25,11 @@ internal class PropertyAccessor : MemberAccessor
         _name = _propertyInfo.Name;
         _memberType = _propertyInfo.PropertyType;
 
-        _hasGetter = _propertyInfo.GetGetMethod(true) != null;
+        _hasGetter = _propertyInfo.GetGetMethod(true) is not null;
         if (_hasGetter)
             _lateBoundGet = new Lazy<LateBoundGet>(() => DelegateFactory.CreateGet(_propertyInfo));
 
-        _hasSetter = propertyInfo.GetSetMethod(true) != null;
+        _hasSetter = propertyInfo.GetSetMethod(true) is not null;
         if (_hasSetter)
             _lateBoundSet = new Lazy<LateBoundSet>(() => DelegateFactory.CreateSet(_propertyInfo));
     }
@@ -71,13 +71,13 @@ internal class PropertyAccessor : MemberAccessor
     /// <returns>
     /// The member value for the instance parameter.
     /// </returns>
-    public override object GetValue(object instance)
+    public override object? GetValue(object instance)
     {
-        if (_lateBoundGet == null || !HasGetter)
+        if (_lateBoundGet is null || !HasGetter)
             throw new InvalidOperationException($"Property '{Name}' does not have a getter.");
 
         var get = _lateBoundGet.Value;
-        if (get == null)
+        if (get is null)
             throw new InvalidOperationException($"Property '{Name}' does not have a getter.");
 
         return get(instance);
@@ -88,13 +88,13 @@ internal class PropertyAccessor : MemberAccessor
     /// </summary>
     /// <param name="instance">The object whose member value will be set.</param>
     /// <param name="value">The new value for this member.</param>
-    public override void SetValue(object instance, object value)
+    public override void SetValue(object instance, object? value)
     {
-        if (_lateBoundSet == null || !HasSetter)
+        if (_lateBoundSet is null || !HasSetter)
             throw new InvalidOperationException($"Property '{Name}' does not have a setter.");
 
         var set = _lateBoundSet.Value;
-        if (set == null)
+        if (set is null)
             throw new InvalidOperationException($"Property '{Name}' does not have a setter.");
 
         set(instance, value);

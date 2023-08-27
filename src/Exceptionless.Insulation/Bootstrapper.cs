@@ -41,7 +41,10 @@ public class Bootstrapper
 
             client.Configuration.SetDefaultMinLogLevel(Logging.LogLevel.Warn);
             client.Configuration.UseLogger(new SelfLogLogger());
-            client.Configuration.SetVersion(appOptions.Version);
+
+            if (!String.IsNullOrEmpty(appOptions.Version))
+                client.Configuration.SetVersion(appOptions.Version);
+
             if (String.IsNullOrEmpty(appOptions.InternalProjectId))
                 client.Configuration.Enabled = false;
 
@@ -68,7 +71,7 @@ public class Bootstrapper
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
         {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-            healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => s.GetRequiredService<IMailSender>() as MailKitMailSender, null, new[] { "Mail", "MailMessage", "AllJobs" }));
+            healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => (MailKitMailSender)s.GetRequiredService<IMailSender>(), null, new[] { "Mail", "MailMessage", "AllJobs" }));
         }
     }
 

@@ -32,7 +32,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
     private readonly JsonSerializerSettings _jsonSerializerSettings;
     private readonly AppOptions _appOptions;
 
-    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, ILoggerFactory loggerFactory = null) : base(queue, loggerFactory)
+    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
     {
         _eventPostService = eventPostService;
         _eventParserPluginManager = eventParserPluginManager;
@@ -58,8 +58,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
         var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 
-        byte[] payload = await payloadTask.AnyContext();
-        if (payload == null)
+        byte[]? payload = await payloadTask.AnyContext();
+        if (payload is null)
         {
             await Task.WhenAll(AbandonEntryAsync(entry), projectTask, organizationTask).AnyContext();
             return JobResult.FailedWithMessage($"Unable to retrieve payload '{payloadPath}'.");
@@ -81,11 +81,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Information))
             {
                 using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
-                    _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={project} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
+                    _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={ProjectId} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
             }
 
             var project = await projectTask.AnyContext();
-            if (project == null)
+            if (project is null)
             {
                 if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {Project}", payloadPath, ep.ProjectId);
                 await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask).AnyContext();
@@ -135,7 +135,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
             var createdUtc = SystemClock.UtcNow;
             var events = ParseEventPost(ep, createdUtc, uncompressedData, entry.Id, isInternalProject);
-            if (events == null || events.Count == 0)
+            if (events is null || events.Count == 0)
             {
                 await Task.WhenAll(CompleteEntryAsync(entry, ep, createdUtc), organizationTask).AnyContext();
                 return JobResult.Success;
@@ -148,7 +148,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             }
 
             var organization = await organizationTask.AnyContext();
-            if (organization == null)
+            if (organization is null)
             {
                 if (!isInternalProject)
                     _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {OrganizationId}", payloadPath, project.OrganizationId);
@@ -246,14 +246,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
     }
 
-    private List<PersistentEvent> ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
+    private List<PersistentEvent>? ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
     {
         using (_logger.BeginScope(new ExceptionlessState().Tag("parsing")))
         {
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("Parsing EventPost: {QueueEntryId}", queueEntryId);
 
-            List<PersistentEvent> events = null;
+            var events = new List<PersistentEvent>();
             try
             {
                 var encoding = Encoding.UTF8;
@@ -263,7 +263,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 AppDiagnostics.PostsParsingTime.Time(() =>
                 {
                     string input = encoding.GetString(uncompressedData);
-                    events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent) ?? new List<PersistentEvent>(0);
+                    events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent);
                     foreach (var ev in events)
                     {
                         ev.CreatedUtc = createdUtc;
@@ -275,7 +275,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                             ev.ReferenceId = ev.Id;
 
                         // the event id and stack id should never be set for posted events
-                        ev.Id = ev.StackId = null;
+                        ev.Id = ev.StackId = null!;
                     }
                 });
                 AppDiagnostics.PostsParsed.Add(1);
@@ -312,7 +312,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     IpAddress = ep.IpAddress,
                     MediaType = ep.MediaType,
                     OrganizationId = ep.OrganizationId ?? project.OrganizationId,
-                    ProjectId = ep.ProjectId,
+                    ProjectId = ep.ProjectId ?? project.Id,
                     UserAgent = ep.UserAgent
                 }, stream).AnyContext();
             }

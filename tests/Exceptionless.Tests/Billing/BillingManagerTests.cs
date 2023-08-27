@@ -13,7 +13,7 @@ public class BillingManagerTests : TestWithServices
     {
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
-        Assert.Equal(plans.FreePlan.Id, billingManager.GetBillingPlan(plans.FreePlan.Id).Id);
+        Assert.Equal(plans.FreePlan.Id, billingManager.GetBillingPlan(plans.FreePlan.Id)?.Id);
     }
 
     [Fact]

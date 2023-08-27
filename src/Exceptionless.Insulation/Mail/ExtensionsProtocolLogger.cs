@@ -11,7 +11,7 @@ public class ExtensionsProtocolLogger : IProtocolLogger
 
     private readonly ILogger _logger;
 
-    public IAuthenticationSecretDetector AuthenticationSecretDetector { get; set; }
+    public IAuthenticationSecretDetector AuthenticationSecretDetector { get; set; } = null!;
 
     public ExtensionsProtocolLogger(ILogger logger)
     {
@@ -38,7 +38,7 @@ public class ExtensionsProtocolLogger : IProtocolLogger
         if (!_logger.IsEnabled(LogLevel.Trace))
             return;
 
-        if (buffer == null)
+        if (buffer is null)
             throw new ArgumentNullException(nameof(buffer));
 
         if (offset < 0 || offset > buffer.Length)

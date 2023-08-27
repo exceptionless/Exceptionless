@@ -20,9 +20,9 @@ public class EventPostService
         _logger = loggerFactory.CreateLogger<EventPostService>();
     }
 
-    public async Task<string> EnqueueAsync(EventPost data, Stream stream, CancellationToken cancellationToken = default)
+    public async Task<string?> EnqueueAsync(EventPost data, Stream stream, CancellationToken cancellationToken = default)
     {
-        if (stream == null)
+        if (stream is null)
             throw new ArgumentNullException(nameof(stream));
 
         if (data.ShouldArchive)
@@ -58,7 +58,7 @@ public class EventPostService
         return await _queue.EnqueueAsync(data).AnyContext();
     }
 
-    public async Task<byte[]> GetEventPostPayloadAsync(string path)
+    public async Task<byte[]?> GetEventPostPayloadAsync(string path)
     {
         if (String.IsNullOrEmpty(path))
             return null;

@@ -1,6 +1,6 @@
 ﻿namespace Exceptionless.Web.Models;
 
-public class TokenResult
+public record TokenResult
 {
-    public string Token { get; set; }
+    public required string Token { get; set; }
 }

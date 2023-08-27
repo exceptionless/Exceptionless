@@ -16,7 +16,7 @@ public sealed class RedisConnectionMapping : IConnectionMapping
 
     public Task AddAsync(string key, string connectionId)
     {
-        if (key == null)
+        if (key is null)
             return Task.CompletedTask;
 
         return Database.SetAddAsync(String.Concat(KeyPrefix, key), connectionId);
@@ -26,7 +26,7 @@ public sealed class RedisConnectionMapping : IConnectionMapping
 
     public async Task<ICollection<string>> GetConnectionsAsync(string key)
     {
-        if (key == null)
+        if (key is null)
             return new List<string>();
 
         var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key)).AnyContext();
@@ -35,7 +35,7 @@ public sealed class RedisConnectionMapping : IConnectionMapping
 
     public async Task<int> GetConnectionCountAsync(string key)
     {
-        if (key == null)
+        if (key is null)
             return 0;
 
         return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key)).AnyContext();
@@ -43,7 +43,7 @@ public sealed class RedisConnectionMapping : IConnectionMapping
 
     public Task RemoveAsync(string key, string connectionId)
     {
-        if (key == null)
+        if (key is null)
             return Task.CompletedTask;
 
         return Database.SetRemoveAsync(String.Concat(KeyPrefix, key), connectionId);

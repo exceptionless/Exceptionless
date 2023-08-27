@@ -55,12 +55,7 @@ namespace Exceptionless.Core.Repositories.Queries
 {
     public class StackQueryBuilder : IElasticQueryBuilder
     {
-        private readonly string _stackIdFieldName;
-
-        public StackQueryBuilder()
-        {
-            _stackIdFieldName = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
-        }
+        private readonly string _stackIdFieldName = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
         {

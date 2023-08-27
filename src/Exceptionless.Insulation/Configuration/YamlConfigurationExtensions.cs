@@ -94,9 +94,9 @@ public static class YamlConfigurationExtensions
     /// <returns>
     ///     The <see cref="IConfigurationBuilder" />.
     /// </returns>
-    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, IFileProvider provider, string path, bool optional, bool reloadOnChange)
+    public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
     {
-        if (builder == null)
+        if (builder is null)
             throw new ArgumentNullException(nameof(builder));
 
         if (String.IsNullOrEmpty(path))

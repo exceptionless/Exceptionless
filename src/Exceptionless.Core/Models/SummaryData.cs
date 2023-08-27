@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class SummaryData
+public record SummaryData
 {
-    public string TemplateKey { get; set; }
-    public object Data { get; set; }
+    public required string TemplateKey { get; set; }
+    public required object Data { get; set; }
 }

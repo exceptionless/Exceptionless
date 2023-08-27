@@ -27,6 +27,10 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
     public async Task SendAsync(MailMessage model)
     {
+        string? host = _emailOptions.SmtpHost;
+        if (String.IsNullOrEmpty(host))
+            throw new Exception("Email Host is not configured");
+
         _logger.LogTrace("Creating Mail Message from model");
 
         var message = CreateMailMessage(model);
@@ -35,39 +39,36 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         message.Headers.Add("X-Auto-Response-Suppress", "All");
         message.Headers.Add("Auto-Submitted", "auto-generated");
 
-        using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger)))
+        using var client = new SmtpClient(new ExtensionsProtocolLogger(_logger));
+        int port = _emailOptions.SmtpPort;
+        var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
+        _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
+
+        var sw = Stopwatch.StartNew();
+        await client.ConnectAsync(host, port, encryption).AnyContext();
+        _logger.LogTrace("Connected to SMTP server took {Duration:g}", sw.Elapsed);
+
+        // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
+        client.AuthenticationMechanisms.Remove("XOAUTH2");
+
+        string? user = _emailOptions.SmtpUser;
+        if (!String.IsNullOrEmpty(user))
         {
-            string host = _emailOptions.SmtpHost;
-            int port = _emailOptions.SmtpPort;
-            var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
-            _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
-
-            var sw = Stopwatch.StartNew();
-            await client.ConnectAsync(host, port, encryption).AnyContext();
-            _logger.LogTrace("Connected to SMTP server took {Duration:g}", sw.Elapsed);
-
-            // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
-            client.AuthenticationMechanisms.Remove("XOAUTH2");
-
-            string user = _emailOptions.SmtpUser;
-            if (!String.IsNullOrEmpty(user))
-            {
-                _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
-                sw.Restart();
-                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
-                _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", user, sw.Elapsed);
-            }
-
-            _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
+            _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
             sw.Restart();
-            await client.SendAsync(message).AnyContext();
-            _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);
-
-            sw.Restart();
-            await client.DisconnectAsync(true).AnyContext();
-            _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
-            sw.Stop();
+            await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
+            _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", user, sw.Elapsed);
         }
+
+        _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
+        sw.Restart();
+        await client.SendAsync(message).AnyContext();
+        _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);
+
+        sw.Restart();
+        await client.DisconnectAsync(true).AnyContext();
+        _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
+        sw.Stop();
 
         _lastSuccessfulConnection = SystemClock.UtcNow;
     }
@@ -110,29 +111,30 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         if (_lastSuccessfulConnection.IsAfter(SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(5))))
             return HealthCheckResult.Healthy();
 
+        string? host = _emailOptions.SmtpHost;
+        if (String.IsNullOrEmpty(host))
+            return HealthCheckResult.Unhealthy("Email is not configured");
+
         var sw = Stopwatch.StartNew();
 
         try
         {
-            using (var client = new SmtpClient(new ExtensionsProtocolLogger(_logger)))
+            using var client = new SmtpClient(new ExtensionsProtocolLogger(_logger));
+            int port = _emailOptions.SmtpPort;
+            var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
+
+            await client.ConnectAsync(host, port, encryption).AnyContext();
+
+            // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
+            client.AuthenticationMechanisms.Remove("XOAUTH2");
+
+            string? user = _emailOptions.SmtpUser;
+            if (!String.IsNullOrEmpty(user))
             {
-                string host = _emailOptions.SmtpHost;
-                int port = _emailOptions.SmtpPort;
-                var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
-
-                await client.ConnectAsync(host, port, encryption).AnyContext();
-
-                // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
-                client.AuthenticationMechanisms.Remove("XOAUTH2");
-
-                string user = _emailOptions.SmtpUser;
-                if (!String.IsNullOrEmpty(user))
-                {
-                    await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
-                }
-
-                await client.DisconnectAsync(true).AnyContext();
+                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
             }
+
+            await client.DisconnectAsync(true).AnyContext();
 
             _lastSuccessfulConnection = SystemClock.UtcNow;
         }

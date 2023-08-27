@@ -22,6 +22,7 @@ using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Stripe;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using InvoiceLineItem = Exceptionless.Web.Models.InvoiceLineItem;
 
@@ -80,7 +81,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// </summary>
     /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
-    public async Task<ActionResult<ViewOrganization>> GetAsync(string mode = null)
+    public async Task<ActionResult<ViewOrganization>> GetAsync(string? mode = null)
     {
         var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
         var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
@@ -94,7 +95,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [HttpGet("~/" + API_PREFIX + "/admin/organizations")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetForAdminsAsync(string criteria = null, bool? paid = null, bool? suspended = null, string mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest)
+    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetForAdminsAsync(string? criteria = null, bool? paid = null, bool? suspended = null, string? mode = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest)
     {
         page = GetPage(page);
         limit = GetLimit(limit);
@@ -122,10 +123,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
-    public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string mode = null)
+    public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string? mode = null)
     {
         var organization = await GetModelAsync(id);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
@@ -183,13 +184,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
     protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations)
     {
+        var user = CurrentUser ?? throw new InvalidOperationException();
         foreach (var organization in organizations)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-            {
-                _logger.UserDeletingOrganization(CurrentUser.Id, organization.Name, organization.Id);
-                await _organizationService.SoftDeleteOrganizationAsync(organization, CurrentUser.Id);
-            }
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+            _logger.UserDeletingOrganization(user.Id, organization.Name, organization.Id);
+            await _organizationService.SoftDeleteOrganizationAsync(organization, user.Id);
         }
 
         return Enumerable.Empty<string>();
@@ -212,7 +212,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (!id.StartsWith("in_"))
             id = "in_" + id;
 
-        Stripe.Invoice stripeInvoice = null;
+        Stripe.Invoice? stripeInvoice = null;
         try
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
@@ -221,7 +221,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
         }
 
@@ -229,7 +229,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return NotFound();
 
         var organization = await _repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId);
-        if (organization == null || !CanAccessOrganization(organization.Id))
+        if (organization is null || !CanAccessOrganization(organization.Id))
             return NotFound();
 
         var invoice = new Invoice
@@ -242,19 +242,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             Total = stripeInvoice.Total / 100.0m
         };
 
-
         foreach (var line in stripeInvoice.Lines.Data)
         {
-            var item = new InvoiceLineItem { Amount = line.Amount / 100.0m };
-
-            if (line.Plan != null)
+            var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
+            if (line.Plan is not null)
             {
-                string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name;
+                string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name ?? line.Plan.Id;
                 item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
-            }
-            else
-            {
-                item.Description = line.Description;
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -264,7 +258,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
 
         var coupon = stripeInvoice.Discount?.Coupon;
-        if (coupon != null)
+        if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
             {
@@ -293,13 +287,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <response code="404">The organization was not found.</response>
     [HttpGet]
     [Route("{id:objectid}/invoices")]
-    public async Task<ActionResult<IReadOnlyCollection<InvoiceGridModel>>> GetInvoicesAsync(string id, string before = null, string after = null, int limit = 12)
+    public async Task<ActionResult<IReadOnlyCollection<InvoiceGridModel>>> GetInvoicesAsync(string id, string? before = null, string? after = null, int limit = 12)
     {
         if (!_options.StripeOptions.EnableBilling)
             return NotFound();
 
         var organization = await GetModelAsync(id);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (String.IsNullOrWhiteSpace(organization.StripeCustomerId))
@@ -331,7 +325,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     public async Task<ActionResult<IReadOnlyCollection<BillingPlan>>> GetPlansAsync(string id)
     {
         var organization = await GetModelAsync(id);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         var plans = _plans.Plans;
@@ -375,7 +369,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [HttpPost]
     [Consumes("application/json")]
     [Route("{id:objectid}/change-plan")]
-    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null)
+    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string? stripeToken = null, string? last4 = null, string? couponId = null)
     {
         if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
             return NotFound();
@@ -384,11 +378,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
         var organization = await GetModelAsync(id, false);
-        if (organization == null)
+        if (organization is null)
             return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
         var plan = _billingManager.GetBillingPlan(planId);
-        if (plan == null)
+        if (plan is null)
             return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));
 
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(_plans.FreePlan.Id, plan.Id))
@@ -433,7 +427,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Source = stripeToken,
                     Plan = planId,
                     Description = organization.Name,
-                    Email = CurrentUser.EmailAddress
+                    Email = CurrentUser?.EmailAddress
                 };
 
                 if (!String.IsNullOrWhiteSpace(couponId))
@@ -454,7 +448,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
                 if (!Request.IsGlobalAdmin())
-                    customerUpdateOptions.Email = CurrentUser.EmailAddress;
+                    customerUpdateOptions.Email = CurrentUser?.EmailAddress;
 
                 if (!String.IsNullOrEmpty(stripeToken))
                 {
@@ -466,7 +460,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var subscriptionList = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
-                if (subscription != null)
+                if (subscription is not null)
                 {
                     update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Plan = planId });
                     await subscriptionService.UpdateAsync(subscription.Id, update);
@@ -490,7 +484,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
 
             return Ok(ChangePlanResult.FailWithMessage(ex.Message));
@@ -510,18 +504,18 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [Route("{id:objectid}/users/{email:minlength(1)}")]
     public async Task<ActionResult<User>> AddUserAsync(string id, string email)
     {
-        if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
+        if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email) || CurrentUser is null)
             return NotFound();
 
         var organization = await GetModelAsync(id);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         if (!await _billingManager.CanAddUserAsync(organization))
             return PlanLimitReached("Please upgrade your plan to add an additional user.");
 
         var user = await _userRepository.GetByEmailAddressAsync(email);
-        if (user != null)
+        if (user is not null)
         {
             if (!user.OrganizationIds.Contains(organization.Id))
             {
@@ -540,7 +534,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         else
         {
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
-            if (invite == null)
+            if (invite is null)
             {
                 invite = new Invite
                 {
@@ -570,14 +564,14 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     public async Task<IActionResult> RemoveUserAsync(string id, string email)
     {
         var organization = await GetModelAsync(id, false);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         var user = await _userRepository.GetByEmailAddressAsync(email);
-        if (user == null || !user.OrganizationIds.Contains(id))
+        if (user is null || !user.OrganizationIds.Contains(id))
         {
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
-            if (invite == null)
+            if (invite is null)
                 return Ok();
 
             organization.Invites.Remove(invite);
@@ -618,15 +612,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> SuspendAsync(string id, SuspensionCode code, string notes = null)
+    public async Task<IActionResult> SuspendAsync(string id, SuspensionCode code, string? notes = null)
     {
         var organization = await GetModelAsync(id, false);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         organization.IsSuspended = true;
         organization.SuspensionDate = SystemClock.UtcNow;
-        organization.SuspendedByUserId = CurrentUser.Id;
+        organization.SuspendedByUserId = CurrentUser?.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
         await _repository.SaveAsync(organization, o => o.Cache().Originals());
@@ -641,7 +635,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     public async Task<IActionResult> UnsuspendAsync(string id)
     {
         var organization = await GetModelAsync(id, false);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         organization.IsSuspended = false;
@@ -670,9 +664,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return BadRequest();
 
         var organization = await GetModelAsync(id, false);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
+        organization.Data ??= new DataDictionary();
         organization.Data[key.Trim()] = value.Value.Trim();
         await _repository.SaveAsync(organization, o => o.Cache());
 
@@ -690,10 +685,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     public async Task<IActionResult> DeleteDataAsync(string id, string key)
     {
         var organization = await GetModelAsync(id, false);
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
-        if (organization.Data.Remove(key))
+        if (organization.Data is not null && organization.Data.Remove(key))
             await _repository.SaveAsync(organization, o => o.Cache());
 
         return Ok();
@@ -741,15 +736,16 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
     protected override async Task<Organization> AddModelAsync(Organization value)
     {
-        _billingManager.ApplyBillingPlan(value, _options.StripeOptions.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, CurrentUser);
+        var user = CurrentUser ?? throw new InvalidOperationException();
+        _billingManager.ApplyBillingPlan(value, _options.StripeOptions.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, user);
 
         var organization = await base.AddModelAsync(value);
 
-        CurrentUser.OrganizationIds.Add(organization.Id);
-        await _userRepository.SaveAsync(CurrentUser, o => o.Cache());
+        user.OrganizationIds.Add(organization.Id);
+        await _userRepository.SaveAsync(user, o => o.Cache());
         await _messagePublisher.PublishAsync(new UserMembershipChanged
         {
-            UserId = CurrentUser.Id,
+            UserId = user.Id,
             OrganizationId = organization.Id,
             ChangeType = ChangeType.Added
         });
@@ -811,7 +807,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
     private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization)
     {
-        return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).FirstOrDefault();
+        return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).Single();
     }
 
     private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> viewOrganizations)

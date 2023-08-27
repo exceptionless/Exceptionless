@@ -50,6 +50,8 @@ public sealed class MailerTests : TestWithServices
     public Task SendEventNoticeSimpleErrorAsync()
     {
         var ex = GetException();
+        Assert.NotNull(ex);
+
         return SendEventNoticeAsync(new PersistentEvent
         {
             Type = Event.KnownTypes.Error,
@@ -227,7 +229,7 @@ public sealed class MailerTests : TestWithServices
         var sender = GetService<IMailSender>() as InMemoryMailSender;
         Assert.NotNull(sender);
 
-        Assert.Contains("Join Organization", sender.LastMessage.Body);
+        Assert.Contains("Join Organization", sender.LastMessage?.Body);
     }
 
     [Fact]
@@ -349,15 +351,15 @@ public sealed class MailerTests : TestWithServices
         var job = GetService<MailMessageJob>();
         await job.RunAsync();
 
-        if (!(GetService<IMailSender>() is InMemoryMailSender sender))
+        if (GetService<IMailSender>() is not InMemoryMailSender sender)
             return;
 
-        _logger.LogTrace("To:      {To}", sender.LastMessage.To);
-        _logger.LogTrace("Subject: {Subject}", sender.LastMessage.Subject);
-        _logger.LogTrace("Body:\n{Body}", sender.LastMessage.Body);
+        _logger.LogTrace("To:      {To}", sender.LastMessage?.To);
+        _logger.LogTrace("Subject: {Subject}", sender.LastMessage?.Subject);
+        _logger.LogTrace("Body:\n{Body}", sender.LastMessage?.Body);
     }
 
-    private Exception GetException()
+    private Exception? GetException()
     {
         void TestInner()
         {

@@ -1,6 +1,6 @@
 ﻿namespace Exceptionless.Core.Messaging.Models;
 
-public class PlanChanged
+public record PlanChanged
 {
-    public string OrganizationId { get; set; }
+    public required string OrganizationId { get; set; }
 }

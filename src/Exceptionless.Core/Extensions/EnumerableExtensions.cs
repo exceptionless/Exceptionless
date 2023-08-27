@@ -8,7 +8,7 @@ public static class EnumerableExtensions
 {
     public static IReadOnlyCollection<T> UnionOriginalAndModified<T>(this IReadOnlyCollection<ModifiedDocument<T>> documents) where T : class, new()
     {
-        return documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d != null)).ToList();
+        return documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d is not null)).ToList();
     }
 
     public static bool Contains<T>(this IEnumerable<T> enumerable, Func<T, bool> function)
@@ -18,39 +18,20 @@ public static class EnumerableExtensions
         return !Equals(a, b);
     }
 
-    public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-    {
-        return source.DistinctBy(keySelector, EqualityComparer<TKey>.Default);
-    }
-
-    public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
-    {
-        if (source == null)
-            throw new ArgumentNullException(nameof(source));
-        if (keySelector == null)
-            throw new ArgumentNullException(nameof(keySelector));
-        if (comparer == null)
-            throw new ArgumentNullException(nameof(comparer));
-
-        return DistinctByImpl(source, keySelector, comparer);
-    }
-
-    private static IEnumerable<TSource> DistinctByImpl<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
-    {
-        var knownKeys = new HashSet<TKey>(comparer);
-        foreach (var element in source)
-            if (knownKeys.Add(keySelector(element)))
-                yield return element;
-    }
-
     public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
     {
         foreach (var item in collection ?? new List<T>())
             action(item);
     }
 
-    public static bool CollectionEquals<T>(this IEnumerable<T> source, IEnumerable<T> other)
+    public static bool CollectionEquals<T>(this IEnumerable<T>? source, IEnumerable<T>? other)
     {
+        if (source is null && other is null)
+            return true;
+
+        if (source is null || other is null)
+            return false;
+
         using var sourceEnumerator = source.GetEnumerator();
         using var otherEnumerator = other.GetEnumerator();
 
@@ -62,7 +43,7 @@ public static class EnumerableExtensions
                 return false;
             }
 
-            if (sourceEnumerator.Current != null && sourceEnumerator.Current.Equals(otherEnumerator.Current))
+            if (sourceEnumerator.Current is not null && sourceEnumerator.Current.Equals(otherEnumerator.Current))
             {
                 // values aren't equal
                 return false;
@@ -74,12 +55,12 @@ public static class EnumerableExtensions
 
     public static int GetCollectionHashCode<T>(this IEnumerable<T> source)
     {
-        string assemblyQualifiedName = typeof(T).AssemblyQualifiedName;
+        string? assemblyQualifiedName = typeof(T).AssemblyQualifiedName;
         int hashCode = assemblyQualifiedName?.GetHashCode() ?? 0;
 
         foreach (var item in source)
         {
-            if (item == null)
+            if (item is null)
                 continue;
 
             unchecked
@@ -100,23 +81,20 @@ public static class EnumerableExtensions
     /// <returns>a collection of sub-collections by page size</returns>
     public static IEnumerable<ReadOnlyCollection<T>> Page<T>(this IEnumerable<T> source, int pageSize)
     {
-        Contract.Requires(source != null);
-        Contract.Requires(pageSize > 0);
-        Contract.Ensures(Contract.Result<IEnumerable<IEnumerable<T>>>() != null);
+        if (source is null)
+            throw new ArgumentNullException(nameof(source));
 
-        using (var enumerator = source.GetEnumerator())
+        using var enumerator = source.GetEnumerator();
+        while (enumerator.MoveNext())
         {
-            while (enumerator.MoveNext())
+            var currentPage = new List<T>(pageSize) { enumerator.Current };
+
+            while (currentPage.Count < pageSize && enumerator.MoveNext())
             {
-                var currentPage = new List<T>(pageSize) { enumerator.Current };
-
-                while (currentPage.Count < pageSize && enumerator.MoveNext())
-                {
-                    currentPage.Add(enumerator.Current);
-                }
-
-                yield return new ReadOnlyCollection<T>(currentPage);
+                currentPage.Add(enumerator.Current);
             }
+
+            yield return new ReadOnlyCollection<T>(currentPage);
         }
     }
 }

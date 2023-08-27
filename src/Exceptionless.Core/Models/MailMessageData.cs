@@ -1,7 +1,7 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class MailMessageData
+public record MailMessageData
 {
-    public string Subject { get; set; }
-    public Dictionary<string, object> Data { get; set; }
+    public required string Subject { get; set; }
+    public required Dictionary<string, object?> Data { get; set; }
 }

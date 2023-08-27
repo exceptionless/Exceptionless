@@ -34,10 +34,11 @@ public static class ServiceCollectionExtensions
             var registrationType = type;
             if (type.IsGenericTypeDefinition)
             {
-                if (type.IsInterface)
-                    registrationType = type.MakeGenericType(implementingType.GetInterface(type.Name).GenericTypeArguments);
-                else
-                    registrationType = type.MakeGenericType(implementingType.BaseType.GenericTypeArguments);
+                var typeArguments = type.IsInterface
+                    ? implementingType.GetInterface(type.Name)?.GenericTypeArguments
+                    : implementingType.BaseType?.GenericTypeArguments;
+
+                registrationType = type.MakeGenericType(typeArguments ?? throw new InvalidOperationException());
             }
 
             services.Add(new ServiceDescriptor(registrationType, implementingType, lifetime));
@@ -54,7 +55,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, T instance)
     {
-        return services.Replace(new ServiceDescriptor(typeof(T), s => instance, ServiceLifetime.Singleton));
+        return services.Replace(new ServiceDescriptor(typeof(T), s => instance ?? throw new ArgumentNullException(nameof(instance)), ServiceLifetime.Singleton));
     }
 
     public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, object instance)
@@ -69,7 +70,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection ReplaceSingleton<T>(this IServiceCollection services, Func<IServiceProvider, T> factory)
     {
-        return services.Replace(new ServiceDescriptor(typeof(T), s => factory(s), ServiceLifetime.Singleton));
+        return services.Replace(new ServiceDescriptor(typeof(T), s => factory(s) ?? throw new InvalidOperationException(), ServiceLifetime.Singleton));
     }
 
     public static IServiceCollection ReplaceSingleton<TService, TInstance>(this IServiceCollection services)

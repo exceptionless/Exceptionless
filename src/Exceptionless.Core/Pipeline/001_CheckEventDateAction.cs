@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Pipeline;
 [Priority(1)]
 public class CheckEventDateAction : EventPipelineActionBase
 {
-    public CheckEventDateAction(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public CheckEventDateAction(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         ContinueOnError = true;
     }

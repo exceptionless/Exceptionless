@@ -16,7 +16,7 @@ public class ElasticConnectionSettingsAwareContractResolver : ConnectionSettings
         var property = base.CreateProperty(member, memberSerialization);
 
         var shouldSerialize = property.ShouldSerialize;
-        property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
+        property.ShouldSerialize = obj => (shouldSerialize is null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
         return property;
     }
 

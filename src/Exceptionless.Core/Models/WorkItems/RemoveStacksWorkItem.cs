@@ -1,7 +1,7 @@
 namespace Exceptionless.Core.Models.WorkItems;
 
-public class RemoveStacksWorkItem
+public record RemoveStacksWorkItem
 {
-    public string OrganizationId { get; set; }
-    public string ProjectId { get; set; }
+    public required string OrganizationId { get; init; }
+    public required string ProjectId { get; init; }
 }

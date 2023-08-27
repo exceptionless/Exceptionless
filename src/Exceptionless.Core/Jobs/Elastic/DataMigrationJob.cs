@@ -30,7 +30,7 @@ public class DataMigrationJob : JobBase
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
         var elasticOptions = _configuration.Options;
-        if (elasticOptions.ElasticsearchToMigrate == null)
+        if (elasticOptions.ElasticsearchToMigrate is null)
             return JobResult.CancelledWithMessage($"Please configure the connection string EX_{nameof(elasticOptions.ElasticsearchToMigrate)}.");
 
         var retentionPeriod = _configuration.Events.MaxIndexAge.GetValueOrDefault(TimeSpan.FromDays(180));
@@ -78,7 +78,7 @@ public class DataMigrationJob : JobBase
 
             if (workingTasks.Count < 10 && workItemQueue.TryDequeue(out var dequeuedWorkItem))
             {
-                if (dequeuedWorkItem.CreateIndex != null)
+                if (dequeuedWorkItem.CreateIndex is not null)
                 {
                     try
                     {
@@ -138,7 +138,7 @@ public class DataMigrationJob : JobBase
                 _logger.LogRequest(taskStatus);
 
                 var status = taskStatus?.Task?.Status;
-                if (status == null)
+                if (taskStatus?.Task is null || status is null)
                 {
                     _logger.LogWarning(taskStatus?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
                     if (taskStatus?.ServerError?.Status == 429)
@@ -228,6 +228,9 @@ public class DataMigrationJob : JobBase
     private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd)
     {
         var elasticOptions = _configuration.Options.ElasticsearchToMigrate;
+        if (elasticOptions is null)
+            throw new ArgumentException("ElasticsearchToMigrate options cannot be null");
+
         if (!String.IsNullOrEmpty(elasticOptions.UserName) && !String.IsNullOrEmpty(elasticOptions.Password))
             rsd.Username(elasticOptions.UserName).Password(elasticOptions.Password);
 
@@ -235,9 +238,9 @@ public class DataMigrationJob : JobBase
     }
 }
 
-public class ReindexWorkItem
+public record ReindexWorkItem
 {
-    public ReindexWorkItem(string sourceIndex, string sourceIndexType, string targetIndex, string dateField, Func<Task> createIndex = null, string script = null)
+    public ReindexWorkItem(string sourceIndex, string sourceIndexType, string targetIndex, string dateField, Func<Task>? createIndex = null, string? script = null)
     {
         SourceIndex = sourceIndex;
         SourceIndexType = sourceIndexType;
@@ -247,14 +250,14 @@ public class ReindexWorkItem
         Script = script;
     }
 
-    public string SourceIndex { get; set; }
-    public string SourceIndexType { get; set; }
-    public string TargetIndex { get; set; }
-    public string DateField { get; set; }
-    public Func<Task> CreateIndex { get; set; }
-    public string Script { get; set; }
-    public TaskId TaskId { get; set; }
-    public TaskInfo LastTaskInfo { get; set; }
+    public string SourceIndex { get; init; }
+    public string SourceIndexType { get; init; }
+    public string TargetIndex { get; init; }
+    public string DateField { get; init; }
+    public Func<Task>? CreateIndex { get; init; }
+    public string? Script { get; init; }
+    public TaskId? TaskId { get; set; }
+    public TaskInfo LastTaskInfo { get; set; } = null!;
     public int ConsecutiveStatusErrors { get; set; }
     public int Attempts { get; set; }
 }

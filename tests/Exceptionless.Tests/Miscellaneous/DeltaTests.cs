@@ -29,13 +29,13 @@ public class DeltaTests
         Assert.Equal(delta.Data, msg.Data);
     }
 
-    public class SimpleMessageA
+    public record SimpleMessageA
     {
-        public string Data { get; set; }
+        public required string Data { get; set; }
     }
 
-    public class SimpleMessageB
+    public record SimpleMessageB
     {
-        public string Data { get; set; }
+        public required string Data { get; set; }
     }
 }

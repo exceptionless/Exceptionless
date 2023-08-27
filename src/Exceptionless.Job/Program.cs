@@ -43,12 +43,8 @@ public class Program
     {
         var jobOptions = new JobRunnerOptions(args);
 
-        Console.Title = jobOptions.JobName != null ? $"Exceptionless {jobOptions.JobName} Job" : "Exceptionless Jobs";
-
-        string environment = Environment.GetEnvironmentVariable("EX_AppMode");
-        if (String.IsNullOrWhiteSpace(environment))
-            environment = "Production";
-
+        Console.Title = $"Exceptionless {jobOptions.JobName} Job";
+        string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? "Production";
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
@@ -59,7 +55,7 @@ public class Program
             .Build();
 
         var options = AppOptions.ReadFromConfiguration(config);
-        var apmConfig = new ApmConfig(config, "job-" + jobOptions.JobName.ToLowerUnderscoredWords('-'), options.InformationalVersion, options.CacheOptions.Provider == "redis");
+        var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
         Log.Logger = loggerConfig.CreateLogger();
@@ -89,14 +85,14 @@ public class Program
                             o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
                             o.GetLevel = (context, duration, ex) =>
                             {
-                                if (ex != null || context.Response.StatusCode > 499)
+                                if (ex is not null || context.Response.StatusCode > 499)
                                     return LogEventLevel.Error;
 
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
                             };
                         });
 
-                        Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetService<ILogger<Program>>());
+                        Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetRequiredService<ILogger<Program>>());
 
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                             app.UseExceptionless(ExceptionlessClient.Default);

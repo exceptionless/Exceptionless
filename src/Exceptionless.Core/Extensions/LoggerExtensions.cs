@@ -12,7 +12,7 @@ internal static class LoggerExtensions
         LoggerMessage.Define<string, string, string>(
             LogLevel.Trace,
             new EventId(0, nameof(RecordWebHook)),
-            "Process web hook call: id={Id} project={project} url={Url}");
+            "Process web hook call: id={Id} project={ProjectId} url={Url}");
 
     private static readonly Action<ILogger, Exception?> _webHookCancelled =
         LoggerMessage.Define(
@@ -30,25 +30,25 @@ internal static class LoggerExtensions
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Error,
             new EventId(3, nameof(WebHookTimeout)),
-            "Timeout calling web hook: status={Status} org={organization} project={project} url={Url}");
+            "Timeout calling web hook: status={Status} org={organization} project={ProjectId} url={Url}");
 
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookError =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Error,
             new EventId(4, nameof(WebHookError)),
-            "Error calling web hook: status={Status} org={organization} project={project} url={Url}");
+            "Error calling web hook: status={Status} org={organization} project={ProjectId} url={Url}");
 
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookComplete =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Information,
             new EventId(5, nameof(WebHookError)),
-            "Web hook POST complete: status={Status} org={organization} project={project} url={Url}");
+            "Web hook POST complete: status={Status} org={organization} project={ProjectId} url={Url}");
 
     private static readonly Action<ILogger, string, HttpStatusCode?, string, string, string, Exception?> _webHookDisabledStatusCode =
         LoggerMessage.Define<string, HttpStatusCode?, string, string, string>(
             LogLevel.Warning,
             new EventId(6, nameof(WebHookDisabledStatusCode)),
-            "Disabling Web hook instance {WebHookId} due to status code: status={Status} org={organization} project={project} url={Url}");
+            "Disabling Web hook instance {WebHookId} due to status code: status={Status} org={organization} project={ProjectId} url={Url}");
 
     private static readonly Action<ILogger, string, Exception?> _webHookDisabledTooManyErrors =
         LoggerMessage.Define<string>(

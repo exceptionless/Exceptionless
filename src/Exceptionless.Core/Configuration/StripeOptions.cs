@@ -7,9 +7,9 @@ public class StripeOptions
 {
     public bool EnableBilling => !String.IsNullOrEmpty(StripeApiKey);
 
-    public string StripeApiKey { get; internal set; }
+    public string? StripeApiKey { get; internal set; }
 
-    public string StripeWebHookSigningSecret { get; set; }
+    public string? StripeWebHookSigningSecret { get; set; }
 
     public static StripeOptions ReadFromConfiguration(IConfiguration config)
     {

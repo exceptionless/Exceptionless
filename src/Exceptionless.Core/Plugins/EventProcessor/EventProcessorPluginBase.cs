@@ -5,7 +5,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 
 public abstract class EventProcessorPluginBase : PluginBase, IEventProcessorPlugin
 {
-    public EventProcessorPluginBase(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public EventProcessorPluginBase(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     protected bool ContinueOnError { get; set; }
 

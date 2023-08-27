@@ -15,6 +15,7 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Jobs;
 
@@ -144,6 +145,8 @@ public class EventPostJobTests : IntegrationTestsBase
     public async Task CanRunJobWithMassiveEventAsync()
     {
         var ev = GenerateEvent();
+        ev.Data ??= new DataDictionary();
+
         for (int i = 1; i < 100; i++)
             ev.Data[$"{i}MB"] = new string('0', 1024 * 1000);
 
@@ -180,7 +183,7 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.Equal(1, stats.Abandoned);
     }
 
-    private async Task CreateDataAsync(BillingPlan plan = null)
+    private async Task CreateDataAsync(BillingPlan? plan = null)
     {
         foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
         {
@@ -227,12 +230,12 @@ public class EventPostJobTests : IntegrationTestsBase
         }
     }
 
-    private Task<string> EnqueueEventPostAsync(PersistentEvent ev)
+    private Task<string?> EnqueueEventPostAsync(PersistentEvent ev)
     {
         return EnqueueEventPostAsync(new List<PersistentEvent> { ev });
     }
 
-    private Task<string> EnqueueEventPostAsync(List<PersistentEvent> ev)
+    private Task<string?> EnqueueEventPostAsync(List<PersistentEvent> ev)
     {
         var first = ev.First();
 
@@ -251,7 +254,7 @@ public class EventPostJobTests : IntegrationTestsBase
         return _eventPostService.EnqueueAsync(eventPostInfo, stream);
     }
 
-    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string userIdentity = null, string type = null, string source = null, string sessionId = null)
+    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? source = null, string? sessionId = null)
     {
         occurrenceDate ??= SystemClock.OffsetNow;
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);

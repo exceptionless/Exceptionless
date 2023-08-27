@@ -8,9 +8,9 @@ namespace Exceptionless.Core.Extensions;
 
 public static class OrganizationExtensions
 {
-    public static Invite GetInvite(this Organization organization, string token)
+    public static Invite? GetInvite(this Organization organization, string token)
     {
-        if (organization == null || String.IsNullOrEmpty(token))
+        if (String.IsNullOrEmpty(token))
             return null;
 
         return organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
@@ -87,7 +87,7 @@ public static class OrganizationExtensions
     public static UsageHourInfo GetHourlyUsage(this Organization organization, DateTime date)
     {
         var overage = organization.UsageHours.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfHour());
-        if (overage != null)
+        if (overage is not null)
             return overage;
 
         overage = new UsageHourInfo
@@ -126,7 +126,7 @@ public static class OrganizationExtensions
     {
         var startOfMonth = date.ToUniversalTime().StartOfMonth();
         var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
-        if (usage != null)
+        if (usage is not null)
             return usage;
 
         usage = new UsageInfo

@@ -6,10 +6,10 @@ using Foundatio.Utility;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
-public class ThrottlingOptions
+public record ThrottlingOptions
 {
-    public Func<string, long> MaxRequestsForUserIdentifierFunc { get; set; }
-    public TimeSpan Period { get; set; }
+    public required Func<string, long> MaxRequestsForUserIdentifierFunc { get; set; }
+    public required TimeSpan Period { get; set; }
     public string Message { get; set; } = "The allowed number of requests has been exceeded.";
 }
 
@@ -18,10 +18,10 @@ public class ThrottlingMiddleware
     private readonly ICacheClient _cacheClient;
     private readonly ThrottlingOptions _options;
     private readonly RequestDelegate _next;
-    private static readonly PathString _v1ProjectConfigPath = new PathString("/api/v1/project/config");
-    private static readonly PathString _v2ProjectConfigPath = new PathString("/api/v2/projects/config");
-    private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
-    private static readonly PathString _webSocketPath = new PathString("/api/v2/push");
+    private static readonly PathString _v1ProjectConfigPath = new("/api/v1/project/config");
+    private static readonly PathString _v2ProjectConfigPath = new("/api/v2/projects/config");
+    private static readonly PathString _heartbeatPath = new("/api/v2/events/session/heartbeat");
+    private static readonly PathString _webSocketPath = new("/api/v2/push");
 
 
     public ThrottlingMiddleware(RequestDelegate next, ICacheClient cacheClient, ThrottlingOptions options)
@@ -31,7 +31,7 @@ public class ThrottlingMiddleware
         _options = options;
     }
 
-    protected virtual string GetUserIdentifier(HttpRequest request)
+    protected virtual string? GetUserIdentifier(HttpRequest request)
     {
         var authType = request.GetAuthType();
         if (authType == AuthType.Token)
@@ -40,12 +40,12 @@ public class ThrottlingMiddleware
         if (authType == AuthType.User)
         {
             var user = request.GetUser();
-            if (user != null)
+            if (user is not null)
                 return user.Id;
         }
 
         // fallback to using the IP address
-        string ip = request.GetClientIpAddress();
+        string? ip = request.GetClientIpAddress();
         if (String.IsNullOrEmpty(ip) || ip == "::1")
             ip = "127.0.0.1";
 
@@ -65,7 +65,7 @@ public class ThrottlingMiddleware
             return;
         }
 
-        string identifier = GetUserIdentifier(context.Request);
+        string? identifier = GetUserIdentifier(context.Request);
         if (String.IsNullOrEmpty(identifier))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;

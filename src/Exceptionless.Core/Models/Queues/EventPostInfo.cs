@@ -1,24 +1,24 @@
 ﻿namespace Exceptionless.Core.Queues.Models;
 
-public class EventPostInfo
+public record EventPostInfo
 {
-    public string OrganizationId { get; set; }
-    public string ProjectId { get; set; }
-    public string CharSet { get; set; }
-    public string MediaType { get; set; }
-    public int ApiVersion { get; set; }
-    public string UserAgent { get; set; }
-    public string ContentEncoding { get; set; }
-    public string IpAddress { get; set; }
+    public string OrganizationId { get; init; } = null!;
+    public string ProjectId { get; init; } = null!;
+    public string? CharSet { get; init; }
+    public string? MediaType { get; init; }
+    public int ApiVersion { get; init; }
+    public string? UserAgent { get; init; }
+    public string? ContentEncoding { get; init; }
+    public string? IpAddress { get; init; }
 }
 
-public class EventPost : EventPostInfo
+public record EventPost : EventPostInfo
 {
     public EventPost(bool enableArchive)
     {
         ShouldArchive = enableArchive;
     }
 
-    public bool ShouldArchive { get; set; }
-    public string FilePath { get; set; }
+    public bool ShouldArchive { get; init; }
+    public string FilePath { get; set; } = null!;
 }

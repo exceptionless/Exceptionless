@@ -17,7 +17,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
-    public async Task<User> GetByEmailAddressAsync(string emailAddress)
+    public async Task<User?> GetByEmailAddressAsync(string emailAddress)
     {
         if (String.IsNullOrWhiteSpace(emailAddress))
             return null;
@@ -27,7 +27,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return hit?.Document;
     }
 
-    public async Task<User> GetByPasswordResetTokenAsync(string token)
+    public async Task<User?> GetByPasswordResetTokenAsync(string token)
     {
         if (String.IsNullOrEmpty(token))
             return null;
@@ -36,7 +36,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return hit?.Document;
     }
 
-    public async Task<User> GetUserByOAuthProviderAsync(string provider, string providerUserId)
+    public async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId)
     {
         if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
             return null;
@@ -47,7 +47,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
     }
 
-    public async Task<User> GetByVerifyEmailAddressTokenAsync(string token)
+    public async Task<User?> GetByVerifyEmailAddressTokenAsync(string token)
     {
         if (String.IsNullOrEmpty(token))
             return null;
@@ -57,7 +57,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return hit?.Document;
     }
 
-    public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User> options = null)
+    public Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null)
     {
         if (String.IsNullOrEmpty(organizationId))
             return Task.FromResult(new FindResults<User>());

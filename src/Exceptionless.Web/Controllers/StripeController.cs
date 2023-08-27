@@ -36,7 +36,7 @@ public class StripeController : ExceptionlessApiController
                 return BadRequest();
             }
 
-            Stripe.Event stripeEvent;
+            Event stripeEvent;
             try
             {
                 stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], _stripeOptions.StripeWebHookSigningSecret, throwOnApiVersionMismatch: false);
@@ -47,7 +47,7 @@ public class StripeController : ExceptionlessApiController
                 return BadRequest();
             }
 
-            if (stripeEvent == null)
+            if (stripeEvent is null)
             {
                 _logger.LogWarning("Null stripe event.");
                 return BadRequest();

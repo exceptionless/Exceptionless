@@ -29,7 +29,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         AddPropertyRequiredForRemove(e => e.Date);
     }
 
-    public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent> options = null)
+    public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx[Event.KnownDataKeys.SessionEnd + "-d"]));
         if (createdBeforeUtc.Ticks > 0)
@@ -48,7 +48,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return true;
     }
 
-    public Task<long> RemoveAllAsync(string organizationId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent> options = null)
+    public Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
@@ -73,7 +73,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
-    public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter systemFilter, DateTime? utcStart, DateTime? utcEnd)
+    public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
         var previous = GetPreviousEventIdAsync(ev, systemFilter, utcStart, utcEnd);
         var next = GetNextEventIdAsync(ev, systemFilter, utcStart, utcEnd);
@@ -86,11 +86,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         };
     }
 
-    private async Task<string> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
+    private async Task<string?> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
-        if (ev == null)
-            return null;
-
         var retentionDate = _options.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(_options.MaximumRetentionDays) : DateTime.MinValue;
         if (!utcStart.HasValue || utcStart.Value.IsBefore(retentionDate))
             utcStart = retentionDate;
@@ -130,11 +127,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return index == 0 ? null : unionResults[index - 1].Id;
     }
 
-    private async Task<string> GetNextEventIdAsync(PersistentEvent ev, AppFilter systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
+    private async Task<string?> GetNextEventIdAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
-        if (ev == null)
-            return null;
-
         if (!utcStart.HasValue || utcStart.Value.IsBefore(ev.Date.UtcDateTime))
             utcStart = ev.Date.UtcDateTime;
 
@@ -173,7 +167,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
     }
 
-    public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent> options = null)
+    public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));
@@ -181,7 +175,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Organization(organizationId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
 
-    public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent> options = null)
+    public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }

@@ -37,19 +37,19 @@ public class YamlConfigurationProvider : FileConfigurationProvider
         }
     }
 
-    private static string RetrieveErrorContext(YamlException ex, IEnumerable<string> fileContent)
+    private static string RetrieveErrorContext(YamlException ex, IEnumerable<string?> fileContent)
     {
-        string possibleLineContent = fileContent.Skip(ex.Start.Line - 1).FirstOrDefault();
+        string? possibleLineContent = fileContent.Skip(ex.Start.Line - 1).FirstOrDefault();
         return possibleLineContent ?? String.Empty;
     }
 
-    private static IEnumerable<string> ReadLines(StreamReader streamReader)
+    private static IEnumerable<string?> ReadLines(StreamReader streamReader)
     {
-        string line;
+        string? line;
         do
         {
             line = streamReader.ReadLine();
             yield return line;
-        } while (line != null);
+        } while (line is not null);
     }
 }

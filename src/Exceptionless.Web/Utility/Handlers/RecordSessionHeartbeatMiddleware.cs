@@ -12,7 +12,7 @@ public sealed class RecordSessionHeartbeatMiddleware
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
-    private static readonly PathString _heartbeatPath = new PathString("/api/v2/events/session/heartbeat");
+    private static readonly PathString _heartbeatPath = new("/api/v2/events/session/heartbeat");
 
     public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, AppOptions appOptions, ILogger<ProjectConfigMiddleware> logger)
     {
@@ -38,7 +38,7 @@ public sealed class RecordSessionHeartbeatMiddleware
             return;
         }
 
-        string projectId = context.Request.GetDefaultProjectId();
+        string? projectId = context.Request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;

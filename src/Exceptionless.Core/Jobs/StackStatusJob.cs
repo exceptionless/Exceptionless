@@ -17,7 +17,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _stackRepository = stackRepository;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(10));

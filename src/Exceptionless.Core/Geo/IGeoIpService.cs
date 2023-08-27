@@ -2,5 +2,5 @@
 
 public interface IGeoIpService
 {
-    Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = default);
+    Task<GeoResult?> ResolveIpAsync(string ip, CancellationToken cancellationToken = default);
 }

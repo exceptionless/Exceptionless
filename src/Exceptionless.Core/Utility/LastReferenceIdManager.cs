@@ -2,7 +2,7 @@
 
 public class NullCoreLastReferenceIdManager : ICoreLastReferenceIdManager
 {
-    public string GetLastReferenceId()
+    public string? GetLastReferenceId()
     {
         return null;
     }
@@ -10,5 +10,5 @@ public class NullCoreLastReferenceIdManager : ICoreLastReferenceIdManager
 
 public interface ICoreLastReferenceIdManager
 {
-    string GetLastReferenceId();
+    string? GetLastReferenceId();
 }

@@ -2,16 +2,16 @@
 
 public class StackFrame : Method
 {
-    public string FileName { get; set; }
-    public int LineNumber { get; set; }
-    public int Column { get; set; }
+    public string? FileName { get; set; }
+    public int? LineNumber { get; set; }
+    public int? Column { get; set; }
 
     protected bool Equals(StackFrame other)
     {
         return base.Equals(other) && String.Equals(FileName, other.FileName);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

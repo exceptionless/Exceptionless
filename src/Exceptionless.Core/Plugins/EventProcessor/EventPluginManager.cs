@@ -5,7 +5,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 
 public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
 {
-    public EventPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public EventPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs all of the event plugins startup method.

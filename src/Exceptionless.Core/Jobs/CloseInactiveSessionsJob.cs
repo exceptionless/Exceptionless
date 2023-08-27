@@ -21,7 +21,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastActivity;
 
-    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _eventRepository = eventRepository;
         _cache = cacheClient;
@@ -54,11 +54,11 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
                 var heartbeatResult = await GetHeartbeatAsync(sessionStart).AnyContext();
 
-                bool closeDuplicate = heartbeatResult?.CacheKey != null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
-                if (heartbeatResult?.CacheKey != null && !closeDuplicate)
+                bool closeDuplicate = heartbeatResult?.CacheKey is not null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
+                if (heartbeatResult?.CacheKey is not null && !closeDuplicate)
                     existingSessionHeartbeatIds.Add(heartbeatResult.CacheKey);
 
-                if (heartbeatResult != null && (closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
+                if (heartbeatResult is not null && (closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
                     sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriodUtc);
                 else if (lastActivityUtc <= inactivePeriodUtc)
                     sessionStart.UpdateSessionStart(lastActivityUtc, isSessionEnd: true);
@@ -66,14 +66,14 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                     continue;
 
                 sessionsToUpdate.Add(sessionStart);
-                if (heartbeatResult != null)
+                if (heartbeatResult is not null)
                 {
                     cacheKeysToRemove.Add(heartbeatResult.CacheKey);
                     if (heartbeatResult.Close)
-                        cacheKeysToRemove.Add(heartbeatResult.CacheKey + "-close");
+                        cacheKeysToRemove.Add($"{heartbeatResult.CacheKey}-close");
                 }
 
-                Debug.Assert(sessionStart.Value != null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
+                Debug.Assert(sessionStart.Value is not null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
             }
 
             totalSessions += results.Documents.Count;
@@ -104,13 +104,13 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         return JobResult.Success;
     }
 
-    private async Task<HeartbeatResult> GetHeartbeatAsync(PersistentEvent sessionStart)
+    private async Task<HeartbeatResult?> GetHeartbeatAsync(PersistentEvent sessionStart)
     {
-        string sessionId = sessionStart.GetSessionId();
+        string? sessionId = sessionStart.GetSessionId();
         if (!String.IsNullOrWhiteSpace(sessionId))
         {
             var result = await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}").AnyContext();
-            if (result != null)
+            if (result is not null)
                 return result;
         }
 
@@ -121,12 +121,12 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         return await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}").AnyContext();
     }
 
-    private async Task<HeartbeatResult> GetLastHeartbeatActivityUtcAsync(string cacheKey)
+    private async Task<HeartbeatResult?> GetLastHeartbeatActivityUtcAsync(string cacheKey)
     {
         var cacheValue = await _cache.GetAsync<DateTime>(cacheKey).AnyContext();
         if (cacheValue.HasValue)
         {
-            bool close = await _cache.GetAsync(cacheKey + "-close", false).AnyContext();
+            bool close = await _cache.GetAsync($"{cacheKey}-close", false).AnyContext();
             return new HeartbeatResult { ActivityUtc = cacheValue.Value, Close = close, CacheKey = cacheKey };
         }
 
@@ -135,11 +135,11 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
     public TimeSpan DefaultInactivePeriod { get; set; } = TimeSpan.FromMinutes(5);
 
-    private class HeartbeatResult
+    private record HeartbeatResult
     {
-        public DateTime ActivityUtc { get; set; }
-        public string CacheKey { get; set; }
-        public bool Close { get; set; }
+        public required DateTime ActivityUtc { get; init; }
+        public required string CacheKey { get; init; }
+        public required bool Close { get; init; }
     }
 
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)

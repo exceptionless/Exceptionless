@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <IsPackable>False</IsPackable>
+    <AccelerateBuildsInVisualStudio>false</AccelerateBuildsInVisualStudio>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
@@ -15,8 +16,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Exceptionless.Web\Exceptionless.Web.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <None Update="**\*.json" CopyToOutputDirectory="Always" />
-    <None Update="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

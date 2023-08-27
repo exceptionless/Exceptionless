@@ -20,7 +20,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _options = options;
         _storage = storage;
@@ -36,7 +36,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
     {
         _lastRun = SystemClock.UtcNow;
 
-        string licenseKey = _options.MaxMindGeoIpKey;
+        string? licenseKey = _options.MaxMindGeoIpKey;
         if (String.IsNullOrEmpty(licenseKey))
         {
             _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpKey));
@@ -46,7 +46,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
         try
         {
             var fi = await _storage.GetFileInfoAsync(GEO_IP_DATABASE_PATH).AnyContext();
-            if (fi != null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay()))
+            if (fi is not null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay()))
             {
                 _logger.LogInformation("The GeoIP database is already up-to-date.");
                 return JobResult.Success;

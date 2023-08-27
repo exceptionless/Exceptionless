@@ -31,12 +31,12 @@ public interface IPipelineContext
     /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="ex">The Exception that occurred.</param>
-    void SetError(string message, Exception ex = null);
+    void SetError(string message, Exception? ex = null);
 
     /// <summary>
     /// The error message that occurred during processing.
     /// </summary>
-    string ErrorMessage { get; }
+    string? ErrorMessage { get; }
 
     /// <summary>
     /// Gets or sets the exception that occurred during processing of this context.
@@ -44,7 +44,7 @@ public interface IPipelineContext
     /// <value>
     /// 	<c>Exception</c> if an error occurred during processing; otherwise, <c>null</c>.
     /// </value>
-    Exception Exception { get; }
+    Exception? Exception { get; }
 }
 
 /// <summary>
@@ -71,14 +71,14 @@ public abstract class PipelineContextBase : IPipelineContext
     /// <summary>
     /// Gets a value indicating whether or not this context has gotten an error during processing.
     /// </summary>
-    public bool HasError => ErrorMessage != null || Exception != null;
+    public bool HasError => ErrorMessage is not null || Exception is not null;
 
     /// <summary>
     /// Used to set the context into an errored state with an error message and possibly exception with details.
     /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="ex">The Exception that occurred.</param>
-    public void SetError(string message, Exception ex = null)
+    public void SetError(string message, Exception? ex = null)
     {
         ErrorMessage = message;
         Exception = ex;
@@ -87,7 +87,7 @@ public abstract class PipelineContextBase : IPipelineContext
     /// <summary>
     /// The error message that occurred during processing.
     /// </summary>
-    public string ErrorMessage { get; private set; }
+    public string? ErrorMessage { get; private set; }
 
     /// <summary>
     /// Gets or sets the exception that occurred during processing of this context.
@@ -95,5 +95,5 @@ public abstract class PipelineContextBase : IPipelineContext
     /// <value>
     /// 	<c>Exception</c> if an error occurred during processing; otherwise, <c>null</c>.
     /// </value>
-    public Exception Exception { get; private set; }
+    public Exception? Exception { get; private set; }
 }

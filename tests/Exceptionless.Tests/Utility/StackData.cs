@@ -12,7 +12,7 @@ namespace Exceptionless.Tests.Utility;
 
 internal static class StackData
 {
-    public static IEnumerable<Stack> GenerateStacks(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null)
+    public static IEnumerable<Stack> GenerateStacks(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateStack(generateId, id, organizationId, projectId, type: type);
@@ -32,14 +32,14 @@ internal static class StackData
         return GenerateStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
     }
 
-    public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string type = null, string title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string signatureHash = null)
+    public static Stack GenerateStack(bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null, string? title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string? signatureHash = null)
     {
         var utcNow = SystemClock.UtcNow;
         var stack = new Stack
         {
-            Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
+            Id = (id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id)!,
             OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
-            ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
+            ProjectId = (projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId)!,
             Title = title ?? RandomData.GetTitleWords(),
             Type = type ?? Stack.KnownTypes.Error,
             DateFixed = dateFixed,
@@ -54,7 +54,7 @@ internal static class StackData
         stack.DuplicateSignature = String.Concat(stack.ProjectId, ":", stack.SignatureHash);
 
         if (type == Event.KnownTypes.Error)
-            stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random());
+            stack.SignatureInfo.Add("ExceptionType", TestConstants.ExceptionTypes.Random()!);
 
         for (int i = 0; i < RandomData.GetInt(0, 5); i++)
         {

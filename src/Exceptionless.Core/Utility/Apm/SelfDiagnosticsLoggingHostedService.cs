@@ -17,12 +17,12 @@ public class SelfDiagnosticsLoggingHostedService : IHostedService, IDisposable
         // The sole purpose of this HostedService is to
         // start forwarding the self-diagnostics events
         // to the logger factory
-        this.forwarder = new SelfDiagnosticsEventLogForwarder(this.loggerFactory, minEventLevel);
+        forwarder = new SelfDiagnosticsEventLogForwarder(this.loggerFactory, minEventLevel);
     }
 
     public void Dispose()
     {
-        this.forwarder?.Dispose();
+        forwarder?.Dispose();
     }
 
     public Task StartAsync(CancellationToken cancellationToken)

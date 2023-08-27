@@ -17,7 +17,7 @@ public class QueueNotificationAction : EventPipelineActionBase
     private readonly IWebHookRepository _webHookRepository;
     private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _notificationQueue = notificationQueue;
         _webHookNotificationQueue = webHookNotificationQueue;
@@ -32,7 +32,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (!ctx.Organization.HasPremiumFeatures)
             return;
 
-        if (!ctx.Stack.AllowNotifications)
+        if (ctx.Stack is null || !ctx.Stack.AllowNotifications)
             return;
 
         if (ShouldQueueNotification(ctx))
@@ -50,7 +50,7 @@ public class QueueNotificationAction : EventPipelineActionBase
             if (!ShouldCallWebHook(hook, ctx))
                 continue;
 
-            var context = new WebHookDataContext(hook, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
+            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, ctx.IsNew, ctx.IsRegression);
             var notification = new WebHookNotification
             {
                 OrganizationId = ctx.Event.OrganizationId,
@@ -61,9 +61,14 @@ public class QueueNotificationAction : EventPipelineActionBase
                 Data = await _webHookDataPluginManager.CreateFromEventAsync(context).AnyContext()
             };
 
+            if (notification.Data is null)
+            {
+                _logger.LogTrace("Skipping Web hook: invalid data payload: project={ProjectId} url={Url}", ctx.Event.ProjectId, hook.Url);
+                continue;
+            }
+
             await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
-            using (_logger.BeginScope(new Dictionary<string, object> { { "Web Hook Notification", notification } }))
-                _logger.LogTrace("Web hook queued: project={project} url={Url}", ctx.Event.ProjectId, hook.Url);
+            _logger.LogTrace("Web hook queued: project={ProjectId} url={Url}", ctx.Event.ProjectId, hook.Url);
         }
     }
 

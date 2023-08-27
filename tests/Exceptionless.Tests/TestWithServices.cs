@@ -48,7 +48,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
         Web.Bootstrapper.RegisterServices(services, options, Log);
-        Core.Bootstrapper.RegisterServices(services, options);
+        Bootstrapper.RegisterServices(services, options);
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
     }

@@ -4,15 +4,15 @@ namespace Exceptionless.Core.Extensions;
 
 public static class NameValueCollectionExtensions
 {
-    public static string GetValue(this NameValueCollection collection, string name, string defaultValue = null)
+    public static string? GetValue(this NameValueCollection collection, string name, string? defaultValue = null)
     {
         return collection[name] ?? defaultValue;
     }
 
     public static int? GetInt(this NameValueCollection collection, string name)
     {
-        string value = collection[name];
-        if (value == null)
+        string? value = collection[name];
+        if (value is null)
             return null;
 
         if (Int32.TryParse(value, out int number))
@@ -33,8 +33,8 @@ public static class NameValueCollectionExtensions
 
     public static long? GetInt64(this NameValueCollection collection, string name)
     {
-        string value = collection[name];
-        if (value == null)
+        string? value = collection[name];
+        if (value is null)
             return null;
 
         if (Int64.TryParse(value, out long number))
@@ -45,8 +45,8 @@ public static class NameValueCollectionExtensions
 
     public static bool? GetBool(this NameValueCollection collection, string name)
     {
-        string value = collection[name];
-        if (value == null)
+        string? value = collection[name];
+        if (value is null)
             return null;
 
         if (Boolean.TryParse(value, out bool boolean))
@@ -62,8 +62,8 @@ public static class NameValueCollectionExtensions
 
     public static T GetEnum<T>(this NameValueCollection collection, string name, T? defaultValue = null) where T : struct
     {
-        string value = GetValue(collection, name);
-        if (value == null)
+        string? value = GetValue(collection, name);
+        if (value is null)
         {
             if (defaultValue.HasValue && defaultValue is T)
                 return (T)defaultValue;
@@ -85,19 +85,19 @@ public static class NameValueCollectionExtensions
         }
     }
 
-    public static List<string> GetStringList(this NameValueCollection collection, string name, string defaultValues = null, char[] separators = null)
+    public static List<string>? GetStringList(this NameValueCollection collection, string name, string? defaultValues = null, char[]? separators = null)
     {
-        string value = collection[name];
-        if (value == null && defaultValues == null)
+        string? value = collection[name];
+        if (value is null && defaultValues is null)
             return null;
 
-        if (value == null)
+        if (value is null)
             value = defaultValues;
 
-        if (separators == null)
+        if (separators is null)
             separators = new[] { ',' };
 
-        return value
+        return value?
             .Split(separators, StringSplitOptions.RemoveEmptyEntries)
             .Select(s => s.Trim())
             .ToList();

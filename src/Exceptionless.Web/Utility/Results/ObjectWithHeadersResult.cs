@@ -4,7 +4,7 @@ namespace Exceptionless.Web.Utility.Results;
 
 public class ObjectWithHeadersResult : ObjectResult
 {
-    public ObjectWithHeadersResult(object value, IHeaderDictionary headers) : base(value)
+    public ObjectWithHeadersResult(object? value, IHeaderDictionary? headers) : base(value)
     {
         Headers = headers ?? new HeaderDictionary();
     }
@@ -14,9 +14,6 @@ public class ObjectWithHeadersResult : ObjectResult
     public override void OnFormatting(ActionContext context)
     {
         base.OnFormatting(context);
-
-        if (Headers == null)
-            return;
 
         foreach (var header in Headers)
             context.HttpContext.Response.Headers.Add(header.Key, header.Value);

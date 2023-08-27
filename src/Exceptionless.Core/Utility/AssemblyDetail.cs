@@ -6,28 +6,28 @@ namespace Exceptionless.Core.Utility;
 
 public class AssemblyDetail
 {
-    public string AssemblyName { get; private set; }
+    public string? AssemblyName { get; private set; }
 
-    public string AssemblyTitle { get; private set; }
+    public string? AssemblyTitle { get; private set; }
 
-    public string AssemblyDescription { get; private set; }
+    public string? AssemblyDescription { get; private set; }
 
-    public string AssemblyProduct { get; private set; }
+    public string? AssemblyProduct { get; private set; }
 
-    public string AssemblyCompany { get; private set; }
+    public string? AssemblyCompany { get; private set; }
 
-    public string AssemblyCopyright { get; private set; }
+    public string? AssemblyCopyright { get; private set; }
 
-    public string AssemblyConfiguration { get; private set; }
+    public string? AssemblyConfiguration { get; private set; }
 
-    public string AssemblyVersion { get; private set; }
+    public string? AssemblyVersion { get; private set; }
 
-    public string AssemblyFileVersion { get; private set; }
+    public string? AssemblyFileVersion { get; private set; }
 
-    public string AssemblyInformationalVersion { get; private set; }
+    public string? AssemblyInformationalVersion { get; private set; }
 
 
-    private static readonly ConcurrentDictionary<Assembly, AssemblyDetail> _detailCache = new ConcurrentDictionary<Assembly, AssemblyDetail>();
+    private static readonly ConcurrentDictionary<Assembly, AssemblyDetail> _detailCache = new();
 
     public static AssemblyDetail Extract(Assembly assembly)
     {
@@ -60,7 +60,7 @@ public class AssemblyDetail
 
         foreach (var assembly in assemblies)
         {
-            if (!assembly.FullName.AnyWildcardMatches(new[] { filter }))
+            if (assembly.FullName is null || !assembly.FullName.AnyWildcardMatches(new[] { filter }))
                 continue;
 
             yield return Extract(assembly);

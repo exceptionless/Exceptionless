@@ -14,7 +14,7 @@ public class AllowSynchronousIOMiddleware
     public Task Invoke(HttpContext context)
     {
         var syncIOFeature = context.Features.Get<IHttpBodyControlFeature>();
-        if (syncIOFeature != null)
+        if (syncIOFeature is not null)
             syncIOFeature.AllowSynchronousIO = true;
 
         return _next(context);

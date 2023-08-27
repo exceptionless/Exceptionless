@@ -19,7 +19,7 @@ public class LegacyErrorParserPlugin : PluginBase, IEventParserPlugin
         _settings = settings;
     }
 
-    public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent)
+    public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
     {
         if (apiVersion != 1)
             return null;

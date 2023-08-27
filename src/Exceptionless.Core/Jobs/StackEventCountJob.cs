@@ -16,7 +16,7 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackEventCountJob(StackService stackService, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public StackEventCountJob(StackService stackService, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _stackService = stackService;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(5));

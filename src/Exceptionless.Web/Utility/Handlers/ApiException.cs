@@ -2,7 +2,7 @@
 
 public class ApiException : Exception
 {
-    public ApiException(string message, int statusCode = StatusCodes.Status500InternalServerError, ICollection<ApiErrorItem> errors = null) : base(message)
+    public ApiException(string message, int statusCode = StatusCodes.Status500InternalServerError, ICollection<ApiErrorItem>? errors = null) : base(message)
     {
         StatusCode = statusCode;
         Errors = errors;
@@ -14,5 +14,5 @@ public class ApiException : Exception
     }
 
     public int StatusCode { get; set; }
-    public ICollection<ApiErrorItem> Errors { get; set; }
+    public ICollection<ApiErrorItem>? Errors { get; set; }
 }

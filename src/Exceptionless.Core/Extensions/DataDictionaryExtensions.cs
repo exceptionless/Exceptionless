@@ -6,26 +6,24 @@ namespace Exceptionless.Core.Extensions;
 
 public static class DataDictionaryExtensions
 {
-    public static T GetValue<T>(this DataDictionary extendedData, string key)
+    public static T? GetValue<T>(this DataDictionary extendedData, string key)
     {
-        if (!extendedData.ContainsKey(key))
+        if (!extendedData.TryGetValue(key, out object? data))
             throw new KeyNotFoundException($"Key \"{key}\" not found in the dictionary.");
 
-        object data = extendedData[key];
-        if (data is T)
-            return (T)data;
+        if (data is T value)
+            return value;
 
-        if (data is JObject)
+        if (data is JObject jObject)
         {
             try
             {
-                return ((JObject)data).ToObject<T>();
+                return jObject.ToObject<T>();
             }
             catch { }
         }
 
-        string json = data as string;
-        if (json.IsJson())
+        if (data is string json && json.IsJson())
         {
             try
             {
@@ -36,7 +34,10 @@ public static class DataDictionaryExtensions
 
         try
         {
-            return data.ToType<T>();
+            if (data != null)
+            {
+                return data.ToType<T>();
+            }
         }
         catch { }
 

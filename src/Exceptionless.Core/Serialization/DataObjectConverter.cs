@@ -14,16 +14,16 @@ namespace Exceptionless.Serializer;
 public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData, new()
 {
     private static readonly Type _type = typeof(T);
-    private static readonly ConcurrentDictionary<string, IMemberAccessor> _propertyAccessors = new ConcurrentDictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, Type> _dataTypeRegistry = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, IMemberAccessor> _propertyAccessors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Type> _dataTypeRegistry = new(StringComparer.OrdinalIgnoreCase);
     private readonly ILogger _logger;
     private readonly char[] _filteredChars = { '.', '-', '_' };
 
-    public DataObjectConverter(ILogger logger, IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null)
+    public DataObjectConverter(ILogger logger, IEnumerable<KeyValuePair<string, Type>>? knownDataTypes = null)
     {
         _logger = logger;
 
-        if (knownDataTypes != null)
+        if (knownDataTypes is not null)
             _dataTypeRegistry.AddRange(knownDataTypes);
 
         if (_propertyAccessors.Count != 0)
@@ -38,7 +38,7 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
         _dataTypeRegistry.TryAdd(name, dataType);
     }
 
-    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
     {
         var target = Create(objectType);
         var json = JObject.Load(reader);
@@ -56,7 +56,7 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
             }
 
             var accessor = _propertyAccessors.TryGetValue(propertyName, out var value) ? value : null;
-            if (accessor != null)
+            if (accessor is not null)
             {
                 if (p.Value.Type == JTokenType.None || p.Value.Type == JTokenType.Undefined)
                     continue;
@@ -69,7 +69,7 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
 
                 if (accessor.MemberType == typeof(DateTime))
                 {
-                    if (p.Value.Type == JTokenType.Date || p.Value.Type == JTokenType.String && p.Value.Value<string>().Contains("+"))
+                    if (p.Value.Type == JTokenType.Date || p.Value.Type == JTokenType.String && p.Value.Value<string>()!.Contains("+"))
                     {
                         accessor.SetValue(target, p.Value.ToObject<DateTimeOffset>(serializer).DateTime);
                         continue;
@@ -77,7 +77,7 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
                 }
                 else if (accessor.MemberType == typeof(DateTime?))
                 {
-                    if (p.Value.Type == JTokenType.Date || p.Value.Type == JTokenType.String && p.Value.Value<string>().Contains("+"))
+                    if (p.Value.Type == JTokenType.Date || p.Value.Type == JTokenType.String && p.Value.Value<string>()!.Contains("+"))
                     {
                         var offset = p.Value.ToObject<DateTimeOffset?>(serializer);
                         accessor.SetValue(target, offset?.DateTime);
@@ -97,7 +97,7 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
 
     private void AddDataEntry(JsonSerializer serializer, JProperty p, T target)
     {
-        if (target.Data == null)
+        if (target.Data is null)
             target.Data = new DataDictionary();
 
         string dataKey = GetDataKey(target.Data, p.Name);
@@ -132,16 +132,16 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
         // Add item to data as a JObject, JArray or native type.
         if (p.Value is JObject)
         {
-            target.Data[dataType == null || dataType == typeof(JObject) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JObject>();
+            target.Data[dataType is null || dataType == typeof(JObject) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JObject>();
         }
         else if (p.Value is JArray)
         {
-            target.Data[dataType == null || dataType == typeof(JArray) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JArray>();
+            target.Data[dataType is null || dataType == typeof(JArray) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JArray>();
         }
-        else if (p.Value is JValue && p.Value.Type != JTokenType.String)
+        else if (p.Value is JValue jValue && jValue.Type != JTokenType.String)
         {
-            object value = ((JValue)p.Value).Value;
-            target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+            object? value = jValue.Value;
+            target.Data[dataType is null || dataType == value?.GetType() ? dataKey : unknownTypeDataKey] = value;
         }
         else
         {
@@ -149,21 +149,21 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
             var jsonType = value.GetJsonType();
             if (jsonType == JsonType.Object)
             {
-                if (value.TryFromJson(out JObject obj))
-                    target.Data[dataType == null || dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
+                if (value.TryFromJson(out JObject? obj))
+                    target.Data[dataType is null || dataType == obj?.GetType() ? dataKey : unknownTypeDataKey] = obj;
                 else
-                    target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                    target.Data[dataType is null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
             }
             else if (jsonType == JsonType.Array)
             {
-                if (value.TryFromJson(out JArray obj))
-                    target.Data[dataType == null || dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
+                if (value.TryFromJson(out JArray? obj))
+                    target.Data[dataType is null || dataType == obj?.GetType() ? dataKey : unknownTypeDataKey] = obj;
                 else
-                    target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                    target.Data[dataType is null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
             }
             else
             {
-                target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                target.Data[dataType is null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
             }
         }
     }

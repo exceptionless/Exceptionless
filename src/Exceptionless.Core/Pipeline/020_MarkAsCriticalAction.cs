@@ -6,14 +6,14 @@ namespace Exceptionless.Core.Pipeline;
 [Priority(20)]
 public class MarkAsCriticalAction : EventPipelineActionBase
 {
-    public MarkAsCriticalAction(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory)
+    public MarkAsCriticalAction(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         ContinueOnError = true;
     }
 
     public override Task ProcessAsync(EventContext ctx)
     {
-        if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
+        if (ctx.Stack is null || !ctx.Stack.OccurrencesAreCritical)
             return Task.CompletedTask;
 
         _logger.LogTrace("Marking error as critical.");

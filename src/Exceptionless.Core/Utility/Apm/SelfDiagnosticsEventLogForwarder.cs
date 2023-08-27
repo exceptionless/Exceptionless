@@ -12,11 +12,11 @@ namespace OpenTelemetry.Internal;
 internal class SelfDiagnosticsEventLogForwarder : EventListener
 {
     private const string EventSourceNamePrefix = "OpenTelemetry-";
-    private readonly object lockObj = new object();
+    private readonly object lockObj = new();
     private readonly EventLevel? minEventLevel;
-    private readonly List<EventSource> eventSources = new List<EventSource>();
+    private readonly List<EventSource> eventSources = new();
     private readonly ILoggerFactory loggerFactory;
-    private readonly ConcurrentDictionary<EventSource, ILogger> loggers = new ConcurrentDictionary<EventSource, ILogger>();
+    private readonly ConcurrentDictionary<EventSource, ILogger> loggers = new();
 
     private readonly Func<EventSourceEvent, Exception, string> formatMessage = FormatMessage;
 
@@ -26,12 +26,12 @@ internal class SelfDiagnosticsEventLogForwarder : EventListener
         this.minEventLevel = minEventLevel;
 
         // set initial levels on existing event sources
-        this.SetEventSourceLevels();
+        SetEventSourceLevels();
     }
 
     public override void Dispose()
     {
-        this.StopForwarding();
+        StopForwarding();
         base.Dispose();
     }
 
@@ -39,12 +39,12 @@ internal class SelfDiagnosticsEventLogForwarder : EventListener
     {
         if (eventSource.Name.StartsWith(EventSourceNamePrefix, StringComparison.Ordinal))
         {
-            lock (this.lockObj)
+            lock (lockObj)
             {
-                this.eventSources.Add(eventSource);
+                eventSources.Add(eventSource);
             }
 
-            this.SetEventSourceLevel(eventSource);
+            SetEventSourceLevel(eventSource);
         }
 
         base.OnEventSourceCreated(eventSource);
@@ -56,17 +56,17 @@ internal class SelfDiagnosticsEventLogForwarder : EventListener
     /// <param name="eventData">Data of the EventSource event.</param>
     protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
-        if (this.loggerFactory == null)
+        if (loggerFactory is null)
         {
             return;
         }
 
-        if (!this.loggers.TryGetValue(eventData.EventSource, out var logger))
+        if (!loggers.TryGetValue(eventData.EventSource, out var logger))
         {
-            logger = this.loggers.GetOrAdd(eventData.EventSource, eventSource => this.loggerFactory.CreateLogger(ToLoggerName(eventSource.Name)));
+            logger = loggers.GetOrAdd(eventData.EventSource, eventSource => loggerFactory.CreateLogger(ToLoggerName(eventSource.Name)));
         }
 
-        logger.Log(MapLevel(eventData.Level), new EventId(eventData.EventId, eventData.EventName), new EventSourceEvent(eventData), null, this.formatMessage);
+        logger.Log(MapLevel(eventData.Level), new EventId(eventData.EventId, eventData.EventName), new EventSourceEvent(eventData), null, formatMessage!);
     }
 
     private static string ToLoggerName(string name)
@@ -95,69 +95,80 @@ internal class SelfDiagnosticsEventLogForwarder : EventListener
 
     private EventLevel? GetEventLevel(string category)
     {
-        return this.minEventLevel;
+        return minEventLevel;
     }
 
     private void SetEventSourceLevels()
     {
-        lock (this.lockObj)
+        lock (lockObj)
         {
-            foreach (var eventSource in this.eventSources)
+            foreach (var eventSource in eventSources)
             {
-                this.SetEventSourceLevel(eventSource);
+                SetEventSourceLevel(eventSource);
             }
         }
     }
 
     private void StopForwarding()
     {
-        lock (this.lockObj)
+        lock (lockObj)
         {
-            foreach (var eventSource in this.eventSources)
+            foreach (var eventSource in eventSources)
             {
-                this.DisableEvents(eventSource);
+                DisableEvents(eventSource);
             }
         }
     }
 
     private void SetEventSourceLevel(EventSource eventSource)
     {
-        var eventLevel = this.GetEventLevel(ToLoggerName(eventSource.Name));
+        var eventLevel = GetEventLevel(ToLoggerName(eventSource.Name));
 
         if (eventLevel.HasValue)
         {
-            this.EnableEvents(eventSource, eventLevel.HasValue ? eventLevel.Value : EventLevel.Warning);
+            EnableEvents(eventSource, eventLevel.HasValue ? eventLevel.Value : EventLevel.Warning);
         }
         else
         {
-            this.DisableEvents(eventSource);
+            DisableEvents(eventSource);
         }
     }
 
-    private readonly struct EventSourceEvent : IReadOnlyList<KeyValuePair<string, object>>
+    private readonly struct EventSourceEvent : IReadOnlyList<KeyValuePair<string, object?>>
     {
         public EventSourceEvent(EventWrittenEventArgs eventData)
         {
-            this.EventData = eventData;
+            EventData = eventData;
         }
 
         public EventWrittenEventArgs EventData { get; }
 
-        public int Count => this.EventData.PayloadNames.Count;
+        public int Count => EventData.PayloadNames?.Count ?? 0;
 
-        public KeyValuePair<string, object> this[int index] => new KeyValuePair<string, object>(this.EventData.PayloadNames[index], this.EventData.Payload[index]);
-
-        public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+        public KeyValuePair<string, object?> this[int index]
         {
-            for (int i = 0; i < this.Count; i++)
+            get
             {
-                yield return new KeyValuePair<string, object>(this.EventData.PayloadNames[i], this.EventData.Payload[i]);
+                if (EventData.PayloadNames is [..] collection && collection.Count >= index)
+                {
+                    return new(EventData.PayloadNames[index], EventData.Payload?[index]);
+                }
+
+                throw new IndexOutOfRangeException();
+            }
+        }
+
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                yield return new KeyValuePair<string, object?>(EventData.PayloadNames![i], EventData.Payload?[i]);
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
     }
 }

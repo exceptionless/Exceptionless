@@ -8,12 +8,12 @@ public static class EnumHelper
     /// <param name="type"></param>
     /// <param name="value"></param>
     /// <returns>True if the enum value is defined.</returns>
-    public static bool TryEnumIsDefined(Type type, object value)
+    public static bool TryEnumIsDefined(Type type, object? value)
     {
-        if (type == null || value == null || !type.IsEnum)
+        if (value is null || !type.IsEnum)
             return false;
 
-        // Return true if the value is an enum and is a matching type. 
+        // Return true if the value is an enum and is a matching type.
         if (type == value.GetType())
             return true;
 
@@ -44,7 +44,7 @@ public static class EnumHelper
         // Catch any casting errors that can occur or if 0 is not defined as a default value.
         try
         {
-            if (value is T && Enum.IsDefined(type, (T)value))
+            if (value is T tValue && Enum.IsDefined(type, tValue))
                 return true;
         }
         catch (Exception) { }

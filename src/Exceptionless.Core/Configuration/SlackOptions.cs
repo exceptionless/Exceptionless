@@ -6,9 +6,9 @@ namespace Exceptionless.Core.Configuration;
 
 public class SlackOptions
 {
-    public string SlackId { get; internal set; }
+    public string? SlackId { get; internal set; }
 
-    public string SlackSecret { get; internal set; }
+    public string? SlackSecret { get; internal set; }
 
     public bool EnableSlack => !String.IsNullOrEmpty(SlackId);
 

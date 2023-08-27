@@ -25,7 +25,7 @@ public sealed class EventUpgraderTests : TestWithServices
 
         _upgrader.Upgrade(ctx);
         string expectedContent = File.ReadAllText(Path.ChangeExtension(errorFilePath, ".expected.json"));
-        Assert.Equal(expectedContent, ctx.Documents.First.ToString());
+        Assert.Equal(expectedContent, ctx.Documents.First?.ToString());
 
         var events = _parser.ParseEvents(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
         Assert.Single(events);

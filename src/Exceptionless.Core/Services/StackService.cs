@@ -14,11 +14,11 @@ public class StackService
     private readonly ICacheClient _cache;
     private readonly TimeSpan _expireTimeout = TimeSpan.FromHours(12);
 
-    public StackService(IStackRepository stackRepository, ICacheClient cache, ILoggerFactory loggerFactory = null)
+    public StackService(IStackRepository stackRepository, ICacheClient cache, ILoggerFactory loggerFactory)
     {
         _stackRepository = stackRepository;
         _cache = cache;
-        _logger = loggerFactory?.CreateLogger<UsageService>() ?? NullLogger<UsageService>.Instance;
+        _logger = loggerFactory.CreateLogger<UsageService>() ?? NullLogger<UsageService>.Instance;
     }
 
     public async Task IncrementStackUsageAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count)

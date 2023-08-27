@@ -4,15 +4,10 @@ namespace Exceptionless.Core.Models.Data;
 
 public class Error : InnerError
 {
-    public Error()
-    {
-        Modules = new ModuleCollection();
-    }
-
     /// <summary>
     /// Any modules that were loaded / referenced when the error occurred.
     /// </summary>
-    public ModuleCollection Modules { get; set; }
+    public ModuleCollection Modules { get; set; } = new();
 
     public static class KnownDataKeys
     {
@@ -25,7 +20,7 @@ public class Error : InnerError
         return base.Equals(other) && Modules.CollectionEquals(other.Modules);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;

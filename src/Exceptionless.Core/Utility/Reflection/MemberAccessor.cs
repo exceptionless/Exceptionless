@@ -40,13 +40,13 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// <returns>
     /// The member value for the instance parameter.
     /// </returns>
-    public abstract object GetValue(object instance);
+    public abstract object? GetValue(object instance);
     /// <summary>
     /// Sets the value of the member.
     /// </summary>
     /// <param name="instance">The object whose member value will be set.</param>
     /// <param name="value">The new value for this member.</param>
-    public abstract void SetValue(object instance, object value);
+    public abstract void SetValue(object instance, object? value);
 
     /// <summary>
     /// Determines whether the specified <see cref="IMemberAccessor"/> is equal to this instance.
@@ -55,7 +55,7 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// <returns>
     /// 	<c>true</c> if the specified <see cref="IMemberAccessor"/> is equal to this instance; otherwise, <c>false</c>.
     /// </returns>
-    public bool Equals(IMemberAccessor other)
+    public bool Equals(IMemberAccessor? other)
     {
         if (other is null)
             return false;
@@ -72,7 +72,7 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// <returns>
     /// 	<c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.
     /// </returns>
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null)
             return false;
@@ -88,7 +88,7 @@ internal abstract class MemberAccessor : IMemberAccessor, IEquatable<IMemberAcce
     /// Returns a hash code for this instance.
     /// </summary>
     /// <returns>
-    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
     /// </returns>
     public override int GetHashCode()
     {

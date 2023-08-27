@@ -1,8 +1,8 @@
 ﻿namespace Exceptionless.Core.Messaging.Models;
 
-public class ReleaseNotification
+public record ReleaseNotification
 {
-    public bool Critical { get; set; }
-    public DateTime Date { get; set; }
-    public string Message { get; set; }
+    public required bool Critical { get; set; }
+    public required DateTime Date { get; set; }
+    public required string? Message { get; set; }
 }

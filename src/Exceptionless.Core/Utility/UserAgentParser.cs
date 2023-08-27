@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Utility;
 
 public sealed class UserAgentParser
 {
-    private static readonly Lazy<Parser> _parser = new Lazy<Parser>(() => Parser.GetDefault());
+    private static readonly Lazy<Parser> _parser = new(() => Parser.GetDefault());
     private readonly InMemoryCacheClient _localCache;
     private readonly ILogger _logger;
 
@@ -17,7 +17,7 @@ public sealed class UserAgentParser
         _logger = loggerFactory.CreateLogger<UserAgentParser>();
     }
 
-    public async Task<ClientInfo> ParseAsync(string userAgent)
+    public async Task<ClientInfo?> ParseAsync(string userAgent)
     {
         if (String.IsNullOrEmpty(userAgent))
             return null;
@@ -26,7 +26,7 @@ public sealed class UserAgentParser
         if (cacheValue.HasValue)
             return cacheValue.Value;
 
-        ClientInfo info = null;
+        ClientInfo? info = null;
         try
         {
             info = _parser.Value.Parse(userAgent);

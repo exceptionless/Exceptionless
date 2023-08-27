@@ -2,7 +2,7 @@
 
 public class DocumentNotFoundException : ApplicationException
 {
-    public DocumentNotFoundException(string id, string message = null) : base(message)
+    public DocumentNotFoundException(string id, string? message = null) : base(message)
     {
         Id = id;
     }

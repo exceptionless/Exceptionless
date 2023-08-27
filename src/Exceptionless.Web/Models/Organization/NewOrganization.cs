@@ -1,6 +1,6 @@
 ﻿namespace Exceptionless.Web.Models;
 
-public class NewOrganization
+public record NewOrganization
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }

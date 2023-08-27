@@ -18,22 +18,19 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
         _delimiters = delimiters;
     }
 
-    public char[] Delimiters => _delimiters;
-
     public override ValueProviderResult GetValue(string key)
     {
-        if (key == null)
+        if (key is null)
             throw new ArgumentNullException(nameof(key));
 
         var values = _queryCollection[key];
         if (values.Count == 0)
             return ValueProviderResult.None;
 
-        if (!values.Any(x => _delimiters.Any(x.Contains)))
+        if (!values.Any(x => x != null && _delimiters.Any(x.Contains)))
             return new ValueProviderResult(values, _culture);
 
-        var stringValues = new StringValues(values.SelectMany(x => x.Split(_delimiters, StringSplitOptions.RemoveEmptyEntries)).ToArray());
-
+        var stringValues = new StringValues(values.SelectMany(x => x?.Split(_delimiters, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>()).ToArray());
         return new ValueProviderResult(stringValues, _culture);
     }
 }
@@ -47,15 +44,12 @@ public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
 
     public DelimitedQueryStringValueProviderFactory(params char[] delimiters)
     {
-        if (delimiters == null || delimiters.Length == 0)
-            _delimiters = DefaultDelimiters;
-        else
-            _delimiters = delimiters;
+        _delimiters = delimiters.Length == 0 ? DefaultDelimiters : delimiters;
     }
 
     public Task CreateValueProviderAsync(ValueProviderFactoryContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         var valueProvider = new DelimitedQueryStringValueProvider(BindingSource.Query, context.ActionContext.HttpContext.Request.Query, CultureInfo.InvariantCulture, _delimiters);
@@ -78,13 +72,13 @@ public class DelimitedQueryStringAttribute : Attribute, IResourceFilter
 
     public void OnResourceExecuted(ResourceExecutedContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
     }
 
     public void OnResourceExecuting(ResourceExecutingContext context)
     {
-        if (context == null)
+        if (context is null)
             throw new ArgumentNullException(nameof(context));
 
         context.ValueProviderFactories.AddDelimitedValueProviderFactory(_delimiters);
@@ -97,7 +91,7 @@ public static class ValueProviderFactoriesExtensions
     {
         var queryStringValueProviderFactory = valueProviderFactories.OfType<QueryStringValueProviderFactory>().FirstOrDefault();
 
-        if (queryStringValueProviderFactory == null)
+        if (queryStringValueProviderFactory is null)
         {
             valueProviderFactories.Insert(0, new DelimitedQueryStringValueProviderFactory(delimiters));
         }

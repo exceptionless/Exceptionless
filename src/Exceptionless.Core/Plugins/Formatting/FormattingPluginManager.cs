@@ -5,7 +5,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 
 public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 {
-    public FormattingPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null) : base(serviceProvider, options, loggerFactory) { }
+    public FormattingPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
@@ -17,7 +17,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             try
             {
                 var result = plugin.GetStackSummaryData(stack);
-                if (result != null)
+                if (result is not null)
                     return result;
             }
             catch (Exception ex)
@@ -26,7 +26,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
         }
 
-        return null;
+        throw new InvalidOperationException();
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             try
             {
                 var result = plugin.GetEventSummaryData(ev);
-                if (result != null)
+                if (result is not null)
                     return result;
             }
             catch (Exception ex)
@@ -48,7 +48,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
         }
 
-        return null;
+        throw new InvalidOperationException();
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
         {
             try
             {
-                string result = plugin.GetStackTitle(ev);
+                string? result = plugin.GetStackTitle(ev);
                 if (!String.IsNullOrEmpty(result))
                     return result;
             }
@@ -70,7 +70,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
         }
 
-        return null;
+        throw new InvalidOperationException();
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             try
             {
                 var result = plugin.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
-                if (result != null)
+                if (result is not null)
                     return result;
             }
             catch (Exception ex)
@@ -92,7 +92,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
         }
 
-        return null;
+        throw new InvalidOperationException();
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             try
             {
                 var message = plugin.GetSlackEventNotification(ev, project, isCritical, isNew, isRegression);
-                if (message != null)
+                if (message is not null)
                     return message;
             }
             catch (Exception ex)
@@ -114,6 +114,6 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
         }
 
-        return null;
+        throw new InvalidOperationException();
     }
 }

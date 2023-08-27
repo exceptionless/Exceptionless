@@ -46,12 +46,7 @@ namespace Exceptionless.Core.Repositories.Queries
 {
     public class OrganizationQueryBuilder : IElasticQueryBuilder
     {
-        private readonly string _organizationIdFieldName;
-
-        public OrganizationQueryBuilder()
-        {
-            _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
-        }
+        private readonly string _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
         {

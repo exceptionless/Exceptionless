@@ -177,10 +177,10 @@ public class Bootstrapper
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
 
-        services.AddTransient<AutoMapper.Profile, CoreMappings>();
+        services.AddTransient<Profile, CoreMappings>();
         services.AddSingleton<IMapper>(s =>
         {
-            var profiles = s.GetServices<AutoMapper.Profile>();
+            var profiles = s.GetServices<Profile>();
             var c = new MapperConfiguration(cfg =>
             {
                 cfg.ConstructServicesUsing(s.GetRequiredService);

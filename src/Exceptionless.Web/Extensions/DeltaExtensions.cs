@@ -11,6 +11,6 @@ public static class DeltaExtensions
             return false;
 
         var expression = action.Body as MemberExpression ?? ((UnaryExpression)action.Body).Operand as MemberExpression;
-        return expression != null && value.GetChangedPropertyNames().Contains(expression.Member.Name);
+        return expression is not null && value.GetChangedPropertyNames().Contains(expression.Member.Name);
     }
 }

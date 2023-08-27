@@ -16,14 +16,14 @@ public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase
     private readonly IEventRepository _eventRepository;
     private readonly ILockProvider _lockProvider;
 
-    public SetProjectIsConfiguredWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public SetProjectIsConfiguredWorkItemHandler(IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _projectRepository = projectRepository;
         _eventRepository = eventRepository;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         string cacheKey = $"{nameof(SetProjectIsConfiguredWorkItemHandler)}:{((SetProjectIsConfiguredWorkItem)workItem).ProjectId}";
         return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
@@ -32,10 +32,10 @@ public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
-        Log.LogInformation("Setting Is Configured for project: {project}", workItem.ProjectId);
+        Log.LogInformation("Setting Is Configured for project: {ProjectId}", workItem.ProjectId);
 
         var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
-        if (project == null || project.IsConfigured.GetValueOrDefault())
+        if (project is null || project.IsConfigured.GetValueOrDefault())
             return;
 
         project.IsConfigured = workItem.IsConfigured || await _eventRepository.CountAsync(q => q.Project(project.Id)).AnyContext() > 0;

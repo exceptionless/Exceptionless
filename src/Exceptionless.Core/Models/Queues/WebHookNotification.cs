@@ -1,13 +1,13 @@
 ﻿namespace Exceptionless.Core.Queues.Models;
 
-public class WebHookNotification
+public record WebHookNotification
 {
-    public string OrganizationId { get; set; }
-    public string ProjectId { get; set; }
-    public string WebHookId { get; set; }
-    public WebHookType Type { get; set; } = WebHookType.General;
-    public string Url { get; set; }
-    public object Data { get; set; }
+    public required string OrganizationId { get; set; }
+    public required string ProjectId { get; set; }
+    public string? WebHookId { get; set; }
+    public required WebHookType Type { get; set; } = WebHookType.General;
+    public required string Url { get; set; }
+    public required object? Data { get; set; }
 }
 
 public enum WebHookType

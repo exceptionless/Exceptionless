@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Queries.Validation;
 
 public sealed class StackQueryValidator : AppQueryValidator
 {
-    private readonly HashSet<string> _freeQueryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+    private readonly HashSet<string> _freeQueryFields = new(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
             StackIndex.Alias.LastOccurrence,
@@ -22,7 +22,7 @@ public sealed class StackQueryValidator : AppQueryValidator
             "project_id"
         };
 
-    private static readonly HashSet<string> _freeAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+    private static readonly HashSet<string> _freeAggregationFields = new(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
             StackIndex.Alias.LastOccurrence,
@@ -33,7 +33,7 @@ public sealed class StackQueryValidator : AppQueryValidator
             StackIndex.Alias.Type
         };
 
-    private static readonly HashSet<string> _allowedAggregationFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+    private static readonly HashSet<string> _allowedAggregationFields = new(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
             StackIndex.Alias.LastOccurrence,

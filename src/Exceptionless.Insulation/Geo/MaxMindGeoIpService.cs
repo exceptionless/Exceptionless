@@ -16,7 +16,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
     private readonly InMemoryCacheClient _localCache;
     private readonly IFileStorage _storage;
     private readonly ILogger _logger;
-    private DatabaseReader _database;
+    private DatabaseReader? _database;
     private DateTime? _databaseLastChecked;
 
     public MaxMindGeoIpService(IFileStorage storage, ILoggerFactory loggerFactory)
@@ -26,7 +26,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         _logger = loggerFactory.CreateLogger<MaxMindGeoIpService>();
     }
 
-    public async Task<GeoResult> ResolveIpAsync(string ip, CancellationToken cancellationToken = new CancellationToken())
+    public async Task<GeoResult?> ResolveIpAsync(string ip, CancellationToken cancellationToken = new())
     {
         if (String.IsNullOrEmpty(ip) || (!ip.Contains(".") && !ip.Contains(":")))
             return null;
@@ -35,18 +35,18 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         if (ip.IsPrivateNetwork())
             return null;
 
-        var cacheValue = await _localCache.GetAsync<GeoResult>(ip).AnyContext();
+        var cacheValue = await _localCache.GetAsync<GeoResult?>(ip).AnyContext();
         if (cacheValue.HasValue)
             return cacheValue.Value;
 
-        GeoResult result = null;
+        GeoResult? result = null;
         var database = await GetDatabaseAsync(cancellationToken).AnyContext();
-        if (database == null)
+        if (database is null)
             return null;
 
         try
         {
-            if (database.TryCity(ip, out var city) && city?.Location != null)
+            if (database.TryCity(ip, out var city) && city?.Location is not null)
             {
                 result = new GeoResult
                 {
@@ -66,7 +66,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
             if (ex is GeoIP2Exception)
             {
                 _logger.LogTrace(ex, ex.Message);
-                await _localCache.SetAsync<GeoResult>(ip, null).AnyContext();
+                await _localCache.SetAsync<GeoResult?>(ip, null).AnyContext();
             }
             else
             {
@@ -77,16 +77,16 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         }
     }
 
-    private async Task<DatabaseReader> GetDatabaseAsync(CancellationToken cancellationToken)
+    private async Task<DatabaseReader?> GetDatabaseAsync(CancellationToken cancellationToken)
     {
         // Try to load the new database from disk if the current one is a day old.
-        if (_database != null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < SystemClock.UtcNow.SubtractDays(1))
+        if (_database is not null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < SystemClock.UtcNow.SubtractDays(1))
         {
             _database.Dispose();
             _database = null;
         }
 
-        if (_database != null)
+        if (_database is not null)
             return _database;
 
         if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= SystemClock.UtcNow.SubtractSeconds(30))
@@ -116,7 +116,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
     public void Dispose()
     {
-        if (_database == null)
+        if (_database is null)
             return;
 
         _database.Dispose();

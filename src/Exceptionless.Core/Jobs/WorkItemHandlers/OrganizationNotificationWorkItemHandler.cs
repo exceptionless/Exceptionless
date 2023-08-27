@@ -21,7 +21,7 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
     private readonly IMessageSubscriber _subscriber;
     private readonly ILogger _logger;
 
-    public EnqueueOrganizationNotificationOnPlanOverage(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, ILoggerFactory loggerFactory = null)
+    public EnqueueOrganizationNotificationOnPlanOverage(IQueue<WorkItemData> workItemQueue, IMessageSubscriber subscriber, ILoggerFactory loggerFactory)
     {
         _workItemQueue = workItemQueue;
         _subscriber = subscriber;
@@ -51,7 +51,7 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
     private readonly IMailer _mailer;
     private readonly ILockProvider _lockProvider;
 
-    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
@@ -69,7 +69,7 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
             Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
 
             var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache()).AnyContext();
-            if (organization == null)
+            if (organization is null)
                 return;
 
             if (wi.IsOverMonthlyLimit)

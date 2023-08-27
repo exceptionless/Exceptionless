@@ -1,8 +1,8 @@
 ﻿namespace Exceptionless.Core.Models.WorkItems;
 
-public class OrganizationNotificationWorkItem
+public record OrganizationNotificationWorkItem
 {
-    public string OrganizationId { get; set; }
-    public bool IsOverHourlyLimit { get; set; }
-    public bool IsOverMonthlyLimit { get; set; }
+    public required string OrganizationId { get; init; }
+    public required bool IsOverHourlyLimit { get; init; }
+    public required bool IsOverMonthlyLimit { get; init; }
 }

@@ -44,7 +44,7 @@ public class OrganizationService : IStartupAction
     {
         foreach (var doc in args.Documents)
         {
-            if (doc.Original != null)
+            if (doc.Original is not null)
             {
                 await _usageService.HandleOrganizationChange(doc.Value, doc.Original);
 
@@ -72,7 +72,7 @@ public class OrganizationService : IStartupAction
         }
     }
 
-    public async Task<long> RemoveUsersAsync(Organization organization, string currentUserId)
+    public async Task<long> RemoveUsersAsync(Organization organization, string? currentUserId)
     {
         var users = await _userRepository.GetByOrganizationIdAsync(organization.Id, o => o.PageLimit(1000)).AnyContext();
         foreach (var user in users.Documents)

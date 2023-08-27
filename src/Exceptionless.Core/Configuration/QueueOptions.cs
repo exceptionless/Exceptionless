@@ -7,21 +7,19 @@ namespace Exceptionless.Core.Configuration;
 
 public class QueueOptions
 {
-    public string ConnectionString { get; internal set; }
-    public string Provider { get; internal set; }
-    public Dictionary<string, string> Data { get; internal set; }
+    public string? ConnectionString { get; internal set; }
+    public string? Provider { get; internal set; }
+    public Dictionary<string, string> Data { get; internal set; } = null!;
 
-    public string Scope { get; internal set; }
-    public string ScopePrefix { get; internal set; }
+    public string Scope { get; internal set; } = null!;
+    public string ScopePrefix { get; internal set; } = null!;
 
     public static QueueOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
     {
-        var options = new QueueOptions();
+        var options = new QueueOptions { Scope = appOptions.AppScope };
+        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
 
-        options.Scope = appOptions.AppScope;
-        options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? options.Scope + "-" : String.Empty;
-
-        string cs = config.GetConnectionString("Queue");
+        string? cs = config.GetConnectionString("Queue");
         options.Data = cs.ParseConnectionString();
         options.Provider = options.Data.GetString(nameof(options.Provider));
 

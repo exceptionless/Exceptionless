@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
@@ -25,14 +26,14 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     protected readonly string _metricPrefix;
     protected readonly ILogger _logger;
 
-    public PipelineBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory = null)
+    public PipelineBase(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory)
     {
         _serviceProvider = serviceProvider;
         _options = options;
 
         var type = GetType();
         _metricPrefix = String.Concat(type.Name.ToLower(), ".");
-        _logger = loggerFactory?.CreateLogger(type);
+        _logger = loggerFactory.CreateLogger(type);
 
         _actions = LoadDefaultActions();
     }
@@ -104,7 +105,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
 
             try
             {
-                actions.Add((IPipelineAction<TContext>)_serviceProvider.GetService(type));
+                actions.Add((IPipelineAction<TContext>)_serviceProvider.GetRequiredService(type));
             }
             catch (Exception ex)
             {

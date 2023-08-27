@@ -24,7 +24,7 @@ public class MessageService : IDisposable, IStartupAction
         _eventRepository = eventRepository;
         _connectionMapping = connectionMapping;
         _options = options;
-        _logger = loggerFactory?.CreateLogger<MessageService>() ?? NullLogger<MessageService>.Instance;
+        _logger = loggerFactory.CreateLogger<MessageService>() ?? NullLogger<MessageService>.Instance;
     }
 
     public Task RunAsync(CancellationToken shutdownToken = default)

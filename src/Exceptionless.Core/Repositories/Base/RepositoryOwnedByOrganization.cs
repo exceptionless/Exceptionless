@@ -14,7 +14,7 @@ public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRep
         AddPropertyRequiredForRemove(o => o.OrganizationId);
     }
 
-    public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T> options = null)
+    public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T>? options = null)
     {
         if (String.IsNullOrEmpty(organizationId))
             throw new ArgumentNullException(nameof(organizationId));

@@ -45,8 +45,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [HttpGet("me")]
     public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
     {
+        if (CurrentUser is null)
+            return NotFound();
+
         var currentUser = await GetModelAsync(CurrentUser.Id);
-        if (currentUser == null)
+        if (currentUser is null)
             return NotFound();
 
         return Ok(new ViewCurrentUser(currentUser, _intercomOptions));
@@ -77,7 +80,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return NotFound();
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        if (organization == null)
+        if (organization is null)
             return NotFound();
 
         page = GetPage(page);
@@ -127,7 +130,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        return DeleteImplAsync(new[] { CurrentUser.Id });
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? new[] { CurrentUser.Id } : Array.Empty<string>();
+        return DeleteImplAsync(userIds);
     }
 
     /// <summary>
@@ -157,15 +161,15 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         email = email.Trim().ToLowerInvariant();
-        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
         // Only allow 3 email address updates per hour period by a single user.
-        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser.Id}:attempts";
+        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser?.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
             return BadRequest("Update email address rate limit reached. Please try updating later.");
@@ -214,10 +218,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> VerifyAsync(string token)
     {
         var user = await _repository.GetByVerifyEmailAddressTokenAsync(token);
-        if (user == null)
+        if (user is null)
         {
             // The user may already be logged in and verified.
-            if (CurrentUser != null && CurrentUser.IsEmailAddressVerified)
+            if (CurrentUser is not null && CurrentUser.IsEmailAddressVerified)
                 return Ok();
 
             return NotFound();
@@ -241,7 +245,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> ResendVerificationEmailAsync(string id)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         if (!user.IsEmailAddressVerified)
@@ -287,7 +291,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> AddAdminRoleAsync(string id)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
@@ -305,7 +309,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> DeleteAdminRoleAsync(string id)
     {
         var user = await GetModelAsync(id, false);
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
@@ -323,14 +327,17 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return false;
 
         email = email.Trim().ToLowerInvariant();
-        if (CurrentUser != null && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (CurrentUser is not null && String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return true;
 
-        return await _repository.GetByEmailAddressAsync(email) == null;
+        return await _repository.GetByEmailAddressAsync(email) is null;
     }
 
-    protected override async Task<User> GetModelAsync(string id, bool useCache = true)
+    protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
     {
+        if (CurrentUser is null)
+            return null;
+
         if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
             return await base.GetModelAsync(id, useCache);
 
@@ -339,6 +346,9 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
     {
+        if (CurrentUser is null)
+            return base.GetModelsAsync(Array.Empty<string>());
+
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);
 
@@ -350,7 +360,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (value.OrganizationIds.Count > 0)
             return PermissionResult.DenyWithMessage("Please delete or leave any organizations before deleting your account.");
 
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser?.Id)
             return PermissionResult.Deny;
 
         return await base.CanDeleteAsync(value);

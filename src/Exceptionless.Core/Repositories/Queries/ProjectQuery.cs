@@ -39,12 +39,7 @@ namespace Exceptionless.Core.Repositories.Queries
 {
     public class ProjectQueryBuilder : IElasticQueryBuilder
     {
-        private readonly string _projectIdFieldName;
-
-        public ProjectQueryBuilder()
-        {
-            _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
-        }
+        private readonly string _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
 
         public Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()
         {

@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Pipeline;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -7,11 +8,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 [Priority(0)]
 public class GetVersion : PluginBase, IEventUpgraderPlugin
 {
-    public GetVersion(AppOptions options, ILoggerFactory loggerFactory = null) : base(options, loggerFactory) { }
+    public GetVersion(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     public void Upgrade(EventUpgraderContext ctx)
     {
-        if (ctx.Version != null)
+        if (ctx.Version is not null)
             return;
 
         if (ctx.Documents.Count == 0 || !ctx.Documents.First().HasValues)
@@ -21,27 +22,32 @@ public class GetVersion : PluginBase, IEventUpgraderPlugin
         }
 
         var doc = ctx.Documents.First();
-        if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["Version"] == null)
+        if (!(doc["ExceptionlessClientInfo"] is JObject { HasValues: true } clientInfo) || clientInfo["Version"] is null)
         {
             ctx.Version = new Version();
             return;
         }
 
-        if (clientInfo["Version"].ToString().Contains(" "))
+        string? version = clientInfo.GetPropertyStringValue("Version");
+        if (String.IsNullOrEmpty(version))
         {
-            string version = clientInfo["Version"].ToString().Split(' ').First();
-            ctx.Version = new Version(version);
+            ctx.Version = new Version();
             return;
         }
 
-        if (clientInfo["Version"].ToString().Contains("-"))
+        if (version.Contains(" "))
         {
-            string version = clientInfo["Version"].ToString().Split('-').First();
-            ctx.Version = new Version(version);
+            ctx.Version = new Version(version.Split(' ').First());
+            return;
+        }
+
+        if (version.Contains("-"))
+        {
+            ctx.Version = new Version(version.Split('-').First());
             return;
         }
 
         // old version format
-        ctx.Version = new Version(clientInfo["Version"].ToString());
+        ctx.Version = new Version(version);
     }
 }

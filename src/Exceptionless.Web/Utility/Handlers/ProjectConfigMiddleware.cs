@@ -40,7 +40,7 @@ public sealed class ProjectConfigMiddleware
             return;
         }
 
-        string projectId = context.Request.GetDefaultProjectId();
+        string? projectId = context.Request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -48,7 +48,7 @@ public sealed class ProjectConfigMiddleware
         }
 
         var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
-        if (project == null)
+        if (project is null)
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             return;

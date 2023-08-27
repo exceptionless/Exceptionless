@@ -8,9 +8,9 @@ namespace Exceptionless.Web.Hubs;
 
 public class WebSocketConnectionManager : IDisposable
 {
-    private static readonly ArraySegment<byte> _keepAliveMessage = new ArraySegment<byte>(Encoding.ASCII.GetBytes("{}"), 0, 2);
-    private readonly ConcurrentDictionary<string, WebSocket> _connections = new ConcurrentDictionary<string, WebSocket>();
-    private readonly Timer _timer;
+    private static readonly ArraySegment<byte> _keepAliveMessage = new(Encoding.ASCII.GetBytes("{}"), 0, 2);
+    private readonly ConcurrentDictionary<string, WebSocket> _connections = new();
+    private readonly Timer? _timer;
     private readonly JsonSerializerSettings _serializerSettings;
     private readonly ILogger _logger;
 
@@ -24,9 +24,9 @@ public class WebSocketConnectionManager : IDisposable
         _timer = new Timer(KeepAlive, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
 
-    private void KeepAlive(object state)
+    private void KeepAlive(object? state)
     {
-        if (_connections.IsEmpty && _connections.Count == 0)
+        if (_connections is { IsEmpty: true, Count: 0 })
             return;
 
         Task.Factory.StartNew(async () =>
@@ -57,7 +57,7 @@ public class WebSocketConnectionManager : IDisposable
         });
     }
 
-    public WebSocket GetWebSocketById(string connectionId)
+    public WebSocket? GetWebSocketById(string connectionId)
     {
         return _connections.TryGetValue(connectionId, out var socket) ? socket : null;
     }
@@ -146,12 +146,17 @@ public class WebSocketConnectionManager : IDisposable
 
     public Task SendMessageAsync(string connectionId, object message)
     {
-        return SendMessageAsync(GetWebSocketById(connectionId), message);
+        var socket = GetWebSocketById(connectionId);
+        return socket is not null ? SendMessageAsync(socket, message) : Task.CompletedTask;
     }
 
     public Task SendMessageAsync(IEnumerable<string> connectionIds, object message)
     {
-        return Task.WhenAll(connectionIds.Select(id => SendMessageAsync(GetWebSocketById(id), message)));
+        return Task.WhenAll(connectionIds.Select(id =>
+        {
+            var socket = GetWebSocketById(id);
+            return socket is not null ? SendMessageAsync(socket, message) : Task.CompletedTask;
+        }));
     }
 
     public async Task SendMessageToAllAsync(object message, bool throwOnError = true)
@@ -175,7 +180,7 @@ public class WebSocketConnectionManager : IDisposable
 
     private bool CanSendWebSocketMessage(WebSocket socket)
     {
-        return socket != null && socket.State != WebSocketState.Aborted && socket.State != WebSocketState.Closed && socket.State != WebSocketState.CloseSent;
+        return socket.State != WebSocketState.Aborted && socket.State != WebSocketState.Closed && socket.State != WebSocketState.CloseSent;
     }
 
     public void Dispose()

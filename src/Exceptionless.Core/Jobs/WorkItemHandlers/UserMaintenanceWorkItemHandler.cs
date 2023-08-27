@@ -17,13 +17,13 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
     private readonly IUserRepository _userRepository;
     private readonly ILockProvider _lockProvider;
 
-    public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory = null) : base(loggerFactory)
+    public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _userRepository = userRepository;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new CancellationToken())
+    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         return _lockProvider.AcquireAsync(nameof(UserMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
@@ -60,9 +60,9 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 
     private void NormalizeUser(User user)
     {
-        user.FullName = user.FullName?.Trim();
+        user.FullName = user.FullName.Trim();
 
-        string email = user.EmailAddress?.Trim().ToLowerInvariant();
+        string email = user.EmailAddress.Trim().ToLowerInvariant();
         if (!String.Equals(user.EmailAddress, email))
         {
             Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);

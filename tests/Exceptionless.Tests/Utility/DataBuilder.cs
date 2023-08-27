@@ -24,7 +24,7 @@ public class DataBuilder
 
     public EventDataBuilder Event()
     {
-        var eventBuilder = _serviceProvider.GetService<EventDataBuilder>();
+        var eventBuilder = _serviceProvider.GetRequiredService<EventDataBuilder>();
         _eventBuilders.Add(eventBuilder);
         return eventBuilder;
     }
@@ -36,9 +36,9 @@ public class EventDataBuilder
     private readonly ISerializer _serializer;
     private readonly ICollection<Action<Stack>> _stackMutations;
     private int _additionalEventsToCreate = 0;
-    private readonly PersistentEvent _event = new PersistentEvent();
-    private Stack _stack = null;
-    private EventDataBuilder _stackEventBuilder;
+    private readonly PersistentEvent _event = new();
+    private Stack? _stack = null;
+    private EventDataBuilder? _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
 
     public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer)
@@ -50,7 +50,7 @@ public class EventDataBuilder
 
     public EventDataBuilder Mutate(Action<PersistentEvent> mutation)
     {
-        mutation?.Invoke(_event);
+        mutation(_event);
 
         return this;
     }
@@ -215,7 +215,7 @@ public class EventDataBuilder
         return this;
     }
 
-    public EventDataBuilder RequestInfoSample(Action<RequestInfo> requestMutator = null)
+    public EventDataBuilder RequestInfoSample(Action<RequestInfo>? requestMutator = null)
     {
         var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo);
         requestMutator?.Invoke(requestInfo);
@@ -437,14 +437,14 @@ public class EventDataBuilder
         return this;
     }
 
-    public Stack GetStack()
+    public Stack? GetStack()
     {
         Build();
         return _stack;
     }
 
     private bool _isBuilt = false;
-    public (Stack Stack, PersistentEvent[] Events) Build()
+    public (Stack? Stack, PersistentEvent[] Events) Build()
     {
         if (_isBuilt)
             return (_stack, BuildEvents(_stack, _event));
@@ -464,9 +464,9 @@ public class EventDataBuilder
 
         _event.CopyDataToIndex();
 
-        if (_stackEventBuilder != null)
+        if (_stackEventBuilder is not null)
         {
-            _stack = _stackEventBuilder.GetStack();
+            _stack = _stackEventBuilder.GetStack() ?? throw new InvalidOperationException();
 
             _stack.TotalOccurrences++;
             if (_event.Date.UtcDateTime < _stack.FirstOccurrence)
@@ -481,14 +481,14 @@ public class EventDataBuilder
 
             _stack.Tags.AddRange(_event.Tags ?? new TagSet());
         }
-        else if (_stack == null)
+        else if (_stack is null)
         {
             string title = _formattingPluginManager.GetStackTitle(_event);
             _stack = new Stack
             {
                 OrganizationId = _event.OrganizationId,
                 ProjectId = _event.ProjectId,
-                Title = title?.Truncate(1000),
+                Title = title.Truncate(1000),
                 Tags = _event.Tags ?? new TagSet(),
                 Type = _event.Type,
                 TotalOccurrences = 1,
@@ -528,9 +528,9 @@ public class EventDataBuilder
             _event.IsFirstOccurrence = false;
 
         var msi = _event.GetManualStackingInfo();
-        if (msi != null)
+        if (msi is not null)
         {
-            _stack.Title = msi.Title;
+            _stack.Title = msi.Title!;
             _stack.SignatureInfo.Clear();
             _stack.SignatureInfo.AddRange(msi.SignatureData);
         }
@@ -554,17 +554,17 @@ public class EventDataBuilder
         return (_stack, BuildEvents(_stack, _event));
     }
 
-    private PersistentEvent[] BuildEvents(Stack stack, PersistentEvent ev)
+    private PersistentEvent[] BuildEvents(Stack? stack, PersistentEvent ev)
     {
         var events = new List<PersistentEvent>(_additionalEventsToCreate) { ev };
-        if (_additionalEventsToCreate <= 0)
+        if (stack is null || _additionalEventsToCreate <= 0)
             return events.ToArray();
 
         int interval = (stack.LastOccurrence - stack.FirstOccurrence).Milliseconds / _additionalEventsToCreate;
         for (int index = 0; index < stack.TotalOccurrences - 1; index++)
         {
             var clone = ev.DeepClone();
-            clone.Id = null;
+            clone.Id = null!;
             if (interval > 0)
                 clone.Date = new DateTimeOffset(stack.FirstOccurrence.AddMilliseconds(interval * index), ev.Date.Offset);
 

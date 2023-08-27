@@ -43,7 +43,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         ICacheClient cacheClient,
         BillingManager billingManager,
         AppOptions appOptions,
-        ILoggerFactory loggerFactory = null
+        ILoggerFactory loggerFactory
     ) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;

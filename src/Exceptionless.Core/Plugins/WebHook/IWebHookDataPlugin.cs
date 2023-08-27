@@ -2,6 +2,6 @@
 
 public interface IWebHookDataPlugin : IPlugin
 {
-    Task<object> CreateFromEventAsync(WebHookDataContext ctx);
-    Task<object> CreateFromStackAsync(WebHookDataContext ctx);
+    Task<object?> CreateFromEventAsync(WebHookDataContext ctx);
+    Task<object?> CreateFromStackAsync(WebHookDataContext ctx);
 }

@@ -47,7 +47,8 @@ public static class TestConstants
 
     public const string WebHookId = "1ecd0826e447a44e78877cb2";
 
-    public static readonly List<string> ExceptionTypes = new List<string> {
+    public static readonly List<string> ExceptionTypes = new()
+    {
             "System.NullReferenceException",
             "System.ApplicationException",
             "System.AggregateException",
@@ -57,7 +58,8 @@ public static class TestConstants
             "System.InvalidOperationException"
         };
 
-    public static readonly List<string> EventTags = new List<string> {
+    public static readonly List<string> EventTags = new()
+    {
             "Tag1",
             "Tag2",
             "Tag3",
@@ -65,13 +67,15 @@ public static class TestConstants
             "Tag5"
         };
 
-    public static readonly List<string> ProjectIds = new List<string> {
+    public static readonly List<string> ProjectIds = new()
+    {
             ProjectId,
             InvalidProjectId,
             ProjectIdWithNoRoles
         };
 
-    public static readonly List<string> Namespaces = new List<string> {
+    public static readonly List<string> Namespaces = new()
+    {
             "System",
             "System.IO",
             "CodeSmith",
@@ -79,13 +83,15 @@ public static class TestConstants
             "SomeOther.Blah"
         };
 
-    public static readonly List<string> TypeNames = new List<string> {
+    public static readonly List<string> TypeNames = new()
+    {
             "DateTime",
             "SomeType",
             "ProjectGenerator"
         };
 
-    public static readonly List<string> MethodNames = new List<string> {
+    public static readonly List<string> MethodNames = new()
+    {
             "SomeMethod",
             "GenerateCode"
         };

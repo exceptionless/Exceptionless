@@ -35,7 +35,7 @@ public class Program
 
     public static IHostBuilder CreateHostBuilder(string[] args)
     {
-        string environment = Environment.GetEnvironmentVariable("EX_AppMode");
+        string? environment = Environment.GetEnvironmentVariable("EX_AppMode");
         if (String.IsNullOrWhiteSpace(environment))
             environment = "Production";
 
