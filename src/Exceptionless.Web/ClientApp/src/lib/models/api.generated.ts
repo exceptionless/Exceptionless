@@ -210,12 +210,13 @@ export class ResetPasswordModel {
 }
 
 export class SignupModel {
-	constructor(email: string, password: string) {
+	constructor(name: string, email: string, password: string) {
+		this.name = name;
 		this.email = email;
 		this.password = password;
 	}
 
-	@IsOptional() name?: string;
+	@IsDefined() @MinLength(1) name: string;
 	/** @format email */
 	@IsDefined() @IsEmail({ require_tld: false }) @MinLength(1) email: string;
 	@IsDefined() @MinLength(6) @MaxLength(100) password: string;

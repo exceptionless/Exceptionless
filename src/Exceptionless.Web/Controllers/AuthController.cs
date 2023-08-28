@@ -161,6 +161,8 @@ public class AuthController : ExceptionlessApiController
     [HttpGet("logout")]
     public async Task<IActionResult> LogoutAsync()
     {
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Logout").Identity(CurrentUser!.EmailAddress).SetHttpContext(HttpContext));
+
         if (User.IsTokenAuthType())
             return Ok();
 
@@ -174,8 +176,7 @@ public class AuthController : ExceptionlessApiController
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Logout").Identity(CurrentUser!.EmailAddress).SetHttpContext(HttpContext)))
-                _logger.LogCritical(ex, "Logout failed for {EmailAddress}: {Message}", CurrentUser!.EmailAddress, ex.Message);
+            _logger.LogCritical(ex, "Logout failed for {EmailAddress}: {Message}", CurrentUser!.EmailAddress, ex.Message);
         }
 
         return Ok();
@@ -192,107 +193,94 @@ public class AuthController : ExceptionlessApiController
     [HttpPost("signup")]
     public async Task<ActionResult<TokenResult>> SignupAsync(SignupModel model)
     {
-        bool valid = await IsAccountCreationEnabledAsync(model?.InviteToken);
+        string email = model.Email.Trim().ToLowerInvariant();
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Signup").Identity(email).Property("Name", model.Name).Property("Password Length", model.Password.Length).SetHttpContext(HttpContext));
+
+        bool valid = await IsAccountCreationEnabledAsync(model.InviteToken);
         if (!valid)
-            return BadRequest("Account Creation is currently disabled.");
+            return BadRequest("Account Creation is currently disabled");
 
-        string? email = model?.Email?.Trim().ToLowerInvariant();
-        using (_logger.BeginScope(new ExceptionlessState().Tag("Signup").Identity(email).Property("Name", model is not null ? model.Name : "<null>").Property("Password Length", model?.Password?.Length ?? 0).SetHttpContext(HttpContext)))
+        if (!PasswordMeetsRequirements(model.Password))
         {
-            if (String.IsNullOrEmpty(email))
-            {
-                _logger.LogError("Signup failed: Email Address is required.");
-                return BadRequest("Email Address is required.");
-            }
-
-            if (String.IsNullOrWhiteSpace(model?.Name))
-            {
-                _logger.LogError("Signup failed for {EmailAddress}: Name is required.", email);
-                return BadRequest("Name is required.");
-            }
-
-            if (!PasswordMeetsRequirements(model.Password))
-            {
-                _logger.LogError("Signup failed for {EmailAddress}: Invalid Password", email);
-                return BadRequest("Password must be at least 6 characters long.");
-            }
-
-            User? user;
-            try
-            {
-                user = await _userRepository.GetByEmailAddressAsync(email);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
-                return BadRequest();
-            }
-
-            if (user is not null)
-                return await LoginAsync(model);
-
-            string ipSignupAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:signup:attempts";
-            bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) is not null;
-            if (!hasValidInviteToken)
-            {
-                // Only allow 10 sign ups per hour period by a single ip.
-                long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
-                if (ipSignupAttempts > 10)
-                {
-                    _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time.", email, ipSignupAttempts);
-                    return BadRequest();
-                }
-            }
-
-            if (_authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password))
-            {
-                _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed.", email);
-                return BadRequest();
-            }
-
-            user = new User
-            {
-                IsActive = true,
-                FullName = model.Name.Trim(),
-                EmailAddress = email,
-                IsEmailAddressVerified = _authOptions.EnableActiveDirectoryAuth
-            };
-            user.CreateVerifyEmailAddressToken();
-            user.Roles.Add(AuthorizationRoles.Client);
-            user.Roles.Add(AuthorizationRoles.User);
-            await AddGlobalAdminRoleIfFirstUserAsync(user);
-
-            if (!_authOptions.EnableActiveDirectoryAuth)
-            {
-                user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-                user.Password = model.Password!.ToSaltedHash(user.Salt);
-            }
-
-            try
-            {
-                user = await _userRepository.AddAsync(user, o => o.Cache());
-            }
-            catch (ValidationException ex)
-            {
-                string errors = String.Join(", ", ex.Errors);
-                _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, errors);
-                return BadRequest(errors);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
-                return BadRequest("An error occurred.");
-            }
-
-            if (hasValidInviteToken)
-                await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
-
-            if (!user.IsEmailAddressVerified)
-                await _mailer.SendUserEmailVerifyAsync(user);
-
-            _logger.UserSignedUp(user.EmailAddress);
-            return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+            _logger.LogError("Signup failed for {EmailAddress}: Invalid Password", email);
+            return BadRequest("Password must be at least 6 characters long");
         }
+
+        User? user;
+        try
+        {
+            user = await _userRepository.GetByEmailAddressAsync(email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
+            return BadRequest();
+        }
+
+        if (user is not null)
+            return await LoginAsync(model);
+
+        string ipSignupAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:signup:attempts";
+        bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) is not null;
+        if (!hasValidInviteToken)
+        {
+            // Only allow 10 sign ups per hour period by a single ip.
+            long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            if (ipSignupAttempts > 10)
+            {
+                _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time.", email, ipSignupAttempts);
+                return BadRequest();
+            }
+        }
+
+        if (_authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password))
+        {
+            _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed.", email);
+            return BadRequest();
+        }
+
+        user = new User
+        {
+            IsActive = true,
+            FullName = model.Name.Trim(),
+            EmailAddress = email,
+            IsEmailAddressVerified = _authOptions.EnableActiveDirectoryAuth
+        };
+        user.CreateVerifyEmailAddressToken();
+        user.Roles.Add(AuthorizationRoles.Client);
+        user.Roles.Add(AuthorizationRoles.User);
+        await AddGlobalAdminRoleIfFirstUserAsync(user);
+
+        if (!_authOptions.EnableActiveDirectoryAuth)
+        {
+            user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
+            user.Password = model.Password!.ToSaltedHash(user.Salt);
+        }
+
+        try
+        {
+            user = await _userRepository.AddAsync(user, o => o.Cache());
+        }
+        catch (ValidationException ex)
+        {
+            string errors = String.Join(", ", ex.Errors);
+            _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, errors);
+            return BadRequest(errors);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
+            return BadRequest("An error occurred.");
+        }
+
+        if (hasValidInviteToken)
+            await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
+
+        if (!user.IsEmailAddressVerified)
+            await _mailer.SendUserEmailVerifyAsync(user);
+
+        _logger.UserSignedUp(user.EmailAddress);
+        return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
     }
 
     [ApiExplorerSettings(IgnoreApi = true)]
