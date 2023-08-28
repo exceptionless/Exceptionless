@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
@@ -11,16 +12,14 @@ using Exceptionless.Web.Utility.Handlers;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Foundatio.Extensions.Hosting.Startup;
-using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
@@ -63,6 +62,7 @@ public class Startup
         {
             o.Filters.Add<ApiExceptionFilter>();
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
+            o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
         }).AddNewtonsoftJson(o =>
         {
@@ -72,12 +72,7 @@ public class Startup
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
 
-        services.AddFluentValidationAutoValidation(fvc =>
-        {
-            fvc.DisableDataAnnotationsValidation = true;
-        });
-
-        services.AddFluentValidationClientsideAdapters();
+        services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssemblyContaining<Program>();
         services.AddProblemDetails(ConfigureProblemDetails);
 
@@ -100,6 +95,7 @@ public class Startup
             r.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
+
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v2", new OpenApiInfo
@@ -345,6 +341,7 @@ public class Startup
             {
                 // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
                 SetDetails(details, StatusCodes.Status422UnprocessableEntity);
+
                 string[] keys = vpd.Errors.Keys.ToArray();
                 foreach (string key in keys)
                 {
@@ -352,41 +349,6 @@ public class Startup
                     vpd.Errors.Remove(key);
                 }
             }
-
-            // var exception = context.HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
-            //
-            // switch (exception)
-            // {
-            //     case ValidationException ve:
-            //         SetDetails(details, StatusCodes.Status422UnprocessableEntity);
-            //
-            //         // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
-            //         var errors = ve.Errors
-            //             .GroupBy(x => x.PropertyName)
-            //             .ToDictionary(
-            //                 x => x.Key.ToLowerUnderscoredWords(),
-            //                 x => x.Select(vf => vf.ErrorMessage).ToArray());
-            //
-            //         break;
-            //     case UnauthorizedAccessException:
-            //         SetDetails(details, StatusCodes.Status401Unauthorized);
-            //         break;
-            //     case VersionConflictDocumentException:
-            //         SetDetails(details, StatusCodes.Status409Conflict);
-            //         break;
-            //     case ApplicationException:
-            //         SetDetails(details, StatusCodes.Status500InternalServerError);
-            //         break;
-            //     case NotImplementedException:
-            //         SetDetails(details, StatusCodes.Status501NotImplemented);
-            //         break;
-            //     case HttpRequestException:
-            //         SetDetails(details, StatusCodes.Status503ServiceUnavailable);
-            //         break;
-            //     case Exception:
-            //         SetDetails(details, StatusCodes.Status500InternalServerError);
-            //         break;
-            // }
         };
     }
 
