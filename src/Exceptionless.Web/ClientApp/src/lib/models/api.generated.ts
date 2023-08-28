@@ -87,7 +87,7 @@ export class CountResult {
 }
 
 export interface IAggregate {
-	data?: Record<string, any>;
+	data?: Record<string, unknown>;
 }
 
 export class Invite {

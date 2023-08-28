@@ -21,7 +21,7 @@ const dataContractTemplates = {
   },
   interface: (contract) => {
     if (contract.name.match(/^[I]{1}[A-Z]{1}/)) {
-        return `interface ${contract.name}${buildGenerics(contract)} {\r\n${contract.content}}`;
+        return `interface ${contract.name}${buildGenerics(contract)} {\r\n${contract.content.replaceAll('any', 'unknown')}}`;
     }
 
     return includeFile('./class-data-contract.ejs', { ...it, contract });
