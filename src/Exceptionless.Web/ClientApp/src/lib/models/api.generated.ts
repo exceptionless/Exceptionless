@@ -126,14 +126,9 @@ export class InvoiceLineItem {
 }
 
 export class LoginModel {
-	constructor(email: string, password: string) {
-		this.email = email;
-		this.password = password;
-	}
-
 	/** @format email */
-	@IsEmail({ require_tld: false }) @MinLength(1) email: string;
-	@MinLength(6) @MaxLength(100) password: string;
+	@IsEmail({ require_tld: false }) @MinLength(1) email!: string;
+	@MinLength(6) @MaxLength(100) password!: string;
 	@IsOptional() invite_token?: string | null;
 }
 
@@ -212,16 +207,10 @@ export class ResetPasswordModel {
 }
 
 export class SignupModel {
-	constructor(name: string, email: string, password: string) {
-		this.name = name;
-		this.email = email;
-		this.password = password;
-	}
-
-	@MinLength(1) name: string;
+	@MinLength(1) name!: string;
 	/** @format email */
-	@IsEmail({ require_tld: false }) @MinLength(1) email: string;
-	@MinLength(6) @MaxLength(100) password: string;
+	@IsEmail({ require_tld: false }) @MinLength(1) email!: string;
+	@MinLength(6) @MaxLength(100) password!: string;
 	@IsOptional() invite_token?: string | null;
 }
 
@@ -337,11 +326,6 @@ export class UsageInfo {
 }
 
 export class User {
-	constructor(full_name: string, email_address: string) {
-		this.full_name = full_name;
-		this.email_address = email_address;
-	}
-
 	@IsOptional() @IsMongoId() id?: string;
 	@IsOptional() organization_ids?: string[];
 	@IsOptional() password?: string | null;
@@ -350,9 +334,9 @@ export class User {
 	/** @format date-time */
 	@IsOptional() @IsDate() password_reset_token_expiration?: string;
 	@IsOptional() @ValidateNested() o_auth_accounts?: OAuthAccount[];
-	@MinLength(1) full_name: string;
+	@MinLength(1) full_name!: string;
 	/** @format email */
-	@IsEmail({ require_tld: false }) @MinLength(1) email_address: string;
+	@IsEmail({ require_tld: false }) @MinLength(1) email_address!: string;
 	@IsOptional() email_notifications_enabled?: boolean;
 	@IsOptional() is_email_address_verified?: boolean;
 	@IsOptional() verify_email_address_token?: string | null;
@@ -367,12 +351,8 @@ export class User {
 }
 
 export class UserDescription {
-	constructor(description: string) {
-		this.description = description;
-	}
-
 	@IsOptional() email_address?: string | null;
-	@MinLength(1) description: string;
+	@MinLength(1) description!: string;
 	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 }
 
@@ -486,19 +466,13 @@ export class ViewUser {
 }
 
 export class WebHook {
-	constructor(url: string, event_types: string[], version: string) {
-		this.url = url;
-		this.event_types = event_types;
-		this.version = version;
-	}
-
 	@IsOptional() @IsMongoId() id?: string;
 	@IsOptional() @IsMongoId() organization_id?: string;
 	@IsOptional() @IsMongoId() project_id?: string;
-	@IsUrl() @MinLength(1) url: string;
-	@IsDefined() event_types: string[];
+	@IsUrl() @MinLength(1) url!: string;
+	@IsDefined() event_types!: string[];
 	@IsOptional() is_enabled?: boolean;
-	@MinLength(1) version: string;
+	@MinLength(1) version!: string;
 	/** @format date-time */
 	@IsOptional() @IsDate() created_utc?: string;
 }

@@ -12,10 +12,12 @@
 	import { liveLogin, facebookLogin, googleLogin, githubLogin, accessToken } from '$api/Auth';
 	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
 	import type { TokenResult } from '$lib/models/api.generated';
-	import { Login } from '$lib/models/api';
+	import { LoginModel } from '$lib/models/api.generated';
 
 	const api = new FetchClient();
-	const data = new Login($page.url.searchParams.get('token'));
+	const data = new LoginModel();
+	data.invite_token = $page.url.searchParams.get('token');
+
 	const loading = api.loading;
 	let problem = new ProblemDetails();
 	const redirectUrl = $page.url.searchParams.get('url') ?? '/';
@@ -32,7 +34,7 @@
 			accessToken.set(response.data.token);
 			await goto(redirectUrl);
 		} else if (response.status === 401) {
-			problem = problem.setErrorMessage('Invalid email or password.');
+			problem = problem.setErrorMessage('Invalid email or password');
 		} else {
 			problem = response.problem;
 		}
