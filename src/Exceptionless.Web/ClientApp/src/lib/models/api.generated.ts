@@ -9,22 +9,34 @@
  * ---------------------------------------------------------------
  */
 
-import { IsDate, IsDefined, IsEmail, IsMongoId, IsOptional, IsUrl } from 'class-validator';
+import {
+	IsDate,
+	IsDefined,
+	IsEmail,
+	IsInt,
+	IsMongoId,
+	IsNumber,
+	IsOptional,
+	IsUrl,
+	MaxLength,
+	MinLength,
+	ValidateNested
+} from 'class-validator';
 
 export class BillingPlan {
 	@IsOptional() @IsMongoId() id?: string;
 	@IsOptional() name?: string;
 	@IsOptional() description?: string;
 	/** @format double */
-	@IsOptional() price?: number;
+	@IsOptional() @IsNumber() price?: number;
 	/** @format int32 */
-	@IsOptional() max_projects?: number;
+	@IsOptional() @IsInt() max_projects?: number;
 	/** @format int32 */
-	@IsOptional() max_users?: number;
+	@IsOptional() @IsInt() max_users?: number;
 	/** @format int32 */
-	@IsOptional() retention_days?: number;
+	@IsOptional() @IsInt() retention_days?: number;
 	/** @format int32 */
-	@IsOptional() max_events_per_month?: number;
+	@IsOptional() @IsInt() max_events_per_month?: number;
 	@IsOptional() has_premium_features?: boolean;
 	@IsOptional() is_hidden?: boolean;
 }
@@ -63,15 +75,15 @@ export class ChangePlanResult {
 
 export class ClientConfiguration {
 	/** @format int32 */
-	@IsOptional() version?: number;
-	@IsOptional() settings?: Record<string, string>;
+	@IsOptional() @IsInt() version?: number;
+	@IsOptional() @ValidateNested() settings?: Record<string, string>;
 }
 
 export class CountResult {
 	/** @format int64 */
-	@IsOptional() total?: number;
-	@IsOptional() aggregations?: Record<string, IAggregate>;
-	@IsOptional() data?: Record<string, unknown>;
+	@IsOptional() @IsInt() total?: number;
+	@IsOptional() @ValidateNested() aggregations?: Record<string, IAggregate>;
+	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 }
 
 export interface IAggregate {
@@ -93,8 +105,8 @@ export class Invoice {
 	@IsOptional() @IsDate() date?: string;
 	@IsOptional() paid?: boolean;
 	/** @format double */
-	@IsOptional() total?: number;
-	@IsOptional() items?: InvoiceLineItem[];
+	@IsOptional() @IsNumber() total?: number;
+	@IsOptional() @ValidateNested() items?: InvoiceLineItem[];
 }
 
 export class InvoiceGridModel {
@@ -108,7 +120,7 @@ export class InvoiceLineItem {
 	@IsOptional() description?: string;
 	@IsOptional() date?: string | null;
 	/** @format double */
-	@IsOptional() amount?: number;
+	@IsOptional() @IsNumber() amount?: number;
 }
 
 export class LoginModel {
@@ -118,8 +130,8 @@ export class LoginModel {
 	}
 
 	/** @format email */
-	@IsDefined() @IsEmail({ require_tld: false }) email: string;
-	@IsDefined() password: string;
+	@IsDefined() @IsEmail({ require_tld: false }) @MinLength(1) email: string;
+	@IsDefined() @MinLength(6) @MaxLength(100) password: string;
 	@IsOptional() invite_token?: string | null;
 }
 
@@ -165,7 +177,7 @@ export class OAuthAccount {
 	@IsOptional() provider?: string;
 	@IsOptional() @IsMongoId() provider_user_id?: string;
 	@IsOptional() username?: string;
-	@IsOptional() extra_data?: Record<string, string>;
+	@IsOptional() @ValidateNested() extra_data?: Record<string, string>;
 }
 
 export class PersistentEvent {
@@ -176,7 +188,7 @@ export class PersistentEvent {
 	@IsOptional() is_first_occurrence?: boolean;
 	/** @format date-time */
 	@IsOptional() @IsDate() created_utc?: string;
-	@IsOptional() idx?: Record<string, unknown>;
+	@IsOptional() @ValidateNested() idx?: Record<string, unknown>;
 	@IsOptional() type?: string | null;
 	@IsOptional() source?: string | null;
 	/** @format date-time */
@@ -185,10 +197,10 @@ export class PersistentEvent {
 	@IsOptional() message?: string | null;
 	@IsOptional() geo?: string | null;
 	/** @format double */
-	@IsOptional() value?: number | null;
+	@IsOptional() @IsNumber() value?: number | null;
 	/** @format int32 */
-	@IsOptional() count?: number | null;
-	@IsOptional() data?: Record<string, unknown>;
+	@IsOptional() @IsInt() count?: number | null;
+	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 	@IsOptional() @IsMongoId() reference_id?: string | null;
 }
 
@@ -205,8 +217,8 @@ export class SignupModel {
 
 	@IsOptional() name?: string;
 	/** @format email */
-	@IsDefined() @IsEmail({ require_tld: false }) email: string;
-	@IsDefined() password: string;
+	@IsDefined() @IsEmail({ require_tld: false }) @MinLength(1) email: string;
+	@IsDefined() @MinLength(6) @MaxLength(100) password: string;
 	@IsOptional() invite_token?: string | null;
 }
 
@@ -228,13 +240,13 @@ export class Stack {
 	/** @format date-time */
 	@IsOptional() @IsDate() snooze_until_utc?: string | null;
 	@IsOptional() signature_hash?: string;
-	@IsOptional() signature_info?: Record<string, string>;
+	@IsOptional() @ValidateNested() signature_info?: Record<string, string>;
 	@IsOptional() fixed_in_version?: string | null;
 	/** @format date-time */
 	@IsOptional() @IsDate() date_fixed?: string | null;
 	@IsOptional() title?: string;
 	/** @format int32 */
-	@IsOptional() total_occurrences?: number;
+	@IsOptional() @IsInt() total_occurrences?: number;
 	/** @format date-time */
 	@IsOptional() @IsDate() first_occurrence?: string;
 	/** @format date-time */
@@ -297,28 +309,28 @@ export class UsageHourInfo {
 	/** @format date-time */
 	@IsOptional() @IsDate() date?: string;
 	/** @format int32 */
-	@IsOptional() total?: number;
+	@IsOptional() @IsInt() total?: number;
 	/** @format int32 */
-	@IsOptional() blocked?: number;
+	@IsOptional() @IsInt() blocked?: number;
 	/** @format int32 */
-	@IsOptional() discarded?: number;
+	@IsOptional() @IsInt() discarded?: number;
 	/** @format int32 */
-	@IsOptional() too_big?: number;
+	@IsOptional() @IsInt() too_big?: number;
 }
 
 export class UsageInfo {
 	/** @format date-time */
 	@IsOptional() @IsDate() date?: string;
 	/** @format int32 */
-	@IsOptional() limit?: number;
+	@IsOptional() @IsInt() limit?: number;
 	/** @format int32 */
-	@IsOptional() total?: number;
+	@IsOptional() @IsInt() total?: number;
 	/** @format int32 */
-	@IsOptional() blocked?: number;
+	@IsOptional() @IsInt() blocked?: number;
 	/** @format int32 */
-	@IsOptional() discarded?: number;
+	@IsOptional() @IsInt() discarded?: number;
 	/** @format int32 */
-	@IsOptional() too_big?: number;
+	@IsOptional() @IsInt() too_big?: number;
 }
 
 export class User {
@@ -334,10 +346,10 @@ export class User {
 	@IsOptional() password_reset_token?: string | null;
 	/** @format date-time */
 	@IsOptional() @IsDate() password_reset_token_expiration?: string;
-	@IsOptional() o_auth_accounts?: OAuthAccount[];
-	@IsDefined() full_name: string;
+	@IsOptional() @ValidateNested() o_auth_accounts?: OAuthAccount[];
+	@IsDefined() @MinLength(1) full_name: string;
 	/** @format email */
-	@IsDefined() @IsEmail({ require_tld: false }) email_address: string;
+	@IsDefined() @IsEmail({ require_tld: false }) @MinLength(1) email_address: string;
 	@IsOptional() email_notifications_enabled?: boolean;
 	@IsOptional() is_email_address_verified?: boolean;
 	@IsOptional() verify_email_address_token?: string | null;
@@ -357,8 +369,8 @@ export class UserDescription {
 	}
 
 	@IsOptional() email_address?: string | null;
-	@IsDefined() description: string;
-	@IsOptional() data?: Record<string, unknown>;
+	@IsDefined() @MinLength(1) description: string;
+	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 }
 
 export class ViewOrganization {
@@ -385,15 +397,15 @@ export class ViewOrganization {
 	 */
 	@IsOptional() billing_status?: BillingStatus;
 	/** @format double */
-	@IsOptional() billing_price?: number;
+	@IsOptional() @IsNumber() billing_price?: number;
 	/** @format int32 */
-	@IsOptional() max_events_per_month?: number;
+	@IsOptional() @IsInt() max_events_per_month?: number;
 	/** @format int32 */
-	@IsOptional() bonus_events_per_month?: number;
+	@IsOptional() @IsInt() bonus_events_per_month?: number;
 	/** @format date-time */
 	@IsOptional() @IsDate() bonus_expiration?: string | null;
 	/** @format int32 */
-	@IsOptional() retention_days?: number;
+	@IsOptional() @IsInt() retention_days?: number;
 	@IsOptional() is_suspended?: boolean;
 	@IsOptional() suspension_code?: string | null;
 	@IsOptional() suspension_notes?: string | null;
@@ -401,19 +413,19 @@ export class ViewOrganization {
 	@IsOptional() @IsDate() suspension_date?: string | null;
 	@IsOptional() has_premium_features?: boolean;
 	/** @format int32 */
-	@IsOptional() max_users?: number;
+	@IsOptional() @IsInt() max_users?: number;
 	/** @format int32 */
-	@IsOptional() max_projects?: number;
+	@IsOptional() @IsInt() max_projects?: number;
 	/** @format int64 */
-	@IsOptional() project_count?: number;
+	@IsOptional() @IsInt() project_count?: number;
 	/** @format int64 */
-	@IsOptional() stack_count?: number;
+	@IsOptional() @IsInt() stack_count?: number;
 	/** @format int64 */
-	@IsOptional() event_count?: number;
-	@IsOptional() invites?: Invite[];
-	@IsOptional() usage_hours?: UsageHourInfo[];
-	@IsOptional() usage?: UsageInfo[];
-	@IsOptional() data?: Record<string, unknown>;
+	@IsOptional() @IsInt() event_count?: number;
+	@IsOptional() @ValidateNested() invites?: Invite[];
+	@IsOptional() @ValidateNested() usage_hours?: UsageHourInfo[];
+	@IsOptional() @ValidateNested() usage?: UsageInfo[];
+	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 	@IsOptional() is_throttled?: boolean;
 	@IsOptional() is_over_monthly_limit?: boolean;
 	@IsOptional() is_over_request_limit?: boolean;
@@ -427,17 +439,17 @@ export class ViewProject {
 	@IsOptional() organization_name?: string;
 	@IsOptional() name?: string;
 	@IsOptional() delete_bot_data_enabled?: boolean;
-	@IsOptional() data?: Record<string, unknown>;
+	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 	@IsOptional() promoted_tabs?: string[];
 	@IsOptional() is_configured?: boolean | null;
 	/** @format int64 */
-	@IsOptional() stack_count?: number;
+	@IsOptional() @IsInt() stack_count?: number;
 	/** @format int64 */
-	@IsOptional() event_count?: number;
+	@IsOptional() @IsInt() event_count?: number;
 	@IsOptional() has_premium_features?: boolean;
 	@IsOptional() has_slack_integration?: boolean;
-	@IsOptional() usage_hours?: UsageHourInfo[];
-	@IsOptional() usage?: UsageInfo[];
+	@IsOptional() @ValidateNested() usage_hours?: UsageHourInfo[];
+	@IsOptional() @ValidateNested() usage?: UsageInfo[];
 }
 
 export class ViewToken {
@@ -480,10 +492,10 @@ export class WebHook {
 	@IsOptional() @IsMongoId() id?: string;
 	@IsOptional() @IsMongoId() organization_id?: string;
 	@IsOptional() @IsMongoId() project_id?: string;
-	@IsDefined() @IsUrl() url: string;
+	@IsDefined() @IsUrl() @MinLength(1) url: string;
 	@IsDefined() event_types: string[];
 	@IsOptional() is_enabled?: boolean;
-	@IsDefined() version: string;
+	@IsDefined() @MinLength(1) version: string;
 	/** @format date-time */
 	@IsOptional() @IsDate() created_utc?: string;
 }

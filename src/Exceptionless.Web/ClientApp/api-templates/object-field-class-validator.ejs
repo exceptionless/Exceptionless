@@ -3,33 +3,35 @@ const { field, utils } = it;
 const { require, _ } = utils;
 
 function getFormatValidation(field) {
+    if (field.type === "integer") {
+        return "@IsInt()";
+    }
+
+    if (field.type === "number") {
+        return "@IsNumber()";
+    }
+
     switch (field.format) {
         case "date-time":
-            return "@IsDate()\n";
-        case "double":
-        case "int32":
-        case "int64":
-            return field.value === "string" && "@IsNumber()\n";
+            return "@IsDate()";
         case "email":
-            return "@IsEmail({ require_tld: false })\n";
+            return "@IsEmail({ require_tld: false })";
         default:
-            return `TODO_CLASS_@format ${field.format}\n`;
+            throw new Error(`Unknown format: ${field.format}`);
     }
 }
 
 const validationLines = _.uniq(
     _.compact([
-        field.deprecated && `TODO_CLASS_ * @deprecated`,
         field.isRequired && "@IsDefined()",
         !field.isRequired && "@IsOptional()",
         (field.name === "id" || field.name.endsWith("_id")) && "@IsMongoId()",
         field.name === "url" && "@IsUrl()",
         !_.isUndefined(field.format) && getFormatValidation(field),
-        !_.isUndefined(field.minimum) && `TODO_CLASS_@min ${field.minimum}`,
-        !_.isUndefined(field.maximum) && `TODO_CLASS_@max ${field.maximum}`,
-        !_.isUndefined(field.pattern) && `TODO_CLASS_@pattern ${field.pattern}`,
-        !_.isUndefined(field.example) &&
-        `TODO_CLASS_@example ${_.isObject(field.example) ? JSON.stringify(field.example) : field.example}`,
+        !_.isUndefined(field.minLength) && `@MinLength(${field.minLength})`,
+        !_.isUndefined(field.maxLength) && `@MaxLength(${field.maxLength})`,
+        !_.isUndefined(field.pattern) && `@Matches(${field.pattern})`,
+        !_.isUndefined(field.type) && (field.type === "object" || (field.type === "array" && field.items.$ref)) && `@ValidateNested()`,
     ]).reduce((acc, validation) => [...acc, ...validation.split(/\n/g)], []),
 );
 %>

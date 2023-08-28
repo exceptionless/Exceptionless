@@ -41,13 +41,21 @@ import {
     IsDefined,
     IsEmail,
     IsOptional,
+    IsInt,
     IsNumber,
     IsMongoId,
-    IsUrl
+    IsUrl,
+    Min,
+    MinDate,
+    MinLength,
+    Max,
+    MaxDate,
+    MaxLength,
+    ValidateNested
 } from "class-validator";
 
 <% for (const contract of modelTypes) { %>
-  <%~ includeFile('./data-contract-jsdoc.ejs', { ...it, data: { ...contract, ...contract.typeData } }) %>
+  <%~ includeFile('@base/data-contract-jsdoc.ejs', { ...it, data: { ...contract, ...contract.typeData } }) %>
   <%~ contract.internal ? '' : 'export'%> <%~ (dataContractTemplates[contract.typeIdentifier] || dataContractTemplates.type)(contract) %>
 
 
