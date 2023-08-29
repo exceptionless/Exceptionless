@@ -1,15 +1,16 @@
+using System.ComponentModel.DataAnnotations;
 using FluentValidation;
 
 namespace Exceptionless.Web.Models;
 
-public record LoginModel(string Email, string Password, string? InviteToken = null);
-
-public class LoginModelValidator : AbstractValidator<LoginModel>
+public record LoginModel
 {
-    public LoginModelValidator()
-    {
-        RuleFor(u => u.Email).NotEmpty().EmailAddress();
-        RuleFor(u => u.Password).NotEmpty().MinimumLength(6).MaximumLength(100);
-        RuleFor(u => u.InviteToken).NotEmpty().Length(40).When(m => m.InviteToken is not null);
-    }
+    [Required, EmailAddress]
+    public string Email { get; init; } = null!;
+
+    [Required, StringLength(100, MinimumLength = 6)]
+    public string Password { get; init; } = null!;
+
+    [StringLength(40, MinimumLength = 40)]
+    public string? InviteToken { get; init; }
 }

@@ -2,18 +2,14 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 using Foundatio.Extensions.Hosting.Startup;
 using Joonasw.AspNetCore.SecurityHeaders;
-using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -72,8 +68,7 @@ public class Startup
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
 
-        services.AddFluentValidationAutoValidation();
-        services.AddValidatorsFromAssemblyContaining<Program>();
+        services.AddAutoValidation();
         services.AddProblemDetails(ConfigureProblemDetails);
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
@@ -168,7 +163,6 @@ public class Startup
             c.SupportNonNullableReferenceTypes();
         });
         services.AddSwaggerGenNewtonsoftSupport();
-        services.AddFluentValidationRulesToSwagger();
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
@@ -349,17 +343,10 @@ public class Startup
         options.CustomizeProblemDetails = context =>
         {
             var details = context.ProblemDetails;
-            if (details is ValidationProblemDetails vpd)
+            if (details is ValidationProblemDetails { Status: not 422 })
             {
                 // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
                 SetDetails(details, StatusCodes.Status422UnprocessableEntity);
-
-                string[] keys = vpd.Errors.Keys.ToArray();
-                foreach (string key in keys)
-                {
-                    vpd.Errors[key.ToLowerUnderscoredWords()] = vpd.Errors[key];
-                    vpd.Errors.Remove(key);
-                }
             }
         };
     }

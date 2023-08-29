@@ -13,7 +13,6 @@
 
 import {
 	IsDate,
-	IsDefined,
 	IsEmail,
 	IsInt,
 	IsMongoId,
@@ -129,7 +128,7 @@ export class LoginModel {
 	/** @format email */
 	@IsEmail({ require_tld: false }) @MinLength(1) email!: string;
 	@MinLength(6) @MaxLength(100) password!: string;
-	@IsOptional() invite_token?: string | null;
+	@IsOptional() @MinLength(40) @MaxLength(40) invite_token?: string | null;
 }
 
 export class NewOrganization {
@@ -211,7 +210,7 @@ export class SignupModel {
 	/** @format email */
 	@IsEmail({ require_tld: false }) @MinLength(1) email!: string;
 	@MinLength(6) @MaxLength(100) password!: string;
-	@IsOptional() invite_token?: string | null;
+	@IsOptional() @MinLength(40) @MaxLength(40) invite_token?: string | null;
 }
 
 export class Stack {
@@ -334,9 +333,8 @@ export class User {
 	/** @format date-time */
 	@IsOptional() @IsDate() password_reset_token_expiration?: string;
 	@IsOptional() @ValidateNested() o_auth_accounts?: OAuthAccount[];
-	@MinLength(1) full_name!: string;
-	/** @format email */
-	@IsEmail({ require_tld: false }) @MinLength(1) email_address!: string;
+	@IsOptional() full_name?: string;
+	@IsOptional() email_address?: string;
 	@IsOptional() email_notifications_enabled?: boolean;
 	@IsOptional() is_email_address_verified?: boolean;
 	@IsOptional() verify_email_address_token?: string | null;
@@ -352,7 +350,7 @@ export class User {
 
 export class UserDescription {
 	@IsOptional() email_address?: string | null;
-	@MinLength(1) description!: string;
+	@IsOptional() description?: string | null;
 	@IsOptional() @ValidateNested() data?: Record<string, unknown>;
 }
 
@@ -469,10 +467,10 @@ export class WebHook {
 	@IsOptional() @IsMongoId() id?: string;
 	@IsOptional() @IsMongoId() organization_id?: string;
 	@IsOptional() @IsMongoId() project_id?: string;
-	@IsUrl() @MinLength(1) url!: string;
-	@IsDefined() event_types!: string[];
+	@IsOptional() @IsUrl() url?: string;
+	@IsOptional() event_types?: string[];
 	@IsOptional() is_enabled?: boolean;
-	@MinLength(1) version!: string;
+	@IsOptional() version?: string;
 	/** @format date-time */
 	@IsOptional() @IsDate() created_utc?: string;
 }

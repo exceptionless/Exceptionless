@@ -51,7 +51,11 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Hello", "test@domain.com", null!))
+            .Content(new SignupModel
+            {
+                Email = "test@domain.com",
+                Name = "hello"
+            })
             .StatusCodeShouldBeBadRequest()
         );
     }
@@ -74,7 +78,13 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Test", email, password))
+            .Content(new SignupModel
+            {
+                Email = email,
+                InviteToken = "",
+                Name = "Test",
+                Password = password
+            })
             .StatusCodeShouldBeBadRequest()
         );
     }
@@ -97,7 +107,13 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Test", email, password, StringExtensions.GetNewToken()))
+            .Content(new SignupModel
+            {
+                Email = email,
+                InviteToken = StringExtensions.GetNewToken(),
+                Name = "Test",
+                Password = password
+            })
             .StatusCodeShouldBeBadRequest()
         );
     }
@@ -132,7 +148,13 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel("Test", email, password, invite.Token))
+           .Content(new SignupModel
+           {
+               Email = email,
+               InviteToken = invite.Token,
+               Name = "Test",
+               Password = password
+           })
            .StatusCodeShouldBeOk()
        );
 
@@ -165,7 +187,13 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel("Test", email, password, invite.Token))
+           .Content(new SignupModel
+           {
+               Email = email,
+               InviteToken = invite.Token,
+               Name = "Test",
+               Password = password
+           })
            .StatusCodeShouldBeBadRequest()
         );
     }
@@ -178,7 +206,13 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel("Test", "test4@localhost.com", "Password1$", ""))
+           .Content(new SignupModel
+           {
+               Email = "test4@exceptionless.io",
+               InviteToken = "",
+               Name = "Test",
+               Password = "Password1$"
+           })
            .StatusCodeShouldBeOk()
         );
 
@@ -198,7 +232,13 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel("Test", email, TestDomainLoginProvider.ValidPassword, ""))
+           .Content(new SignupModel
+           {
+               Email = email,
+               InviteToken = "",
+               Name = "Test",
+               Password = TestDomainLoginProvider.ValidPassword
+           })
            .StatusCodeShouldBeOk()
         );
 
@@ -213,9 +253,15 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions.EnableActiveDirectoryAuth = true;
 
         return SendRequestAsync(r => r
-            .Post()
-            .AppendPath("auth/signup")
-            .Content(new SignupModel("Test", "testuser2@localhost.com", "Password1$", ""))
+           .Post()
+           .AppendPath("auth/signup")
+           .Content(new SignupModel
+           {
+               Email = "testuser2@exceptionless.io",
+               InviteToken = "",
+               Name = "Test",
+               Password = "literallydoesntmatter"
+           })
            .StatusCodeShouldBeBadRequest()
         );
     }
@@ -246,7 +292,13 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel(name, email, password, invite.Token))
+           .Content(new SignupModel
+           {
+               Email = email,
+               InviteToken = invite.Token,
+               Name = name,
+               Password = password
+           })
            .StatusCodeShouldBeOk()
         );
 
@@ -299,9 +351,15 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(organization.GetInvite(invite.Token));
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
-            .Post()
-            .AppendPath("auth/signup")
-            .Content(new SignupModel("Test", email, TestDomainLoginProvider.ValidPassword, invite.Token))
+           .Post()
+           .AppendPath("auth/signup")
+           .Content(new SignupModel
+           {
+               Email = email,
+               InviteToken = invite.Token,
+               Name = "Test",
+               Password = TestDomainLoginProvider.ValidPassword
+           })
            .StatusCodeShouldBeOk()
         );
 
@@ -331,7 +389,13 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel("Test", email, TestDomainLoginProvider.ValidPassword, invite.Token))
+           .Content(new SignupModel
+           {
+               Email = email,
+               InviteToken = invite.Token,
+               Name = "Test",
+               Password = TestDomainLoginProvider.ValidPassword
+           })
            .StatusCodeShouldBeBadRequest()
         );
     }
@@ -359,14 +423,23 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Random Name", email, null!))
+            .Content(new SignupModel
+            {
+                Email = email,
+                Name = "Random Name"
+            })
             .StatusCodeShouldBeBadRequest()
         );
 
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel("Random Name", email, "invalidPass"))
+            .Content(new SignupModel
+            {
+                Email = email,
+                Name = "Random Name",
+                Password = "invalidPass",
+            })
             .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -393,7 +466,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel(email, password))
+           .Content(new LoginModel
+           {
+               Email = email,
+               Password = password
+           })
            .StatusCodeShouldBeOk()
         );
 
@@ -425,7 +502,11 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel(email, "This password is wrong"))
+           .Content(new LoginModel
+           {
+               Email = email,
+               Password = "This password ain't right"
+           })
            .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -452,7 +533,11 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel("Thisguydoesntexist@localhost.com", "This password is wrong"))
+           .Content(new LoginModel
+           {
+               Email = "Thisguydoesntexist@exceptionless.io",
+               Password = "This password ain't right"
+           })
            .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -476,7 +561,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel(email, TestDomainLoginProvider.ValidPassword))
+           .Content(new LoginModel
+           {
+               Email = email,
+               Password = TestDomainLoginProvider.ValidPassword
+           })
            .StatusCodeShouldBeOk()
         );
 
@@ -485,7 +574,7 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task LoginValidNonExistentActiveDirectoryAsync()
+    public Task LoginValidNonExistantActiveDirectoryAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = true;
 
@@ -495,7 +584,11 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel(email, TestDomainLoginProvider.ValidPassword))
+           .Content(new LoginModel
+           {
+               Email = email,
+               Password = TestDomainLoginProvider.ValidPassword
+           })
            .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -508,7 +601,11 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel(TestDomainLoginProvider.ValidUsername + ".au", "Totallywrongpassword1234"))
+           .Content(new LoginModel
+           {
+               Email = TestDomainLoginProvider.ValidUsername + ".au",
+               Password = "Totallywrongpassword1234"
+           })
            .StatusCodeShouldBeUnauthorized()
         );
 
@@ -537,7 +634,11 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel(TestDomainLoginProvider.ValidUsername, "Totallywrongpassword1234"))
+           .Content(new LoginModel
+           {
+               Email = TestDomainLoginProvider.ValidUsername,
+               Password = "Totallywrongpassword1234"
+           })
            .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -565,7 +666,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel(email, password))
+            .Content(new LoginModel
+            {
+                Email = email,
+                Password = password,
+            })
             .StatusCodeShouldBeOk()
         );
 
@@ -622,7 +727,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel(email, password))
+            .Content(new LoginModel
+            {
+                Email = email,
+                Password = password,
+            })
             .StatusCodeShouldBeOk()
         );
 
@@ -675,7 +784,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel(email, password))
+            .Content(new LoginModel
+            {
+                Email = email,
+                Password = password,
+            })
             .StatusCodeShouldBeOk()
         );
 
@@ -729,7 +842,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel(email, password))
+            .Content(new LoginModel
+            {
+                Email = email,
+                Password = password,
+            })
             .StatusCodeShouldBeOk()
         );
 
