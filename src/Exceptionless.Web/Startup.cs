@@ -101,7 +101,19 @@ public class Startup
             c.SwaggerDoc("v2", new OpenApiInfo
             {
                 Title = "Exceptionless API",
-                Version = "v2"
+                Version = "v2",
+                TermsOfService = new Uri("https://exceptionless.com/terms/"),
+                Contact = new OpenApiContact
+                {
+                    Name = "Exceptionless",
+                    Email = String.Empty,
+                    Url = new Uri("https://github.com/exceptionless/Exceptionless")
+                },
+                License = new OpenApiLicense
+                {
+                    Name = "Apache License 2.0",
+                    Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
+                }
             });
 
             c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
