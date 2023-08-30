@@ -124,7 +124,7 @@ export class InvoiceLineItem {
 	@IsOptional() @IsNumber() amount?: number;
 }
 
-export class LoginModel {
+export class Login {
 	/** @format email */
 	@IsEmail({ require_tld: false }) @MinLength(1) email!: string;
 	@MinLength(6) @MaxLength(100) password!: string;
@@ -205,7 +205,7 @@ export class ResetPasswordModel {
 	@IsOptional() password?: string | null;
 }
 
-export class SignupModel {
+export class Signup {
 	@MinLength(1) name!: string;
 	/** @format email */
 	@IsEmail({ require_tld: false }) @MinLength(1) email!: string;
@@ -289,7 +289,7 @@ export class StringValueFromBody {
 }
 
 export class TokenResult {
-	@IsOptional() token?: string;
+	@MinLength(1) token!: string;
 }
 
 export class UpdateEmailAddressResult {

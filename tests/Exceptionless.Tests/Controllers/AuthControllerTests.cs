@@ -51,7 +51,7 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel
+            .Content(new Signup
             {
                 Email = "test@domain.com",
                 Name = "hello"
@@ -78,7 +78,7 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel
+            .Content(new Signup
             {
                 Email = email,
                 InviteToken = "",
@@ -107,7 +107,7 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel
+            .Content(new Signup
             {
                 Email = email,
                 InviteToken = StringExtensions.GetNewToken(),
@@ -148,7 +148,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = email,
                InviteToken = invite.Token,
@@ -187,7 +187,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = email,
                InviteToken = invite.Token,
@@ -206,7 +206,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = "test4@exceptionless.io",
                InviteToken = "",
@@ -232,7 +232,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = email,
                InviteToken = "",
@@ -255,7 +255,7 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = "testuser2@exceptionless.io",
                InviteToken = "",
@@ -292,7 +292,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = email,
                InviteToken = invite.Token,
@@ -353,7 +353,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = email,
                InviteToken = invite.Token,
@@ -389,7 +389,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/signup")
-           .Content(new SignupModel
+           .Content(new Signup
            {
                Email = email,
                InviteToken = invite.Token,
@@ -423,7 +423,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel
+            .Content(new Signup
             {
                 Email = email,
                 Name = "Random Name"
@@ -434,7 +434,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AppendPath("auth/signup")
-            .Content(new SignupModel
+            .Content(new Signup
             {
                 Email = email,
                 Name = "Random Name",
@@ -466,7 +466,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = email,
                Password = password
@@ -502,7 +502,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = email,
                Password = "This password ain't right"
@@ -533,7 +533,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = "Thisguydoesntexist@exceptionless.io",
                Password = "This password ain't right"
@@ -561,7 +561,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = email,
                Password = TestDomainLoginProvider.ValidPassword
@@ -584,7 +584,7 @@ public class AuthControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = email,
                Password = TestDomainLoginProvider.ValidPassword
@@ -601,7 +601,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = TestDomainLoginProvider.ValidUsername + ".au",
                Password = "Totallywrongpassword1234"
@@ -634,7 +634,7 @@ public class AuthControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
-           .Content(new LoginModel
+           .Content(new Login
            {
                Email = TestDomainLoginProvider.ValidUsername,
                Password = "Totallywrongpassword1234"
@@ -666,7 +666,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel
+            .Content(new Login
             {
                 Email = email,
                 Password = password,
@@ -727,7 +727,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel
+            .Content(new Login
             {
                 Email = email,
                 Password = password,
@@ -784,7 +784,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel
+            .Content(new Login
             {
                 Email = email,
                 Password = password,
@@ -842,7 +842,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new LoginModel
+            .Content(new Login
             {
                 Email = email,
                 Password = password,

@@ -6,7 +6,10 @@
 	export let problem: ProblemDetails;
 	export let required: boolean = false;
 
+	export let autocomplete: string | null = null;
 	export let label: string | undefined;
+	export let minlength: number | undefined;
+	export let maxlength: number | undefined;
 	export let placeholder: string | undefined;
 
 	$: error = problem.errors?.[name];
@@ -25,7 +28,10 @@
 	<input
 		id={name}
 		type="text"
+		{autocomplete}
 		{placeholder}
+		{minlength}
+		{maxlength}
 		class="input input-bordered input-primary w-full"
 		class:input-error={error}
 		on:change={clearError}

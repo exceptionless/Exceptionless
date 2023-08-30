@@ -6,6 +6,7 @@
 	export let problem: ProblemDetails;
 	export let required: boolean = false;
 
+	export let autocomplete: string | null = null;
 	export let label: string | null = null;
 	export let placeholder: string | null = 'Enter email address';
 
@@ -25,6 +26,7 @@
 	<input
 		id={name}
 		type="email"
+		{autocomplete}
 		{placeholder}
 		class="input input-bordered input-primary w-full"
 		class:input-error={error}

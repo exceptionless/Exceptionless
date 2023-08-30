@@ -12,10 +12,10 @@
 	import { liveLogin, facebookLogin, googleLogin, githubLogin, accessToken } from '$api/Auth';
 	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
 	import type { TokenResult } from '$lib/models/api.generated';
-	import { LoginModel } from '$lib/models/api.generated';
+	import { Login } from '$lib/models/api.generated';
 
 	const api = new FetchClient();
-	const data = new LoginModel();
+	const data = new Login();
 	data.invite_token = $page.url.searchParams.get('token');
 
 	const loading = api.loading;
@@ -48,10 +48,19 @@
 <h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">Log in to your account</h2>
 <form on:submit|preventDefault={onLogin}>
 	{#if problem.errors.general}<p class="text-error">{problem.errors.general}</p>{/if}
-	<EmailInput name="email" bind:value={data.email} required {problem}></EmailInput>
+	<EmailInput
+		name="email"
+		bind:value={data.email}
+		autocomplete="email"
+		required
+		{problem}
+	></EmailInput>
 	<PasswordInput
 		name="password"
 		bind:value={data.password}
+		autocomplete="current-password"
+		minlength={6}
+		maxlength={100}
 		required
 		{problem}
 		placeholder="Enter password"
@@ -98,7 +107,7 @@
 
 <p class="mt-5 text-center text-sm">
 	Not a member?
-	<a href="/signup" class="link-primary link">Start a free trial</a>
+	<a href="/signup" class="link link-primary">Start a free trial</a>
 </p>
 
 <p class="mt-5 text-center text-sm">

@@ -70,7 +70,7 @@ public class AuthController : ExceptionlessApiController
     [AllowAnonymous]
     [Consumes("application/json")]
     [HttpPost("login")]
-    public async Task<ActionResult<TokenResult>> LoginAsync(LoginModel model)
+    public async Task<ActionResult<TokenResult>> LoginAsync(Login model)
     {
         string email = model.Email.Trim().ToLowerInvariant();
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext));
@@ -162,7 +162,6 @@ public class AuthController : ExceptionlessApiController
     public async Task<IActionResult> LogoutAsync()
     {
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Logout").Identity(CurrentUser!.EmailAddress).SetHttpContext(HttpContext));
-
         if (User.IsTokenAuthType())
             return Ok();
 
@@ -191,7 +190,7 @@ public class AuthController : ExceptionlessApiController
     [AllowAnonymous]
     [Consumes("application/json")]
     [HttpPost("signup")]
-    public async Task<ActionResult<TokenResult>> SignupAsync(SignupModel model)
+    public async Task<ActionResult<TokenResult>> SignupAsync(Signup model)
     {
         string email = model.Email.Trim().ToLowerInvariant();
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Signup").Identity(email).Property("Name", model.Name).Property("Password Length", model.Password.Length).SetHttpContext(HttpContext));
