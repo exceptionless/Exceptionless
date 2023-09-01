@@ -14,9 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -328,27 +326,27 @@ public class Startup
 
     private static void ConfigureProblemDetails(ProblemDetailsOptions options)
     {
-        void SetDetails(ProblemDetails details, int statusCode)
-        {
-            details.Status = statusCode;
-            details.Type = GetDefaultType(statusCode);
-            details.Title = ReasonPhrases.GetReasonPhrase(statusCode);
-        }
+        //void SetDetails(ProblemDetails details, int statusCode)
+        //{
+        //    details.Status = statusCode;
+        //    details.Type = GetDefaultType(statusCode);
+        //    details.Title = ReasonPhrases.GetReasonPhrase(statusCode);
+        //}
 
-        string GetDefaultType(int statusCode)
-        {
-            return $"https://httpstatuses.io/{statusCode}";
-        }
+        //string GetDefaultType(int statusCode)
+        //{
+        //    return $"https://httpstatuses.io/{statusCode}";
+        //}
 
-        options.CustomizeProblemDetails = context =>
-        {
-            var details = context.ProblemDetails;
-            if (details is ValidationProblemDetails { Status: not 422 })
-            {
-                // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
-                SetDetails(details, StatusCodes.Status422UnprocessableEntity);
-            }
-        };
+        //options.CustomizeProblemDetails = context =>
+        //{
+        //    var details = context.ProblemDetails;
+        //    if (details is ValidationProblemDetails { Status: not 422 })
+        //    {
+        //        // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
+        //        SetDetails(details, StatusCodes.Status422UnprocessableEntity);
+        //    }
+        //};
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)

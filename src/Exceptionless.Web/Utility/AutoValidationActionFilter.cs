@@ -1,12 +1,9 @@
-﻿using System.IO.Pipelines;
+using System.IO.Pipelines;
 using System.Security.Claims;
 using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.Extensions.Logging.Abstractions;
 using MiniValidation;
 
 namespace Exceptionless.Web.Utility;
@@ -22,37 +19,37 @@ public class AutoValidationActionFilter : IAsyncActionFilter
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        if (context is { Controller: ControllerBase controllerBase })
+        if (context is { Controller: ControllerBase controllerBase, ActionDescriptor: ControllerActionDescriptor actionDescriptor })
         {
-            if (context is { ActionDescriptor: ControllerActionDescriptor actionDescriptor })
+            var parametersToValidate = actionDescriptor.MethodInfo.GetParameters()
+                .Where(p => ShouldValidate(p.ParameterType, _serviceProvider as IServiceProviderIsService))
+                .ToArray();
+
+            bool hasErrors = false;
+            foreach (var parameter in parametersToValidate)
             {
-                var parametersToValidate = actionDescriptor.MethodInfo.GetParameters()
-                    .Where(p => ShouldValidate(p.ParameterType, _serviceProvider as IServiceProviderIsService))
-                    .ToArray();
+                if (parameter.Name == null || !context.ActionArguments.TryGetValue(parameter.Name, out object? subject) || subject is null)
+                    continue;
 
-                foreach (var parameter in parametersToValidate)
+                (bool isValid, var errors) = await MiniValidator.TryValidateAsync(subject, _serviceProvider, recurse: true);
+                if (isValid)
+                    continue;
+
+                foreach (var error in errors)
                 {
-                    if (parameter.Name == null ||
-                        !context.ActionArguments.TryGetValue(parameter.Name, out object? subject) || subject is null)
-                        continue;
-
-                    (bool isValid, var errors) = await MiniValidator.TryValidateAsync(subject, _serviceProvider, recurse: true);
-                    if (isValid)
-                        continue;
-
-                    foreach (var error in errors)
+                    // TODO: Verify nested object keys
+                    string key = error.Key.ToLowerUnderscoredWords();
+                    var modelStateEntry = context.ModelState[key];
+                    foreach (string errorMessage in error.Value)
                     {
-                        // TODO: Verify nested object keys
-                        string key = error.Key.ToLowerUnderscoredWords();
-                        foreach (string errorMessage in error.Value)
-                        {
+                        hasErrors = true;
+                        if (modelStateEntry is null || !modelStateEntry.Errors.Contains(e => String.Equals(e.ErrorMessage, errorMessage)))
                             context.ModelState.AddModelError(key, errorMessage);
-                        }
                     }
                 }
             }
 
-            if (!context.ModelState.IsValid)
+            if (hasErrors)
             {
                 var validationProblem = controllerBase.ProblemDetailsFactory.CreateValidationProblemDetails(context.HttpContext, context.ModelState, 422);
                 context.Result = new UnprocessableEntityObjectResult(validationProblem);
@@ -78,12 +75,4 @@ public class AutoValidationActionFilter : IAsyncActionFilter
         || typeof(Stream) == type
         || typeof(PipeReader) == type
         || isService?.IsService(type) == true;
-}
-
-public class AutoValidationObjectModelValidator : IObjectModelValidator
-{
-    public void Validate(ActionContext actionContext, ValidationStateDictionary? validationState, string prefix, object? model)
-    {
-        // Do nothing because IObjectModelValidator does not support async
-    }
 }

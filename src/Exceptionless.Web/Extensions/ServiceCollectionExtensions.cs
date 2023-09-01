@@ -19,9 +19,6 @@ public static class ServiceCollectionExtensions
         serviceCollection.Configure<MvcOptions>(options =>
             options.Filters.Add<AutoValidationActionFilter>(modelStateInvalidFilter.Order - 1));
 
-        // Disable built-in model state validation as it doesn't support async validation and everything now runs through MiniValidator
-        serviceCollection.Replace(ServiceDescriptor.Singleton<IObjectModelValidator, AutoValidationObjectModelValidator>());
-
         return serviceCollection;
     }
 }
