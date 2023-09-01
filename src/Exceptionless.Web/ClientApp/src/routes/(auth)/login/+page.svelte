@@ -48,12 +48,7 @@
 <h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">Log in to your account</h2>
 <form on:submit|preventDefault={onLogin}>
 	{#if problem.errors.general}<p class="text-error">{problem.errors.general}</p>{/if}
-	<EmailInput
-		name="email"
-		bind:value={data.email}
-		autocomplete="email"
-		required
-		{problem}
+	<EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}
 	></EmailInput>
 	<PasswordInput
 		name="password"

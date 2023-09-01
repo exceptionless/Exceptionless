@@ -1,16 +1,22 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { FetchClient } from '$lib/api/FetchClient';
+	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
 	import type { PersistentEvent } from '$lib/models/api.generated';
+	import { useQuery } from '@sveltestack/svelte-query';
 
 	const api = new FetchClient();
-	const loading = api.loading;
-	let data: PersistentEvent[] = [];
+	const eventsQueryResult = useQuery<PersistentEvent[], ProblemDetails, PersistentEvent[]>(
+		['PersistentEvent'],
+		async () => {
+			const response = await api.getJSON<PersistentEvent[]>('events', {
+				params: { mode: 'summary' }
+			});
+			if (response.success) {
+				return response.data ?? [];
+			}
 
-	onMount(async () => {
-		let response = await api.getJSON<PersistentEvent[]>('events');
-		if (response.success && response.data) data = response.data;
-	});
+			throw response.problem;
+		}
+	);
 </script>
 
 <svelte:head>
@@ -61,39 +67,20 @@
 			</tr>
 		</thead>
 		<tbody>
-			<!-- row 1 -->
-			<tr>
-				<th>
-					<label>
-						<input type="checkbox" class="checkbox" />
-					</label>
-				</th>
-				<td>Feature: Svelte</td>
-				<td>Blake Niemyjski</td>
-				<td>a few seconds ago</td>
-			</tr>
-			<!-- row 2 -->
-			<tr class="hover">
-				<th>
-					<label>
-						<input type="checkbox" class="checkbox" />
-					</label>
-				</th>
-				<td>Feature: Is</td>
-				<td>Blake Niemyjski</td>
-				<td>a few seconds ago</td>
-			</tr>
-			<!-- row 3 -->
-			<tr>
-				<th>
-					<label>
-						<input type="checkbox" class="checkbox" />
-					</label>
-				</th>
-				<td>Feature: Amazing</td>
-				<td></td>
-				<td>a few seconds ago</td>
-			</tr>
+			{#if $eventsQueryResult.isSuccess}
+				{#each $eventsQueryResult.data as ev}
+					<tr>
+						<th>
+							<label>
+								<input type="checkbox" class="checkbox" />
+							</label>
+						</th>
+						<td>{ev.data?.Message}</td>
+						<td>{ev.data?.Identity ?? ev.data?.Name}</td>
+						<td>{ev.date}</td>
+					</tr>
+				{/each}
+			{/if}
 		</tbody>
 		<tfoot>
 			<tr>
@@ -112,7 +99,7 @@
 				>
 				<td></td>
 				<td class="text-left"
-					>{#if $loading}
+					>{#if $eventsQueryResult.isLoading}
 						<p class="loading loading-spinner loading-lg"></p>
 					{/if}</td
 				>
@@ -129,11 +116,3 @@
 		>
 	</table>
 </div>
-
-{#if $loading}
-	<p class="loading loading-spinner loading-lg"></p>
-{:else}
-	{#each data as item}
-		<p>{item.message}</p>
-	{/each}
-{/if}

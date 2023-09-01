@@ -1,12 +1,48 @@
 <script lang="ts">
+	import { useQueryClient } from '@sveltestack/svelte-query';
 	import { goto } from '$app/navigation';
 	import { isAuthenticated } from '$lib/api/Auth';
 	import { page } from '$app/stores';
+	import { WebSocketClient } from '$lib/api/WebSocketClient';
+	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';
 
-	$: if (!$isAuthenticated) {
-		const url = $page.url.pathname === '/' ? '/login' : `/login?url=${location.href}`;
-		goto(url, { replaceState: true });
-	}
+	isAuthenticated.subscribe((authenticated) => {
+		if (!authenticated) {
+			const url = $page.url.pathname === '/' ? '/login' : `/login?url=${location.href}`;
+			goto(url, { replaceState: true });
+		}
+	});
+
+	const queryClient = useQueryClient();
+	const ws = new WebSocketClient();
+
+	ws.onMessage = async (message) => {
+		const data: { type: WebSocketMessageType; message: unknown } = message.data
+			? JSON.parse(message.data)
+			: null;
+
+		if (!data?.type) {
+			return;
+		}
+
+		document.dispatchEvent(
+			new CustomEvent(data.type, {
+				detail: data.message,
+				bubbles: true
+			})
+		);
+
+		if (isEntityChangedType(data)) {
+			await queryClient.invalidateQueries([data.message.type]);
+		}
+
+		// This event is fired when a user is added or removed from an organization.
+		// if (data.type === "UserMembershipChanged" && data.message?.organization_id) {
+		//     $rootScope.$emit("OrganizationChanged", data.message);
+		//     $rootScope.$emit("ProjectChanged", data.message);
+		// }
+	};
+	ws.onError = (error) => console.error({ 'WS Error': error });
 </script>
 
 {#if $isAuthenticated}
@@ -54,8 +90,8 @@
 		<slot />
 	</div>
 
-	<footer class="footer items-center p-4 bg-base-300 text-base-content">
-		<div class="items-center grid-flow-col">
+	<footer class="footer items-center bg-base-300 p-4 text-base-content">
+		<div class="grid-flow-col items-center">
 			<p>
 				© 2023
 				<a href="https://exceptionless.com" target="_blank" class="link">Exceptionless</a>
