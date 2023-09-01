@@ -1,6 +1,5 @@
 import { validate as classValidate } from 'class-validator';
 import { writable, derived } from 'svelte/store';
-import { goto } from '$app/navigation';
 import { accessToken } from './Auth';
 
 function createCount() {
@@ -27,12 +26,12 @@ export type RequestOptions = {
 	shouldValidate?: boolean;
 	params?: Record<string, unknown>;
 	expectedStatusCodes?: number[];
-	unauthorizedShouldRedirect?: boolean;
+	unauthorizedShouldResetAccessToken?: boolean;
 	errorCallback?: (error: Response) => void;
 };
 
 export class JsonResponse<T extends object> {
-	constructor(response: Response, success: boolean, data?: T | null, problem?: ProblemDetails) {
+	constructor(response: Response, success: boolean, data?: T, problem?: ProblemDetails) {
 		this.response = response;
 		this.status = response.status;
 		this.data = data;
@@ -42,7 +41,7 @@ export class JsonResponse<T extends object> {
 
 	success: boolean = false;
 	status: number;
-	data?: T | null;
+	data?: T;
 	response: Response;
 	problem: ProblemDetails;
 }
@@ -296,7 +295,7 @@ export class FetchClient {
 			!response.ok ||
 			response.headers.get('Content-Type')?.startsWith('application/problem+json')
 		)
-			return new JsonResponse<T>(response, response.ok, null, data);
+			return new JsonResponse<T>(response, response.ok, undefined, data);
 
 		return new JsonResponse(response, response.ok, data);
 	}
@@ -334,13 +333,8 @@ export class FetchClient {
 			return;
 		}
 
-		if (
-			response.status === 401 &&
-			!location.pathname.startsWith('/login') &&
-			options?.unauthorizedShouldRedirect != false
-		) {
-			const returnUrl = location.href;
-			await goto(`/login?url=${returnUrl}`, { replaceState: true });
+		if (response.status === 401 && options?.unauthorizedShouldResetAccessToken != false) {
+			accessToken.set(null);
 			return;
 		}
 
