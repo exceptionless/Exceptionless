@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@sveltestack/svelte-query';
+import { createInfiniteQuery, createQuery } from '@tanstack/svelte-query';
 import { FetchClient, JsonResponse, ProblemDetails } from './FetchClient';
 import type { PersistentEvent } from '$lib/models/api.generated';
 import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from './link';
@@ -18,7 +18,7 @@ export interface IGetEventsParams {
 }
 
 export function useGetEventsQuery(params?: IGetEventsParams) {
-	return useQuery<
+	return createQuery<
 		JsonResponse<PersistentEvent[]>,
 		ProblemDetails,
 		JsonResponse<PersistentEvent[]>
@@ -37,7 +37,7 @@ export function useGetEventsQuery(params?: IGetEventsParams) {
 }
 
 export function useGetEventsInfiniteQuery(params?: IGetEventsParams) {
-	return useInfiniteQuery<JsonResponse<PersistentEvent[]>, ProblemDetails>(
+	return createInfiniteQuery<JsonResponse<PersistentEvent[]>, ProblemDetails>(
 		[queryKey],
 		async ({ pageParam }) => {
 			const api = new FetchClient();

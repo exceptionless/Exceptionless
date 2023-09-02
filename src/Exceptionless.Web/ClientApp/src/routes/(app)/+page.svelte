@@ -1,29 +1,30 @@
 <script lang="ts">
+	import { createSvelteTable } from '@tanstack/svelte-table';
 	import InfiniteScroll from 'svelte-infinite-scroll';
 	import {
 		useGetEventsQuery,
 		useGetEventsInfiniteQuery,
 		type IGetEventsParams
 	} from '$api/EventQueries';
-	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
-	import type { PersistentEvent } from '$lib/models/api.generated';
-	import { IsFetching, useQuery } from '@sveltestack/svelte-query';
-	import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from '$api/link';
-
-	//const api = new FetchClient();
-	// 	const eventsQueryResult = useQuery<PersistentEvent[], ProblemDetails, PersistentEvent[]>(
-	// 		['PersistentEvent'],
-	// 		async () => {
-	// 			const response = await api.getJSON<PersistentEvent[]>('events', {
-	// 				params: { mode: 'summary' }
-	// 			});
-	// 			if (response.success) {
-	// 				return response.data ?? [];
-	// 			}
+	//	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+	// 	import type { PersistentEvent } from '$lib/models/api.generated';
+	// 	import { createQuery } from '@tanstack/svelte-query';
+	// 	import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from '$api/link';
 	//
-	// 			throw response.problem;
-	// 		}
-	// 	);
+	// 	const api = new FetchClient();
+	// 		const eventsQueryResult = createQuery<PersistentEvent[], ProblemDetails, PersistentEvent[]>(
+	// 			['PersistentEvent'],
+	// 			async () => {
+	// 				const response = await api.getJSON<PersistentEvent[]>('events', {
+	// 					params: { mode: 'summary' }
+	// 				});
+	// 				if (response.success) {
+	// 					return response.data ?? [];
+	// 				}
+	//
+	// 				throw response.problem;
+	// 			}
+	// 		);
 
 	// Uncomment for paging
 	// $: currentPageParams = { mode: 'summary' } as IGetEventsParams;

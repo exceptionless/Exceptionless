@@ -11,6 +11,13 @@
 -   <https://joyofcode.xyz/sveltekit-progressive-enhancement>
 -   <https://joyofcode.xyz/working-with-forms-in-sveltekit>
 
+## Data Tables
+
+-   <https://github.com/TanStack/table>
+-   <https://svelte-headless-table.bryanmylee.com/#headless>
+-   <https://tanstack.com/table/v8/docs/guide/column-sizing>
+-   <https://www.youtube.com/watch?v=-Zuo3UWjjI8>
+
 ## State
 
 -   <https://joyofcode.xyz/svelte-context-with-stores>

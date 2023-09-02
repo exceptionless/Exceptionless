@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useQueryClient } from '@sveltestack/svelte-query';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
 	import { isAuthenticated } from '$lib/api/Auth';
 	import { page } from '$app/stores';
