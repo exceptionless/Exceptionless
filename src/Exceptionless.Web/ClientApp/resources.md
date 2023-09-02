@@ -17,6 +17,9 @@
 -   <https://svelte-headless-table.bryanmylee.com/#headless>
 -   <https://tanstack.com/table/v8/docs/guide/column-sizing>
 -   <https://www.youtube.com/watch?v=-Zuo3UWjjI8>
+-   <https://tanstack.com/table/v8/docs/examples/svelte/basic>
+-   <https://codesandbox.io/examples/package/@tanstack/svelte-table>
+-   <https://codesandbox.io/s/tanstack-table-example-svelte-basic-4jif2l?file=/src/App.svelte>
 
 ## State
 

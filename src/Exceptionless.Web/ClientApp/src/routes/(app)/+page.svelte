@@ -34,6 +34,7 @@
 	// $: nextPageParams = parseNextPageQueryParameters(linkHeader) as IGetEventsParams;
 
 	const eventsQueryResult = useGetEventsInfiniteQuery({ mode: 'summary' });
+	const table = createSvelteTable({});
 </script>
 
 <svelte:head>
