@@ -1,3 +1,5 @@
+export { Login, PersistentEvent, TokenResult } from './api.generated';
+
 export enum ChangeType {
 	Added = 0,
 	Saved = 1,

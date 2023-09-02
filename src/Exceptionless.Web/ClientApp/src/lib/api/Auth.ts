@@ -1,7 +1,7 @@
 import { derived } from 'svelte/store';
 import { persisted } from 'svelte-local-storage-store';
 import { FetchClient } from './FetchClient';
-import type { TokenResult } from '$lib/models/api.generated';
+import type { TokenResult } from '$lib/models/api';
 import { goto } from '$app/navigation';
 
 export const accessToken = persisted<string | null>('access_token', null);

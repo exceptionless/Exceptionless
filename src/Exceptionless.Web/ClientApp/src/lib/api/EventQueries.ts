@@ -1,7 +1,6 @@
 import { createInfiniteQuery, createQuery } from '@tanstack/svelte-query';
 import { FetchClient, JsonResponse, ProblemDetails } from './FetchClient';
-import type { PersistentEvent } from '$lib/models/api.generated';
-import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from './link';
+import type { PersistentEvent } from '$lib/models/api';
 
 const queryKey: string = 'PersistentEvent';
 
@@ -45,10 +44,8 @@ export function useGetEventsInfiniteQuery(params?: IGetEventsParams) {
 			return await api.getJSON<PersistentEvent[]>('events', { params: mergedParams });
 		},
 		{
-			getPreviousPageParam: (firstPage) =>
-				parseNextPageQueryParameters(firstPage.response.headers.get('link')),
-			getNextPageParam: (lastPage) =>
-				parseNextPageQueryParameters(lastPage.response.headers.get('link'))
+			getPreviousPageParam: (firstPage) => firstPage.nextPageParams,
+			getNextPageParam: (lastPage) => lastPage.nextPageParams
 		}
 	);
 }

@@ -11,8 +11,7 @@
 	import { page } from '$app/stores';
 	import { liveLogin, facebookLogin, googleLogin, githubLogin, accessToken } from '$api/Auth';
 	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
-	import type { TokenResult } from '$lib/models/api.generated';
-	import { Login } from '$lib/models/api.generated';
+	import { Login, type TokenResult } from '$lib/models/api';
 
 	const api = new FetchClient();
 	const data = new Login();

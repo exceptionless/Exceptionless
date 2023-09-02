@@ -1,6 +1,7 @@
 import { validate as classValidate } from 'class-validator';
 import { writable, derived } from 'svelte/store';
 import { accessToken } from './Auth';
+import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from './link';
 
 function createCount() {
 	const { subscribe, set, update } = writable(0);
@@ -37,6 +38,12 @@ export class JsonResponse<T extends object> {
 		this.data = data;
 		this.success = success;
 		this.problem = Object.assign(new ProblemDetails(), problem);
+
+		if (success && response.headers.has('link')) {
+			const linkHeaderValue = response.headers.get('link');
+			this.previousPageParams = parsePreviousPageQueryParameters(linkHeaderValue);
+			this.nextPageParams = parseNextPageQueryParameters(linkHeaderValue);
+		}
 	}
 
 	success: boolean = false;
@@ -44,6 +51,17 @@ export class JsonResponse<T extends object> {
 	data?: T;
 	response: Response;
 	problem: ProblemDetails;
+
+	previousPageParams?: Record<string, unknown>;
+	nextPageParams?: Record<string, unknown>;
+
+	get hasPreviousPage(): boolean {
+		return !!this.previousPageParams;
+	}
+
+	get hasNextPage(): boolean {
+		return !!this.nextPageParams;
+	}
 }
 
 export class ProblemDetails implements Record<string, unknown> {

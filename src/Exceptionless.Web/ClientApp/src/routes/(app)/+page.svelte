@@ -7,7 +7,7 @@
 		type IGetEventsParams
 	} from '$api/EventQueries';
 	//	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
-	// 	import type { PersistentEvent } from '$lib/models/api.generated';
+	// 	import type { PersistentEvent } from '$lib/models/api';
 	// 	import { createQuery } from '@tanstack/svelte-query';
 	// 	import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from '$api/link';
 	//
@@ -34,7 +34,6 @@
 	// $: nextPageParams = parseNextPageQueryParameters(linkHeader) as IGetEventsParams;
 
 	const eventsQueryResult = useGetEventsInfiniteQuery({ mode: 'summary' });
-	const table = createSvelteTable({});
 </script>
 
 <svelte:head>
