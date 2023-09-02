@@ -263,7 +263,6 @@ export class FetchClient {
 		options?: RequestOptions
 	): Promise<Response> {
 		url = this.buildUrl(url, options);
-
 		globalRequestCount.increment();
 		this.requestCount.increment();
 

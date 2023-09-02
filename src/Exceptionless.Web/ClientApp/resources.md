@@ -4,6 +4,7 @@
 
 -   <https://kit.svelte.dev/docs/project-structure>
 -   <https://github.com/laoshaw/sveltespa>
+-   <https://khromov.se/the-missing-guide-to-understanding-adapter-static-in-sveltekit/>
 
 ## Forms
 
