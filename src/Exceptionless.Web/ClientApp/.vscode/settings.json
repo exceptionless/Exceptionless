@@ -1,6 +1,6 @@
 {
 	"debug.allowBreakpointsEverywhere": true,
-	"cSpell.words": ["keyof", "nameof", "tanstack"],
+	"cSpell.words": ["keyof", "nameof", "sessionend", "tanstack"],
 	"prettier.documentSelectors": ["**/*.svelte"],
 	"svelte.plugin.svelte.defaultScriptLanguage": "ts"
 }

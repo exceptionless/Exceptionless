@@ -65,7 +65,7 @@ export class JsonResponse<T extends object> {
 }
 
 export class ProblemDetails implements Record<string, unknown> {
-	[x: string]: unknown;
+	[key: string]: unknown;
 	type?: string;
 	title?: string;
 	status?: number;

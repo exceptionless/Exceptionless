@@ -52,6 +52,7 @@
 		"oidc-client-ts": "^2.2.5",
 		"svelte-infinite-scroll": "^2.0.1",
 		"svelte-local-storage-store": "^0.6.0",
+		"svelte-time": "^0.8.0",
 		"tailwindcss": "^3.3.3",
 		"unplugin-icons": "^0.16.6"
 	},

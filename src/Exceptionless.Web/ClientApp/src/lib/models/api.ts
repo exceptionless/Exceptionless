@@ -1,4 +1,152 @@
+import type { StackStatus } from './api.generated';
+
 export { Login, PersistentEvent, TokenResult } from './api.generated';
+
+export type SummaryTemplateKeys =
+	| 'event-summary'
+	| 'stack-summary'
+	| 'event-simple-summary'
+	| 'stack-simple-summary'
+	| 'event-error-summary'
+	| 'stack-error-summary'
+	| 'event-session-summary'
+	| 'stack-session-summary'
+	| 'event-notfound-summary'
+	| 'stack-notfound-summary'
+	| 'event-feature-summary'
+	| 'stack-feature-summary'
+	| 'event-log-summary'
+	| 'stack-log-summary';
+
+export type SummaryDataValue<T extends SummaryTemplateKeys> = T extends 'event-summary'
+	? EventSummaryData
+	: T extends 'stack-summary'
+	? StackSummaryData
+	: T extends 'event-simple-summary'
+	? EventSimpleSummaryData
+	: T extends 'stack-simple-summary'
+	? StackSimpleSummaryData
+	: T extends 'event-error-summary'
+	? EventErrorSummaryData
+	: T extends 'stack-error-summary'
+	? StackErrorSummaryData
+	: T extends 'event-session-summary'
+	? EventSessionSummaryData
+	: T extends 'event-notfound-summary'
+	? EventNotFoundSummaryData
+	: T extends 'event-feature-summary'
+	? EventFeatureSummaryData
+	: T extends 'event-log-summary'
+	? EventLogSummaryData
+	: T extends 'stack-log-summary'
+	? StackLogSummaryData
+	: Record<string, unknown>;
+
+export interface EventSummaryData {
+	Message?: string;
+	Source?: string;
+	Type?: string;
+	Identity?: string;
+	Name?: string;
+}
+
+export interface StackSummaryData {
+	Source?: string;
+	Type?: string;
+}
+
+export interface EventSimpleSummaryData {
+	Message?: string;
+	Type?: string;
+	TypeFullName?: string;
+	Path?: string;
+}
+
+export interface StackSimpleSummaryData {
+	Type?: string;
+	TypeFullName?: string;
+	Path?: string;
+}
+
+export interface EventErrorSummaryData {
+	Message?: string;
+	Type?: string;
+	TypeFullName?: string;
+	Method?: string;
+	MethodFullName?: string;
+	Path?: string;
+}
+
+export interface StackErrorSummaryData {
+	Message?: string;
+	Type?: string;
+	TypeFullName?: string;
+	Method?: string;
+	MethodFullName?: string;
+	Path?: string;
+}
+
+export interface EventSessionSummaryData {
+	SessionId?: string;
+	SessionEnd?: string;
+	Value?: string;
+	Type?: 'session' | 'sessionend' | 'heartbeat';
+	Identity?: string;
+	Name?: string;
+}
+
+export interface EventNotFoundSummaryData {
+	Source?: string;
+	Identity?: string;
+	Name?: string;
+}
+
+export interface EventFeatureSummaryData {
+	Source?: string;
+	Identity?: string;
+	Name?: string;
+	IpAddress?: string[];
+}
+
+export interface EventLogSummaryData {
+	Message?: string;
+	Source?: string;
+	SourceShortName?: string;
+	Level?: string;
+	Identity?: string;
+	Name?: string;
+}
+
+export interface StackLogSummaryData {
+	Source?: string;
+	SourceShortName?: string;
+}
+
+export interface SummaryModel<T extends SummaryTemplateKeys> {
+	id: string;
+	template_key: T;
+	data: SummaryDataValue<T>;
+}
+
+export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
+	/** @format date-time */
+	date: string;
+}
+
+export interface StackSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
+	title: string;
+	status: StackStatus;
+	/** @format date-time */
+	first_occurrence: string;
+	/** @format date-time */
+	last_occurrence: string;
+	/** @format int64 */
+	total: number;
+	/** @format double */
+	users: number;
+	/** @format double */
+	total_users: number;
+}
 
 export enum ChangeType {
 	Added = 0,

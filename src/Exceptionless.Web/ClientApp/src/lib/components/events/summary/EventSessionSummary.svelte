@@ -1,0 +1,37 @@
+<script lang="ts">
+	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+
+	export let badgeClass: string;
+	export let showBadge: boolean;
+	export let showStatus: boolean;
+	export let showType: boolean;
+	export let summary: SummaryModel<SummaryTemplateKeys>;
+	const source = summary as EventSummaryModel<'event-session-summary'>;
+
+	function truncateText(text?: string, maxLines?: number) {
+		// Implement your text truncation logic here, or use a library like 'svelte-truncate'
+		// to handle truncation.
+		return text;
+	}
+</script>
+
+{#if showType}
+	<strong>
+		{#if source.data.Type === 'sessionend'}
+			Session End
+		{:else if source.data.Type === 'heartbeat'}
+			Session Heartbeat
+		{:else}
+			Session
+		{/if}
+	</strong>:&nbsp;
+{/if}
+
+<a href="/event/{source.id}" class="truncate" style="max-lines: 2">
+	{#if source.data.Name || source.data.Identity || source.data.SessionId}
+		{source.data.Name || source.data.Identity || source.data.SessionId}
+		{#if source.data.Name && source.data.Identity}
+			<span class="text-muted"> ({source.data.Identity})</span>
+		{/if}
+	{/if}
+</a>
