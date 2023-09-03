@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/api/Auth';
+	import { isAuthenticated } from '$api/auth';
 	import { page } from '$app/stores';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
 	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';

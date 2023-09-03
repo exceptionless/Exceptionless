@@ -9,31 +9,32 @@
 
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { liveLogin, facebookLogin, googleLogin, githubLogin, accessToken } from '$api/Auth';
-	import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+	import {
+		login,
+		liveLogin,
+		facebookLogin,
+		googleLogin,
+		githubLogin,
+		accessToken
+	} from '$api/auth';
+	import { FetchClient, ProblemDetails, globalLoading } from '$lib/api/FetchClient';
 	import { Login, type TokenResult } from '$lib/models/api';
 
-	const api = new FetchClient();
+	const client = new FetchClient();
 	const data = new Login();
+	let loading = client.loading;
 	data.invite_token = $page.url.searchParams.get('token');
 
-	const loading = api.loading;
 	let problem = new ProblemDetails();
 	const redirectUrl = $page.url.searchParams.get('url') ?? '/';
 
 	async function onLogin() {
-		if ($loading) {
-			return;
-		}
+		if ($loading) return;
 
-		const response = await api.postJSON<TokenResult>('auth/login', data, {
-			expectedStatusCodes: [401]
-		});
-		if (response.success && response.data?.token) {
-			accessToken.set(response.data.token);
+		let response = await login(data.email, data.password);
+
+		if (response.ok) {
 			await goto(redirectUrl);
-		} else if (response.status === 401) {
-			problem = problem.setErrorMessage('Invalid email or password');
 		} else {
 			problem = response.problem;
 		}
@@ -66,7 +67,7 @@
 	</PasswordInput>
 	<div class="my-4">
 		<button type="submit" class="btn btn-primary btn-block">
-			{#if $loading}
+			{#if $globalLoading}
 				<span class="loading loading-spinner"></span> Logging in...
 			{:else}
 				Login

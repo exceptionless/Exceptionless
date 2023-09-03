@@ -1,15 +1,37 @@
 import { derived } from 'svelte/store';
 import { persisted } from 'svelte-local-storage-store';
-import { FetchClient } from './FetchClient';
-import type { TokenResult } from '$lib/models/api';
+import { globalFetchClient, setAccessTokenStore } from './FetchClient';
+import type { TokenResult } from '$lib/models/api.generated';
 import { goto } from '$app/navigation';
 
 export const accessToken = persisted<string | null>('access_token', null);
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
 
+console.log('set access token store');
+// set FetchClient access token store
+setAccessTokenStore(accessToken);
+
+export async function login(username: string, password: string) {
+	const data = { username, password };
+	const response = await globalFetchClient.postJSON<TokenResult>(
+		'https://jsonplaceholder.typicode.com/todos/1',
+		data,
+		{
+			expectedStatusCodes: [401]
+		}
+	);
+
+	if (response.ok && response.data?.token) {
+		accessToken.set(response.data.token);
+	} else if (response.status === 401) {
+		response.problem.setErrorMessage('Invalid email or password');
+	}
+
+	return response;
+}
+
 export async function logout() {
-	const client = new FetchClient();
-	await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
+	await globalFetchClient.get('auth/logout', { expectedStatusCodes: [200, 401] });
 	accessToken.set(null);
 }
 
@@ -103,15 +125,14 @@ async function oauthLogin(options: {
 	if (options.extraParams?.state && data.state !== options.extraParams.state)
 		throw new Error('Invalid state');
 
-	const client = new FetchClient();
-	const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
+	const response = await globalFetchClient.postJSON<TokenResult>(`auth/${options.provider}`, {
 		state: data.state,
 		code: data.code,
 		clientId: options.clientId,
 		redirectUri: redirectUrl
 	});
 
-	if (response.success && response.data?.token) {
+	if (response.ok && response.data?.token) {
 		accessToken.set(response.data.token);
 		await goto(options.redirectUrl || '/');
 	}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { FetchClient, ProblemDetails } from '$api/FetchClient';
 	import { goto } from '$app/navigation';
-	import { isAuthenticated, logout } from '$lib/api/Auth';
+	import { isAuthenticated, logout } from '$api/auth';
 
 	$: if (!$isAuthenticated) {
 		goto('/login', { replaceState: true });
