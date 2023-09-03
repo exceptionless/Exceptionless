@@ -201,9 +201,13 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
+    /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -250,7 +254,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return Ok(result);
     }
 
-    private async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false)
+    private async Task<ActionResult<ICollection<PersistentEvent>>> GetInternalAsync(AppFilter sf, TimeInfo ti, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false)
     {
         using var _ = _logger.BeginScope(new ExceptionlessState()
             .Property("Search Filter", new
@@ -294,8 +298,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         var summaryData = _formattingPluginManager.GetEventSummaryData(e);
                         return new EventSummaryModel
                         {
+                            Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
-                            Id = e.Id,
                             Date = e.Date,
                             Data = summaryData.Data
                         };
@@ -424,7 +428,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -456,7 +463,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -492,7 +502,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByStackAsync(string stackId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByStackAsync(string stackId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var stack = await GetStackAsync(stackId);
         if (stack is null)
@@ -521,9 +534,13 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
+    /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("by-ref/{referenceId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository);
         if (organizations.All(o => o.IsSuspended))
@@ -550,7 +567,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetByReferenceIdAsync(string referenceId, string projectId, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -582,9 +602,13 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <param name="after">The after parameter is a cursor used for pagination and defines your place in the list of results.</param>
     /// <response code="400">Invalid filter.</response>
+    /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("sessions/{sessionId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetBySessionIdAsync(string sessionId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -614,7 +638,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetBySessionIdAndProjectAsync(string sessionId, string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -647,7 +674,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="400">Invalid filter.</response>
     [HttpGet("sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionsAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionsAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -676,7 +706,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionByOrganizationAsync(string organizationId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organization = await GetOrganizationAsync(organizationId);
         if (organization is null)
@@ -708,7 +741,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="426">Unable to view event occurrences for the suspended organization.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/sessions")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
+    [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetSessionByProjectAsync(string projectId, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var project = await GetProjectAsync(projectId);
         if (project is null)
@@ -1355,9 +1391,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             var data = _formattingPluginManager.GetStackSummaryData(stack);
             var summary = new StackSummaryModel
             {
+                Id = data.Id,
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,
-                Id = stack.Id,
                 Title = stack.Title,
                 Status = stack.Status,
                 FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,

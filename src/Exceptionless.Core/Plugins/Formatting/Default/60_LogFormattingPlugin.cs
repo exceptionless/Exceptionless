@@ -32,7 +32,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             }
         }
 
-        return new SummaryData { TemplateKey = "stack-log-summary", Data = data };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-log-summary", Data = data };
     }
 
     public override string? GetStackTitle(PersistentEvent ev)
@@ -64,7 +64,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrWhiteSpace(level))
             data.Add("Level", level.Trim());
 
-        return new SummaryData { TemplateKey = "event-log-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-log-summary", Data = data };
     }
 
     public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)

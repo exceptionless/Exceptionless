@@ -50,9 +50,9 @@ public class SummaryDataTests : TestWithServices
         var data = GetService<FormattingPluginManager>().GetStackSummaryData(stack);
         var summary = new StackSummaryModel
         {
+            Id = data.Id,
             TemplateKey = data.TemplateKey,
             Data = data.Data,
-            Id = stack.Id,
             Title = stack.Title,
             Status = stack.Status,
             Total = 1

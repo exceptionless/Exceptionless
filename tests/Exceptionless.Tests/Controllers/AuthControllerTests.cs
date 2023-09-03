@@ -53,8 +53,9 @@ public class AuthControllerTests : IntegrationTestsBase
             .AppendPath("auth/signup")
             .Content(new Signup
             {
+                Name = "hello",
                 Email = "test@domain.com",
-                Name = "hello"
+                Password = null!
             })
             .StatusCodeShouldBeBadRequest()
         );
@@ -109,10 +110,10 @@ public class AuthControllerTests : IntegrationTestsBase
             .AppendPath("auth/signup")
             .Content(new Signup
             {
-                Email = email,
-                InviteToken = StringExtensions.GetNewToken(),
                 Name = "Test",
-                Password = password
+                Email = email,
+                Password = password,
+                InviteToken = StringExtensions.GetNewToken()
             })
             .StatusCodeShouldBeBadRequest()
         );
@@ -150,10 +151,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = email,
-               InviteToken = invite.Token,
                Name = "Test",
-               Password = password
+               Email = email,
+               Password = password,
+               InviteToken = invite.Token
            })
            .StatusCodeShouldBeOk()
        );
@@ -189,10 +190,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = email,
-               InviteToken = invite.Token,
                Name = "Test",
-               Password = password
+               Email = email,
+               Password = password,
+               InviteToken = invite.Token
            })
            .StatusCodeShouldBeBadRequest()
         );
@@ -208,10 +209,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = "test4@exceptionless.io",
-               InviteToken = "",
                Name = "Test",
-               Password = "Password1$"
+               Email = "test4@exceptionless.io",
+               Password = "Password1$",
+               InviteToken = ""
            })
            .StatusCodeShouldBeOk()
         );
@@ -234,10 +235,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = email,
-               InviteToken = "",
                Name = "Test",
-               Password = TestDomainLoginProvider.ValidPassword
+               Email = email,
+               Password = TestDomainLoginProvider.ValidPassword,
+               InviteToken = ""
            })
            .StatusCodeShouldBeOk()
         );
@@ -257,10 +258,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = "testuser2@exceptionless.io",
-               InviteToken = "",
                Name = "Test",
-               Password = "literallydoesntmatter"
+               Email = "testuser2@exceptionless.io",
+               Password = "literallydoesntmatter",
+               InviteToken = ""
            })
            .StatusCodeShouldBeBadRequest()
         );
@@ -294,10 +295,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = email,
-               InviteToken = invite.Token,
                Name = name,
-               Password = password
+               Email = email,
+               Password = password,
+               InviteToken = invite.Token
            })
            .StatusCodeShouldBeOk()
         );
@@ -355,10 +356,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = email,
-               InviteToken = invite.Token,
                Name = "Test",
-               Password = TestDomainLoginProvider.ValidPassword
+               Email = email,
+               Password = TestDomainLoginProvider.ValidPassword,
+               InviteToken = invite.Token
            })
            .StatusCodeShouldBeOk()
         );
@@ -391,10 +392,10 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/signup")
            .Content(new Signup
            {
-               Email = email,
-               InviteToken = invite.Token,
                Name = "Test",
-               Password = TestDomainLoginProvider.ValidPassword
+               Email = email,
+               Password = TestDomainLoginProvider.ValidPassword,
+               InviteToken = invite.Token
            })
            .StatusCodeShouldBeBadRequest()
         );
@@ -425,8 +426,9 @@ public class AuthControllerTests : IntegrationTestsBase
             .AppendPath("auth/signup")
             .Content(new Signup
             {
+                Name = "Random Name",
                 Email = email,
-                Name = "Random Name"
+                Password = null!
             })
             .StatusCodeShouldBeBadRequest()
         );
@@ -436,8 +438,8 @@ public class AuthControllerTests : IntegrationTestsBase
             .AppendPath("auth/signup")
             .Content(new Signup
             {
-                Email = email,
                 Name = "Random Name",
+                Email = email,
                 Password = "invalidPass",
             })
             .StatusCodeShouldBeUnauthorized()
