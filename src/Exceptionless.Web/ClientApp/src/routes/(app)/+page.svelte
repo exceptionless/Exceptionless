@@ -34,4 +34,4 @@
 
 <h1 class="text-xl mt-5">Events</h1>
 
-<EventSummaries></EventSummaries>
+<EventSummaries mode="summary"></EventSummaries>

@@ -25,7 +25,7 @@
 	import { nameof } from '$lib/utils';
 	import StackUsersSummary from './summary/StackUsersSummary.svelte';
 
-	export let mode: GetEventsMode = 'stack_new';
+	export let mode: GetEventsMode = 'summary';
 	const eventParams: IGetEventsParams = { mode };
 	const queryResult = useGetEventSummariesQuery(eventParams);
 
