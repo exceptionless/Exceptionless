@@ -1,8 +1,9 @@
-import { derived } from 'svelte/store';
+import { get, derived } from 'svelte/store';
 import { persisted } from 'svelte-local-storage-store';
 import { globalFetchClient, setAccessTokenStore } from './FetchClient';
 import type { TokenResult } from '$lib/models/api.generated';
 import { goto } from '$app/navigation';
+import { page } from '$app/stores';
 
 export const accessToken = persisted<string | null>('access_token', null);
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
@@ -28,6 +29,18 @@ export async function login(username: string, password: string) {
 	}
 
 	return response;
+}
+
+export async function gotoLogin() {
+	const currentPage = get(page);
+	const isAuthPath =
+		currentPage.url.pathname.startsWith('/login') ||
+		currentPage.url.pathname.startsWith('/logout');
+	const url =
+		currentPage.url.pathname === '/' || isAuthPath
+			? '/login'
+			: `/login?redirect=${location.href}`;
+	await goto(url, { replaceState: true });
 }
 
 export async function logout() {

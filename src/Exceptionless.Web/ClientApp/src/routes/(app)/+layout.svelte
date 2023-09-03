@@ -1,16 +1,24 @@
 <script lang="ts">
 	import { useQueryClient } from '@tanstack/svelte-query';
-	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$api/auth';
-	import { page } from '$app/stores';
+	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
 	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';
+	import {
+		setAccessTokenStore,
+		setDefaultModelValidator,
+		useGlobalMiddleware
+	} from '$api/FetchClient';
+	import { validate } from '$lib/validation/validation';
 
 	isAuthenticated.subscribe((authenticated) => {
-		if (!authenticated) {
-			const url = $page.url.pathname === '/' ? '/login' : `/login?url=${location.href}`;
-			goto(url, { replaceState: true });
-		}
+		if (!authenticated) gotoLogin();
+	});
+
+	setDefaultModelValidator(validate);
+	setAccessTokenStore(accessToken);
+	useGlobalMiddleware(async (ctx, next) => {
+		await next();
+		if (ctx.response && ctx.response.status === 401) await gotoLogin();
 	});
 
 	const queryClient = useQueryClient();

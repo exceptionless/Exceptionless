@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { FetchClient } from './FetchClient';
-import { validate } from '$lib/validation/validation';
-import { Login } from '$lib/models/api.generated';
+import {
+	FetchClient,
+	ProblemDetails,
+	setDefaultModelValidator,
+	setDefaultRequestOptions,
+	useGlobalMiddleware
+} from './FetchClient';
 
 describe('fetch client', () => {
 	it('can getJSON with middleware', async () => {
 		const fakeFetch = (): Promise<Response> =>
 			new Promise((resolve) => {
-				console.log('fake fetch');
 				const data = JSON.stringify({
 					userId: 1,
 					id: 1,
@@ -43,7 +46,6 @@ describe('fetch client', () => {
 	it('can postJSON with middleware', async () => {
 		const fakeFetch = (): Promise<Response> =>
 			new Promise((resolve) => {
-				console.log('fake fetch');
 				const data = JSON.stringify({
 					userId: 1,
 					id: 1,
@@ -79,7 +81,6 @@ describe('fetch client', () => {
 	it('can putJSON with middleware', async () => {
 		const fakeFetch = (): Promise<Response> =>
 			new Promise((resolve) => {
-				console.log('fake fetch');
 				const data = JSON.stringify({
 					userId: 1,
 					id: 1,
@@ -115,7 +116,6 @@ describe('fetch client', () => {
 	it('can delete with middleware', async () => {
 		const fakeFetch = (): Promise<Response> =>
 			new Promise((resolve) => {
-				console.log('fake fetch');
 				resolve(new Response());
 			});
 		const client = new FetchClient(fakeFetch);
@@ -141,7 +141,6 @@ describe('fetch client', () => {
 		const fakeFetch = (r: unknown): Promise<Response> =>
 			new Promise((resolve) => {
 				const request = r as Request;
-				console.log('fake fetch');
 				const data = JSON.stringify({
 					userId: 1,
 					id: 1,
@@ -154,7 +153,10 @@ describe('fetch client', () => {
 				request.signal.addEventListener('abort', () => {
 					clearTimeout(responseTimeout);
 					resolve(
-						new Response(null, { status: 0, statusText: 'The user aborted a request.' })
+						new Response(null, {
+							status: 299,
+							statusText: 'The user aborted a request.'
+						})
 					);
 				});
 			});
@@ -172,23 +174,28 @@ describe('fetch client', () => {
 		const fakeFetch = (): Promise<Response> =>
 			new Promise((resolve) => {
 				called = true;
-				const data = JSON.stringify({
-					userId: 1,
-					id: 1,
-					title: 'delectus aut autem',
-					completed: false
-				});
-				resolve(new Response(data));
+				resolve(new Response());
 			});
 
 		const client = new FetchClient(fakeFetch);
-		const data = new Login();
-		data.email = 'test@test';
-		data.password = 'test';
+		const data = {
+			email: 'test@test',
+			password: 'test'
+		};
+		const modelValidator = async (data: object | null) => {
+			// use zod or class validator
+			const problem = new ProblemDetails();
+			const d = data as any;
+			if (d!.password!.length < 6)
+				problem.errors.password = [
+					'Password must be longer than or equal to 6 characters.'
+				];
+			return problem;
+		};
 		const response = await client.postJSON(
 			'https://jsonplaceholder.typicode.com/todos/1',
 			data,
-			{ modelValidator: validate }
+			{ modelValidator: modelValidator }
 		);
 		expect(response.ok).toBe(false);
 		expect(called).toBe(false);
@@ -201,5 +208,80 @@ describe('fetch client', () => {
 		expect(response.problem!.errors.password![0]).toBe(
 			'Password must be longer than or equal to 6 characters.'
 		);
+	});
+
+	it('will validate postJSON model with default model validator', async () => {
+		let called = false;
+		const fakeFetch = (): Promise<Response> =>
+			new Promise((resolve) => {
+				called = true;
+				resolve(new Response());
+			});
+
+		const client = new FetchClient(fakeFetch);
+		const data = {
+			email: 'test@test',
+			password: 'test'
+		};
+		setDefaultModelValidator(async (data: object | null) => {
+			// use zod or class validator
+			const problem = new ProblemDetails();
+			const d = data as any;
+			if (d!.password!.length < 6)
+				problem.errors.password = [
+					'Password must be longer than or equal to 6 characters.'
+				];
+			return problem;
+		});
+		const response = await client.postJSON(
+			'https://jsonplaceholder.typicode.com/todos/1',
+			data
+		);
+		expect(response.ok).toBe(false);
+		expect(called).toBe(false);
+		expect(response.status).toBe(422);
+		expect(response.data).toBeNull();
+		expect(response.problem).not.toBeNull();
+		expect(response.problem!.errors).not.toBeNull();
+		expect(response.problem!.errors.password).not.toBeNull();
+		expect(response.problem!.errors.password!.length).toBe(1);
+		expect(response.problem!.errors.password![0]).toBe(
+			'Password must be longer than or equal to 6 characters.'
+		);
+	});
+
+	it('can use global middleware', async () => {
+		const fakeFetch = (): Promise<Response> =>
+			new Promise((resolve) => {
+				const data = JSON.stringify({
+					userId: 1,
+					id: 1,
+					title: 'delectus aut autem',
+					completed: false
+				});
+				resolve(new Response(data));
+			});
+		const client = new FetchClient(fakeFetch);
+		let called = false;
+		useGlobalMiddleware(async (ctx, next) => {
+			expect(ctx).not.toBeNull();
+			expect(ctx.request).not.toBeNull();
+			expect(ctx.response).toBeNull();
+			called = true;
+			await next();
+			expect(ctx.response).not.toBeNull();
+		});
+		expect(client).not.toBeNull();
+
+		type Todo = { userId: number; id: number; title: string; completed: boolean };
+		const r = await client.getJSON<Todo>('https://jsonplaceholder.typicode.com/todos/1');
+		expect(r.ok).toBe(true);
+		expect(r.status).toBe(200);
+		expect(r.data).not.toBeNull();
+		expect(called).toBe(true);
+		expect(r.data!.userId).toBe(1);
+		expect(r.data!.id).toBe(1);
+		expect(r.data!.title).toBe('delectus aut autem');
+		expect(r.data!.completed).toBe(false);
 	});
 });

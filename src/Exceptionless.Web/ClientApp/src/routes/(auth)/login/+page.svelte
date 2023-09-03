@@ -9,14 +9,7 @@
 
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import {
-		login,
-		liveLogin,
-		facebookLogin,
-		googleLogin,
-		githubLogin,
-		accessToken
-	} from '$api/auth';
+	import { login, liveLogin, facebookLogin, googleLogin, githubLogin } from '$api/auth';
 	import { FetchClient, ProblemDetails, globalLoading } from '$lib/api/FetchClient';
 	import { Login, type TokenResult } from '$lib/models/api';
 
@@ -26,7 +19,7 @@
 	data.invite_token = $page.url.searchParams.get('token');
 
 	let problem = new ProblemDetails();
-	const redirectUrl = $page.url.searchParams.get('url') ?? '/';
+	const redirectUrl = $page.url.searchParams.get('redirect') ?? '/';
 
 	async function onLogin() {
 		if ($loading) return;

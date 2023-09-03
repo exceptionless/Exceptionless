@@ -45,6 +45,23 @@ export type RequestOptions = {
 	signal?: AbortSignal;
 };
 
+let defaultOptions: RequestOptions = {};
+export function setDefaultRequestOptions(options: RequestOptions) {
+	defaultOptions = options;
+}
+
+export function setDefaultModelValidator(
+	validate: (model: object | null) => Promise<ProblemDetails | null>
+) {
+	defaultOptions = Object.assign({}, defaultOptions, { modelValidator: validate });
+}
+
+export function useGlobalMiddleware(middleware: FetchClientMiddleware) {
+	defaultOptions = Object.assign({}, defaultOptions, {
+		middleware: [...(defaultOptions.middleware ?? []), middleware]
+	});
+}
+
 type FetchClientResponse<T> = Response & {
 	data: T | null;
 	problem: ProblemDetails;
@@ -95,6 +112,7 @@ export class FetchClient {
 	}
 
 	async get(url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
+		options = Object.assign({}, defaultOptions, options);
 		const response = await this.fetchInternal(
 			url,
 			{
@@ -119,6 +137,7 @@ export class FetchClient {
 		body?: object | string,
 		options?: RequestOptions
 	): Promise<FetchClientResponse<unknown>> {
+		options = Object.assign({}, defaultOptions, options);
 		const problem = await this.validate(body, options);
 		if (problem) return this.problemToResponse(problem, url);
 
@@ -151,6 +170,7 @@ export class FetchClient {
 		body?: object | string,
 		options?: RequestOptions
 	): Promise<FetchClientResponse<unknown>> {
+		options = Object.assign({}, defaultOptions, options);
 		const problem = await this.validate(body, options);
 		if (problem) return this.problemToResponse(problem, url);
 
@@ -179,6 +199,7 @@ export class FetchClient {
 	}
 
 	async patch(url: string, body?: object | string, options?: RequestOptions): Promise<Response> {
+		options = Object.assign({}, defaultOptions, options);
 		const problem = await this.validate(body, options);
 		if (problem) return this.problemToResponse(problem, url);
 
@@ -207,6 +228,7 @@ export class FetchClient {
 	}
 
 	async delete(url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
+		options = Object.assign({}, defaultOptions, options);
 		return await this.fetchInternal(
 			url,
 			{
