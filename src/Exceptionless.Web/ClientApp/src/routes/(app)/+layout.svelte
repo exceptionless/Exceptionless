@@ -10,15 +10,17 @@
 	} from '$api/FetchClient';
 	import { validate } from '$lib/validation/validation';
 
-	isAuthenticated.subscribe((authenticated) => {
-		if (!authenticated) gotoLogin();
+	isAuthenticated.subscribe(async (authenticated) => {
+		if (!authenticated) {
+			await gotoLogin();
+		}
 	});
 
 	setDefaultModelValidator(validate);
 	setAccessTokenStore(accessToken);
 	useGlobalMiddleware(async (ctx, next) => {
 		await next();
-		if (ctx.response && ctx.response.status === 401) await gotoLogin();
+		if (ctx.response && ctx.response.status === 401) accessToken.set(null);
 	});
 
 	const queryClient = useQueryClient();

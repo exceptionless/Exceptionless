@@ -1,6 +1,7 @@
 import { createInfiniteQuery, createQuery } from '@tanstack/svelte-query';
-import { FetchClient, JsonResponse, ProblemDetails } from './FetchClient';
+import { FetchClient, type FetchClientResponse, ProblemDetails } from './FetchClient';
 import type { PersistentEvent, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+import { getQueryParametersFromLink } from './Link';
 
 const queryKey: string = 'PersistentEvent';
 
@@ -26,16 +27,16 @@ export interface IGetEventsParams {
 
 export function useGetEventsQuery(params?: IGetEventsParams) {
 	return createQuery<
-		JsonResponse<PersistentEvent[]>,
+		FetchClientResponse<PersistentEvent[]>,
 		ProblemDetails,
-		JsonResponse<PersistentEvent[]>
+		FetchClientResponse<PersistentEvent[]>
 	>([queryKey, ...Object.entries({ ...params }).map((kvp) => kvp.join('='))], async () => {
 		const api = new FetchClient();
 		const response = await api.getJSON<PersistentEvent[]>('events', {
 			params: { ...params }
 		});
 
-		if (response.success) {
+		if (response.ok) {
 			return response;
 		}
 
@@ -45,9 +46,9 @@ export function useGetEventsQuery(params?: IGetEventsParams) {
 
 export function useGetEventSummariesQuery(params?: IGetEventsParams) {
 	return createQuery<
-		JsonResponse<SummaryModel<SummaryTemplateKeys>[]>,
+		FetchClientResponse<SummaryModel<SummaryTemplateKeys>[]>,
 		ProblemDetails,
-		JsonResponse<SummaryModel<SummaryTemplateKeys>[]>
+		FetchClientResponse<SummaryModel<SummaryTemplateKeys>[]>
 	>(
 		[queryKey, ...Object.entries({ mode: 'summary', ...params }).map((kvp) => kvp.join('='))],
 		async () => {
@@ -56,7 +57,7 @@ export function useGetEventSummariesQuery(params?: IGetEventsParams) {
 				params: { mode: 'summary', ...params }
 			});
 
-			if (response.success) {
+			if (response.ok) {
 				return response;
 			}
 
@@ -65,17 +66,23 @@ export function useGetEventSummariesQuery(params?: IGetEventsParams) {
 	);
 }
 
-export function useGetEventsInfiniteQuery(params?: IGetEventsParams) {
-	return createInfiniteQuery<JsonResponse<PersistentEvent[]>, ProblemDetails>(
+export function useGetEventSummariesInfiniteQuery(params?: IGetEventsParams) {
+	return createInfiniteQuery<
+		FetchClientResponse<SummaryModel<SummaryTemplateKeys>[]>,
+		ProblemDetails
+	>(
 		[queryKey],
 		async ({ pageParam }) => {
 			const api = new FetchClient();
 			const mergedParams = { ...params, ...pageParam };
-			return await api.getJSON<PersistentEvent[]>('events', { params: mergedParams });
+			return await api.getJSON<SummaryModel<SummaryTemplateKeys>[]>('events', {
+				params: mergedParams
+			});
 		},
 		{
-			getPreviousPageParam: (firstPage) => firstPage.nextPageParams,
-			getNextPageParam: (lastPage) => lastPage.nextPageParams
+			getPreviousPageParam: (firstPage) =>
+				getQueryParametersFromLink(firstPage.links.previous),
+			getNextPageParam: (lastPage) => getQueryParametersFromLink(lastPage.links.next)
 		}
 	);
 }

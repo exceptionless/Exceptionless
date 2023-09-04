@@ -20,7 +20,7 @@ export function parseNextPageQueryParameters(
 	return getQueryParametersFromLink(parseLinkHeader(linkHeader)?.next);
 }
 
-function getQueryParametersFromLink(link?: Link): Record<string, unknown> | undefined {
+export function getQueryParametersFromLink(link?: Link): Record<string, unknown> | undefined {
 	if (!link) {
 		return;
 	}

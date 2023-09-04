@@ -62,7 +62,7 @@ export function useGlobalMiddleware(middleware: FetchClientMiddleware) {
 	});
 }
 
-type FetchClientResponse<T> = Response & {
+export type FetchClientResponse<T> = Response & {
 	data: T | null;
 	problem: ProblemDetails;
 	links: Links & { next?: Link; previous?: Link };
