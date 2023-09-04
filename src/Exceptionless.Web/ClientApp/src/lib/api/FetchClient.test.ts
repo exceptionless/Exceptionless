@@ -3,7 +3,6 @@ import {
 	FetchClient,
 	ProblemDetails,
 	setDefaultModelValidator,
-	setDefaultRequestOptions,
 	useGlobalMiddleware
 } from './FetchClient';
 

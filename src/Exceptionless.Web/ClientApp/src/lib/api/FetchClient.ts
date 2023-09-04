@@ -53,13 +53,14 @@ export function setDefaultRequestOptions(options: RequestOptions) {
 export function setDefaultModelValidator(
 	validate: (model: object | null) => Promise<ProblemDetails | null>
 ) {
-	defaultOptions = Object.assign({}, defaultOptions, { modelValidator: validate });
+	defaultOptions = { ...defaultOptions, modelValidator: validate };
 }
 
 export function useGlobalMiddleware(middleware: FetchClientMiddleware) {
-	defaultOptions = Object.assign({}, defaultOptions, {
+	defaultOptions = {
+		...defaultOptions,
 		middleware: [...(defaultOptions.middleware ?? []), middleware]
-	});
+	};
 }
 
 export type FetchClientResponse<T> = Response & {
@@ -112,15 +113,12 @@ export class FetchClient {
 	}
 
 	async get(url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
-		options = Object.assign({}, defaultOptions, options);
+		options = { ...defaultOptions, ...options };
 		const response = await this.fetchInternal(
 			url,
 			{
 				method: 'GET',
-				headers: Object.assign(
-					{ 'Content-Type': 'application/json' },
-					options?.headers ?? {}
-				)
+				headers: { ...{ 'Content-Type': 'application/json' }, ...options?.headers }
 			},
 			options
 		);
@@ -137,7 +135,7 @@ export class FetchClient {
 		body?: object | string,
 		options?: RequestOptions
 	): Promise<FetchClientResponse<unknown>> {
-		options = Object.assign({}, defaultOptions, options);
+		options = { ...defaultOptions, ...options };
 		const problem = await this.validate(body, options);
 		if (problem) return this.problemToResponse(problem, url);
 
@@ -145,10 +143,7 @@ export class FetchClient {
 			url,
 			{
 				method: 'POST',
-				headers: Object.assign(
-					{ 'Content-Type': 'application/json' },
-					options?.headers ?? {}
-				),
+				headers: { 'Content-Type': 'application/json', ...options?.headers },
 				body: typeof body === 'string' ? body : JSON.stringify(body)
 			},
 			options
@@ -170,7 +165,7 @@ export class FetchClient {
 		body?: object | string,
 		options?: RequestOptions
 	): Promise<FetchClientResponse<unknown>> {
-		options = Object.assign({}, defaultOptions, options);
+		options = { ...defaultOptions, ...options };
 		const problem = await this.validate(body, options);
 		if (problem) return this.problemToResponse(problem, url);
 
@@ -178,10 +173,7 @@ export class FetchClient {
 			url,
 			{
 				method: 'PUT',
-				headers: Object.assign(
-					{ 'Content-Type': 'application/json' },
-					options?.headers ?? {}
-				),
+				headers: { 'Content-Type': 'application/json', ...options?.headers },
 				body: typeof body === 'string' ? body : JSON.stringify(body)
 			},
 			options
@@ -199,7 +191,7 @@ export class FetchClient {
 	}
 
 	async patch(url: string, body?: object | string, options?: RequestOptions): Promise<Response> {
-		options = Object.assign({}, defaultOptions, options);
+		options = { ...defaultOptions, ...options };
 		const problem = await this.validate(body, options);
 		if (problem) return this.problemToResponse(problem, url);
 
@@ -207,10 +199,7 @@ export class FetchClient {
 			url,
 			{
 				method: 'PATCH',
-				headers: Object.assign(
-					{ 'Content-Type': 'application/json' },
-					options?.headers ?? {}
-				),
+				headers: { 'Content-Type': 'application/json', ...options?.headers },
 				body: typeof body === 'string' ? body : JSON.stringify(body)
 			},
 			options
@@ -228,7 +217,7 @@ export class FetchClient {
 	}
 
 	async delete(url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
-		options = Object.assign({}, defaultOptions, options);
+		options = { ...defaultOptions, ...options };
 		return await this.fetchInternal(
 			url,
 			{
@@ -246,7 +235,9 @@ export class FetchClient {
 		if (typeof data !== 'object' || (options && options.shouldValidateModel === false))
 			return null;
 
-		if (options?.modelValidator === undefined) return null;
+		if (options?.modelValidator === undefined) {
+			return null;
+		}
 
 		const problem = await options.modelValidator(data as object);
 		if (!problem) return null;
@@ -262,20 +253,30 @@ export class FetchClient {
 		url = this.buildUrl(url, options);
 
 		const accessToken = get(accessTokenStore);
-		if (accessToken !== null)
-			init = Object.assign({}, init, { headers: { Authorization: `Bearer ${accessToken}` } });
-		if (options?.signal) init = Object.assign({}, init, { signal: options.signal });
+		if (accessToken !== null) {
+			init = {
+				...init,
+				...{ headers: { ...init?.headers, Authorization: `Bearer ${accessToken}` } }
+			};
+		}
+
+		if (options?.signal) {
+			init = { ...init, signal: options.signal };
+		}
 
 		const fetchMiddleware = async (ctx: FetchClientContext, next: Next) => {
 			const response = await this.fetch(ctx.request);
 			if (ctx.request.headers.get('Content-Type') === 'application/json')
 				ctx.response = await this.getJSONResponse<T>(response);
 			else
-				ctx.response = Object.assign(response, {
-					data: null,
-					problem: new ProblemDetails(),
-					links: {}
-				}) as FetchClientResponse<T>;
+				ctx.response = {
+					...response,
+					...{
+						data: null,
+						problem: new ProblemDetails(),
+						links: {}
+					}
+				} as FetchClientResponse<T>;
 
 			ctx.response.links = parseLinkHeader(response.headers.get('Link')) || {};
 			await next();
@@ -373,7 +374,6 @@ export class FetchClient {
 		}
 
 		const origin = isAbsoluteUrl ? undefined : window.location.origin ?? '';
-
 		const parsed = new URL(url, origin);
 
 		if (options?.params) {
@@ -388,12 +388,17 @@ export class FetchClient {
 	}
 
 	private async validateResponse(response: Response | null, options: RequestOptions | undefined) {
-		if (!response) throw new Error('Response is null');
+		if (!response) {
+			throw new Error('Response is null');
+		}
 
-		if (response.ok) return;
-
-		if (options?.expectedStatusCodes && options.expectedStatusCodes.includes(response.status))
+		if (response.ok) {
 			return;
+		}
+
+		if (options?.expectedStatusCodes && options.expectedStatusCodes.includes(response.status)) {
+			return;
+		}
 
 		if (options?.errorCallback) {
 			options.errorCallback(response);
