@@ -2,10 +2,10 @@
 	import IconChevronRight from '~icons/mdi/chevron-right';
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-	export let badgeClass: string;
-	export let showBadge: boolean;
-	export let showStatus: boolean;
-	export let showType: boolean;
+	export const badgeClass: string = '';
+	export const showBadge: boolean = false;
+	export const showStatus: boolean = false;
+	export const showType: boolean = false;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-simple-summary'>;
 

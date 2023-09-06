@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-	export let badgeClass: string;
-	export let showBadge: boolean;
-	export let showStatus: boolean;
+	export const badgeClass: string = '';
+	export const showBadge: boolean = false;
+	export const showStatus: boolean = false;
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-summary'>;

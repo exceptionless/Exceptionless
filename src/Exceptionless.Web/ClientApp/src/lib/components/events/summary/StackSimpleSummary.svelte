@@ -4,8 +4,8 @@
 
 	export let badgeClass: string;
 	export let showBadge: boolean;
-	export let showStatus: boolean;
-	export let showType: boolean;
+	export const showStatus: boolean = false;
+	export const showType: boolean = false;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as StackSummaryModel<'stack-simple-summary'>;
 

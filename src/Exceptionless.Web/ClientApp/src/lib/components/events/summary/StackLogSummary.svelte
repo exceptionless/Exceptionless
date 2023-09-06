@@ -3,7 +3,7 @@
 
 	export let badgeClass: string;
 	export let showBadge: boolean;
-	export let showStatus: boolean;
+	export const showStatus: boolean = false;
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as StackSummaryModel<'stack-log-summary'>;
