@@ -4,16 +4,10 @@
 
 	export let badgeClass: string;
 	export let showBadge: boolean;
-	export let showStatus: boolean;
-	export let showType: boolean;
+	export const showStatus: boolean = false;
+	export const showType: boolean = false;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as StackSummaryModel<'stack-error-summary'>;
-
-	function truncateText(text?: string, maxLines?: number) {
-		// Implement your text truncation logic here, or use a library like 'svelte-truncate'
-		// to handle truncation.
-		return text;
-	}
 </script>
 
 <div>
@@ -37,14 +31,14 @@
 		</strong>
 	{/if}
 
-	<a href="/stack/{source.id}" class="truncate" style="max-lines: 2">
+	<a href="/stack/{source.id}" class="inline line-clamp-2">
 		{source.title}
 	</a>
 </div>
 
 {#if source.data.Path}
-	<div class="hidden-xs error-path">
-		<IconChevronRight />
-		<span class="truncate">{source.data.Path}</span>
+	<div class="hidden sm:block text-gray-500 ml-6 text-sm">
+		<IconChevronRight class="inline" />
+		<span class="inline line-clamp-1">{source.data.Path}</span>
 	</div>
 {/if}

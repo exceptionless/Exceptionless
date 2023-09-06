@@ -7,12 +7,6 @@
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-session-summary'>;
-
-	function truncateText(text?: string, maxLines?: number) {
-		// Implement your text truncation logic here, or use a library like 'svelte-truncate'
-		// to handle truncation.
-		return text;
-	}
 </script>
 
 {#if showType}
@@ -27,7 +21,7 @@
 	</strong>:&nbsp;
 {/if}
 
-<a href="/event/{source.id}" class="truncate" style="max-lines: 2">
+<a href="/event/{source.id}" class="inline line-clamp-2">
 	{#if source.data.Name || source.data.Identity || source.data.SessionId}
 		{source.data.Name || source.data.Identity || source.data.SessionId}
 		{#if source.data.Name && source.data.Identity}

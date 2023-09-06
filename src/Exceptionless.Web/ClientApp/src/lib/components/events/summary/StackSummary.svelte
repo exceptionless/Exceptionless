@@ -7,12 +7,6 @@
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as StackSummaryModel<'stack-summary'>;
-
-	function truncateText(text?: string, maxLines?: number) {
-		// Implement your text truncation logic here, or use a library like 'svelte-truncate'
-		// to handle truncation.
-		return text;
-	}
 </script>
 
 {#if showBadge}
@@ -37,6 +31,6 @@
 	:&nbsp;
 {/if}
 
-<a href="/stack/{source.id}" class="truncate" style="max-lines: 2">
+<a href="/stack/{source.id}" class="inline line-clamp-2">
 	{source.title}
 </a>

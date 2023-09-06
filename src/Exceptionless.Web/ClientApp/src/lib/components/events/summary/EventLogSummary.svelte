@@ -13,21 +13,12 @@
 	const isLevelInfo = level === 'info';
 	const isLevelWarning = level === 'warn';
 	const isLevelError = level === 'error';
-
-	function truncateText(text?: string, maxLines?: number) {
-		// Implement your text truncation logic here, or use a library like 'svelte-truncate'
-		// to handle truncation.
-		return text;
-	}
 </script>
 
 {#if level}
 	<span
-		class="label label-default"
-		class:label-success={isLevelSuccess}
-		class:label-info={isLevelInfo}
-		class:label-warning={isLevelWarning}
-		class:label-danger={isLevelError}
+		class="badge {isLevelSuccess && 'badge-success'} {isLevelInfo &&
+			'badge-info'} {isLevelWarning && 'badge-warning'} {isLevelError && 'badge-error'}"
 	>
 		{level}
 	</span>
@@ -47,7 +38,5 @@
 		{/if}
 	</strong>
 	{#if showType || source.data.Source}:&nbsp;{/if}
-	<a href="app.event/{source.id}" class="truncate" style="max-lines: 2"
-		>{truncateText(source.data.Message)}</a
-	>
+	<a href="app.event/{source.id}" class="inline line-clamp-2">{source.data.Message}</a>
 {/if}

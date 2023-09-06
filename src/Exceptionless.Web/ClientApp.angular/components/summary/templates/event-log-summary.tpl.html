@@ -1,7 +1,11 @@
 <span
     ng-if="source.data.Level"
     class="label label-default"
-    ng-class="{ 'label-success': isLevelSuccess, 'label-info': isLevelInfo, 'label-warning': isLevelWarning, 'label-danger': isLevelError }"
+    ng-class="{
+    'label-success': isLevelSuccess,
+    'label-info': isLevelInfo,
+    'label-warning': isLevelWarning,
+    'label-danger': isLevelError }"
 >
     {{::source.data.Level}}
 </span>
