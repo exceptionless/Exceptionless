@@ -30,18 +30,25 @@ export function useGetEventsQuery(params?: IGetEventsParams) {
 		FetchClientResponse<PersistentEvent[]>,
 		ProblemDetails,
 		FetchClientResponse<PersistentEvent[]>
-	>([queryKey, ...Object.entries({ ...params }).map((kvp) => kvp.join('='))], async () => {
-		const api = new FetchClient();
-		const response = await api.getJSON<PersistentEvent[]>('events', {
-			params: { ...params }
-		});
+	>(
+		[queryKey, ...Object.entries({ ...params }).map((kvp) => kvp.join('='))],
+		async ({ signal }) => {
+			const api = new FetchClient();
+			const response = await api.getJSON<PersistentEvent[]>('events', {
+				params: { ...params },
+				signal
+			});
 
-		if (response.ok) {
-			return response;
+			if (response.ok) {
+				return response;
+			}
+
+			throw response.problem;
+		},
+		{
+			keepPreviousData: true
 		}
-
-		throw response.problem;
-	});
+	);
 }
 
 export function useGetEventSummariesQuery(params?: IGetEventsParams) {
@@ -51,10 +58,11 @@ export function useGetEventSummariesQuery(params?: IGetEventsParams) {
 		FetchClientResponse<SummaryModel<SummaryTemplateKeys>[]>
 	>(
 		[queryKey, ...Object.entries({ mode: 'summary', ...params }).map((kvp) => kvp.join('='))],
-		async () => {
+		async ({ signal }) => {
 			const api = new FetchClient();
 			const response = await api.getJSON<SummaryModel<SummaryTemplateKeys>[]>('events', {
-				params: { mode: 'summary', ...params }
+				params: { mode: 'summary', ...params },
+				signal
 			});
 
 			if (response.ok) {
@@ -62,6 +70,9 @@ export function useGetEventSummariesQuery(params?: IGetEventsParams) {
 			}
 
 			throw response.problem;
+		},
+		{
+			keepPreviousData: true
 		}
 	);
 }
@@ -72,17 +83,22 @@ export function useGetEventSummariesInfiniteQuery(params?: IGetEventsParams) {
 		ProblemDetails
 	>(
 		[queryKey],
-		async ({ pageParam }) => {
+		async ({ pageParam, signal }) => {
 			const api = new FetchClient();
 			const mergedParams = { ...params, ...pageParam };
 			return await api.getJSON<SummaryModel<SummaryTemplateKeys>[]>('events', {
-				params: mergedParams
+				params: mergedParams,
+				signal
 			});
 		},
 		{
-			getPreviousPageParam: (firstPage) =>
-				getQueryParametersFromLink(firstPage.links.previous),
-			getNextPageParam: (lastPage) => getQueryParametersFromLink(lastPage.links.next)
+			keepPreviousData: true,
+			getPreviousPageParam: (firstPage) => getQueryParametersFromLink(firstPage.links.next),
+			getNextPageParam: (lastPage) => getQueryParametersFromLink(lastPage.links.previous),
+			select: (data) => ({
+				pages: [...data.pages].reverse(),
+				pageParams: [...data.pageParams].reverse()
+			})
 		}
 	);
 }

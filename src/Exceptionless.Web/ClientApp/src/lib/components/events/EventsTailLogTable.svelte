@@ -70,8 +70,17 @@
 	queryResult.subscribe((result) => {
 		options.update((options) => ({
 			...options,
-			data: result.data?.data ?? []
+			data: result.data?.pages.flatMap((f) => f.data || []) || []
 		}));
+
+		// only limit to last two pages..
+		// import { useQueryClient } from '@sveltestack/svelte-query'
+		//
+		// const queryClient = useQueryClient()
+		// queryResult.setQueryData(['projects'], (data) => ({
+		//     pages: data.pages.slice(0,1),
+		//     pageParams: data.pageParams.slice(0,1),
+		// }));
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
