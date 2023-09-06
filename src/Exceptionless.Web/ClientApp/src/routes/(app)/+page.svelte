@@ -1,5 +1,5 @@
 <script lang="ts">
-	import EventSummaries from '$comp/events/EventsTable.svelte';
+	import EventsTailLogTable from '$comp/events/EventsTailLogTable.svelte';
 </script>
 
 <svelte:head>
@@ -34,4 +34,4 @@
 
 <h1 class="text-xl mt-5">Events</h1>
 
-<EventSummaries mode="summary"></EventSummaries>
+<EventsTailLogTable></EventsTailLogTable>
