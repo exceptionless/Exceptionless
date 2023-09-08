@@ -25,6 +25,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -346,7 +347,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, resolvedPage);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
-                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
+                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
             }
         }
         catch (ApplicationException ex)
