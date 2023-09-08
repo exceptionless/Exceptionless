@@ -3,7 +3,7 @@ import { FetchClient, type FetchClientResponse, ProblemDetails } from './FetchCl
 import type { PersistentEvent, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 import { getQueryParametersFromLink } from './Link';
 
-const queryKey: string = 'PersistentEvent';
+export const queryKey: string = 'PersistentEvent';
 
 export type GetEventsMode =
 	| 'summary'

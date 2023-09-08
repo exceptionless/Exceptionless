@@ -1,6 +1,4 @@
 <script lang="ts">
-	import InfiniteScroll from 'svelte-infinite-scroll';
-
 	import Time from 'svelte-time';
 	import { writable } from 'svelte/store';
 	import {
@@ -12,13 +10,18 @@
 		type Updater,
 		type VisibilityState
 	} from '@tanstack/svelte-table';
-	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-	import { type IGetEventsParams, useGetEventSummariesInfiniteQuery } from '$api/EventQueries';
+	import {
+		ChangeType,
+		type EventSummaryModel,
+		type SummaryModel,
+		type SummaryTemplateKeys,
+		type WebSocketMessageValue
+	} from '$lib/models/api';
+	import type { IGetEventsParams } from '$api/EventQueries';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
-
-	const eventParams: IGetEventsParams = { mode: 'summary' };
-	const queryResult = useGetEventSummariesInfiniteQuery(eventParams);
+	import { FetchClient, ProblemDetails } from '$api/FetchClient';
+	import { onMount } from 'svelte';
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -67,26 +70,54 @@
 		getRowId: (originalRow, _, __) => originalRow.id
 	});
 
-	queryResult.subscribe((result) => {
-		options.update((options) => ({
-			...options,
-			data: result.data?.pages.flatMap((f) => f.data || []) || []
-		}));
+	const api = new FetchClient();
+	const loading = api.loading;
+	let problem = new ProblemDetails();
+	const data = writable<SummaryModel<SummaryTemplateKeys>[]>([]);
 
-		// only limit to last two pages..
-		// import { useQueryClient } from '@sveltestack/svelte-query'
-		//
-		// const queryClient = useQueryClient()
-		// queryResult.setQueryData(['projects'], (data) => ({
-		//     pages: data.pages.slice(0,1),
-		//     pageParams: data.pageParams.slice(0,1),
-		// }));
-	});
+	const defaultParams: IGetEventsParams = { mode: 'summary' };
+	let nextUpdate = new Date();
+
+	async function loadData() {
+		if ($loading) {
+			return;
+		}
+
+		const lastUpdate = nextUpdate;
+		nextUpdate = new Date();
+		const response = await api.getJSON<SummaryModel<SummaryTemplateKeys>[]>('events', {
+			params: {
+				...defaultParams, //     2023-09-07T21:18:58-2023-09-07T23:59:59
+				// [2023-09-08T03:18:30.306Z-now]
+				time: `${lastUpdate.toISOString()}-now`
+			}
+		});
+
+		if (response.ok) {
+			problem.clear('general');
+			console.log(response.links);
+			data.update((data) => {
+				for (const summary of response.data?.reverse() || []) {
+					if (!data.find((doc) => doc.id === summary.id)) {
+						data.push(summary);
+					} else {
+						console.log('Duplicate summary', summary);
+					}
+				}
+
+				return data.slice(-10);
+			});
+		} else {
+			nextUpdate = lastUpdate;
+			problem = problem.setErrorMessage(
+				'An error occurred while loading events, please try again.'
+			);
+		}
+	}
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 
 	function getUserColumnData(row: SummaryModel<SummaryTemplateKeys>): string | undefined {
-		console.log(row);
 		if (!row?.data) {
 			return;
 		}
@@ -99,6 +130,40 @@
 			return row.data.Name as string;
 		}
 	}
+
+	data.subscribe((data) => {
+		options.update((options) => ({
+			...options,
+			data
+		}));
+	});
+
+	async function onPersistentEvent({
+		detail
+	}: CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>) {
+		switch (detail.change_type) {
+			case ChangeType.Added:
+			case ChangeType.Saved:
+				return await loadData();
+			case ChangeType.Removed:
+				data.update((data) => data.filter((doc) => doc.id !== detail.id));
+				break;
+		}
+	}
+
+	onMount(async () => {
+		async function mount() {
+			await loadData();
+
+			document.addEventListener('PersistentEventChanged', onPersistentEvent);
+
+			return () => {
+				document.removeEventListener('PersistentEventChanged', onPersistentEvent);
+			};
+		}
+
+		await mount();
+	});
 </script>
 
 <table class="table">
@@ -132,12 +197,6 @@
 				{/each}
 			</tr>
 		{/each}
-		<InfiniteScroll
-			hasMore={$queryResult.hasNextPage && !$queryResult.isFetchingNextPage}
-			threshold={100}
-			window={true}
-			on:loadMore={() => $queryResult.fetchNextPage()}
-		/>
 	</tbody>
 	<tfoot>
 		{#each $table.getFooterGroups() as footerGroup}
@@ -158,3 +217,6 @@
 		{/each}
 	</tfoot>
 </table>
+<p class="text-center text-xs text-gray-700">
+	Last updated <Time live={true} relative={true} timestamp={nextUpdate}></Time>
+</p>
