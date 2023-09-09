@@ -4,9 +4,23 @@ import { globalFetchClient, setAccessTokenStore } from './FetchClient';
 import type { TokenResult } from '$lib/models/api.generated';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
+import {
+	PUBLIC_ENABLE_ACCOUNT_CREATION,
+	PUBLIC_FACEBOOK_APPID,
+	PUBLIC_GITHUB_APPID,
+	PUBLIC_GOOGLE_APPID,
+	PUBLIC_LIVE_APPID
+} from '$env/static/public';
 
 export const accessToken = persisted<string | null>('access_token', null);
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
+export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
+export const facebookClientId = PUBLIC_FACEBOOK_APPID;
+export const gitHubClientId = PUBLIC_GITHUB_APPID;
+export const googleClientId = PUBLIC_GOOGLE_APPID;
+export const liveClientId = PUBLIC_LIVE_APPID;
+export const enableOAuthLogin =
+	facebookClientId || gitHubClientId || googleClientId || liveClientId;
 
 console.log('set access token store');
 // set FetchClient access token store
@@ -48,11 +62,14 @@ export async function logout() {
 	accessToken.set(null);
 }
 
-// TODO move client ids out to config
 export async function liveLogin(redirectUrl?: string) {
+	if (!liveClientId) {
+		throw new Error('Live client id not set');
+	}
+
 	await oauthLogin({
 		provider: 'live',
-		clientId: '000000004C137E8B',
+		clientId: liveClientId,
 		authUrl: 'https://login.live.com/oauth20_authorize.srf',
 		scope: 'wl.emails',
 		extraParams: {
@@ -63,9 +80,13 @@ export async function liveLogin(redirectUrl?: string) {
 }
 
 export async function facebookLogin(redirectUrl?: string) {
+	if (!facebookClientId) {
+		throw new Error('Facebook client id not set');
+	}
+
 	await oauthLogin({
 		provider: 'facebook',
-		clientId: '395178683904310',
+		clientId: facebookClientId,
 		authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
 		scope: 'email',
 		redirectUrl
@@ -73,9 +94,13 @@ export async function facebookLogin(redirectUrl?: string) {
 }
 
 export async function googleLogin(redirectUrl?: string) {
+	if (!googleClientId) {
+		throw new Error('Google client id not set');
+	}
+
 	await oauthLogin({
 		provider: 'google',
-		clientId: '809763155066-enkkdmt4ierc33q9cft9nf5d5c02h30q.apps.googleusercontent.com',
+		clientId: googleClientId,
 		authUrl: 'https://accounts.google.com/o/oauth2/auth/oauthchooseaccount',
 		scope: 'openid profile email',
 		extraParams: {
@@ -90,9 +115,13 @@ export async function googleLogin(redirectUrl?: string) {
 }
 
 export async function githubLogin(redirectUrl?: string) {
+	if (!gitHubClientId) {
+		throw new Error('GitHub client id not set');
+	}
+
 	await oauthLogin({
 		provider: 'github',
-		clientId: '7ef1dd5bfbc4ccf7f5ef',
+		clientId: gitHubClientId,
 		authUrl: 'https://github.com/login/oauth/authorize',
 		scope: 'user:email',
 		popupOptions: { width: 1020, height: 618 },

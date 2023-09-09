@@ -7,12 +7,23 @@
 	import IconGoogle from '~icons/mdi/google';
 	import IconMicrosoft from '~icons/mdi/microsoft';
 
-	import { env } from '$env/dynamic/public';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { login, liveLogin, facebookLogin, googleLogin, githubLogin } from '$api/auth';
+	import {
+		login,
+		liveLogin,
+		facebookLogin,
+		googleLogin,
+		githubLogin,
+		enableAccountCreation,
+		googleClientId,
+		enableOAuthLogin,
+		facebookClientId,
+		gitHubClientId,
+		liveClientId
+	} from '$api/auth';
 	import { FetchClient, ProblemDetails, globalLoading } from '$lib/api/FetchClient';
-	import { Login, type TokenResult } from '$lib/models/api';
+	import { Login } from '$lib/models/api';
 
 	const client = new FetchClient();
 	const data = new Login();
@@ -26,7 +37,6 @@
 		if ($loading) return;
 
 		let response = await login(data.email, data.password);
-
 		if (response.ok) {
 			await goto(redirectUrl);
 		} else {
@@ -70,31 +80,53 @@
 	</div>
 </form>
 
-<div class="my-4 flex w-full items-center">
-	<hr class="w-full" />
-	<p class="px-3">OR</p>
-	<hr class="w-full" />
-</div>
-<div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
-	<button class="btn" aria-label="Login with Microsoft" on:click={() => liveLogin(redirectUrl)}>
-		<IconMicrosoft /> Microsoft
-	</button>
-	<button class="btn" aria-label="Login with Google" on:click={() => googleLogin(redirectUrl)}>
-		<IconGoogle /> Google
-	</button>
-	<button
-		class="btn"
-		aria-label="Login with Facebook"
-		on:click={() => facebookLogin(redirectUrl)}
-	>
-		<IconFacebook /> Facebook
-	</button>
-	<button class="btn" aria-label="Login with GitHub" on:click={() => githubLogin(redirectUrl)}>
-		<IconGitHub /> GitHub
-	</button>
-</div>
+{#if enableOAuthLogin}
+	<div class="my-4 flex w-full items-center">
+		<hr class="w-full" />
+		<p class="px-3">OR</p>
+		<hr class="w-full" />
+	</div>
+	<div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
+		{#if liveClientId}
+			<button
+				class="btn"
+				aria-label="Login with Microsoft"
+				on:click={() => liveLogin(redirectUrl)}
+			>
+				<IconMicrosoft /> Microsoft
+			</button>
+		{/if}
+		{#if googleClientId}
+			<button
+				class="btn"
+				aria-label="Login with Google"
+				on:click={() => googleLogin(redirectUrl)}
+			>
+				<IconGoogle /> Google
+			</button>
+		{/if}
+		{#if facebookClientId}
+			<button
+				class="btn"
+				aria-label="Login with Facebook"
+				on:click={() => facebookLogin(redirectUrl)}
+			>
+				<IconFacebook /> Facebook
+			</button>
+		{/if}
+		{#if gitHubClientId}
+			<button
+				class="btn"
+				aria-label="Login with GitHub"
+				on:click={() => githubLogin(redirectUrl)}
+			>
+				<IconGitHub /> GitHub
+			</button>
+		{/if}
+	</div>
+{/if}
 
-{#if env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true'}
+{#if enableAccountCreation}
 	<p class="mt-5 text-center text-sm">
 		Not a member?
 		<a href="/signup" class="link link-primary">Start a free trial</a>
