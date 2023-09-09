@@ -61,70 +61,81 @@
 </script>
 
 {#if $isAuthenticated}
-	<div class="navbar bg-base-100">
-		<div class="flex-1">
-			<a href="/" class="btn btn-ghost text-xl normal-case">Exceptionless</a>
-		</div>
-		<div class="flex-none gap-2">
-			<div class="form-control">
-				<input
-					type="text"
-					placeholder="Search"
-					class="input input-bordered w-24 md:w-auto"
-				/>
+	<div class="flex flex-col h-screen justify-between" data-theme="light">
+		<header
+			class="navbar h-10 bg-base-300 border-primary border-b-2 drop-shadow-md sticky top-0"
+			data-theme="dark"
+		>
+			<div class="flex-1">
+				<a href="/" class="btn btn-ghost text-xl normal-case"
+					><img src="/exceptionless-logo.png" alt="Exceptionless" /></a
+				>
 			</div>
-			<div class="dropdown dropdown-end">
-				<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-				<div tabindex="0" class="avatar btn btn-circle btn-ghost">
-					<div class="w-10 rounded-full">
-						<img
-							src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
-							alt="avatar"
-						/>
-					</div>
+			<div class="flex-none gap-2">
+				<div class="form-control">
+					<input
+						type="text"
+						placeholder="Search"
+						class="input input-bordered w-24 md:w-auto"
+					/>
 				</div>
-				<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-				<ul
-					tabindex="0"
-					class="menu dropdown-content rounded-box menu-sm z-[1] mt-3 w-52 bg-base-100 p-2 shadow"
-				>
-					<li>
-						<a href="/account/manage" class="justify-between">
-							Profile
-							<span class="badge">New</span>
-						</a>
-					</li>
-					<li><a href="/account/manage">Settings</a></li>
-					<li><a href="/logout">Logout</a></li>
-				</ul>
+				<div class="dropdown dropdown-end">
+					<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+					<div tabindex="0" class="avatar btn btn-square btn-ghost">
+						<div class="w-10 rounded">
+							<img
+								src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
+								alt="avatar"
+							/>
+						</div>
+					</div>
+					<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+					<ul
+						tabindex="0"
+						class="menu dropdown-content rounded-box menu-sm z-[1] mt-3 w-52 bg-base-100 p-2 shadow"
+					>
+						<li>
+							<a href="/account/manage" class="justify-between">
+								Profile
+								<span class="badge">New</span>
+							</a>
+						</li>
+						<li><a href="/account/manage">Settings</a></li>
+						<li><a href="/logout">Logout</a></li>
+					</ul>
+				</div>
 			</div>
-		</div>
-	</div>
+		</header>
 
-	<div class="m-5">
-		<slot />
-	</div>
+		<main class="mb-auto h-10 m-5 min-h-8">
+			<slot />
+		</main>
 
-	<footer class="footer items-center bg-base-300 p-4 text-base-content">
-		<div class="grid-flow-col items-center">
-			<p>
-				© 2023
-				<a href="https://exceptionless.com" target="_blank" class="link">Exceptionless</a>
-				<a href="https://exceptionless.com/news/" target="_blank" class="link ml-2">News</a>
-				<a href="https://exceptionless.com/terms/" target="_blank" class="link ml-2"
-					>Terms of Use</a
+		<footer class="footer h-10 items-center bg-base-300 p-4 text-base-content sticky bottom-0">
+			<div class="grid-flow-col items-center">
+				<p>
+					© 2023
+					<a href="https://exceptionless.com" target="_blank" class="link"
+						>Exceptionless</a
+					>
+					<a href="https://exceptionless.com/news/" target="_blank" class="link ml-2"
+						>News</a
+					>
+					<a href="https://exceptionless.com/terms/" target="_blank" class="link ml-2"
+						>Terms of Use</a
+					>
+					<a href="https://exceptionless.com/privacy/" target="_blank" class="link ml-2"
+						>Privacy Policy</a
+					>
+				</p>
+			</div>
+			<div class="grid-flow-col gap-4 md:place-self-center md:justify-self-end">
+				<a
+					href="https://github.com/exceptionless/Exceptionless/releases"
+					target="_blank"
+					title="Version">9.0.0-TODO</a
 				>
-				<a href="https://exceptionless.com/privacy/" target="_blank" class="link ml-2"
-					>Privacy Policy</a
-				>
-			</p>
-		</div>
-		<div class="grid-flow-col gap-4 md:place-self-center md:justify-self-end">
-			<a
-				href="https://github.com/exceptionless/Exceptionless/releases"
-				target="_blank"
-				title="Version">9.0.0-TODO</a
-			>
-		</div>
-	</footer>
+			</div>
+		</footer>
+	</div>
 {/if}
