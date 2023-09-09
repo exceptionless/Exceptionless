@@ -1,13 +1,20 @@
 <script lang="ts">
+	import { Exceptionless } from '@exceptionless/browser';
 	import IconChevronRight from '~icons/mdi/chevron-right';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
 	export let badgeClass: string;
 	export let showBadge: boolean;
-	export const showStatus: boolean = false;
-	export const showType: boolean = false;
+	export let showStatus: boolean;
+	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as StackSummaryModel<'stack-error-summary'>;
+
+	Exceptionless.submitLog(
+		'StackErrorSummary',
+		`Rendering Summary badgeClass=${badgeClass} showBadge=${showBadge} showStatus=${showStatus} showType=${showType}`,
+		'trace'
+	);
 </script>
 
 <div>

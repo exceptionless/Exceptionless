@@ -1,12 +1,19 @@
 <script lang="ts">
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+	import { Exceptionless } from '@exceptionless/browser';
 
-	export const badgeClass: string = '';
-	export const showBadge: boolean = false;
-	export const showStatus: boolean = false;
+	export let badgeClass: string;
+	export let showBadge: boolean;
+	export let showStatus: boolean;
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-notfound-summary'>;
+
+	Exceptionless.submitLog(
+		'EventNotFoundSummary',
+		`Rendering Summary badgeClass=${badgeClass} showBadge=${showBadge} showStatus=${showStatus} showType=${showType}`,
+		'trace'
+	);
 </script>
 
 {#if showType}
