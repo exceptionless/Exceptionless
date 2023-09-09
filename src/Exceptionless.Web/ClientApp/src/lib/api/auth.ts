@@ -1,6 +1,6 @@
 import { get, derived } from 'svelte/store';
 import { persisted } from 'svelte-local-storage-store';
-import { globalFetchClient, setAccessTokenStore } from './FetchClient';
+import { globalFetchClient } from './FetchClient';
 import type { Login, TokenResult } from '$lib/models/api.generated';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
@@ -22,9 +22,6 @@ export const liveClientId = PUBLIC_LIVE_APPID;
 export const enableOAuthLogin =
 	facebookClientId || gitHubClientId || googleClientId || liveClientId;
 
-// set FetchClient access token store
-setAccessTokenStore(accessToken);
-
 export async function login(email: string, password: string) {
 	const data: Login = { email, password };
 	const response = await globalFetchClient.postJSON<TokenResult>('auth/login', data, {
@@ -43,12 +40,12 @@ export async function login(email: string, password: string) {
 export async function gotoLogin() {
 	const currentPage = get(page);
 	const isAuthPath =
-		currentPage.url.pathname.startsWith('/login') ||
-		currentPage.url.pathname.startsWith('/logout');
+		currentPage.url.pathname.startsWith('/next/login') ||
+		currentPage.url.pathname.startsWith('/next/logout');
 	const url =
 		currentPage.url.pathname === '/' || isAuthPath
-			? '/login'
-			: `/login?redirect=${location.href}`;
+			? '/next/login'
+			: `/next/login?redirect=${location.href}`;
 	await goto(url, { replaceState: true });
 }
 

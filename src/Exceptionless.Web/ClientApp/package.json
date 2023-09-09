@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "cross-env NODE_OPTIONS=--trace-warnings vite dev",
-		"dev:api": "cross-env ASPNETCORE_URLS=http://be.exceptionless.io/ vite dev",
+		"dev:api": "cross-env ASPNETCORE_URLS=https://be.exceptionless.io/ vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "npm run test:integration && npm run test:unit",

@@ -148,18 +148,14 @@
 		}
 	}
 
-	onMount(async () => {
-		async function mount() {
-			await loadData();
+	onMount(() => {
+		loadData();
 
-			document.addEventListener('PersistentEventChanged', onPersistentEvent);
+		document.addEventListener('PersistentEventChanged', onPersistentEvent);
 
-			return () => {
-				document.removeEventListener('PersistentEventChanged', onPersistentEvent);
-			};
-		}
-
-		await mount();
+		return () => {
+			document.removeEventListener('PersistentEventChanged', onPersistentEvent);
+		};
 	});
 
 	const dispatch = createEventDispatcher();

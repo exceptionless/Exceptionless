@@ -3,12 +3,9 @@
 	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
 	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';
-	import {
-		setAccessTokenStore,
-		setDefaultModelValidator,
-		useGlobalMiddleware
-	} from '$api/FetchClient';
+	import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
 	import { validate } from '$lib/validation/validation';
+	import { onMount } from 'svelte';
 
 	isAuthenticated.subscribe(async (authenticated) => {
 		if (!authenticated) {
@@ -17,16 +14,14 @@
 	});
 
 	setDefaultModelValidator(validate);
-	setAccessTokenStore(accessToken);
 	useGlobalMiddleware(async (ctx, next) => {
 		await next();
 		if (ctx.response && ctx.response.status === 401) accessToken.set(null);
 	});
 
 	const queryClient = useQueryClient();
-	const ws = new WebSocketClient();
 
-	ws.onMessage = async (message) => {
+	async function onMessage(message: MessageEvent) {
 		const data: { type: WebSocketMessageType; message: unknown } = message.data
 			? JSON.parse(message.data)
 			: null;
@@ -51,7 +46,18 @@
 		//     $rootScope.$emit("OrganizationChanged", data.message);
 		//     $rootScope.$emit("ProjectChanged", data.message);
 		// }
-	};
+	}
+
+	onMount(() => {
+		if (!$isAuthenticated) return;
+
+		const ws = new WebSocketClient();
+		ws.onMessage = onMessage;
+
+		return () => {
+			ws?.close();
+		};
+	});
 </script>
 
 {#if $isAuthenticated}

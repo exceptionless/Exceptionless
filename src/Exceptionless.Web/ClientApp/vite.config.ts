@@ -14,6 +14,9 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	},
+	build: {
+		target: 'esnext'
+	},
 	server: {
 		port: 5173,
 		strictPort: true,
