@@ -1,6 +1,7 @@
 <script lang="ts">
-	import Time from 'svelte-time';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import { writable } from 'svelte/store';
+	import Time from 'svelte-time';
 	import {
 		createSvelteTable,
 		flexRender,
@@ -13,7 +14,6 @@
 	import {
 		ChangeType,
 		type EventSummaryModel,
-		type SummaryModel,
 		type SummaryTemplateKeys,
 		type WebSocketMessageValue
 	} from '$lib/models/api';
@@ -21,9 +21,8 @@
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import { FetchClient, ProblemDetails } from '$api/FetchClient';
-	import { onMount } from 'svelte';
 
-	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
+	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
 			header: 'Summary',
 			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
@@ -59,7 +58,7 @@
 		}));
 	};
 
-	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
+	const options = writable<TableOptions<EventSummaryModel<SummaryTemplateKeys>>>({
 		data: [],
 		columns: defaultColumns,
 		state: {
@@ -70,10 +69,25 @@
 		getRowId: (originalRow, _, __) => originalRow.id
 	});
 
+	const table = createSvelteTable<EventSummaryModel<SummaryTemplateKeys>>(options);
+	function getUserColumnData(row: EventSummaryModel<SummaryTemplateKeys>): string | undefined {
+		if (!row?.data) {
+			return;
+		}
+
+		if ('Identity' in row.data && row.data.Identity) {
+			return row.data.Identity as string;
+		}
+
+		if ('Name' in row.data) {
+			return row.data.Name as string;
+		}
+	}
+
 	const api = new FetchClient();
 	const loading = api.loading;
 	let problem = new ProblemDetails();
-	const data = writable<SummaryModel<SummaryTemplateKeys>[]>([]);
+	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
 	const defaultParams: IGetEventsParams = { mode: 'summary' };
 	let lastUpdated: Date;
@@ -89,7 +103,7 @@
 			params.before = before;
 		}
 
-		const response = await api.getJSON<SummaryModel<SummaryTemplateKeys>[]>('events', {
+		const response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
 			params
 		});
 
@@ -111,22 +125,6 @@
 			problem = problem.setErrorMessage(
 				'An error occurred while loading events, please try again.'
 			);
-		}
-	}
-
-	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
-
-	function getUserColumnData(row: SummaryModel<SummaryTemplateKeys>): string | undefined {
-		if (!row?.data) {
-			return;
-		}
-
-		if ('Identity' in row.data && row.data.Identity) {
-			return row.data.Identity as string;
-		}
-
-		if ('Name' in row.data) {
-			return row.data.Name as string;
 		}
 	}
 
@@ -163,6 +161,8 @@
 
 		await mount();
 	});
+
+	const dispatch = createEventDispatcher();
 </script>
 
 <table class="table">
@@ -186,7 +186,7 @@
 	</thead>
 	<tbody>
 		{#each $table.getRowModel().rows as row}
-			<tr class="hover">
+			<tr class="hover cursor-pointer" on:click={() => dispatch('rowclick', row.original)}>
 				{#each row.getVisibleCells() as cell}
 					<td>
 						<svelte:component
