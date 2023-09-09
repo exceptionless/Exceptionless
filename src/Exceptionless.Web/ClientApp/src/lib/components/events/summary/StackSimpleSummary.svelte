@@ -23,12 +23,12 @@
 	</span>
 {/if}
 
-<div>
+<div class="line-clamp-2">
 	<strong>
 		<abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>:
 	</strong>
 
-	<a href="app.stack/{source.id}" class="inline line-clamp-2">
+	<a href="app.stack/{source.id}" class="inline">
 		{source.title}
 	</a>
 </div>

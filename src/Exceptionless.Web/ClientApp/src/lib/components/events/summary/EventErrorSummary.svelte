@@ -17,7 +17,7 @@
 	);
 </script>
 
-<div>
+<div class="line-clamp-2">
 	{#if source.data.Type}
 		<strong>
 			<abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>
@@ -33,7 +33,7 @@
 		</strong>
 	{/if}
 
-	<a href="/event/{source.id}" class="inline line-clamp-2">
+	<a href="/event/{source.id}" class="inline">
 		{source.data.Message}
 	</a>
 </div>

@@ -16,15 +16,17 @@
 	);
 </script>
 
-{#if showBadge}
-	<span class="label label-default {badgeClass}">
-		{source.status}
-	</span>
-{/if}
+<div class="line-clamp-2">
+	{#if showBadge}
+		<span class="label label-default {badgeClass}">
+			{source.status}
+		</span>
+	{/if}
 
-{#if showType}
-	<strong>404</strong>:&nbsp;
-{/if}
-<a href="/stack/{source.id}" class="inline line-clamp-2">
-	{source.title}
-</a>
+	{#if showType}
+		<strong>404</strong>:&nbsp;
+	{/if}
+	<a href="/stack/{source.id}" class="inline">
+		{source.title}
+	</a>
+</div>

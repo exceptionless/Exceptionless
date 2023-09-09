@@ -16,9 +16,9 @@
 	);
 </script>
 
-<div>
+<div class="line-clamp-2">
 	{#if showType}
 		<strong>Feature:&nbsp;</strong>
 	{/if}
-	<a href="/event/{source.id}" class="inline line-clamp-2">{source.data.Source}</a>
+	<a href="/event/{source.id}" class="inline">{source.data.Source}</a>
 </div>

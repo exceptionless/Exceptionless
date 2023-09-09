@@ -17,7 +17,7 @@
 	);
 </script>
 
-<div>
+<div class="line-clamp-2">
 	{#if showBadge}
 		<span class="label label-default {badgeClass}">
 			{source.status}
@@ -38,7 +38,7 @@
 		</strong>
 	{/if}
 
-	<a href="/stack/{source.id}" class="inline line-clamp-2">
+	<a href="/stack/{source.id}" class="inline">
 		{source.title}
 	</a>
 </div>

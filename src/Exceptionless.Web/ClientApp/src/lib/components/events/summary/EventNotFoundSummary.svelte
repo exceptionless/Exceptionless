@@ -16,7 +16,9 @@
 	);
 </script>
 
-{#if showType}
-	<strong>404</strong>:&nbsp;
-{/if}
-<a href="/event/{source.id}" class="inline line-clamp-2">{source.data.Source}</a>
+<div class="line-clamp-2">
+	{#if showType}
+		<strong>404</strong>:&nbsp;
+	{/if}
+	<a href="/event/{source.id}" class="inline">{source.data.Source}</a>
+</div>

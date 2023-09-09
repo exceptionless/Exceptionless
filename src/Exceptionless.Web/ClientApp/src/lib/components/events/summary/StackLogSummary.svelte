@@ -16,20 +16,22 @@
 	);
 </script>
 
-{#if showBadge}
-	<span class="label label-default {badgeClass}">
-		{source.status}
-	</span>
-{/if}
-
-{#if showType}
-	<strong>Log source:</strong>&nbsp;
-{/if}
-
-<a href="/stack/{source.id}" class="inline line-clamp-2">
-	{#if source.data?.Source}
-		<abbr title={source.data.Source}>{source.data.SourceShortName}</abbr>
-	{:else}
-		{source.title}
+<div class="line-clamp-2">
+	{#if showBadge}
+		<span class="label label-default {badgeClass}">
+			{source.status}
+		</span>
 	{/if}
-</a>
+
+	{#if showType}
+		<strong>Log source:</strong>&nbsp;
+	{/if}
+
+	<a href="/stack/{source.id}" class="inline">
+		{#if source.data?.Source}
+			<abbr title={source.data.Source}>{source.data.SourceShortName}</abbr>
+		{:else}
+			{source.title}
+		{/if}
+	</a>
+</div>

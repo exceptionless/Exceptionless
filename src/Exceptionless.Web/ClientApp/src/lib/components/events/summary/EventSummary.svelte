@@ -16,16 +16,18 @@
 	);
 </script>
 
-{#if showType}
-	<strong>{source.data.Type}</strong>
-{/if}
-{#if showType && source.data.Source}
-	&nbsp;in&nbsp;
-{/if}
-{#if source.data.Source}
-	<strong>{source.data.Source}</strong>
-{/if}
-{#if showType || source.data.Source}
-	:&nbsp;
-{/if}
-<a href="app.event/{source.id}" class="inline line-clamp-2">{source.data.Message}</a>
+<div class="line-clamp-2">
+	{#if showType}
+		<strong>{source.data.Type}</strong>
+	{/if}
+	{#if showType && source.data.Source}
+		&nbsp;in&nbsp;
+	{/if}
+	{#if source.data.Source}
+		<strong>{source.data.Source}</strong>
+	{/if}
+	{#if showType || source.data.Source}
+		:&nbsp;
+	{/if}
+	<a href="app.event/{source.id}" class="inline">{source.data.Message}</a>
+</div>
