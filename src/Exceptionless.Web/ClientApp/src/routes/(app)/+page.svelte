@@ -1,10 +1,12 @@
 <script lang="ts">
+	import EventsTable from '$comp/events/EventsTable.svelte';
 	import EventsTailLogTable from '$comp/events/EventsTailLogTable.svelte';
-	import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
+	let liveMode = true;
 	let showDrawer = false;
-	let currentSummary: EventSummaryModel<SummaryTemplateKeys>;
-	async function onRowClick({ detail }: CustomEvent<EventSummaryModel<SummaryTemplateKeys>>) {
+	let currentSummary: SummaryModel<SummaryTemplateKeys>;
+	async function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
 		currentSummary = detail;
 		showDrawer = true;
 	}
@@ -47,9 +49,19 @@
 				<div class="stat-desc">↘︎ 90 (14%)</div>
 			</div>
 		</div>
+		<div class="flex justify-between mt-5">
+			<h1 class="text-xl">Events</h1>
+			<label class="cursor-pointer label">
+				<span class="label-text mr-2">Live</span>
+				<input type="checkbox" class="toggle toggle-primary" bind:checked={liveMode} />
+			</label>
+		</div>
 
-		<h1 class="text-xl mt-5">Events</h1>
-		<EventsTailLogTable on:rowclick={onRowClick}></EventsTailLogTable>
+		{#if liveMode}
+			<EventsTailLogTable on:rowclick={onRowClick}></EventsTailLogTable>
+		{:else}
+			<EventsTable on:rowclick={onRowClick}></EventsTable>
+		{/if}
 	</div>
 	<div class="drawer-side">
 		<label for="event-detail-drawer" class="drawer-overlay"></label>

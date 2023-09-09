@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import Time from 'svelte-time';
 	import { writable } from 'svelte/store';
 	import {
@@ -24,6 +25,7 @@
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import StackUsersSummary from './summary/StackUsersSummary.svelte';
+	import Pager from '$comp/Pager.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	const eventParams: IGetEventsParams = { mode };
@@ -133,9 +135,11 @@
 			return row.data.Name as string;
 		}
 	}
+
+	const dispatch = createEventDispatcher();
 </script>
 
-<table class="table">
+<table class="table table-xs">
 	<thead>
 		{#each $table.getHeaderGroups() as headerGroup}
 			<tr>
@@ -156,7 +160,10 @@
 	</thead>
 	<tbody>
 		{#each $table.getRowModel().rows as row}
-			<tr class="hover">
+			<tr
+				class="hover cursor-pointer"
+				on:click|preventDefault={() => dispatch('rowclick', row.original)}
+			>
 				{#each row.getVisibleCells() as cell}
 					<td>
 						<svelte:component
@@ -186,3 +193,7 @@
 		{/each}
 	</tfoot>
 </table>
+
+<!-- TODO: Error and loading indicators -->
+<!-- TODO: move this into the table -->
+<Pager hasPrevious={false} hasNext={true}></Pager>

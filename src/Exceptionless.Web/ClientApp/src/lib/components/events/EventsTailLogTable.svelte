@@ -165,7 +165,7 @@
 	const dispatch = createEventDispatcher();
 </script>
 
-<table class="table">
+<table class="table table-xs">
 	<thead>
 		{#each $table.getHeaderGroups() as headerGroup}
 			<tr>
@@ -186,7 +186,10 @@
 	</thead>
 	<tbody>
 		{#each $table.getRowModel().rows as row}
-			<tr class="hover cursor-pointer" on:click={() => dispatch('rowclick', row.original)}>
+			<tr
+				class="hover cursor-pointer"
+				on:click|preventDefault={() => dispatch('rowclick', row.original)}
+			>
 				{#each row.getVisibleCells() as cell}
 					<td>
 						<svelte:component
@@ -218,5 +221,8 @@
 </table>
 
 <p class="text-center text-xs text-gray-700">
-	Last updated <Time live={true} relative={true} timestamp={lastUpdated}></Time>
+	Streaming events... Last updated <Time live={true} relative={true} timestamp={lastUpdated}
+	></Time>
 </p>
+
+<!-- TODO: Error and loading indicators -->
