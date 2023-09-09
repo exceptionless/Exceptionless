@@ -63,12 +63,12 @@
 {#if $isAuthenticated}
 	<div class="flex flex-col h-screen justify-between" data-theme="light">
 		<header
-			class="navbar h-10 bg-base-300 border-primary border-b-2 drop-shadow-md sticky top-0"
+			class="navbar min-h-[40px] h-[52px] bg-base-300 border-primary border-b-2 drop-shadow-lg sticky top-0 py-1 px-0"
 			data-theme="dark"
 		>
-			<div class="flex-1">
-				<a href="/" class="btn btn-ghost text-xl normal-case"
-					><img src="/exceptionless-logo.png" alt="Exceptionless" /></a
+			<div class="flex-1 pl-[20px]">
+				<a href="/" class="text-xl normal-case"
+					><img src="/exceptionless-logo.png" class="h-[38px]" alt="Exceptionless" /></a
 				>
 			</div>
 			<div class="flex-none gap-2">
@@ -76,7 +76,7 @@
 					<input
 						type="text"
 						placeholder="Search"
-						class="input input-bordered w-24 md:w-auto"
+						class="input input-bordered h-[38px] w-24 md:w-auto"
 					/>
 				</div>
 				<div class="dropdown dropdown-end">
@@ -111,7 +111,9 @@
 			<slot />
 		</main>
 
-		<footer class="footer h-10 items-center bg-base-300 p-4 text-base-content sticky bottom-0">
+		<footer
+			class="footer h-10 items-center bg-base-300 p-2 text-base-content sticky bottom-0 border-t border-gray-300"
+		>
 			<div class="grid-flow-col items-center">
 				<p>
 					© 2023

@@ -139,7 +139,7 @@
 	const dispatch = createEventDispatcher();
 </script>
 
-<table class="table table-xs">
+<table class="table table-zebra table-xs border">
 	<thead>
 		{#each $table.getHeaderGroups() as headerGroup}
 			<tr>
