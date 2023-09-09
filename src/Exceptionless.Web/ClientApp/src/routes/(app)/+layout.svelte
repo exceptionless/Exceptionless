@@ -52,7 +52,6 @@
 		//     $rootScope.$emit("ProjectChanged", data.message);
 		// }
 	};
-	ws.onError = (error) => console.error({ 'WS Error': error });
 </script>
 
 {#if $isAuthenticated}

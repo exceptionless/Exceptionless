@@ -1,7 +1,7 @@
 import { get, derived } from 'svelte/store';
 import { persisted } from 'svelte-local-storage-store';
 import { globalFetchClient, setAccessTokenStore } from './FetchClient';
-import type { TokenResult } from '$lib/models/api.generated';
+import type { Login, TokenResult } from '$lib/models/api.generated';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import {
@@ -22,19 +22,14 @@ export const liveClientId = PUBLIC_LIVE_APPID;
 export const enableOAuthLogin =
 	facebookClientId || gitHubClientId || googleClientId || liveClientId;
 
-console.log('set access token store');
 // set FetchClient access token store
 setAccessTokenStore(accessToken);
 
-export async function login(username: string, password: string) {
-	const data = { username, password };
-	const response = await globalFetchClient.postJSON<TokenResult>(
-		'https://jsonplaceholder.typicode.com/todos/1',
-		data,
-		{
-			expectedStatusCodes: [401]
-		}
-	);
+export async function login(email: string, password: string) {
+	const data: Login = { email, password };
+	const response = await globalFetchClient.postJSON<TokenResult>('auth/login', data, {
+		expectedStatusCodes: [401]
+	});
 
 	if (response.ok && response.data?.token) {
 		accessToken.set(response.data.token);

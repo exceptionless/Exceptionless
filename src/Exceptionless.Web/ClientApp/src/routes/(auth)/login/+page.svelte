@@ -34,7 +34,9 @@
 	const redirectUrl = $page.url.searchParams.get('redirect') ?? '/';
 
 	async function onLogin() {
-		if ($loading) return;
+		if ($loading) {
+			return;
+		}
 
 		let response = await login(data.email, data.password);
 		if (response.ok) {
