@@ -1,5 +1,4 @@
 import { Exceptionless, toError } from '@exceptionless/browser';
-
 import { PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONLESS_SERVER_URL } from '$env/static/public';
 
 await Exceptionless.startup((c) => {
@@ -8,7 +7,6 @@ await Exceptionless.startup((c) => {
 
 	c.defaultTags.push('UI', 'Svelte');
 	c.settings['@@log:*'] = 'debug';
-	c.useDebugLogger();
 });
 
 /** @type {import('@sveltejs/kit').HandleClientError} */
