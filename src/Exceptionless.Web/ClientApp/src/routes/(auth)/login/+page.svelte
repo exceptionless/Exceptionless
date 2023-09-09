@@ -7,6 +7,7 @@
 	import IconGoogle from '~icons/mdi/google';
 	import IconMicrosoft from '~icons/mdi/microsoft';
 
+	import { env } from '$env/dynamic/public';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { login, liveLogin, facebookLogin, googleLogin, githubLogin } from '$api/auth';
@@ -93,17 +94,19 @@
 	</button>
 </div>
 
-<p class="mt-5 text-center text-sm">
-	Not a member?
-	<a href="/signup" class="link link-primary">Start a free trial</a>
-</p>
+{#if env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true'}
+	<p class="mt-5 text-center text-sm">
+		Not a member?
+		<a href="/signup" class="link link-primary">Start a free trial</a>
+	</p>
 
-<p class="mt-5 text-center text-sm">
-	By signing up, you agree to our <a
-		href="https://exceptionless.com/privacy"
-		target="_blank"
-		class="link">Privacy Policy</a
-	>
-	and
-	<a href="https://exceptionless.com/terms" target="_blank" class="link">Terms of Service</a>.
-</p>
+	<p class="mt-5 text-center text-sm">
+		By signing up, you agree to our <a
+			href="https://exceptionless.com/privacy"
+			target="_blank"
+			class="link">Privacy Policy</a
+		>
+		and
+		<a href="https://exceptionless.com/terms" target="_blank" class="link">Terms of Service</a>.
+	</p>
+{/if}
