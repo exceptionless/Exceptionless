@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import '../app.css';
 
