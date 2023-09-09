@@ -76,39 +76,38 @@
 	const data = writable<SummaryModel<SummaryTemplateKeys>[]>([]);
 
 	const defaultParams: IGetEventsParams = { mode: 'summary' };
-	let nextUpdate = new Date();
+	let lastUpdated: Date;
+	let before: string | undefined;
 
 	async function loadData() {
 		if ($loading) {
 			return;
 		}
 
-		const lastUpdate = nextUpdate;
-		nextUpdate = new Date();
+		const params = { ...defaultParams };
+		if (before) {
+			params.before = before;
+		}
+
 		const response = await api.getJSON<SummaryModel<SummaryTemplateKeys>[]>('events', {
-			params: {
-				...defaultParams, //     2023-09-07T21:18:58-2023-09-07T23:59:59
-				// [2023-09-08T03:18:30.306Z-now]
-				time: `${lastUpdate.toISOString()}-now`
-			}
+			params
 		});
 
 		if (response.ok) {
+			if (response.links.previous) {
+				before = response.links.previous?.before;
+			}
+
+			lastUpdated = new Date();
 			problem.clear('general');
-			console.log(response.links);
 			data.update((data) => {
 				for (const summary of response.data?.reverse() || []) {
-					if (!data.find((doc) => doc.id === summary.id)) {
-						data.push(summary);
-					} else {
-						console.log('Duplicate summary', summary);
-					}
+					data.push(summary);
 				}
 
 				return data.slice(-10);
 			});
 		} else {
-			nextUpdate = lastUpdate;
 			problem = problem.setErrorMessage(
 				'An error occurred while loading events, please try again.'
 			);
@@ -217,6 +216,7 @@
 		{/each}
 	</tfoot>
 </table>
+
 <p class="text-center text-xs text-gray-700">
-	Last updated <Time live={true} relative={true} timestamp={nextUpdate}></Time>
+	Last updated <Time live={true} relative={true} timestamp={lastUpdated}></Time>
 </p>
