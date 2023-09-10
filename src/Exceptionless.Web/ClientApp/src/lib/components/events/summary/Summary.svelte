@@ -18,32 +18,37 @@
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	export let showStatus: boolean = true;
 	export let showType: boolean = true;
+
 	const showBadge: boolean = showStatus && 'status' in summary && summary.status !== 'open';
 	const badgeClass = 'label-' + (('status' in summary && summary.status) || 'open');
-
-	const components: {
-		templateKey: SummaryTemplateKeys;
-		component: ConstructorOfATypedSvelteComponent;
-	}[] = [
-		{ templateKey: 'event-summary', component: EventSummary },
-		{ templateKey: 'stack-summary', component: StackSummary },
-		{ templateKey: 'event-simple-summary', component: EventSimpleSummary },
-		{ templateKey: 'stack-simple-summary', component: StackSimpleSummary },
-		{ templateKey: 'event-error-summary', component: EventErrorSummary },
-		{ templateKey: 'stack-error-summary', component: StackErrorSummary },
-		{ templateKey: 'event-session-summary', component: EventSessionSummary },
-		{ templateKey: 'stack-session-summary', component: StackSessionSummary },
-		{ templateKey: 'event-notfound-summary', component: EventNotFoundSummary },
-		{ templateKey: 'stack-notfound-summary', component: StackNotFoundSummary },
-		{ templateKey: 'event-feature-summary', component: EventFeatureSummary },
-		{ templateKey: 'stack-feature-summary', component: StackFeatureSummary },
-		{ templateKey: 'event-log-summary', component: EventLogSummary },
-		{ templateKey: 'stack-log-summary', component: StackLogSummary }
-	];
-
-	const component = components.find(
-		(type) => type.templateKey == summary.template_key
-	)?.component;
 </script>
 
-<svelte:component this={component} {summary} {showBadge} {showStatus} {showType} {badgeClass} />
+{#if summary.template_key === 'event-summary'}
+	<EventSummary {summary} {showType} />
+{:else if summary.template_key === 'stack-summary'}
+	<StackSummary {summary} {showBadge} {showType} {badgeClass} />
+{:else if summary.template_key === 'event-simple-summary'}
+	<EventSimpleSummary {summary} />
+{:else if summary.template_key === 'stack-simple-summary'}
+	<StackSimpleSummary {summary} {showBadge} {badgeClass} />
+{:else if summary.template_key === 'event-error-summary'}
+	<EventErrorSummary {summary} />
+{:else if summary.template_key === 'stack-error-summary'}
+	<StackErrorSummary {summary} {showBadge} {badgeClass} />
+{:else if summary.template_key === 'event-session-summary'}
+	<EventSessionSummary {summary} {showType} />
+{:else if summary.template_key === 'stack-session-summary'}
+	<StackSessionSummary {summary} {showBadge} {showType} {badgeClass} />
+{:else if summary.template_key === 'event-notfound-summary'}
+	<EventNotFoundSummary {summary} {showType} />
+{:else if summary.template_key === 'stack-notfound-summary'}
+	<StackNotFoundSummary {summary} {showBadge} {showType} {badgeClass} />
+{:else if summary.template_key === 'event-feature-summary'}
+	<EventFeatureSummary {summary} {showType} />
+{:else if summary.template_key === 'stack-feature-summary'}
+	<StackFeatureSummary {summary} {showBadge} {showType} {badgeClass} />
+{:else if summary.template_key === 'event-log-summary'}
+	<EventLogSummary {summary} {showType} />
+{:else}
+	<StackLogSummary {summary} {showBadge} {showType} {badgeClass} />
+{/if}

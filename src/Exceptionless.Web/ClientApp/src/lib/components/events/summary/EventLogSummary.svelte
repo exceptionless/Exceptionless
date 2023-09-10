@@ -1,10 +1,6 @@
 <script lang="ts">
-	import { Exceptionless } from '@exceptionless/browser';
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-	export let badgeClass: string;
-	export let showBadge: boolean;
-	export let showStatus: boolean;
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-log-summary'>;
@@ -14,12 +10,6 @@
 	const isLevelInfo = level === 'info';
 	const isLevelWarning = level === 'warn';
 	const isLevelError = level === 'error';
-
-	Exceptionless.submitLog(
-		'EventLogSummary',
-		`Rendering Summary badgeClass=${badgeClass} showBadge=${showBadge} showStatus=${showStatus} showType=${showType}`,
-		'trace'
-	);
 </script>
 
 <div class="line-clamp-2">
