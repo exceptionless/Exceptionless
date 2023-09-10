@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import { writable } from 'svelte/store';
 	import Time from 'svelte-time';
 	import {
@@ -21,6 +21,7 @@
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import { FetchClient, ProblemDetails } from '$api/FetchClient';
+	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -148,18 +149,12 @@
 		}
 	}
 
-	onMount(() => {
-		loadData();
-
-		document.addEventListener('PersistentEventChanged', onPersistentEvent);
-
-		return () => {
-			document.removeEventListener('PersistentEventChanged', onPersistentEvent);
-		};
-	});
-
 	const dispatch = createEventDispatcher();
+
+	loadData();
 </script>
+
+<WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
 <table class="table table-zebra table-xs border">
 	<thead>
