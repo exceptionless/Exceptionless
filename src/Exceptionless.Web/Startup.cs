@@ -352,15 +352,19 @@ public class Startup
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
+        var apiPathSegment = new PathString("/api");
+        var docsPathSegment = new PathString("/docs");
+        var nextPathSegment = new PathString("/next");
         app.Use(next => context =>
         {
-            var apiPathSegment = new PathString("/api");
-            var docsPathSegment = new PathString("/docs");
             bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
             bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
+            bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
 
-            if (!isApiRequest && !isDocsRequest)
+            if (!isApiRequest && !isDocsRequest && !isNextRequest)
                 context.Request.Path = "/" + filePath;
+            else if (!isApiRequest && !isDocsRequest)
+                context.Request.Path = "/next/" + filePath;
 
             // Set endpoint to null so the static files middleware will handle the request.
             context.SetEndpoint(null);
