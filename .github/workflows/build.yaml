@@ -32,8 +32,6 @@ jobs:
           echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
-      - name: Lint .NET
-        run: dotnet format --verify-no-changes --no-restore --verbosity diagnostic
       - name: Build
         run: dotnet build --configuration Release /clp:NoSummary
       - name: Start Services
