@@ -12,7 +12,7 @@ import {
 	PUBLIC_LIVE_APPID
 } from '$env/static/public';
 
-export const accessToken = persisted<string | null>('access_token', null);
+export const accessToken = persisted<string | null>('satellizer_token', null, { serializer: { parse: (s) => s, stringify: s => s as string }});
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
 export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = PUBLIC_FACEBOOK_APPID;

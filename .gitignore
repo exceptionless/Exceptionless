@@ -124,5 +124,6 @@ k8s/ex-prod\.yaml
 k8s/ex-*-snapshots.yaml
 node_modules
 src/Exceptionless\.Web/ClientApp/build/
+src/Exceptionless\.Web/ClientApp.angular/dist/
 
 *.DotSettings

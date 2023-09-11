@@ -58,6 +58,11 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 				target: aspNetConfig.url
+			},
+            '^/(?!(next|api|docs|health|ready|_)).*': {
+				changeOrigin: true,
+				secure: false,
+				target: 'http://localhost:5100'
 			}
 		}
 	}

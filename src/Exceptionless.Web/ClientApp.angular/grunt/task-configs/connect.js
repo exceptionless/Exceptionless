@@ -12,7 +12,7 @@ module.exports = function () {
         main: {
             options: {
                 port: 5100,
-                protocol: "https",
+                protocol: "http",
                 key: certs.key,
                 cert: certs.cert,
                 middleware: function (connect, options, middlewares) {
@@ -63,9 +63,9 @@ module.exports = function () {
 };
 
 function getTarget() {
-    var port = 5201;
+    var port = 5200;
     var host = "localhost";
-    var ssl = true;
+    var ssl = false;
 
     if (process.env.ASPNETCORE_HTTPS_PORT) {
         port = process.env.ASPNETCORE_HTTPS_PORT;
