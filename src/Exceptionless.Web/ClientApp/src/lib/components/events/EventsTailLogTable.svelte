@@ -23,6 +23,8 @@
 	import { FetchClient, ProblemDetails } from '$api/FetchClient';
 	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
+	import ErrorMessage from '$comp/ErrorMessage.svelte';
+	import Loading from '$comp/Loading.svelte';
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -175,8 +177,12 @@
 </table>
 
 <p class="text-center text-xs text-gray-700">
-	Streaming events... Last updated <Time live={true} relative={true} timestamp={lastUpdated}
-	></Time>
+	{#if $loading}
+		<Loading></Loading>
+	{:else if problem.errors.general}
+		<ErrorMessage message={problem.errors.general}></ErrorMessage>
+	{:else}
+		Streaming events... Last updated <Time live={true} relative={true} timestamp={lastUpdated}
+		></Time>
+	{/if}
 </p>
-
-<!-- TODO: Error and loading indicators -->

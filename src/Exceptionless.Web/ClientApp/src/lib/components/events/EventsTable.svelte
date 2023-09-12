@@ -29,9 +29,11 @@
 	import NumberFormatter from '$comp/formatters/NumberFormatter.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import PagerSummary from '$comp/PagerSummary.svelte';
+	import Loading from '$comp/Loading.svelte';
+	import ErrorMessage from '$comp/ErrorMessage.svelte';
 
 	export let mode: GetEventsMode = 'summary';
-	let eventParams: IGetEventsParams = { mode, before: undefined, after: undefined };
+	let eventParams: IGetEventsParams = { mode };
 	$: queryResult = useGetEventSummariesQuery(eventParams);
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
@@ -165,8 +167,16 @@
 		{/each}
 	</tbody>
 </table>
-{#if $queryResult?.data?.total}
-	<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+
+<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+	<div class="py-2">
+		{#if $queryResult.isLoading}
+			<Loading></Loading>
+		{:else if $queryResult.isError}
+			<ErrorMessage message={$queryResult.error?.errors.general}></ErrorMessage>
+		{/if}
+	</div>
+	{#if $queryResult.data?.total}
 		<PagerSummary
 			{page}
 			pageSize={10}
@@ -195,8 +205,5 @@
 				}}
 			></Pager>
 		</div>
-	</div>
-{/if}
-
-<!-- TODO: Error and loading indicators -->
-<!-- TODO: move this into the table -->
+	{/if}
+</div>

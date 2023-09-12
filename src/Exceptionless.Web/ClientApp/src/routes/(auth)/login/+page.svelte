@@ -24,6 +24,8 @@
 	} from '$api/auth';
 	import { FetchClient, ProblemDetails, globalLoading } from '$lib/api/FetchClient';
 	import { Login } from '$lib/models/api';
+	import Loading from '$comp/Loading.svelte';
+	import ErrorMessage from '$comp/ErrorMessage.svelte';
 
 	const client = new FetchClient();
 	const data = new Login();
@@ -53,7 +55,7 @@
 
 <h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">Log in to your account</h2>
 <form on:submit|preventDefault={onLogin}>
-	{#if problem.errors.general}<p class="text-error">{problem.errors.general}</p>{/if}
+	<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	<EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}
 	></EmailInput>
 	<PasswordInput
@@ -74,7 +76,7 @@
 	<div class="my-4">
 		<button type="submit" class="btn btn-primary btn-block">
 			{#if $globalLoading}
-				<span class="loading loading-spinner"></span> Logging in...
+				<Loading></Loading> Logging in...
 			{:else}
 				Login
 			{/if}

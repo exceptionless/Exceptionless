@@ -6,8 +6,8 @@
 	export let pageTotal: number;
 	export let total: number;
 
-	const start = page * pageSize + 1;
-	const end = start + pageTotal - 1;
+	$: start = page * pageSize + 1;
+	$: end = start + pageTotal - 1;
 </script>
 
 {#if pageTotal !== 0 && total !== 0}

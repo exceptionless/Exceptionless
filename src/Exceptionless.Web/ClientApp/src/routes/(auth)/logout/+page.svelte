@@ -2,6 +2,8 @@
 	import { FetchClient, ProblemDetails } from '$api/FetchClient';
 	import { goto } from '$app/navigation';
 	import { isAuthenticated, logout } from '$api/auth';
+	import Loading from '$comp/Loading.svelte';
+	import ErrorMessage from '$comp/ErrorMessage.svelte';
 
 	$: if (!$isAuthenticated) {
 		goto('/login', { replaceState: true });
@@ -34,11 +36,11 @@
 
 <h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">Log out?</h2>
 <form on:submit|preventDefault={onLogout}>
-	{#if problem.errors.general}<p class="text-error">{problem.errors.general}</p>{/if}
+	<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	<div class="my-4">
 		<button type="submit" class="btn btn-primary btn-block">
 			{#if $loading}
-				<span class="loading loading-spinner"></span> Logging out...
+				<Loading></Loading> Logging out...
 			{:else}
 				Logout
 			{/if}
