@@ -3,7 +3,7 @@
     <SpaRoot>ClientApp\</SpaRoot>
     <AngularSpaRoot>ClientApp.angular\</AngularSpaRoot>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**;$(AngularSpaRoot)node_modules\**;</DefaultItemExcludes>
-    <SpaProxyServerUrl>http://localhost:5173</SpaProxyServerUrl>
+    <SpaProxyServerUrl>http://localhost:5173/next</SpaProxyServerUrl>
     <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
     <SkipSpaPublish>false</SkipSpaPublish>
   </PropertyGroup>
