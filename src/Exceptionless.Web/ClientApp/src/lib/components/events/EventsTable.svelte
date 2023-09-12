@@ -32,7 +32,7 @@
 
 	export let mode: GetEventsMode = 'summary';
 	let eventParams: IGetEventsParams = { mode, before: undefined, after: undefined };
-	const queryResult = useGetEventSummariesQuery(eventParams);
+	$: queryResult = useGetEventSummariesQuery(eventParams);
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -116,7 +116,7 @@
 		getRowId: (originalRow, _, __) => originalRow.id
 	});
 
-	queryResult.subscribe((result) => {
+	$: queryResult?.subscribe((result) => {
 		options.update((options) => ({
 			...options,
 			data: result.data?.data ?? []
@@ -165,7 +165,7 @@
 		{/each}
 	</tbody>
 </table>
-{#if $queryResult.data?.total}
+{#if $queryResult?.data?.total}
 	<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
 		<PagerSummary
 			{page}
@@ -175,7 +175,7 @@
 		></PagerSummary>
 		<div class="py-2">
 			<Pager
-				hasPrevious={page > 1}
+				hasPrevious={page > 0}
 				on:previous={() => {
 					page = Math.max(page - 1, 0);
 					eventParams = {

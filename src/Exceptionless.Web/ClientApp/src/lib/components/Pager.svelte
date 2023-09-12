@@ -13,7 +13,6 @@
 		disabled={!hasPrevious}
 		on:click|preventDefault={() => dispatch('previous')}>&lt;</button
 	>
-
 	<button
 		class="btn btn-square btn-outline join-item btn-sm"
 		disabled={!hasNext}
