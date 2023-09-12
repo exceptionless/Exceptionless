@@ -69,6 +69,7 @@ export function useGlobalMiddleware(middleware: FetchClientMiddleware) {
 export type FetchClientResponse<T> = Response & {
 	data: T | null;
 	problem: ProblemDetails;
+	total: number | null;
 	links: Links & { next?: Link; previous?: Link };
 };
 
@@ -271,9 +272,12 @@ export class FetchClient {
 				ctx.response = response as FetchClientResponse<T>;
 				ctx.response.data = null;
 				ctx.response.problem = new ProblemDetails();
+				ctx.response.total = null;
 				ctx.response.links = {};
 			}
 
+			const resultCountHeaderValue = parseInt(response.headers.get('X-Result-Count') || '');
+			ctx.response.total = !isNaN(resultCountHeaderValue) ? resultCountHeaderValue : null;
 			ctx.response.links = parseLinkHeader(response.headers.get('Link')) || {};
 			await next();
 		};

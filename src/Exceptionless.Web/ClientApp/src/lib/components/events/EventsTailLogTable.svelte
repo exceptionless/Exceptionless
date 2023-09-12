@@ -22,6 +22,7 @@
 	import { nameof } from '$lib/utils';
 	import { FetchClient, ProblemDetails } from '$api/FetchClient';
 	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
+	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -31,7 +32,8 @@
 		{
 			id: 'user',
 			header: 'User',
-			accessorFn: (row) => getUserColumnData(row)
+			cell: (prop) =>
+				flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
 		},
 		{
 			id: 'date',
@@ -71,19 +73,6 @@
 	});
 
 	const table = createSvelteTable<EventSummaryModel<SummaryTemplateKeys>>(options);
-	function getUserColumnData(row: EventSummaryModel<SummaryTemplateKeys>): string | undefined {
-		if (!row?.data) {
-			return;
-		}
-
-		if ('Identity' in row.data && row.data.Identity) {
-			return row.data.Identity as string;
-		}
-
-		if ('Name' in row.data) {
-			return row.data.Name as string;
-		}
-	}
 
 	const api = new FetchClient();
 	const loading = api.loading;
@@ -191,24 +180,6 @@
 			</tr>
 		{/each}
 	</tbody>
-	<tfoot>
-		{#each $table.getFooterGroups() as footerGroup}
-			<tr>
-				{#each footerGroup.headers as header}
-					<th>
-						{#if !header.isPlaceholder}
-							<svelte:component
-								this={flexRender(
-									header.column.columnDef.footer,
-									header.getContext()
-								)}
-							/>
-						{/if}
-					</th>
-				{/each}
-			</tr>
-		{/each}
-	</tfoot>
 </table>
 
 <p class="text-center text-xs text-gray-700">

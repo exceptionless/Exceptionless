@@ -24,8 +24,10 @@
 	} from '$api/EventQueries';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
-	import StackUsersSummary from './summary/StackUsersSummary.svelte';
+	import StackUsersSummary from './StackUsersSummaryColumn.svelte';
 	import Pager from '$comp/Pager.svelte';
+	import NumberFormatter from '$comp/formatters/NumberFormatter.svelte';
+	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	const eventParams: IGetEventsParams = { mode };
@@ -44,7 +46,8 @@
 			{
 				id: 'user',
 				header: 'User',
-				accessorFn: (row) => getUserColumnData(row)
+				cell: (prop) =>
+					flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
 			},
 			{
 				id: 'date',
@@ -65,7 +68,7 @@
 				id: 'events',
 				header: 'Events',
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-				cell: (prop) => Intl.NumberFormat().format(prop.getValue() as number)
+				cell: (prop) => flexRender(NumberFormatter, { value: prop.getValue() as number })
 			},
 			{
 				id: 'first',
@@ -120,22 +123,6 @@
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
-
-	function getUserColumnData(row: SummaryModel<SummaryTemplateKeys>): string | undefined {
-		console.log(row);
-		if (!row?.data) {
-			return;
-		}
-
-		if ('Identity' in row.data && row.data.Identity) {
-			return row.data.Identity as string;
-		}
-
-		if ('Name' in row.data) {
-			return row.data.Name as string;
-		}
-	}
-
 	const dispatch = createEventDispatcher();
 </script>
 
@@ -174,26 +161,25 @@
 			</tr>
 		{/each}
 	</tbody>
-	<tfoot>
-		{#each $table.getFooterGroups() as footerGroup}
-			<tr>
-				{#each footerGroup.headers as header}
-					<th>
-						{#if !header.isPlaceholder}
-							<svelte:component
-								this={flexRender(
-									header.column.columnDef.footer,
-									header.getContext()
-								)}
-							/>
-						{/if}
-					</th>
-				{/each}
-			</tr>
-		{/each}
-	</tfoot>
 </table>
+{#if $queryResult.data?.total}
+	<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+		<p class="text-sm text-gray-700">
+			Showing
+			<span class="font-medium">1</span>
+			to
+			<span class="font-medium">10</span>
+			of
+			<span class="font-medium">
+				<NumberFormatter value={$queryResult.data.total}></NumberFormatter>
+			</span>
+			results
+		</p>
+		<div class="py-2">
+			<Pager hasPrevious={false} hasNext={true}></Pager>
+		</div>
+	</div>
+{/if}
 
 <!-- TODO: Error and loading indicators -->
 <!-- TODO: move this into the table -->
-<Pager hasPrevious={false} hasNext={true}></Pager>

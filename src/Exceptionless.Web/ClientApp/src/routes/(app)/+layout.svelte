@@ -70,7 +70,7 @@
 		>
 			<div class="flex-1 pl-[20px]">
 				<a href="/" class="text-xl normal-case"
-					><img src="{logo}" class="h-[38px]" alt="Exceptionless" /></a
+					><img src={logo} class="h-[38px]" alt="Exceptionless" /></a
 				>
 			</div>
 			<div class="flex-none gap-2">
