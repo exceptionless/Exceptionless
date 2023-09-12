@@ -31,6 +31,7 @@
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Table from '$comp/table/Table.svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let mode: GetEventsMode = 'summary';
 	let eventParams: IGetEventsParams = { mode };
@@ -127,9 +128,11 @@
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 	let page = 0;
+
+    const dispatch = createEventDispatcher();
 </script>
 
-<Table {table}></Table>
+<Table {table} on:rowclick={event => dispatch('rowclick', event.detail)}></Table>
 
 <div class="flex flex-1 items-center justify-between text-xs text-gray-700">
 	<div class="py-2">

@@ -25,6 +25,7 @@
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
 	import Table from '$comp/table/Table.svelte';
+	import { createEventDispatcher } from "svelte";
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -132,12 +133,14 @@
 		}
 	}
 
+    const dispatch = createEventDispatcher();
+
 	loadData();
 </script>
 
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
-<Table {table}></Table>
+<Table {table} on:rowclick={event => dispatch('rowclick', event.detail)}></Table>
 
 <p class="py-2 text-center text-xs text-gray-700">
 	{#if $loading}
