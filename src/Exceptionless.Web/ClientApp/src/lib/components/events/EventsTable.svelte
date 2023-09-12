@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import Time from 'svelte-time';
 	import { writable } from 'svelte/store';
 	import {
@@ -31,6 +30,7 @@
 	import PagerSummary from '$comp/table/PagerSummary.svelte';
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
+	import Table from '$comp/table/Table.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	let eventParams: IGetEventsParams = { mode };
@@ -126,47 +126,10 @@
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
-	const dispatch = createEventDispatcher();
-
 	let page = 0;
 </script>
 
-<table class="table table-zebra table-xs border">
-	<thead>
-		{#each $table.getHeaderGroups() as headerGroup}
-			<tr>
-				{#each headerGroup.headers as header}
-					<th>
-						{#if !header.isPlaceholder}
-							<svelte:component
-								this={flexRender(
-									header.column.columnDef.header,
-									header.getContext()
-								)}
-							/>
-						{/if}
-					</th>
-				{/each}
-			</tr>
-		{/each}
-	</thead>
-	<tbody>
-		{#each $table.getRowModel().rows as row}
-			<tr
-				class="hover cursor-pointer"
-				on:click|preventDefault={() => dispatch('rowclick', row.original)}
-			>
-				{#each row.getVisibleCells() as cell}
-					<td>
-						<svelte:component
-							this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-						/>
-					</td>
-				{/each}
-			</tr>
-		{/each}
-	</tbody>
-</table>
+<Table {table}></Table>
 
 <div class="flex flex-1 items-center justify-between text-xs text-gray-700">
 	<div class="py-2">

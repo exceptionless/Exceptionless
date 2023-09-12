@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { writable } from 'svelte/store';
 	import Time from 'svelte-time';
 	import {
@@ -25,6 +24,7 @@
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
+	import Table from '$comp/table/Table.svelte';
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -132,49 +132,12 @@
 		}
 	}
 
-	const dispatch = createEventDispatcher();
-
 	loadData();
 </script>
 
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
-<table class="table table-zebra table-xs border">
-	<thead>
-		{#each $table.getHeaderGroups() as headerGroup}
-			<tr>
-				{#each headerGroup.headers as header}
-					<th>
-						{#if !header.isPlaceholder}
-							<svelte:component
-								this={flexRender(
-									header.column.columnDef.header,
-									header.getContext()
-								)}
-							/>
-						{/if}
-					</th>
-				{/each}
-			</tr>
-		{/each}
-	</thead>
-	<tbody>
-		{#each $table.getRowModel().rows as row}
-			<tr
-				class="hover cursor-pointer"
-				on:click|preventDefault={() => dispatch('rowclick', row.original)}
-			>
-				{#each row.getVisibleCells() as cell}
-					<td>
-						<svelte:component
-							this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-						/>
-					</td>
-				{/each}
-			</tr>
-		{/each}
-	</tbody>
-</table>
+<Table {table}></Table>
 
 <p class="py-2 text-center text-xs text-gray-700">
 	{#if $loading}
