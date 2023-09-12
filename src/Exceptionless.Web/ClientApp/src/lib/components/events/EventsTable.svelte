@@ -28,9 +28,10 @@
 	import Pager from '$comp/Pager.svelte';
 	import NumberFormatter from '$comp/formatters/NumberFormatter.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
+	import PagerSummary from '$comp/PagerSummary.svelte';
 
 	export let mode: GetEventsMode = 'summary';
-	const eventParams: IGetEventsParams = { mode };
+	let eventParams: IGetEventsParams = { mode, before: undefined, after: undefined };
 	const queryResult = useGetEventSummariesQuery(eventParams);
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
@@ -124,6 +125,8 @@
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 	const dispatch = createEventDispatcher();
+
+	let page = 0;
 </script>
 
 <table class="table table-zebra table-xs border">
@@ -164,19 +167,33 @@
 </table>
 {#if $queryResult.data?.total}
 	<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-		<p class="text-sm text-gray-700">
-			Showing
-			<span class="font-medium">1</span>
-			to
-			<span class="font-medium">10</span>
-			of
-			<span class="font-medium">
-				<NumberFormatter value={$queryResult.data.total}></NumberFormatter>
-			</span>
-			results
-		</p>
+		<PagerSummary
+			{page}
+			pageSize={10}
+			pageTotal={$queryResult.data.data?.length || 0}
+			total={$queryResult.data.total}
+		></PagerSummary>
 		<div class="py-2">
-			<Pager hasPrevious={false} hasNext={true}></Pager>
+			<Pager
+				hasPrevious={page > 1}
+				on:previous={() => {
+					page = Math.max(page - 1, 0);
+					eventParams = {
+						...eventParams,
+						before: $queryResult.data?.links.previous?.before,
+						after: undefined
+					};
+				}}
+				hasNext={!!$queryResult.data.links.next}
+				on:next={() => {
+					page = page + 1;
+					eventParams = {
+						...eventParams,
+						before: undefined,
+						after: $queryResult.data?.links.next?.after
+					};
+				}}
+			></Pager>
 		</div>
 	</div>
 {/if}

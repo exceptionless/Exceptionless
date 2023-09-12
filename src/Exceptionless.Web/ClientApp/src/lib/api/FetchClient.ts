@@ -385,7 +385,9 @@ export class FetchClient {
 
 		if (options?.params) {
 			for (const [key, value] of Object.entries(options?.params)) {
-				parsed.searchParams.append(key, value as string);
+				if (value !== undefined && value !== null) {
+					parsed.searchParams.append(key, value as string);
+				}
 			}
 
 			url = parsed.toString();

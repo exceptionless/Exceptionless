@@ -88,21 +88,13 @@
 			return;
 		}
 
-		const params = { ...defaultParams };
-		if (before) {
-			params.before = before;
-		}
-
 		const response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
-			params
+			params: { ...defaultParams, before }
 		});
 
 		if (response.ok) {
-			if (response.links.previous) {
-				before = response.links.previous?.before;
-			}
-
 			lastUpdated = new Date();
+			before = response.links.previous?.before;
 			problem.clear('general');
 			data.update((data) => {
 				for (const summary of response.data?.reverse() || []) {
