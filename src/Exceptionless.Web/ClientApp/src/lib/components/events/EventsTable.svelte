@@ -25,10 +25,10 @@
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import StackUsersSummary from './StackUsersSummaryColumn.svelte';
-	import Pager from '$comp/Pager.svelte';
+	import Pager from '$comp/table/Pager.svelte';
 	import NumberFormatter from '$comp/formatters/NumberFormatter.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
-	import PagerSummary from '$comp/PagerSummary.svelte';
+	import PagerSummary from '$comp/table/PagerSummary.svelte';
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 
@@ -168,7 +168,7 @@
 	</tbody>
 </table>
 
-<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+<div class="flex flex-1 items-center justify-between text-xs text-gray-700">
 	<div class="py-2">
 		{#if $queryResult.isLoading}
 			<Loading></Loading>
@@ -183,6 +183,7 @@
 			pageTotal={$queryResult.data.data?.length || 0}
 			total={$queryResult.data.total}
 		></PagerSummary>
+
 		<div class="py-2">
 			<Pager
 				hasPrevious={page > 0}

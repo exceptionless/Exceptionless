@@ -176,13 +176,12 @@
 	</tbody>
 </table>
 
-<p class="text-center text-xs text-gray-700">
+<p class="py-2 text-center text-xs text-gray-700">
 	{#if $loading}
 		<Loading></Loading>
 	{:else if problem.errors.general}
 		<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	{:else}
-		Streaming events... Last updated <Time live={true} relative={true} timestamp={lastUpdated}
-		></Time>
+		Streaming events... Last updated <span class="font-medium"><Time live={true} relative={true} timestamp={lastUpdated}></Time></span>
 	{/if}
 </p>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import NumberFormatter from './formatters/NumberFormatter.svelte';
+	import NumberFormatter from '../formatters/NumberFormatter.svelte';
 
 	export let page: number;
 	export let pageSize: number;
