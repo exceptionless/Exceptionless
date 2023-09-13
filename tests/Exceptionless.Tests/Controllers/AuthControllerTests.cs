@@ -57,7 +57,7 @@ public class AuthControllerTests : IntegrationTestsBase
                 Email = "test@domain.com",
                 Password = null!
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
@@ -86,7 +86,7 @@ public class AuthControllerTests : IntegrationTestsBase
                 Name = "Test",
                 Password = password
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
@@ -212,7 +212,7 @@ public class AuthControllerTests : IntegrationTestsBase
                Name = "Test",
                Email = "test4@exceptionless.io",
                Password = "Password1$",
-               InviteToken = ""
+               InviteToken = null
            })
            .StatusCodeShouldBeOk()
         );
@@ -238,7 +238,7 @@ public class AuthControllerTests : IntegrationTestsBase
                Name = "Test",
                Email = email,
                Password = TestDomainLoginProvider.ValidPassword,
-               InviteToken = ""
+               InviteToken = null
            })
            .StatusCodeShouldBeOk()
         );
@@ -263,7 +263,7 @@ public class AuthControllerTests : IntegrationTestsBase
                Password = "literallydoesntmatter",
                InviteToken = ""
            })
-           .StatusCodeShouldBeBadRequest()
+           .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
@@ -430,7 +430,7 @@ public class AuthControllerTests : IntegrationTestsBase
                 Email = email,
                 Password = null!
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
 
         await SendRequestAsync(r => r
