@@ -12,6 +12,9 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
+[*.json]
+insert_final_newline = false
+
 # Generated code
 [*{_AssemblyInfo.cs,.notsupported.cs,AsmOffsets.cs}]
 generated_code = true
