@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { flexRender, type Table } from "@tanstack/svelte-table";
-	import { createEventDispatcher } from "svelte";
-    import type { Readable } from 'svelte/store';
+	import { flexRender, type Table } from '@tanstack/svelte-table';
+	import { createEventDispatcher } from 'svelte';
+	import type { Readable } from 'svelte/store';
 
-    type TData = $$Generic;
-    export let table: Readable<Table<TData>>
+	type TData = $$Generic;
+	export let table: Readable<Table<TData>>;
 
 	const dispatch = createEventDispatcher();
 </script>

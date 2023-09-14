@@ -1,13 +1,14 @@
 <script lang="ts">
 	import NumberFormatter from '../formatters/NumberFormatter.svelte';
+	import { getPageEnd, getPageStart } from './pagination';
 
 	export let page: number;
-	export let pageSize: number;
 	export let pageTotal: number;
+	export let limit: number;
 	export let total: number;
 
-	$: start = page * pageSize + 1;
-	$: end = start + pageTotal - 1;
+	$: start = getPageStart(page, limit);
+	$: end = getPageEnd(page, pageTotal, limit);
 </script>
 
 {#if pageTotal !== 0 && total !== 0}

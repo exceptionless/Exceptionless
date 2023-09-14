@@ -44,7 +44,8 @@ export async function gotoLogin() {
 	const isAuthPath =
 		currentPage.url.pathname.startsWith('/next/login') ||
 		currentPage.url.pathname.startsWith('/next/logout');
-	const url = currentPage.url.pathname === '/next' || isAuthPath
+	const url =
+		currentPage.url.pathname === '/next' || isAuthPath
 			? '/next/login'
 			: `/next/login?redirect=${location.href}`;
 	await goto(url, { replaceState: true });

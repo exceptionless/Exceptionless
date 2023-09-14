@@ -31,7 +31,8 @@
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Table from '$comp/table/Table.svelte';
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher } from 'svelte';
+	import { DEFAULT_LIMIT, hasNextPage, hasPreviousPage } from '$comp/table/pagination';
 
 	export let mode: GetEventsMode = 'summary';
 	let eventParams: IGetEventsParams = { mode };
@@ -129,10 +130,28 @@
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 	let page = 0;
 
-    const dispatch = createEventDispatcher();
+	function onPreviousPage() {
+		page = Math.max(page - 1, 0);
+		eventParams = {
+			...eventParams,
+			before: $queryResult.data?.links.previous?.before,
+			after: undefined
+		};
+	}
+
+	function onNextPage() {
+		page = page + 1;
+		eventParams = {
+			...eventParams,
+			before: undefined,
+			after: $queryResult.data?.links.next?.after
+		};
+	}
+
+	const dispatch = createEventDispatcher();
 </script>
 
-<Table {table} on:rowclick={event => dispatch('rowclick', event.detail)}></Table>
+<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></Table>
 
 <div class="flex flex-1 items-center justify-between text-xs text-gray-700">
 	<div class="py-2">
@@ -145,31 +164,22 @@
 	{#if $queryResult.data?.total}
 		<PagerSummary
 			{page}
-			pageSize={10}
 			pageTotal={$queryResult.data.data?.length || 0}
-			total={$queryResult.data.total}
+			limit={DEFAULT_LIMIT}
+			total={$queryResult.data?.total || 0}
 		></PagerSummary>
 
 		<div class="py-2">
 			<Pager
-				hasPrevious={page > 0}
-				on:previous={() => {
-					page = Math.max(page - 1, 0);
-					eventParams = {
-						...eventParams,
-						before: $queryResult.data?.links.previous?.before,
-						after: undefined
-					};
-				}}
-				hasNext={!!$queryResult.data.links.next}
-				on:next={() => {
-					page = page + 1;
-					eventParams = {
-						...eventParams,
-						before: undefined,
-						after: $queryResult.data?.links.next?.after
-					};
-				}}
+				hasPrevious={hasPreviousPage(page)}
+				on:previous={() => onPreviousPage()}
+				hasNext={hasNextPage(
+					page,
+					$queryResult.data.data?.length || 0,
+					DEFAULT_LIMIT,
+					$queryResult.data?.total || 0
+				)}
+				on:next={() => onNextPage()}
 			></Pager>
 		</div>
 	{/if}
