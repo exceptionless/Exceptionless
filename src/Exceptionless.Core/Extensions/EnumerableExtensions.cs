@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics.Contracts;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Extensions;

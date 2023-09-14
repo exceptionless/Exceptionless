@@ -127,7 +127,7 @@ public class ErrorSignature
         SignatureHash = SignatureInfo.Values.Any(v => v is not null) ? SignatureInfo.Values.ToSHA1() : null;
     }
 
-    private string GetStackFrameSignature(Method method)
+    private static string GetStackFrameSignature(Method method)
     {
         var builder = new StringBuilder(255);
         if (method is null)

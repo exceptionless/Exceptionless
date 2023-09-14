@@ -102,22 +102,22 @@ public class StackService
         }
     }
 
-    internal string GetStackOccurrenceSetCacheKey()
+    internal static string GetStackOccurrenceSetCacheKey()
     {
         return "usage:occurrences";
     }
 
-    internal string GetStackOccurrenceCountCacheKey(string stackId)
+    internal static string GetStackOccurrenceCountCacheKey(string stackId)
     {
         return String.Concat("usage:occurrences:count:", stackId);
     }
 
-    internal string GetStackOccurrenceMinDateCacheKey(string stackId)
+    internal static string GetStackOccurrenceMinDateCacheKey(string stackId)
     {
         return String.Concat("usage:occurrences:min:", stackId);
     }
 
-    internal string GetStackOccurrenceMaxDateCacheKey(string stackId)
+    internal static string GetStackOccurrenceMaxDateCacheKey(string stackId)
     {
         return String.Concat("usage:occurrences:max:", stackId);
     }

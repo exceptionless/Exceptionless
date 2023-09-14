@@ -104,7 +104,7 @@ public class EventPostService
         }
     }
 
-    private string GetArchivePath(DateTime createdUtc, string projectId, string fileName)
+    private static string GetArchivePath(DateTime createdUtc, string projectId, string fileName)
     {
         return Path.Combine("archive", createdUtc.ToString("yy"), createdUtc.ToString("MM"), createdUtc.ToString("dd"), createdUtc.ToString("HH"), createdUtc.ToString("mm"), projectId, fileName);
     }

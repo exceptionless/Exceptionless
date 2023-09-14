@@ -1,6 +1,5 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Logging;

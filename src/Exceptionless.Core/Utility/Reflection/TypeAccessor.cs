@@ -34,10 +34,7 @@ internal class TypeAccessor
     /// <returns>A new instance of accessors type.</returns>
     public object Create()
     {
-        var constructor = _lateBoundConstructor.Value;
-        if (constructor is null)
-            throw new InvalidOperationException($"Could not find constructor for '{Type.Name}'.");
-
+        var constructor = _lateBoundConstructor.Value ?? throw new InvalidOperationException($"Could not find constructor for '{Type.Name}'.");
         return constructor.Invoke();
     }
 

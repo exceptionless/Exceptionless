@@ -171,7 +171,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return Task.CompletedTask;
         }
 
-        private QueryContainer GetRetentionFilter<T>(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
+        private static QueryContainer GetRetentionFilter<T>(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
         {
             if (field is null)
                 throw new ArgumentNullException(nameof(field), "Retention field not specified for this index");
@@ -181,7 +181,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 
-        private bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
+        private static bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
         {
             ArgumentNullException.ThrowIfNull(index);
 

@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Models;
-using Exceptionless.Core.Pipeline;
+﻿using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default;
