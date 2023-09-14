@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Extensions;
@@ -19,8 +19,7 @@ public static class ErrorExtensions
 
     public static StackingTarget GetStackingTarget(this Error error)
     {
-        if (error is null)
-            throw new ArgumentNullException(nameof(error));
+        ArgumentNullException.ThrowIfNull(error);
 
         InnerError? targetError = error;
         while (targetError is not null)
@@ -67,8 +66,7 @@ public static class ErrorExtensions
 
     public static InnerError GetInnermostError(this InnerError error)
     {
-        if (error is null)
-            throw new ArgumentNullException(nameof(error));
+        ArgumentNullException.ThrowIfNull(error);
 
         var current = error;
         while (current.Inner is not null)

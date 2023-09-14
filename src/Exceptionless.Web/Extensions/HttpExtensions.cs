@@ -17,40 +17,35 @@ public static class HttpExtensions
 
     public static void SetUser(this HttpRequest request, User user)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         request.HttpContext.Items["User"] = user;
     }
 
     public static Project? GetProject(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         return request.HttpContext.Items.TryGetAndReturn("Project") as Project;
     }
 
     public static void SetProject(this HttpRequest request, Project project)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         request.HttpContext.Items["Project"] = project;
     }
 
     public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         return request.HttpContext.User;
     }
 
     public static AuthType GetAuthType(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         var principal = request.GetClaimsPrincipal();
         return principal.GetAuthType();
@@ -58,8 +53,7 @@ public static class HttpExtensions
 
     public static bool CanAccessOrganization(this HttpRequest request, string organizationId)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         if (request.IsInOrganization(organizationId))
             return true;
@@ -69,8 +63,7 @@ public static class HttpExtensions
 
     public static bool IsGlobalAdmin(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         var principal = request.GetClaimsPrincipal();
         return principal.IsInRole(AuthorizationRoles.GlobalAdmin);
@@ -78,8 +71,7 @@ public static class HttpExtensions
 
     public static bool IsInOrganization(this HttpRequest request, string organizationId)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         if (String.IsNullOrEmpty(organizationId))
             return false;
@@ -89,8 +81,7 @@ public static class HttpExtensions
 
     public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         var principal = request.GetClaimsPrincipal();
         return principal.GetOrganizationIds();
@@ -98,8 +89,7 @@ public static class HttpExtensions
 
     public static string? GetTokenOrganizationId(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         var principal = request.GetClaimsPrincipal();
         return principal.GetTokenOrganizationId();
@@ -107,16 +97,14 @@ public static class HttpExtensions
 
     public static string? GetDefaultOrganizationId(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         return request.GetAssociatedOrganizationIds().FirstOrDefault();
     }
 
     public static string? GetProjectId(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         var principal = request.GetClaimsPrincipal();
         return principal.GetProjectId();
@@ -124,8 +112,7 @@ public static class HttpExtensions
 
     public static string? GetDefaultProjectId(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         // TODO: Use project id from url. E.G., /api/v{apiVersion:int=2}/projects/{projectId:objectid}/events
         //var path = request.Path.Value;
@@ -136,16 +123,14 @@ public static class HttpExtensions
 
     public static string? GetClientIpAddress(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         return request.HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
     public static string? GetQueryString(this HttpRequest request, string key)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         if (request.Query.TryGetValue(key, out var queryStrings))
             return queryStrings;
@@ -155,8 +140,7 @@ public static class HttpExtensions
 
     public static AuthInfo? GetBasicAuth(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         string? authHeader = request.Headers.TryGetAndReturn("Authorization");
         if (authHeader is null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
@@ -177,8 +161,7 @@ public static class HttpExtensions
 
     public static bool IsLocal(this HttpRequest request)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         if (request.Host.Host.Contains("localtest.me", StringComparison.OrdinalIgnoreCase) ||
             request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))

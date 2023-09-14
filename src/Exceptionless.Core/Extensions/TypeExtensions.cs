@@ -40,8 +40,7 @@ public static class TypeExtensions
 
     public static T ToType<T>(this object value)
     {
-        if (value is null)
-            throw new ArgumentNullException(nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
 
         var targetType = typeof(T);
         var converter = TypeDescriptor.GetConverter(targetType);

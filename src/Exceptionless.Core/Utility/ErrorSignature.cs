@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -140,8 +140,7 @@ public class ErrorSignature
 
     private bool IsUserFrame(StackFrame frame)
     {
-        if (frame is null)
-            throw new ArgumentNullException(nameof(frame));
+        ArgumentNullException.ThrowIfNull(frame);
 
         if (frame.Name is null)
             return false;

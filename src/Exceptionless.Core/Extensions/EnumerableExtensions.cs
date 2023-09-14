@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using Foundatio.Repositories.Models;
 
@@ -81,8 +81,7 @@ public static class EnumerableExtensions
     /// <returns>a collection of sub-collections by page size</returns>
     public static IEnumerable<ReadOnlyCollection<T>> Page<T>(this IEnumerable<T> source, int pageSize)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         using var enumerator = source.GetEnumerator();
         while (enumerator.MoveNext())

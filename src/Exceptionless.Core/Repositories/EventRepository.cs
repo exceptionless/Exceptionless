@@ -50,8 +50,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
         var query = new RepositoryQuery<PersistentEvent>().Organization(organizationId);
         if (utcStart.HasValue && utcEnd.HasValue)
@@ -169,8 +168,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public override Task<FindResults<PersistentEvent>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
         return FindAsync(q => q.Organization(organizationId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
@@ -182,8 +180,9 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)
     {
-        if (stackIds is null || stackIds.Length == 0)
-            throw new ArgumentNullException(nameof(stackIds));
+        ArgumentNullException.ThrowIfNull(stackIds);
+        if (stackIds.Length == 0)
+            throw new ArgumentOutOfRangeException(nameof(stackIds));
 
         return RemoveAllAsync(q => q.Stack(stackIds));
     }

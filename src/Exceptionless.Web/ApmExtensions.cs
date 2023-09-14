@@ -274,8 +274,7 @@ namespace OpenTelemetry
     {
         public static TracerProviderBuilder AddFilteredOtlpExporter(this TracerProviderBuilder builder, Action<FilteredOtlpExporterOptions>? configure = null)
         {
-            if (builder is null)
-                throw new ArgumentNullException(nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
 
             if (builder is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
             {

@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Exceptionless.Core.Extensions;
@@ -11,8 +11,7 @@ public static class HashExtensions
     /// <returns>The hash as a hexadecimal String.</returns>
     public static string ComputeHash(this string input, HashAlgorithm algorithm)
     {
-        if (String.IsNullOrEmpty(input))
-            throw new ArgumentNullException(nameof(input));
+        ArgumentException.ThrowIfNullOrEmpty(input);
 
         byte[] data = algorithm.ComputeHash(Encoding.Unicode.GetBytes(input));
 

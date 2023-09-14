@@ -8,8 +8,7 @@ public class ConfigurationResponseFilterAttribute : ActionFilterAttribute
 {
     public override void OnActionExecuted(ActionExecutedContext context)
     {
-        if (context is null)
-            throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
 
         if (context.HttpContext.Response.StatusCode != StatusCodes.Status200OK && context.HttpContext.Response.StatusCode != StatusCodes.Status202Accepted)
             return;
