@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;

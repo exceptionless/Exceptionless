@@ -1,15 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Net.Http;
-using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Extensions.Hosting.Implementation;
@@ -18,7 +9,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
-using Serilog.Events;
 
 namespace OpenTelemetry
 {
@@ -85,7 +75,7 @@ namespace OpenTelemetry
                                 }
 
                                 // 404s should not be error
-                                var httpStatus = activity.GetTagItem("http.status_code") as int?;
+                                int? httpStatus = activity.GetTagItem("http.status_code") as int?;
                                 if (httpStatus.HasValue && httpStatus.Value == 404)
                                     activity.SetStatus(Status.Unset);
                             };

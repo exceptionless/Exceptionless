@@ -242,7 +242,7 @@ public static class PersistentEventExtensions
 
     public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev)
     {
-        if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
+        if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains('.') || ev.Geo.Contains(':')))
             yield return ev.Geo.Trim();
 
         var ri = ev.GetRequestInfo();

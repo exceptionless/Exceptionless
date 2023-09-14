@@ -8,7 +8,6 @@ using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Controllers;

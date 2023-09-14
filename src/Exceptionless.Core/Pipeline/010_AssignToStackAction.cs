@@ -64,7 +64,7 @@ public class AssignToStackAction : EventPipelineActionBase
                 // create new stack in distributed lock
                 if (ctx.Stack is null)
                 {
-                    var success = await _lockProvider.TryUsingAsync($"new-stack:{ctx.Event.ProjectId}:{signatureHash}", async () =>
+                    bool success = await _lockProvider.TryUsingAsync($"new-stack:{ctx.Event.ProjectId}:{signatureHash}", async () =>
                     {
                         // double check in case another process just created the stack
                         var newStack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();

@@ -18,7 +18,7 @@ public class CustomAttributesModelBinder : IModelBinder
     {
         ArgumentNullException.ThrowIfNull(bindingContext);
 
-        if (!(bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) is ControllerParameterDescriptor parameter))
+        if (bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) is not ControllerParameterDescriptor parameter)
             return _simpleModelBinder.BindModelAsync(bindingContext);
 
         if (bindingContext.ModelType == typeof(string))

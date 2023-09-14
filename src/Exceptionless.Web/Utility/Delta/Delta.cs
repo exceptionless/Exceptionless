@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
@@ -130,7 +129,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        if (_propertiesThatExist.TryGetValue(name, out IMemberAccessor? cacheHit))
+        if (_propertiesThatExist.TryGetValue(name, out var cacheHit))
         {
             value = cacheHit.GetValue(target ?? _entity);
             return true;
@@ -202,7 +201,6 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Returns the <see cref="EntityType" /> instance
     /// that holds all the changes (and original values) being tracked by this Delta.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not appropriate to be a property")]
     public TEntityType GetEntity()
     {
         return _entity;
@@ -346,7 +344,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
         _propertiesThatExist = _propertyCache[entityType];
     }
 
-    private void CachePropertyAccessors(Type type)
+    private static void CachePropertyAccessors(Type type)
     {
         _propertyCache.GetOrAdd(type, t =>
         {

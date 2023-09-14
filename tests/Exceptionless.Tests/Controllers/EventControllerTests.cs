@@ -855,7 +855,7 @@ public class EventControllerTests : IntegrationTestsBase
         await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
 
         var usageService = GetService<UsageService>();
-        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        int eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.True(eventsLeftInBucket > 0);
 
         var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
@@ -1015,7 +1015,7 @@ public class EventControllerTests : IntegrationTestsBase
         await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
 
         var usageService = GetService<UsageService>();
-        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        int eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.True(eventsLeftInBucket > 0);
 
         await SendRequestAsync(r => r
@@ -1059,7 +1059,7 @@ public class EventControllerTests : IntegrationTestsBase
             .AppendPath("blah")
             .StatusCodeShouldBeOk()
         );
-        var content = await response.Content.ReadAsStringAsync();
+        string content = await response.Content.ReadAsStringAsync();
         Assert.Contains("exceptionless", content);
 
         await SendRequestAsync(r => r
@@ -1099,7 +1099,7 @@ public class EventControllerTests : IntegrationTestsBase
         await _organizationRepository.SaveAsync(organization, o => o.Originals().ImmediateConsistency().Cache());
 
         var usageService = GetService<UsageService>();
-        var eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
+        int eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.True(eventsLeftInBucket > 0);
 
         var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
@@ -1491,7 +1491,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(secondEventId, result.Single().Id);
     }
 
-    private string? GetQueryStringValue(string url, string name)
+    private static string? GetQueryStringValue(string url, string name)
     {
         var uri = new Uri(url);
         var parameters = HttpUtility.ParseQueryString(uri.Query);

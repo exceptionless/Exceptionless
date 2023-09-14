@@ -2,7 +2,6 @@
 using Exceptionless.Core.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Stripe;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 

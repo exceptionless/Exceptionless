@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Utility;
