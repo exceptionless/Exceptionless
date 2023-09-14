@@ -118,11 +118,8 @@ ctx._source.total_occurrences += params.count;";
 
     public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
-
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
 
         return PatchAllAsync(
             q => q.Organization(organizationId).Project(projectId),

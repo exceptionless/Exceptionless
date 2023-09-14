@@ -38,8 +38,7 @@ public class ExtensionsProtocolLogger : IProtocolLogger
         if (!_logger.IsEnabled(LogLevel.Trace))
             return;
 
-        if (buffer is null)
-            throw new ArgumentNullException(nameof(buffer));
+        ArgumentNullException.ThrowIfNull(buffer);
 
         if (offset < 0 || offset > buffer.Length)
             throw new ArgumentOutOfRangeException(nameof(offset));

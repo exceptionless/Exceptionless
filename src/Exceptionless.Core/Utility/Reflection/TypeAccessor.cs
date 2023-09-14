@@ -73,10 +73,8 @@ internal class TypeAccessor
 
     private static PropertyInfo? FindProperty(Type type, string name, BindingFlags flags)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         // first try GetProperty
         var property = type.GetProperty(name, flags);
@@ -127,10 +125,8 @@ internal class TypeAccessor
 
     private static FieldInfo? FindField(Type type, string name, BindingFlags flags)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         // first try GetField
         var field = type.GetField(name, flags);

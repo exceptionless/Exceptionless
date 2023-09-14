@@ -28,8 +28,7 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
 
     public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook>? options = null)
     {
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
 
         return FindAsync(q => q.Project(projectId).Sort(f => f.CreatedUtc), options);
     }

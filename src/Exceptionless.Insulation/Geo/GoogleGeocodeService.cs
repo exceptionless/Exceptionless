@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Geocoding.Google;
 
@@ -9,8 +9,7 @@ public class GoogleGeocodeService : IGeocodeService
     private readonly GoogleGeocoder _geocoder;
     public GoogleGeocodeService(string apiKey)
     {
-        if (String.IsNullOrEmpty(apiKey))
-            throw new ArgumentNullException(nameof(apiKey));
+        ArgumentException.ThrowIfNullOrEmpty(apiKey);
 
         _geocoder = new GoogleGeocoder(apiKey);
     }

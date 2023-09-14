@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
@@ -29,8 +29,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
 
     public async Task<Organization?> GetByInviteTokenAsync(string token)
     {
-        if (String.IsNullOrEmpty(token))
-            throw new ArgumentNullException(nameof(token));
+        ArgumentException.ThrowIfNullOrEmpty(token);
 
         var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
         var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
@@ -39,8 +38,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
 
     public async Task<Organization?> GetByStripeCustomerIdAsync(string customerId)
     {
-        if (String.IsNullOrEmpty(customerId))
-            throw new ArgumentNullException(nameof(customerId));
+        ArgumentException.ThrowIfNullOrEmpty(customerId);
 
         var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
         var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();

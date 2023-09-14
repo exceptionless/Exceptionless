@@ -91,8 +91,7 @@ public static class PersistentEventExtensions
     /// <param name="id">The reference id that points to a specific event</param>
     public static void SetEventReference(this PersistentEvent ev, string name, string id)
     {
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         if (!IsValidIdentifier(id) || String.IsNullOrEmpty(id))
             throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));

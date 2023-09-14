@@ -49,8 +49,7 @@ namespace Exceptionless.Core.Repositories.Queries
     {
         public AppFilter(Organization organization) : this(new List<Organization> { organization })
         {
-            if (organization is null)
-                throw new ArgumentNullException(nameof(organization));
+            ArgumentNullException.ThrowIfNull(organization);
         }
 
         public AppFilter(IReadOnlyCollection<Organization> organizations)
@@ -60,11 +59,8 @@ namespace Exceptionless.Core.Repositories.Queries
 
         public AppFilter(Project project, Organization organization) : this(new List<Project> { project }, new List<Organization> { organization })
         {
-            if (organization is null)
-                throw new ArgumentNullException(nameof(organization));
-
-            if (project is null)
-                throw new ArgumentNullException(nameof(project));
+            ArgumentNullException.ThrowIfNull(organization);
+            ArgumentNullException.ThrowIfNull(project);
         }
 
         public AppFilter(IReadOnlyCollection<Project> projects, IReadOnlyCollection<Organization> organizations) : this(organizations)
@@ -187,8 +183,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
         private bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
         {
-            if (index is null)
-                throw new ArgumentNullException(nameof(index));
+            ArgumentNullException.ThrowIfNull(index);
 
             var indexType = index.GetType();
             if (indexType == typeof(StackIndex))
@@ -202,8 +197,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
         private string? GetDateField(IIndex index)
         {
-            if (index is null)
-                throw new ArgumentNullException(nameof(index));
+            ArgumentNullException.ThrowIfNull(index);
 
             var indexType = index.GetType();
             if (indexType == typeof(StackIndex))

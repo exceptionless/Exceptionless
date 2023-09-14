@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.Net.Http.Headers;
@@ -16,8 +16,7 @@ public class CustomAttributesModelBinder : IModelBinder
 
     public Task BindModelAsync(ModelBindingContext bindingContext)
     {
-        if (bindingContext is null)
-            throw new ArgumentNullException(nameof(bindingContext));
+        ArgumentNullException.ThrowIfNull(bindingContext);
 
         if (!(bindingContext.ActionContext.ActionDescriptor.Parameters.FirstOrDefault(p => p.Name == bindingContext.FieldName) is ControllerParameterDescriptor parameter))
             return _simpleModelBinder.BindModelAsync(bindingContext);
@@ -88,8 +87,7 @@ public class CustomAttributesModelBinderProvider : IModelBinderProvider
 {
     public IModelBinder? GetBinder(ModelBinderProviderContext context)
     {
-        if (context is null)
-            throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
 
         if (context.Metadata.ModelType == typeof(string) || context.Metadata.ModelType == typeof(IQueryCollection))
             return new CustomAttributesModelBinder(context.Metadata.ModelType, context.Services.GetRequiredService<ILoggerFactory>());
