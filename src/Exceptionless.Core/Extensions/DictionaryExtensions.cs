@@ -24,8 +24,7 @@ public static class DictionaryExtensions
 
     public static void AddItemIfNotEmpty(this IDictionary<string, string> dictionary, string key, string? value)
     {
-        if (key is null)
-            throw new ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(key);
 
         if (!String.IsNullOrEmpty(value))
             dictionary[key] = value;

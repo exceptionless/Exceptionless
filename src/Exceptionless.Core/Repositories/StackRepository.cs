@@ -118,11 +118,8 @@ ctx._source.total_occurrences += params.count;";
 
     public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
-
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
 
         return PatchAllAsync(
             q => q.Organization(organizationId).Project(projectId),
@@ -150,5 +147,5 @@ ctx._source.total_occurrences += params.count;";
     }
 
     private string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
-    private string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
+    private static string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
 }

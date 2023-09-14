@@ -34,10 +34,8 @@ public static class LateBinder
     /// </returns>
     public static IMemberAccessor? FindProperty(Type type, string name, BindingFlags flags)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var currentType = type;
         TypeAccessor typeAccessor;
@@ -66,9 +64,7 @@ public static class LateBinder
     /// </returns>
     public static IMemberAccessor GetPropertyAccessor(PropertyInfo property)
     {
-        if (property is null)
-            throw new ArgumentNullException(nameof(property));
-
+        ArgumentNullException.ThrowIfNull(property);
         return new PropertyAccessor(property);
     }
 
@@ -81,9 +77,7 @@ public static class LateBinder
     /// </returns>
     public static IMemberAccessor GetFieldAccessor(FieldInfo field)
     {
-        if (field is null)
-            throw new ArgumentNullException(nameof(field));
-
+        ArgumentNullException.ThrowIfNull(field);
         return new FieldAccessor(field);
     }
 
@@ -112,10 +106,8 @@ public static class LateBinder
     /// </returns>
     public static IMemberAccessor? FindField(Type type, string name, BindingFlags flags)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var typeAccessor = GetAccessor(type);
         var memberAccessor = typeAccessor.FindField(name, flags);
@@ -131,10 +123,8 @@ public static class LateBinder
     /// <param name="value">The new value to be set.</param>
     public static void SetProperty(object target, string name, object value)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var rootType = target.GetType();
         var currentType = rootType;
@@ -171,10 +161,8 @@ public static class LateBinder
     /// <param name="value">The new value to be set.</param>
     public static void SetField(object target, string name, object value)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var rootType = target.GetType();
         var memberAccessor = FindField(rootType, name);
@@ -193,10 +181,8 @@ public static class LateBinder
     /// <returns>The value of the property.</returns>
     public static object? GetProperty(object target, string name)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var rootType = target.GetType();
         var currentType = rootType;
@@ -233,10 +219,8 @@ public static class LateBinder
     /// <returns>The value of the field.</returns>
     public static object? GetField(object target, string name)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (String.IsNullOrEmpty(name))
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var rootType = target.GetType();
         var memberAccessor = FindField(rootType, name);
@@ -253,8 +237,7 @@ public static class LateBinder
     /// <returns>A new instance of the specified type.</returns>
     public static object CreateInstance(Type type)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
 
         var typeAccessor = GetAccessor(type);
         if (typeAccessor is null)

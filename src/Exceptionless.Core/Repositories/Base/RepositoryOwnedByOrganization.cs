@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -16,8 +16,7 @@ public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRep
 
     public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T>? options = null)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
         var commandOptions = options.Configure();
         if (commandOptions.ShouldUseCache())
@@ -28,8 +27,7 @@ public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRep
 
     public virtual Task<long> RemoveAllByOrganizationIdAsync(string organizationId)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
         return RemoveAllAsync(q => q.Organization(organizationId));
     }

@@ -44,16 +44,14 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
 
     public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
         return CountAsync(q => q.Organization(organizationId), o => o.Cache(String.Concat("Organization:", organizationId)));
     }
 
     public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project>? options = null)
     {
-        if (organizationIds is null)
-            throw new ArgumentNullException(nameof(organizationIds));
+        ArgumentNullException.ThrowIfNull(organizationIds);
 
         if (organizationIds.Count == 0)
             return Task.FromResult(new FindResults<Project>());
@@ -79,9 +77,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
 
     public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects)
     {
-        if (projects is null)
-            throw new ArgumentNullException(nameof(projects));
-
+        ArgumentNullException.ThrowIfNull(projects);
         if (projects.Count == 0)
             return;
 

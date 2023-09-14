@@ -14,15 +14,14 @@ namespace Exceptionless.Core.Repositories
 
         public static T Organization<T>(this T query, string organizationId) where T : IRepositoryQuery
         {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException(nameof(organizationId));
+            ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
             return query.AddCollectionOptionValue(OrganizationsKey, organizationId);
         }
 
         public static T Organization<T>(this T query, IEnumerable<string> organizationIds) where T : IRepositoryQuery
         {
-            var organizationIdList = organizationIds.Distinct().ToArray();
+            string[] organizationIdList = organizationIds.Distinct().ToArray();
             if (organizationIdList.Length == 0)
                 throw new ArgumentException("Must contain at least one organization id.", nameof(organizationIds));
 

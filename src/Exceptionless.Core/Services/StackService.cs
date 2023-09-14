@@ -23,12 +23,9 @@ public class StackService
 
     public async Task IncrementStackUsageAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
-        if (String.IsNullOrEmpty(stackId))
-            throw new ArgumentNullException(nameof(stackId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+        ArgumentException.ThrowIfNullOrEmpty(stackId);
         if (count <= 0)
             return;
 
@@ -105,22 +102,22 @@ public class StackService
         }
     }
 
-    internal string GetStackOccurrenceSetCacheKey()
+    internal static string GetStackOccurrenceSetCacheKey()
     {
         return "usage:occurrences";
     }
 
-    internal string GetStackOccurrenceCountCacheKey(string stackId)
+    internal static string GetStackOccurrenceCountCacheKey(string stackId)
     {
         return String.Concat("usage:occurrences:count:", stackId);
     }
 
-    internal string GetStackOccurrenceMinDateCacheKey(string stackId)
+    internal static string GetStackOccurrenceMinDateCacheKey(string stackId)
     {
         return String.Concat("usage:occurrences:min:", stackId);
     }
 
-    internal string GetStackOccurrenceMaxDateCacheKey(string stackId)
+    internal static string GetStackOccurrenceMaxDateCacheKey(string stackId)
     {
         return String.Concat("usage:occurrences:max:", stackId);
     }

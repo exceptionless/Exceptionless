@@ -28,8 +28,7 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
 
     public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook>? options = null)
     {
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
 
         return FindAsync(q => q.Project(projectId).Sort(f => f.CreatedUtc), options);
     }
@@ -68,5 +67,5 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
     }
 
     private string CacheKey(WebHook webHook) => String.Concat("Organization:", webHook.OrganizationId, ":Project:", webHook.ProjectId);
-    private string PagedCacheKey(string organizationId, string projectId) => String.Concat("paged:Organization:", organizationId, ":Project:", projectId);
+    private static string PagedCacheKey(string organizationId, string projectId) => String.Concat("paged:Organization:", organizationId, ":Project:", projectId);
 }

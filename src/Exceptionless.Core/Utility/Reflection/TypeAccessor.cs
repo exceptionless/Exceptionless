@@ -34,10 +34,7 @@ internal class TypeAccessor
     /// <returns>A new instance of accessors type.</returns>
     public object Create()
     {
-        var constructor = _lateBoundConstructor.Value;
-        if (constructor is null)
-            throw new InvalidOperationException($"Could not find constructor for '{Type.Name}'.");
-
+        var constructor = _lateBoundConstructor.Value ?? throw new InvalidOperationException($"Could not find constructor for '{Type.Name}'.");
         return constructor.Invoke();
     }
 
@@ -73,10 +70,8 @@ internal class TypeAccessor
 
     private static PropertyInfo? FindProperty(Type type, string name, BindingFlags flags)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         // first try GetProperty
         var property = type.GetProperty(name, flags);
@@ -127,10 +122,8 @@ internal class TypeAccessor
 
     private static FieldInfo? FindField(Type type, string name, BindingFlags flags)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         // first try GetField
         var field = type.GetField(name, flags);

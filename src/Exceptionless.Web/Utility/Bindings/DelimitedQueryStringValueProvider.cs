@@ -20,8 +20,7 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
 
     public override ValueProviderResult GetValue(string key)
     {
-        if (key is null)
-            throw new ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(key);
 
         var values = _queryCollection[key];
         if (values.Count == 0)
@@ -49,8 +48,7 @@ public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
 
     public Task CreateValueProviderAsync(ValueProviderFactoryContext context)
     {
-        if (context is null)
-            throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
 
         var valueProvider = new DelimitedQueryStringValueProvider(BindingSource.Query, context.ActionContext.HttpContext.Request.Query, CultureInfo.InvariantCulture, _delimiters);
 
@@ -72,14 +70,12 @@ public class DelimitedQueryStringAttribute : Attribute, IResourceFilter
 
     public void OnResourceExecuted(ResourceExecutedContext context)
     {
-        if (context is null)
-            throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
     }
 
     public void OnResourceExecuting(ResourceExecutingContext context)
     {
-        if (context is null)
-            throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
 
         context.ValueProviderFactories.AddDelimitedValueProviderFactory(_delimiters);
     }

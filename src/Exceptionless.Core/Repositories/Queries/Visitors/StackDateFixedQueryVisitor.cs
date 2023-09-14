@@ -1,4 +1,4 @@
-﻿using Foundatio.Parsers.ElasticQueries.Extensions;
+using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Nest;
@@ -10,8 +10,7 @@ public class StackDateFixedQueryVisitor : ChainableQueryVisitor
     private readonly string _dateFixedFieldName;
     public StackDateFixedQueryVisitor(string dateFixedFieldName)
     {
-        if (String.IsNullOrEmpty(dateFixedFieldName))
-            throw new ArgumentNullException(nameof(dateFixedFieldName));
+        ArgumentException.ThrowIfNullOrEmpty(dateFixedFieldName);
 
         _dateFixedFieldName = dateFixedFieldName;
     }

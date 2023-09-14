@@ -1,4 +1,3 @@
-﻿using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -30,8 +29,7 @@ public class SlackService
 
     public async Task<SlackToken?> GetAccessTokenAsync(string code)
     {
-        if (String.IsNullOrEmpty(code))
-            throw new ArgumentNullException(nameof(code));
+        ArgumentException.ThrowIfNullOrEmpty(code);
 
         if (String.IsNullOrEmpty(_appOptions.SlackOptions.SlackId) || String.IsNullOrEmpty(_appOptions.SlackOptions.SlackSecret))
             throw new Exception("SlackId or SlackSecret requires configuration");
@@ -79,8 +77,7 @@ public class SlackService
 
     public async Task<bool> RevokeAccessTokenAsync(string token)
     {
-        if (String.IsNullOrEmpty(token))
-            throw new ArgumentNullException(nameof(token));
+        ArgumentException.ThrowIfNullOrEmpty(token);
 
         string url = $"https://slack.com/api/auth.revoke?token={token}";
         var response = await _client.PostAsync(url).AnyContext();
@@ -96,17 +93,10 @@ public class SlackService
 
     public Task SendMessageAsync(string organizationId, string projectId, string url, SlackMessage message)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
-
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
-
-        if (String.IsNullOrEmpty(url))
-            throw new ArgumentNullException(nameof(url));
-
-        if (message is null)
-            throw new ArgumentNullException(nameof(message));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+        ArgumentException.ThrowIfNullOrEmpty(url);
+        ArgumentNullException.ThrowIfNull(message);
 
         var notification = new WebHookNotification
         {

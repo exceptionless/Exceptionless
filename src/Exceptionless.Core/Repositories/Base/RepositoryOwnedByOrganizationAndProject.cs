@@ -15,19 +15,15 @@ public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwn
 
     public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T>? options = null)
     {
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
 
         return FindAsync(q => q.Project(projectId), options);
     }
 
     public virtual Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId)
     {
-        if (String.IsNullOrEmpty(organizationId))
-            throw new ArgumentNullException(nameof(organizationId));
-
-        if (String.IsNullOrEmpty(projectId))
-            throw new ArgumentNullException(nameof(projectId));
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
 
         return RemoveAllAsync(q => q.Organization(organizationId).Project(projectId));
     }

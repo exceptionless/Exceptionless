@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
@@ -68,8 +67,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <returns>True if successful</returns>
     public bool TrySetPropertyValue(string name, object? value, TEntityType? target = null)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         if (!_propertiesThatExist.ContainsKey(name))
             return false;
@@ -129,10 +127,9 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <returns>True if the Property was found</returns>
     public bool TryGetPropertyValue(string name, out object? value, TEntityType? target = null)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
-        if (_propertiesThatExist.TryGetValue(name, out IMemberAccessor? cacheHit))
+        if (_propertiesThatExist.TryGetValue(name, out var cacheHit))
         {
             value = cacheHit.GetValue(target ?? _entity);
             return true;
@@ -154,8 +151,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <returns>Returns <c>true</c> if the Property was found and <c>false</c> if not.</returns>
     public bool TryGetPropertyType(string name, out Type? type)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         if (_propertiesThatExist.TryGetValue(name, out var value))
         {
@@ -178,8 +174,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// </summary>
     public override bool TrySetMember(SetMemberBinder binder, object? value)
     {
-        if (binder is null)
-            throw new ArgumentNullException(nameof(binder));
+        ArgumentNullException.ThrowIfNull(binder);
 
         // add properties that don't exist to the unknown properties collect
         if (!_propertiesThatExist.ContainsKey(binder.Name))
@@ -197,8 +192,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// </summary>
     public override bool TryGetMember(GetMemberBinder binder, out object? result)
     {
-        if (binder is null)
-            throw new ArgumentNullException(nameof(binder));
+        ArgumentNullException.ThrowIfNull(binder);
 
         return TryGetPropertyValue(binder.Name, out result);
     }
@@ -207,7 +201,6 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// Returns the <see cref="EntityType" /> instance
     /// that holds all the changes (and original values) being tracked by this Delta.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not appropriate to be a property")]
     public TEntityType GetEntity()
     {
         return _entity;
@@ -267,8 +260,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <param name="target">The target entity to be updated.</param>
     public void CopyChangedValues(object target)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(target);
 
         var targetType = target.GetType();
         if (!_propertyCache.ContainsKey(targetType))
@@ -296,9 +288,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <param name="target">The entity to be updated.</param>
     public void CopyUnchangedValues(object target)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
+        ArgumentNullException.ThrowIfNull(target);
 
         var targetType = target.GetType();
         if (!_propertyCache.ContainsKey(targetType))
@@ -342,8 +332,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
 
     private void Initialize(Type entityType)
     {
-        if (entityType is null)
-            throw new ArgumentNullException(nameof(entityType));
+        ArgumentNullException.ThrowIfNull(entityType);
 
         if (!typeof(TEntityType).IsAssignableFrom(entityType))
             throw new InvalidOperationException("Delta Entity Type Not Assignable");
@@ -355,7 +344,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
         _propertiesThatExist = _propertyCache[entityType];
     }
 
-    private void CachePropertyAccessors(Type type)
+    private static void CachePropertyAccessors(Type type)
     {
         _propertyCache.GetOrAdd(type, t =>
         {

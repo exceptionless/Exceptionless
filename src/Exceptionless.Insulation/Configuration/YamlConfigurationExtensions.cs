@@ -96,8 +96,7 @@ public static class YamlConfigurationExtensions
     /// </returns>
     public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
     {
-        if (builder is null)
-            throw new ArgumentNullException(nameof(builder));
+        ArgumentNullException.ThrowIfNull(builder);
 
         if (String.IsNullOrEmpty(path))
             throw new ArgumentException("File path must be a non-empty string.", nameof(path));

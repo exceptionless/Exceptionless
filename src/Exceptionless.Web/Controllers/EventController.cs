@@ -360,7 +360,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
     }
 
-    private string AddFirstOccurrenceFilter(DateTimeRange timeRange, string? filter)
+    private static string AddFirstOccurrenceFilter(DateTimeRange timeRange, string? filter)
     {
         bool inverted = false;
         if (filter is not null && filter.StartsWith("@!"))
