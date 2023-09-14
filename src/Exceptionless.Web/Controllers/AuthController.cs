@@ -14,6 +14,7 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json.Linq;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
@@ -202,7 +203,8 @@ public class AuthController : ExceptionlessApiController
         if (!PasswordMeetsRequirements(model.Password))
         {
             _logger.LogError("Signup failed for {EmailAddress}: Invalid Password", email);
-            return BadRequest("Password must be at least 6 characters long");
+            ModelState.AddModelError<Signup>(m => m.Password, "Password must be at least 6 characters long");
+            return ValidationProblem(ModelState);
         }
 
         User? user;
@@ -234,7 +236,7 @@ public class AuthController : ExceptionlessApiController
 
         if (_authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password))
         {
-            _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed.", email);
+            _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed", email);
             return BadRequest();
         }
 

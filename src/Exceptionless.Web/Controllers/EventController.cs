@@ -303,7 +303,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Date = e.Date,
                             Data = summaryData.Data
                         };
-                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.GetSearchBeforeToken(), events.GetSearchAfterToken());
+                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":

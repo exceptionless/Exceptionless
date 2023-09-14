@@ -81,12 +81,12 @@ public class AuthControllerTests : IntegrationTestsBase
             .AppendPath("auth/signup")
             .Content(new Signup
             {
-                Email = email,
-                InviteToken = "",
                 Name = "Test",
-                Password = password
+                Email = email,
+                Password = password,
+                InviteToken = null
             })
-            .StatusCodeShouldBeUnprocessableEntity()
+            .StatusCodeShouldBeBadRequest()
         );
     }
 
@@ -261,9 +261,9 @@ public class AuthControllerTests : IntegrationTestsBase
                Name = "Test",
                Email = "testuser2@exceptionless.io",
                Password = "literallydoesntmatter",
-               InviteToken = ""
+               InviteToken = null
            })
-           .StatusCodeShouldBeUnprocessableEntity()
+           .StatusCodeShouldBeBadRequest()
         );
     }
 
@@ -440,7 +440,7 @@ public class AuthControllerTests : IntegrationTestsBase
             {
                 Name = "Random Name",
                 Email = email,
-                Password = "invalidPass",
+                Password = "invalidPass"
             })
             .StatusCodeShouldBeUnauthorized()
         );
@@ -576,7 +576,7 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task LoginValidNonExistantActiveDirectoryAsync()
+    public Task LoginValidNonExistentActiveDirectoryAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = true;
 
@@ -596,25 +596,25 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task LoginInvalidNonExistantActiveDirectoryAsync()
+    public async Task LoginInvalidNonExistentActiveDirectoryAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = true;
+        var provider = new TestDomainLoginProvider();
+        string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
         await SendRequestAsync(r => r
            .Post()
            .AppendPath("auth/login")
            .Content(new Login
            {
-               Email = TestDomainLoginProvider.ValidUsername + ".au",
+               Email = $"{email}.au",
                Password = "Totallywrongpassword1234"
            })
            .StatusCodeShouldBeUnauthorized()
         );
 
         // Verify that a user account was not added
-        var provider = new TestDomainLoginProvider();
-        string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
-        var user = await _userRepository.GetByEmailAddressAsync(email + ".au");
+        var user = await _userRepository.GetByEmailAddressAsync($"{email}.au");
         Assert.Null(user);
     }
 
@@ -638,10 +638,37 @@ public class AuthControllerTests : IntegrationTestsBase
            .AppendPath("auth/login")
            .Content(new Login
            {
-               Email = TestDomainLoginProvider.ValidUsername,
+               Email = email,
                Password = "Totallywrongpassword1234"
            })
            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task LoginInvalidExistingActiveDirectoryAccountUsingUserNameLoginAsync()
+    {
+        _authOptions.EnableActiveDirectoryAuth = true;
+
+        var provider = new TestDomainLoginProvider();
+        string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
+        var user = new User
+        {
+            EmailAddress = email,
+            IsEmailAddressVerified = true,
+            FullName = "User 6"
+        };
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login
+            {
+                Email = TestDomainLoginProvider.ValidUsername,
+                Password = "Totallywrongpassword1234"
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
