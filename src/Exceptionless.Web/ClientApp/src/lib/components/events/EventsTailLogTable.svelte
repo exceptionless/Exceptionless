@@ -19,7 +19,7 @@
 	import type { IGetEventsParams } from '$api/EventQueries';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
-	import { FetchClient, ProblemDetails } from '$api/FetchClient';
+	import { FetchClient, ProblemDetails, type FetchClientResponse } from '$api/FetchClient';
 	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
@@ -67,6 +67,7 @@
 	const options = writable<TableOptions<EventSummaryModel<SummaryTemplateKeys>>>({
 		data: [],
 		columns: defaultColumns,
+        enableSorting: false,
 		state: {
 			columnVisibility
 		},
@@ -79,7 +80,7 @@
 
 	const api = new FetchClient();
 	const loading = api.loading;
-	let problem = new ProblemDetails();
+    let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
 	const defaultParams: IGetEventsParams = { mode: 'summary' };
@@ -91,14 +92,14 @@
 			return;
 		}
 
-		const response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
 			params: { ...defaultParams, before }
 		});
 
 		if (response.ok) {
 			lastUpdated = new Date();
 			before = response.links.previous?.before;
-			problem.clear('general');
+
 			data.update((data) => {
 				for (const summary of response.data?.reverse() || []) {
 					data.push(summary);
@@ -106,10 +107,6 @@
 
 				return data.slice(-10);
 			});
-		} else {
-			problem = problem.setErrorMessage(
-				'An error occurred while loading events, please try again.'
-			);
 		}
 	}
 
@@ -134,7 +131,6 @@
 	}
 
 	const dispatch = createEventDispatcher();
-
 	loadData();
 </script>
 
@@ -145,8 +141,8 @@
 <p class="py-2 text-center text-xs text-gray-700">
 	{#if $loading}
 		<Loading></Loading>
-	{:else if problem.errors.general}
-		<ErrorMessage message={problem.errors.general}></ErrorMessage>
+	{:else if response?.problem?.errors.general}
+		<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
 	{:else}
 		Streaming events... Last updated <span class="font-medium"
 			><Time live={true} relative={true} timestamp={lastUpdated}></Time></span

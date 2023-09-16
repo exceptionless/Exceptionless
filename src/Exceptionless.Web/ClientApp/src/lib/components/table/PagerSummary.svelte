@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { getPageEnd, getPageStart } from "$lib/helpers/api";
 	import NumberFormatter from '../formatters/NumberFormatter.svelte';
-	import { getPageEnd, getPageStart } from './pagination';
 
 	export let page: number;
 	export let pageTotal: number;

@@ -242,3 +242,23 @@ export function isEntityChangedType(message: {
 		message.type.endsWith('Changed')
 	);
 }
+
+export type GetEventsMode =
+    | 'summary'
+    | 'stack_recent'
+    | 'stack_frequent'
+    | 'stack_new'
+    | 'stack_users'
+    | null;
+
+export interface IGetEventsParams {
+    filter?: string;
+    sort?: string;
+    time?: string;
+    offset?: string;
+    mode?: GetEventsMode;
+    page?: number;
+    limit?: number;
+    before?: string;
+    after?: string;
+}

@@ -8,19 +8,16 @@
 		type ColumnDef,
 		type TableOptions,
 		type Updater,
-		type VisibilityState
-	} from '@tanstack/svelte-table';
+		type VisibilityState,
+		type ColumnSort	} from '@tanstack/svelte-table';
 	import type {
 		EventSummaryModel,
+		GetEventsMode,
+		IGetEventsParams,
 		StackSummaryModel,
 		SummaryModel,
 		SummaryTemplateKeys
 	} from '$lib/models/api';
-	import {
-		useGetEventSummariesQuery,
-		type IGetEventsParams,
-		type GetEventsMode
-	} from '$api/EventQueries';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import StackUsersSummary from './StackUsersSummaryColumn.svelte';
@@ -32,11 +29,10 @@
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Table from '$comp/table/Table.svelte';
 	import { createEventDispatcher } from 'svelte';
-	import { DEFAULT_LIMIT, hasNextPage, hasPreviousPage } from '$comp/table/pagination';
+	import { DEFAULT_LIMIT, hasNextPage, hasPreviousPage } from "$lib/helpers/api";
+	import { type FetchClientResponse, FetchClient } from "$api/FetchClient";
 
 	export let mode: GetEventsMode = 'summary';
-	let eventParams: IGetEventsParams = { mode };
-	$: queryResult = useGetEventSummariesQuery(eventParams);
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -51,12 +47,14 @@
 			{
 				id: 'user',
 				header: 'User',
+                enableSorting: false,
 				cell: (prop) =>
 					flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
 			},
 			{
 				id: 'date',
 				header: 'Date',
+                enableSorting: true,
 				accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
 				cell: (prop) =>
 					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
@@ -67,17 +65,20 @@
 			{
 				id: 'users',
 				header: 'Users',
+                enableSorting: false,
 				cell: (prop) => flexRender(StackUsersSummary, { summary: prop.row.original })
 			},
 			{
 				id: 'events',
 				header: 'Events',
+                enableSorting: false,
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
 				cell: (prop) => flexRender(NumberFormatter, { value: prop.getValue() as number })
 			},
 			{
 				id: 'first',
 				header: 'First',
+                enableSorting: false,
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
 				cell: (prop) =>
 					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
@@ -85,6 +86,7 @@
 			{
 				id: 'last',
 				header: 'Last',
+                enableSorting: false,
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
 				cell: (prop) =>
 					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
@@ -109,43 +111,91 @@
 		}));
 	};
 
+	let sorting: ColumnSort[] = [{
+        id: 'date',
+        desc: true
+    }];
+	const setSorting = (updaterOrValue: Updater<ColumnSort[]>) => {
+		if (updaterOrValue instanceof Function) {
+			sorting = updaterOrValue(sorting);
+		} else {
+			sorting = updaterOrValue;
+		}
+
+		options.update((old) => ({
+			...old,
+			state: {
+				...old.state,
+				sorting
+			}
+		}));
+
+		parameters.update((params) => ({
+            ...params,
+            before: undefined,
+            after: undefined,
+            sort: sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined
+        }));
+	};
+
 	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
-		data: [],
 		columns: defaultColumns,
+		data: [],
+        enableSortingRemoval: false,
+        manualSorting: true,
 		state: {
-			columnVisibility
+			columnVisibility,
+			sorting
 		},
 		onColumnVisibilityChange: setColumnVisibility,
+		onSortingChange: setSorting,
 		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow, _, __) => originalRow.id
-	});
-
-	$: queryResult?.subscribe((result) => {
-		options.update((options) => ({
-			...options,
-			data: result.data?.data ?? []
-		}));
+		getRowId: (originalRow, _, __) => originalRow.id,
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
-	let page = 0;
+
+    let page = 0;
+
+	const api = new FetchClient();
+	const loading = api.loading;
+    let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
+    const parameters = writable<IGetEventsParams>({ mode });
+    parameters.subscribe(async () => await loadData());
+
+	async function loadData() {
+		if ($loading) {
+			return;
+		}
+
+		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+			params: { mode: 'summary', ...$parameters }
+		});
+
+		if (response.ok) {
+            options.update((options) => ({
+                ...options,
+                data: response.data || []
+            }));
+		}
+	}
 
 	function onPreviousPage() {
 		page = Math.max(page - 1, 0);
-		eventParams = {
-			...eventParams,
-			before: $queryResult.data?.links.previous?.before,
-			after: undefined
-		};
+        parameters.update((params) => ({
+            ...params,
+            before: response?.links.next?.before,
+            after: undefined
+        }));
 	}
 
 	function onNextPage() {
 		page = page + 1;
-		eventParams = {
-			...eventParams,
-			before: undefined,
-			after: $queryResult.data?.links.next?.after
-		};
+        parameters.update((params) => ({
+            ...params,
+            before: undefined,
+            after: response?.links.next?.after
+        }));
 	}
 
 	const dispatch = createEventDispatcher();
@@ -155,18 +205,19 @@
 
 <div class="flex flex-1 items-center justify-between text-xs text-gray-700">
 	<div class="py-2">
-		{#if $queryResult.isLoading}
+		{#if $loading}
 			<Loading></Loading>
-		{:else if $queryResult.isError}
-			<ErrorMessage message={$queryResult.error?.errors.general}></ErrorMessage>
+	    {:else if response?.problem?.errors.general}
+		    <ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
 		{/if}
 	</div>
-	{#if $queryResult.data?.total}
+
+	{#if response?.total}
 		<PagerSummary
 			{page}
-			pageTotal={$queryResult.data.data?.length || 0}
+			pageTotal={response?.data?.length || 0}
 			limit={DEFAULT_LIMIT}
-			total={$queryResult.data?.total || 0}
+			total={response?.total || 0}
 		></PagerSummary>
 
 		<div class="py-2">
@@ -175,9 +226,9 @@
 				on:previous={() => onPreviousPage()}
 				hasNext={hasNextPage(
 					page,
-					$queryResult.data.data?.length || 0,
+					response?.data?.length || 0,
 					DEFAULT_LIMIT,
-					$queryResult.data?.total || 0
+					response?.total || 0
 				)}
 				on:next={() => onNextPage()}
 			></Pager>
