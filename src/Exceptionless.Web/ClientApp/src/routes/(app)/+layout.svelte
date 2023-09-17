@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { useQueryClient } from '@tanstack/svelte-query';
 	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
 	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';
@@ -21,8 +20,6 @@
 		if (ctx.response && ctx.response.status === 401) accessToken.set(null);
 	});
 
-	const queryClient = useQueryClient();
-
 	async function onMessage(message: MessageEvent) {
 		const data: { type: WebSocketMessageType; message: unknown } = message.data
 			? JSON.parse(message.data)
@@ -40,7 +37,7 @@
 		);
 
 		if (isEntityChangedType(data)) {
-			await queryClient.invalidateQueries([data.message.type]);
+			//await queryClient.invalidateQueries([data.message.type]);
 		}
 
 		// This event is fired when a user is added or removed from an organization.

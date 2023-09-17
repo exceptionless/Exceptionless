@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getPageEnd, getPageStart } from "$lib/helpers/api";
+	import { getPageEnd, getPageStart } from '$lib/helpers/api';
 	import NumberFormatter from '../formatters/NumberFormatter.svelte';
 
 	export let page: number;

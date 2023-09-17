@@ -1,8 +1,8 @@
 <script lang="ts">
-	import KeyboardArrowDown from '~icons/mdi/keyboard-arrow-down';
-	import KeyboardArrowUp from '~icons/mdi/keyboard-arrow-up';
+	import KeyboardArrowDownIcon from '~icons/mdi/keyboard-arrow-down';
+	import KeyboardArrowUpIcon from '~icons/mdi/keyboard-arrow-up';
 
-	import { flexRender, type Table } from '@tanstack/svelte-table';
+	import { flexRender, type Header, type Table } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import type { Readable } from 'svelte/store';
 
@@ -10,6 +10,10 @@
 	export let table: Readable<Table<TData>>;
 
 	const dispatch = createEventDispatcher();
+
+	function getHeaderColumnClass(header: Header<TData, unknown>) {
+		return (header.column.columnDef.meta as { class?: string })?.class;
+	}
 </script>
 
 <table class="table table-zebra table-xs border">
@@ -17,16 +21,12 @@
 		{#each $table.getHeaderGroups() as headerGroup}
 			<tr>
 				{#each headerGroup.headers as header}
-					<th>
+					<th class={getHeaderColumnClass(header)}>
 						{#if !header.isPlaceholder}
-							<div
-                                class="flex items-center"
-								class:cursor-pointer={header.column.getCanSort()}
-								class:select-none={header.column.getCanSort()}
+							<button
 								on:click={header.column.getToggleSortingHandler()}
-                                on:keydown={header.column.getToggleSortingHandler()}
-                                tabindex="0"
-                                role="button"
+								disabled={!header.column.getCanSort()}
+								class="flex items-center"
 							>
 								<svelte:component
 									this={flexRender(
@@ -34,12 +34,12 @@
 										header.getContext()
 									)}
 								/>
-                                {#if header.column.getIsSorted() === 'asc'}
-                                    <KeyboardArrowUp />
-                                {:else if header.column.getIsSorted() === 'desc'}
-                                    <KeyboardArrowDown />
-                                {/if}
-							</div>
+								{#if header.column.getIsSorted() === 'asc'}
+									<KeyboardArrowUpIcon />
+								{:else if header.column.getIsSorted() === 'desc'}
+									<KeyboardArrowDownIcon />
+								{/if}
+							</button>
 						{/if}
 					</th>
 				{/each}

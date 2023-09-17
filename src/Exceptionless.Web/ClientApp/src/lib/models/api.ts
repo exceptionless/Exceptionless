@@ -244,21 +244,21 @@ export function isEntityChangedType(message: {
 }
 
 export type GetEventsMode =
-    | 'summary'
-    | 'stack_recent'
-    | 'stack_frequent'
-    | 'stack_new'
-    | 'stack_users'
-    | null;
+	| 'summary'
+	| 'stack_recent'
+	| 'stack_frequent'
+	| 'stack_new'
+	| 'stack_users'
+	| null;
 
 export interface IGetEventsParams {
-    filter?: string;
-    sort?: string;
-    time?: string;
-    offset?: string;
-    mode?: GetEventsMode;
-    page?: number;
-    limit?: number;
-    before?: string;
-    after?: string;
+	filter?: string;
+	sort?: string;
+	time?: string;
+	offset?: string;
+	mode?: GetEventsMode;
+	page?: number;
+	limit?: number;
+	before?: string;
+	after?: string;
 }

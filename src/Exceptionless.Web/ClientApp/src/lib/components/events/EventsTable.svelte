@@ -9,7 +9,8 @@
 		type TableOptions,
 		type Updater,
 		type VisibilityState,
-		type ColumnSort	} from '@tanstack/svelte-table';
+		type ColumnSort
+	} from '@tanstack/svelte-table';
 	import type {
 		EventSummaryModel,
 		GetEventsMode,
@@ -28,15 +29,16 @@
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Table from '$comp/table/Table.svelte';
-	import { createEventDispatcher } from 'svelte';
-	import { DEFAULT_LIMIT, hasNextPage, hasPreviousPage } from "$lib/helpers/api";
-	import { type FetchClientResponse, FetchClient } from "$api/FetchClient";
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { DEFAULT_LIMIT, hasNextPage, hasPreviousPage } from '$lib/helpers/api';
+	import { type FetchClientResponse, FetchClient } from '$api/FetchClient';
 
 	export let mode: GetEventsMode = 'summary';
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
 		{
 			header: 'Summary',
+			enableHiding: false,
 			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
 		}
 	];
@@ -47,15 +49,20 @@
 			{
 				id: 'user',
 				header: 'User',
-                enableSorting: false,
+				enableSorting: false,
+				meta: {
+					class: 'w-28'
+				},
 				cell: (prop) =>
 					flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
 			},
 			{
 				id: 'date',
 				header: 'Date',
-                enableSorting: true,
 				accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
+				meta: {
+					class: 'w-36'
+				},
 				cell: (prop) =>
 					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
 			}
@@ -65,20 +72,29 @@
 			{
 				id: 'users',
 				header: 'Users',
-                enableSorting: false,
+				enableSorting: false,
+				meta: {
+					class: 'w-24'
+				},
 				cell: (prop) => flexRender(StackUsersSummary, { summary: prop.row.original })
 			},
 			{
 				id: 'events',
 				header: 'Events',
-                enableSorting: false,
+				enableSorting: false,
+				meta: {
+					class: 'w-24'
+				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
 				cell: (prop) => flexRender(NumberFormatter, { value: prop.getValue() as number })
 			},
 			{
 				id: 'first',
 				header: 'First',
-                enableSorting: false,
+				enableSorting: false,
+				meta: {
+					class: 'w-36'
+				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
 				cell: (prop) =>
 					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
@@ -86,7 +102,10 @@
 			{
 				id: 'last',
 				header: 'Last',
-                enableSorting: false,
+				enableSorting: false,
+				meta: {
+					class: 'w-36'
+				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
 				cell: (prop) =>
 					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
@@ -111,10 +130,12 @@
 		}));
 	};
 
-	let sorting: ColumnSort[] = [{
-        id: 'date',
-        desc: true
-    }];
+	let sorting: ColumnSort[] = [
+		{
+			id: 'date',
+			desc: true
+		}
+	];
 	const setSorting = (updaterOrValue: Updater<ColumnSort[]>) => {
 		if (updaterOrValue instanceof Function) {
 			sorting = updaterOrValue(sorting);
@@ -131,18 +152,21 @@
 		}));
 
 		parameters.update((params) => ({
-            ...params,
-            before: undefined,
-            after: undefined,
-            sort: sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined
-        }));
+			...params,
+			before: undefined,
+			after: undefined,
+			sort:
+				sorting.length > 0
+					? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',')
+					: undefined
+		}));
 	};
 
 	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
 		columns: defaultColumns,
 		data: [],
-        enableSortingRemoval: false,
-        manualSorting: true,
+		enableSortingRemoval: false,
+		manualSorting: true,
 		state: {
 			columnVisibility,
 			sorting
@@ -150,18 +174,17 @@
 		onColumnVisibilityChange: setColumnVisibility,
 		onSortingChange: setSorting,
 		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow, _, __) => originalRow.id,
+		getRowId: (originalRow, _, __) => originalRow.id
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
-
-    let page = 0;
+	let page = 0;
 
 	const api = new FetchClient();
 	const loading = api.loading;
-    let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
-    const parameters = writable<IGetEventsParams>({ mode });
-    parameters.subscribe(async () => await loadData());
+	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
+	const parameters = writable<IGetEventsParams>({ mode });
+	parameters.subscribe(async () => await loadData());
 
 	async function loadData() {
 		if ($loading) {
@@ -173,32 +196,35 @@
 		});
 
 		if (response.ok) {
-            options.update((options) => ({
-                ...options,
-                data: response.data || []
-            }));
+			options.update((options) => ({
+				...options,
+				data: response.data || []
+			}));
 		}
 	}
 
 	function onPreviousPage() {
 		page = Math.max(page - 1, 0);
-        parameters.update((params) => ({
-            ...params,
-            before: response?.links.next?.before,
-            after: undefined
-        }));
+		parameters.update((params) => ({
+			...params,
+			before: response?.links.next?.before,
+			after: undefined
+		}));
 	}
 
 	function onNextPage() {
 		page = page + 1;
-        parameters.update((params) => ({
-            ...params,
-            before: undefined,
-            after: response?.links.next?.after
-        }));
+		parameters.update((params) => ({
+			...params,
+			before: undefined,
+			after: response?.links.next?.after
+		}));
 	}
 
 	const dispatch = createEventDispatcher();
+	onMount(() => {
+		dispatch('table', $table);
+	});
 </script>
 
 <Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></Table>
@@ -207,8 +233,8 @@
 	<div class="py-2">
 		{#if $loading}
 			<Loading></Loading>
-	    {:else if response?.problem?.errors.general}
-		    <ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
+		{:else if response?.problem?.errors.general}
+			<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
 		{/if}
 	</div>
 

@@ -13,34 +13,41 @@
 	import {
 		ChangeType,
 		type EventSummaryModel,
+		type IGetEventsParams,
 		type SummaryTemplateKeys,
 		type WebSocketMessageValue
 	} from '$lib/models/api';
-	import type { IGetEventsParams } from '$api/EventQueries';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
-	import { FetchClient, ProblemDetails, type FetchClientResponse } from '$api/FetchClient';
+	import { FetchClient, type FetchClientResponse } from '$api/FetchClient';
 	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
 	import Table from '$comp/table/Table.svelte';
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
 			header: 'Summary',
+			enableHiding: false,
 			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
 		},
 		{
 			id: 'user',
 			header: 'User',
+			meta: {
+				class: 'w-28'
+			},
 			cell: (prop) =>
 				flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
 		},
 		{
 			id: 'date',
 			header: 'Date',
+			meta: {
+				class: 'w-36'
+			},
 			accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
 			cell: (prop) =>
 				flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
@@ -67,7 +74,7 @@
 	const options = writable<TableOptions<EventSummaryModel<SummaryTemplateKeys>>>({
 		data: [],
 		columns: defaultColumns,
-        enableSorting: false,
+		enableSorting: false,
 		state: {
 			columnVisibility
 		},
@@ -80,7 +87,7 @@
 
 	const api = new FetchClient();
 	const loading = api.loading;
-    let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
+	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
 	const defaultParams: IGetEventsParams = { mode: 'summary' };
@@ -130,8 +137,12 @@
 		}
 	}
 
-	const dispatch = createEventDispatcher();
 	loadData();
+
+	const dispatch = createEventDispatcher();
+	onMount(() => {
+		dispatch('table', $table);
+	});
 </script>
 
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>

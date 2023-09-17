@@ -1,14 +1,22 @@
 <script lang="ts">
 	import EventsTable from '$comp/events/EventsTable.svelte';
 	import EventsTailLogTable from '$comp/events/EventsTailLogTable.svelte';
+	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+	import type { Table } from '@tanstack/svelte-table';
 
 	let liveMode = true;
 	let showDrawer = false;
 	let currentSummary: SummaryModel<SummaryTemplateKeys>;
-	async function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
+	let currentTable: Table<SummaryModel<SummaryTemplateKeys>>;
+
+	function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
 		currentSummary = detail;
 		showDrawer = true;
+	}
+
+	function onTableChanged({ detail }: CustomEvent<Table<SummaryModel<SummaryTemplateKeys>>>) {
+		currentTable = detail;
 	}
 </script>
 
@@ -116,16 +124,24 @@
 
 		<div class="flex justify-between mt-5">
 			<h1 class="text-xl">Events</h1>
-			<label class="cursor-pointer label">
-				<span class="label-text mr-2">Live</span>
-				<input type="checkbox" class="toggle toggle-primary" bind:checked={liveMode} />
-			</label>
+			<div class="flex">
+				<label class="cursor-pointer label">
+					<span class="label-text mr-2">Live</span>
+					<input type="checkbox" class="toggle toggle-primary" bind:checked={liveMode} />
+				</label>
+				{#if currentTable}
+					<div class="ml-1 mt-2">
+						<TableColumnPicker table={currentTable}></TableColumnPicker>
+					</div>
+				{/if}
+			</div>
 		</div>
 
 		{#if liveMode}
-			<EventsTailLogTable on:rowclick={onRowClick}></EventsTailLogTable>
+			<EventsTailLogTable on:rowclick={onRowClick} on:table={onTableChanged}
+			></EventsTailLogTable>
 		{:else}
-			<EventsTable on:rowclick={onRowClick}></EventsTable>
+			<EventsTable on:rowclick={onRowClick} on:table={onTableChanged}></EventsTable>
 		{/if}
 	</div>
 	<div class="drawer-side">
