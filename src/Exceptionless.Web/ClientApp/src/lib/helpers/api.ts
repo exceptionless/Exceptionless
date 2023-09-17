@@ -8,6 +8,10 @@ export function getPageEnd(page: number, pageTotal: number, limit: number): numb
 	return getPageStart(page, limit) + pageTotal - 1;
 }
 
+export function canNavigateToFirstPage(page: number): boolean {
+    return page > 1;
+}
+
 export function hasPreviousPage(page: number): boolean {
 	return page > 0;
 }
