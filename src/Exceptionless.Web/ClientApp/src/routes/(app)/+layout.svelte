@@ -4,10 +4,10 @@
 	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';
 	import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
 	import { validate } from '$lib/validation/validation';
-	import { onMount, setContext, type ComponentType } from 'svelte';
+	import { onMount } from 'svelte';
 
 	import logo from '$lib/assets/exceptionless-logo.png';
-	import { writable, type Writable } from 'svelte/store';
+	import { drawerComponent, showDrawer } from "$lib/stores/drawer";
 
 	isAuthenticated.subscribe(async (authenticated) => {
 		if (!authenticated) {
@@ -59,12 +59,7 @@
 		};
 	});
 
-	const showDrawer = writable(false);
-	const drawerComponent: Writable<ComponentType | null> = writable(null);
-	setContext('drawer', {
-		showDrawer,
-		drawerComponent
-	});
+    const currentYear = new Date().getFullYear();
 </script>
 
 {#if $isAuthenticated}
@@ -126,7 +121,7 @@
 				>
 					<div class="grid-flow-col items-center">
 						<p>
-							© 2023
+							© {currentYear}
 							<a href="https://exceptionless.com" target="_blank" class="link"
 								>Exceptionless</a
 							>

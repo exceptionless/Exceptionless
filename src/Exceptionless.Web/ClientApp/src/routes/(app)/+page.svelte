@@ -5,16 +5,12 @@
 	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import { flexRender, type Table } from '@tanstack/svelte-table';
-	import { getContext, type ComponentType } from 'svelte';
-	import type { Readable, Writable } from 'svelte/store';
+	import type { Readable } from 'svelte/store';
+	import { drawerComponent, showDrawer } from "$lib/stores/drawer";
+	import { persisted } from "svelte-local-storage-store";
 
-	let liveMode = true;
+	let liveMode = persisted<boolean>('live', true);
 	let currentTable: Readable<Table<SummaryModel<SummaryTemplateKeys>>>;
-
-	const { showDrawer, drawerComponent } = getContext('drawer') as {
-		showDrawer: Writable<boolean>;
-		drawerComponent: Writable<ComponentType | null>;
-	};
 
 	function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
 		showDrawer.set(true);
@@ -127,7 +123,7 @@
 	<div class="flex">
 		<label class="cursor-pointer label">
 			<span class="label-text mr-2">Live</span>
-			<input type="checkbox" class="toggle toggle-primary" bind:checked={liveMode} />
+			<input type="checkbox" class="toggle toggle-primary" bind:checked={$liveMode} />
 		</label>
 		{#if currentTable}
 			<div class="ml-1 mt-2">
@@ -137,7 +133,7 @@
 	</div>
 </div>
 
-{#if liveMode}
+{#if $liveMode}
 	<EventsTailLogTable on:rowclick={onRowClick} on:table={onTableChanged}></EventsTailLogTable>
 {:else}
 	<EventsTable on:rowclick={onRowClick} on:table={onTableChanged}></EventsTable>
