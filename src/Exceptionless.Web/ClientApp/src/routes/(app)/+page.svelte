@@ -16,7 +16,7 @@
 		showDrawer = true;
 	}
 
-	function onTableChanged({ detail }: CustomEvent<Table<SummaryModel<SummaryTemplateKeys>>>) {
+	function onTableChanged({ detail }: CustomEvent<Readable<Table<SummaryModel<SummaryTemplateKeys>>>>) {
 		currentTable = detail;
 	}
 </script>
