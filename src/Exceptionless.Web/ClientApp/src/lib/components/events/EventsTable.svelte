@@ -30,7 +30,12 @@
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Table from '$comp/table/Table.svelte';
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { DEFAULT_LIMIT, hasNextPage, hasPreviousPage, canNavigateToFirstPage } from '$lib/helpers/api';
+	import {
+		DEFAULT_LIMIT,
+		hasNextPage,
+		hasPreviousPage,
+		canNavigateToFirstPage
+	} from '$lib/helpers/api';
 	import { type FetchClientResponse, FetchClient } from '$api/FetchClient';
 
 	export let mode: GetEventsMode = 'summary';
@@ -257,7 +262,7 @@
 
 		<div class="py-2">
 			<Pager
-                canNavigateToFirstPage={canNavigateToFirstPage(page)}
+				canNavigateToFirstPage={canNavigateToFirstPage(page)}
 				on:navigatetofirstpage={() => onNavigateToFirstPage()}
 				hasPrevious={hasPreviousPage(page)}
 				on:previous={() => onPreviousPage()}

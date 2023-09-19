@@ -12,12 +12,13 @@
 </script>
 
 <div class="join">
-    {#if canNavigateToFirstPage}
-	<button
-		class="btn btn-square btn-outline join-item btn-sm"
-		on:click|preventDefault={() => dispatch('navigatetofirstpage')}><FirstPageIcon /></button
-	>
-    {/if}
+	{#if canNavigateToFirstPage}
+		<button
+			class="btn btn-square btn-outline join-item btn-sm"
+			on:click|preventDefault={() => dispatch('navigatetofirstpage')}
+			><FirstPageIcon /></button
+		>
+	{/if}
 	<button
 		class="btn btn-square btn-outline join-item btn-sm"
 		disabled={!hasPrevious}

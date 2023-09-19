@@ -9,7 +9,7 @@ export function getPageEnd(page: number, pageTotal: number, limit: number): numb
 }
 
 export function canNavigateToFirstPage(page: number): boolean {
-    return page > 1;
+	return page > 1;
 }
 
 export function hasPreviousPage(page: number): boolean {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Readable } from "svelte/store";
+	import type { Readable } from 'svelte/store';
 
 	import ViewColumnIcon from '~icons/mdi/view-column';
 	import type { Table } from '@tanstack/svelte-table';
