@@ -21,6 +21,10 @@
 -   <https://tanstack.com/table/v8/docs/examples/svelte/basic>
 -   <https://codesandbox.io/examples/package/@tanstack/svelte-table>
 -   <https://codesandbox.io/s/tanstack-table-example-svelte-basic-4jif2l?file=/src/App.svelte>
+-   <https://tailwindcomponents.com/component/free-tailwind-css-advance-table-component>
+-   <https://tailwindcomponents.com/component/table-1>
+-   <https://tuk.dev/components/webapp/table/advance_table>
+-   <https://github.dev/phartenfeller/sveltekit-1.0-sqlite-demo-app/tree/tut-13-tanstack-table-edit-row>
 
 ## State
 

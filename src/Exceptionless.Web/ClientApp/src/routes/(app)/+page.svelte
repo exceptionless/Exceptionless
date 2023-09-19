@@ -4,11 +4,12 @@
 	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import type { Table } from '@tanstack/svelte-table';
+	import type { Readable } from "svelte/store";
 
 	let liveMode = true;
 	let showDrawer = false;
 	let currentSummary: SummaryModel<SummaryTemplateKeys>;
-	let currentTable: Table<SummaryModel<SummaryTemplateKeys>>;
+	let currentTable: Readable<Table<SummaryModel<SummaryTemplateKeys>>>;
 
 	function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
 		currentSummary = detail;

@@ -232,7 +232,7 @@
 
 	const dispatch = createEventDispatcher();
 	onMount(() => {
-		dispatch('table', $table);
+		dispatch('table', table);
 	});
 </script>
 

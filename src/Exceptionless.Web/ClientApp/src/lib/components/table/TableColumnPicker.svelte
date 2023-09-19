@@ -1,9 +1,11 @@
 <script lang="ts">
+	import type { Readable } from "svelte/store";
+
 	import ViewColumnIcon from '~icons/mdi/view-column';
 	import type { Table } from '@tanstack/svelte-table';
 
 	type TData = $$Generic;
-	export let table: Table<TData>;
+	export let table: Readable<Table<TData>>;
 </script>
 
 <div class="dropdown dropdown-bottom dropdown-end">
@@ -15,15 +17,15 @@
 				<span class="label-text">Toggle All</span>
 				<input
 					type="checkbox"
-					checked={table.getIsAllColumnsVisible()}
-					on:change={(e) => table.getToggleAllColumnsVisibilityHandler()(e)}
+					checked={$table.getIsAllColumnsVisible()}
+					on:change={(e) => $table.getToggleAllColumnsVisibilityHandler()(e)}
 					class="checkbox checkbox-xs"
 				/>
 			</label>
 		</div>
 
 		<div class="divider m-0"></div>
-		{#each table.getAllLeafColumns() as column}
+		{#each $table.getAllLeafColumns() as column}
 			{#if column.getCanHide()}
 				<div class="form-control">
 					<label class="cursor-pointer label">
