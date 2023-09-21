@@ -82,7 +82,7 @@
 		},
 		onColumnVisibilityChange: setColumnVisibility,
 		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow, _, __) => originalRow.id
+		getRowId: (originalRow) => originalRow.id
 	});
 
 	const table = createSvelteTable<EventSummaryModel<SummaryTemplateKeys>>(options);

@@ -181,7 +181,7 @@
 		onColumnVisibilityChange: setColumnVisibility,
 		onSortingChange: setSorting,
 		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow, _, __) => originalRow.id
+		getRowId: (originalRow) => originalRow.id
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);

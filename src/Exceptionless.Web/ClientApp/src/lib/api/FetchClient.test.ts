@@ -12,7 +12,7 @@ test('can getJSON with middleware', async () => {
 			const data = JSON.stringify({
 				userId: 1,
 				id: 1,
-				title: 'delectus aut autem',
+				title: 'A random title',
 				completed: false
 			});
 			resolve(new Response(data));
@@ -37,7 +37,7 @@ test('can getJSON with middleware', async () => {
 	expect(called).toBe(true);
 	expect(r.data!.userId).toBe(1);
 	expect(r.data!.id).toBe(1);
-	expect(r.data!.title).toBe('delectus aut autem');
+	expect(r.data!.title).toBe('A random title');
 	expect(r.data!.completed).toBe(false);
 });
 
@@ -47,7 +47,7 @@ test('can postJSON with middleware', async () => {
 			const data = JSON.stringify({
 				userId: 1,
 				id: 1,
-				title: 'delectus aut autem',
+				title: 'A random title',
 				completed: false
 			});
 			resolve(new Response(data));
@@ -72,7 +72,7 @@ test('can postJSON with middleware', async () => {
 	expect(called).toBe(true);
 	expect(r.data!.userId).toBe(1);
 	expect(r.data!.id).toBe(1);
-	expect(r.data!.title).toBe('delectus aut autem');
+	expect(r.data!.title).toBe('A random title');
 	expect(r.data!.completed).toBe(false);
 });
 
@@ -82,7 +82,7 @@ test('can putJSON with middleware', async () => {
 			const data = JSON.stringify({
 				userId: 1,
 				id: 1,
-				title: 'delectus aut autem',
+				title: 'A random title',
 				completed: false
 			});
 			resolve(new Response(data));
@@ -107,7 +107,7 @@ test('can putJSON with middleware', async () => {
 	expect(called).toBe(true);
 	expect(r.data!.userId).toBe(1);
 	expect(r.data!.id).toBe(1);
-	expect(r.data!.title).toBe('delectus aut autem');
+	expect(r.data!.title).toBe('A random title');
 	expect(r.data!.completed).toBe(false);
 });
 
@@ -136,7 +136,7 @@ test('can delete with middleware', async () => {
 
 test('can abort getJSON', () => {
 	const controller = new AbortController();
-	let responseTimeout: number;
+	let responseTimeout: ReturnType<typeof setTimeout>;
 	const fakeFetch = (r: unknown): Promise<Response> =>
 		new Promise((resolve) => {
 			const request = r as Request;
@@ -182,10 +182,11 @@ test('will validate postJSON model', async () => {
 	const modelValidator = async (data: object | null) => {
 		// use zod or class validator
 		const problem = new ProblemDetails();
-		const d = data as any;
-		if (d!.password!.length < 6) {
+		const d = data as { password: string };
+		if (d?.password?.length < 6) {
 			problem.errors.password = ['Password must be longer than or equal to 6 characters.'];
 		}
+
 		return problem;
 	};
 	const response = await client.postJSON('https://jsonplaceholder.typicode.com/todos/1', data, {
@@ -220,8 +221,8 @@ test('will validate postJSON model with default model validator', async () => {
 	setDefaultModelValidator(async (data: object | null) => {
 		// use zod or class validator
 		const problem = new ProblemDetails();
-		const d = data as any;
-		if (d!.password!.length < 6) {
+		const d = data as { password: string };
+		if (d?.password?.length < 6) {
 			problem.errors.password = ['Password must be longer than or equal to 6 characters.'];
 		}
 		return problem;
@@ -246,7 +247,7 @@ test('can use global middleware', async () => {
 			const data = JSON.stringify({
 				userId: 1,
 				id: 1,
-				title: 'delectus aut autem',
+				title: 'A random title',
 				completed: false
 			});
 			resolve(new Response(data));
@@ -271,6 +272,6 @@ test('can use global middleware', async () => {
 	expect(called).toBe(true);
 	expect(r.data!.userId).toBe(1);
 	expect(r.data!.id).toBe(1);
-	expect(r.data!.title).toBe('delectus aut autem');
+	expect(r.data!.title).toBe('A random title');
 	expect(r.data!.completed).toBe(false);
 });

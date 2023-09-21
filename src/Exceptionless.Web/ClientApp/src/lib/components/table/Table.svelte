@@ -51,13 +51,13 @@
 		{/each}
 	</thead>
 	<tbody>
-        {#if !$table.getRowModel().rows.length}
-            <tr>
-                <td colspan={$table.getVisibleLeafColumns().length} class="text-center">
-                    No data was found with the current filter.
-                </td>
-            </tr>
-        {/if}
+		{#if !$table.getRowModel().rows.length}
+			<tr>
+				<td colspan={$table.getVisibleLeafColumns().length} class="text-center">
+					No data was found with the current filter.
+				</td>
+			</tr>
+		{/if}
 		{#each $table.getRowModel().rows as row}
 			<tr
 				class="hover cursor-pointer"
