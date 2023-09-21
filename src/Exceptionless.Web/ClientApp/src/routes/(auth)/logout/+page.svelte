@@ -6,7 +6,7 @@
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 
 	$: if (!$isAuthenticated) {
-		goto('/login', { replaceState: true });
+		goto('next/login', { replaceState: true });
 	}
 
 	const api = new FetchClient();
@@ -21,7 +21,7 @@
 		const response = await api.get('auth/logout');
 		if (response.ok) {
 			await logout();
-			await goto('/login');
+			await goto('/next/login');
 		} else {
 			problem = problem.setErrorMessage(
 				'An error occurred while logging out, please try again.'

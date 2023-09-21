@@ -16,6 +16,10 @@
 	}
 </script>
 
+<div>
+	<slot name="header" {table} />
+</div>
+
 <table class="table table-zebra table-xs border">
 	<thead>
 		{#each $table.getHeaderGroups() as headerGroup}
@@ -63,3 +67,7 @@
 		{/each}
 	</tbody>
 </table>
+
+<div>
+	<slot name="footer" {table} />
+</div>

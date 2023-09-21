@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { writable } from 'svelte/store';
+	import { writable, type Readable } from 'svelte/store';
 	import Time from 'svelte-time';
 	import {
 		createSvelteTable,
@@ -25,7 +25,9 @@
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
 	import Table from '$comp/table/Table.svelte';
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
+
+	export let filter: Readable<string>;
 
 	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -90,9 +92,15 @@
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
-	const defaultParams: IGetEventsParams = { mode: 'summary' };
 	let lastUpdated: Date;
 	let before: string | undefined;
+
+	const defaultParams: IGetEventsParams = { mode: 'summary' };
+	filter.subscribe(async () => {
+		before = undefined;
+		data.set([]);
+		await loadData();
+	});
 
 	async function loadData() {
 		if ($loading) {
@@ -100,7 +108,11 @@
 		}
 
 		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
-			params: { ...defaultParams, before }
+			params: {
+				...defaultParams,
+				filter: $filter,
+				before
+			}
 		});
 
 		if (response.ok) {
@@ -140,14 +152,18 @@
 	loadData();
 
 	const dispatch = createEventDispatcher();
-	onMount(() => {
-		dispatch('table', table);
-	});
 </script>
 
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
-<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></Table>
+<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}>
+	<div slot="header">
+		<slot name="header" {table} problem={response?.problem} />
+	</div>
+	<div slot="footer">
+		<slot name="footer" {table} problem={response?.problem} />
+	</div>
+</Table>
 
 <p class="py-2 text-center text-xs text-gray-700">
 	{#if $loading}

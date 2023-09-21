@@ -7,7 +7,7 @@
 	import { onMount } from 'svelte';
 
 	import logo from '$lib/assets/exceptionless-logo.png';
-	import { drawerComponent, showDrawer } from "$lib/stores/drawer";
+	import { drawerComponent, showDrawer } from '$lib/stores/drawer';
 
 	isAuthenticated.subscribe(async (authenticated) => {
 		if (!authenticated) {
@@ -59,7 +59,7 @@
 		};
 	});
 
-    const currentYear = new Date().getFullYear();
+	const currentYear = new Date().getFullYear();
 </script>
 
 {#if $isAuthenticated}

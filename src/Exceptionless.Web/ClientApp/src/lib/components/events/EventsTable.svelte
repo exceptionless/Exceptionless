@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Time from 'svelte-time';
-	import { writable } from 'svelte/store';
+	import { writable, type Readable } from 'svelte/store';
 	import {
 		createSvelteTable,
 		flexRender,
@@ -29,7 +29,7 @@
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Table from '$comp/table/Table.svelte';
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import {
 		DEFAULT_LIMIT,
 		hasNextPage,
@@ -39,6 +39,8 @@
 	import { type FetchClientResponse, FetchClient } from '$api/FetchClient';
 
 	export let mode: GetEventsMode = 'summary';
+	export let filter: Readable<string>;
+	export let time: Readable<string>;
 
 	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
 		{
@@ -190,6 +192,8 @@
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const parameters = writable<IGetEventsParams>({ mode });
 	parameters.subscribe(async () => await loadData());
+	filter.subscribe(async () => await loadData());
+	time.subscribe(async () => await loadData());
 
 	async function loadData() {
 		if ($loading) {
@@ -197,7 +201,12 @@
 		}
 
 		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
-			params: { mode: 'summary', ...$parameters }
+			params: {
+				mode: 'summary',
+				filter: $filter,
+				time: $time,
+				...$parameters
+			}
 		});
 
 		if (response.ok) {
@@ -236,12 +245,16 @@
 	}
 
 	const dispatch = createEventDispatcher();
-	onMount(() => {
-		dispatch('table', table);
-	});
 </script>
 
-<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></Table>
+<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}>
+	<div slot="header">
+		<slot name="header" {table} problem={response?.problem} />
+	</div>
+	<div slot="footer">
+		<slot name="footer" {table} problem={response?.problem} />
+	</div>
+</Table>
 
 <div class="flex flex-1 items-center justify-between text-xs text-gray-700">
 	<div class="py-2">
