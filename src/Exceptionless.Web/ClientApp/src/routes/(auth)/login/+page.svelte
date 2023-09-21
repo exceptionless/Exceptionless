@@ -22,14 +22,12 @@
 		gitHubClientId,
 		liveClientId
 	} from '$api/auth';
-	import { FetchClient, ProblemDetails, globalLoading } from '$lib/api/FetchClient';
+	import { ProblemDetails, globalLoading as loading } from '$lib/api/FetchClient';
 	import { Login } from '$lib/models/api';
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 
-	const client = new FetchClient();
 	const data = new Login();
-	let loading = client.loading;
 	data.invite_token = $page.url.searchParams.get('token');
 
 	let problem = new ProblemDetails();
@@ -75,7 +73,7 @@
 	</PasswordInput>
 	<div class="my-4">
 		<button type="submit" class="btn btn-primary btn-block">
-			{#if $globalLoading}
+			{#if $loading}
 				<Loading></Loading> Logging in...
 			{:else}
 				Login

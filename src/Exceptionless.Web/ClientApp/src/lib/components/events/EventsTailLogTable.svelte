@@ -19,7 +19,11 @@
 	} from '$lib/models/api';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
-	import { FetchClient, type FetchClientResponse } from '$api/FetchClient';
+	import {
+		type FetchClientResponse,
+		globalFetchClient as api,
+		globalLoading as loading
+	} from '$api/FetchClient';
 	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
@@ -87,8 +91,6 @@
 
 	const table = createSvelteTable<EventSummaryModel<SummaryTemplateKeys>>(options);
 
-	const api = new FetchClient();
-	const loading = api.loading;
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
@@ -161,18 +163,18 @@
 		<slot name="header" {table} problem={response?.problem} />
 	</div>
 	<div slot="footer">
-		<slot name="footer" {table} problem={response?.problem} />
+		<slot name="footer" {table} problem={response?.problem} {loading} {lastUpdated}>
+			<p class="py-2 text-center text-xs text-gray-700">
+				{#if $loading}
+					<Loading></Loading>
+				{:else if response?.problem?.errors.general}
+					<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
+				{:else}
+					Streaming events... Last updated <span class="font-medium"
+						><Time live={true} relative={true} timestamp={lastUpdated}></Time></span
+					>
+				{/if}
+			</p>
+		</slot>
 	</div>
 </Table>
-
-<p class="py-2 text-center text-xs text-gray-700">
-	{#if $loading}
-		<Loading></Loading>
-	{:else if response?.problem?.errors.general}
-		<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
-	{:else}
-		Streaming events... Last updated <span class="font-medium"
-			><Time live={true} relative={true} timestamp={lastUpdated}></Time></span
-		>
-	{/if}
-</p>

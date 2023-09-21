@@ -36,7 +36,11 @@
 		hasPreviousPage,
 		canNavigateToFirstPage
 	} from '$lib/helpers/api';
-	import { type FetchClientResponse, FetchClient } from '$api/FetchClient';
+	import {
+		type FetchClientResponse,
+		globalFetchClient as api,
+		globalLoading as loading
+	} from '$api/FetchClient';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -187,8 +191,6 @@
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 	let page = 0;
 
-	const api = new FetchClient();
-	const loading = api.loading;
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const parameters = writable<IGetEventsParams>({ mode });
 	parameters.subscribe(async () => await loadData());

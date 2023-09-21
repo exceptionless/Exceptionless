@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { FetchClient, ProblemDetails } from '$api/FetchClient';
+	import {
+		ProblemDetails,
+		globalFetchClient as api,
+		globalLoading as loading
+	} from '$api/FetchClient';
 	import { goto } from '$app/navigation';
 	import { isAuthenticated, logout } from '$api/auth';
 	import Loading from '$comp/Loading.svelte';
@@ -9,8 +13,6 @@
 		goto('next/login', { replaceState: true });
 	}
 
-	const api = new FetchClient();
-	const loading = api.loading;
 	let problem = new ProblemDetails();
 
 	async function onLogout() {
