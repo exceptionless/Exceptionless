@@ -30,6 +30,7 @@
 	import Loading from '$comp/Loading.svelte';
 	import Table from '$comp/table/Table.svelte';
 	import { createEventDispatcher } from 'svelte';
+	import { persisted } from "svelte-local-storage-store";
 
 	export let filter: Readable<string>;
 
@@ -60,19 +61,19 @@
 		}
 	];
 
-	let columnVisibility: VisibilityState = {};
+	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {
-			columnVisibility = updaterOrValue(columnVisibility);
+			columnVisibility.update(() => updaterOrValue($columnVisibility));
 		} else {
-			columnVisibility = updaterOrValue;
+			columnVisibility.update(() => updaterOrValue);
 		}
 
 		options.update((old) => ({
 			...old,
 			state: {
 				...old.state,
-				columnVisibility
+				...{ columnVisibility: $columnVisibility }
 			}
 		}));
 	};
@@ -82,7 +83,7 @@
 		columns: defaultColumns,
 		enableSorting: false,
 		state: {
-			columnVisibility
+			columnVisibility: $columnVisibility,
 		},
 		onColumnVisibilityChange: setColumnVisibility,
 		getCoreRowModel: getCoreRowModel(),

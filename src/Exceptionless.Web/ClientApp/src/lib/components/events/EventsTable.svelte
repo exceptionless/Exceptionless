@@ -33,6 +33,7 @@
 	} from '$api/FetchClient';
 	import TableWithPaging from '$comp/table/TableWithPaging.svelte';
 	import TableWithPagingFooter from '$comp/table/TableWithPagingFooter.svelte';
+	import { persisted } from "svelte-local-storage-store";
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -116,19 +117,19 @@
 		);
 	}
 
-	let columnVisibility: VisibilityState = {};
+	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {
-			columnVisibility = updaterOrValue(columnVisibility);
+			columnVisibility.update(() => updaterOrValue($columnVisibility));
 		} else {
-			columnVisibility = updaterOrValue;
+			columnVisibility.update(() => updaterOrValue);
 		}
 
 		options.update((old) => ({
 			...old,
 			state: {
 				...old.state,
-				columnVisibility
+				...{ columnVisibility: $columnVisibility }
 			}
 		}));
 	};
@@ -171,7 +172,7 @@
 		enableSortingRemoval: false,
 		manualSorting: true,
 		state: {
-			columnVisibility,
+			columnVisibility: $columnVisibility,
 			sorting
 		},
 		onColumnVisibilityChange: setColumnVisibility,
