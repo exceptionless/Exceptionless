@@ -1,18 +1,18 @@
 <script lang="ts">
 	import EventsTable from '$comp/events/EventsTable.svelte';
 	import EventsTailLogTable from '$comp/events/EventsTailLogTable.svelte';
-	import Summary from '$comp/events/summary/Summary.svelte';
 	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-	import { flexRender } from '@tanstack/svelte-table';
-	import { drawerComponent, showDrawer } from '$lib/stores/drawer';
+	import { drawerComponent, drawerComponentProps, showDrawer } from '$lib/stores/drawer';
 	import { persisted } from 'svelte-local-storage-store';
+	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 
 	let liveMode = persisted<boolean>('live', true);
 
 	function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
 		showDrawer.set(true);
-		drawerComponent.set(flexRender(Summary, { summary: detail }));
+		drawerComponent.set(EventsDrawer);
+		drawerComponentProps.set({ id: detail.id });
 	}
 
 	let filter = persisted<string>('filter', '');

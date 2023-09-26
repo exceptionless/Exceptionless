@@ -7,7 +7,7 @@
 	import { onMount } from 'svelte';
 
 	import logo from '$lib/assets/exceptionless-logo.png';
-	import { drawerComponent, showDrawer } from '$lib/stores/drawer';
+	import { drawerComponent, drawerComponentProps, showDrawer } from '$lib/stores/drawer';
 
 	isAuthenticated.subscribe(async (authenticated) => {
 		if (!authenticated) {
@@ -156,7 +156,7 @@
 			<label for="app-drawer" class="drawer-overlay"></label>
 			<div class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
 				{#if drawerComponent}
-					<svelte:component this={$drawerComponent} />
+					<svelte:component this={$drawerComponent} {...$drawerComponentProps} />
 				{:else}
 					<p>$drawerComponent is undefined</p>
 				{/if}

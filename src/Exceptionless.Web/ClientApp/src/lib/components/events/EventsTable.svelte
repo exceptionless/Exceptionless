@@ -33,7 +33,7 @@
 	} from '$api/FetchClient';
 	import TableWithPaging from '$comp/table/TableWithPaging.svelte';
 	import TableWithPagingFooter from '$comp/table/TableWithPagingFooter.svelte';
-	import { persisted } from "svelte-local-storage-store";
+	import { persisted } from 'svelte-local-storage-store';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;

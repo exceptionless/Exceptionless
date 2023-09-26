@@ -30,7 +30,7 @@
 	import Loading from '$comp/Loading.svelte';
 	import Table from '$comp/table/Table.svelte';
 	import { createEventDispatcher } from 'svelte';
-	import { persisted } from "svelte-local-storage-store";
+	import { persisted } from 'svelte-local-storage-store';
 
 	export let filter: Readable<string>;
 
@@ -83,7 +83,7 @@
 		columns: defaultColumns,
 		enableSorting: false,
 		state: {
-			columnVisibility: $columnVisibility,
+			columnVisibility: $columnVisibility
 		},
 		onColumnVisibilityChange: setColumnVisibility,
 		getCoreRowModel: getCoreRowModel(),
