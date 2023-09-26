@@ -8,7 +8,7 @@
 	export let total: number;
 
 	$: start = getPageStart(page, limit);
-	$: end = getPageEnd(page, pageTotal, limit);
+	$: end = Math.min(getPageEnd(page, pageTotal, limit), total);
 </script>
 
 {#if pageTotal !== 0 && total !== 0}

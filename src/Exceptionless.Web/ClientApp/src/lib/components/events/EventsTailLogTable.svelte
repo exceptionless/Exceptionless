@@ -159,22 +159,25 @@
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
 <Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}>
-	<div slot="header">
-		<slot name="header" {table} problem={response?.problem} />
-	</div>
-	<div slot="footer">
-		<slot name="footer" {table} problem={response?.problem} {loading} {lastUpdated}>
-			<p class="py-2 text-center text-xs text-gray-700">
-				{#if $loading}
-					<Loading></Loading>
-				{:else if response?.problem?.errors.general}
-					<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
-				{:else}
-					Streaming events... Last updated <span class="font-medium"
-						><Time live={true} relative={true} timestamp={lastUpdated}></Time></span
-					>
-				{/if}
-			</p>
-		</slot>
-	</div>
+	<slot slot="header" name="header" {table} />
+	<slot
+		slot="footer"
+		name="footer"
+		{table}
+		error={response?.problem?.errors.general}
+		{loading}
+		{lastUpdated}
+	>
+		<p class="py-2 text-center text-xs text-gray-700">
+			{#if $loading}
+				<Loading></Loading>
+			{:else if response?.problem?.errors.general}
+				<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
+			{:else}
+				Streaming events... Last updated <span class="font-medium"
+					><Time live={true} relative={true} timestamp={lastUpdated}></Time></span
+				>
+			{/if}
+		</p>
+	</slot>
 </Table>

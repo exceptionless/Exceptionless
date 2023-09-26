@@ -2,12 +2,12 @@
 	import KeyboardArrowDownIcon from '~icons/mdi/keyboard-arrow-down';
 	import KeyboardArrowUpIcon from '~icons/mdi/keyboard-arrow-up';
 
-	import { flexRender, type Header, type Table } from '@tanstack/svelte-table';
+	import { flexRender, type Header, type Table as TableType } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import type { Readable } from 'svelte/store';
 
 	type TData = $$Generic;
-	export let table: Readable<Table<TData>>;
+	export let table: Readable<TableType<TData>>;
 
 	const dispatch = createEventDispatcher();
 
@@ -16,9 +16,7 @@
 	}
 </script>
 
-<div>
-	<slot name="header" {table} />
-</div>
+<slot name="header" {table} />
 
 <table class="table table-zebra table-xs border">
 	<thead>
@@ -51,13 +49,11 @@
 		{/each}
 	</thead>
 	<tbody>
-		{#if !$table.getRowModel().rows.length}
-			<tr>
-				<td colspan={$table.getVisibleLeafColumns().length} class="text-center">
-					No data was found with the current filter.
-				</td>
-			</tr>
-		{/if}
+		<tr class="hidden only:table-row text-center">
+			<td colspan={$table.getVisibleLeafColumns().length}>
+				No data was found with the current filter.
+			</td>
+		</tr>
 		{#each $table.getRowModel().rows as row}
 			<tr
 				class="hover cursor-pointer"
@@ -75,6 +71,4 @@
 	</tbody>
 </table>
 
-<div>
-	<slot name="footer" {table} />
-</div>
+<slot name="footer" {table} />

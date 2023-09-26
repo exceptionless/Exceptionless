@@ -22,25 +22,17 @@
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import StackUsersSummary from './StackUsersSummaryColumn.svelte';
-	import Pager from '$comp/table/Pager.svelte';
 	import NumberFormatter from '$comp/formatters/NumberFormatter.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
-	import PagerSummary from '$comp/table/PagerSummary.svelte';
-	import Loading from '$comp/Loading.svelte';
-	import ErrorMessage from '$comp/ErrorMessage.svelte';
-	import Table from '$comp/table/Table.svelte';
 	import { createEventDispatcher } from 'svelte';
-	import {
-		DEFAULT_LIMIT,
-		hasNextPage,
-		hasPreviousPage,
-		canNavigateToFirstPage
-	} from '$lib/helpers/api';
+	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 	import {
 		type FetchClientResponse,
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
+	import TableWithPaging from '$comp/table/TableWithPaging.svelte';
+	import TableWithPagingFooter from '$comp/table/TableWithPagingFooter.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -189,7 +181,7 @@
 	});
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
-	let page = 0;
+	const page = writable(0);
 
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const parameters = writable<IGetEventsParams>({ mode });
@@ -220,7 +212,7 @@
 	}
 
 	function onNavigateToFirstPage() {
-		page = 0;
+		page.update(() => 0);
 		parameters.update((params) => ({
 			...params,
 			before: undefined,
@@ -229,7 +221,7 @@
 	}
 
 	function onPreviousPage() {
-		page = Math.max(page - 1, 0);
+		page.update((page) => Math.max(page - 1, 0));
 		parameters.update((params) => ({
 			...params,
 			before: response?.links.next?.before,
@@ -238,7 +230,7 @@
 	}
 
 	function onNextPage() {
-		page = page + 1;
+		page.update((page) => page + 1);
 		parameters.update((params) => ({
 			...params,
 			before: undefined,
@@ -249,46 +241,44 @@
 	const dispatch = createEventDispatcher();
 </script>
 
-<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}>
-	<div slot="header">
-		<slot name="header" {table} problem={response?.problem} />
-	</div>
-	<div slot="footer">
-		<slot name="footer" {table} problem={response?.problem} />
-	</div>
-</Table>
-
-<div class="flex flex-1 items-center justify-between text-xs text-gray-700">
-	<div class="py-2">
-		{#if $loading}
-			<Loading></Loading>
-		{:else if response?.problem?.errors.general}
-			<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
-		{/if}
-	</div>
-
-	{#if response?.total}
-		<PagerSummary
-			{page}
+<TableWithPaging
+	{table}
+	loading={$loading}
+	error={response?.problem?.errors.general}
+	page={$page}
+	pageTotal={response?.data?.length || 0}
+	limit={DEFAULT_LIMIT}
+	total={response?.total || 0}
+	{onNavigateToFirstPage}
+	{onPreviousPage}
+	{onNextPage}
+	on:rowclick={(event) => dispatch('rowclick', event.detail)}
+>
+	<slot slot="header" name="header" {table} />
+	<slot
+		slot="footer"
+		name="footer"
+		{table}
+		loading={$loading}
+		error={response?.problem?.errors.general}
+		page={$page}
+		pageTotal={response?.data?.length || 0}
+		limit={DEFAULT_LIMIT}
+		total={response?.total || 0}
+		{onNavigateToFirstPage}
+		{onPreviousPage}
+		{onNextPage}
+	>
+		<TableWithPagingFooter
+			loading={$loading}
+			error={response?.problem?.errors.general}
+			page={$page}
 			pageTotal={response?.data?.length || 0}
 			limit={DEFAULT_LIMIT}
 			total={response?.total || 0}
-		></PagerSummary>
-
-		<div class="py-2">
-			<Pager
-				canNavigateToFirstPage={canNavigateToFirstPage(page)}
-				on:navigatetofirstpage={() => onNavigateToFirstPage()}
-				hasPrevious={hasPreviousPage(page)}
-				on:previous={() => onPreviousPage()}
-				hasNext={hasNextPage(
-					page,
-					response?.data?.length || 0,
-					DEFAULT_LIMIT,
-					response?.total || 0
-				)}
-				on:next={() => onNextPage()}
-			></Pager>
-		</div>
-	{/if}
-</div>
+			{onNavigateToFirstPage}
+			{onPreviousPage}
+			{onNextPage}
+		></TableWithPagingFooter>
+	</slot>
+</TableWithPaging>
