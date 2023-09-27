@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { writable, type Readable } from 'svelte/store';
-	import Time from 'svelte-time';
 	import {
 		createSvelteTable,
 		flexRender,
@@ -26,6 +25,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { persisted } from 'svelte-local-storage-store';
 	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
+	import TimeAgo from '$comp/time/TimeAgo.svelte';
 
 	export let filter: Readable<string>;
 
@@ -51,8 +51,7 @@
 				class: 'w-36'
 			},
 			accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-			cell: (prop) =>
-				flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
+			cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
 		}
 	];
 
@@ -171,7 +170,7 @@
 				<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
 			{:else}
 				Streaming events... Last updated <span class="font-medium"
-					><Time live={true} relative={true} timestamp={lastUpdated}></Time></span
+					><TimeAgo date={lastUpdated}></TimeAgo></span
 				>
 			{/if}
 		</p>

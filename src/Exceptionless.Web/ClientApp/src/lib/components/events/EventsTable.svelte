@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Time from 'svelte-time';
 	import { writable, type Readable } from 'svelte/store';
 	import {
 		createSvelteTable,
@@ -34,6 +33,7 @@
 	import TableWithPaging from '$comp/table/TableWithPaging.svelte';
 	import TableWithPagingFooter from '$comp/table/TableWithPagingFooter.svelte';
 	import { persisted } from 'svelte-local-storage-store';
+	import TimeAgo from '$comp/time/TimeAgo.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -67,8 +67,7 @@
 				meta: {
 					class: 'w-36'
 				},
-				cell: (prop) =>
-					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
+				cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
 			}
 		);
 	} else {
@@ -100,8 +99,7 @@
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-				cell: (prop) =>
-					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
+				cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
 			},
 			{
 				id: 'last',
@@ -111,8 +109,7 @@
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-				cell: (prop) =>
-					flexRender(Time, { live: true, relative: true, timestamp: prop.getValue() })
+				cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
 			}
 		);
 	}
