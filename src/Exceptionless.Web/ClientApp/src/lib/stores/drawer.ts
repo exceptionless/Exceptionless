@@ -6,8 +6,8 @@ export const drawerComponentProps: Writable<object | null> = writable(null);
 
 export const showDrawer = writable(false);
 showDrawer.subscribe((show) => {
-    if (!show) {
-        drawerComponent.set(null);
-        drawerComponentProps.set(null);
-    }
+	if (!show) {
+		drawerComponent.set(null);
+		drawerComponentProps.set(null);
+	}
 });
