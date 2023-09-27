@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
-	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/api';
+	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
 	import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
 	import { validate } from '$lib/validation/validation';
 	import { onMount } from 'svelte';

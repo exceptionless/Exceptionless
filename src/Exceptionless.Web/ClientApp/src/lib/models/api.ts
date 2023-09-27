@@ -1,6 +1,78 @@
-import type { StackStatus } from './api.generated';
+import { IsOptional, ValidateNested } from 'class-validator';
+import { PersistentEvent as PersistentEventBase, StackStatus } from './api.generated';
+import type {
+	EnvironmentInfo,
+	ErrorInfo,
+	LogLevel,
+	ManualStackingInfo,
+	RequestInfo,
+	SimpleError,
+	UserDescription,
+	UserInfo
+} from '@exceptionless/browser';
 
-export { Login, PersistentEvent, TokenResult } from './api.generated';
+export { Login, ViewProject, TokenResult } from './api.generated';
+
+export type PersistentEventKnownTypes =
+	| '404'
+	| 'error'
+	| 'heartbeat'
+	| 'log'
+	| 'usage'
+	| 'session'
+	| 'sessionend'
+	| string;
+
+export type KnownDataKeys =
+	| '@environment'
+	| '@error'
+	| '@level'
+	| '@location'
+	| '@request'
+	| '@simple_error'
+	| '@stack'
+	| '@submission_method'
+	| '@submission_client'
+	| '@trace'
+	| '@user'
+	| '@user_description'
+	| '@version'
+	| 'sessionend';
+
+export interface Location {
+	country?: string;
+	level1?: string;
+	level2?: string;
+	locality?: string;
+}
+
+export interface SubmissionClient {
+	ip_address?: string;
+	user_agent?: string;
+	version?: string;
+}
+
+export interface IEventData extends Record<string, unknown> {
+	'@environment'?: EnvironmentInfo;
+	'@error'?: ErrorInfo;
+	'@level'?: LogLevel;
+	'@location'?: Location;
+	'@request'?: RequestInfo;
+	'@simple_error'?: SimpleError;
+	'@stack'?: ManualStackingInfo;
+	'@submission_method'?: string;
+	'@submission_client'?: SubmissionClient;
+	'@trace'?: string[];
+	'@user'?: UserInfo;
+	'@user_description'?: UserDescription;
+	'@version'?: string;
+	sessionend?: string;
+}
+
+export class PersistentEvent extends PersistentEventBase {
+	@IsOptional() type?: PersistentEventKnownTypes = undefined;
+	@IsOptional() @ValidateNested() data?: IEventData = undefined;
+}
 
 export type SummaryTemplateKeys =
 	| 'event-summary'
@@ -146,101 +218,6 @@ export interface StackSummaryModel<T extends SummaryTemplateKeys> extends Summar
 	users: number;
 	/** @format double */
 	total_users: number;
-}
-
-export enum ChangeType {
-	Added = 0,
-	Saved = 1,
-	Removed = 2
-}
-
-export interface EntityChanged {
-	type: string;
-	change_type: ChangeType;
-
-	id: string;
-	organization_id?: string;
-	projectId?: string;
-	stackId?: string;
-
-	data: Record<string, unknown>;
-}
-
-export interface PlanChanged {
-	organization_id: string;
-}
-
-export interface PlanOverage {
-	organization_id: string;
-	is_hourly: boolean;
-}
-
-export interface UserMembershipChanged {
-	change_type: ChangeType;
-	user_id: string;
-	organization_id: string;
-}
-
-export interface ReleaseNotification {
-	critical: boolean;
-	date: string;
-	message?: string;
-}
-
-export interface SystemNotification {
-	date: string;
-	message?: string;
-}
-
-export type WebSocketMessageType =
-	| 'PlanChanged'
-	| 'PlanOverage'
-	| 'UserMembershipChanged'
-	| 'ReleaseNotification'
-	| 'SystemNotification'
-	| `${string}Changed`;
-
-export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'PlanChanged'
-	? PlanChanged
-	: T extends 'PlanOverage'
-	? PlanOverage
-	: T extends 'UserMembershipChanged'
-	? UserMembershipChanged
-	: T extends 'ReleaseNotification'
-	? ReleaseNotification
-	: T extends 'SystemNotification'
-	? SystemNotification
-	: EntityChanged;
-
-export interface WebSocketMessage<T extends WebSocketMessageType> {
-	type: T;
-	message: WebSocketMessageValue<T>;
-}
-
-export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
-	return (
-		(
-			[
-				'PlanChanged',
-				'PlanOverage',
-				'UserMembershipChanged',
-				'ReleaseNotification',
-				'SystemNotification'
-			] as const
-		).includes(type as Exclude<WebSocketMessageType, `${string}Changed`>) ||
-		type.endsWith('Changed')
-	);
-}
-
-export function isEntityChangedType(message: {
-	type: WebSocketMessageType;
-	message: unknown;
-}): message is WebSocketMessage<`${string}Changed`> {
-	return (
-		message.type !== 'PlanChanged' &&
-		message.type !== 'UserMembershipChanged' &&
-		message.type.endsWith('Changed')
-	);
 }
 
 export type GetEventsMode =

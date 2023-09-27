@@ -10,13 +10,7 @@
 		type Updater,
 		type VisibilityState
 	} from '@tanstack/svelte-table';
-	import {
-		ChangeType,
-		type EventSummaryModel,
-		type IGetEventsParams,
-		type SummaryTemplateKeys,
-		type WebSocketMessageValue
-	} from '$lib/models/api';
+	import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
 	import {
@@ -31,6 +25,7 @@
 	import Table from '$comp/table/Table.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { persisted } from 'svelte-local-storage-store';
+	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
 
 	export let filter: Readable<string>;
 
