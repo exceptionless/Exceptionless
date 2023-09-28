@@ -34,10 +34,7 @@ jobs:
           dotnet tool install --global minver-cli --version 4.3.0
           version=$(minver --tag-prefix v)
           echo "version=$version" >> $GITHUB_OUTPUT
-          echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
-
-          echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
-          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "### $version" >> $GITHUB_STEP_SUMMARY
 
   test-api:
 
@@ -137,15 +134,31 @@ jobs:
         with:
           platforms: linux/amd64
 
-      - name: Build docker images
+      - name: Build api docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          # build docker images
+          docker buildx build . --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
 
-          # build remaining docker images
-          for image in {"api","job","app","exceptionless"}; do
-            docker buildx build . --target $image --platform linux/amd64 --tag exceptionless/$image-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
-          done
+      - name: Build job docker image
+        run: |
+          echo "::remove-matcher owner=csc::"
+          docker buildx build . --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+
+      - name: Build app docker image
+        run: |
+          echo "::remove-matcher owner=csc::"
+          docker buildx build . --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+
+      - name: Build all-in-one docker image
+        run: |
+          echo "::remove-matcher owner=csc::"
+          docker buildx build . --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+
+      - name: Build all-in-one Elasticsearch 7 docker image
+        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        run: |
+          echo "::remove-matcher owner=csc::"
+          docker buildx build . --target exceptionless7 --platform linux/amd64 --tag exceptionless/exceptionless:latest-elasticsearch7 --cache-from type=gha --cache-to type=gha,mode=max --load
 
       - name: Login to GitHub Container Registry
         if: "${{ env.DOCKER_USERNAME != '' }}"
@@ -162,7 +175,7 @@ jobs:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Wait for jobs
+      - name: Wait for test jobs
         uses: yogeshlonkar/wait-for-jobs@v0
         with:
           jobs: 'test-api,test-client'
@@ -189,6 +202,9 @@ jobs:
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
+          # only build elasticsearch 7 all-in-one image for release builds
+          docker image tag exceptionless/exceptionless:latest-elasticsearch7 exceptionless/exceptionless:$VERSION-elasticsearch7
+
           for image in {"api","job","app","exceptionless"}; do
             docker image tag exceptionless/$image-ci:latest exceptionless/$image:$VERSION
             docker image tag exceptionless/$image-ci:latest exceptionless/$image:latest
@@ -196,12 +212,8 @@ jobs:
             docker image push --all-tags exceptionless/$image
           done
 
-          # only build and push elasticsearch 7 all-in-one image for release builds
-          docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
-
-
   deploy:
-
+    if: "${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name != 'pull_request' }}"
     needs: [version,build-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 30
