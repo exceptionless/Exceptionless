@@ -44,7 +44,7 @@ jobs:
 
       - name: Start Services
         working-directory: docker
-        run: docker compose up -d elasticsearch
+        run: docker compose up -d elasticsearch &
 
       - name: Build
         run: dotnet build --configuration Release /clp:NoSummary
