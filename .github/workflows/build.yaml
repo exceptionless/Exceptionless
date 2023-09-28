@@ -122,6 +122,7 @@ jobs:
         with:
             name: app-image
             path: /tmp/app.tar
+            retention-days: 1
 
   deploy:
     runs-on: ubuntu-latest
