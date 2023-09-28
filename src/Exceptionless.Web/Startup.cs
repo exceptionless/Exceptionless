@@ -226,7 +226,8 @@ public class Startup
             csp.AllowFonts.FromSelf()
                 .From("https://fonts.gstatic.com")
                 .From("https://www.gravatar.com")
-                .From("https://fonts.intercomcdn.com");
+                .From("https://fonts.intercomcdn.com")
+                .From("https://cdn.jsdelivr.net");
             csp.AllowImages.FromSelf()
                 .From("data:")
                 .From("https://q.stripe.com")
@@ -241,9 +242,12 @@ public class Startup
                 .AllowUnsafeEval()
                 .From("https://js.stripe.com")
                 .From("https://widget.intercom.io")
-                .From("https://js.intercomcdn.com");
+                .From("https://js.intercomcdn.com")
+                .From("https://cdn.jsdelivr.net");
             csp.AllowStyles.FromSelf()
-                .AllowUnsafeInline();
+                .AllowUnsafeInline()
+                .From("https://fonts.googleapis.com")
+                .From("https://cdn.jsdelivr.net");
             csp.AllowConnections.ToSelf()
                 .To("https://collector.exceptionless.io")
                 .To("https://config.exceptionless.io")
