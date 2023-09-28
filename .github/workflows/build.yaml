@@ -8,9 +8,12 @@ env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
-  build:
+
+  build-reason:
+
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -20,18 +23,22 @@ jobs:
         env:
           GITHUB_EVENT: ${{ toJson(github) }}
         run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
+
+  test-api:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 7.0.*
           dotnet-quality: ga
-      - name: Build Version
-        run: |
-          dotnet tool install --global minver-cli --version 4.3.0
-          version=$(minver --tag-prefix v)
-          echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
-          echo "VERSION=$version" >> $GITHUB_ENV
-          echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
       - name: Build
         run: dotnet build --configuration Release /clp:NoSummary
       - name: Start Services
@@ -39,21 +46,186 @@ jobs:
         run: docker compose up --wait elasticsearch
       - name: Run Tests
         run: dotnet test --configuration Release --no-build --logger GitHubActions
+
+  test-client:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./src/Exceptionless.Web/ClientApp
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.*
+          dotnet-quality: ga
+
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
           node-version: 18
+
       - name: Install Npm Packages
-        working-directory: src/Exceptionless.Web/ClientApp
         run: npm ci
+
       - name: Lint Client
-        working-directory: src/Exceptionless.Web/ClientApp
         run: npm run lint
+
+      - name: Run Unit Tests
+        run: npm run test:unit
+
+  build-docker:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build api docker image
+        uses: docker/build-push-action@v4
+        with:
+            context: .
+            target: api
+            cache-from: type=gha
+            cache-to: type=gha,mode=min
+            tags: exceptionless/api-ci:latest
+            outputs: type=docker,dest=/tmp/api.tar
+
+      - name: Upload api artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: api-image
+            path: /tmp/api.tar
+
+      - name: Build job docker image
+        uses: docker/build-push-action@v4
+        with:
+            context: .
+            target: job
+            cache-from: type=gha
+            cache-to: type=gha,mode=min
+            tags: exceptionless/job-ci:latest
+            outputs: type=docker,dest=/tmp/job.tar
+
+      - name: Upload job artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: job-image
+            path: /tmp/job.tar
+
+      - name: Build app docker image
+        uses: docker/build-push-action@v4
+        with:
+            context: .
+            target: app
+            cache-from: type=gha
+            cache-to: type=gha,mode=min
+            tags: exceptionless/app-ci:latest
+            outputs: type=docker,dest=/tmp/app.tar
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: app-image
+            path: /tmp/app.tar
+
+      - name: Build exceptionless docker image
+        uses: docker/build-push-action@v4
+        with:
+            context: .
+            target: exceptionless
+            cache-from: type=gha
+            cache-to: type=gha,mode=min
+            tags: exceptionless/exceptionless-ci:latest
+            outputs: type=docker,dest=/tmp/exceptionless.tar
+
+      - name: Upload exceptionless artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: exceptionless-image
+            path: /tmp/exceptionless.tar
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test-api, test-client, build-docker]
+    timeout-minutes: 30
+
+    steps:
+      - name: Version
+        run: |
+          dotnet tool install --global minver-cli --version 4.3.0
+          version=$(minver --tag-prefix v)
+          echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
+
       - name: Set up Docker Buildx
         if: "${{ env.DOCKER_USERNAME != '' }}"
         uses: docker/setup-buildx-action@v2
         with:
           platforms: linux/amd64
+
+      - name: Download api artifact
+        uses: actions/download-artifact@v3
+        with:
+            name: api-image
+            path: /tmp
+
+      - name: Download job artifact
+        uses: actions/download-artifact@v3
+        with:
+            name: job-image
+            path: /tmp
+
+      - name: Download app artifact
+        uses: actions/download-artifact@v3
+        with:
+            name: app-image
+            path: /tmp
+
+      - name: Download app artifact
+        uses: actions/download-artifact@v3
+        with:
+            name: exceptionless-image
+            path: /tmp
+
+      - uses: geekyeggo/delete-artifact@v2
+        with:
+            name: |
+              api-image
+              job-image
+              app-image
+              exceptionless-image
+
+      - name: Load docker images
+        run: |
+          for image in {"api","job","app","exceptionless"}; do
+            docker load --input /tmp/$image-image.tar
+          done
+
       - name: Login to GitHub Container Registry
         if: "${{ env.DOCKER_USERNAME != '' }}"
         uses: docker/login-action@v2
@@ -61,34 +233,48 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Login to DockerHub
         if: "${{ env.DOCKER_USERNAME != '' }}"
         uses: docker/login-action@v2
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Publish CI Packages
         if: "${{ env.DOCKER_USERNAME != '' }}"
         run: |
           echo "::remove-matcher owner=csc::"
-          # tag and push docker image
+          # tag and push docker images
+
           for image in {"api","job","app","exceptionless"}; do
-            docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image-ci:$VERSION --tag exceptionless/$image-ci:latest --tag ghcr.io/exceptionless/exceptionless/$image:$VERSION --tag ghcr.io/exceptionless/exceptionless/$image:latest
+            docker image tag exceptionless/$image-ci:latest exceptionless/$image-ci:$VERSION
+            docker image tag exceptionless/$image-ci:latest ghcr.io/exceptionless/exceptionless/$image-ci:$VERSION
+            docker image tag exceptionless/$image-ci:latest ghcr.io/exceptionless/exceptionless/$image-ci:latest
+
+            docker image push --all-tags exceptionless/$image-ci
           done
-          #docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless-ci:$VERSION-elasticsearch7 --tag exceptionless/exceptionless-ci:latest-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:$VERSION-elasticsearch7 --tag ghcr.io/exceptionless/exceptionless/exceptionless:latest-elasticsearch7
+
       - name: Publish Release Packages
         if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
         run: |
-          # tag and push docker image
+          echo "::remove-matcher owner=csc::"
+          # tag and push docker images
+
           for image in {"api","job","app","exceptionless"}; do
-            docker buildx build --target $image --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION --tag exceptionless/$image:latest
+            docker image tag exceptionless/$image-ci:latest exceptionless/$image:$VERSION
+            docker image tag exceptionless/$image-ci:latest exceptionless/$image:latest
+
+            docker image push --all-tags exceptionless/$image
           done
-          docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
+          #docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
+
       - name: Install Helm
         if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
         uses: azure/setup-helm@v3
         with:
           version: v3.11.1
+
       - name: Deploy Changes to Development Environment
         if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
         run: |
@@ -96,6 +282,7 @@ jobs:
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
+
       - name: Deploy Changes to Production Environment
         if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
         run: |
