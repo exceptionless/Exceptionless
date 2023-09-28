@@ -1,5 +1,6 @@
-import { Exceptionless, toError } from '@exceptionless/browser';
 import { PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONLESS_SERVER_URL } from '$env/static/public';
+
+import { Exceptionless, toError } from '@exceptionless/browser';
 
 await Exceptionless.startup((c) => {
 	c.apiKey = PUBLIC_EXCEPTIONLESS_API_KEY;

@@ -1,4 +1,5 @@
 import { validate as classValidate } from 'class-validator';
+
 import { ProblemDetails } from '../api/FetchClient';
 
 export async function validate(data: object | null): Promise<ProblemDetails | null> {

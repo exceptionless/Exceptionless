@@ -1,5 +1,5 @@
-import { type Readable, get, writable, readable, derived } from 'svelte/store';
-import { type Links, parseLinkHeader, type Link } from '@web3-storage/parse-link-header';
+import { derived, get, type Readable, readable, writable } from 'svelte/store';
+import { type Link, type Links, parseLinkHeader } from '@web3-storage/parse-link-header';
 
 function createCount() {
 	const { subscribe, set, update } = writable(0);

@@ -1,5 +1,11 @@
 import { IsOptional, ValidateNested } from 'class-validator';
-import { PersistentEvent as PersistentEventBase, StackStatus } from './api.generated';
+
+import {
+	PersistentEvent as PersistentEventBase,
+	StackStatus,
+	UserDescription
+} from './api.generated';
+
 import type {
 	EnvironmentInfo,
 	ErrorInfo,
@@ -7,9 +13,8 @@ import type {
 	ManualStackingInfo,
 	RequestInfo,
 	SimpleError,
-	UserDescription,
 	UserInfo
-} from '@exceptionless/browser';
+} from './client';
 
 export { Login, ViewProject, TokenResult } from './api.generated';
 
@@ -52,7 +57,7 @@ export interface SubmissionClient {
 	version?: string;
 }
 
-export interface IEventData extends Record<string, unknown> {
+export interface IPersistentEventData extends Record<string, unknown> {
 	'@environment'?: EnvironmentInfo;
 	'@error'?: ErrorInfo;
 	'@level'?: LogLevel;
@@ -71,7 +76,7 @@ export interface IEventData extends Record<string, unknown> {
 
 export class PersistentEvent extends PersistentEventBase {
 	@IsOptional() type?: PersistentEventKnownTypes = undefined;
-	@IsOptional() @ValidateNested() data?: IEventData = undefined;
+	@IsOptional() @ValidateNested() data?: IPersistentEventData = undefined;
 }
 
 export type SummaryTemplateKeys =

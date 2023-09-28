@@ -4,8 +4,7 @@
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
-	import Accordion from '$comp/accordion/Accordion.svelte';
-	import AccordionItem from '$comp/accordion/AccordionItem.svelte';
+	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import type { PersistentEvent } from '$lib/models/api';
 	import Overview from './views/Overview.svelte';
 
@@ -22,21 +21,11 @@
 {#if $loading}
 	<p>Loading...</p>
 {:else if response?.data}
-	<Accordion>
-		<AccordionItem title="Overview" checked={true}>
-			<Overview event={response.data}></Overview>
-		</AccordionItem>
-		<AccordionItem title="Exception">
-			<p>hello</p>
-		</AccordionItem>
-		<AccordionItem title="Environment">
-			<p>hello</p>
-		</AccordionItem>
-		<AccordionItem title="Extended Data">
-			<p>hello</p>
-		</AccordionItem>
-	</Accordion>
-	<pre>{JSON.stringify(response.data, null, 2)}</pre>
+	<h1 class="text-xl">Event Details</h1>
+	<Overview event={response.data}></Overview>
+	<div class="flex justify-center mt-2">
+		<a href="/next/event/{id}" class="btn btn-primary btn-sm"> View Event </a>
+	</div>
 {:else}
-	<p>Error: {response}</p>
+	<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
 {/if}

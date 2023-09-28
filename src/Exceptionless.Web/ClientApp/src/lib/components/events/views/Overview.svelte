@@ -3,6 +3,13 @@
 	import TimeAgo from '$comp/time/TimeAgo.svelte';
 	import Duration from '$comp/time/Duration.svelte';
 	import DateTime from '$comp/time/DateTime.svelte';
+	import {
+		getErrorType,
+		getLocation,
+		getMessage,
+		getRequestInfoUrl
+	} from '$lib/helpers/persistent-event';
+	import { buildUrl } from '$lib/helpers/url';
 
 	export let event: PersistentEvent;
 	let project: ViewProject = {}; // TODO
@@ -12,6 +19,7 @@
 	const isSessionStart = event.type === 'session';
 	let referenceId = isSessionStart ? event.reference_id : null;
 
+	const message = getMessage(event);
 	let references: { id: string; name: string }[] = [];
 	const referencePrefix = '@ref:';
 	Object.entries(event.data || {}).forEach(([key, value]) => {
@@ -25,18 +33,29 @@
 	});
 
 	const level = event.data?.['@level']?.toLowerCase();
+	const location = getLocation(event);
+
+	const userInfo = event.data?.['@user'];
+	const userIdentity = userInfo?.identity;
+	const userName = userInfo?.name;
+	const userDescriptionInfo = event.data?.['@user_description'];
+	const userEmail = userDescriptionInfo?.email_address;
+	const userDescription = userDescriptionInfo?.description;
+
+	const requestUrl = getRequestInfoUrl(event);
+	const version = event.data?.['@version'];
 
 	function activateSessionEventsTab() {}
 </script>
 
 <table class="table table-zebra table-xs border">
 	<tr>
-		<th>Occurred On</th>
+		<th class="whitespace-nowrap">Occurred On</th>
 		<td><DateTime date={event.date}></DateTime> (<TimeAgo date={event.date}></TimeAgo>)</td>
 	</tr>
 	{#if isSessionStart}
 		<tr>
-			<th>Duration</th>
+			<th class="whitespace-nowrap">Duration</th>
 			<td>
 				{#if !event.data?.sessionend}
 					<span class="text-green-500">•</span>
@@ -49,12 +68,12 @@
 		</tr>
 	{/if}
 	<!-- <tr>
-		<th>Project</th>
+		<th class="whitespace-nowrap">Project</th>
 		<td><a href="/app.project-frequent/{event.project_id}">{project.name}</a></td>
 	</tr> -->
 	{#if event.reference_id}
 		<tr>
-			<th>Reference</th>
+			<th class="whitespace-nowrap">Reference</th>
 			<td>
 				{#if isSessionStart}
 					<button on:click|preventDefault={activateSessionEventsTab}
@@ -68,102 +87,106 @@
 	{/if}
 	{#each references as reference (reference.id)}
 		<tr>
-			<th>{reference.name}</th>
+			<th class="whitespace-nowrap">{reference.name}</th>
 			<td><a href="/next/event/by-ref/{reference.id}">{reference.id}</a></td>
 		</tr>
 	{/each}
 	{#if level}
 		<tr>
-			<th>Level</th>
-			<td><span class="label-default label">{level}</span></td>
+			<th class="whitespace-nowrap">Level</th>
+			<td><span class="label label-default">{level}</span></td>
 		</tr>
 	{/if}
 	{#if event.type !== 'error'}
 		<tr>
-			<th>Event Type</th>
+			<th class="whitespace-nowrap">Event Type</th>
 			<td>{event.type}</td>
 		</tr>
 	{/if}
-	<!-- {#if hasError}
+	{#if hasError}
 		<tr>
-			<th>Error Type</th>
-			<td>{errorType}</td>
+			<th class="whitespace-nowrap">Error Type</th>
+			<td>{getErrorType(event)}</td>
 		</tr>
-	{/if} -->
+	{/if}
 	{#if event.source}
 		<tr>
-			<th>Source</th>
+			<th class="whitespace-nowrap">Source</th>
 			<td>{event.source}</td>
 		</tr>
 	{/if}
 	{#if !isSessionStart && event.value}
 		<tr>
-			<th>Value</th>
+			<th class="whitespace-nowrap">Value</th>
 			<td>{event.value}</td>
 		</tr>
 	{/if}
-	<!-- {#if event.message || getMessage()}
+	{#if message}
 		<tr>
-			<th>Message</th>
-			<td>{event.message || message}</td>
+			<th class="whitespace-nowrap">Message</th>
+			<td>{message}</td>
 		</tr>
 	{/if}
 	{#if version}
 		<tr>
-			<th>Version</th>
+			<th class="whitespace-nowrap">Version</th>
 			<td>{version}</td>
 		</tr>
 	{/if}
 	{#if location}
 		<tr>
-			<th>Geo</th>
+			<th class="whitespace-nowrap">Geo</th>
 			<td>{location}</td>
 		</tr>
 	{/if}
-	{#if event.tags.length > 0}
+	{#if event.tags?.length}
 		<tr>
-			<th>Tags</th>
-			<td><span class="label label-info" each={tag in event.tags}>{tag}</span></td>
+			<th class="whitespace-nowrap">Tags</th>
+			<td class="flex flex-wrap justify-start overflow-auto gap-2">
+				{#each event.tags as tag}
+					<div class="badge badge-neutral">{tag}</div>
+				{/each}
+			</td>
 		</tr>
 	{/if}
 	{#if requestUrl}
 		<tr>
-			<th>URL</th>
-			<td><a href={requestUrl} target="_blank">{requestUrl}</a></td>
+			<th class="whitespace-nowrap">URL</th>
+			<td><a href={requestUrl} target="_blank" class="link">{requestUrl}</a></td>
 		</tr>
-	{/if} -->
+	{/if}
 </table>
 
-<!-- {#if userEmail || userDescription || userIdentity || userEmail}
-	<h4>User Info</h4>
-	<table class="table-auto border-collapse border border-gray-800">
+{#if userEmail || userDescription || userIdentity}
+	<h4 class="text-lg">User Info</h4>
+	<table class="table table-zebra table-xs border">
 		{#if userEmail}
 			<tr>
-				<th>User Email</th>
+				<th class="whitespace-nowrap">User Email</th>
 				<td><a href="mailto:{userEmail}">{userEmail}</a></td>
 			</tr>
 		{/if}
 		{#if userIdentity}
 			<tr>
-				<th>User Identity</th>
+				<th class="whitespace-nowrap">User Identity</th>
 				<td>{userIdentity}</td>
 			</tr>
 		{/if}
 		{#if userName}
 			<tr>
-				<th>User Name</th>
+				<th class="whitespace-nowrap">User Name</th>
 				<td>{userName}</td>
 			</tr>
 		{/if}
-		{#if userDescription}
+		{#if userDescriptionInfo}
 			<tr>
-				<th>User Description</th>
-				<td>{userDescription}</td>
+				<th class="whitespace-nowrap">User Description</th>
+				<td>{userDescriptionInfo}</td>
 			</tr>
 		{/if}
 	</table>
 {/if}
-
+<!--
 {#if hasError}
 	<div class="flex justify-end">
 		<a
@@ -172,7 +195,7 @@
 			title="Copy Stack Trace to Clipboard"
 		></a>
 	</div>
-	<h4>Stack Trace</h4>
+	<h4 class="text-lg">Stack Trace</h4>
 	<StackTrace class="stack-trace-mini" exception={event.data['@error']} />
 	<SimpleStackTrace class="stack-trace-mini" exception={event.data['@simple_error']} />
 {/if} -->

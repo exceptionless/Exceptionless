@@ -1,7 +1,3 @@
-import { get, derived } from 'svelte/store';
-import { persisted } from 'svelte-local-storage-store';
-import { globalFetchClient } from './FetchClient';
-import type { Login, TokenResult } from '$lib/models/api.generated';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import {
@@ -11,7 +7,12 @@ import {
 	PUBLIC_GOOGLE_APPID,
 	PUBLIC_LIVE_APPID
 } from '$env/static/public';
+import { persisted } from 'svelte-local-storage-store';
+import { derived, get } from 'svelte/store';
 
+import { globalFetchClient } from './FetchClient';
+
+import type { Login, TokenResult } from '$lib/models/api.generated';
 export const accessToken = persisted<string | null>('satellizer_token', null, {
 	serializer: { parse: (s) => s, stringify: (s) => s as string }
 });
