@@ -236,7 +236,8 @@ public class Startup
                 .From("https://uploads.intercomcdn.com")
                 .From("https://static.intercomassets.com")
                 .From("https://user-images.githubusercontent.com")
-                .From("https://www.gravatar.com");
+                .From("https://www.gravatar.com")
+                .From("http://www.gravatar.com");
             csp.AllowScripts.FromSelf()
                 .AllowUnsafeInline()
                 .AllowUnsafeEval()
