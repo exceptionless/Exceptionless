@@ -107,21 +107,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build exceptionless docker image
+      - name: Build docker image
         uses: docker/build-push-action@v4
         with:
             context: .
-            target: exceptionless
+            target: app
             cache-from: type=gha
             cache-to: type=gha,mode=min
-            tags: exceptionless/exceptionless-ci:latest
-            outputs: type=docker,dest=/tmp/exceptionless.tar
+            tags: exceptionless/app-ci:latest
+            outputs: type=docker,dest=/tmp/app.tar
 
-      - name: Upload exceptionless artifact
+      - name: Upload docker artifact
         uses: actions/upload-artifact@v3
         with:
-            name: exceptionless-image
-            path: /tmp/exceptionless.tar
+            name: app-image
+            path: /tmp/app.tar
 
   deploy:
     runs-on: ubuntu-latest
@@ -143,26 +143,27 @@ jobs:
         with:
           platforms: linux/amd64
 
-      - name: Download exceptionless artifact
+      - name: Download docker artifact
         uses: actions/download-artifact@v3
         with:
-            name: exceptionless-image
+            name: app-image
             path: /tmp
 
       - uses: geekyeggo/delete-artifact@v2
         with:
-            name: exceptionless-image
+            name: app-image
 
       - name: Load docker image
         run: |
-          docker load --input /tmp/exceptionless-image.tar
+          docker load --input /tmp/app.tar
 
       - name: Build docker images
         run: |
           echo "::remove-matcher owner=csc::"
           # build docker images
 
-          for image in {"api","job","app"}; do
+          # build remaining docker images
+          for image in {"api","job","exceptionless"}; do
             docker buildx build --cache-from type=gha --cache-to type=gha,mode=min --tag exceptionless/$image-ci:latest --target $image .
           done
 
@@ -207,7 +208,7 @@ jobs:
 
             docker image push --all-tags exceptionless/$image
           done
-          #docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
+          docker buildx build --target exceptionless7 --platform linux/amd64 --output "type=image,push=true" . --tag exceptionless/exceptionless:$VERSION-elasticsearch7 --tag exceptionless/exceptionless:latest-elasticsearch7
 
       - name: Install Helm
         if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
