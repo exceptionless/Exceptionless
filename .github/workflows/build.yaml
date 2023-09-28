@@ -104,54 +104,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build api docker image
-        uses: docker/build-push-action@v4
-        with:
-            context: .
-            target: api
-            cache-from: type=gha
-            cache-to: type=gha,mode=min
-            tags: exceptionless/api-ci:latest
-            outputs: type=docker,dest=/tmp/api.tar
-
-      - name: Upload api artifact
-        uses: actions/upload-artifact@v3
-        with:
-            name: api-image
-            path: /tmp/api.tar
-
-      - name: Build job docker image
-        uses: docker/build-push-action@v4
-        with:
-            context: .
-            target: job
-            cache-from: type=gha
-            cache-to: type=gha,mode=min
-            tags: exceptionless/job-ci:latest
-            outputs: type=docker,dest=/tmp/job.tar
-
-      - name: Upload job artifact
-        uses: actions/upload-artifact@v3
-        with:
-            name: job-image
-            path: /tmp/job.tar
-
-      - name: Build app docker image
-        uses: docker/build-push-action@v4
-        with:
-            context: .
-            target: app
-            cache-from: type=gha
-            cache-to: type=gha,mode=min
-            tags: exceptionless/app-ci:latest
-            outputs: type=docker,dest=/tmp/app.tar
-
-      - name: Upload app artifact
-        uses: actions/upload-artifact@v3
-        with:
-            name: app-image
-            path: /tmp/app.tar
-
       - name: Build exceptionless docker image
         uses: docker/build-push-action@v4
         with:
@@ -188,25 +140,7 @@ jobs:
         with:
           platforms: linux/amd64
 
-      - name: Download api artifact
-        uses: actions/download-artifact@v3
-        with:
-            name: api-image
-            path: /tmp
-
-      - name: Download job artifact
-        uses: actions/download-artifact@v3
-        with:
-            name: job-image
-            path: /tmp
-
-      - name: Download app artifact
-        uses: actions/download-artifact@v3
-        with:
-            name: app-image
-            path: /tmp
-
-      - name: Download app artifact
+      - name: Download exceptionless artifact
         uses: actions/download-artifact@v3
         with:
             name: exceptionless-image
@@ -214,16 +148,19 @@ jobs:
 
       - uses: geekyeggo/delete-artifact@v2
         with:
-            name: |
-              api-image
-              job-image
-              app-image
-              exceptionless-image
+            name: exceptionless-image
 
-      - name: Load docker images
+      - name: Load docker image
         run: |
-          for image in {"api","job","app","exceptionless"}; do
-            docker load --input /tmp/$image-image.tar
+          docker load --input /tmp/exceptionless-image.tar
+
+      - name: Build docker images
+        run: |
+          echo "::remove-matcher owner=csc::"
+          # build docker images
+
+          for image in {"api","job","app"}; do
+            docker buildx build --cache-from type=gha --cache-to type=gha,mode=min --tag exceptionless/$image-ci:latest --target $image .
           done
 
       - name: Login to GitHub Container Registry
