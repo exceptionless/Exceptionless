@@ -58,15 +58,46 @@ jobs:
         working-directory: docker
         run: docker compose up -d elasticsearch &
 
+      - uses: actions/cache@v3
+        with:
+            path: ~/.nuget/packages
+            key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+            restore-keys: |
+                nuget-${{ runner.os }}-
+
+      - name: Nuget Restore
+        run: dotnet restore
+
       - name: Build
-        run: dotnet build --configuration Release /clp:NoSummary
+        run: dotnet build --no-restore --configuration Release
 
       - name: Wait for Elasticsearch
         working-directory: docker
         run: docker compose up --wait elasticsearch
 
-      - name: Run Tests
-        run: dotnet test --configuration Release --no-build --logger GitHubActions
+      - name: Run .NET Tests
+        run: dotnet test --no-restore --no-build --configuration Release --collect:"XPlat Code Coverage" -m:1 --logger trx --results-directory coverage --logger GitHubActions
+
+      - name: Copy Coverage to Predictable Location
+        run: cp coverage/*/coverage.cobertura.xml coverage/coverage.cobertura.xml
+
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+            filename: coverage/coverage.cobertura.xml
+            badge: true
+            format: "markdown"
+            output: "both"
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+            recreate: true
+            path: code-coverage-results.md
+
+      - name: Write Coverage to Job Summary
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 
   test-client:
 
