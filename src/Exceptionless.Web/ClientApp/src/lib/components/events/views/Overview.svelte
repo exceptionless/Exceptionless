@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PersistentEvent, ViewProject } from '$lib/models/api';
+	import type { PersistentEvent } from '$lib/models/api';
 	import TimeAgo from '$comp/time/TimeAgo.svelte';
 	import Duration from '$comp/time/Duration.svelte';
 	import DateTime from '$comp/time/DateTime.svelte';
@@ -9,22 +9,22 @@
 		getMessage,
 		getRequestInfoUrl
 	} from '$lib/helpers/persistent-event';
-	import { buildUrl } from '$lib/helpers/url';
+	//import { buildUrl } from '$lib/helpers/url';
 
 	export let event: PersistentEvent;
-	let project: ViewProject = {}; // TODO
+	//let project: ViewProject = {}; // TODO
 
 	const hasError = !!event.data?.['@error'] || !!event.data?.['@simple_error'];
 
 	const isSessionStart = event.type === 'session';
-	let referenceId = isSessionStart ? event.reference_id : null;
+	//let referenceId = isSessionStart ? event.reference_id : null;
 
 	const message = getMessage(event);
 	let references: { id: string; name: string }[] = [];
 	const referencePrefix = '@ref:';
 	Object.entries(event.data || {}).forEach(([key, value]) => {
 		if (key === '@ref:session') {
-			referenceId = value as string;
+			//referenceId = value as string;
 		}
 
 		if (key.startsWith(referencePrefix)) {
@@ -94,7 +94,7 @@
 	{#if level}
 		<tr>
 			<th class="whitespace-nowrap">Level</th>
-			<td><span class="label label-default">{level}</span></td>
+			<td><span class="label-default label">{level}</span></td>
 		</tr>
 	{/if}
 	{#if event.type !== 'error'}
@@ -142,7 +142,7 @@
 	{#if event.tags?.length}
 		<tr>
 			<th class="whitespace-nowrap">Tags</th>
-			<td class="flex flex-wrap justify-start overflow-auto gap-2">
+			<td class="flex flex-wrap justify-start gap-2 overflow-auto">
 				{#each event.tags as tag}
 					<div class="badge badge-neutral">{tag}</div>
 				{/each}
