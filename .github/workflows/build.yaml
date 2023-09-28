@@ -102,40 +102,7 @@ jobs:
         run: echo "npm run test:integration"
 
   build-docker:
-
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-            fetch-depth: 0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build docker image
-        uses: docker/build-push-action@v4
-        with:
-            context: .
-            target: app
-            cache-from: type=gha
-            cache-to: type=gha,mode=min
-            tags: exceptionless/app-ci:latest
-            outputs: type=docker,dest=/tmp/app.tar
-
-      - name: Upload docker artifact
-        uses: actions/upload-artifact@v3
-        with:
-            name: app-image
-            path: /tmp/app.tar
-            retention-days: 1
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [test-api, test-client, build-docker]
     timeout-minutes: 30
 
     steps:
@@ -159,28 +126,14 @@ jobs:
         with:
           platforms: linux/amd64
 
-      - name: Download docker artifact
-        uses: actions/download-artifact@v3
-        with:
-            name: app-image
-            path: /tmp
-
-      - uses: geekyeggo/delete-artifact@v2
-        with:
-            name: app-image
-
-      - name: Load docker image
-        run: |
-          docker load --input /tmp/app.tar
-
       - name: Build docker images
         run: |
           echo "::remove-matcher owner=csc::"
           # build docker images
 
           # build remaining docker images
-          for image in {"api","job","exceptionless"}; do
-            docker buildx build . --target $image --platform linux/amd64 --tag exceptionless/$image-ci:latest --cache-from type=gha --cache-to type=gha,mode=min --load --progress plain
+          for image in {"api","job","app","exceptionless"}; do
+            docker buildx build . --target $image --platform linux/amd64 --tag exceptionless/$image-ci:latest --cache-from type=gha --cache-to type=gha,mode=min --load
           done
 
       - name: Login to GitHub Container Registry
@@ -197,6 +150,12 @@ jobs:
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - uses: yogeshlonkar/wait-for-jobs@v0
+        with:
+          jobs: 'test-api,test-client'
+          interval: '2500'
+          ttl: '10'
 
       - name: Publish CI Packages
         if: "${{ env.DOCKER_USERNAME != '' }}"
