@@ -30,20 +30,29 @@ jobs:
     timeout-minutes: 30
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 7.0.*
           dotnet-quality: ga
-      - name: Build
-        run: dotnet build --configuration Release /clp:NoSummary
+
       - name: Start Services
         working-directory: docker
+        run: docker compose up -d elasticsearch
+
+      - name: Build
+        run: dotnet build --configuration Release /clp:NoSummary
+
+      - name: Wait for Elasticsearch
+        working-directory: docker
         run: docker compose up --wait elasticsearch
+
       - name: Run Tests
         run: dotnet test --configuration Release --no-build --logger GitHubActions
 
@@ -165,7 +174,7 @@ jobs:
 
           # build remaining docker images
           for image in {"api","job","exceptionless"}; do
-            docker buildx build --cache-from type=gha --cache-to type=gha,mode=min --tag exceptionless/$image-ci:latest --target $image .
+            docker buildx build --cache-from type=gha --cache-to type=gha,mode=min --tag exceptionless/$image-ci:latest --target $image --load .
           done
 
       - name: Login to GitHub Container Registry
