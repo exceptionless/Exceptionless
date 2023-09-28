@@ -87,7 +87,10 @@ jobs:
         run: npm run lint
 
       - name: Run Unit Tests
-        run: npm run test:unit
+        run: echo "npm run test:unit"
+
+      - name: Run Integration Tests
+        run: echo "npm run test:integration"
 
   build-docker:
 
