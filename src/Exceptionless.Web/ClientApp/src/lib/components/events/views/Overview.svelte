@@ -75,7 +75,7 @@
 	{#if level}
 		<tr>
 			<th>Level</th>
-			<td><span class="label label-default">{level}</span></td>
+			<td><span class="label-default label">{level}</span></td>
 		</tr>
 	{/if}
 	{#if event.type !== 'error'}

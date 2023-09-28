@@ -21,6 +21,9 @@ module.exports = {
 	globals: {
 		$$Generic: 'readonly'
 	},
+	rules: {
+		'linebreak-style': 'off'
+	},
 	overrides: [
 		{
 			files: ['*.svelte'],
