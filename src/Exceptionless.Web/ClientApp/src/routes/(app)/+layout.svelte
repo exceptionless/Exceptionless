@@ -154,7 +154,7 @@
 		</div>
 		<div class="drawer-side">
 			<label for="app-drawer" class="drawer-overlay"></label>
-			<div class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
+			<div class="menu p-4 w-[600px] min-h-full bg-base-200 text-base-content">
 				{#if drawerComponent}
 					<svelte:component this={$drawerComponent} {...$drawerComponentProps} />
 				{:else}
