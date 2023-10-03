@@ -6,11 +6,11 @@ on:
 
 jobs:
   build:
-    cancel-timeout-minutes: 30
+    timeout-minutes: 30
     concurrency:
       cancel-in-progress: true
       group: arm64
-    runs-on: buildjet-2vcpu-ubuntu-2204-arm
+    runs-on: macos-latest-xlarge
     steps:
       - name: Checkout
         uses: actions/checkout@v3
