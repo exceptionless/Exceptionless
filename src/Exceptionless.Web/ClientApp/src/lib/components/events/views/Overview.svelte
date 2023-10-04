@@ -199,7 +199,10 @@
 
 	<h4 class="text-lg">Stack Trace</h4>
 	<div class="h-[120px]">
-		<StackTrace error={event.data?.['@error']} />
-		<SimpleStackTrace error={event.data?.['@simple_error']} />
+		{#if event.data?.['@error']}
+			<StackTrace error={event.data['@error']} />
+		{:else}
+			<SimpleStackTrace error={event.data?.['@simple_error']} />
+		{/if}
 	</div>
 {/if}
