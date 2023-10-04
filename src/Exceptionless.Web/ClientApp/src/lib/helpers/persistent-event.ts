@@ -163,7 +163,7 @@ export function getStackFrame(frame: StackFrameInfo) {
 		}
 	}
 
-	return `${result}\r\n`;
+	return result;
 }
 
 function getStackTraceHeader<T extends SimpleErrorInfo | ErrorInfo>(errors: T[]) {
@@ -197,7 +197,7 @@ export function getErrorInfoStackTrace(error: ErrorInfo) {
 			const stackTrace = error.stack_trace;
 			if (stackTrace) {
 				stackTrace.forEach((trace) => {
-					frames += getStackFrame(trace);
+					frames += `${getStackFrame(trace)}\r\n`;
 				});
 
 				if (index < errors.length - 1) {
