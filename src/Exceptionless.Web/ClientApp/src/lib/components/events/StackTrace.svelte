@@ -188,6 +188,7 @@
 		const errors = getErrors(error);
 		stackTrace = buildStackTrace(errors, true);
 		textStackTrace = buildStackTrace(errors, false);
+		console.log({ stackTrace, textStackTrace });
 	});
 </script>
 
