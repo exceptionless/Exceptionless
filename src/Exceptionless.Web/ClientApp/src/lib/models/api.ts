@@ -12,9 +12,9 @@ import type {
 	LogLevel,
 	ManualStackingInfo,
 	RequestInfo,
-	SimpleError,
+	SimpleErrorInfo,
 	UserInfo
-} from './client';
+} from './client-data';
 
 export { Login, ViewProject, TokenResult } from './api.generated';
 
@@ -63,7 +63,7 @@ export interface IPersistentEventData extends Record<string, unknown> {
 	'@level'?: LogLevel;
 	'@location'?: Location;
 	'@request'?: RequestInfo;
-	'@simple_error'?: SimpleError;
+	'@simple_error'?: SimpleErrorInfo;
 	'@stack'?: ManualStackingInfo;
 	'@submission_method'?: string;
 	'@submission_client'?: SubmissionClient;

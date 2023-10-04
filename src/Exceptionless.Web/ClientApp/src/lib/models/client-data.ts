@@ -35,16 +35,16 @@ export interface RequestInfo {
 	data?: Record<string, unknown>;
 }
 
-export interface ISimpleErrorData extends Record<string, unknown> {
+export interface ISimpleErrorInfoData extends Record<string, unknown> {
 	'@ext'?: Record<string, unknown>;
 }
 
-export interface SimpleError {
+export interface SimpleErrorInfo {
 	message?: string;
 	type?: string;
 	stack_trace?: string;
-	data?: ISimpleErrorData;
-	inner?: SimpleError;
+	data?: ISimpleErrorInfoData;
+	inner?: SimpleErrorInfo;
 }
 
 export interface ITargetErrorData extends Record<string, string | undefined> {

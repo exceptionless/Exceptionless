@@ -1,6 +1,6 @@
 <script lang="ts">
-	import EventsTable from '$comp/events/EventsTable.svelte';
-	import EventsTailLogTable from '$comp/events/EventsTailLogTable.svelte';
+	import EventsTable from '$comp/events/table/EventsTable.svelte';
+	import EventsTailLogTable from '$comp/events/table/EventsTailLogTable.svelte';
 	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import { drawerComponent, drawerComponentProps, showDrawer } from '$lib/stores/drawer';

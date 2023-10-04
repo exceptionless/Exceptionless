@@ -25,7 +25,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { persisted } from 'svelte-local-storage-store';
 	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
-	import TimeAgo from '$comp/time/TimeAgo.svelte';
+	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 
 	export let filter: Readable<string>;
 
@@ -51,7 +51,7 @@
 				class: 'w-36'
 			},
 			accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-			cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
+			cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
 		}
 	];
 
@@ -170,7 +170,7 @@
 				<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
 			{:else}
 				Streaming events... Last updated <span class="font-medium"
-					><TimeAgo date={lastUpdated}></TimeAgo></span
+					><TimeAgo value={lastUpdated}></TimeAgo></span
 				>
 			{/if}
 		</p>

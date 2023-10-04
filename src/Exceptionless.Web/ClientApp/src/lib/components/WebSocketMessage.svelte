@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { WebSocketMessageType, WebSocketMessageValue } from '$lib/models/api';
+	import type { WebSocketMessageType, WebSocketMessageValue } from '$lib/models/websocket';
 	import { createEventDispatcher, onMount } from 'svelte';
 
 	export let type: WebSocketMessageType;

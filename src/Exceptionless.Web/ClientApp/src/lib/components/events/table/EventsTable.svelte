@@ -20,8 +20,7 @@
 	} from '$lib/models/api';
 	import Summary from '$comp/events/summary/Summary.svelte';
 	import { nameof } from '$lib/utils';
-	import StackUsersSummary from './StackUsersSummaryColumn.svelte';
-	import NumberFormatter from '$comp/formatters/NumberFormatter.svelte';
+	import NumberFormatter from '$comp/formatters/Number.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
@@ -33,7 +32,8 @@
 	import TableWithPaging from '$comp/table/TableWithPaging.svelte';
 	import TableWithPagingFooter from '$comp/table/TableWithPagingFooter.svelte';
 	import { persisted } from 'svelte-local-storage-store';
-	import TimeAgo from '$comp/time/TimeAgo.svelte';
+	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+	import StackUsersSummaryColumn from './StackUsersSummaryColumn.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -67,7 +67,7 @@
 				meta: {
 					class: 'w-36'
 				},
-				cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
+				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
 			}
 		);
 	} else {
@@ -79,7 +79,7 @@
 				meta: {
 					class: 'w-24'
 				},
-				cell: (prop) => flexRender(StackUsersSummary, { summary: prop.row.original })
+				cell: (prop) => flexRender(StackUsersSummaryColumn, { summary: prop.row.original })
 			},
 			{
 				id: 'events',
@@ -99,7 +99,7 @@
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
+				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
 			},
 			{
 				id: 'last',
@@ -109,7 +109,7 @@
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { date: prop.getValue() })
+				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
 			}
 		);
 	}

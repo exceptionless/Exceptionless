@@ -1,5 +1,5 @@
 import type { PersistentEvent } from '$lib/models/api';
-import type { ErrorInfo, InnerErrorInfo } from '$lib/models/client';
+import type { ErrorInfo, SimpleErrorInfo } from '$lib/models/client-data';
 import { buildUrl } from './url';
 
 export function getLocation(event: PersistentEvent) {
@@ -40,6 +40,17 @@ export function getMessage(event: PersistentEvent) {
 	return event.message;
 }
 
+export function getErrors<T extends SimpleErrorInfo | ErrorInfo>(error: T | undefined): T[] {
+	const errors: T[] = [];
+	let current: T | undefined = error;
+	while (current) {
+		errors.push(current);
+		current = current?.inner as T | undefined;
+	}
+
+	return errors;
+}
+
 export function getErrorType(event: PersistentEvent) {
 	const error = event.data?.['@error'];
 	if (error) {
@@ -49,17 +60,6 @@ export function getErrorType(event: PersistentEvent) {
 
 	const simpleError = event.data?.['@simple_error'];
 	return simpleError?.type || 'Unknown';
-}
-
-export function getErrors(error: ErrorInfo) {
-	const errors = [];
-	let currentError: InnerErrorInfo | undefined = error;
-	while (currentError) {
-		errors.push(currentError);
-		currentError = currentError.inner;
-	}
-
-	return errors;
 }
 
 export function getTargetInfo(error: ErrorInfo) {

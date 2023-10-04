@@ -1,14 +1,16 @@
 <script lang="ts">
 	import type { PersistentEvent } from '$lib/models/api';
-	import TimeAgo from '$comp/time/TimeAgo.svelte';
-	import Duration from '$comp/time/Duration.svelte';
-	import DateTime from '$comp/time/DateTime.svelte';
+	import Duration from '$comp/formatters/Duration.svelte';
+	import DateTime from '$comp/formatters/DateTime.svelte';
+	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import {
 		getErrorType,
 		getLocation,
 		getMessage,
 		getRequestInfoUrl
 	} from '$lib/helpers/persistent-event';
+	import SimpleStackTrace from '../SimpleStackTrace.svelte';
+	import StackTrace from '../StackTrace.svelte';
 	//import { buildUrl } from '$lib/helpers/url';
 
 	export let event: PersistentEvent;
@@ -51,7 +53,7 @@
 <table class="table table-zebra table-xs border">
 	<tr>
 		<th class="whitespace-nowrap">Occurred On</th>
-		<td><DateTime date={event.date}></DateTime> (<TimeAgo date={event.date}></TimeAgo>)</td>
+		<td><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}></TimeAgo>)</td>
 	</tr>
 	{#if isSessionStart}
 		<tr>
@@ -62,7 +64,7 @@
 				{/if}
 				<Duration value={event.date}></Duration>
 				{#if event.data?.sessionend}
-					(ended <TimeAgo date={event.data.sessionend}></TimeAgo>)
+					(ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
 				{/if}
 			</td>
 		</tr>
@@ -186,16 +188,18 @@
 		{/if}
 	</table>
 {/if}
-<!--
+
 {#if hasError}
 	<div class="flex justify-end">
-		<a
+		<button
 			class="btn btn-default btn-xs fa fa-code hidden-xs"
-			role="button"
 			title="Copy Stack Trace to Clipboard"
-		></a>
+		></button>
 	</div>
+
 	<h4 class="text-lg">Stack Trace</h4>
-	<StackTrace class="stack-trace-mini" exception={event.data['@error']} />
-	<SimpleStackTrace class="stack-trace-mini" exception={event.data['@simple_error']} />
-{/if} -->
+	<div class="h-[120px]">
+		<StackTrace error={event.data?.['@error']} />
+		<SimpleStackTrace error={event.data?.['@simple_error']} />
+	</div>
+{/if}
