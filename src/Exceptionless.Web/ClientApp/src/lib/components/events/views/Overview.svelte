@@ -198,7 +198,7 @@
 	</div>
 
 	<h4 class="text-lg">Stack Trace</h4>
-	<div class="max-h-[120px]">
+	<div class="max-h-[120px] overflow-auto p-2 mt-2 border border-info">
 		{#if event.data?.['@error']}
 			<StackTrace error={event.data['@error']} />
 		{:else}

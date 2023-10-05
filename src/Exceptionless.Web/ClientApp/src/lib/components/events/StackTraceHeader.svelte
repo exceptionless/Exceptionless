@@ -5,8 +5,8 @@
 </script>
 
 {#each errors as error, index}<div>
-		{#if index > 0}<span class="ml-6">---> </span>{/if}{#if error.type}<span class="font-bold"
-				>{error.type}:</span
+		{#if index > 0}<span class="ml-6">---> </span>{/if}{#if error.type}<span
+				class="font-bold mr-1">{error.type}:</span
 			>{/if}{#if error.message}{error.message}{/if}
 	</div>
 {/each}
