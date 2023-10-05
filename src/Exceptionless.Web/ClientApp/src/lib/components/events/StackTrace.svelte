@@ -8,20 +8,11 @@
 	const errors = getErrors(error);
 </script>
 
-<pre
-	class="max-h-[500px] overflow-y-scroll overflow-x-scroll break-normal resize-y whitespace-pre tab-size-2"><code
-		><StackTraceHeader {errors}></StackTraceHeader>
-        {#each errors.reverse() as error, index}
-			{#if error.stack_trace}
-				<div class="pl-[10px]">
-                    {#each error.stack_trace as frame}
-						{getStackFrame(frame)}
-					{/each}
-                    {#if index < errors.length - 1}
-						<div>--- End of inner exception stack trace ---</div>
-					{/if}
-                </div>
-			{/if}
-		{/each}
+<pre><code
+		><StackTraceHeader {errors}
+		></StackTraceHeader>{#each errors.reverse() as error, index}{#if error.stack_trace}<div
+					class="pl-[10px]">{#each error.stack_trace as frame}{getStackFrame(
+							frame
+						)}{/each}{#if index < errors.length - 1}<div>--- End of inner exception stack trace ---</div>{/if}</div>{/if}{/each}
     </code>
 </pre>
