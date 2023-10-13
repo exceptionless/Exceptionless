@@ -1,6 +1,6 @@
 module.exports = {
     options: {
-        assets: ["app.min.css", "app.min.js", "app.config.js", "favicon.ico"],
+        assets: ["vendor.min.css", "vendor.min.js", "app.min.css", "app.min.js", "app.config.js", "favicon.ico"],
         baseDir: "./dist",
     },
     src: ["dist/index.html"],
