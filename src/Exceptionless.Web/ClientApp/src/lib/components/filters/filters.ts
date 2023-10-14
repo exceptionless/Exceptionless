@@ -52,7 +52,7 @@ export function updateFilters(filters: IFilter[], filter: IFilter): IFilter[] {
  * @param filter The current filter string that was modified by the user
  * @returns The updated filter
  */
-export function updateFiltersWithUserModifications(filters: IFilter[], input: string): IFilter[] {
+export function parseFilter(filters: IFilter[], input: string): IFilter[] {
 	const resolvedFilters: IFilter[] = [];
 
 	const keywordFilterParts = [];

@@ -11,7 +11,7 @@
 		toFilter,
 		type IFilter,
 		updateFilters,
-		updateFiltersWithUserModifications
+		parseFilter
 	} from '$comp/filters/filters';
 	import { derived } from 'svelte/store';
 
@@ -31,12 +31,12 @@
 		filters.set(updateFilters($filters, detail));
 	}
 
-	let updateFiltersDebounceTimer: ReturnType<typeof setTimeout>;
-	function updateFiltersWithCustomInput(event: Event) {
-		clearTimeout(updateFiltersDebounceTimer);
-		updateFiltersDebounceTimer = setTimeout(() => {
+	let parseFiltersDebounceTimer: ReturnType<typeof setTimeout>;
+	function onFilterInputChanged(event: Event) {
+		clearTimeout(parseFiltersDebounceTimer);
+		parseFiltersDebounceTimer = setTimeout(() => {
 			const { value } = event.target as HTMLInputElement;
-			filters.set(updateFiltersWithUserModifications($filters, value));
+			filters.set(parseFilter($filters, value));
 		}, 500);
 	}
 </script>
@@ -58,7 +58,7 @@
 					placeholder="Search..."
 					class="input input-sm w-full max-w-xs"
 					value={$filter}
-					on:input={updateFiltersWithCustomInput}
+					on:input={onFilterInputChanged}
 				/>
 				<div class="flex items-center space-x-2">
 					<div class="flex items-center">
@@ -85,7 +85,7 @@
 					placeholder="Search..."
 					class="input input-sm w-full max-w-xs"
 					value={$filter}
-					on:input={updateFiltersWithCustomInput}
+					on:input={onFilterInputChanged}
 				/>
 				<select class="select select-sm" bind:value={$time}>
 					<option value="last hour">Last Hour</option>
