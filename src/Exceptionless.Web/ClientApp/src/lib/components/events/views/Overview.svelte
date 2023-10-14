@@ -11,6 +11,7 @@
 	} from '$lib/helpers/persistent-event';
 	import SimpleStackTrace from '../SimpleStackTrace.svelte';
 	import StackTrace from '../StackTrace.svelte';
+	import SearchItem from '$comp/filters/FilterableItem.svelte';
 	//import { buildUrl } from '$lib/helpers/url';
 
 	export let event: PersistentEvent;
@@ -102,7 +103,7 @@
 	{#if event.type !== 'error'}
 		<tr>
 			<th class="whitespace-nowrap">Event Type</th>
-			<td>{event.type}</td>
+			<td><SearchItem term="type" value={event.type}>{event.type}</SearchItem></td>
 		</tr>
 	{/if}
 	{#if hasError}
@@ -146,7 +147,9 @@
 			<th class="whitespace-nowrap">Tags</th>
 			<td class="flex flex-wrap justify-start gap-2 overflow-auto">
 				{#each event.tags as tag}
-					<div class="badge badge-neutral">{tag}</div>
+					<SearchItem term="tag" value={tag}
+						><div class="badge badge-neutral">{tag}</div></SearchItem
+					>
 				{/each}
 			</td>
 		</tr>

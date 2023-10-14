@@ -6,6 +6,14 @@
 	import { drawerComponent, drawerComponentProps, showDrawer } from '$lib/stores/drawer';
 	import { persisted } from 'svelte-local-storage-store';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
+	import {
+		toFilter,
+		type IFilter,
+		updateFilters,
+		updateFiltersWithUserModifications
+	} from '$comp/filters/filters';
+	import { derived } from 'svelte/store';
 
 	let liveMode = persisted<boolean>('live', true);
 
@@ -15,13 +23,29 @@
 		drawerComponentProps.set({ id: detail.id });
 	}
 
-	let filter = persisted<string>('filter', '');
 	let time = persisted<string>('time', '');
+
+	const filters = persisted<IFilter[]>('filters', []);
+	let filter = derived(filters, ($filters) => toFilter($filters));
+	function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
+		filters.set(updateFilters($filters, detail));
+	}
+
+	let updateFiltersDebounceTimer: ReturnType<typeof setTimeout>;
+	function updateFiltersWithCustomInput(event: Event) {
+		clearTimeout(updateFiltersDebounceTimer);
+		updateFiltersDebounceTimer = setTimeout(() => {
+			const { value } = event.target as HTMLInputElement;
+			filters.set(updateFiltersWithUserModifications($filters, value));
+		}, 500);
+	}
 </script>
 
 <svelte:head>
 	<title>Exceptionless</title>
 </svelte:head>
+
+<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <h1 class="text-xl">Events</h1>
 
@@ -33,7 +57,8 @@
 					type="search"
 					placeholder="Search..."
 					class="input input-sm w-full max-w-xs"
-					bind:value={$filter}
+					value={$filter}
+					on:input={updateFiltersWithCustomInput}
 				/>
 				<div class="flex items-center space-x-2">
 					<div class="flex items-center">
@@ -59,7 +84,8 @@
 					type="search"
 					placeholder="Search..."
 					class="input input-sm w-full max-w-xs"
-					bind:value={$filter}
+					value={$filter}
+					on:input={updateFiltersWithCustomInput}
 				/>
 				<select class="select select-sm" bind:value={$time}>
 					<option value="last hour">Last Hour</option>

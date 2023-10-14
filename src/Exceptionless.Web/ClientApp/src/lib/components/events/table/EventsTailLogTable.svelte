@@ -17,7 +17,7 @@
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
-	import WebSocketMessage from '$comp/WebSocketMessage.svelte';
+	import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
 	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';

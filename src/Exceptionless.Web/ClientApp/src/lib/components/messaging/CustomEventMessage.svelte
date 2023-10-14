@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { WebSocketMessageType, WebSocketMessageValue } from '$lib/models/websocket';
 	import { createEventDispatcher, onMount } from 'svelte';
 
-	export let type: WebSocketMessageType;
+	export let type: string;
 
-	function onMessage({ detail }: CustomEvent<WebSocketMessageValue<WebSocketMessageType>>) {
+	function onMessage({ detail }: CustomEvent<unknown>) {
 		dispatch('message', detail);
 	}
 
