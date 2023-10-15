@@ -1,6 +1,9 @@
-﻿namespace Exceptionless.Web.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Exceptionless.Web.Models;
 
 public record TokenResult
 {
-    public required string Token { get; set; }
+    [Required]
+    public required string Token { get; init; }
 }

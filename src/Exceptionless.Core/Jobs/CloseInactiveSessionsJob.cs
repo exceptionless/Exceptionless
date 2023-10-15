@@ -66,7 +66,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                     continue;
 
                 sessionsToUpdate.Add(sessionStart);
-                if (heartbeatResult is not null)
+                if (heartbeatResult?.CacheKey is not null)
                 {
                     cacheKeysToRemove.Add(heartbeatResult.CacheKey);
                     if (heartbeatResult.Close)

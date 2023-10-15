@@ -1,0 +1,48 @@
+<%
+const { field, utils } = it;
+const { require, _ } = utils;
+
+function getFormatValidation(field) {
+    if (field.type === "integer") {
+        return "@IsInt()";
+    }
+
+    if (field.type === "number") {
+        return "@IsNumber()";
+    }
+
+    switch (field.format) {
+        case "date-time":
+            return "@IsDate()";
+        case "email":
+            return "@IsEmail({ require_tld: false })";
+        default:
+            throw new Error(`Unknown format: ${field.format}`);
+    }
+}
+
+const validationDecorators = _.compact([
+    !field.isRequired && "@IsOptional()",
+    (field.name === "id" || field.name.endsWith("_id")) && "@IsMongoId()",
+    field.name === "url" && "@IsUrl()",
+    !_.isUndefined(field.format) && getFormatValidation(field),
+    !_.isUndefined(field.minLength) && `@MinLength(${field.minLength})`,
+    !_.isUndefined(field.maxLength) && `@MaxLength(${field.maxLength})`,
+    !_.isUndefined(field.pattern) && `@Matches(${field.pattern})`,
+    !_.isUndefined(field.type) && (field.type === "object" || (field.type === "array" && field.items.$ref)) && `@ValidateNested()`,
+]);
+
+if (!validationDecorators.length && field.isRequired) {
+    validationDecorators.push("@IsDefined()");
+}
+
+const validationLines = _.uniq(validationDecorators).reduce((acc, validation) => [...acc, ...validation.split(/\n/g)], []);
+
+%>
+<% if (validationLines.length === 1) { %>
+  <%~ validationLines[0] %>
+<% } else if (validationLines.length) { %>
+  <% validationLines.forEach(validation => { %>
+  <%~ validation %>
+  <% }) %>
+<% } %>

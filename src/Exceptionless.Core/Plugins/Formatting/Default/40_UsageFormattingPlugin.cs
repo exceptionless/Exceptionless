@@ -20,7 +20,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.FeatureUsage))
             return null;
 
-        return new SummaryData { TemplateKey = "stack-feature-summary", Data = new Dictionary<string, object>() };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-feature-summary", Data = new Dictionary<string, object>() };
     }
 
     public override string? GetStackTitle(PersistentEvent ev)
@@ -39,7 +39,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        return new SummaryData { TemplateKey = "event-feature-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-feature-summary", Data = data };
     }
 
     public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)

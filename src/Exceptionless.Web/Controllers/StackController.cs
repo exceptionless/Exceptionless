@@ -619,9 +619,9 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             var data = _formattingPluginManager.GetStackSummaryData(stack);
             var summary = new StackSummaryModel
             {
+                Id = data.Id,
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,
-                Id = stack.Id,
                 Title = stack.Title,
                 Status = stack.Status,
                 FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,

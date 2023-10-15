@@ -1,0 +1,33 @@
+{
+	"debug.allowBreakpointsEverywhere": true,
+	"cSpell.words": [
+		"iconify",
+		"keyof",
+		"nameof",
+		"navigatetofirstpage",
+		"oidc",
+		"rowclick",
+		"satellizer",
+		"sessionend",
+		"tailwindcss",
+		"tanstack"
+	],
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[svelte]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"prettier.documentSelectors": ["**/*.svelte"],
+	"editor.codeActionsOnSave": {
+		"source.fixAll": true
+	},
+	"editor.formatOnSave": true,
+	"svelte.plugin.svelte.defaultScriptLanguage": "ts"
+}

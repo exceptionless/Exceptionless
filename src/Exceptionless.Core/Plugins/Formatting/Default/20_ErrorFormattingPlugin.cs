@@ -50,7 +50,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (stack.SignatureInfo.TryGetValue("Path", out value) && !String.IsNullOrEmpty(value))
             data.Add("Path", value);
 
-        return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-error-summary", Data = data };
     }
 
     public override SummaryData? GetEventSummaryData(PersistentEvent ev)
@@ -62,7 +62,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (stackingTarget?.Error is null)
             return null;
 
-        var data = new Dictionary<string, object?> { { "Id", ev.Id }, { "Message", ev.Message } };
+        var data = new Dictionary<string, object?> { { "Message", ev.Message } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
         if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
@@ -81,7 +81,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(requestInfo?.Path))
             data.Add("Path", requestInfo.Path);
 
-        return new SummaryData { TemplateKey = "event-error-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-error-summary", Data = data };
     }
 
     public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)

@@ -47,6 +47,7 @@ Content-Type: application/json
 ### Change Plan
 POST {{apiUrl}}/organizations/{{organizationId}}/change-plan?planId=EX_FREE
 Authorization: Bearer {{token}}
+Content-Type: application/json
 
 ### Add User
 POST {{apiUrl}}/organizations/{{organizationId}}/users/test2@localhost

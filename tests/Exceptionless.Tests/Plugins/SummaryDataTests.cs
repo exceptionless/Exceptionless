@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
@@ -13,12 +13,13 @@ public class SummaryDataTests : TestWithServices
 
     [Theory]
     [MemberData(nameof(Events))]
-    public void EventSummaryData(string path)
+    public async Task EventSummaryData(string path)
     {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
 
-        string json = File.ReadAllText(path);
+        string json = await File.ReadAllTextAsync(path);
+        Assert.NotNull(json);
 
         var ev = json.FromJson<PersistentEvent>(settings);
         Assert.NotNull(ev);
@@ -26,39 +27,41 @@ public class SummaryDataTests : TestWithServices
         var data = GetService<FormattingPluginManager>().GetEventSummaryData(ev);
         var summary = new EventSummaryModel
         {
-            TemplateKey = data.TemplateKey,
-            Id = ev.Id,
             Date = ev.Date,
+            Id = ev.Id,
+            TemplateKey = data.TemplateKey,
             Data = data.Data
         };
 
-        string expectedContent = File.ReadAllText(Path.ChangeExtension(path, "summary.json"));
+        string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"));
         Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
     }
 
     [Theory]
     [MemberData(nameof(Stacks))]
-    public void StackSummaryData(string path)
+    public async Task StackSummaryData(string path)
     {
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
 
-        string json = File.ReadAllText(path);
+        string json = await File.ReadAllTextAsync(path);
+        Assert.NotNull(json);
+
         var stack = json.FromJson<Stack>(settings);
         Assert.NotNull(stack);
 
         var data = GetService<FormattingPluginManager>().GetStackSummaryData(stack);
         var summary = new StackSummaryModel
         {
-            TemplateKey = data.TemplateKey,
-            Data = data.Data,
-            Id = stack.Id,
             Title = stack.Title,
             Status = stack.Status,
-            Total = 1
+            Total = 1,
+            Id = data.Id,
+            TemplateKey = data.TemplateKey,
+            Data = data.Data
         };
 
-        string expectedContent = File.ReadAllText(Path.ChangeExtension(path, "summary.json"));
+        string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"));
         Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
     }
 

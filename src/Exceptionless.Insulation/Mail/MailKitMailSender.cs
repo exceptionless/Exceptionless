@@ -57,7 +57,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
             sw.Restart();
             await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
-            _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", user, sw.Elapsed);
+            _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", sw.Elapsed);
         }
 
         _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);

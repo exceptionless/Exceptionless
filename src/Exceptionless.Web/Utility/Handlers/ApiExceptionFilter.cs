@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Plugins;
 using FluentValidation;
+using Foundatio.Repositories.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -24,10 +25,8 @@ public class ApiExceptionFilter : ExceptionFilterAttribute
 
         // TODO: pull the reference id using the reference id manager.
         string referenceId = builder.Target.ReferenceId;
-        using (_logger.BeginScope(new ExceptionlessState().Property("Reference", referenceId)))
-        {
-            _logger.LogError(context.Exception, "Unhandled error: {Message}", context.Exception.Message);
-        }
+        using var _ = _logger.BeginScope(new ExceptionlessState().Property("Reference", referenceId));
+        _logger.LogError(context.Exception, "Unhandled error: {Message}", context.Exception.Message);
 
         ApiError apiError;
         int statusCode = StatusCodes.Status500InternalServerError;
@@ -46,15 +45,25 @@ public class ApiExceptionFilter : ExceptionFilterAttribute
             apiError = new ApiError(unauthorizedAccessException.Message, referenceId);
             statusCode = StatusCodes.Status401Unauthorized;
         }
+        else if (context.Exception is NotImplementedException notImplementedException)
+        {
+            apiError = new ApiError(notImplementedException.Message, referenceId);
+            statusCode = StatusCodes.Status501NotImplemented;
+        }
         else if (context.Exception is ValidationException validationException)
         {
             apiError = new ApiError(validationException, referenceId);
-            statusCode = StatusCodes.Status400BadRequest;
+            statusCode = StatusCodes.Status422UnprocessableEntity;
         }
         else if (context.Exception is ApplicationException applicationException && applicationException.Message.Contains("version_conflict"))
         {
             apiError = new ApiError(applicationException.Message, referenceId);
-            statusCode = StatusCodes.Status400BadRequest;
+            statusCode = StatusCodes.Status409Conflict;
+        }
+        else if (context.Exception is VersionConflictDocumentException versionConflictDocumentException)
+        {
+            apiError = new ApiError(versionConflictDocumentException.Message, referenceId);
+            statusCode = StatusCodes.Status409Conflict;
         }
         else
         {
@@ -65,7 +74,7 @@ public class ApiExceptionFilter : ExceptionFilterAttribute
                 Detail = context.Exception.StackTrace
             };
 #else
-                apiError = new ApiError("An error occurred while serving your request.", referenceId);
+            apiError = new ApiError("An error occurred while serving your request.", referenceId);
 #endif
         }
 

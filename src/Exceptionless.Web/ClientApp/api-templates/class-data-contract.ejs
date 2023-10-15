@@ -1,0 +1,12 @@
+<%
+const { contract, utils } = it;
+const { formatDescription, require, _ } = utils;
+%>
+export class <%~ contract.name %> {
+  <% for (const field of contract.$content) { %>
+    <%~ includeFile('@base/object-field-jsdoc.ejs', { ...it, field }) %>
+    <%~ includeFile('./object-field-class-validator.ejs', { ...it, field }) %>
+    <%~ field.name %><%~ field.isRequired ? '!' : '?' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
+  <% } %>
+}
+

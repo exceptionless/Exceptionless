@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
@@ -12,7 +12,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Controllers;
 
-[Produces("application/json")]
+[Produces("application/json", "application/problem+json")]
 [ApiController]
 public abstract class ExceptionlessApiController : Controller
 {
