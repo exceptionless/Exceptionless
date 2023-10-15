@@ -10,7 +10,7 @@ jobs:
     concurrency:
       cancel-in-progress: true
       group: arm64
-    runs-on: macos-latest-xlarge
+    runs-on: buildjet-2vcpu-ubuntu-2204-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v3
