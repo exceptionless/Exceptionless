@@ -95,8 +95,8 @@ public class ThrottlingMiddleware
 
         context.Response.OnStarting(() =>
         {
-            context.Response.Headers.Add(Headers.RateLimit, maxRequests.ToString());
-            context.Response.Headers.Add(Headers.RateLimitRemaining, remaining.ToString());
+            context.Response.Headers[Headers.RateLimit] = maxRequests.ToString();
+            context.Response.Headers[Headers.RateLimitRemaining] = remaining.ToString();
 
             return Task.CompletedTask;
         });

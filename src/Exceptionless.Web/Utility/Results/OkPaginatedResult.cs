@@ -23,7 +23,7 @@ public class OkPaginatedResult : ObjectWithHeadersResult
         AddPageLinkHeaders(context.HttpContext.Request);
 
         if (Total.HasValue)
-            Headers.Add(Utility.Headers.ResultCount, Total.ToString());
+            Headers[Utility.Headers.ResultCount] = Total.ToString();
 
         base.OnFormatting(context);
     }
@@ -56,6 +56,6 @@ public class OkPaginatedResult : ObjectWithHeadersResult
             links.Add(String.Concat("<", request.Path, "?", String.Join('&', nextParameters.Select(kvp => $"{kvp.Key}={kvp.Value}")), ">; rel=\"next\""));
         }
 
-        Headers.Add(HeaderNames.Link, links.ToArray());
+        Headers[HeaderNames.Link] = links.ToArray();
     }
 }

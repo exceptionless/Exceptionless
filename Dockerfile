@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 ENV HUSKY 0
@@ -38,7 +38,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
@@ -58,7 +58,7 @@ RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
@@ -78,7 +78,7 @@ RUN dotnet publish -c Release -o out
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS app
 
 WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
@@ -99,7 +99,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.9.0 AS exceptionless
+FROM exceptionless/elasticsearch:8.10.3 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -146,7 +146,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --version 7.0.3 --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 8.0 --quality preview --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 80 443 9200
@@ -155,7 +155,7 @@ ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # completely self-contained 7.x
 
-FROM exceptionless/elasticsearch:7.17.12 AS exceptionless7
+FROM exceptionless/elasticsearch:7.17.14 AS exceptionless7
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -202,7 +202,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --version 7.0.3 --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 8.0 --quality preview --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 80 443 9200

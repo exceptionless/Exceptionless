@@ -43,10 +43,10 @@ public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollecti
             ? GetPagedLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Page.Value, HasMore)
             : GetBeforeAndAfterLinks(new Uri(context.HttpContext.Request.GetDisplayUrl()), Before, After);
         if (links.Count > 0)
-            Headers.Add(HeaderNames.Link, links.ToArray());
+            Headers[HeaderNames.Link] = links.ToArray();
 
         if (Total.HasValue)
-            Headers.Add(Utility.Headers.ResultCount, Total.ToString());
+            Headers[Utility.Headers.ResultCount] = Total.ToString();
 
         base.OnFormatting(context);
     }
