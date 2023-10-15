@@ -9,7 +9,7 @@ export interface TermFilter extends IFilter {
 	value: string | number | boolean | Date | null | undefined;
 }
 
-export function quote(value?: string): string | undefined {
+export function quote(value?: string | null): string | undefined {
 	return value ? `"${value}"` : undefined;
 }
 
