@@ -16,6 +16,6 @@ public class ObjectWithHeadersResult : ObjectResult
         base.OnFormatting(context);
 
         foreach (var header in Headers)
-            context.HttpContext.Response.Headers.Add(header.Key, header.Value);
+            context.HttpContext.Response.Headers[header.Key] = header.Value;
     }
 }

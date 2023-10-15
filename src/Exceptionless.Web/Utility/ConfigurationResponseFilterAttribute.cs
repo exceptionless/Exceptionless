@@ -22,6 +22,6 @@ public class ConfigurationResponseFilterAttribute : ActionFilterAttribute
             headerName = Headers.LegacyConfigurationVersion;
 
         // add the current configuration version to the response headers so the client will know if it should update its config.
-        context.HttpContext.Response.Headers.Add(headerName, project.Configuration.Version.ToString());
+        context.HttpContext.Response.Headers[headerName] = project.Configuration.Version.ToString();
     }
 }

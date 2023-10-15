@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 ENV HUSKY 0
@@ -38,7 +38,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
@@ -58,7 +58,7 @@ RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
@@ -78,7 +78,7 @@ RUN dotnet publish -c Release -o out
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS app
 
 WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
