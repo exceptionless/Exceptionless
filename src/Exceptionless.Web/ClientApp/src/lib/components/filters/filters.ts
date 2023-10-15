@@ -9,6 +9,10 @@ export interface TermFilter extends IFilter {
 	value: string | number | boolean | Date | null | undefined;
 }
 
+export function quote(value?: string): string | undefined {
+	return value ? `"${value}"` : undefined;
+}
+
 function isKeywordFilter(filter: IFilter): filter is KeywordFilter {
 	return 'keyword' in filter;
 }

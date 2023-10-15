@@ -189,7 +189,7 @@ export interface EventLogSummaryData {
 	Message?: string;
 	Source?: string;
 	SourceShortName?: string;
-	Level?: string;
+	Level?: LogLevel;
 	Identity?: string;
 	Name?: string;
 }

@@ -11,13 +11,16 @@
 	} from '$lib/helpers/persistent-event';
 	import SimpleStackTrace from '../SimpleStackTrace.svelte';
 	import StackTrace from '../StackTrace.svelte';
-	import SearchItem from '$comp/filters/FilterableItem.svelte';
+	import FilterableItem from '$comp/filters/FilterableItem.svelte';
+	import LogLevel from '../LogLevel.svelte';
+	import { quote } from '$comp/filters/filters';
 	//import { buildUrl } from '$lib/helpers/url';
 
 	export let event: PersistentEvent;
 	//let project: ViewProject = {}; // TODO
 
 	const hasError = !!event.data?.['@error'] || !!event.data?.['@simple_error'];
+	const errorType = hasError ? getErrorType(event) : null;
 
 	const isSessionStart = event.type === 'session';
 	//let referenceId = isSessionStart ? event.reference_id : null;
@@ -47,8 +50,6 @@
 
 	const requestUrl = getRequestInfoUrl(event);
 	const version = event.data?.['@version'];
-
-	function activateSessionEventsTab() {}
 </script>
 
 <table class="table table-zebra table-xs border">
@@ -78,9 +79,10 @@
 		<tr>
 			<th class="whitespace-nowrap">Reference</th>
 			<td>
+				<!-- TODO: support group filters (reference:{sessionId} OR ref.session:{sessionId}) -->
 				{#if isSessionStart}
-					<button on:click|preventDefault={activateSessionEventsTab}
-						>{event.reference_id}</button
+					<FilterableItem term="ref.session" value={quote(event.reference_id)}
+						>{event.reference_id}</FilterableItem
 					>
 				{:else}
 					{event.reference_id}
@@ -91,49 +93,69 @@
 	{#each references as reference (reference.id)}
 		<tr>
 			<th class="whitespace-nowrap">{reference.name}</th>
-			<td><a href="/next/event/by-ref/{reference.id}">{reference.id}</a></td>
+			<td
+				><FilterableItem term="reference" value={quote(reference.id)}
+					>{reference.id}</FilterableItem
+				></td
+			>
 		</tr>
 	{/each}
 	{#if level}
 		<tr>
 			<th class="whitespace-nowrap">Level</th>
-			<td><span class="label-default label">{level}</span></td>
+			<td
+				><FilterableItem term="level" value={quote(level)}
+					><LogLevel {level}></LogLevel></FilterableItem
+				></td
+			>
 		</tr>
 	{/if}
 	{#if event.type !== 'error'}
 		<tr>
 			<th class="whitespace-nowrap">Event Type</th>
-			<td><SearchItem term="type" value={event.type}>{event.type}</SearchItem></td>
+			<td
+				><FilterableItem term="type" value={quote(event.type)}>{event.type}</FilterableItem
+				></td
+			>
 		</tr>
 	{/if}
 	{#if hasError}
 		<tr>
 			<th class="whitespace-nowrap">Error Type</th>
-			<td>{getErrorType(event)}</td>
+			<td
+				><FilterableItem term="error.type" value={quote(errorType)}
+					>{errorType}</FilterableItem
+				></td
+			>
 		</tr>
 	{/if}
 	{#if event.source}
 		<tr>
 			<th class="whitespace-nowrap">Source</th>
-			<td>{event.source}</td>
+			<td
+				><FilterableItem term="source" value={quote(event.source)}
+					>{event.source}</FilterableItem
+				></td
+			>
 		</tr>
 	{/if}
 	{#if !isSessionStart && event.value}
 		<tr>
 			<th class="whitespace-nowrap">Value</th>
-			<td>{event.value}</td>
+			<td><FilterableItem term="value" value={event.value}>{event.value}</FilterableItem></td>
 		</tr>
 	{/if}
 	{#if message}
 		<tr>
 			<th class="whitespace-nowrap">Message</th>
-			<td>{message}</td>
+			<td><FilterableItem term="message" value={quote(message)}>{message}</FilterableItem></td
+			>
 		</tr>
 	{/if}
 	{#if version}
 		<tr>
 			<th class="whitespace-nowrap">Version</th>
-			<td>{version}</td>
+			<td><FilterableItem term="version" value={version}>{version}</FilterableItem></td>
 		</tr>
 	{/if}
 	{#if location}
@@ -147,8 +169,8 @@
 			<th class="whitespace-nowrap">Tags</th>
 			<td class="flex flex-wrap justify-start gap-2 overflow-auto">
 				{#each event.tags as tag}
-					<SearchItem term="tag" value={tag}
-						><div class="badge badge-neutral">{tag}</div></SearchItem
+					<FilterableItem term="tag" value={quote(tag)}
+						><div class="badge badge-neutral">{tag}</div></FilterableItem
 					>
 				{/each}
 			</td>
@@ -157,7 +179,7 @@
 	{#if requestUrl}
 		<tr>
 			<th class="whitespace-nowrap">URL</th>
-			<td><a href={requestUrl} target="_blank" class="link">{requestUrl}</a></td>
+			<td><a href={requestUrl} target="_blank" class="link">{requestUrl}></a></td>
 		</tr>
 	{/if}
 </table>

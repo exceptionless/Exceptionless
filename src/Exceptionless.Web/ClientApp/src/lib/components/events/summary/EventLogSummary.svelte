@@ -1,26 +1,15 @@
 <script lang="ts">
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+	import LogLevel from '../LogLevel.svelte';
 
 	export let showType: boolean;
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-log-summary'>;
-
 	const level = source.data.Level?.toLowerCase();
-	const isLevelSuccess = level === 'trace' || level === 'debug';
-	const isLevelInfo = level === 'info';
-	const isLevelWarning = level === 'warn';
-	const isLevelError = level === 'error';
 </script>
 
 <div class="line-clamp-2">
-	{#if level}
-		<span
-			class="badge {isLevelSuccess && 'badge-success'} {isLevelInfo &&
-				'badge-info'} {isLevelWarning && 'badge-warning'} {isLevelError && 'badge-error'}"
-		>
-			{level}
-		</span>
-	{/if}
+	{#if level}<LogLevel {level} />{/if}
 
 	{#if showType}
 		<strong>Log</strong>
