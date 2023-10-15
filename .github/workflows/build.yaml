@@ -28,6 +28,12 @@ jobs:
           GITHUB_EVENT: ${{ toJson(github) }}
         run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
 
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.*
+          dotnet-quality: preview
+
       - name: Version
         id: version
         run: |
@@ -51,8 +57,8 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 7.0.*
-          dotnet-quality: ga
+          dotnet-version: 8.0.*
+          dotnet-quality: preview
 
       - name: Start Services
         working-directory: docker
@@ -117,8 +123,8 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 7.0.*
-          dotnet-quality: ga
+          dotnet-version: 8.0.*
+          dotnet-quality: preview
 
       - name: Cache node_modules
         uses: actions/cache@v3
@@ -252,6 +258,11 @@ jobs:
       VERSION: ${{needs.version.outputs.version}}
 
     steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
 
       - name: Install Helm
         if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"

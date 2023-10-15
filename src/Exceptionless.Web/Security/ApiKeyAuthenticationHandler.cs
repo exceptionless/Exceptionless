@@ -27,7 +27,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock) : base(options, logger, encoder, clock)
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;

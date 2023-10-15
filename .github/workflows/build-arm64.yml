@@ -19,8 +19,8 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 7.0.*
-          #dotnet-quality: ga
+          dotnet-version: 8.0.*
+          dotnet-quality: preview
       - name: Build Reason
         env:
           GITHUB_EVENT: ${{ toJson(github) }}
