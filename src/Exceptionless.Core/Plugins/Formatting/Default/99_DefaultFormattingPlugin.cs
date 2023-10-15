@@ -25,7 +25,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (stack.SignatureInfo.TryGetValue("Source", out string? value))
             data.Add("Source", value);
 
-        return new SummaryData { TemplateKey = "stack-summary", Data = data };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-summary", Data = data };
     }
 
     public override SummaryData GetEventSummaryData(PersistentEvent ev)
@@ -38,7 +38,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        return new SummaryData { TemplateKey = "event-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-summary", Data = data };
     }
 
     public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)

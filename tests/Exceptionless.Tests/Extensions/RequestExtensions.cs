@@ -30,6 +30,11 @@ public static class RequestExtensions
         return builder.ExpectedStatus(HttpStatusCode.BadRequest);
     }
 
+    public static AppSendBuilder StatusCodeShouldBeUnprocessableEntity(this AppSendBuilder builder)
+    {
+        return builder.ExpectedStatus(HttpStatusCode.UnprocessableEntity);
+    }
+
     public static AppSendBuilder StatusCodeShouldBeCreated(this AppSendBuilder builder)
     {
         return builder.ExpectedStatus(HttpStatusCode.Created);

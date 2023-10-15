@@ -20,7 +20,7 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Session, Event.KnownTypes.SessionEnd, Event.KnownTypes.SessionHeartbeat))
             return null;
 
-        return new SummaryData { TemplateKey = "stack-session-summary", Data = new Dictionary<string, object>() };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-session-summary", Data = new Dictionary<string, object>() };
     }
 
     public override string? GetStackTitle(PersistentEvent ev)
@@ -51,6 +51,6 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase
                 data.Add("SessionEnd", endTime);
         }
 
-        return new SummaryData { TemplateKey = "event-session-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-session-summary", Data = data };
     }
 }

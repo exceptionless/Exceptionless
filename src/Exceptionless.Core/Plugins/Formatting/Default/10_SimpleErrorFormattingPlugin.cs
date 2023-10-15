@@ -30,7 +30,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (stack.SignatureInfo.TryGetValue("Path", out value))
             data.Add("Path", value);
 
-        return new SummaryData { TemplateKey = "stack-simple-summary", Data = data };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-simple-summary", Data = data };
     }
 
     public override string? GetStackTitle(PersistentEvent ev)
@@ -64,7 +64,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(requestInfo?.Path))
             data.Add("Path", requestInfo.Path);
 
-        return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-simple-summary", Data = data };
     }
 
     public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)

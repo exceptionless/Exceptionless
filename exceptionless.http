@@ -70,7 +70,12 @@ Hello World!
 
 ### get events
 
-GET {{apiUrl}}/events
+GET {{apiUrl}}/events?sort=date
+Authorization: Bearer {{token}}
+
+### get events with after token
+
+GET {{apiUrl}}/events?sort=date&after=WzE2OTQxNDczMjc1NTgsIjY0ZmFhMmZmZTBhZTljMmY1YzhmZjMxYyJd
 Authorization: Bearer {{token}}
 
 ###

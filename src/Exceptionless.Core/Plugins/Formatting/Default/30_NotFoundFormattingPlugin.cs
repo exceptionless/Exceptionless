@@ -20,7 +20,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
             return null;
 
-        return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new Dictionary<string, object>() };
+        return new SummaryData { Id = stack.Id, TemplateKey = "stack-notfound-summary", Data = new Dictionary<string, object>() };
     }
 
     public override string? GetStackTitle(PersistentEvent ev)
@@ -43,7 +43,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (ips.Count > 0)
             data.Add("IpAddress", ips);
 
-        return new SummaryData { TemplateKey = "event-notfound-summary", Data = data };
+        return new SummaryData { Id = ev.Id, TemplateKey = "event-notfound-summary", Data = data };
     }
 
     public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)

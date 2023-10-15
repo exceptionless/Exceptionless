@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
@@ -13,7 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -55,6 +56,7 @@ public class Startup
         {
             o.Filters.Add<ApiExceptionFilter>();
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
+            o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
         }).AddNewtonsoftJson(o =>
         {
@@ -63,6 +65,9 @@ public class Startup
             o.SerializerSettings.Formatting = Formatting.Indented;
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
+
+        services.AddAutoValidation();
+        services.AddProblemDetails(ConfigureProblemDetails);
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
         services.AddAuthorization(options =>
@@ -83,12 +88,25 @@ public class Startup
             r.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
+
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v2", new OpenApiInfo
             {
                 Title = "Exceptionless API",
-                Version = "v2"
+                Version = "v2",
+                TermsOfService = new Uri("https://exceptionless.com/terms/"),
+                Contact = new OpenApiContact
+                {
+                    Name = "Exceptionless",
+                    Email = String.Empty,
+                    Url = new Uri("https://github.com/exceptionless/Exceptionless")
+                },
+                License = new OpenApiLicense
+                {
+                    Name = "Apache License 2.0",
+                    Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
+                }
             });
 
             c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
@@ -161,6 +179,8 @@ public class Startup
         var options = app.ApplicationServices.GetRequiredService<AppOptions>();
         Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
         var apmConfig = app.ApplicationServices.GetRequiredService<ApmConfig>();
@@ -216,7 +236,8 @@ public class Startup
                 .From("https://uploads.intercomcdn.com")
                 .From("https://static.intercomassets.com")
                 .From("https://user-images.githubusercontent.com")
-                .From("https://www.gravatar.com");
+                .From("https://www.gravatar.com")
+                .From("http://www.gravatar.com");
             csp.AllowScripts.FromSelf()
                 .AllowUnsafeInline()
                 .AllowUnsafeEval()
@@ -230,6 +251,8 @@ public class Startup
                 .From("https://cdn.jsdelivr.net");
             csp.AllowConnections.ToSelf()
                 .To("https://collector.exceptionless.io")
+                .To("https://config.exceptionless.io")
+                .To("https://heartbeat.exceptionless.io")
                 .To("https://api-iam.intercom.io/")
                 .To("wss://nexus-websocket-a.intercom.io");
 
@@ -262,16 +285,7 @@ public class Startup
             };
         });
 
-        app.UseStaticFiles(new StaticFileOptions
-        {
-            ContentTypeProvider = new FileExtensionContentTypeProvider
-            {
-                Mappings = {
-                        [".less"] = "plain/text"
-                    }
-            }
-        });
-
+        app.UseStaticFiles();
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
@@ -294,12 +308,7 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        app.UseSwagger(c =>
-        {
-            c.RouteTemplate = "docs/{documentName}/swagger.json";
-            // TODO: Remove once 5.6.4+ is released
-            c.PreSerializeFilters.Add((doc, _) => doc.Servers?.Clear());
-        });
+        app.UseSwagger(c => c.RouteTemplate = "docs/{documentName}/swagger.json");
         app.UseSwaggerUI(s =>
         {
             s.RoutePrefix = "docs";
@@ -320,18 +329,47 @@ public class Startup
         });
     }
 
+    private static void ConfigureProblemDetails(ProblemDetailsOptions options)
+    {
+        //void SetDetails(ProblemDetails details, int statusCode)
+        //{
+        //    details.Status = statusCode;
+        //    details.Type = GetDefaultType(statusCode);
+        //    details.Title = ReasonPhrases.GetReasonPhrase(statusCode);
+        //}
+
+        //string GetDefaultType(int statusCode)
+        //{
+        //    return $"https://httpstatuses.io/{statusCode}";
+        //}
+
+        //options.CustomizeProblemDetails = context =>
+        //{
+        //    var details = context.ProblemDetails;
+        //    if (details is ValidationProblemDetails { Status: not 422 })
+        //    {
+        //        // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
+        //        SetDetails(details, StatusCodes.Status422UnprocessableEntity);
+        //    }
+        //};
+    }
+
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
+        var apiPathSegment = new PathString("/api");
+        var docsPathSegment = new PathString("/docs");
+        var nextPathSegment = new PathString("/next");
         app.Use(next => context =>
         {
-            var apiPathSegment = new PathString("/api");
-            var docsPathSegment = new PathString("/docs");
             bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
             bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
+            bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
 
-            if (!isApiRequest && !isDocsRequest)
+            if (!isApiRequest && !isDocsRequest && !isNextRequest)
                 context.Request.Path = "/" + filePath;
+            else if (!isApiRequest && !isDocsRequest)
+                context.Request.Path = "/next/" + filePath;
 
             // Set endpoint to null so the static files middleware will handle the request.
             context.SetEndpoint(null);

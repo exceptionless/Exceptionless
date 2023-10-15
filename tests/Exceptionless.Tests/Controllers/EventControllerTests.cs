@@ -1418,10 +1418,14 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
 
         var links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
-        Assert.Single(links);
+        Assert.Equal(2, links.Count);
+
+        string? before = GetQueryStringValue(links["previous"], "before");
+        Assert.NotNull(before);
 
         string? after = GetQueryStringValue(links["next"], "after");
         Assert.NotNull(after);
+        Assert.Equal(before, after);
 
         var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
         Assert.NotNull(result);
@@ -1440,7 +1444,7 @@ public class EventControllerTests : IntegrationTestsBase
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
-        string? before = GetQueryStringValue(links["previous"], "before");
+        before = GetQueryStringValue(links["previous"], "before");
         Assert.NotNull(before);
 
         after = GetQueryStringValue(links["next"], "after");
@@ -1463,10 +1467,14 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal("3", response.Headers.GetValues(Headers.ResultCount).Single());
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
-        Assert.Single(links);
+        Assert.Equal(2, links.Count);
 
         before = GetQueryStringValue(links["previous"], "before");
         Assert.NotNull(before);
+
+        after = GetQueryStringValue(links["next"], "after");
+        Assert.NotNull(after);
+        Assert.Equal(before, after);
 
         result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
         Assert.NotNull(result);
