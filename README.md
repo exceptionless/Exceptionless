@@ -17,7 +17,12 @@ Refer to the [Exceptionless documentation](https://exceptionless.com/docs/).
 
 We provide very reasonably priced hosting at [Exceptionless](https://exceptionless.com). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 
-Exceptionless can be run locally as simply as `docker run --rm -it -p 5200:80 exceptionless/exceptionless:latest`. This will run a completely self-contained simple instance of Exceptionless. It is only suitable for testing purposes since it will not persist data. For more complete setups, check out the [self hosting documentation](https://exceptionless.com/docs/self-hosting/). Also, if you want to support the project while self hosting you can send us a pull request or [donation](https://donorbox.org/exceptionless?recurring=true).
+Exceptionless can easily be run locally using Docker:
+- `docker run --rm -it -p 5200:80 exceptionless/exceptionless:latest`
+- Open `http://localhost:5200`
+- Create an account. The first account in the system will automatically be an admin.
+
+This will run a completely self-contained simple instance of Exceptionless. It is only suitable for testing purposes since it will not persist data. For more complete setups, check out the [self hosting documentation](https://exceptionless.com/docs/self-hosting/). Also, if you want to support the project while self hosting you can send us a pull request or [donation](https://donorbox.org/exceptionless?recurring=true).
 
 ## Contributing
 
