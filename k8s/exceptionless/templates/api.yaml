@@ -33,13 +33,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
-              port: 80
+              port: 8080
             initialDelaySeconds: 3
             periodSeconds: 3
           resources:
@@ -51,7 +51,7 @@ spec:
               cpu: 800m
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           envFrom:
             - configMapRef:

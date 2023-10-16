@@ -10,7 +10,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}{{ .Values.jobs.closeInactiveSessions.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}{{ .Values.jobs.closeInactiveSessions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
@@ -61,7 +61,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}{{ .Values.jobs.dailySummary.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}{{ .Values.jobs.dailySummary.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
@@ -154,7 +154,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}{{ .Values.jobs.eventNotifications.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}{{ .Values.jobs.eventNotifications.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
@@ -205,7 +205,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}{{ .Values.jobs.eventPosts.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}{{ .Values.jobs.eventPosts.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
@@ -228,7 +228,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -292,7 +292,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}{{ .Values.jobs.eventUserDescriptions.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}{{ .Values.jobs.eventUserDescriptions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
@@ -315,7 +315,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -343,7 +343,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}{{ .Values.jobs.mailMessage.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}{{ .Values.jobs.mailMessage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
@@ -366,7 +366,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -407,7 +407,7 @@ spec:
               livenessProbe:
                 httpGet:
                   path: /health
-                  port: 80
+                  port: 8080
                 initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
@@ -449,7 +449,7 @@ spec:
               livenessProbe:
                 httpGet:
                   path: /health
-                  port: 80
+                  port: 8080
                 initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
@@ -491,7 +491,7 @@ spec:
               livenessProbe:
                 httpGet:
                   path: /health
-                  port: 80
+                  port: 8080
                 initialDelaySeconds: 10
                 periodSeconds: 10
               resources:
@@ -520,7 +520,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}{{ .Values.jobs.stackEventCount.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}{{ .Values.jobs.stackEventCount.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
@@ -543,7 +543,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -571,7 +571,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}{{ .Values.jobs.webhooks.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}{{ .Values.jobs.webhooks.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
@@ -594,7 +594,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -622,7 +622,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}{{ .Values.jobs.workitem.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}{{ .Values.jobs.workitem.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-work-item
@@ -645,7 +645,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -682,7 +682,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}{{ .Values.jobs.eventUsage.replicaCount }}{{ else }}{{ 1 }}{{ end }}  
+  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}{{ .Values.jobs.eventUsage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-usage
@@ -705,7 +705,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
