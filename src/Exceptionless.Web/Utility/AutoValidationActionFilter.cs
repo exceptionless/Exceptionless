@@ -31,6 +31,10 @@ public class AutoValidationActionFilter : IAsyncActionFilter
                 if (parameter.Name == null || !context.ActionArguments.TryGetValue(parameter.Name, out object? subject) || subject is null)
                     continue;
 
+                // We don't support validating JSON Types
+                if (subject is Newtonsoft.Json.Linq.JToken)
+                    continue;
+
                 (bool isValid, var errors) = await MiniValidator.TryValidateAsync(subject, _serviceProvider, recurse: true);
                 if (isValid)
                     continue;
