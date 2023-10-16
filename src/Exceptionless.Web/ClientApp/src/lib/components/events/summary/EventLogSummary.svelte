@@ -25,6 +25,6 @@
 			{/if}
 		</strong>
 	{/if}
-    {#if showType || source.data.Source}:&nbsp;{/if}
-    <a href="/event/{source.id}" class="inline">{source.data.Message}</a>
+	{#if showType || source.data.Source}:&nbsp;{/if}
+	<a href="/event/{source.id}" class="inline">{source.data.Message}</a>
 </div>
