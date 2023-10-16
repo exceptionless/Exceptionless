@@ -1,8 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-ENV HUSKY 0
-
 COPY ./*.sln ./NuGet.Config ./
 COPY ./src/*.props ./src/
 COPY ./tests/*.props ./tests/
@@ -42,7 +40,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
-EXPOSE 80 443
+EXPOSE 8080
 
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 
@@ -62,7 +60,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
-EXPOSE 80 443
+EXPOSE 8080
 
 ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 
@@ -93,7 +91,7 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
 RUN chmod +x /app/app-docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/update-config
 
-EXPOSE 80 443
+EXPOSE 8080
 
 ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
@@ -149,7 +147,7 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     ./dotnet-install.sh --channel 8.0 --quality preview --runtime aspnetcore && \
     rm dotnet-install.sh
 
-EXPOSE 80 443 9200
+EXPOSE 8080 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
@@ -205,7 +203,7 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     ./dotnet-install.sh --channel 8.0 --quality preview --runtime aspnetcore && \
     rm dotnet-install.sh
 
-EXPOSE 80 443 9200
+EXPOSE 8080 9200
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
