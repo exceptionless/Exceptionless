@@ -85,7 +85,7 @@ COPY ./build/update-config.sh /usr/local/bin/update-config
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
-    ASPNETCORE_URLS=http://+:80 \
+    ASPNETCORE_URLS=http://+:8080 \
     EX_Html5Mode=true
 
 RUN chmod +x /app/app-docker-entrypoint.sh
@@ -127,7 +127,7 @@ RUN apt-get update -y && \
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
     ES_JAVA_OPTS="-Xms1g -Xmx1g" \
-    ASPNETCORE_URLS=http://+:80 \
+    ASPNETCORE_URLS=http://+:8080 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
@@ -183,7 +183,7 @@ RUN apt-get update -y && \
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
     ES_JAVA_OPTS="-Xms1g -Xmx1g" \
-    ASPNETCORE_URLS=http://+:80 \
+    ASPNETCORE_URLS=http://+:8080 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
