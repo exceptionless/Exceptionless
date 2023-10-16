@@ -24,7 +24,7 @@
 				{source.data.Source}
 			{/if}
 		</strong>
-		{#if showType || source.data.Source}:&nbsp;{/if}
-		<a href="app.event/{source.id}" class="inline">{source.data.Message}</a>
 	{/if}
+    {#if showType || source.data.Source}:&nbsp;{/if}
+    <a href="/event/{source.id}" class="inline">{source.data.Message}</a>
 </div>

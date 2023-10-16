@@ -19,5 +19,5 @@
 	{#if showType || source.data.Source}
 		:&nbsp;
 	{/if}
-	<a href="app.event/{source.id}" class="inline">{source.data.Message}</a>
+	<a href="/event/{source.id}" class="inline">{source.data.Message}</a>
 </div>
