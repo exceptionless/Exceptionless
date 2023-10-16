@@ -40,3 +40,4 @@ jobs:
 
 config:
   EX_EnableSnapshotJobs: "false"
+  EX_Serilog__MinimumLevel__Default: "Information"
