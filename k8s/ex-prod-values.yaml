@@ -36,6 +36,7 @@ config:
   EX_SmtpFrom: "Exceptionless <noreply@exceptionless.io>"
   EX_TestEmailAddress: "test@exceptionless.io"
   EX_EnableArchive: "false"
+  EX_Serilog__MinimumLevel__Default: "Warning"
   EX_Apm__Endpoint: http://apm.elastic-system.svc:8200
   EX_Apm__EnableLogs: "true"
   EX_Apm__EnableMetrics: "true"

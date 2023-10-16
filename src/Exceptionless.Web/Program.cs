@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
@@ -25,7 +25,7 @@ public class Program
         }
         finally
         {
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync();
             await ExceptionlessClient.Default.ProcessQueueAsync();
 
             if (Debugger.IsAttached)
@@ -59,7 +59,8 @@ public class Program
         var apmConfig = new ApmConfig(config, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-        Log.Logger = loggerConfig.CreateBootstrapLogger();
+        Log.Logger = loggerConfig.CreateBootstrapLogger().ForContext<Program>();
+
         var configDictionary = config.ToDictionary("Serilog");
         Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 

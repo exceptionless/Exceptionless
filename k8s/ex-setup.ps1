@@ -145,6 +145,9 @@ kubectl apply -f namespace-default-limits.yaml
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
+# upgrade redis server
+helm upgrade ex-$ENV-redis bitnami/redis --reset-values --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
+
 # install exceptionless app
 $VERSION="8.0.0"
 helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml `

@@ -31,7 +31,7 @@ public class Program
         }
         finally
         {
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync();
             await ExceptionlessClient.Default.ProcessQueueAsync();
 
             if (Debugger.IsAttached)
@@ -58,7 +58,8 @@ public class Program
         var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-        Log.Logger = loggerConfig.CreateLogger();
+        Log.Logger = loggerConfig.CreateBootstrapLogger().ForContext<Program>();
+
         var configDictionary = config.ToDictionary("Serilog");
         Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
 

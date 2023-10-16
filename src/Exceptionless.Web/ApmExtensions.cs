@@ -140,7 +140,7 @@ namespace OpenTelemetry
                     b.AddRuntimeInstrumentation();
 
                     if (config.Console)
-                        b.AddConsoleExporter((exporterOptions, metricReaderOptions) =>
+                        b.AddConsoleExporter((_, metricReaderOptions) =>
                         {
                             // The ConsoleMetricExporter defaults to a manual collect cycle.
                             // This configuration causes metrics to be exported to stdout on a 10s interval.
@@ -164,11 +164,13 @@ namespace OpenTelemetry
                                 c.Headers = $"api-key={config.ApiKey}";
                         });
                 });
+            });
 
-                if (config.EnableLogs)
+            if (config.EnableLogs)
+            {
+                builder.ConfigureLogging(l =>
                 {
-                    services.AddSingleton<ILoggerProvider, OpenTelemetryLoggerProvider>();
-                    services.Configure<OpenTelemetryLoggerOptions>(o =>
+                    l.AddOpenTelemetry(o =>
                     {
                         o.SetResourceBuilder(resourceBuilder);
                         o.IncludeScopes = true;
@@ -192,8 +194,8 @@ namespace OpenTelemetry
                             });
                         }
                     });
-                }
-            });
+                });
+            }
 
             return builder;
         }
