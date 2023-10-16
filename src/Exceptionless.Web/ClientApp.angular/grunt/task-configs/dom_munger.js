@@ -12,10 +12,12 @@ module.exports = {
         options: {
             remove: ['script[data-remove!="false"]', 'link[data-remove="true"]'],
             append: [
+                { selector: "body", html: '<script src="/vendor.min.js"></script>' },
                 {
                     selector: "body",
                     html: '<script src="/app.min.js"></script><script src="/app.config.js"></script>',
                 },
+                { selector: "head", html: '<link rel="stylesheet" href="/vendor.min.css">' },
                 { selector: "head", html: '<link rel="stylesheet" href="/app.min.css">' },
             ],
         },
