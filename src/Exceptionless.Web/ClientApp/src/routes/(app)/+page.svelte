@@ -7,7 +7,7 @@
 	import { persisted } from 'svelte-local-storage-store';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-	import { toFilter, type IFilter, updateFilters, parseFilter } from '$comp/filters/filters';
+	import { type IFilter, updateFilters, parseFilter } from '$comp/filters/filters';
 	import { derived } from 'svelte/store';
 
 	let liveMode = persisted<boolean>('live', true);
