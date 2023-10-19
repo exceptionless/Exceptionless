@@ -1,4 +1,5 @@
 import { accessToken } from './auth';
+import { documentVisibilityStore } from 'svelte-legos';
 
 export class WebSocketClient {
 	private accessToken: string | null = null;
@@ -12,8 +13,8 @@ export class WebSocketClient {
 	private timedOut: boolean = false;
 	private ws: WebSocket | null = null;
 
-	public onConnecting: () => void = () => {};
-	public onOpen: (ev: Event) => void = () => {};
+	public onConnecting: (isReconnect: boolean) => void = () => {};
+	public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
 	public onMessage: (ev: MessageEvent) => void = () => {};
 	public onError: (ev: Event) => void = () => {};
 	public onClose: (ev: CloseEvent) => void = () => {};
@@ -31,15 +32,29 @@ export class WebSocketClient {
 				this.connect();
 			}
 		});
+
+		const visibility = documentVisibilityStore();
+		visibility.subscribe((visible) => {
+			if (
+				visible === 'visible' &&
+				(this.readyState === WebSocket.CLOSING || this.readyState === WebSocket.CLOSED)
+			) {
+				this.connect();
+			} else if (visible === 'hidden') {
+				this.close();
+			}
+		});
 	}
 
 	public connect(reconnectAttempt: boolean = true) {
+		const isReconnect: boolean = this.forcedClose;
+
 		// Reset state
 		this.readyState = WebSocket.CONNECTING;
 		this.forcedClose = false;
 
 		this.ws = new WebSocket(`${this.url}?access_token=${this.accessToken}`);
-		this.onConnecting();
+		this.onConnecting(isReconnect);
 
 		const localWs = this.ws;
 		const timeout = setTimeout(() => {
@@ -53,7 +68,7 @@ export class WebSocketClient {
 
 			this.readyState = WebSocket.OPEN;
 			reconnectAttempt = false;
-			this.onOpen(event);
+			this.onOpen(event, isReconnect);
 		};
 
 		this.ws.onclose = (event: CloseEvent) => {
@@ -65,7 +80,7 @@ export class WebSocketClient {
 				this.onClose(event);
 			} else {
 				this.readyState = WebSocket.CONNECTING;
-				this.onConnecting();
+				this.onConnecting(isReconnect);
 				if (!reconnectAttempt && !this.timedOut) {
 					this.onClose(event);
 				}
