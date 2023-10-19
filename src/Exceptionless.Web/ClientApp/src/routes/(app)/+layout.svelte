@@ -53,6 +53,16 @@
 
 		const ws = new WebSocketClient();
 		ws.onMessage = onMessage;
+		ws.onOpen = (_, isReconnect) => {
+			if (isReconnect) {
+				document.dispatchEvent(
+					new CustomEvent('refresh', {
+						detail: 'WebSocket Connected',
+						bubbles: true
+					})
+				);
+			}
+		};
 
 		return () => {
 			ws?.close();

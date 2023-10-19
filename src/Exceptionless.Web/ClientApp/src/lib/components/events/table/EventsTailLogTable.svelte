@@ -26,6 +26,7 @@
 	import { persisted } from 'svelte-local-storage-store';
 	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
 	export let filter: Readable<string>;
 
@@ -151,6 +152,7 @@
 	const dispatch = createEventDispatcher();
 </script>
 
+<CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
 <Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}>
