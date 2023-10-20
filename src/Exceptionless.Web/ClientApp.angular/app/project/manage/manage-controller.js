@@ -84,6 +84,7 @@
                     return dialogs
                         .create("components/web-hook/add-web-hook-dialog.tpl.html", "AddWebHookDialog as vm")
                         .result.then(function (data) {
+                            data.organization_id = vm.project.organization_id;
                             data.project_id = vm._projectId;
                             return createWebHook(data);
                         })

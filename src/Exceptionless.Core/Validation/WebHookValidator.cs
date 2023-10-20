@@ -12,6 +12,7 @@ public class WebHookValidator : AbstractValidator<WebHook>
         RuleFor(w => w.ProjectId).IsObjectId().When(p => String.IsNullOrEmpty(p.OrganizationId)).WithMessage("Please specify a valid project id.");
         RuleFor(w => w.Url).NotEmpty().WithMessage("Please specify a valid url.");
         RuleFor(w => w.EventTypes).NotEmpty().WithMessage("Please specify one or more event types.");
+        RuleForEach(w => w.EventTypes).Must(et => WebHook.AllKnownEventTypes.Contains(et)).WithMessage("Please specify a valid event type.");
         RuleFor(w => w.Version).NotEmpty().WithMessage("Please specify a valid version.");
     }
 }

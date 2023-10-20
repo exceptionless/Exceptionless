@@ -25,6 +25,66 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanUpdateProject()
+    {
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Test Project",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPath("projects", project.Id)
+            .Content(new UpdateProject
+            {
+                Name = "Test Project 2",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotEqual(project.Name, updatedProject.Name);
+    }
+
+
+    [Fact]
+    public async Task CanUpdateProjectWithExtraPayloadProperties()
+    {
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Test Project",
+                DeleteBotDataEnabled = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        project.Name = "Updated";
+        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPath("projects", project.Id)
+            .Content(project)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Equal("Updated", updatedProject.Name);
+    }
+
+    [Fact]
     public async Task CanGetProjectConfiguration()
     {
         var response = await SendRequestAsync(r => r

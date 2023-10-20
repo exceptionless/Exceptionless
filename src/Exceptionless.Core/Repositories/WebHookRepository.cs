@@ -43,16 +43,6 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         await SaveAsync(webHook, o => o.Cache()).AnyContext();
     }
 
-    public static class EventTypes
-    {
-        // TODO: Add support for these new web hook types.
-        public const string NewError = "NewError";
-        public const string CriticalError = "CriticalError";
-        public const string NewEvent = "NewEvent";
-        public const string CriticalEvent = "CriticalEvent";
-        public const string StackRegression = "StackRegression";
-        public const string StackPromoted = "StackPromoted";
-    }
 
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ChangeType? changeType = null)
     {

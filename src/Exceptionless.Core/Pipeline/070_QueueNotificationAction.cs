@@ -80,19 +80,19 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (!String.IsNullOrEmpty(hook.ProjectId) && !String.Equals(ctx.Project.Id, hook.ProjectId))
             return false;
 
-        if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError))
+        if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewError))
             return true;
 
-        if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError))
+        if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalError))
             return true;
 
-        if (ctx.IsRegression && hook.EventTypes.Contains(WebHookRepository.EventTypes.StackRegression))
+        if (ctx.IsRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
             return true;
 
-        if (ctx.IsNew && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewEvent))
+        if (ctx.IsNew && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewEvent))
             return true;
 
-        if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalEvent))
+        if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalEvent))
             return true;
 
         return false;
