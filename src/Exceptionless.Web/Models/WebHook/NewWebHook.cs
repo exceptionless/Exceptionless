@@ -12,5 +12,5 @@ public record NewWebHook : IOwnedByOrganizationAndProject
     /// <summary>
     /// The schema version that should be used.
     /// </summary>
-    public Version Version { get; set; } = null!;
+    public Version? Version { get; set; }
 }

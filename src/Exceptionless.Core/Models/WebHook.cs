@@ -24,4 +24,20 @@ public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedD
         public const string Version1 = "v1";
         public const string Version2 = "v2";
     }
+
+    public static readonly string[] AllKnownEventTypes = new[]
+    {
+        KnownEventTypes.NewError, KnownEventTypes.CriticalError, KnownEventTypes.NewEvent,
+        KnownEventTypes.CriticalEvent, KnownEventTypes.StackRegression, KnownEventTypes.StackPromoted
+    };
+
+    public static class KnownEventTypes
+    {
+        public const string NewError = "NewError";
+        public const string CriticalError = "CriticalError";
+        public const string NewEvent = "NewEvent";
+        public const string CriticalEvent = "CriticalEvent";
+        public const string StackRegression = "StackRegression";
+        public const string StackPromoted = "StackPromoted";
+    }
 }
