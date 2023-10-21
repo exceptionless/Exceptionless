@@ -220,7 +220,7 @@
 	{/if}
 </table>
 
-{#if userEmail || userDescription || userIdentity}
+{#if userEmail || userIdentity || userName || userDescription}
 	<h4 class="text-lg">User Info</h4>
 	<table class="table table-zebra table-xs border">
 		{#if userEmail}
