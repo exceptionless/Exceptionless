@@ -56,28 +56,28 @@ public class AutoValidationActionFilter : IAsyncActionFilter
 
             if (hasErrors)
             {
-            var validationProblem = controllerBase.ProblemDetailsFactory.CreateValidationProblemDetails(context.HttpContext, context.ModelState, 422);
-            context.Result = new UnprocessableEntityObjectResult(validationProblem);
+                var validationProblem = controllerBase.ProblemDetailsFactory.CreateValidationProblemDetails(context.HttpContext, context.ModelState, 422);
+                context.Result = new UnprocessableEntityObjectResult(validationProblem);
 
-            return;
+                return;
+            }
         }
+
+        await next();
     }
 
-    await next();
-}
+    private static bool ShouldValidate(Type type, IServiceProviderIsService? isService = null) =>
+        !IsNonValidatedType(type, isService) && MiniValidator.RequiresValidation(type);
 
-private static bool ShouldValidate(Type type, IServiceProviderIsService? isService = null) =>
-    !IsNonValidatedType(type, isService) && MiniValidator.RequiresValidation(type);
-
-private static bool IsNonValidatedType(Type type, IServiceProviderIsService? isService) =>
-    typeof(HttpContext) == type
-    || typeof(HttpRequest) == type
-    || typeof(HttpResponse) == type
-    || typeof(ClaimsPrincipal) == type
-    || typeof(CancellationToken) == type
-    || typeof(IFormFileCollection) == type
-    || typeof(IFormFile) == type
-    || typeof(Stream) == type
-    || typeof(PipeReader) == type
-    || isService?.IsService(type) == true;
+    private static bool IsNonValidatedType(Type type, IServiceProviderIsService? isService) =>
+        typeof(HttpContext) == type
+        || typeof(HttpRequest) == type
+        || typeof(HttpResponse) == type
+        || typeof(ClaimsPrincipal) == type
+        || typeof(CancellationToken) == type
+        || typeof(IFormFileCollection) == type
+        || typeof(IFormFile) == type
+        || typeof(Stream) == type
+        || typeof(PipeReader) == type
+        || isService?.IsService(type) == true;
 }
