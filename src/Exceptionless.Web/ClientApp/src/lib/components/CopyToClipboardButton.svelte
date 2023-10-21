@@ -1,16 +1,17 @@
 <script lang="ts">
 	import IconContentCopy from '~icons/mdi/content-copy';
 	import { clickToCopyAction } from 'svelte-legos';
+	import { toast } from 'svoast';
 
 	export let title: string = 'Copy to Clipboard';
 	export let value: string | null | undefined;
 
 	function handleCopyDone() {
-		console.log('Copy to clipboard succeeded');
+		toast.success('Copy to clipboard succeeded');
 	}
 
 	function handleCopyError() {
-		console.error('Copy to clipboard failed');
+		toast.error('Copy to clipboard failed');
 	}
 </script>
 

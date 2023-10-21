@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Toasts } from 'svoast';
 	import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient';
 	import { accessToken } from '$api/auth';
 	import '../app.css';
@@ -8,3 +9,5 @@
 </script>
 
 <slot />
+
+<Toasts position="bottom-right" />
