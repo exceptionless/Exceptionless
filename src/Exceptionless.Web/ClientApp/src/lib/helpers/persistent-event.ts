@@ -21,6 +21,11 @@ export function getLocation(event: PersistentEvent) {
 		}, '');
 }
 
+export function getRequestInfoPath(event: PersistentEvent) {
+	const requestInfo = event.data?.['@request'];
+	return requestInfo ? requestInfo.path : null;
+}
+
 export function getRequestInfoUrl(event: PersistentEvent) {
 	const requestInfo = event.data?.['@request'];
 	if (requestInfo) {
@@ -232,4 +237,14 @@ export function getSimpleErrorInfoStackTrace(error: SimpleErrorInfo) {
 
 	const errors = getErrors(error);
 	return getStackTraceHeader(errors) + buildStackFrames(errors.reverse());
+}
+
+export function getStackTrace(event: PersistentEvent): string | undefined {
+	const error = event.data?.['@error'];
+	if (error) {
+		return getErrorInfoStackTrace(error);
+	}
+
+	const simpleError = event.data?.['@simple_error'];
+	return simpleError?.stack_trace;
 }
