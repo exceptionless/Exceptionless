@@ -29,7 +29,7 @@
 		"@typescript-eslint/parser": "^6.8.0",
 		"autoprefixer": "^10.4.16",
 		"cross-env": "^7.0.3",
-		"eslint": "^8.51.0",
+		"eslint": "^8.52.0",
 		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-svelte": "^2.34.0",
 		"npm-run-all": "^4.1.5",
@@ -57,7 +57,7 @@
 		"svelte-local-storage-store": "^0.6.4",
 		"svelte-time": "^0.8.0",
 		"tailwindcss": "^3.3.3",
-		"unplugin-icons": "^0.17.0"
+		"unplugin-icons": "^0.17.1"
 	},
 	"type": "module"
 }
