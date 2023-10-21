@@ -1,4 +1,6 @@
 <script lang="ts">
+	import IconEmail from '~icons/mdi/email';
+	import IconOpenInNew from '~icons/mdi/open-in-new';
 	import type { PersistentEvent } from '$lib/models/api';
 	import Duration from '$comp/formatters/Duration.svelte';
 	import DateTime from '$comp/formatters/DateTime.svelte';
@@ -7,25 +9,32 @@
 		getErrorType,
 		getLocation,
 		getMessage,
-		getRequestInfoUrl
+		getRequestInfoPath,
+		getRequestInfoUrl,
+		getStackTrace
 	} from '$lib/helpers/persistent-event';
 	import SimpleStackTrace from '../SimpleStackTrace.svelte';
 	import StackTrace from '../StackTrace.svelte';
-	import FilterableItem from '$comp/filters/FilterableItem.svelte';
 	import LogLevel from '../LogLevel.svelte';
-	import { quote } from '$comp/filters/filters';
-	//import { buildUrl } from '$lib/helpers/url';
+	import ClickableSessionFilter from '$comp/filters/ClickableSessionFilter.svelte';
+	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+	import ClickableReferenceFilter from '$comp/filters/ClickableReferenceFilter.svelte';
+	import ClickableNumberFilter from '$comp/filters/ClickableNumberFilter.svelte';
+	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
+	import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
+	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 
 	export let event: PersistentEvent;
 	//let project: ViewProject = {}; // TODO
 
 	const hasError = !!event.data?.['@error'] || !!event.data?.['@simple_error'];
 	const errorType = hasError ? getErrorType(event) : null;
+	const stackTrace = hasError ? getStackTrace(event) : null;
 
 	const isSessionStart = event.type === 'session';
 	//let referenceId = isSessionStart ? event.reference_id : null;
 
-	const message = getMessage(event);
+	const message = event.message || getMessage(event);
 	let references: { id: string; name: string }[] = [];
 	const referencePrefix = '@ref:';
 	Object.entries(event.data || {}).forEach(([key, value]) => {
@@ -49,13 +58,19 @@
 	const userDescription = userDescriptionInfo?.description;
 
 	const requestUrl = getRequestInfoUrl(event);
+	const requestUrlPath = getRequestInfoPath(event);
 	const version = event.data?.['@version'];
 </script>
 
 <table class="table table-zebra table-xs border">
 	<tr>
 		<th class="whitespace-nowrap">Occurred On</th>
-		<td><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}></TimeAgo>)</td>
+		<td
+			><ClickableDateFilter term="date" value={event.date}
+				><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}
+				></TimeAgo>)</ClickableDateFilter
+			></td
+		>
 	</tr>
 	{#if isSessionStart}
 		<tr>
@@ -79,13 +94,14 @@
 		<tr>
 			<th class="whitespace-nowrap">Reference</th>
 			<td>
-				<!-- TODO: support group filters (reference:{sessionId} OR ref.session:{sessionId}) -->
 				{#if isSessionStart}
-					<FilterableItem term="ref.session" value={quote(event.reference_id)}
-						>{event.reference_id}</FilterableItem
+					<ClickableSessionFilter sessionId={event.reference_id}
+						>{event.reference_id}</ClickableSessionFilter
 					>
 				{:else}
-					{event.reference_id}
+					<ClickableReferenceFilter referenceId={event.reference_id}
+						>{event.reference_id}</ClickableReferenceFilter
+					>
 				{/if}
 			</td>
 		</tr>
@@ -94,8 +110,8 @@
 		<tr>
 			<th class="whitespace-nowrap">{reference.name}</th>
 			<td
-				><FilterableItem term="reference" value={quote(reference.id)}
-					>{reference.id}</FilterableItem
+				><ClickableReferenceFilter referenceId={reference.id}
+					>{reference.id}</ClickableReferenceFilter
 				></td
 			>
 		</tr>
@@ -104,8 +120,8 @@
 		<tr>
 			<th class="whitespace-nowrap">Level</th>
 			<td
-				><FilterableItem term="level" value={quote(level)}
-					><LogLevel {level}></LogLevel></FilterableItem
+				><ClickableStringFilter term="level" value={level}
+					><LogLevel {level}></LogLevel></ClickableStringFilter
 				></td
 			>
 		</tr>
@@ -114,7 +130,8 @@
 		<tr>
 			<th class="whitespace-nowrap">Event Type</th>
 			<td
-				><FilterableItem term="type" value={quote(event.type)}>{event.type}</FilterableItem
+				><ClickableStringFilter term="type" value={event.type}
+					>{event.type}</ClickableStringFilter
 				></td
 			>
 		</tr>
@@ -123,8 +140,8 @@
 		<tr>
 			<th class="whitespace-nowrap">Error Type</th>
 			<td
-				><FilterableItem term="error.type" value={quote(errorType)}
-					>{errorType}</FilterableItem
+				><ClickableStringFilter term="error.type" value={errorType}
+					>{errorType}</ClickableStringFilter
 				></td
 			>
 		</tr>
@@ -133,8 +150,8 @@
 		<tr>
 			<th class="whitespace-nowrap">Source</th>
 			<td
-				><FilterableItem term="source" value={quote(event.source)}
-					>{event.source}</FilterableItem
+				><ClickableStringFilter term="source" value={event.source}
+					>{event.source}</ClickableStringFilter
 				></td
 			>
 		</tr>
@@ -142,20 +159,31 @@
 	{#if !isSessionStart && event.value}
 		<tr>
 			<th class="whitespace-nowrap">Value</th>
-			<td><FilterableItem term="value" value={event.value}>{event.value}</FilterableItem></td>
+			<td
+				><ClickableNumberFilter term="value" value={event.value}
+					>{event.value}</ClickableNumberFilter
+				></td
+			>
 		</tr>
 	{/if}
 	{#if message}
 		<tr>
 			<th class="whitespace-nowrap">Message</th>
-			<td><FilterableItem term="message" value={quote(message)}>{message}</FilterableItem></td
+			<td
+				><ClickableStringFilter term="message" value={message}
+					>{message}</ClickableStringFilter
+				></td
 			>
 		</tr>
 	{/if}
 	{#if version}
 		<tr>
 			<th class="whitespace-nowrap">Version</th>
-			<td><FilterableItem term="version" value={version}>{version}</FilterableItem></td>
+			<td
+				><ClickableVersionFilter term="version" value={version}
+					>{version}</ClickableVersionFilter
+				></td
+			>
 		</tr>
 	{/if}
 	{#if location}
@@ -169,8 +197,8 @@
 			<th class="whitespace-nowrap">Tags</th>
 			<td class="flex flex-wrap justify-start gap-2 overflow-auto">
 				{#each event.tags as tag}
-					<FilterableItem term="tag" value={quote(tag)}
-						><div class="badge badge-neutral">{tag}</div></FilterableItem
+					<ClickableStringFilter term="tag" value={tag}
+						><div class="badge badge-neutral">{tag}</div></ClickableStringFilter
 					>
 				{/each}
 			</td>
@@ -179,7 +207,15 @@
 	{#if requestUrl}
 		<tr>
 			<th class="whitespace-nowrap">URL</th>
-			<td><a href={requestUrl} target="_blank" class="link">{requestUrl}></a></td>
+			<td>
+				<ClickableStringFilter term="path" value={requestUrlPath}
+					>{requestUrl}</ClickableStringFilter
+				>
+
+				<a href={requestUrl} target="_blank" class="link" title="Open in new window"
+					><IconOpenInNew /></a
+				></td
+			>
 		</tr>
 	{/if}
 </table>
@@ -190,39 +226,54 @@
 		{#if userEmail}
 			<tr>
 				<th class="whitespace-nowrap">User Email</th>
-				<td><a href="mailto:{userEmail}">{userEmail}</a></td>
+				<td
+					><ClickableStringFilter term="user.email" value={userEmail}
+						>{userEmail}</ClickableStringFilter
+					>
+					<a href="mailto:{userEmail}" title="Send email to {userEmail}"><IconEmail /></a
+					></td
+				>
 			</tr>
 		{/if}
 		{#if userIdentity}
 			<tr>
 				<th class="whitespace-nowrap">User Identity</th>
-				<td>{userIdentity}</td>
+				<td
+					><ClickableStringFilter term="user" value={userIdentity}
+						>{userIdentity}</ClickableStringFilter
+					></td
+				>
 			</tr>
 		{/if}
 		{#if userName}
 			<tr>
 				<th class="whitespace-nowrap">User Name</th>
-				<td>{userName}</td>
+				<td
+					><ClickableStringFilter term="user.name" value={userName}
+						>{userName}</ClickableStringFilter
+					></td
+				>
 			</tr>
 		{/if}
-		{#if userDescriptionInfo}
+		{#if userDescription}
 			<tr>
 				<th class="whitespace-nowrap">User Description</th>
-				<td>{userDescriptionInfo}</td>
+				<td
+					><ClickableStringFilter term="user.description" value={userDescription}
+						>{userDescription}</ClickableStringFilter
+					></td
+				>
 			</tr>
 		{/if}
 	</table>
 {/if}
 
 {#if hasError}
-	<div class="flex justify-end">
-		<button
-			class="btn btn-default btn-xs fa fa-code hidden-xs"
-			title="Copy Stack Trace to Clipboard"
-		></button>
+	<div class="flex justify-between items-center">
+		<h4 class="text-lg">Stack Trace</h4>
+		<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
+		></CopyToClipboardButton>
 	</div>
-
-	<h4 class="text-lg">Stack Trace</h4>
 	<div class="max-h-[150px] overflow-auto p-2 mt-2 border border-info text-xs">
 		{#if event.data?.['@error']}
 			<StackTrace error={event.data['@error']} />

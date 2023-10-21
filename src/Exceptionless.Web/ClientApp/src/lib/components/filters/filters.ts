@@ -1,6 +1,7 @@
 import type { Serializer } from 'svelte-local-storage-store';
 
 export interface IFilter {
+	readonly type: string;
 	toFilter(): string;
 }
 
@@ -9,6 +10,10 @@ export class BooleanFilter implements IFilter {
 		public term: string,
 		public value?: boolean
 	) {}
+
+	public get type(): string {
+		return 'boolean';
+	}
 
 	public toFilter(): string {
 		if (this.value === undefined) {
@@ -22,20 +27,28 @@ export class BooleanFilter implements IFilter {
 export class DateFilter implements IFilter {
 	constructor(
 		public term: string,
-		public value?: Date
+		public value?: Date | string
 	) {}
+
+	public get type(): string {
+		return 'date';
+	}
 
 	public toFilter(): string {
 		if (this.value === undefined) {
 			return `_missing_:${this.term}`;
 		}
 
-		return `${this.term}:${this.value}`;
+		const date = this.value instanceof Date ? this.value.toISOString() : this.value;
+		return `${this.term}:${quoteIfSpecialCharacters(date)}`;
 	}
 }
 
 export class KeywordFilter implements IFilter {
 	constructor(public keyword: string) {}
+	public get type(): string {
+		return 'keyword';
+	}
 
 	public toFilter(): string {
 		return this.keyword;
@@ -47,6 +60,10 @@ export class NumberFilter implements IFilter {
 		public term: string,
 		public value?: number
 	) {}
+
+	public get type(): string {
+		return 'number';
+	}
 
 	public toFilter(): string {
 		if (this.value === undefined) {
@@ -60,31 +77,44 @@ export class NumberFilter implements IFilter {
 export class ReferenceFilter implements IFilter {
 	constructor(public referenceId: string) {}
 
+	public get type(): string {
+		return 'reference';
+	}
+
 	public toFilter(): string {
-		return `reference:${this.referenceId}`;
+		return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
 	}
 }
 
 export class SessionFilter implements IFilter {
 	constructor(public sessionId: string) {}
 
+	public get type(): string {
+		return 'session';
+	}
+
 	public toFilter(): string {
-		return `(reference:${this.sessionId} OR ref.session:${this.sessionId})`;
+		const session = quoteIfSpecialCharacters(this.sessionId);
+		return `(reference:${session} OR ref.session:${session})`;
 	}
 }
 
 export class StringFilter implements IFilter {
 	constructor(
 		public term: string,
-		public value?: number
+		public value?: string | null
 	) {}
+
+	public get type(): string {
+		return 'string';
+	}
 
 	public toFilter(): string {
 		if (this.value === undefined) {
 			return `_missing_:${this.term}`;
 		}
 
-		return `${this.term}:${this.value}`;
+		return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
 	}
 }
 
@@ -94,12 +124,16 @@ export class VersionFilter implements IFilter {
 		public value?: string
 	) {}
 
+	public get type(): string {
+		return 'version';
+	}
+
 	public toFilter(): string {
 		if (this.value === undefined) {
 			return `_missing_:${this.term}`;
 		}
 
-		return `${this.term}:${this.value}`;
+		return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
 	}
 }
 
@@ -119,6 +153,13 @@ export function quoteIfSpecialCharacters(value?: string | null): string | null |
 
 export function quote(value?: string | null): string | undefined {
 	return value ? `"${value}"` : undefined;
+}
+
+export function toFilter(filters: IFilter[]): string {
+	return filters
+		.map((f) => f.toFilter())
+		.join(' ')
+		.trim();
 }
 
 /**
@@ -178,8 +219,48 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
 	return resolvedFilters;
 }
 
+export class FilterSerializer {
+	// implements Serializer<IFilter[]> {
+	public parse(text: string): IFilter[] {
+		if (!text) {
+			return [];
+		}
 
-export class FilterSerializer implements Serializer<IFilter[]> {
-	parse(text: string): IFilter[];
-	stringify(object: IFilter[]): string;
+		const data = JSON.parse(text);
+		const filters: IFilter[] = [];
+		for (const filter of data) {
+			switch (filter.type) {
+				case 'boolean':
+					filters.push(new BooleanFilter(filter.term, filter.value));
+					break;
+				case 'date':
+					filters.push(new DateFilter(filter.term, filter.value));
+					break;
+				case 'keyword':
+					filters.push(new KeywordFilter(filter.keyword));
+					break;
+				case 'number':
+					filters.push(new NumberFilter(filter.term, filter.value));
+					break;
+				case 'reference':
+					filters.push(new ReferenceFilter(filter.referenceId));
+					break;
+				case 'session':
+					filters.push(new SessionFilter(filter.sessionId));
+					break;
+				case 'string':
+					filters.push(new StringFilter(filter.term, filter.value));
+					break;
+				case 'version':
+					filters.push(new VersionFilter(filter.term, filter.value));
+					break;
+			}
+		}
+
+		return filters;
+	}
+
+	public stringify(object: IFilter[]): string {
+		return JSON.stringify(object);
+	}
 }

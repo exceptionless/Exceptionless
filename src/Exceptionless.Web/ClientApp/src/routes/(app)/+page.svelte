@@ -7,7 +7,13 @@
 	import { persisted } from 'svelte-local-storage-store';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-	import { type IFilter, updateFilters, parseFilter } from '$comp/filters/filters';
+	import {
+		type IFilter,
+		updateFilters,
+		parseFilter,
+		FilterSerializer,
+		toFilter
+	} from '$comp/filters/filters';
 	import { derived } from 'svelte/store';
 
 	let liveMode = persisted<boolean>('live', true);
@@ -20,7 +26,7 @@
 
 	let time = persisted<string>('time', '');
 
-	const filters = persisted<IFilter[]>('filters', []);
+	const filters = persisted<IFilter[]>('filters', [], { serializer: new FilterSerializer() });
 	let filter = derived(filters, ($filters) => toFilter($filters));
 	function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
 		filters.set(updateFilters($filters, detail));
