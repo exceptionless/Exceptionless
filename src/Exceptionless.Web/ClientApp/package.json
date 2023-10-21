@@ -56,6 +56,7 @@
 		"svelte-legos": "^0.2.2",
 		"svelte-local-storage-store": "^0.6.4",
 		"svelte-time": "^0.8.0",
+		"svoast": "^2.3.0",
 		"tailwindcss": "^3.3.3",
 		"unplugin-icons": "^0.17.1"
 	},
