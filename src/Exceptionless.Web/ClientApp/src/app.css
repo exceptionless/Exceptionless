@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+	/* Spacing for the container and between each toast */
+	--svoast-offset: 16px;
+	--svoast-gap: 16px;
+	/* The toast itself. */
+	--svoast-bg: theme('colors.base-100');
+	--svoast-text: theme('colors.neutral');
+	--svoast-padding: theme('spacing.6');
+	--svoast-radius: theme('borderRadius.lg');
+	--svoast-shadow: theme('boxShadow.xl');
+	--svoast-font-size: theme('fontSize.sm');
+	--svoast-dismiss-gap: 8px;
+	--svoast-max-width: unset;
+	/* The current colour of the toast, depending on the type */
+	--svoast-colour: '';
+	/* Colour for each type */
+	--svoast-info-colour: theme('colors.info');
+	--svoast-attention-colour: theme('colors.primary');
+	--svoast-success-colour: theme('colors.success');
+	--svoast-warning-colour: theme('colors.warning');
+	--svoast-error-colour: theme('colors.error');
+	/* The coloured bar */
+	--svoast-bar-width: 3px;
+	/* Icons */
+	--svoast-icon-padding: 2px;
+}

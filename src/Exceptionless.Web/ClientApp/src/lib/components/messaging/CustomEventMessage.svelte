@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 
-	export let type: string;
+	export let type: 'Refresh' | string;
 
 	function onMessage({ detail }: CustomEvent<unknown>) {
 		dispatch('message', detail);

@@ -21,6 +21,11 @@ export function getLocation(event: PersistentEvent) {
 		}, '');
 }
 
+export function getRequestInfoPath(event: PersistentEvent) {
+	const requestInfo = event.data?.['@request'];
+	return requestInfo ? requestInfo.path : null;
+}
+
 export function getRequestInfoUrl(event: PersistentEvent) {
 	const requestInfo = event.data?.['@request'];
 	if (requestInfo) {
@@ -43,6 +48,46 @@ export function getMessage(event: PersistentEvent) {
 	}
 
 	return event.message;
+}
+
+export function getErrorData(event: PersistentEvent) {
+	const exceptions = getErrorsFromEvent(event);
+	return exceptions
+		.map((ex: SimpleErrorInfo | ErrorInfo, index: number) => {
+			const getAdditionalData = (error: SimpleErrorInfo | ErrorInfo) => {
+				if (!error.data) {
+					return;
+				}
+
+				const additionalData = error.data['@ext'] || {};
+				Object.entries(error.data).forEach(([key, value]) => {
+					if (!key.startsWith('@')) {
+						additionalData[key] = value;
+					}
+				});
+
+				return additionalData;
+			};
+
+			const errorType = ex.type || 'Unknown';
+			return {
+				title: index === 0 ? 'Additional Data' : `${errorType} Additional Data`,
+				type: errorType,
+				message: ex.message,
+				data: getAdditionalData(ex)
+			};
+		})
+		.filter((errorData) => !!errorData.data);
+}
+
+function getErrorsFromEvent(event: PersistentEvent): SimpleErrorInfo[] | ErrorInfo[] {
+	const error = event.data?.['@error'];
+	if (error) {
+		return getErrors(error);
+	}
+
+	const simpleError = event.data?.['@simple_error'];
+	return getErrors(simpleError);
 }
 
 export function getErrors<T extends SimpleErrorInfo | ErrorInfo>(error: T | undefined): T[] {
@@ -232,4 +277,18 @@ export function getSimpleErrorInfoStackTrace(error: SimpleErrorInfo) {
 
 	const errors = getErrors(error);
 	return getStackTraceHeader(errors) + buildStackFrames(errors.reverse());
+}
+
+export function getStackTrace(event: PersistentEvent): string | undefined {
+	const error = event.data?.['@error'];
+	if (error) {
+		return getErrorInfoStackTrace(error);
+	}
+
+	const simpleError = event.data?.['@simple_error'];
+	return simpleError?.stack_trace;
+}
+
+export function hasErrorOrSimpleError(event: PersistentEvent | null): boolean {
+	return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
 }
