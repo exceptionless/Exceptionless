@@ -219,8 +219,7 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
 	return resolvedFilters;
 }
 
-export class FilterSerializer {
-	// implements Serializer<IFilter[]> {
+export class FilterSerializer implements Serializer<IFilter[]> {
 	public parse(text: string): IFilter[] {
 		if (!text) {
 			return [];
