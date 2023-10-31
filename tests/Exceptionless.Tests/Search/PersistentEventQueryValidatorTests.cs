@@ -29,7 +29,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     [InlineData("NOT _exists_:data.sessionend", "NOT _exists_:idx.sessionend-d", true, true)]
     [InlineData("data.SessionEnd:<now", "idx.sessionend-d:<now", true, true)]
     [InlineData("data.haserror:true", "idx.haserror-b:true", true, true)]
-    [InlineData("data.field:(now criteria2)", "idx.field-s:(now criteria2)", true, true)]
+    [InlineData("data.field:(now criteria2)", "idx.field-s:(now AND criteria2)", true, true)]
     [InlineData("data.date:>now", "idx.date-d:>now", true, true)]
     [InlineData("data.date:[now/d-4d TO now/d+1d}", "idx.date-d:[now/d-4d TO now/d+1d}", true, true)]
     [InlineData("data.date:[2012-01-01 TO 2012-12-31]", "idx.date-d:[2012-01-01 TO 2012-12-31]", true, true)]
