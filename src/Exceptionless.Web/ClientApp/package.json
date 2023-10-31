@@ -23,10 +23,10 @@
 	"devDependencies": {
 		"@playwright/test": "^1.39.0",
 		"@sveltejs/adapter-static": "^2.0.3",
-		"@sveltejs/kit": "^1.26.0",
+		"@sveltejs/kit": "^1.27.2",
 		"@sveltejs/vite-plugin-svelte": "^2.4.6",
-		"@typescript-eslint/eslint-plugin": "^6.8.0",
-		"@typescript-eslint/parser": "^6.8.0",
+		"@typescript-eslint/eslint-plugin": "^6.9.1",
+		"@typescript-eslint/parser": "^6.9.1",
 		"autoprefixer": "^10.4.16",
 		"cross-env": "^7.0.3",
 		"eslint": "^8.52.0",
@@ -46,18 +46,18 @@
 		"vitest": "^0.34.6"
 	},
 	"dependencies": {
-		"@exceptionless/browser": "^3.0.4",
-		"@iconify-json/mdi": "^1.1.54",
+		"@exceptionless/browser": "^3.0.5",
+		"@iconify-json/mdi": "^1.1.55",
 		"@tanstack/svelte-table": "^8.10.7",
 		"@web3-storage/parse-link-header": "^3.1.0",
 		"class-validator": "^0.14.0",
-		"daisyui": "^3.9.3",
-		"oidc-client-ts": "^2.3.0",
+		"daisyui": "^3.9.4",
+		"oidc-client-ts": "^2.4.0",
 		"svelte-legos": "^0.2.2",
 		"svelte-local-storage-store": "^0.6.4",
 		"svelte-time": "^0.8.0",
 		"svoast": "^2.3.0",
-		"tailwindcss": "^3.3.3",
+		"tailwindcss": "^3.3.5",
 		"unplugin-icons": "^0.17.1"
 	},
 	"type": "module"
