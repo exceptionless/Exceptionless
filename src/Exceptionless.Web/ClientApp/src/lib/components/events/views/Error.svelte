@@ -2,16 +2,23 @@
 	import type { PersistentEvent } from '$lib/models/api';
 	import DateTime from '$comp/formatters/DateTime.svelte';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-	import { getErrorType, getMessage, getStackTrace } from '$lib/helpers/persistent-event';
+	import {
+		getErrorData,
+		getErrorType,
+		getMessage,
+		getStackTrace
+	} from '$lib/helpers/persistent-event';
 	import SimpleStackTrace from '../SimpleStackTrace.svelte';
 	import StackTrace from '../StackTrace.svelte';
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
 	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
 	import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
+	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 
 	export let event: PersistentEvent;
 
+	const errorData = getErrorData(event);
 	const errorType = getErrorType(event);
 	const stackTrace = getStackTrace(event);
 
@@ -69,10 +76,12 @@
 	>
 </table>
 
-<div class="flex justify-between items-center">
+<div class="flex justify-between">
 	<h4 class="text-lg">Stack Trace</h4>
-	<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
-	></CopyToClipboardButton>
+	<div class="flex justify-end">
+		<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
+		></CopyToClipboardButton>
+	</div>
 </div>
 <div class="overflow-auto p-2 mt-2 border border-info text-xs">
 	{#if event.data?.['@error']}
@@ -82,7 +91,11 @@
 	{/if}
 </div>
 
-<!-- TODO: Extended Data item-->
+{#each errorData as ed}
+	<div class="mt-2">
+		<ExtendedDataItem canPromote={false} title={ed.title} data={ed.data}></ExtendedDataItem>
+	</div>
+{/each}
 
 {#if modules.length}
 	<div class="flex justify-between items-center mt-4">
