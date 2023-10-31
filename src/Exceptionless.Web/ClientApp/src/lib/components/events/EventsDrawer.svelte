@@ -22,7 +22,7 @@
 	<h1 class="text-xl">Event Details</h1>
 	<Overview event={response.data}></Overview>
 	<div class="flex justify-center mt-2">
-		<a href="/next/event/{id}" class="btn btn-primary btn-sm"> View Event </a>
+		<a href="/event/{id}" class="btn btn-primary btn-sm"> View Event </a>
 	</div>
 {:else if $loading}
 	<p>Loading...</p>
