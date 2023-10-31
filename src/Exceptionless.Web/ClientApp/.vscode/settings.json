@@ -1,14 +1,17 @@
 {
 	"debug.allowBreakpointsEverywhere": true,
 	"cSpell.words": [
+		"colour",
 		"iconify",
 		"keyof",
+		"lucene",
 		"nameof",
 		"navigatetofirstpage",
 		"oidc",
 		"rowclick",
 		"satellizer",
 		"sessionend",
+		"svoast",
 		"tailwindcss",
 		"tanstack"
 	],

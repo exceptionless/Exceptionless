@@ -1,4 +1,6 @@
 <script lang="ts">
+	import IconClose from '~icons/mdi/close';
+	import { hotKeyAction } from 'svelte-legos';
 	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
 	import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
@@ -48,11 +50,25 @@
 		// }
 	}
 
+	function closeDrawer() {
+		showDrawer.set(false);
+	}
+
 	onMount(() => {
 		if (!$isAuthenticated) return;
 
 		const ws = new WebSocketClient();
 		ws.onMessage = onMessage;
+		ws.onOpen = (_, isReconnect) => {
+			if (isReconnect) {
+				document.dispatchEvent(
+					new CustomEvent('refresh', {
+						detail: 'WebSocket Connected',
+						bubbles: true
+					})
+				);
+			}
+		};
 
 		return () => {
 			ws?.close();
@@ -154,11 +170,24 @@
 		</div>
 		<div class="drawer-side">
 			<label for="app-drawer" class="drawer-overlay"></label>
-			<div class="menu p-4 w-[600px] min-h-full bg-base-200 text-base-content">
-				{#if drawerComponent}
-					<svelte:component this={$drawerComponent} {...$drawerComponentProps} />
-				{:else}
-					<p>$drawerComponent is undefined</p>
+			<div
+				class="menu p-4 w-full md:w-4/5 min-h-full bg-base-200 text-base-content overflow-x-auto"
+			>
+				{#if $showDrawer}
+					<button
+						class="absolute top-0 right-0 m-4 text-xl"
+						on:click={() => closeDrawer()}
+						title="Close"
+						use:hotKeyAction={{ code: 'Escape' }}
+					>
+						<IconClose />
+					</button>
+
+					{#if drawerComponent}
+						<svelte:component this={$drawerComponent} {...$drawerComponentProps} />
+					{:else}
+						<p>$drawerComponent is undefined</p>
+					{/if}
 				{/if}
 			</div>
 		</div>

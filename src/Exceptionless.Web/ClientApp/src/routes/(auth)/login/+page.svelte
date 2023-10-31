@@ -31,7 +31,7 @@
 	data.invite_token = $page.url.searchParams.get('token');
 
 	let problem = new ProblemDetails();
-	const redirectUrl = $page.url.searchParams.get('redirect') ?? '/';
+	const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
 	async function onLogin() {
 		if ($loading) {
