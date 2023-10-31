@@ -50,6 +50,46 @@ export function getMessage(event: PersistentEvent) {
 	return event.message;
 }
 
+export function getErrorData(event: PersistentEvent) {
+	const exceptions = getErrorsFromEvent(event);
+	return exceptions
+		.map((ex: SimpleErrorInfo | ErrorInfo, index: number) => {
+			const getAdditionalData = (error: SimpleErrorInfo | ErrorInfo) => {
+				if (!error.data) {
+					return;
+				}
+
+				const additionalData = error.data['@ext'] || {};
+				Object.entries(error.data).forEach(([key, value]) => {
+					if (!key.startsWith('@')) {
+						additionalData[key] = value;
+					}
+				});
+
+				return additionalData;
+			};
+
+			const errorType = ex.type || 'Unknown';
+			return {
+				title: index === 0 ? 'Additional Data' : `${errorType} Additional Data`,
+				type: errorType,
+				message: ex.message,
+				data: getAdditionalData(ex)
+			};
+		})
+		.filter((errorData) => !!errorData.data);
+}
+
+function getErrorsFromEvent(event: PersistentEvent): SimpleErrorInfo[] | ErrorInfo[] {
+	const error = event.data?.['@error'];
+	if (error) {
+		return getErrors(error);
+	}
+
+	const simpleError = event.data?.['@simple_error'];
+	return getErrors(simpleError);
+}
+
 export function getErrors<T extends SimpleErrorInfo | ErrorInfo>(error: T | undefined): T[] {
 	const errors: T[] = [];
 	let current: T | undefined = error;

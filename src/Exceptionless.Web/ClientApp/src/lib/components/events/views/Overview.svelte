@@ -275,10 +275,12 @@
 {/if}
 
 {#if hasError}
-	<div class="flex justify-between items-center">
+	<div class="flex justify-between">
 		<h4 class="text-lg">Stack Trace</h4>
-		<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
-		></CopyToClipboardButton>
+		<div class="flex justify-end">
+			<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
+			></CopyToClipboardButton>
+		</div>
 	</div>
 	<div class="max-h-[150px] overflow-auto p-2 mt-2 border border-info text-xs">
 		{#if event.data?.['@error']}

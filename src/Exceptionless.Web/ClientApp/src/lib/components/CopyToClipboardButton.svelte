@@ -17,6 +17,7 @@
 
 <button
 	{title}
+	class="btn btn-xs"
 	use:clickToCopyAction={() => value || ''}
 	on:copy-done={handleCopyDone}
 	on:copy-error={handleCopyError}
