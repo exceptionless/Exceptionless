@@ -248,3 +248,7 @@ export function getStackTrace(event: PersistentEvent): string | undefined {
 	const simpleError = event.data?.['@simple_error'];
 	return simpleError?.stack_trace;
 }
+
+export function hasErrorOrSimpleError(event: PersistentEvent | null): boolean {
+	return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
+}
