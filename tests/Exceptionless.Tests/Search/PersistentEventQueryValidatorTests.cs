@@ -40,7 +40,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     [InlineData("data.Windows-identity:ejsmith", "idx.windows-identity-s:ejsmith", true, true)]
     [InlineData("data.age:(>30 AND <=40)", "idx.age-n:(>30 AND <=40)", true, true)]
     [InlineData("data.age:(+>=10 AND < 20)", "idx.age-n:(+>=10 AND <20)", true, true)]
-    [InlineData("data.age:(+>=10 +<20)", "idx.age-n:(+>=10 +<20)", true, true)]
+    [InlineData("data.age:(+>=10 +<20)", "idx.age-n:(+>=10 AND +<20)", true, true)]
     [InlineData("data.age:(->=10 AND < 20)", "idx.age-n:(->=10 AND <20)", true, true)]
     [InlineData("data.age:[10 TO *]", "idx.age-n:[10 TO *]", true, true)]
     [InlineData("data.age:[* TO 10]", "idx.age-n:[* TO 10]", true, true)]
