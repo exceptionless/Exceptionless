@@ -1,0 +1,120 @@
+<script lang="ts">
+	import type { PersistentEvent } from '$lib/models/api';
+	import DateTime from '$comp/formatters/DateTime.svelte';
+	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+	import {
+		getErrorData,
+		getErrorType,
+		getMessage,
+		getStackTrace
+	} from '$lib/helpers/persistent-event';
+	import SimpleStackTrace from '../SimpleStackTrace.svelte';
+	import StackTrace from '../StackTrace.svelte';
+	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
+	import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
+	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
+	import ExtendedDataItem from '../ExtendedDataItem.svelte';
+
+	export let event: PersistentEvent;
+
+	const errorData = getErrorData(event);
+	const errorType = getErrorType(event);
+	const stackTrace = getStackTrace(event);
+
+	const code = event.data?.['@error']?.code;
+	const message = getMessage(event);
+	const modules = event.data?.['@error']?.modules || [];
+	const submissionMethod = event.data?.['@submission_method'];
+</script>
+
+<table class="table table-zebra table-xs border">
+	<tbody>
+		<tr>
+			<th class="whitespace-nowrap">Occurred On</th>
+			<td
+				><ClickableDateFilter term="date" value={event.date}
+					><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}
+					></TimeAgo>)</ClickableDateFilter
+				></td
+			>
+		</tr>
+		<tr>
+			<th class="whitespace-nowrap">Error Type</th>
+			<td
+				><ClickableStringFilter term="error.type" value={errorType}
+					>{errorType}</ClickableStringFilter
+				></td
+			>
+		</tr>
+		{#if message}
+			<tr>
+				<th class="whitespace-nowrap">Message</th>
+				<td
+					><ClickableStringFilter term="error.message" value={message}
+						>{message}</ClickableStringFilter
+					></td
+				>
+			</tr>
+		{/if}
+		{#if code}
+			<tr>
+				<th class="whitespace-nowrap">Code</th>
+				<td
+					><ClickableVersionFilter term="error.code" value={code}
+						>{code}</ClickableVersionFilter
+					></td
+				>
+			</tr>
+		{/if}
+		{#if submissionMethod}
+			<tr>
+				<th class="whitespace-nowrap">Submission Method</th>
+				<td>{submissionMethod}</td>
+			</tr>
+		{/if}</tbody
+	>
+</table>
+
+<div class="flex justify-between">
+	<h4 class="text-lg">Stack Trace</h4>
+	<div class="flex justify-end">
+		<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
+		></CopyToClipboardButton>
+	</div>
+</div>
+<div class="overflow-auto p-2 mt-2 border border-info text-xs">
+	{#if event.data?.['@error']}
+		<StackTrace error={event.data['@error']} />
+	{:else}
+		<SimpleStackTrace error={event.data?.['@simple_error']} />
+	{/if}
+</div>
+
+{#each errorData as ed}
+	<div class="mt-2">
+		<ExtendedDataItem canPromote={false} title={ed.title} data={ed.data}></ExtendedDataItem>
+	</div>
+{/each}
+
+{#if modules.length}
+	<div class="flex justify-between items-center mt-4">
+		<h4 class="text-lg">Modules</h4>
+	</div>
+	<table class="table table-zebra table-xs border">
+		<thead>
+			<tr>
+				<th>Module Name</th>
+				<th>Version</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each modules as module}
+				<tr>
+					<th class="whitespace-nowrap">{module.name}</th>
+					<td>{module.version}</td>
+				</tr>
+			{/each}</tbody
+		>
+	</table>
+{/if}
