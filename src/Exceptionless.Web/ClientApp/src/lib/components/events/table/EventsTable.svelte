@@ -34,6 +34,7 @@
 	import { persisted } from 'svelte-local-storage-store';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import StackUsersSummaryColumn from './StackUsersSummaryColumn.svelte';
+	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -238,6 +239,8 @@
 
 	const dispatch = createEventDispatcher();
 </script>
+
+<CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
 
 <TableWithPaging
 	{table}
