@@ -28,11 +28,11 @@
 	const submissionMethod = event.data?.['@submission_method'];
 </script>
 
-<table class="table table-zebra table-xs border">
+<table class="table table-zebra table-xs border border-base-300">
 	<tbody>
 		<tr>
-			<th class="whitespace-nowrap">Occurred On</th>
-			<td
+			<th class="border border-base-300 whitespace-nowrap">Occurred On</th>
+			<td class="border border-base-300"
 				><ClickableDateFilter term="date" value={event.date}
 					><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}
 					></TimeAgo>)</ClickableDateFilter
@@ -40,8 +40,8 @@
 			>
 		</tr>
 		<tr>
-			<th class="whitespace-nowrap">Error Type</th>
-			<td
+			<th class="border border-base-300 whitespace-nowrap">Error Type</th>
+			<td class="border border-base-300"
 				><ClickableStringFilter term="error.type" value={errorType}
 					>{errorType}</ClickableStringFilter
 				></td
@@ -49,8 +49,8 @@
 		</tr>
 		{#if message}
 			<tr>
-				<th class="whitespace-nowrap">Message</th>
-				<td
+				<th class="border border-base-300 whitespace-nowrap">Message</th>
+				<td class="border border-base-300"
 					><ClickableStringFilter term="error.message" value={message}
 						>{message}</ClickableStringFilter
 					></td
@@ -59,8 +59,8 @@
 		{/if}
 		{#if code}
 			<tr>
-				<th class="whitespace-nowrap">Code</th>
-				<td
+				<th class="border border-base-300 whitespace-nowrap">Code</th>
+				<td class="border border-base-300"
 					><ClickableVersionFilter term="error.code" value={code}
 						>{code}</ClickableVersionFilter
 					></td
@@ -69,21 +69,21 @@
 		{/if}
 		{#if submissionMethod}
 			<tr>
-				<th class="whitespace-nowrap">Submission Method</th>
-				<td>{submissionMethod}</td>
+				<th class="border border-base-300 whitespace-nowrap">Submission Method</th>
+				<td class="border border-base-300">{submissionMethod}</td>
 			</tr>
 		{/if}</tbody
 	>
 </table>
 
-<div class="flex justify-between">
+<div class="flex justify-between mt-4 mb-2">
 	<h4 class="text-lg">Stack Trace</h4>
 	<div class="flex justify-end">
 		<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
 		></CopyToClipboardButton>
 	</div>
 </div>
-<div class="overflow-auto p-2 mt-2 border border-info text-xs">
+<div class="overflow-auto p-2 mt-2 border border-base-300 text-xs">
 	{#if event.data?.['@error']}
 		<StackTrace error={event.data['@error']} />
 	{:else}
@@ -98,21 +98,21 @@
 {/each}
 
 {#if modules.length}
-	<div class="flex justify-between items-center mt-4">
+	<div class="flex justify-between items-center mt-4 mb-2">
 		<h4 class="text-lg">Modules</h4>
 	</div>
-	<table class="table table-zebra table-xs border">
+	<table class="table table-zebra table-xs border border-base-300">
 		<thead>
 			<tr>
-				<th>Module Name</th>
-				<th>Version</th>
+				<th class="border border-base-300">Name</th>
+				<th class="border border-base-300">Version</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each modules as module}
 				<tr>
-					<th class="whitespace-nowrap">{module.name}</th>
-					<td>{module.version}</td>
+					<td class="border border-base-300 whitespace-nowrap">{module.name}</td>
+					<td class="border border-base-300">{module.version}</td>
 				</tr>
 			{/each}</tbody
 		>

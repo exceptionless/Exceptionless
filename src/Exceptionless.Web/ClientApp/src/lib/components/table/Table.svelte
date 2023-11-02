@@ -12,13 +12,13 @@
 	const dispatch = createEventDispatcher();
 
 	function getHeaderColumnClass(header: Header<TData, unknown>) {
-		return (header.column.columnDef.meta as { class?: string })?.class;
+		return `${(header.column.columnDef.meta as { class?: string })?.class || ''} border border-base-300`.trimStart();
 	}
 </script>
 
 <slot name="header" {table} />
 
-<table class="table table-zebra table-xs border">
+<table class="table table-zebra table-xs border border-base-300">
 	<thead>
 		{#each $table.getHeaderGroups() as headerGroup}
 			<tr>
@@ -50,7 +50,7 @@
 	</thead>
 	<tbody>
 		<tr class="hidden only:table-row text-center">
-			<td colspan={$table.getVisibleLeafColumns().length}>
+			<td class="border border-base-300" colspan={$table.getVisibleLeafColumns().length}>
 				No data was found with the current filter.
 			</td>
 		</tr>
@@ -60,7 +60,7 @@
 				on:click|preventDefault={() => dispatch('rowclick', row.original)}
 			>
 				{#each row.getVisibleCells() as cell}
-					<td>
+					<td class="border border-base-300">
 						<svelte:component
 							this={flexRender(cell.column.columnDef.cell, cell.getContext())}
 						/>

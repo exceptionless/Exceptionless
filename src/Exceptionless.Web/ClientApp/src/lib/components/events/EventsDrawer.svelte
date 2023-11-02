@@ -62,7 +62,7 @@
 		{/each}
 	</div>
 
-	<div class="border mt-2">
+	<div class="mt-4">
 		{#if activeTab === 'Overview'}
 			<Overview event={response.data}></Overview>
 		{:else if activeTab === 'Exception'}
@@ -70,7 +70,7 @@
 		{/if}
 	</div>
 
-	<div class="flex justify-center mt-2">
+	<div class="flex justify-center mt-4">
 		<a href="/event/{id}" class="btn btn-primary btn-sm">View Event</a>
 	</div>
 {:else if $loading}
