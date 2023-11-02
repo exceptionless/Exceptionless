@@ -133,7 +133,7 @@
 				</main>
 
 				<footer
-					class="footer h-10 items-center bg-base-300 p-2 text-base-content sticky bottom-0 border-t border-gray-300"
+					class="footer h-10 items-center bg-base-300 p-2 text-base-content sticky bottom-0 border-t border-base-300"
 				>
 					<div class="grid-flow-col items-center">
 						<p>

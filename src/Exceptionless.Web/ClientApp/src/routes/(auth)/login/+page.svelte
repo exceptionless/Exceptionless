@@ -51,7 +51,7 @@
 	<title>Log in</title>
 </svelte:head>
 
-<h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">Log in to your account</h2>
+<h2 class="mt-4 mb-2 text-center text-2xl font-bold leading-9 tracking-tight">Log in to your account</h2>
 <form on:submit|preventDefault={onLogin}>
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	<EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}

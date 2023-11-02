@@ -32,12 +32,12 @@
 			{/each}
 		</ul>
 	{:else if isObject}
-		<table class="table table-zebra table-xs border">
+		<table class="table table-zebra table-xs border border-base-300">
 			<tbody>
 				{#each Object.entries(value || {}) as [key, val] (key)}
 					<tr>
-						<th class="whitespace-nowrap">{key}</th>
-						<td><svelte:self value={val} /></td>
+						<th class="border border-base-300 whitespace-nowrap">{key}</th>
+						<td class="border border-base-300"><svelte:self value={val} /></td>
 					</tr>
 				{/each}
 			</tbody>

@@ -30,7 +30,7 @@
 	let json = data ? JSON.stringify(data, null, 2) : null;
 </script>
 
-<div class="flex justify-between">
+<div class="flex justify-between mt-4 mb-2">
 	<h4 class="text-lg">{title}</h4>
 	<div class="flex justify-end">
 		<CopyToClipboardButton value={json}></CopyToClipboardButton>
@@ -77,7 +77,7 @@
 
 {#if showRaw}
 	<pre
-		class="whitespace-pre-wrap break-words overflow-auto p-2 mt-2 border border-info text-xs"><code
+		class="whitespace-pre-wrap break-words overflow-auto p-2 mt-2 border border-base-300 text-xs"><code
 			>{json}</code
 		></pre>
 {:else}
