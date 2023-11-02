@@ -50,7 +50,14 @@ export function getMessage(event: PersistentEvent) {
 	return event.message;
 }
 
-export function getErrorData(event: PersistentEvent) {
+export type ErrorData = {
+	title: string;
+	type: string;
+	message: string;
+	data: Record<string, unknown>;
+};
+
+export function getErrorData(event: PersistentEvent): ErrorData[] {
 	const exceptions = getErrorsFromEvent(event);
 	return exceptions
 		.map((ex: SimpleErrorInfo | ErrorInfo, index: number) => {
@@ -66,18 +73,23 @@ export function getErrorData(event: PersistentEvent) {
 					}
 				});
 
-				return additionalData;
+				return Object.keys(additionalData).length > 0 ? additionalData : undefined;
 			};
 
+			const data = getAdditionalData(ex);
+			if (!data) {
+				return;
+			}
+
 			const errorType = ex.type || 'Unknown';
-			return {
+			return <ErrorData>{
 				title: index === 0 ? 'Additional Data' : `${errorType} Additional Data`,
 				type: errorType,
 				message: ex.message,
-				data: getAdditionalData(ex)
+				data: data
 			};
 		})
-		.filter((errorData) => !!errorData.data);
+		.filter((errorData) => !!errorData) as ErrorData[];
 }
 
 function getErrorsFromEvent(event: PersistentEvent): SimpleErrorInfo[] | ErrorInfo[] {
