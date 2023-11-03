@@ -10,11 +10,13 @@
 	import { writable, type Writable } from 'svelte/store';
 	import Error from './views/Error.svelte';
 	import Overview from './views/Overview.svelte';
+	import Environment from './views/Environment.svelte';
+	import Request from './views/Request.svelte';
 
 	export let id: string;
 	let response: FetchClientResponse<PersistentEvent>;
 
-	type TabType = 'Overview' | 'Exception' | string | null;
+	type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | string | null;
 	let activeTab: TabType = null;
 	const tabs: Writable<TabType[]> = writable([]);
 	tabs.subscribe((items) => {
@@ -35,6 +37,14 @@
 		const tabs = ['Overview'];
 		if (hasErrorOrSimpleError(event)) {
 			tabs.push('Exception');
+		}
+
+		if (event.data?.['@environment']) {
+			tabs.push('Environment');
+		}
+
+		if (event.data?.['@request']) {
+			tabs.push('Request');
 		}
 
 		return tabs;
@@ -67,6 +77,10 @@
 			<Overview event={response.data}></Overview>
 		{:else if activeTab === 'Exception'}
 			<Error event={response.data}></Error>
+		{:else if activeTab === 'Environment'}
+			<Environment event={response.data}></Environment>
+		{:else if activeTab === 'Request'}
+			<Request event={response.data}></Request>
 		{/if}
 	</div>
 
