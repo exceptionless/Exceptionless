@@ -12,7 +12,9 @@
 	const dispatch = createEventDispatcher();
 
 	function getHeaderColumnClass(header: Header<TData, unknown>) {
-		return `${(header.column.columnDef.meta as { class?: string })?.class || ''} border border-base-300`.trimStart();
+		return `${
+			(header.column.columnDef.meta as { class?: string })?.class || ''
+		} border border-base-300`.trimStart();
 	}
 </script>
 
