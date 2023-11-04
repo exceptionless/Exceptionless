@@ -66,7 +66,7 @@
 		{#if requestUrl}
 			<tr>
 				<th class="border border-base-300 whitespace-nowrap">URL</th>
-				<td class="border border-base-300">
+				<td class="border border-base-300 flex items-center gap-x-1">
 					<ClickableStringFilter term="path" value={requestUrlPath}
 						>{requestUrl}</ClickableStringFilter
 					>
