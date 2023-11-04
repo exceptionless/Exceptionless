@@ -33,16 +33,11 @@
 	const stackTrace = hasError ? getStackTrace(event) : null;
 
 	const isSessionStart = event.type === 'session';
-	//let referenceId = isSessionStart ? event.reference_id : null;
 
 	const message = getMessage(event);
 	let references: { id: string; name: string }[] = [];
 	const referencePrefix = '@ref:';
 	Object.entries(event.data || {}).forEach(([key, value]) => {
-		if (key === '@ref:session') {
-			//referenceId = value as string;
-		}
-
 		if (key.startsWith(referencePrefix)) {
 			references.push({ id: value as string, name: key.slice(5) });
 		}
