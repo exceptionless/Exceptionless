@@ -166,7 +166,7 @@
 		{:else if activeTab === 'Extended Data'}
 			<ExtendedData event={$eventResponse.data} project={$projectResponse.data}
 			></ExtendedData>
-		{:else}
+		{:else if !!activeTab}
 			<PromotedExtendedData title={activeTab} event={$eventResponse.data}
 			></PromotedExtendedData>
 		{/if}

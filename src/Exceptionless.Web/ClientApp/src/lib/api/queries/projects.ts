@@ -1,7 +1,7 @@
-import { createQuery } from '@tanstack/svelte-query';
-import type { ViewProject } from '$lib/models/api';
-import { FetchClient, type ProblemDetails } from '$api/FetchClient';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 import { derived, readable, type Readable } from 'svelte/store';
+import type { ViewProject } from '$lib/models/api';
+import { FetchClient, type FetchClientResponse, type ProblemDetails } from '$api/FetchClient';
 
 export const queryKey: string = 'Project';
 
@@ -25,4 +25,48 @@ export function getProjectByIdQuery(id: string | Readable<string | null>) {
 			}
 		}))
 	);
+}
+
+export function mutatePromoteTab(id: string) {
+	const client = useQueryClient();
+	return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
+		mutationKey: [queryKey, id],
+		mutationFn: async ({ name }) => {
+			const api = new FetchClient();
+			const response = await api.post(`projects/${id}/promotedtabs`, undefined, {
+				params: { name }
+			});
+
+			if (response.ok) {
+				return response;
+			}
+
+			throw response.problem;
+		},
+		onSettled: () => {
+			client.invalidateQueries({ queryKey: [queryKey, id] });
+		}
+	});
+}
+
+export function mutateDemoteTab(id: string) {
+	const client = useQueryClient();
+	return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
+		mutationKey: [queryKey, id],
+		mutationFn: async ({ name }) => {
+			const api = new FetchClient();
+			const response = await api.delete(`projects/${id}/promotedtabs`, {
+				params: { name }
+			});
+
+			if (response.ok) {
+				return response;
+			}
+
+			throw response.problem;
+		},
+		onSettled: () => {
+			client.invalidateQueries({ queryKey: [queryKey, id] });
+		}
+	});
 }
