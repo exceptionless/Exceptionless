@@ -89,7 +89,7 @@
 		{#if request.referrer}
 			<tr>
 				<th class="border border-base-300 whitespace-nowrap">Referrer</th>
-				<td class="border border-base-300"
+				<td class="border border-base-300 flex items-center gap-x-1"
 					>{request.referrer}
 					<a
 						href={request.referrer}
