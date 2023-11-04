@@ -3,7 +3,7 @@
 	import ObjectDump from '$comp/ObjectDump.svelte';
 
 	export let canPromote: boolean = true;
-	export let data: Record<string, unknown>;
+	export let data: unknown;
 	export let demoteTab: () => void = () => {};
 	export let excludedKeys: string[] = [];
 	export let isPromoted: boolean = false;
@@ -12,7 +12,7 @@
 
 	let showRaw = false;
 
-	function getData(data: Record<string, unknown>, exclusions: string[]): Record<string, unknown> {
+	function getData(data: unknown, exclusions: string[]): unknown {
 		if (typeof data !== 'object' || !(data instanceof Object)) {
 			return data;
 		}
@@ -27,12 +27,27 @@
 	}
 
 	let filteredData = getData(data, excludedKeys);
-	let hasFilteredData =
-		typeof filteredData !== 'undefined' && Object.keys(filteredData).length > 0;
+	let hasData = hasFilteredData(filteredData);
 	let json = data ? JSON.stringify(data, null, 2) : null;
+
+	function hasFilteredData(data: unknown): boolean {
+		if (data === undefined || data === null) {
+			return false;
+		}
+
+		if (Array.isArray(data)) {
+			return data.length > 0;
+		}
+
+		if (Object.prototype.toString.call(data) === '[object Object]') {
+			return Object.keys(data).length > 0;
+		}
+
+		return true;
+	}
 </script>
 
-{#if hasFilteredData}
+{#if hasData}
 	<div class="flex justify-between mt-4 mb-2">
 		<h4 class="text-lg">{title}</h4>
 		<div class="flex justify-end">

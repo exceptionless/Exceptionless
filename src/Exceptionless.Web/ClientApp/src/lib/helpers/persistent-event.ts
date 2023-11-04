@@ -304,3 +304,18 @@ export function getStackTrace(event: PersistentEvent): string | undefined {
 export function hasErrorOrSimpleError(event: PersistentEvent | null): boolean {
 	return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
 }
+
+export function getExtendedDataItems(event: PersistentEvent): Map<string, unknown> {
+	const items: Map<string, unknown> = new Map();
+
+	for (const [key, data] of Object.entries(event.data ?? {})) {
+		const knownDataKeys = ['haserror', 'sessionend'];
+		if (key.startsWith('@') || knownDataKeys.includes(key)) {
+			continue;
+		}
+
+		items.set(key, data);
+	}
+
+	return items;
+}
