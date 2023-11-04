@@ -61,6 +61,22 @@
 	const requestUrl = getRequestInfoUrl(event);
 	const requestUrlPath = getRequestInfoPath(event);
 	const version = event.data?.['@version'];
+
+	function getSessionStartDuration(): Date | number | string | undefined {
+		if (event.data?.sessionend) {
+			if (event.value) {
+				return event.value * 1000;
+			}
+
+			if (event.date) {
+				return new Date(event.data.sessionend).getTime() - new Date(event.date).getTime();
+			}
+
+			throw new Error('Completed session start event has no value or date');
+		}
+
+		return event.date;
+	}
 </script>
 
 <table class="table table-zebra table-xs border border-base-300">
@@ -79,9 +95,12 @@
 				<th class="border border-base-300 whitespace-nowrap">Duration</th>
 				<td class="border border-base-300">
 					{#if !event.data?.sessionend}
-						<span class="text-green-500">•</span>
+						<span
+							class="bg-green-500 rounded-full inline-flex items-center w-2 h-2 animate-pulse"
+							title="Online"
+						></span>
 					{/if}
-					<Duration value={event.date}></Duration>
+					<Duration value={getSessionStartDuration()}></Duration>
 					{#if event.data?.sessionend}
 						(ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
 					{/if}

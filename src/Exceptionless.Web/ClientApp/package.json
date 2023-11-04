@@ -53,6 +53,7 @@
 		"class-validator": "^0.14.0",
 		"daisyui": "^3.9.4",
 		"oidc-client-ts": "^2.4.0",
+		"pretty-ms": "^8.0.0",
 		"svelte-legos": "^0.2.2",
 		"svelte-local-storage-store": "^0.6.4",
 		"svelte-time": "^0.8.0",
