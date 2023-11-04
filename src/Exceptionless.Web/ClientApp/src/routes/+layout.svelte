@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+
 	import { Toasts } from 'svoast';
 	import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient';
 	import { accessToken } from '$api/auth';
@@ -6,8 +9,13 @@
 
 	setDefaultBaseUrl('api/v2');
 	setAccessTokenStore(accessToken);
+
+	const queryClient = new QueryClient();
 </script>
 
-<slot />
+<QueryClientProvider client={queryClient}>
+	<slot />
+	<SvelteQueryDevtools />
+</QueryClientProvider>
 
 <Toasts position="bottom-right" />

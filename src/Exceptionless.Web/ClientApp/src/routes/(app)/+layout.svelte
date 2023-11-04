@@ -10,6 +10,7 @@
 
 	import logo from '$lib/assets/exceptionless-logo.png';
 	import { drawerComponent, drawerComponentProps, showDrawer } from '$lib/stores/drawer';
+	import { useQueryClient } from '@tanstack/svelte-query';
 
 	isAuthenticated.subscribe(async (authenticated) => {
 		if (!authenticated) {
@@ -23,6 +24,7 @@
 		if (ctx.response && ctx.response.status === 401) accessToken.set(null);
 	});
 
+	const queryClient = useQueryClient();
 	async function onMessage(message: MessageEvent) {
 		const data: { type: WebSocketMessageType; message: unknown } = message.data
 			? JSON.parse(message.data)
@@ -40,7 +42,7 @@
 		);
 
 		if (isEntityChangedType(data)) {
-			//await queryClient.invalidateQueries([data.message.type]);
+			await queryClient.invalidateQueries({ queryKey: [data.message.type] });
 		}
 
 		// This event is fired when a user is added or removed from an organization.
