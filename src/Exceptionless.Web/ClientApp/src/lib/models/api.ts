@@ -71,6 +71,7 @@ export interface IPersistentEventData extends Record<string, unknown> {
 	'@user'?: UserInfo;
 	'@user_description'?: UserDescription;
 	'@version'?: string;
+	haserror?: boolean;
 	sessionend?: string;
 }
 

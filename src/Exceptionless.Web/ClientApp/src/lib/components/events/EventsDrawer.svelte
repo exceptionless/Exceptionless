@@ -5,18 +5,28 @@
 		globalLoading as loading
 	} from '$api/FetchClient';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
-	import { hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
+	import { getExtendedDataItems, hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
 	import type { PersistentEvent } from '$lib/models/api';
 	import { writable, type Writable } from 'svelte/store';
 	import Error from './views/Error.svelte';
 	import Overview from './views/Overview.svelte';
 	import Environment from './views/Environment.svelte';
 	import Request from './views/Request.svelte';
+	import TraceLog from './views/TraceLog.svelte';
+	import ExtendedData from './views/ExtendedData.svelte';
 
 	export let id: string;
 	let response: FetchClientResponse<PersistentEvent>;
 
-	type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | string | null;
+	type TabType =
+		| 'Overview'
+		| 'Exception'
+		| 'Environment'
+		| 'Request'
+		| 'Trace Log'
+		| 'Extended Data'
+		| string
+		| null;
 	let activeTab: TabType = null;
 	const tabs: Writable<TabType[]> = writable([]);
 	tabs.subscribe((items) => {
@@ -45,6 +55,15 @@
 
 		if (event.data?.['@request']) {
 			tabs.push('Request');
+		}
+
+		if (event.data?.['@trace']) {
+			tabs.push('Trace Log');
+		}
+
+		const extendedDataItems = getExtendedDataItems(event);
+		if (extendedDataItems.size > 0) {
+			tabs.push('Extended Data');
 		}
 
 		return tabs;
@@ -81,6 +100,10 @@
 			<Environment event={response.data}></Environment>
 		{:else if activeTab === 'Request'}
 			<Request event={response.data}></Request>
+		{:else if activeTab === 'Trace Log'}
+			<TraceLog event={response.data}></TraceLog>
+		{:else if activeTab === 'Extended Data'}
+			<ExtendedData event={response.data}></ExtendedData>
 		{/if}
 	</div>
 
