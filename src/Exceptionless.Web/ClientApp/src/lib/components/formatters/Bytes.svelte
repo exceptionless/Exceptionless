@@ -2,7 +2,7 @@
 	export let value: number | string | null = null;
 
 	const parsedValue = typeof value === 'number' ? value : parseFloat(value ?? '');
-	const byteValueNumberFormatter = Intl.NumberFormat(undefined, {
+	const byteValueNumberFormatter = new Intl.NumberFormat(undefined, {
 		notation: 'compact',
 		style: 'unit',
 		unit: 'byte',
