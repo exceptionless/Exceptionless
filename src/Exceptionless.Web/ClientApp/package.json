@@ -23,15 +23,15 @@
 	"devDependencies": {
 		"@playwright/test": "^1.39.0",
 		"@sveltejs/adapter-static": "^2.0.3",
-		"@sveltejs/kit": "^1.27.2",
+		"@sveltejs/kit": "^1.27.3",
 		"@sveltejs/vite-plugin-svelte": "^2.4.6",
 		"@typescript-eslint/eslint-plugin": "^6.9.1",
 		"@typescript-eslint/parser": "^6.9.1",
 		"autoprefixer": "^10.4.16",
 		"cross-env": "^7.0.3",
-		"eslint": "^8.52.0",
+		"eslint": "^8.53.0",
 		"eslint-config-prettier": "^9.0.0",
-		"eslint-plugin-svelte": "^2.34.0",
+		"eslint-plugin-svelte": "^2.34.1",
 		"npm-run-all": "^4.1.5",
 		"postcss": "^8.4.31",
 		"prettier": "^3.0.3",
@@ -48,6 +48,8 @@
 	"dependencies": {
 		"@exceptionless/browser": "^3.0.5",
 		"@iconify-json/mdi": "^1.1.55",
+		"@tanstack/svelte-query": "^5.6.1",
+		"@tanstack/svelte-query-devtools": "^5.6.1",
 		"@tanstack/svelte-table": "^8.10.7",
 		"@web3-storage/parse-link-header": "^3.1.0",
 		"class-validator": "^0.14.0",
@@ -59,7 +61,7 @@
 		"svelte-time": "^0.8.0",
 		"svoast": "^2.3.0",
 		"tailwindcss": "^3.3.5",
-		"unplugin-icons": "^0.17.1"
+		"unplugin-icons": "^0.17.3"
 	},
 	"type": "module"
 }

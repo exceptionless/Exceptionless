@@ -1,12 +1,7 @@
 <script lang="ts">
-	import {
-		type FetchClientResponse,
-		globalFetchClient as api,
-		globalLoading as loading
-	} from '$api/FetchClient';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import { getExtendedDataItems, hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
-	import type { PersistentEvent } from '$lib/models/api';
+	import type { PersistentEvent, ViewProject } from '$lib/models/api';
 	import { writable, type Writable } from 'svelte/store';
 	import Error from './views/Error.svelte';
 	import Overview from './views/Overview.svelte';
@@ -14,9 +9,15 @@
 	import Request from './views/Request.svelte';
 	import TraceLog from './views/TraceLog.svelte';
 	import ExtendedData from './views/ExtendedData.svelte';
+	import { getEventByIdQuery } from '$api/queries/events';
+	import DateTime from '$comp/formatters/DateTime.svelte';
+	import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
+	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+	import { getProjectByIdQuery } from "$api/queries/projects";
+	import { getStackByIdQuery } from "$api/queries/stacks";
+	import ClickableStringFilter from "$comp/filters/ClickableStringFilter.svelte";
 
 	export let id: string;
-	let response: FetchClientResponse<PersistentEvent>;
 
 	type TabType =
 		| 'Overview'
@@ -39,7 +40,7 @@
 		}
 	});
 
-	function getTabs(event?: PersistentEvent | null): TabType[] {
+	function getTabs(event?: PersistentEvent | null, project?: ViewProject): TabType[] {
 		if (!event) {
 			return [];
 		}
@@ -69,16 +70,64 @@
 		return tabs;
 	}
 
-	async function loadData() {
-		response = await api.getJSON<PersistentEvent>(`events/${id}`);
-		tabs.set(getTabs(response?.data));
-	}
+    const projectId = writable<string | null>(null);
+    const projectResponse = getProjectByIdQuery(projectId);
 
-	loadData();
+    const stackId = writable<string | null>(null);
+    const stackResponse = getStackByIdQuery(stackId);
+
+	const eventResponse = getEventByIdQuery(id);
+	eventResponse.subscribe((response) => {
+        projectId.set(response.data?.project_id ?? null);
+        stackId.set(response.data?.stack_id ?? null);
+		tabs.set(getTabs(response.data, $projectResponse.data));
+	});
+
+	projectResponse.subscribe((response) => {
+		tabs.set(getTabs($eventResponse.data, response.data));
+	});
+
 </script>
 
-{#if response?.data}
+{#if $eventResponse.isLoading}
+	<p>Loading...</p>
+{:else if $eventResponse.isSuccess}
 	<h1 class="text-xl">Event Details</h1>
+
+	<table class="table table-zebra table-xs border border-base-300 mt-4">
+		<tbody>
+			<tr>
+				<th class="border border-base-300 whitespace-nowrap">Occurred On</th>
+				<td class="border border-base-300"
+					><ClickableDateFilter term="date" value={$eventResponse.data.date}
+						><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo
+							value={$eventResponse.data.date}
+						></TimeAgo>)</ClickableDateFilter
+					></td
+				>
+			</tr>
+            {#if $projectResponse.data}
+                <tr>
+                    <th class="border border-base-300 whitespace-nowrap">Project</th>
+                    <td class="border border-base-300"
+                        ><ClickableStringFilter term="project" value={$projectResponse.data.id}
+                            >{$projectResponse.data.name}</ClickableStringFilter
+                        ></td
+                    >
+                </tr>
+            {/if}
+            {#if $stackResponse.data}
+                <tr>
+                    <th class="border border-base-300 whitespace-nowrap">Stack</th>
+                    <td class="border border-base-300"
+                        ><ClickableStringFilter term="stack" value={$stackResponse.data.id}
+                            >{$stackResponse.data.title}</ClickableStringFilter
+                        ></td
+                    >
+                </tr>
+            {/if}
+		</tbody>
+	</table>
 
 	<div class="tabs mt-4">
 		{#each $tabs as tab}
@@ -93,25 +142,23 @@
 
 	<div class="mt-4">
 		{#if activeTab === 'Overview'}
-			<Overview event={response.data}></Overview>
+			<Overview event={$eventResponse.data}></Overview>
 		{:else if activeTab === 'Exception'}
-			<Error event={response.data}></Error>
+			<Error event={$eventResponse.data}></Error>
 		{:else if activeTab === 'Environment'}
-			<Environment event={response.data}></Environment>
+			<Environment event={$eventResponse.data}></Environment>
 		{:else if activeTab === 'Request'}
-			<Request event={response.data}></Request>
+			<Request event={$eventResponse.data}></Request>
 		{:else if activeTab === 'Trace Log'}
-			<TraceLog event={response.data}></TraceLog>
+			<TraceLog logs={$eventResponse.data.data?.['@trace']}></TraceLog>
 		{:else if activeTab === 'Extended Data'}
-			<ExtendedData event={response.data}></ExtendedData>
+			<ExtendedData event={$eventResponse.data}></ExtendedData>
 		{/if}
 	</div>
 
 	<div class="flex justify-center mt-4">
 		<a href="/event/{id}" class="btn btn-primary btn-sm">View Event</a>
 	</div>
-{:else if $loading}
-	<p>Loading...</p>
 {:else}
-	<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
+	<ErrorMessage message={$eventResponse.error?.errors.general}></ErrorMessage>
 {/if}

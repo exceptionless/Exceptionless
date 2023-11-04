@@ -16,7 +16,7 @@ import type {
 	UserInfo
 } from './client-data';
 
-export { Login, ViewProject, TokenResult } from './api.generated';
+export { Login, ViewProject, Stack, TokenResult } from './api.generated';
 
 export type PersistentEventKnownTypes =
 	| '404'
