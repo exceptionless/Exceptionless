@@ -99,6 +99,28 @@
 	projectResponse.subscribe((response) => {
 		tabs.set(getTabs($eventResponse.data, response.data));
 	});
+
+
+	function onPromoted({ detail }: CustomEvent<string>): void {
+        tabs.update((items) => {
+            items.splice(items.length - 1, 0, detail);
+            return items;
+        });
+        activeTab = detail;
+	}
+
+	function onDemoted({ detail }: CustomEvent<string>): void {
+        tabs.update((items) => {
+            items.splice(items.indexOf(detail), 1);
+
+            if (!items.includes('Extended Data')) {
+                items.push('Extended Data');
+            }
+
+            return items;
+        });
+        activeTab = 'Extended Data';
+	}
 </script>
 
 {#if $eventResponse.isLoading}
@@ -164,10 +186,10 @@
 		{:else if activeTab === 'Trace Log'}
 			<TraceLog logs={$eventResponse.data.data?.['@trace']}></TraceLog>
 		{:else if activeTab === 'Extended Data'}
-			<ExtendedData event={$eventResponse.data} project={$projectResponse.data}
+			<ExtendedData event={$eventResponse.data} project={$projectResponse.data} on:promoted={onPromoted}
 			></ExtendedData>
 		{:else if !!activeTab}
-			<PromotedExtendedData title={activeTab} event={$eventResponse.data}
+			<PromotedExtendedData title={activeTab} event={$eventResponse.data} on:demoted={onDemoted}
 			></PromotedExtendedData>
 		{/if}
 	</div>

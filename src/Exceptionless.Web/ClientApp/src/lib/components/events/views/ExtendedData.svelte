@@ -4,16 +4,20 @@
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 	import { getExtendedDataItems } from '$lib/helpers/persistent-event';
 	import { mutatePromoteTab } from '$api/queries/projects';
+	import { createEventDispatcher } from "svelte";
 
 	export let event: PersistentEvent;
 	export let project: ViewProject | undefined;
 
-	const items = getExtendedDataItems(event, project);
+	const dispatch = createEventDispatcher();
+	$: items = getExtendedDataItems(event, project);
 
 	const promoteTab = mutatePromoteTab(event.project_id ?? '');
 	promoteTab.subscribe((response) => {
         if (response.isError) {
 		    toast.error(`An error occurred promoting tab ${response.variables.name}`);
+        } else if (response.isSuccess) {
+            dispatch('promoted', response.variables.name);
         }
 	});
 
