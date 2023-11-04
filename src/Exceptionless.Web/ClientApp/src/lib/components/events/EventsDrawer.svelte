@@ -13,9 +13,10 @@
 	import DateTime from '$comp/formatters/DateTime.svelte';
 	import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-	import { getProjectByIdQuery } from "$api/queries/projects";
-	import { getStackByIdQuery } from "$api/queries/stacks";
-	import ClickableStringFilter from "$comp/filters/ClickableStringFilter.svelte";
+	import { getProjectByIdQuery } from '$api/queries/projects';
+	import { getStackByIdQuery } from '$api/queries/stacks';
+	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+	import PromotedExtendedData from './views/PromotedExtendedData.svelte';
 
 	export let id: string;
 
@@ -62,31 +63,42 @@
 			tabs.push('Trace Log');
 		}
 
-		const extendedDataItems = getExtendedDataItems(event);
-		if (extendedDataItems.size > 0) {
-			tabs.push('Extended Data');
+		if (project) {
+			const extendedDataItems = getExtendedDataItems(event, project);
+			let hasExtendedData = false;
+
+			for (const item of extendedDataItems) {
+				if (item.promoted) {
+					tabs.push(item.title);
+				} else {
+					hasExtendedData = true;
+				}
+			}
+
+			if (hasExtendedData) {
+				tabs.push('Extended Data');
+			}
 		}
 
 		return tabs;
 	}
 
-    const projectId = writable<string | null>(null);
-    const projectResponse = getProjectByIdQuery(projectId);
+	const projectId = writable<string | null>(null);
+	const projectResponse = getProjectByIdQuery(projectId);
 
-    const stackId = writable<string | null>(null);
-    const stackResponse = getStackByIdQuery(stackId);
+	const stackId = writable<string | null>(null);
+	const stackResponse = getStackByIdQuery(stackId);
 
 	const eventResponse = getEventByIdQuery(id);
 	eventResponse.subscribe((response) => {
-        projectId.set(response.data?.project_id ?? null);
-        stackId.set(response.data?.stack_id ?? null);
+		projectId.set(response.data?.project_id ?? null);
+		stackId.set(response.data?.stack_id ?? null);
 		tabs.set(getTabs(response.data, $projectResponse.data));
 	});
 
 	projectResponse.subscribe((response) => {
 		tabs.set(getTabs($eventResponse.data, response.data));
 	});
-
 </script>
 
 {#if $eventResponse.isLoading}
@@ -106,26 +118,26 @@
 					></td
 				>
 			</tr>
-            {#if $projectResponse.data}
-                <tr>
-                    <th class="border border-base-300 whitespace-nowrap">Project</th>
-                    <td class="border border-base-300"
-                        ><ClickableStringFilter term="project" value={$projectResponse.data.id}
-                            >{$projectResponse.data.name}</ClickableStringFilter
-                        ></td
-                    >
-                </tr>
-            {/if}
-            {#if $stackResponse.data}
-                <tr>
-                    <th class="border border-base-300 whitespace-nowrap">Stack</th>
-                    <td class="border border-base-300"
-                        ><ClickableStringFilter term="stack" value={$stackResponse.data.id}
-                            >{$stackResponse.data.title}</ClickableStringFilter
-                        ></td
-                    >
-                </tr>
-            {/if}
+			{#if $projectResponse.data}
+				<tr>
+					<th class="border border-base-300 whitespace-nowrap">Project</th>
+					<td class="border border-base-300"
+						><ClickableStringFilter term="project" value={$projectResponse.data.id}
+							>{$projectResponse.data.name}</ClickableStringFilter
+						></td
+					>
+				</tr>
+			{/if}
+			{#if $stackResponse.data}
+				<tr>
+					<th class="border border-base-300 whitespace-nowrap">Stack</th>
+					<td class="border border-base-300"
+						><ClickableStringFilter term="stack" value={$stackResponse.data.id}
+							>{$stackResponse.data.title}</ClickableStringFilter
+						></td
+					>
+				</tr>
+			{/if}
 		</tbody>
 	</table>
 
@@ -152,7 +164,11 @@
 		{:else if activeTab === 'Trace Log'}
 			<TraceLog logs={$eventResponse.data.data?.['@trace']}></TraceLog>
 		{:else if activeTab === 'Extended Data'}
-			<ExtendedData event={$eventResponse.data}></ExtendedData>
+			<ExtendedData event={$eventResponse.data} project={$projectResponse.data}
+			></ExtendedData>
+		{:else}
+			<PromotedExtendedData title={activeTab} event={$eventResponse.data}
+			></PromotedExtendedData>
 		{/if}
 	</div>
 
