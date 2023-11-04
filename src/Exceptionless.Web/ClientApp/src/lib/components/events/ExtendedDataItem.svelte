@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MenuDownIcon from '~icons/mdi/menu-down';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 	import ObjectDump from '$comp/ObjectDump.svelte';
 
@@ -48,47 +49,44 @@
 </script>
 
 {#if hasData}
-	<div class="flex justify-between mt-4 mb-2">
+	<div class="flex justify-between mb-2">
 		<h4 class="text-lg">{title}</h4>
 		<div class="flex justify-end">
 			<CopyToClipboardButton value={json}></CopyToClipboardButton>
 			<div class="relative inline-block text-left pl-1">
-				<button
-					type="button"
-					class="btn btn-xs btn-outline btn-neutral"
-					on:click|preventDefault={() => (showRaw = !showRaw)}
-				>
-					Toggle View
-				</button>
-
-				{#if canPromote}
-					<div
-						class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-						role="menu"
-						aria-orientation="vertical"
-						aria-labelledby="options-menu"
+				<div class="join">
+					<button
+						class="btn btn-xs btn-outline btn-neutral join-item"
+						on:click|preventDefault={() => (showRaw = !showRaw)}
 					>
-						<div class="py-1" role="none">
-							{#if !isPromoted}
-								<button
-									class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-									role="menuitem"
-									on:click|preventDefault={promoteTab}
-								>
-									Promote to Tab
-								</button>
-							{:else}
-								<button
-									class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-									role="menuitem"
-									on:click|preventDefault={demoteTab}
-								>
-									Demote Tab
-								</button>
-							{/if}
+						Toggle View
+					</button>
+
+					{#if canPromote}
+						<div class="dropdown dropdown-bottom dropdown-end">
+							<button
+								tabindex="0"
+								class="btn btn-xs btn-outline btn-neutral btn-square join-item"
+								><MenuDownIcon /></button
+							>
+							<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+							<div
+								tabindex="0"
+								class="dropdown-content z-[1] menu shadow bg-base-100 rounded-box w-32 p-2"
+							>
+								{#if !isPromoted}
+									<button on:click|preventDefault={promoteTab}>
+										Promote to Tab
+									</button>
+								{:else}
+									<button on:click|preventDefault={demoteTab}>
+										Demote Tab
+									</button>
+								{/if}
+							</div>
 						</div>
-					</div>
-				{/if}
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>

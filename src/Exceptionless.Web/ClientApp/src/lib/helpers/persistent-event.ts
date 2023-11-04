@@ -1,4 +1,4 @@
-import type { PersistentEvent } from '$lib/models/api';
+import type { PersistentEvent, ViewProject } from '$lib/models/api';
 import type {
 	ErrorInfo,
 	ParameterInfo,
@@ -305,8 +305,17 @@ export function hasErrorOrSimpleError(event: PersistentEvent | null): boolean {
 	return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
 }
 
-export function getExtendedDataItems(event: PersistentEvent): Map<string, unknown> {
-	const items: Map<string, unknown> = new Map();
+export type ExtendedDataItem = {
+	title: string;
+	promoted?: boolean;
+	data: unknown;
+};
+
+export function getExtendedDataItems(
+	event: PersistentEvent,
+	project?: ViewProject
+): ExtendedDataItem[] {
+	const items: ExtendedDataItem[] = [];
 
 	for (const [key, data] of Object.entries(event.data ?? {})) {
 		const knownDataKeys = ['haserror', 'sessionend'];
@@ -314,7 +323,8 @@ export function getExtendedDataItems(event: PersistentEvent): Map<string, unknow
 			continue;
 		}
 
-		items.set(key, data);
+		const promoted = project?.promoted_tabs?.includes(key);
+		items.push({ title: key, promoted, data });
 	}
 
 	return items;
