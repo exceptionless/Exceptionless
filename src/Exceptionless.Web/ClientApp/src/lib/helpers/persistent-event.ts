@@ -323,7 +323,7 @@ export function getExtendedDataItems(
 			continue;
 		}
 
-		const promoted = project?.promoted_tabs?.includes(key);
+		const promoted = project?.promoted_tabs?.includes(key) ?? false;
 		items.push({ title: key, promoted, data });
 	}
 
