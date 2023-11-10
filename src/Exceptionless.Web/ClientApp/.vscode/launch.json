@@ -19,7 +19,7 @@
 			"type": "msedge",
 			"request": "launch",
 			"name": "Web (Edge)",
-			"url": "http://localhost:5173",
+			"url": "http://localhost:5173/next",
 			"webRoot": "${workspaceFolder}",
 			"preLaunchTask": "npm run dev"
 		},
@@ -27,7 +27,7 @@
 			"type": "msedge",
 			"request": "launch",
 			"name": "Web Dev Api (Edge)",
-			"url": "http://localhost:5173",
+			"url": "http://localhost:5173/next",
 			"webRoot": "${workspaceFolder}",
 			"preLaunchTask": "npm run dev:api"
 		},
@@ -35,7 +35,7 @@
 			"type": "chrome",
 			"request": "launch",
 			"name": "Web (Chrome)",
-			"url": "http://localhost:5173",
+			"url": "http://localhost:5173/next",
 			"webRoot": "${workspaceFolder}",
 			"preLaunchTask": "npm run dev"
 		},
@@ -43,7 +43,7 @@
 			"type": "chrome",
 			"request": "launch",
 			"name": "Web Dev Api (Chrome)",
-			"url": "http://localhost:5173",
+			"url": "http://localhost:5173/next",
 			"webRoot": "${workspaceFolder}",
 			"preLaunchTask": "npm run dev:api"
 		}

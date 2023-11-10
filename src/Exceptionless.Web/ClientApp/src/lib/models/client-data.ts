@@ -19,6 +19,17 @@ export interface EnvironmentInfo {
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | string;
 
+export interface IRequestInfoInfoData extends Record<string, unknown> {
+	'@browser'?: string;
+	'@browser_version'?: string;
+	'@browser_major_version'?: string;
+	'@device'?: string;
+	'@os'?: string;
+	'@os_version'?: string;
+	'@os_major_version'?: string;
+	'@is_bot'?: boolean;
+}
+
 export interface RequestInfo {
 	user_agent?: string;
 	http_method?: string;
@@ -32,7 +43,7 @@ export interface RequestInfo {
 	cookies?: Record<string, string>;
 	post_data?: Record<string, unknown>;
 	query_string?: Record<string, string>;
-	data?: Record<string, unknown>;
+	data?: IRequestInfoInfoData;
 }
 
 export interface ISimpleErrorInfoData extends Record<string, unknown> {

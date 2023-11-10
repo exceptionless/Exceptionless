@@ -5,4 +5,4 @@
 	export let type: WebSocketMessageType;
 </script>
 
-<CustomEventMessage {type} on:message}></CustomEventMessage>
+<CustomEventMessage {type} on:message></CustomEventMessage>

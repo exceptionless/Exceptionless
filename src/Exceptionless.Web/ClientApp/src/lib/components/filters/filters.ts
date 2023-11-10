@@ -11,9 +11,7 @@ export class BooleanFilter implements IFilter {
 		public value?: boolean
 	) {}
 
-	public get type(): string {
-		return 'boolean';
-	}
+	public type: string = 'boolean';
 
 	public toFilter(): string {
 		if (this.value === undefined) {
@@ -30,9 +28,7 @@ export class DateFilter implements IFilter {
 		public value?: Date | string
 	) {}
 
-	public get type(): string {
-		return 'date';
-	}
+	public type: string = 'date';
 
 	public toFilter(): string {
 		if (this.value === undefined) {
@@ -46,9 +42,8 @@ export class DateFilter implements IFilter {
 
 export class KeywordFilter implements IFilter {
 	constructor(public keyword: string) {}
-	public get type(): string {
-		return 'keyword';
-	}
+
+	public type: string = 'keyword';
 
 	public toFilter(): string {
 		return this.keyword;
@@ -61,9 +56,7 @@ export class NumberFilter implements IFilter {
 		public value?: number
 	) {}
 
-	public get type(): string {
-		return 'number';
-	}
+	public type: string = 'number';
 
 	public toFilter(): string {
 		if (this.value === undefined) {
@@ -77,9 +70,7 @@ export class NumberFilter implements IFilter {
 export class ReferenceFilter implements IFilter {
 	constructor(public referenceId: string) {}
 
-	public get type(): string {
-		return 'reference';
-	}
+	public type: string = 'reference';
 
 	public toFilter(): string {
 		return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
@@ -89,9 +80,7 @@ export class ReferenceFilter implements IFilter {
 export class SessionFilter implements IFilter {
 	constructor(public sessionId: string) {}
 
-	public get type(): string {
-		return 'session';
-	}
+	public type: string = 'session';
 
 	public toFilter(): string {
 		const session = quoteIfSpecialCharacters(this.sessionId);
@@ -105,9 +94,7 @@ export class StringFilter implements IFilter {
 		public value?: string | null
 	) {}
 
-	public get type(): string {
-		return 'string';
-	}
+	public type: string = 'string';
 
 	public toFilter(): string {
 		if (this.value === undefined) {
@@ -124,9 +111,7 @@ export class VersionFilter implements IFilter {
 		public value?: string
 	) {}
 
-	public get type(): string {
-		return 'version';
-	}
+	public type: string = 'version';
 
 	public toFilter(): string {
 		if (this.value === undefined) {

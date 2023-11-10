@@ -1,41 +1,69 @@
 <script lang="ts">
-	import {
-		getRelativeTimeFormatUnit,
-		getDifferenceInSeconds,
-		getSetIntervalTime
-	} from '$lib/helpers/dates';
+	import prettyMilliseconds from 'pretty-ms';
+	import { getSetIntervalTime } from '$lib/helpers/dates';
 	import { onMount } from 'svelte';
 
-	export let value: Date | string | undefined;
+	/**
+	 * @property value
+	 * If the value is a number, it should represent the time difference in milliseconds.
+	 * If the value is a string or a Date object, it will be parsed to a date and compared to the current time.
+	 */
+	export let value: Date | string | number | undefined;
+
 	let durationText = '';
-	let durationInSecondsText = '';
 
 	onMount(() => {
 		function setDurationText() {
-			if (value) {
-				const differenceInSeconds = getDifferenceInSeconds(value);
-				const rtf = new Intl.RelativeTimeFormat(navigator.language, { numeric: 'auto' });
-				durationText = rtf.format(
-					-differenceInSeconds,
-					getRelativeTimeFormatUnit(differenceInSeconds)
-				);
-				durationInSecondsText = `${differenceInSeconds} seconds`;
+			const options = {
+				secondsDecimalDigits: 0,
+				verbose: true
+			};
+
+			if (typeof value === 'number') {
+				durationText = prettyMilliseconds(value, options);
+			} else if (value instanceof Date || typeof value === 'string') {
+				const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
+				durationText = prettyMilliseconds(new Date().getTime() - time, options);
 			} else {
 				durationText = 'never';
-				durationInSecondsText = '';
 			}
 		}
 
 		setDurationText();
-		if (!value) {
+		if (!value || typeof value === 'number') {
 			return;
 		}
 
 		const interval = setInterval(setDurationText, getSetIntervalTime(value));
 		return () => clearInterval(interval);
 	});
+
+	onMount(() => {
+		function setDurationText() {
+			if (typeof value === 'number') {
+				durationText = prettyMilliseconds(value, {
+					secondsDecimalDigits: 0,
+					verbose: true
+				});
+			} else if (value instanceof Date || typeof value === 'string') {
+				const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
+				durationText = prettyMilliseconds(new Date().getTime() - time, {
+					secondsDecimalDigits: 0,
+					verbose: true
+				});
+			} else {
+				durationText = 'never';
+			}
+		}
+
+		if (value && typeof value !== 'number') {
+			setDurationText();
+			const interval = setInterval(setDurationText, getSetIntervalTime(value));
+			return () => clearInterval(interval);
+		} else {
+			setDurationText();
+		}
+	});
 </script>
 
-<abbr title={durationInSecondsText}>
-	{durationText}
-</abbr>
+{durationText}

@@ -36,7 +36,7 @@
 	<title>Log out</title>
 </svelte:head>
 
-<h2 class="mt-5 text-center text-2xl font-bold leading-9 tracking-tight">Log out?</h2>
+<h2 class="mt-4 mb-2 text-center text-2xl font-bold leading-9 tracking-tight">Log out?</h2>
 <form on:submit|preventDefault={onLogout}>
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	<div class="my-4">
