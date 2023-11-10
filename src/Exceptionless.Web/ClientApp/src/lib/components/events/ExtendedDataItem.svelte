@@ -1,18 +1,17 @@
 <script lang="ts">
+	import ArrowDownIcon from '~icons/mdi/arrow-down';
+	import ArrowUpIcon from '~icons/mdi/arrow-up';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 	import ObjectDump from '$comp/ObjectDump.svelte';
+	import { createEventDispatcher } from 'svelte';
 
-	export let canPromote: boolean = true;
-	export let data: Record<string, unknown>;
-	export let demoteTab: () => void = () => {};
-	export let excludedKeys: string[] = [];
-	export let isPromoted: boolean = false;
-	export let promoteTab: () => void = () => {};
 	export let title: string;
+	export let data: unknown;
+	export let canPromote: boolean = true;
+	export let isPromoted: boolean = false;
+	export let excludedKeys: string[] = [];
 
-	let showRaw = false;
-
-	function getData(data: Record<string, unknown>, exclusions: string[]): Record<string, unknown> {
+	function getData(data: unknown, exclusions: string[]): unknown {
 		if (typeof data !== 'object' || !(data instanceof Object)) {
 			return data;
 		}
@@ -26,60 +25,72 @@
 			}, {});
 	}
 
+	function hasFilteredData(data: unknown): boolean {
+		if (data === undefined || data === null) {
+			return false;
+		}
+
+		if (Array.isArray(data)) {
+			return data.length > 0;
+		}
+
+		if (Object.prototype.toString.call(data) === '[object Object]') {
+			return Object.keys(data).length > 0;
+		}
+
+		return true;
+	}
+
+	function onPromote() {
+		dispatch('promote', title);
+	}
+
+	function onDemote() {
+		dispatch('demote', title);
+	}
+
+	let showRaw = false;
 	let filteredData = getData(data, excludedKeys);
+	let hasData = hasFilteredData(filteredData);
 	let json = data ? JSON.stringify(data, null, 2) : null;
+	const dispatch = createEventDispatcher();
 </script>
 
-<div class="flex justify-between">
-	<h4 class="text-lg">{title}</h4>
-	<div class="flex justify-end">
-		<CopyToClipboardButton value={json}></CopyToClipboardButton>
-		<div class="relative inline-block text-left pl-1">
+{#if hasData}
+	<div class="flex justify-between">
+		<h4 class="text-lg mb-2">{title}</h4>
+		<div class="flex justify-end gap-x-1">
 			<button
-				type="button"
 				class="btn btn-xs btn-outline btn-neutral"
 				on:click|preventDefault={() => (showRaw = !showRaw)}
 			>
 				Toggle View
 			</button>
 
+			<CopyToClipboardButton value={json}></CopyToClipboardButton>
+
 			{#if canPromote}
-				<div
-					class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-					role="menu"
-					aria-orientation="vertical"
-					aria-labelledby="options-menu"
-				>
-					<div class="py-1" role="none">
-						{#if !isPromoted}
-							<button
-								class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-								role="menuitem"
-								on:click|preventDefault={promoteTab}
-							>
-								Promote to Tab
-							</button>
-						{:else}
-							<button
-								class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-								role="menuitem"
-								on:click|preventDefault={demoteTab}
-							>
-								Demote Tab
-							</button>
-						{/if}
-					</div>
-				</div>
+				{#if !isPromoted}
+					<button
+						class="btn btn-xs"
+						on:click|preventDefault={onPromote}
+						title="Promote to Tab"><ArrowUpIcon /></button
+					>
+				{:else}
+					<button class="btn btn-xs" on:click|preventDefault={onDemote} title="Demote Tab"
+						><ArrowDownIcon /></button
+					>
+				{/if}
 			{/if}
 		</div>
 	</div>
-</div>
 
-{#if showRaw}
-	<pre
-		class="whitespace-pre-wrap break-words overflow-auto p-2 mt-2 border border-info text-xs"><code
-			>{json}</code
-		></pre>
-{:else}
-	<ObjectDump value={filteredData} />
+	{#if showRaw}
+		<pre
+			class="whitespace-pre-wrap break-words overflow-auto p-2 border border-base-300 text-xs"><code
+				>{json}</code
+			></pre>
+	{:else}
+		<ObjectDump value={filteredData} />
+	{/if}
 {/if}

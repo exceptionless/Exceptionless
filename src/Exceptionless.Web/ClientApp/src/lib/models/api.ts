@@ -16,7 +16,7 @@ import type {
 	UserInfo
 } from './client-data';
 
-export { Login, ViewProject, TokenResult } from './api.generated';
+export { Login, ViewProject, Stack, TokenResult } from './api.generated';
 
 export type PersistentEventKnownTypes =
 	| '404'
@@ -71,6 +71,7 @@ export interface IPersistentEventData extends Record<string, unknown> {
 	'@user'?: UserInfo;
 	'@user_description'?: UserDescription;
 	'@version'?: string;
+	haserror?: boolean;
 	sessionend?: string;
 }
 

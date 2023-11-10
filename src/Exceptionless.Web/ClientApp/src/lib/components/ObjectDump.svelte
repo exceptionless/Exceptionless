@@ -12,6 +12,10 @@
 			return true;
 		}
 
+		if (value === null) {
+			return false;
+		}
+
 		if (typeof value === 'object' || value instanceof Object) {
 			return Object.keys(value || {}).length === 0;
 		}
@@ -24,29 +28,29 @@
 	}
 </script>
 
-{#if !isEmptyValue}
-	{#if Array.isArray(value)}
-		<ul>
-			{#each value as item}
-				<li><svelte:self value={item} /></li>
+{#if isEmptyValue}
+	(Empty)
+{:else if Array.isArray(value)}
+	<ul>
+		{#each value as item}
+			<li><svelte:self value={item} /></li>
+		{/each}
+	</ul>
+{:else if isObject}
+	<table class="table table-zebra table-xs border border-base-300">
+		<tbody>
+			{#each Object.entries(value || {}) as [key, val] (key)}
+				<tr>
+					<th class="border border-base-300 whitespace-nowrap">{key}</th>
+					<td class="border border-base-300"><svelte:self value={val} /></td>
+				</tr>
 			{/each}
-		</ul>
-	{:else if isObject}
-		<table class="table table-zebra table-xs border">
-			<tbody>
-				{#each Object.entries(value || {}) as [key, val] (key)}
-					<tr>
-						<th class="whitespace-nowrap">{key}</th>
-						<td><svelte:self value={val} /></td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	{:else if isBoolean}
-		{value ? 'True' : 'False'}
-	{:else if isNull}
-		(Null)
-	{:else}
-		{value}
-	{/if}
+		</tbody>
+	</table>
+{:else if isBoolean}
+	{value ? 'True' : 'False'}
+{:else if isNull}
+	(Null)
+{:else}
+	{value}
 {/if}
