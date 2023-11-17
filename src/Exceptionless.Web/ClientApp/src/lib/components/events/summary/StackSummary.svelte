@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Badge } from 'flowbite-svelte';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
 	export let badgeClass: string;
@@ -10,9 +11,9 @@
 
 <div class="line-clamp-2">
 	{#if showBadge}
-		<span class="label label-default {badgeClass}">
+		<Badge class={badgeClass}>
 			{source.status}
-		</span>
+		</Badge>
 	{/if}
 
 	{#if showType}

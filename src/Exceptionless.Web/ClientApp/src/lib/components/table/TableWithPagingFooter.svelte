@@ -23,7 +23,7 @@
 	export let onNextPage: () => void;
 </script>
 
-<div class="flex flex-1 items-center justify-between text-xs text-gray-700">
+<div class="flex flex-1 items-center justify-between text-xs text-gray-900 dark:text-white">
 	<div class="py-2">
 		{#if loading}
 			<Loading></Loading>

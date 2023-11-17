@@ -1,0 +1,77 @@
+<script lang="ts">
+	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
+	import IconChartPie from '~icons/mdi/chart-pie';
+
+	import { page } from '$app/stores';
+	import { isSidebarOpen, isSidebarExpanded, isLargeScreen } from '$lib/stores/sidebar';
+	import SearchInput from '$comp/SearchInput.svelte';
+
+	let filter = '';
+
+	function onSidebarMouseEnter(): void {
+		if (!$isSidebarExpanded) {
+			isSidebarOpen.set(true);
+		}
+	}
+
+	function onSidebarMouseLeave(): void {
+		if (!$isSidebarExpanded) {
+			isSidebarOpen.set(false);
+		}
+	}
+
+	function onBackdropClick() {
+		isSidebarExpanded.set(false);
+		isSidebarOpen.set(false);
+	}
+</script>
+
+<Sidebar
+	activeUrl={$page.url.pathname}
+	asideClass="flex fixed top-0 left-0 z-20 flex-col flex-shrink-0 pt-16 w-64 h-full duration-75 lg:flex transition-width {$isSidebarOpen
+		? 'lg:w-64'
+		: 'lg:w-16 hidden'}"
+>
+	<div
+		class="flex relative flex-col flex-1 pt-0 min-h-0 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+		role="none"
+		on:mouseenter={() => onSidebarMouseEnter()}
+		on:mouseleave={() => onSidebarMouseLeave()}
+	>
+		<SidebarWrapper divClass="flex overflow-y-auto flex-col flex-1 pt-5 pb-4">
+			<SidebarWrapper
+				divClass="flex-1 px-3 space-y-1 bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700"
+			>
+				<SidebarGroup ulClass="pb-2 space-y-2">
+					<li class="lg:hidden">
+						<form action="#" method="GET">
+							<SearchInput id="mobile-search" value={filter} />
+						</form>
+					</li>
+					<SidebarItem
+						aClass="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 group dark:text-gray-200 dark:hover:bg-gray-700"
+						spanClass="ml-3 {!$isSidebarOpen && $isLargeScreen
+							? 'lg:hidden lg:absolute'
+							: ''}"
+						label="Dashboard"
+						href="/next"
+					>
+						<svelte:fragment slot="icon">
+							<IconChartPie
+								class="w-6 h-6 text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+							/>
+						</svelte:fragment>
+					</SidebarItem>
+				</SidebarGroup>
+			</SidebarWrapper>
+		</SidebarWrapper>
+	</div>
+</Sidebar>
+
+<button
+	class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!$isLargeScreen && $isSidebarOpen
+		? ''
+		: 'hidden'}"
+	on:click={onBackdropClick}
+	aria-label="Close sidebar"
+/>
