@@ -14,17 +14,7 @@
 		toFilter
 	} from '$comp/filters/filters';
 	import { derived } from 'svelte/store';
-	import {
-		Button,
-		Card,
-		Checkbox,
-		CloseButton,
-		Drawer,
-		Dropdown,
-		DropdownDivider,
-		DropdownItem,
-		Toggle
-	} from 'flowbite-svelte';
+
 	import { sineIn } from 'svelte/easing';
 	import SearchInput from '$comp/SearchInput.svelte';
 	import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
@@ -66,6 +56,8 @@
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
+Test
+<!--
 <Card padding="sm" class="bg-white rounded-lg dark:bg-gray-800">
 	<div class="flex justify-between items-center mb-4">
 		<div>
@@ -111,9 +103,9 @@
 			</div>
 		</EventsTable>
 	{/if}
-</Card>
+</Card> -->
 
-<Drawer
+<!-- <Drawer
 	backdrop={true}
 	placement="right"
 	leftOffset="top-16 h-screen left-0"
@@ -138,11 +130,11 @@
 		>
 			limited-time sale
 		</a>
-		for Flowbite Docs + Job Board. Unlimited access to over 190K top-ranked candidates and the #1
+		 Unlimited access to over 190K top-ranked candidates and the #1
 		design job board.
 	</p>
 	<div class="grid grid-cols-2 gap-4">
 		<Button color="light" href="/">Learn more</Button>
 		<Button href="/" class="px-4">Get access</Button>
 	</div>
-</Drawer>
+</Drawer> -->
