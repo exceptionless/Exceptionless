@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { Button, Dropdown, DropdownItem, Checkbox, DropdownDivider } from 'flowbite-svelte';
+	import { Button } from "$comp/ui/button";
+    import { DropdownMenu } from "$comp/ui/dropdown-menu";
+  import { Checkbox } from "$comp/ui/checkbox";
+  import Label from "$comp/ui/label/label.svelte";
+
 	import type { Readable } from 'svelte/store';
 
 	import ViewColumnIcon from '~icons/mdi/view-column';
@@ -9,28 +13,40 @@
 	export let table: Readable<Table<TData>>;
 </script>
 
-<Button class="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-	><ViewColumnIcon /></Button
->
-<Dropdown class="w-44 p-3 space-y-3 text-sm" placement="bottom-end">
-	<DropdownItem>
-		<Checkbox
-			class="text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
-			checked={$table.getIsAllColumnsVisible()}
-			on:change={(e) => $table.getToggleAllColumnsVisibilityHandler()(e)}>Toggle All</Checkbox
-		>
-	</DropdownItem>
-	<DropdownDivider divClass="text-gray-700 dark:text-gray-400" />
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger asChild let:builder>
+    <Button builders={[builder]} variant="outline"><ViewColumnIcon /></Button>
+  </DropdownMenu.Trigger>
+ <DropdownMenu.Content class="w-44">
+	<DropdownMenu.Label>
+        <div class="flex items-center space-x-2">
+            <Checkbox id="toggle-all" bind:checked={$table.getIsAllColumnsVisible()} on:change={(e) => $table.getToggleAllColumnsVisibilityHandler()(e)} />
+            <div class="grid gap-1.5 leading-none">
+                <Label
+                for="toggle-all"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                Toggle All
+                </Label>
+            </div>
+        </div>
+	</DropdownMenu.Label>
+	<DropdownMenu.Separator  />
 	{#each $table.getAllLeafColumns() as column}
 		{#if column.getCanHide()}
-			<DropdownItem>
-				<Checkbox
-					class="text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
-					checked={column.getIsVisible()}
-					on:change={column.getToggleVisibilityHandler()}
-					>{column.columnDef.header}</Checkbox
-				>
-			</DropdownItem>
+			<DropdownMenu.Label>
+                <div class="flex items-center space-x-2">
+                    <Checkbox id="{column.columnDef.header}" bind:checked={column.getIsVisible()} on:change={column.getToggleVisibilityHandler()} />
+                    <div class="grid gap-1.5 leading-none">
+                        <Label
+                        for="{column.columnDef.header}"
+                        class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                        {column.columnDef.header}
+                        </Label>
+                    </div>
+                </div>
+			</DropdownMenu.Label>
 		{/if}
 	{/each}
-</Dropdown>
+</DropdownMenu.Root>
