@@ -2,14 +2,7 @@
 	import KeyboardArrowDownIcon from '~icons/mdi/keyboard-arrow-down';
 	import KeyboardArrowUpIcon from '~icons/mdi/keyboard-arrow-up';
 
-	import {
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell
-	} from 'flowbite-svelte';
+	import { Table } from "$comp/ui/table";
 	import { flexRender, type Header, type Table as TableType } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import type { Readable } from 'svelte/store';
@@ -38,15 +31,16 @@
 		<div class="inline-block min-w-full align-middle">
 			<slot name="header" {table} />
 
-			<Table
+			<Table.Root
 				striped={true}
 				class="table-fixed min-w-full divide-y divide-gray-200 dark:divide-gray-600"
 			>
-				<TableHead theadClass="bg-gray-50 dark:bg-gray-700">
+				<Table.Header theadClass="bg-gray-50 dark:bg-gray-700">
 					{#each $table.getHeaderGroups() as headerGroup}
+                    <Table.Row>
 						{#each headerGroup.headers as header}
 							{#if !header.isPlaceholder}
-								<TableHeadCell
+								<Table.Head
 									class={getHeaderColumnClass(header)}
 									on:click={header.column.getToggleSortingHandler()}
 									disabled={!header.column.getCanSort()}
@@ -65,29 +59,30 @@
 											<KeyboardArrowDownIcon />
 										{/if}
 									</div>
-								</TableHeadCell>
+								</Table.Head>
 							{:else}
-								<TableHeadCell class={getHeaderColumnClass(header)}></TableHeadCell>
+								<Table.Head class={getHeaderColumnClass(header)}></Table.Head>
 							{/if}
 						{/each}
+                        </Table.Row>
 					{/each}
-				</TableHead>
-				<TableBody tableBodyClass="bg-white dark:bg-gray-800">
-					<TableBodyRow class="hidden only:table-row text-center">
-						<TableBodyCell
+				</Table.Header>
+				<Table.Body tableBodyClass="bg-white dark:bg-gray-800">
+					<Table.Row class="hidden only:table-row text-center">
+						<Table.Cell
 							colspan={$table.getVisibleLeafColumns().length}
 							tdClass="p-4 text-sm font-normal text-gray-900 dark:text-white"
 						>
 							No data was found with the current filter.
-						</TableBodyCell>
-					</TableBodyRow>
+						</Table.Cell>
+					</Table.Row>
 					{#each $table.getRowModel().rows as row}
-						<TableBodyRow
+						<Table.Row
 							class="hover cursor-pointer"
 							on:click={() => dispatch('rowclick', row.original)}
 						>
 							{#each row.getVisibleCells() as cell}
-								<TableBodyCell
+								<Table.Cell
 									tdClass="p-4 text-sm font-normal text-gray-900 dark:text-white"
 								>
 									<svelte:component
@@ -96,12 +91,12 @@
 											cell.getContext()
 										)}
 									/>
-								</TableBodyCell>
+								</Table.Cell>
 							{/each}
-						</TableBodyRow>
+						</Table.Row>
 					{/each}
-				</TableBody>
-			</Table>
+				</Table.Body>
+			</Table.Root>
 
 			<slot name="footer" {table} />
 		</div>

@@ -22,7 +22,7 @@
 	import ClickableNumberFilter from '$comp/filters/ClickableNumberFilter.svelte';
 	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
-	import { Badge } from 'flowbite-svelte';
+	import { Badge } from "$comp/ui/badge";
 
 	export let event: PersistentEvent;
 

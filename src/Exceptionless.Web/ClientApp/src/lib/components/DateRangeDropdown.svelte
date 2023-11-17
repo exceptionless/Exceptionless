@@ -1,20 +1,17 @@
 <script lang="ts">
-	import { Select } from 'flowbite-svelte';
-
+    import { Select } from "$comp/ui/select";
 	export let value: string;
-
-	let items = [
-		{ value: 'last hour', name: 'Last Hour' },
-		{ value: 'last 24 hours', name: 'Last 24 Hours' },
-		{ value: 'last week', name: 'Last Week' },
-		{ value: 'last 30 days', name: 'Last 30 Days' },
-		{ value: '', name: 'All Time' }
-	];
 </script>
 
-<Select
-	placeholder=""
-	defaultClass="w-30 bg-white divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600"
-	{items}
-	bind:value
-/>
+<Select.Root selected="value">
+  <Select.Trigger class="w-[180px]">
+    <Select.Value placeholder=""  />
+  </Select.Trigger>
+  <Select.Content>
+    <Select.Item value="last hour">Last Hour</Select.Item>
+    <Select.Item value="last 24 hours">Last 24 Hours</Select.Item>
+    <Select.Item value="last week">Last Week</Select.Item>
+    <Select.Item value="last 30 days">Last 30 Days</Select.Item>
+    <Select.Item value="">All Time</Select.Item>
+  </Select.Content>
+</Select.Root>
