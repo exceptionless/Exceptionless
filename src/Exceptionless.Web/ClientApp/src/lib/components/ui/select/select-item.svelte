@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { cn } from "$lib/utils";
-	import { Select as SelectPrimitive } from "bits-ui";
-	import { Check } from "radix-icons-svelte";
+	import { cn } from '$lib/utils';
+	import { Select as SelectPrimitive } from 'bits-ui';
+	import { Check } from 'radix-icons-svelte';
 
 	type $$Props = SelectPrimitive.ItemProps;
 	type $$Events = Required<SelectPrimitive.ItemEvents>;
 
-	let className: $$Props["class"] = undefined;
-	export let value: $$Props["value"];
-	export let label: $$Props["label"] = undefined;
-	export let disabled: $$Props["disabled"] = undefined;
+	let className: $$Props['class'] = undefined;
+	export let value: $$Props['value'];
+	export let label: $$Props['label'] = undefined;
+	export let disabled: $$Props['disabled'] = undefined;
 	export { className as class };
 </script>
 
@@ -18,7 +18,7 @@
 	{disabled}
 	{label}
 	class={cn(
-		"relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+		'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
 		className
 	)}
 	{...$$restProps}

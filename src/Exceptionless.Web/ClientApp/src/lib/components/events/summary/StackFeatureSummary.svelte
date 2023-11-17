@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Badge } from "$comp/ui/badge";
+	import { Badge } from '$comp/ui/badge';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
 	export let badgeClass: string;
