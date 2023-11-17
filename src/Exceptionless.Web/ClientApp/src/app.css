@@ -2,13 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+	:root {
+		--background: 0 0% 100%;
+		--foreground: 240 10% 3.9%;
+
+		--muted: 240 4.8% 95.9%;
+		--muted-foreground: 240 3.8% 46.1%;
+
+		--popover: 0 0% 100%;
+		--popover-foreground: 240 10% 3.9%;
+
+		--card: 0 0% 100%;
+		--card-foreground: 240 10% 3.9%;
+
+		--border: 240 5.9% 90%;
+		--input: 240 5.9% 90%;
+
+		--primary: 240 5.9% 10%;
+		--primary-foreground: 0 0% 98%;
+
+		--secondary: 240 4.8% 95.9%;
+		--secondary-foreground: 240 5.9% 10%;
+
+		--accent: 240 4.8% 95.9%;
+		--accent-foreground: 240 5.9% 10%;
+
+		--destructive: 0 72.2% 50.6%;
+		--destructive-foreground: 0 0% 98%;
+
+		--ring: 240 10% 3.9%;
+
+		--radius: 0.5rem;
+	}
+
+	.dark {
+		--background: 240 10% 3.9%;
+		--foreground: 0 0% 98%;
+
+		--muted: 240 3.7% 15.9%;
+		--muted-foreground: 240 5% 64.9%;
+
+		--popover: 240 10% 3.9%;
+		--popover-foreground: 0 0% 98%;
+
+		--card: 240 10% 3.9%;
+		--card-foreground: 0 0% 98%;
+
+		--border: 240 3.7% 15.9%;
+		--input: 240 3.7% 15.9%;
+
+		--primary: 0 0% 98%;
+		--primary-foreground: 240 5.9% 10%;
+
+		--secondary: 240 3.7% 15.9%;
+		--secondary-foreground: 0 0% 98%;
+
+		--accent: 240 3.7% 15.9%;
+		--accent-foreground: 0 0% 98%;
+
+		--destructive: 0 62.8% 30.6%;
+		--destructive-foreground: 0 0% 98%;
+
+		--ring: 240 4.9% 83.9%;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+	}
+}
 :root {
 	/* Spacing for the container and between each toast */
 	--svoast-offset: 16px;
 	--svoast-gap: 16px;
 	/* The toast itself. */
-	--svoast-bg: theme('colors.base-100');
-	--svoast-text: theme('colors.neutral');
+	--svoast-bg: theme('colors.background');
+	--svoast-text: theme('colors.foreground');
 	--svoast-padding: theme('spacing.6');
 	--svoast-radius: theme('borderRadius.lg');
 	--svoast-shadow: theme('boxShadow.xl');
@@ -18,11 +93,11 @@
 	/* The current colour of the toast, depending on the type */
 	--svoast-colour: '';
 	/* Colour for each type */
-	--svoast-info-colour: theme('colors.info');
-	--svoast-attention-colour: theme('colors.primary');
-	--svoast-success-colour: theme('colors.success');
-	--svoast-warning-colour: theme('colors.warning');
-	--svoast-error-colour: theme('colors.error');
+	--svoast-info-colour: theme('colors.blue.500');
+	--svoast-attention-colour: theme('colors.zinc.500');
+	--svoast-success-colour: theme('colors.green.500');
+	--svoast-warning-colour: theme('colors.orange.500');
+	--svoast-error-colour: theme('colors.red.500');
 	/* The coloured bar */
 	--svoast-bar-width: 3px;
 	/* Icons */
