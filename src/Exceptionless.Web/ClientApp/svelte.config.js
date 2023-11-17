@@ -13,7 +13,8 @@ const config = {
 		}),
 		alias: {
 			$api: 'src/lib/api',
-			$comp: 'src/lib/components'
+			$comp: 'src/lib/components',
+			$lib: 'src/lib'
 		}
 	}
 };
