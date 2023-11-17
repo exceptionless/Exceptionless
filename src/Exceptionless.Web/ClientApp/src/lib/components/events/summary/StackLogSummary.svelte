@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-	import { Badge } from 'flowbite-svelte';
+    import { Badge } from "$comp/ui/badge";
 
 	export let badgeClass: string;
 	export let showBadge: boolean;

@@ -1,29 +1,23 @@
 <script lang="ts">
-	import { Badge } from 'flowbite-svelte';
+    import { Badge } from "$comp/ui/badge";
 	import type { LogLevel } from '$lib/models/client-data';
 
 	export let level: LogLevel | undefined;
 
-	let color:
-		| 'red'
-		| 'yellow'
-		| 'green'
-		| 'indigo'
-		| 'purple'
-		| 'pink'
-		| 'blue'
-		| 'dark'
-		| 'primary'
-		| 'none'
-		| undefined = 'none';
-	if (level === 'trace' || level === 'debug') color = 'blue';
-	else if (level === 'info') color = 'green';
-	else if (level === 'warn') color = 'yellow';
-	else if (level === 'error') color = 'red';
+    // TODO: Add more variants;
+	let variant:
+		| 'default'
+		| 'secondary'
+		| 'destructive'
+		| 'outline' = 'default';
+	if (level === 'trace' || level === 'debug') color = 'secondary';
+	else if (level === 'info') color = 'default';
+	else if (level === 'warn') color = 'destructive';
+	else if (level === 'error') color = 'destructive';
 </script>
 
 {#if level}
-	<Badge {color}>
+	<Badge {variant}>
 		{level}
 	</Badge>
 {/if}
