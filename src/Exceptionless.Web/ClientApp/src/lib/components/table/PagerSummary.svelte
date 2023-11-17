@@ -12,7 +12,7 @@
 </script>
 
 {#if pageTotal !== 0 && total !== 0}
-	<p class="text-sm text-gray-700">
+	<p class="text-sm text-gray-900 dark:text-white">
 		Showing
 		<span class="font-medium"> <NumberFormatter value={start}></NumberFormatter></span>
 		to

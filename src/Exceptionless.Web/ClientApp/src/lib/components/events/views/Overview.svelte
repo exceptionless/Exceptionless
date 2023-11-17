@@ -22,6 +22,7 @@
 	import ClickableNumberFilter from '$comp/filters/ClickableNumberFilter.svelte';
 	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
+	import { Badge } from 'flowbite-svelte';
 
 	export let event: PersistentEvent;
 
@@ -198,7 +199,7 @@
 				<td class="border border-base-300 flex flex-wrap justify-start gap-2 overflow-auto">
 					{#each event.tags as tag}
 						<ClickableStringFilter term="tag" value={tag}
-							><div class="badge badge-neutral">{tag}</div></ClickableStringFilter
+							><Badge color="dark">{tag}</Badge></ClickableStringFilter
 						>
 					{/each}
 				</td>

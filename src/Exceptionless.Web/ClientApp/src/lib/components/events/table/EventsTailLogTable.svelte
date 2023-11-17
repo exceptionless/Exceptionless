@@ -165,7 +165,7 @@
 		{loading}
 		{lastUpdated}
 	>
-		<p class="py-2 text-center text-xs text-gray-700">
+		<p class="py-2 text-center text-sm text-gray-700 dark:text-white">
 			{#if $loading}
 				<Loading></Loading>
 			{:else if response?.problem?.errors.general}

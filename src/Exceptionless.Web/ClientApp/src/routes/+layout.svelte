@@ -14,7 +14,9 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-	<slot />
+	<div class="bg-gray-50 dark:bg-gray-800">
+		<slot />
+	</div>
 	<SvelteQueryDevtools />
 </QueryClientProvider>
 

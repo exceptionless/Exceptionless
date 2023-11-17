@@ -11,7 +11,7 @@
 	const dispatch = createEventDispatcher();
 </script>
 
-<div class="join">
+<div class="join text-gray-900 dark:text-white">
 	{#if canNavigateToFirstPage}
 		<button
 			class="btn btn-square btn-outline join-item btn-sm"

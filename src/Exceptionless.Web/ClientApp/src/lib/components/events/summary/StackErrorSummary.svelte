@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Badge } from 'flowbite-svelte';
 	import IconChevronRight from '~icons/mdi/chevron-right';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
@@ -10,9 +11,9 @@
 
 <div class="line-clamp-2">
 	{#if showBadge}
-		<span class="label label-default {badgeClass}">
+		<Badge class={badgeClass}>
 			{source.status}
-		</span>
+		</Badge>
 	{/if}
 
 	<strong>
@@ -35,7 +36,7 @@
 </div>
 
 {#if source.data.Path}
-	<div class="hidden sm:block text-gray-500 ml-6 text-sm">
+	<div class="hidden sm:block ml-6 text-sm text-gray-500 dark:text-gray-400">
 		<IconChevronRight class="inline" />
 		<span class="inline line-clamp-1">{source.data.Path}</span>
 	</div>
