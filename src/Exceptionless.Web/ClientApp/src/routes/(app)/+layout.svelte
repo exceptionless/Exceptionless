@@ -24,7 +24,28 @@
 	setDefaultModelValidator(validate);
 	useGlobalMiddleware(async (ctx, next) => {
 		await next();
-		if (ctx.response && ctx.response.status === 401) accessToken.set(null);
+
+		if (ctx.response && ctx.response.status === 401) {
+			accessToken.set(null);
+			return;
+		}
+
+		if (ctx.response?.headers.has('X-Result-Count') && ctx.response?.data !== null) {
+			const resultCountHeaderValue = parseInt(
+				ctx.response.headers.get('X-Result-Count') || ''
+			);
+
+			ctx.response.meta.total = resultCountHeaderValue;
+
+			if (
+				typeof ctx.response?.data === 'object' &&
+				(ctx.response.data as any).resultCount === undefined
+			) {
+				(ctx.response.data as any).resultCount = !isNaN(resultCountHeaderValue)
+					? resultCountHeaderValue
+					: null;
+			}
+		}
 	});
 
 	const queryClient = useQueryClient();
@@ -87,11 +108,11 @@
 
 {#if $isAuthenticated}
 	<NavbarLayout></NavbarLayout>
-	<div class="flex overflow-hidden pt-16 bg-gray-50 dark:bg-gray-900">
+	<div class="flex overflow-hidden bg-gray-50 pt-16 dark:bg-gray-900">
 		<SidebarLayout />
 
 		<div
-			class="overflow-y-auto relative w-full h-full bg-gray-50 dark:bg-gray-900 {$isSidebarOpen
+			class="relative h-full w-full overflow-y-auto bg-gray-50 dark:bg-gray-900 {$isSidebarOpen
 				? 'lg:ml-64'
 				: 'lg:ml-16'}"
 		>

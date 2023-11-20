@@ -45,8 +45,9 @@ export type RequestOptions = {
 };
 
 let defaultOptions: RequestOptions = {};
+
 export function setDefaultRequestOptions(options: RequestOptions) {
-	defaultOptions = options;
+	defaultOptions = { ...defaultOptions, ...options };
 }
 
 export function setDefaultModelValidator(
@@ -69,8 +70,8 @@ export function useGlobalMiddleware(middleware: FetchClientMiddleware) {
 export type FetchClientResponse<T> = Response & {
 	data: T | null;
 	problem: ProblemDetails;
-	total: number | null;
 	links: Links & { next?: Link; previous?: Link };
+	meta: Record<string, unknown>;
 };
 
 export class ProblemDetails implements Record<string, unknown> {
@@ -118,7 +119,10 @@ export class FetchClient {
 			url,
 			{
 				method: 'GET',
-				headers: { ...{ 'Content-Type': 'application/json' }, ...options?.headers }
+				headers: {
+					...{ 'Content-Type': 'application/json' },
+					...options?.headers
+				}
 			},
 			options
 		);
@@ -256,7 +260,9 @@ export class FetchClient {
 		if (accessToken !== null) {
 			init = {
 				...init,
-				...{ headers: { ...init?.headers, Authorization: `Bearer ${accessToken}` } }
+				...{
+					headers: { ...init?.headers, Authorization: `Bearer ${accessToken}` }
+				}
 			};
 		}
 
@@ -266,19 +272,20 @@ export class FetchClient {
 
 		const fetchMiddleware = async (ctx: FetchClientContext, next: Next) => {
 			const response = await this.fetch(ctx.request);
-			if (ctx.request.headers.get('Content-Type')?.startsWith('application/json')) {
+			if (
+				ctx.request.headers.get('Content-Type')?.startsWith('application/json') ||
+				response?.headers.get('Content-Type')?.startsWith('application/problem+json')
+			) {
 				ctx.response = await this.getJSONResponse<T>(response);
 			} else {
 				ctx.response = response as FetchClientResponse<T>;
 				ctx.response.data = null;
 				ctx.response.problem = new ProblemDetails();
-				ctx.response.total = null;
-				ctx.response.links = {};
 			}
 
-			const resultCountHeaderValue = parseInt(response.headers.get('X-Result-Count') || '');
-			ctx.response.total = !isNaN(resultCountHeaderValue) ? resultCountHeaderValue : null;
 			ctx.response.links = parseLinkHeader(response.headers.get('Link')) || {};
+			ctx.response.meta = {};
+
 			await next();
 		};
 		const middleware = [...this.middleware, ...(options?.middleware ?? []), fetchMiddleware];
@@ -325,7 +332,6 @@ export class FetchClient {
 
 		const jsonResponse = response as FetchClientResponse<T>;
 
-		// HACK: https://github.com/dotnet/aspnetcore/issues/39802
 		if (
 			!response.ok ||
 			response.headers.get('Content-Type')?.startsWith('application/problem+json')
@@ -411,9 +417,8 @@ export class FetchClient {
 
 		if (options?.errorCallback) {
 			options.errorCallback(response);
-		} else {
-			throw response;
 		}
+		throw response;
 	}
 }
 

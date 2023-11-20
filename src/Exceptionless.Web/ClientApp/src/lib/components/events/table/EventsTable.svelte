@@ -187,6 +187,7 @@
 	parameters.subscribe(async () => await loadData());
 	filter.subscribe(async () => await loadData());
 	time.subscribe(async () => await loadData());
+	let total = 0;
 
 	async function loadData() {
 		if ($loading) {
@@ -207,6 +208,7 @@
 				...options,
 				data: response.data || []
 			}));
+			if (response.meta?.total) total = response.meta.total as number;
 		}
 	}
 
@@ -249,7 +251,7 @@
 	page={$page}
 	pageTotal={response?.data?.length || 0}
 	limit={DEFAULT_LIMIT}
-	total={response?.total || 0}
+	{total}
 	{onNavigateToFirstPage}
 	{onPreviousPage}
 	{onNextPage}
@@ -265,7 +267,7 @@
 		page={$page}
 		pageTotal={response?.data?.length || 0}
 		limit={DEFAULT_LIMIT}
-		total={response?.total || 0}
+		{total}
 		{onNavigateToFirstPage}
 		{onPreviousPage}
 		{onNextPage}
@@ -276,7 +278,7 @@
 			page={$page}
 			pageTotal={response?.data?.length || 0}
 			limit={DEFAULT_LIMIT}
-			total={response?.total || 0}
+			{total}
 			{onNavigateToFirstPage}
 			{onPreviousPage}
 			{onNextPage}
