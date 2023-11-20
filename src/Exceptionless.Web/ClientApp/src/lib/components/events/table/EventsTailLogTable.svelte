@@ -115,7 +115,7 @@
 
 		if (response.ok) {
 			lastUpdated = new Date();
-			before = response.links.previous?.before;
+			before = response.meta.links.previous?.before;
 
 			data.update((data) => {
 				for (const summary of response.data?.reverse() || []) {

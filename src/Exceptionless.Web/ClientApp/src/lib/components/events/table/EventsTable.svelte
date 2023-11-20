@@ -225,7 +225,7 @@
 		page.update((page) => Math.max(page - 1, 0));
 		parameters.update((params) => ({
 			...params,
-			before: response?.links.next?.before,
+			before: response?.meta.links.next?.before,
 			after: undefined
 		}));
 	}
@@ -235,7 +235,7 @@
 		parameters.update((params) => ({
 			...params,
 			before: undefined,
-			after: response?.links.next?.after
+			after: response?.meta.links.next?.after
 		}));
 	}
 
