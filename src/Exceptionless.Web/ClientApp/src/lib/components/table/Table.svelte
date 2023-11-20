@@ -2,7 +2,7 @@
 	import KeyboardArrowDownIcon from '~icons/mdi/keyboard-arrow-down';
 	import KeyboardArrowUpIcon from '~icons/mdi/keyboard-arrow-up';
 
-	import { Table } from '$comp/ui/table';
+	import * as Table from '$comp/ui/table';
 	import { flexRender, type Header, type Table as TableType } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import type { Readable } from 'svelte/store';
