@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Select } from '$comp/ui/select';
+	import * as Select from '$comp/ui/select';
 	export let value: string;
 </script>
 
