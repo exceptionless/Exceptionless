@@ -70,8 +70,7 @@ export function useGlobalMiddleware(middleware: FetchClientMiddleware) {
 export type FetchClientResponse<T> = Response & {
 	data: T | null;
 	problem: ProblemDetails;
-	links: Links & { next?: Link; previous?: Link };
-	meta: Record<string, unknown>;
+	meta: Record<string, unknown> & { links: Links & { next?: Link; previous?: Link } };
 };
 
 export class ProblemDetails implements Record<string, unknown> {
@@ -283,8 +282,7 @@ export class FetchClient {
 				ctx.response.problem = new ProblemDetails();
 			}
 
-			ctx.response.links = parseLinkHeader(response.headers.get('Link')) || {};
-			ctx.response.meta = {};
+			ctx.response.meta = { links: parseLinkHeader(response.headers.get('Link')) || {} };
 
 			await next();
 		};
@@ -362,7 +360,7 @@ export class FetchClient {
 			redirected: false,
 			problem: problem,
 			data: null,
-			links: {},
+			meta: { links: {} },
 			type: 'basic',
 			json: () => new Promise((resolve) => resolve(problem)),
 			text: () => new Promise((resolve) => resolve(JSON.stringify(problem))),
