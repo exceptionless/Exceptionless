@@ -6,10 +6,10 @@
 
 	// TODO: Add more variants;
 	let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default';
-	if (level === 'trace' || level === 'debug') color = 'secondary';
-	else if (level === 'info') color = 'default';
-	else if (level === 'warn') color = 'destructive';
-	else if (level === 'error') color = 'destructive';
+	if (level === 'trace' || level === 'debug') variant = 'secondary';
+	else if (level === 'info') variant = 'default';
+	else if (level === 'warn') variant = 'destructive';
+	else if (level === 'error') variant = 'destructive';
 </script>
 
 {#if level}

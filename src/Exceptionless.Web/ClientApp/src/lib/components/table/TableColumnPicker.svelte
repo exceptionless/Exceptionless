@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$comp/ui/button';
-	import { DropdownMenu } from '$comp/ui/dropdown-menu';
+	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import { Checkbox } from '$comp/ui/checkbox';
 	import Label from '$comp/ui/label/label.svelte';
 
