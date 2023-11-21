@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from './link';
+import { parseNextPageQueryParameters, parsePreviousPageQueryParameters } from './Link';
 
 describe('link', () => {
 	it('should parse undefined previous link header', () => {

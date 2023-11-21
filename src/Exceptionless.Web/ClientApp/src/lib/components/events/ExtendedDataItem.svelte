@@ -4,6 +4,7 @@
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 	import ObjectDump from '$comp/ObjectDump.svelte';
 	import { createEventDispatcher } from 'svelte';
+	import { Button } from '$comp/ui/button';
 
 	export let title: string;
 	export let data: unknown;
@@ -41,12 +42,19 @@
 		return true;
 	}
 
-	function onPromote() {
+	function onPromote(e: Event) {
+		e.preventDefault();
 		dispatch('promote', title);
 	}
 
-	function onDemote() {
+	function onDemote(e: Event) {
+		e.preventDefault();
 		dispatch('demote', title);
+	}
+
+	function onToggleView(e: Event) {
+		e.preventDefault();
+		showRaw = !showRaw;
 	}
 
 	let showRaw = false;
@@ -60,25 +68,18 @@
 	<div class="flex justify-between">
 		<h4 class="text-lg mb-2">{title}</h4>
 		<div class="flex justify-end gap-x-1">
-			<button
-				class="btn btn-xs btn-outline btn-neutral"
-				on:click|preventDefault={() => (showRaw = !showRaw)}
-			>
-				Toggle View
-			</button>
+			<Button variant="outline" on:click={onToggleView}>Toggle View</Button>
 
 			<CopyToClipboardButton value={json}></CopyToClipboardButton>
 
 			{#if canPromote}
 				{#if !isPromoted}
-					<button
-						class="btn btn-xs"
-						on:click|preventDefault={onPromote}
-						title="Promote to Tab"><ArrowUpIcon /></button
+					<Button size="icon" on:click={onPromote} title="Promote to Tab"
+						><ArrowUpIcon /></Button
 					>
 				{:else}
-					<button class="btn btn-xs" on:click|preventDefault={onDemote} title="Demote Tab"
-						><ArrowDownIcon /></button
+					<Button size="icon" on:click={onDemote} title="Demote Tab"
+						><ArrowDownIcon /></Button
 					>
 				{/if}
 			{/if}

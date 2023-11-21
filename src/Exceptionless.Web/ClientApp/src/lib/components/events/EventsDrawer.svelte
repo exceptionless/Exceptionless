@@ -17,6 +17,7 @@
 	import { getStackByIdQuery } from '$api/queries/stacks';
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
 	import PromotedExtendedData from './views/PromotedExtendedData.svelte';
+	import { Button } from '$comp/ui/button';
 
 	export let id: string;
 
@@ -164,11 +165,10 @@
 
 	<div class="tabs mt-4">
 		{#each $tabs as tab}
-			<button
-				class="tab tab-bordered"
-				class:tab-active={activeTab === tab}
+			<Button
+				class="tab tab-bordered {tab === activeTab ? 'tab-active' : ''}"
 				on:click={() => (activeTab = tab)}
-				title="Select {tab}">{tab}</button
+				title="Select {tab}">{tab}</Button
 			>
 		{/each}
 	</div>
