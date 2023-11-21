@@ -17,15 +17,15 @@
 
 	import SearchInput from '$comp/SearchInput.svelte';
 	import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-	import { showDrawer } from '$lib/stores/drawer';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 	import Switch from '$comp/primitives/Switch.svelte';
+	import { Portal } from "bits-ui/dist/bits/alert-dialog";
 
 	let liveMode = persisted<boolean>('live', true);
-	let hideDrawer = true;
 
+	let selectedEventId: string | null = null;
 	function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
-		hideDrawer = false;
+		selectedEventId = detail.id;
 	}
 
 	let time = persisted<string>('time', '');
@@ -91,13 +91,12 @@
 {/if}
 <!--</Card>-->
 
-<Sheet.Root bind:open={$showDrawer}>
-	<Sheet.Trigger>Open</Sheet.Trigger>
+<Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
 	<Sheet.Content>
 		<Sheet.Header>
 			<Sheet.Title>Event Details</Sheet.Title>
 			<Sheet.Description>
-				<EventsDrawer id={''}></EventsDrawer>
+				<EventsDrawer id={selectedEventId || ''}></EventsDrawer>
 			</Sheet.Description>
 		</Sheet.Header>
 	</Sheet.Content>

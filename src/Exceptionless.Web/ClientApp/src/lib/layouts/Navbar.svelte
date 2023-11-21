@@ -3,8 +3,11 @@
 
 	import logo from '$lib/assets/exceptionless-48.png';
 	import { isPageWithSidebar, isSidebarOpen, isSidebarExpanded } from '$lib/stores/sidebar';
+	import * as Avatar from '$comp/ui/avatar';
+	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import SearchInput from '$comp/SearchInput.svelte';
 	import DarkModeButton from '$comp/DarkModeButton.svelte';
+	import { Button } from '$comp/ui/button';
 
 	let filter = '';
 
@@ -102,63 +105,68 @@
 
 				<DarkModeButton></DarkModeButton>
 
-				<div class="flex items-center ml-3">
-					<div>
-						<button
-							type="button"
-							class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
-							id="user-menu-button-2"
-							aria-expanded="false"
-							data-dropdown-toggle="dropdown-2"
-						>
-							<span class="sr-only">Open user menu</span>
-							<img
-								class="w-8 h-8 rounded-full"
-								src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
-								alt="user photo"
-							/>
-						</button>
-					</div>
-
-					<div
-						class="hidden z-50 my-4 text-base list-none bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600"
-						id="dropdown-2"
-					>
-						<div class="py-3 px-4" role="none">
-							<p class="text-sm text-gray-900 dark:text-white" role="none">
-								John Doe
-							</p>
-							<p
-								class="text-sm font-medium text-gray-900 truncate dark:text-gray-300"
-								role="none"
+				<div class="ml-3">
+					<DropdownMenu.Root positioning={{ placement: 'bottom-end' }}>
+						<DropdownMenu.Trigger asChild let:builder>
+							<Button
+								builders={[builder]}
+								size="icon"
+								variant="ghost"
+								class="focus:ring-4 rounded-full"
 							>
-								test@localhost
-							</p>
-						</div>
-						<ul class="py-1" role="none">
-							<li>
-								<a
-									href="/"
-									class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-									role="menuitem">Dashboard</a
-								>
-							</li>
-							<li>
-								<a
-									href="/"
-									class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-									role="menuitem">Settings</a
-								>
-							</li>
-							<li>
-								<a
-									href="/"
-									class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-									role="menuitem">Sign out</a
-								>
-							</li>
-						</ul>
-					</div>
+								<Avatar.Root title="TODO">
+									<Avatar.Image
+										src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
+										alt="gravatar"
+									/>
+									<Avatar.Fallback>TODO</Avatar.Fallback>
+								</Avatar.Root>
+							</Button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content class="w-56">
+							<DropdownMenu.Label>My Account</DropdownMenu.Label>
+							<DropdownMenu.Separator />
+							<DropdownMenu.Group>
+								<DropdownMenu.Item>
+									Profile
+									<DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
+								</DropdownMenu.Item>
+								<DropdownMenu.Item>
+									Billing
+									<DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
+								</DropdownMenu.Item>
+								<DropdownMenu.Item>
+									Settings
+									<DropdownMenu.Shortcut>⌘S</DropdownMenu.Shortcut>
+								</DropdownMenu.Item>
+								<DropdownMenu.Item>
+									Keyboard shortcuts
+									<DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
+								</DropdownMenu.Item>
+							</DropdownMenu.Group>
+							<DropdownMenu.Separator />
+							<DropdownMenu.Group>
+								<DropdownMenu.Item>Team</DropdownMenu.Item>
+								<DropdownMenu.Item>
+									Invite users
+									<DropdownMenu.Shortcut>⌘+I</DropdownMenu.Shortcut>
+								</DropdownMenu.Item>
+								<DropdownMenu.Item>
+									New Team
+									<DropdownMenu.Shortcut>⌘+T</DropdownMenu.Shortcut>
+								</DropdownMenu.Item>
+							</DropdownMenu.Group>
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item>GitHub</DropdownMenu.Item>
+							<DropdownMenu.Item>Support</DropdownMenu.Item>
+							<DropdownMenu.Item>API</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item>
+								Sign out
+								<DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 				</div>
 			</div>
 		</div>
