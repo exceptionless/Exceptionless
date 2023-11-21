@@ -55,6 +55,7 @@
 		"bits-ui": "^0.9.8",
 		"class-validator": "^0.14.0",
 		"clsx": "^2.0.0",
+		"mode-watcher": "^0.1.1",
 		"oidc-client-ts": "^2.4.0",
 		"pretty-ms": "^8.0.0",
 		"radix-icons-svelte": "^1.2.1",
