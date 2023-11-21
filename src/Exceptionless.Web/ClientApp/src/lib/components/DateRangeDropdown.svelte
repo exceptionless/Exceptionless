@@ -3,7 +3,7 @@
 	export let value: string;
 </script>
 
-<Select.Root selected="value">
+<Select.Root bind:selected={value}>
 	<Select.Trigger class="w-[180px]">
 		<Select.Value placeholder="" />
 	</Select.Trigger>

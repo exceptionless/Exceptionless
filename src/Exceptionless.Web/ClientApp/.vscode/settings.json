@@ -1,6 +1,7 @@
 {
 	"debug.allowBreakpointsEverywhere": true,
 	"cSpell.words": [
+		"clsx",
 		"colour",
 		"iconify",
 		"keyof",
@@ -9,6 +10,7 @@
 		"nameof",
 		"navigatetofirstpage",
 		"oidc",
+		"promotedtabs",
 		"rowclick",
 		"satellizer",
 		"sessionend",

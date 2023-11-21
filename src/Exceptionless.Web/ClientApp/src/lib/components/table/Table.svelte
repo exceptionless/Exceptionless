@@ -14,7 +14,7 @@
 
 	function getHeaderColumnClass(header: Header<TData, unknown>) {
 		const classes = [
-			'p-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-white',
+			'tracking-wider uppercase',
 			(header.column.columnDef.meta as { class?: string })?.class || ''
 		];
 
@@ -31,11 +31,8 @@
 		<div class="inline-block min-w-full align-middle">
 			<slot name="header" {table} />
 
-			<Table.Root
-				striped={true}
-				class="table-fixed min-w-full divide-y divide-gray-200 dark:divide-gray-600"
-			>
-				<Table.Header theadClass="bg-gray-50 dark:bg-gray-700">
+			<Table.Root>
+				<Table.Header>
 					{#each $table.getHeaderGroups() as headerGroup}
 						<Table.Row>
 							{#each headerGroup.headers as header}
@@ -67,12 +64,9 @@
 						</Table.Row>
 					{/each}
 				</Table.Header>
-				<Table.Body tableBodyClass="bg-white dark:bg-gray-800">
+				<Table.Body>
 					<Table.Row class="hidden only:table-row text-center">
-						<Table.Cell
-							colspan={$table.getVisibleLeafColumns().length}
-							tdClass="p-4 text-sm font-normal text-gray-900 dark:text-white"
-						>
+						<Table.Cell colspan={$table.getVisibleLeafColumns().length}>
 							No data was found with the current filter.
 						</Table.Cell>
 					</Table.Row>
@@ -82,9 +76,7 @@
 							on:click={() => dispatch('rowclick', row.original)}
 						>
 							{#each row.getVisibleCells() as cell}
-								<Table.Cell
-									tdClass="p-4 text-sm font-normal text-gray-900 dark:text-white"
-								>
+								<Table.Cell>
 									<svelte:component
 										this={flexRender(
 											cell.column.columnDef.cell,

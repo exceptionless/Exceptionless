@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Button } from '$comp/ui/button';
 	import { BooleanFilter } from './filters';
 
 	export let term: string;
@@ -6,7 +7,8 @@
 
 	const title = `Search ${term}:${value}`;
 
-	function onSearchClick() {
+	function onSearchClick(e: Event) {
+		e.preventDefault();
 		document.dispatchEvent(
 			new CustomEvent('filter', {
 				detail: new BooleanFilter(term, value)
@@ -15,6 +17,6 @@
 	}
 </script>
 
-<button on:click|preventDefault={onSearchClick} {title}>
+<Button on:click={onSearchClick} {title}>
 	<slot />
-</button>
+</Button>
