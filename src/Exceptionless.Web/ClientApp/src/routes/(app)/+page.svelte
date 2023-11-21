@@ -19,7 +19,6 @@
 	import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 	import Switch from '$comp/primitives/Switch.svelte';
-	import { Portal } from "bits-ui/dist/bits/alert-dialog";
 
 	let liveMode = persisted<boolean>('live', true);
 
@@ -92,7 +91,7 @@
 <!--</Card>-->
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
-	<Sheet.Content>
+	<Sheet.Content class="w-full md:w-5/6 sm:max-w-full">
 		<Sheet.Header>
 			<Sheet.Title>Event Details</Sheet.Title>
 			<Sheet.Description>
