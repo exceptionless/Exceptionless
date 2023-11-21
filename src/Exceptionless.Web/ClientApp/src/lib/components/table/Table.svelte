@@ -6,7 +6,6 @@
 	import { flexRender, type Header, type Table as TableType } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import type { Readable } from 'svelte/store';
-	import Button from '$comp/ui/button/button.svelte';
 
 	type TData = $$Generic;
 	export let table: Readable<TableType<TData>>;

@@ -88,7 +88,7 @@
 
 	{#if showRaw}
 		<pre
-			class="whitespace-pre-wrap break-words overflow-auto p-2 border border-base-300 text-xs"><code
+			class="whitespace-pre-wrap break-words overflow-auto p-2 text-xs"><code
 				>{json}</code
 			></pre>
 	{:else}

@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { writable, type Writable } from 'svelte/store';
+
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import { getExtendedDataItems, hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
 	import type { PersistentEvent, ViewProject } from '$lib/models/api';
-	import { writable, type Writable } from 'svelte/store';
 	import Error from './views/Error.svelte';
 	import Overview from './views/Overview.svelte';
 	import Environment from './views/Environment.svelte';
@@ -18,6 +19,7 @@
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
 	import PromotedExtendedData from './views/PromotedExtendedData.svelte';
 	import { Button } from '$comp/ui/button';
+	import * as Table from '$comp/ui/table';
 	import * as Tabs from '$comp/ui/tabs';
 
 	export let id: string;
@@ -127,76 +129,75 @@
 {#if $eventResponse.isLoading}
 	<p>Loading...</p>
 {:else if $eventResponse.isSuccess}
-	<table class="table table-zebra table-xs border border-base-300 mt-4">
-		<tbody>
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Occurred On</th>
-				<td class="border border-base-300"
+	<Table.Root class="mt-4">
+		<Table.Body>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Occurred On</Table.Head>
+				<Table.Cell
 					><ClickableDateFilter term="date" value={$eventResponse.data.date}
 						><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo
 							value={$eventResponse.data.date}
 						></TimeAgo>)</ClickableDateFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 			{#if $projectResponse.data}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">Project</th>
-					<td class="border border-base-300"
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">Project</Table.Head>
+					<Table.Cell
 						><ClickableStringFilter term="project" value={$projectResponse.data.id}
 							>{$projectResponse.data.name}</ClickableStringFilter
-						></td
+						></Table.Cell
 					>
-				</tr>
+				</Table.Row>
 			{/if}
 			{#if $stackResponse.data}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">Stack</th>
-					<td class="border border-base-300"
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">Stack</Table.Head>
+					<Table.Cell
 						><ClickableStringFilter term="stack" value={$stackResponse.data.id}
 							>{$stackResponse.data.title}</ClickableStringFilter
-						></td
+						></Table.Cell
 					>
-				</tr>
+				</Table.Row>
 			{/if}
-		</tbody>
-	</table>
+		</Table.Body>
+	</Table.Root>
 
 	<Tabs.Root value={activeTab} class="mt-4 mb-4">
-		<Tabs.List class="mb-4">
+		<Tabs.List class="mb-4 w-full justify-normal">
 			{#each $tabs as tab}
 				<Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
 			{/each}
 		</Tabs.List>
-		<Tabs.Content value="Overview">
-			<Overview event={$eventResponse.data}></Overview>
-		</Tabs.Content>
-		<Tabs.Content value="Exception">
-			<Error event={$eventResponse.data}></Error>
-		</Tabs.Content>
-		<Tabs.Content value="Environment">
-			<Environment event={$eventResponse.data}></Environment>
-		</Tabs.Content>
-		<Tabs.Content value="Request">
-			<Request event={$eventResponse.data}></Request>
-		</Tabs.Content>
-		<Tabs.Content value="Trace Log">
-			<TraceLog logs={$eventResponse.data.data?.['@trace']}></TraceLog>
-		</Tabs.Content>
-		<Tabs.Content value="Extended Data">
-			<ExtendedData
-				event={$eventResponse.data}
-				project={$projectResponse.data}
-				on:promoted={onPromoted}
-			></ExtendedData>
-		</Tabs.Content>
-		<Tabs.Content value={activeTab}>
-			<PromotedExtendedData
-				title={activeTab || ''}
-				event={$eventResponse.data}
-				on:demoted={onDemoted}
-			></PromotedExtendedData>
-		</Tabs.Content>
+
+		{#each $tabs as tab}
+			<Tabs.Content value={tab}>
+				{#if tab === 'Overview'}
+					<Overview event={$eventResponse.data}></Overview>
+				{:else if tab === 'Exception'}
+					<Error event={$eventResponse.data}></Error>
+				{:else if tab === 'Environment'}
+					<Environment event={$eventResponse.data}></Environment>
+				{:else if tab === 'Request'}
+					<Request event={$eventResponse.data}></Request>
+				{:else if tab === 'Trace Log'}
+					<TraceLog logs={$eventResponse.data.data?.['@trace']}></TraceLog>
+				{:else if tab === 'Extended Data'}
+					<ExtendedData
+						event={$eventResponse.data}
+						project={$projectResponse.data}
+						on:promoted={onPromoted}
+					></ExtendedData>
+				{:else}
+					<PromotedExtendedData
+						title={tab + ''}
+						event={$eventResponse.data}
+						on:demoted={onDemoted}
+					></PromotedExtendedData>
+				{/if}
+			</Tabs.Content>
+		{/each}
 	</Tabs.Root>
 
 	<Button class="flex justify-center" href="/event/{id}">View Event</Button>
