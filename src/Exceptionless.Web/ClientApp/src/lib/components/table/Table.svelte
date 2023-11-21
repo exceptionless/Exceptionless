@@ -6,6 +6,7 @@
 	import { flexRender, type Header, type Table as TableType } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import type { Readable } from 'svelte/store';
+	import Button from '$comp/ui/button/button.svelte';
 
 	type TData = $$Generic;
 	export let table: Readable<TableType<TData>>;
@@ -37,13 +38,14 @@
 						<Table.Row>
 							{#each headerGroup.headers as header}
 								{#if !header.isPlaceholder}
-									<Table.Head
-										class={getHeaderColumnClass(header)}
-										on:click={header.column.getToggleSortingHandler()}
-										disabled={!header.column.getCanSort()}
-										scope="col"
-									>
-										<div class="flex items-center">
+									<Table.Head class={getHeaderColumnClass(header)}>
+										<button
+											class="flex items-center w-full {getHeaderColumnClass(
+												header
+											)}"
+											on:click={header.column.getToggleSortingHandler()}
+											disabled={!header.column.getCanSort()}
+										>
 											<svelte:component
 												this={flexRender(
 													header.column.columnDef.header,
@@ -55,7 +57,7 @@
 											{:else if header.column.getIsSorted() === 'desc'}
 												<KeyboardArrowDownIcon />
 											{/if}
-										</div>
+										</button>
 									</Table.Head>
 								{:else}
 									<Table.Head class={getHeaderColumnClass(header)}></Table.Head>

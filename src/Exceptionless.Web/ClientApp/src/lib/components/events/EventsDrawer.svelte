@@ -18,6 +18,7 @@
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
 	import PromotedExtendedData from './views/PromotedExtendedData.svelte';
 	import { Button } from '$comp/ui/button';
+	import * as Tabs from '$comp/ui/tabs';
 
 	export let id: string;
 
@@ -126,8 +127,6 @@
 {#if $eventResponse.isLoading}
 	<p>Loading...</p>
 {:else if $eventResponse.isSuccess}
-	<h1 class="text-xl">Event Details</h1>
-
 	<table class="table table-zebra table-xs border border-base-300 mt-4">
 		<tbody>
 			<tr>
@@ -163,45 +162,44 @@
 		</tbody>
 	</table>
 
-	<div class="tabs mt-4">
-		{#each $tabs as tab}
-			<Button
-				class="tab tab-bordered {tab === activeTab ? 'tab-active' : ''}"
-				on:click={() => (activeTab = tab)}
-				title="Select {tab}">{tab}</Button
-			>
-		{/each}
-	</div>
-
-	<div class="mt-4">
-		{#if activeTab === 'Overview'}
+	<Tabs.Root value={activeTab} class="mt-4 mb-4">
+		<Tabs.List class="mb-4">
+			{#each $tabs as tab}
+				<Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
+			{/each}
+		</Tabs.List>
+		<Tabs.Content value="Overview">
 			<Overview event={$eventResponse.data}></Overview>
-		{:else if activeTab === 'Exception'}
+		</Tabs.Content>
+		<Tabs.Content value="Exception">
 			<Error event={$eventResponse.data}></Error>
-		{:else if activeTab === 'Environment'}
+		</Tabs.Content>
+		<Tabs.Content value="Environment">
 			<Environment event={$eventResponse.data}></Environment>
-		{:else if activeTab === 'Request'}
+		</Tabs.Content>
+		<Tabs.Content value="Request">
 			<Request event={$eventResponse.data}></Request>
-		{:else if activeTab === 'Trace Log'}
+		</Tabs.Content>
+		<Tabs.Content value="Trace Log">
 			<TraceLog logs={$eventResponse.data.data?.['@trace']}></TraceLog>
-		{:else if activeTab === 'Extended Data'}
+		</Tabs.Content>
+		<Tabs.Content value="Extended Data">
 			<ExtendedData
 				event={$eventResponse.data}
 				project={$projectResponse.data}
 				on:promoted={onPromoted}
 			></ExtendedData>
-		{:else if !!activeTab}
+		</Tabs.Content>
+		<Tabs.Content value={activeTab}>
 			<PromotedExtendedData
-				title={activeTab}
+				title={activeTab || ''}
 				event={$eventResponse.data}
 				on:demoted={onDemoted}
 			></PromotedExtendedData>
-		{/if}
-	</div>
+		</Tabs.Content>
+	</Tabs.Root>
 
-	<div class="flex justify-center mt-4">
-		<a href="/event/{id}" class="btn btn-primary btn-sm">View Event</a>
-	</div>
+	<Button class="flex justify-center" href="/event/{id}">View Event</Button>
 {:else}
 	<ErrorMessage message={$eventResponse.error?.errors.general}></ErrorMessage>
 {/if}
