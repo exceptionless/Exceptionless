@@ -2,6 +2,7 @@
 	import IconEmail from '~icons/mdi/email';
 	import IconOpenInNew from '~icons/mdi/open-in-new';
 	import type { PersistentEvent } from '$lib/models/api';
+	import * as Table from '$comp/ui/table';
 	import Duration from '$comp/formatters/Duration.svelte';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import {
@@ -72,12 +73,12 @@
 	}
 </script>
 
-<table class="table table-zebra table-xs border border-base-300">
-	<tbody>
+<Table.Root>
+	<Table.Body>
 		{#if isSessionStart}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Duration</th>
-				<td class="border border-base-300">
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Duration</Table.Head>
+				<Table.Cell>
 					{#if !event.data?.sessionend}
 						<span
 							class="bg-green-500 rounded-full inline-flex items-center w-2 h-2 animate-pulse"
@@ -88,13 +89,13 @@
 					{#if event.data?.sessionend}
 						(ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
 					{/if}
-				</td>
-			</tr>
+				</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if event.reference_id}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Reference</th>
-				<td class="border border-base-300">
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Reference</Table.Head>
+				<Table.Cell>
 					{#if isSessionStart}
 						<ClickableSessionFilter sessionId={event.reference_id}
 							>{event.reference_id}</ClickableSessionFilter
@@ -104,173 +105,173 @@
 							>{event.reference_id}</ClickableReferenceFilter
 						>
 					{/if}
-				</td>
-			</tr>
+				</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#each references as reference (reference.id)}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">{reference.name}</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">{reference.name}</Table.Head>
+				<Table.Cell
 					><ClickableReferenceFilter referenceId={reference.id}
 						>{reference.id}</ClickableReferenceFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/each}
 		{#if level}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Level</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Level</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="level" value={level}
 						><LogLevel {level}></LogLevel></ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if event.type !== 'error'}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Event Type</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Event Type</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="type" value={event.type}
 						>{event.type}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if hasError}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Error Type</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Error Type</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="error.type" value={errorType}
 						>{errorType}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if event.source}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Source</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Source</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="source" value={event.source}
 						>{event.source}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if !isSessionStart && event.value}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Value</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Value</Table.Head>
+				<Table.Cell
 					><ClickableNumberFilter term="value" value={event.value}
 						>{event.value}</ClickableNumberFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if message}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Message</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Message</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="message" value={message}
 						>{message}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if version}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Version</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Version</Table.Head>
+				<Table.Cell
 					><ClickableVersionFilter term="version" value={version}
 						>{version}</ClickableVersionFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if location}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Geo</th>
-				<td class="border border-base-300">{location}</td>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Geo</Table.Head>
+				<Table.Cell>{location}</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if event.tags?.length}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Tags</th>
-				<td class="border border-base-300 flex flex-wrap justify-start gap-2 overflow-auto">
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Tags</Table.Head>
+				<Table.Cell class="flex flex-wrap justify-start gap-2 overflow-auto">
 					{#each event.tags as tag}
 						<ClickableStringFilter term="tag" value={tag}
 							><Badge color="dark">{tag}</Badge></ClickableStringFilter
 						>
 					{/each}
-				</td>
-			</tr>
+				</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if requestUrl}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">URL</th>
-				<td class="border border-base-300 flex items-center gap-x-1">
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">URL</Table.Head>
+				<Table.Cell class="flex items-center gap-x-1">
 					<ClickableStringFilter term="path" value={requestUrlPath}
 						>{requestUrl}</ClickableStringFilter
 					>
 
 					<a href={requestUrl} target="_blank" class="link" title="Open in new window"
 						><IconOpenInNew /></a
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
-	</tbody>
-</table>
+	</Table.Body>
+</Table.Root>
 
 {#if userEmail || userIdentity || userName || userDescription}
 	<h4 class="text-lg mt-4 mb-2">User Info</h4>
-	<table class="table table-zebra table-xs border border-base-300">
-		<tbody>
+	<Table.Root>
+		<Table.Body>
 			{#if userEmail}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">User Email</th>
-					<td class="border border-base-300"
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">User Email</Table.Head>
+					<Table.Cell
 						><ClickableStringFilter term="user.email" value={userEmail}
 							>{userEmail}</ClickableStringFilter
 						>
 						<a href="mailto:{userEmail}" title="Send email to {userEmail}"
 							><IconEmail /></a
-						></td
+						></Table.Cell
 					>
-				</tr>
+				</Table.Row>
 			{/if}
 			{#if userIdentity}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">User Identity</th>
-					<td class="border border-base-300"
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">User Identity</Table.Head>
+					<Table.Cell
 						><ClickableStringFilter term="user" value={userIdentity}
 							>{userIdentity}</ClickableStringFilter
-						></td
+						></Table.Cell
 					>
-				</tr>
+				</Table.Row>
 			{/if}
 			{#if userName}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">User Name</th>
-					<td class="border border-base-300"
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">User Name</Table.Head>
+					<Table.Cell
 						><ClickableStringFilter term="user.name" value={userName}
 							>{userName}</ClickableStringFilter
-						></td
+						></Table.Cell
 					>
-				</tr>
+				</Table.Row>
 			{/if}
 			{#if userDescription}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">User Description</th>
-					<td class="border border-base-300"
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">User Description</Table.Head>
+					<Table.Cell
 						><ClickableStringFilter term="user.description" value={userDescription}
 							>{userDescription}</ClickableStringFilter
-						></td
+						></Table.Cell
 					>
-				</tr>
-			{/if}</tbody
+				</Table.Row>
+			{/if}</Table.Body
 		>
-	</table>
+	</Table.Root>
 {/if}
 
 {#if hasError}
@@ -281,7 +282,7 @@
 			></CopyToClipboardButton>
 		</div>
 	</div>
-	<div class="max-h-[150px] overflow-auto p-2 mt-2 border border-base-300 text-xs">
+	<div class="max-h-[150px] overflow-auto p-2 mt-2 text-xs">
 		{#if event.data?.['@error']}
 			<StackTrace error={event.data['@error']} />
 		{:else}

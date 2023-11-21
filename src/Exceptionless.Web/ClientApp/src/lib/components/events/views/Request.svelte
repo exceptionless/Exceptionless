@@ -1,7 +1,8 @@
 <script lang="ts">
 	import IconOpenInNew from '~icons/mdi/open-in-new';
-	import type { PersistentEvent } from '$lib/models/api';
+	import * as Table from '$comp/ui/table';
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+	import type { PersistentEvent } from '$lib/models/api';
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 	import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
 
@@ -43,85 +44,85 @@
 		);
 </script>
 
-<table class="table table-zebra table-xs border border-base-300">
-	<tbody>
+<Table.Root>
+	<Table.Body>
 		{#if request.http_method}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">HTTP Method</th>
-				<td class="border border-base-300">{request.http_method}</td>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">HTTP Method</Table.Head>
+				<Table.Cell>{request.http_method}</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if requestUrl}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">URL</th>
-				<td class="border border-base-300 flex items-center gap-x-1">
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">URL</Table.Head>
+				<Table.Cell class="flex items-center gap-x-1">
 					<ClickableStringFilter term="path" value={requestUrlPath}
 						>{requestUrl}</ClickableStringFilter
 					>
 
 					<a href={requestUrl} target="_blank" class="link" title="Open in new window"
 						><IconOpenInNew /></a
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{:else if requestUrlPath}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">URL</th>
-				<td class="border border-base-300">
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">URL</Table.Head>
+				<Table.Cell>
 					<ClickableStringFilter term="path" value={requestUrlPath}
 						>{requestUrlPath}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if request.referrer}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Referrer</th>
-				<td class="border border-base-300 flex items-center gap-x-1"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Referrer</Table.Head>
+				<Table.Cell class="flex items-center gap-x-1"
 					>{request.referrer}
 					<a
 						href={request.referrer}
 						target="_blank"
 						class="link"
 						title="Open in new window"><IconOpenInNew /></a
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if request.client_ip_address}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Client IP Address</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Client IP Address</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="ip" value={request.client_ip_address}
 						>{request.client_ip_address}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if request.user_agent}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">User Agent</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">User Agent</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="useragent" value={request.user_agent}
 						>{request.user_agent}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if device}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Device</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Device</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="device" value={device}
 						>{device}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if browser}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Browser</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Browser</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="browser" value={browser}
 						>{browser}</ClickableStringFilter
 					>
@@ -131,14 +132,14 @@
 								>{browserMajorVersion}</ClickableStringFilter
 							>
 						</abbr>
-					{/if}</td
+					{/if}</Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if os}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Browser OS</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Browser OS</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="os" value={os}>{os}</ClickableStringFilter>
 					{#if osMajorVersion}
 						<abbr title={osVersion}>
@@ -146,12 +147,12 @@
 								>{osMajorVersion}</ClickableStringFilter
 							>
 						</abbr>
-					{/if}</td
+					{/if}</Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
-	</tbody>
-</table>
+	</Table.Body>
+</Table.Root>
 
 {#if request.post_data}
 	<div class="mt-2">
@@ -162,46 +163,42 @@
 
 {#if hasHeaders}
 	<h4 class="text-lg mt-4 mb-2">Headers</h4>
-	<table class="table table-zebra table-xs border border-base-300">
-		<thead>
-			<tr>
-				<th class="border border-base-300">Name</th>
-				<th class="border border-base-300">Value</th>
-			</tr>
-		</thead>
-		<tbody>
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head>Name</Table.Head>
+				<Table.Head>Value</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
 			{#each Object.entries(sortedHeaders) as [key, value]}
-				<tr>
-					<td class="border border-base-300">{key}</td>
-					<td class="border border-base-300"
-						><span class="inline line-clamp-3">{value}</span></td
-					>
-				</tr>
+				<Table.Row>
+					<Table.Cell>{key}</Table.Cell>
+					<Table.Cell><span class="inline line-clamp-3">{value}</span></Table.Cell>
+				</Table.Row>
 			{/each}
-		</tbody>
-	</table>
+		</Table.Body>
+	</Table.Root>
 {/if}
 
 {#if hasCookies}
 	<h4 class="text-lg mt-4 mb-2">Cookie Values</h4>
-	<table class="table table-zebra table-xs border border-base-300">
-		<thead>
-			<tr>
-				<th class="border border-base-300">Name</th>
-				<th class="border border-base-300">Value</th>
-			</tr>
-		</thead>
-		<tbody>
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head>Name</Table.Head>
+				<Table.Head>Value</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
 			{#each Object.entries(request.cookies || {}) as [key, value]}
-				<tr>
-					<td class="border border-base-300">{key}</td>
-					<td class="border border-base-300"
-						><span class="inline line-clamp-3">{value}</span></td
-					>
-				</tr>
+				<Table.Row>
+					<Table.Cell>{key}</Table.Cell>
+					<Table.Cell><span class="inline line-clamp-3">{value}</span></Table.Cell>
+				</Table.Row>
 			{/each}
-		</tbody>
-	</table>
+		</Table.Body>
+	</Table.Root>
 {/if}
 
 {#if request.data}

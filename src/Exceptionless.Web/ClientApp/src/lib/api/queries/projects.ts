@@ -31,7 +31,7 @@ export function mutatePromoteTab(id: string) {
 	const client = useQueryClient();
 	return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
 		mutationKey: [queryKey, id],
-		mutationFn: async ({ name: string }) => {
+		mutationFn: async ({ name }) => {
 			const api = new FetchClient();
 			const response = await api.post(`projects/${id}/promotedtabs`, undefined, {
 				params: { name }
@@ -53,7 +53,7 @@ export function mutateDemoteTab(id: string) {
 	const client = useQueryClient();
 	return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
 		mutationKey: [queryKey, id],
-		mutationFn: async ({ name: string }) => {
+		mutationFn: async ({ name }) => {
 			const api = new FetchClient();
 			const response = await api.delete(`projects/${id}/promotedtabs`, {
 				params: { name }
