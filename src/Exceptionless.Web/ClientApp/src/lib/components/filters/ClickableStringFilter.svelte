@@ -17,6 +17,6 @@
 	}
 </script>
 
-<Button on:click={onSearchClick} {title}>
+<Button variant="link" on:click={onSearchClick} {title}>
 	<slot />
 </Button>
