@@ -50,7 +50,7 @@
 			href="https://www.facebook.com/exceptionless/"
 			class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 			target="_blank"
-			ariaLabel="Exceptionless Facebook Website"
+			aria-label="Exceptionless Facebook Website"
 		>
 			<IconFacebook class="w-5 h-5" />
 		</a>
@@ -58,7 +58,7 @@
 			href="https://x.com/Exceptionless"
 			class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 			target="_blank"
-			ariaLabel="Exceptionless Twitter Website"
+			aria-label="Exceptionless Twitter Website"
 		>
 			<IconTwitter class="w-5 h-5" />
 		</a>
@@ -66,7 +66,7 @@
 			href="https://github.com/exceptionless"
 			class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 			target="_blank"
-			ariaLabel="Exceptionless GitHub Website"
+			aria-label="Exceptionless GitHub Website"
 		>
 			<IconGitHub class="w-5 h-5" />
 		</a>
@@ -74,7 +74,7 @@
 			href="https://exceptionless.com/"
 			class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
 			target="_blank"
-			ariaLabel="Exceptionless Website"
+			aria-label="Exceptionless Website"
 		>
 			<IconWeb class="w-5 h-5" />
 		</a>

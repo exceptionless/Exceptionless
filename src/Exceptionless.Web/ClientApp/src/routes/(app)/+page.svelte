@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Sheet from '$lib/components/ui/sheet';
 	import EventsTable from '$comp/events/table/EventsTable.svelte';
 	import EventsTailLogTable from '$comp/events/table/EventsTailLogTable.svelte';
 	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
@@ -14,10 +15,11 @@
 	} from '$comp/filters/filters';
 	import { derived } from 'svelte/store';
 
-	import { sineIn } from 'svelte/easing';
 	import SearchInput from '$comp/SearchInput.svelte';
 	import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-	import { Switch } from '$comp/ui/switch';
+	import { showDrawer } from '$lib/stores/drawer';
+	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+	import Switch from '$comp/primitives/Switch.svelte';
 
 	let liveMode = persisted<boolean>('live', true);
 	let hideDrawer = true;
@@ -42,12 +44,6 @@
 			filters.set(parseFilter($filters, value));
 		}, 500);
 	}
-
-	let transitionParamsRight = {
-		x: 320,
-		duration: 200,
-		easing: sineIn
-	};
 </script>
 
 <svelte:head>
@@ -71,10 +67,7 @@
 					<SearchInput value={$filter} onChanged={onFilterInputChanged} />
 				</div>
 				<div class="flex items-center space-x-2">
-					<Switch
-						bind:checked={$liveMode}
-						class="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600">Live</Switch
-					>
+					<Switch id="live-mode" bind:checked={$liveMode}>Live</Switch>
 					<TableColumnPicker {table}></TableColumnPicker>
 				</div>
 			</div>
@@ -89,10 +82,7 @@
 				</div>
 				<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
 				<div class="flex items-center space-x-2">
-					<Switch
-						checked={$liveMode}
-						class="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600">Live</Switch
-					>
+					<Switch id="live-mode" bind:checked={$liveMode}>Live</Switch>
 					<TableColumnPicker {table}></TableColumnPicker>
 				</div>
 			</div>
@@ -101,36 +91,14 @@
 {/if}
 <!--</Card>-->
 
-<!-- <Drawer
-	backdrop={true}
-	placement="right"
-	leftOffset="top-16 h-screen left-0"
-	transitionType="fly"
-	transitionParams={transitionParamsRight}
-	bind:hidden={hideDrawer}
-	id="events-drawer"
->
-	<div class="flex items-center">
-		<h5
-			id="drawer-label"
-			class="inline-flex items-center mb-4 text-base font-semibold text-gray-500 dark:text-gray-400"
-		>
-			Info
-		</h5>
-		<CloseButton on:click={() => (hideDrawer = true)} class="mb-4 dark:text-white" />
-	</div>
-	<p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
-		Supercharge your hiring by taking advantage of our <a
-			href="/"
-			class="text-primary-600 underline dark:text-primary-500 hover:no-underline"
-		>
-			limited-time sale
-		</a>
-		 Unlimited access to over 190K top-ranked candidates and the #1
-		design job board.
-	</p>
-	<div class="grid grid-cols-2 gap-4">
-		<Button color="light" href="/">Learn more</Button>
-		<Button href="/" class="px-4">Get access</Button>
-	</div>
-</Drawer>-->
+<Sheet.Root bind:open={$showDrawer}>
+	<Sheet.Trigger>Open</Sheet.Trigger>
+	<Sheet.Content>
+		<Sheet.Header>
+			<Sheet.Title>Event Details</Sheet.Title>
+			<Sheet.Description>
+				<EventsDrawer id={''}></EventsDrawer>
+			</Sheet.Description>
+		</Sheet.Header>
+	</Sheet.Content>
+</Sheet.Root>
