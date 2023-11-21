@@ -99,26 +99,26 @@ export type SummaryTemplateKeys =
 export type SummaryDataValue<T extends SummaryTemplateKeys> = T extends 'event-summary'
 	? EventSummaryData
 	: T extends 'stack-summary'
-	? StackSummaryData
-	: T extends 'event-simple-summary'
-	? EventSimpleSummaryData
-	: T extends 'stack-simple-summary'
-	? StackSimpleSummaryData
-	: T extends 'event-error-summary'
-	? EventErrorSummaryData
-	: T extends 'stack-error-summary'
-	? StackErrorSummaryData
-	: T extends 'event-session-summary'
-	? EventSessionSummaryData
-	: T extends 'event-notfound-summary'
-	? EventNotFoundSummaryData
-	: T extends 'event-feature-summary'
-	? EventFeatureSummaryData
-	: T extends 'event-log-summary'
-	? EventLogSummaryData
-	: T extends 'stack-log-summary'
-	? StackLogSummaryData
-	: Record<string, unknown>;
+	  ? StackSummaryData
+	  : T extends 'event-simple-summary'
+	    ? EventSimpleSummaryData
+	    : T extends 'stack-simple-summary'
+	      ? StackSimpleSummaryData
+	      : T extends 'event-error-summary'
+	        ? EventErrorSummaryData
+	        : T extends 'stack-error-summary'
+	          ? StackErrorSummaryData
+	          : T extends 'event-session-summary'
+	            ? EventSessionSummaryData
+	            : T extends 'event-notfound-summary'
+	              ? EventNotFoundSummaryData
+	              : T extends 'event-feature-summary'
+	                ? EventFeatureSummaryData
+	                : T extends 'event-log-summary'
+	                  ? EventLogSummaryData
+	                  : T extends 'stack-log-summary'
+	                    ? StackLogSummaryData
+	                    : Record<string, unknown>;
 
 export interface EventSummaryData {
 	Message?: string;

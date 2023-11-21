@@ -17,7 +17,7 @@
 	import { sineIn } from 'svelte/easing';
 	import SearchInput from '$comp/SearchInput.svelte';
 	import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-	import { Switch } from "$comp/ui/switch";
+	import { Switch } from '$comp/ui/switch';
 
 	let liveMode = persisted<boolean>('live', true);
 	let hideDrawer = true;
@@ -57,50 +57,48 @@
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <!--<Card padding="sm" class="bg-white rounded-lg dark:bg-gray-800">-->
-	<div class="flex justify-between items-center mb-4">
-		<div>
-			<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-white">Events</h3>
-		</div>
+<div class="flex justify-between items-center mb-4">
+	<div>
+		<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-white">Events</h3>
 	</div>
+</div>
 
-	{#if $liveMode}
-		<EventsTailLogTable on:rowclick={onRowClick} {filter}>
-			<div slot="header" let:table>
-				<div class="flex justify-between items-center pb-4">
-					<div class="w-2/4">
-						<SearchInput value={$filter} onChanged={onFilterInputChanged} />
-					</div>
-					<div class="flex items-center space-x-2">
-						<Switch
-							bind:checked={$liveMode}
-							class="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600"
-							>Live</Switch
-						>
-						<TableColumnPicker {table}></TableColumnPicker>
-					</div>
+{#if $liveMode}
+	<EventsTailLogTable on:rowclick={onRowClick} {filter}>
+		<div slot="header" let:table>
+			<div class="flex justify-between items-center pb-4">
+				<div class="w-2/4">
+					<SearchInput value={$filter} onChanged={onFilterInputChanged} />
+				</div>
+				<div class="flex items-center space-x-2">
+					<Switch
+						bind:checked={$liveMode}
+						class="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600">Live</Switch
+					>
+					<TableColumnPicker {table}></TableColumnPicker>
 				</div>
 			</div>
-		</EventsTailLogTable>
-	{:else}
-		<EventsTable on:rowclick={onRowClick} {filter} {time}>
-			<div slot="header" let:table>
-				<div class="flex justify-between items-center pb-4">
-					<div class="w-2/4">
-						<SearchInput value={$filter} onChanged={onFilterInputChanged} />
-					</div>
-					<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
-					<div class="flex items-center space-x-2">
-						<Switch
-							checked={$liveMode}
-							class="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600"
-							>Live</Switch
-						>
-						<TableColumnPicker {table}></TableColumnPicker>
-					</div>
+		</div>
+	</EventsTailLogTable>
+{:else}
+	<EventsTable on:rowclick={onRowClick} {filter} {time}>
+		<div slot="header" let:table>
+			<div class="flex justify-between items-center pb-4">
+				<div class="w-2/4">
+					<SearchInput value={$filter} onChanged={onFilterInputChanged} />
+				</div>
+				<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
+				<div class="flex items-center space-x-2">
+					<Switch
+						checked={$liveMode}
+						class="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-600">Live</Switch
+					>
+					<TableColumnPicker {table}></TableColumnPicker>
 				</div>
 			</div>
-		</EventsTable>
-	{/if}
+		</div>
+	</EventsTable>
+{/if}
 <!--</Card>-->
 
 <!-- <Drawer
