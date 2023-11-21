@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Table from '$comp/ui/table';
 	import type { PersistentEvent } from '$lib/models/api';
 	import {
 		getErrorData,
@@ -25,44 +26,44 @@
 	const submissionMethod = event.data?.['@submission_method'];
 </script>
 
-<table class="table table-zebra table-xs border border-base-300">
-	<tbody>
-		<tr>
-			<th class="border border-base-300 whitespace-nowrap">Error Type</th>
-			<td class="border border-base-300"
+<Table.Root>
+	<Table.Body>
+		<Table.Row>
+			<Table.Head class="whitespace-nowrap">Error Type</Table.Head>
+			<Table.Cell
 				><ClickableStringFilter term="error.type" value={errorType}
 					>{errorType}</ClickableStringFilter
-				></td
+				></Table.Cell
 			>
-		</tr>
+		</Table.Row>
 		{#if message}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Message</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Message</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="error.message" value={message}
 						>{message}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if code}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Code</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Code</Table.Head>
+				<Table.Cell
 					><ClickableVersionFilter term="error.code" value={code}
 						>{code}</ClickableVersionFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if submissionMethod}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Submission Method</th>
-				<td class="border border-base-300">{submissionMethod}</td>
-			</tr>
-		{/if}</tbody
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Submission Method</Table.Head>
+				<Table.Cell>{submissionMethod}</Table.Cell>
+			</Table.Row>
+		{/if}</Table.Body
 	>
-</table>
+</Table.Root>
 
 <div class="flex justify-between mt-4 mb-2">
 	<h4 class="text-lg">Stack Trace</h4>
@@ -71,7 +72,7 @@
 		></CopyToClipboardButton>
 	</div>
 </div>
-<div class="overflow-auto p-2 mt-2 border border-base-300 text-xs">
+<div class="overflow-auto p-2 mt-2 text-xs">
 	{#if event.data?.['@error']}
 		<StackTrace error={event.data['@error']} />
 	{:else}
@@ -89,20 +90,20 @@
 	<div class="flex justify-between items-center mt-4 mb-2">
 		<h4 class="text-lg">Modules</h4>
 	</div>
-	<table class="table table-zebra table-xs border border-base-300">
-		<thead>
-			<tr>
-				<th class="border border-base-300">Name</th>
-				<th class="border border-base-300">Version</th>
-			</tr>
-		</thead>
-		<tbody>
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head>Name</Table.Head>
+				<Table.Head>Version</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
 			{#each modules as module}
-				<tr>
-					<td class="border border-base-300 whitespace-nowrap">{module.name}</td>
-					<td class="border border-base-300">{module.version}</td>
-				</tr>
-			{/each}</tbody
+				<Table.Row>
+					<Table.Cell class="whitespace-nowrap">{module.name}</Table.Cell>
+					<Table.Cell>{module.version}</Table.Cell>
+				</Table.Row>
+			{/each}</Table.Body
 		>
-	</table>
+	</Table.Root>
 {/if}

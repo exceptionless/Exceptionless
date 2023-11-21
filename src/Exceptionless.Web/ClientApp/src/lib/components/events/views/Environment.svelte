@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PersistentEvent } from '$lib/models/api';
+	import * as Table from '$comp/ui/table';
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 	import Bytes from '$comp/formatters/Bytes.svelte';
@@ -10,118 +11,112 @@
 	const environment = event.data?.['@environment'] ?? {};
 </script>
 
-<table class="table table-zebra table-xs border border-base-300">
-	<tbody>
+<Table.Root>
+	<Table.Body>
 		{#if environment.machine_name}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Machine Name</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Machine Name</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="machine" value={environment.machine_name}
 						>{environment.machine_name}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if environment.ip_address}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">IP Address</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">IP Address</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="ip" value={environment.ip_address}
 						>{environment.ip_address}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if environment.processor_count}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Processor Count</th>
-				<td class="border border-base-300"
-					><Number value={environment.processor_count}></Number></td
-				>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Processor Count</Table.Head>
+				<Table.Cell><Number value={environment.processor_count}></Number></Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if environment.total_physical_memory}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Total Memory</th>
-				<td class="border border-base-300"
-					><Bytes value={environment.total_physical_memory}></Bytes></td
-				>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Total Memory</Table.Head>
+				<Table.Cell><Bytes value={environment.total_physical_memory}></Bytes></Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if environment.available_physical_memory}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Available Memory</th>
-				<td class="border border-base-300"
-					><Bytes value={environment.available_physical_memory}></Bytes></td
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Available Memory</Table.Head>
+				<Table.Cell
+					><Bytes value={environment.available_physical_memory}></Bytes></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if environment.process_memory_size}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Process Memory</th>
-				<td class="border border-base-300"
-					><Bytes value={environment.process_memory_size}></Bytes></td
-				>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Process Memory</Table.Head>
+				<Table.Cell><Bytes value={environment.process_memory_size}></Bytes></Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if environment.o_s_name}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">OS Name</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">OS Name</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="os" value={environment.o_s_name}
 						>{environment.o_s_name}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if environment.o_s_version}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">OS Version</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">OS Version</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="os.version" value={environment.o_s_version}
 						>{environment.o_s_version}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if environment.architecture}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Architecture</th>
-				<td class="border border-base-300"
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Architecture</Table.Head>
+				<Table.Cell
 					><ClickableStringFilter term="architecture" value={environment.architecture}
 						>{environment.architecture}</ClickableStringFilter
-					></td
+					></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
 		{#if environment.runtime_version}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Runtime Version</th>
-				<td class="border border-base-300">{environment.runtime_version}</td>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Runtime Version</Table.Head>
+				<Table.Cell>{environment.runtime_version}</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if environment.process_id}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Process ID</th>
-				<td class="border border-base-300">{environment.process_id}</td>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Process ID</Table.Head>
+				<Table.Cell>{environment.process_id}</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if environment.process_name}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Process Name</th>
-				<td class="border border-base-300">{environment.process_name}</td>
-			</tr>
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Process Name</Table.Head>
+				<Table.Cell>{environment.process_name}</Table.Cell>
+			</Table.Row>
 		{/if}
 		{#if environment.command_line}
-			<tr>
-				<th class="border border-base-300 whitespace-nowrap">Command Line</th>
-				<td class="border border-base-300"
-					><span class="inline line-clamp-2">{environment.command_line}</span></td
+			<Table.Row>
+				<Table.Head class="whitespace-nowrap">Command Line</Table.Head>
+				<Table.Cell
+					><span class="inline line-clamp-2">{environment.command_line}</span></Table.Cell
 				>
-			</tr>
+			</Table.Row>
 		{/if}
-	</tbody>
-</table>
+	</Table.Body>
+</Table.Root>
 
 {#if environment.data}
 	<div class="mt-2">

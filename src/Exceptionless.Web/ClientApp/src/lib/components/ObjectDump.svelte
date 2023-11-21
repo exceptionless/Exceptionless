@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as Table from '$comp/ui/table';
+
 	export let value: unknown;
 
 	let type = typeof value;
@@ -37,16 +39,16 @@
 		{/each}
 	</ul>
 {:else if isObject}
-	<table class="table table-zebra table-xs border border-base-300">
-		<tbody>
+	<Table.Root>
+		<Table.Body>
 			{#each Object.entries(value || {}) as [key, val] (key)}
-				<tr>
-					<th class="border border-base-300 whitespace-nowrap">{key}</th>
-					<td class="border border-base-300"><svelte:self value={val} /></td>
-				</tr>
+				<Table.Row>
+					<Table.Head class="whitespace-nowrap">{key}</Table.Head>
+					<Table.Cell><svelte:self value={val} /></Table.Cell>
+				</Table.Row>
 			{/each}
-		</tbody>
-	</table>
+		</Table.Body>
+	</Table.Root>
 {:else if isBoolean}
 	{value ? 'True' : 'False'}
 {:else if isNull}

@@ -8,7 +8,7 @@
 	const errors = getErrors(error);
 </script>
 
-<pre class="whitespace-pre-wrap break-words"><code
+<pre class="whitespace-pre-wrap break-words border p-2"><code
 		><StackTraceHeader {errors}
 		></StackTraceHeader>{#each errors.reverse() as error, index}{#if error.stack_trace}<div
 					class="pl-[10px]">{#each error.stack_trace as frame}{getStackFrame(frame)}<br
