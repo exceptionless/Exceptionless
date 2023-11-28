@@ -36,7 +36,7 @@ public class SemanticVersionTests : TestWithServices
     [InlineData("1.2.3.4 7ab3b4da18", "1.2.3-4")]
     [InlineData("4.1.0034", "4.1.34")]
     [InlineData("21.0.717+build20220623120110+commit32432423423", "21.0.717")]
-    public void CanParseSemanticVersion(string input, string expected)
+    public void CanParseSemanticVersion(string? input, string? expected)
     {
         var actual = _parser.Parse(input);
         Assert.Equal(expected, actual?.ToString());

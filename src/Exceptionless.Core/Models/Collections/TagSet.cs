@@ -1,16 +1,16 @@
 ﻿namespace Exceptionless.Core.Models;
 
-public class TagSet : HashSet<string>
+public class TagSet : HashSet<string?>
 {
     public TagSet() : base(StringComparer.OrdinalIgnoreCase) { }
 
-    public TagSet(IEnumerable<string> values) : base(StringComparer.OrdinalIgnoreCase)
+    public TagSet(IEnumerable<string?> values) : base(StringComparer.OrdinalIgnoreCase)
     {
-        foreach (string value in values)
+        foreach (string? value in values)
             Add(value);
     }
 
-    public new IDisposable Add(string item)
+    public new IDisposable Add(string? item)
     {
         base.Add(item);
         return new DisposableTag(this, item);
@@ -20,13 +20,13 @@ public class TagSet : HashSet<string>
     {
         private readonly TagSet _items;
 
-        public DisposableTag(TagSet items, string value)
+        public DisposableTag(TagSet items, string? value)
         {
             _items = items;
             Value = value;
         }
 
-        public string Value { get; private set; }
+        public string? Value { get; private set; }
 
         public void Dispose()
         {

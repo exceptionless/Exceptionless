@@ -50,7 +50,7 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
 
         if (ev.Tags is not null)
         {
-            foreach (string tag in ev.Tags)
+            foreach (string? tag in ev.Tags)
             {
                 if (String.IsNullOrEmpty(tag))
                     result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));

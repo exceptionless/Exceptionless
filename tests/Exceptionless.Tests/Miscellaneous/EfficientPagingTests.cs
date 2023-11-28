@@ -13,7 +13,7 @@ public class EfficientPagingTests : TestWithServices
     [InlineData("http://localhost?after=1", "1", null, true, false)]
     [InlineData("http://localhost?after=1", "1", "2", true, true)]
     [InlineData("http://localhost?before=11", null, "1", false, true)]
-    public void CanBeforeAndAfterLinks(string url, string before, string after, bool expectPrevious, bool expectNext)
+    public void CanBeforeAndAfterLinks(string url, string? before, string? after, bool expectPrevious, bool expectNext)
     {
         var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), before, after); ;
         byte expectedLinkCount = 0;

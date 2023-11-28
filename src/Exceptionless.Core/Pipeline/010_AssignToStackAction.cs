@@ -137,7 +137,7 @@ public class AssignToStackAction : EventPipelineActionBase
             {
                 ctx.Stack.Tags ??= new TagSet();
                 var newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
-                if (newTags.Count > 0 || ctx.Stack.Tags.Count > 50 || ctx.Stack.Tags.Any(t => t.Length > 100))
+                if (newTags.Count > 0 || ctx.Stack.Tags.Count > 50 || ctx.Stack.Tags.Any(t => t?.Length > 100))
                 {
                     ctx.Stack.Tags.AddRange(newTags);
                     ctx.Stack.Tags.RemoveExcessTags();

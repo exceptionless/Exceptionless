@@ -121,7 +121,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     [InlineData("date:(date cardinality:user sum:value avg:value sum:count~1) min:date max:date cardinality:user sum:count~1", true, false)] // stack dashboard
     [InlineData("avg:value cardinality:user date:(date cardinality:user)", true, false)] // session dashboard
     [InlineData("date:(date~month terms:(project cardinality:stack terms:(first @include:true)) cardinality:stack terms:(first @include:true))", true, true)] // Breakdown of total events, new events and unique events per month by project
-    public async Task CanProcessAggregationsAsync(string query, bool isValid, bool usesPremiumFeatures)
+    public async Task CanProcessAggregationsAsync(string? query, bool isValid, bool usesPremiumFeatures)
     {
         var info = await _validator.ValidateAggregationsAsync(query);
         _logger.LogInformation("UsesPremiumFeatures: {UsesPremiumFeatures} IsValid: {IsValid} Message: {Message}", info.UsesPremiumFeatures, info.IsValid, info.Message);
