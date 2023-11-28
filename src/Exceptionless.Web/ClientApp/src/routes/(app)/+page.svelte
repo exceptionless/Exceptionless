@@ -1,5 +1,6 @@
 <script lang="ts">
-	import * as Sheet from '$lib/components/ui/sheet';
+	import * as Card from '$comp/ui/card';
+	import * as Sheet from '$comp/ui/sheet';
 	import EventsTable from '$comp/events/table/EventsTable.svelte';
 	import EventsTailLogTable from '$comp/events/table/EventsTailLogTable.svelte';
 	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
@@ -51,44 +52,41 @@
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
-<!--<Card padding="sm" class="bg-white rounded-lg dark:bg-gray-800">-->
-<div class="flex justify-between items-center mb-4">
-	<div>
-		<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-white">Events</h3>
-	</div>
-</div>
-
-{#if $liveMode}
-	<EventsTailLogTable on:rowclick={onRowClick} {filter}>
-		<div slot="header" let:table>
-			<div class="flex justify-between items-center pb-4">
-				<div class="w-2/4">
-					<SearchInput value={$filter} onChanged={onFilterInputChanged} />
+<Card.Root>
+	<Card.Title class="mb-2 p-6 text-xl font-bold">Events</Card.Title>
+	<Card.Content>
+		{#if $liveMode}
+			<EventsTailLogTable on:rowclick={onRowClick} {filter}>
+				<div slot="header" let:table>
+					<div class="flex justify-between items-center pb-4">
+						<div class="w-2/4">
+							<SearchInput value={$filter} onChanged={onFilterInputChanged} />
+						</div>
+						<div class="flex items-center space-x-2">
+							<Switch id="live-mode" bind:checked={$liveMode}>Live</Switch>
+							<TableColumnPicker {table}></TableColumnPicker>
+						</div>
+					</div>
 				</div>
-				<div class="flex items-center space-x-2">
-					<Switch id="live-mode" bind:checked={$liveMode}>Live</Switch>
-					<TableColumnPicker {table}></TableColumnPicker>
+			</EventsTailLogTable>
+		{:else}
+			<EventsTable on:rowclick={onRowClick} {filter} {time}>
+				<div slot="header" let:table>
+					<div class="flex justify-between items-center pb-4">
+						<div class="w-2/4">
+							<SearchInput value={$filter} onChanged={onFilterInputChanged} />
+						</div>
+						<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
+						<div class="flex items-center space-x-2">
+							<Switch id="live-mode" bind:checked={$liveMode}>Live</Switch>
+							<TableColumnPicker {table}></TableColumnPicker>
+						</div>
+					</div>
 				</div>
-			</div>
-		</div>
-	</EventsTailLogTable>
-{:else}
-	<EventsTable on:rowclick={onRowClick} {filter} {time}>
-		<div slot="header" let:table>
-			<div class="flex justify-between items-center pb-4">
-				<div class="w-2/4">
-					<SearchInput value={$filter} onChanged={onFilterInputChanged} />
-				</div>
-				<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
-				<div class="flex items-center space-x-2">
-					<Switch id="live-mode" bind:checked={$liveMode}>Live</Switch>
-					<TableColumnPicker {table}></TableColumnPicker>
-				</div>
-			</div>
-		</div>
-	</EventsTable>
-{/if}
-<!--</Card>-->
+			</EventsTable>
+		{/if}
+	</Card.Content></Card.Root
+>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
 	<Sheet.Content class="w-full md:w-5/6 sm:max-w-full">

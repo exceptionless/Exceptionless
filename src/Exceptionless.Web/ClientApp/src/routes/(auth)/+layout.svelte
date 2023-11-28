@@ -3,7 +3,7 @@
 </script>
 
 <div class="flex h-screen">
-	<div class="m-auto w-full rounded-md bg-white p-6 shadow-md lg:max-w-lg">
+	<div class="m-auto w-full rounded-md p-6 shadow-md lg:max-w-lg">
 		<img class="mx-auto" src={logo} alt="Exceptionless" />
 		<slot />
 	</div>
