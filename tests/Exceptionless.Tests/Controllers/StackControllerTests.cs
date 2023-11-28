@@ -63,7 +63,7 @@ public class StackControllerTests : IntegrationTestsBase
     [InlineData(null)]
     [InlineData("1.0.0")]
     [InlineData("1.0.0.0")]
-    public async Task CanMarkFixed(string version)
+    public async Task CanMarkFixed(string? version)
     {
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);

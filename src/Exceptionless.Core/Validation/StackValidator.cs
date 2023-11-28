@@ -30,7 +30,7 @@ public class StackValidator : AbstractValidator<Stack>
         //if (stack.Tags.Count > 50)
         //    result.Errors.Add(new ValidationFailure("Tags", "Tags can't include more than 50 tags."));
 
-        foreach (string tag in stack.Tags)
+        foreach (string? tag in stack.Tags)
         {
             if (String.IsNullOrEmpty(tag))
                 result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));

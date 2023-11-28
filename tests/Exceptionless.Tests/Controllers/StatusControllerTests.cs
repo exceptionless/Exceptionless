@@ -29,7 +29,7 @@ public class StatusControllerTests : IntegrationTestsBase
     //[InlineData(null, true, false)] // TODO: Resolve issue where you are required to pass a message via the body.
     [InlineData("New Release!!", false)]
     [InlineData("New Release!!", true)]
-    public async Task CanSendReleaseNotification(string message, bool critical, bool sendMessageAsContentIfEmpty = true)
+    public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)
     {
         var utcNow = SystemClock.UtcNow;
 
@@ -41,7 +41,7 @@ public class StatusControllerTests : IntegrationTestsBase
                 .AsGlobalAdminUser()
                 .AppendPath("notifications/release")
                 .QueryStringIf(() => critical, "critical", critical)
-                .Content(new ValueFromBody<string>(message))
+                .Content(new ValueFromBody<string?>(message))
                 .StatusCodeShouldBeOk());
         }
         else
