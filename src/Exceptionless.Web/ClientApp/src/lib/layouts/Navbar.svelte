@@ -18,9 +18,7 @@
 	}
 </script>
 
-<nav
-	class="fixed z-30 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700"
->
+<nav class="fixed z-30 w-full border-b bg-secondary text-secondary-foreground">
 	<div class="py-3 px-3 lg:px-5 lg:pl-3">
 		<div class="flex justify-between items-center">
 			<div class="flex justify-start items-center">
@@ -29,7 +27,7 @@
 					aria-expanded="true"
 					aria-controls="sidebar"
 					on:click={onHamburgerClick}
-					class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+					class="hidden p-2 mr-3 rounded cursor-pointer lg:inline"
 				>
 					<svg
 						class="w-6 h-6"
@@ -49,7 +47,7 @@
 					aria-expanded="true"
 					aria-controls="sidebar"
 					on:click={onHamburgerClick}
-					class="p-2 mr-2 text-gray-600 rounded cursor-pointer lg:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+					class="p-2 mr-2 rounded cursor-pointer lg:hidden focus:ring-2"
 				>
 					<svg
 						id="toggleSidebarMobileHamburger"
@@ -96,7 +94,7 @@
 					id="toggleSidebarMobileSearch"
 					type="button"
 					on:click={() => isSidebarOpen.set(!$isSidebarOpen)}
-					class="p-2 text-gray-500 rounded-lg lg:hidden hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+					class="p-2 rounded-lg lg:hidden"
 				>
 					<span class="sr-only">Search</span>
 

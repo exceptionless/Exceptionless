@@ -27,20 +27,18 @@
 
 <aside
 	id="sidebar"
-	class="flex fixed top-0 left-0 z-20 flex-col flex-shrink-0 pt-16 w-64 h-full duration-75 lg:flex transition-width {$isSidebarOpen
+	class="bg-secondary text-secondary-foreground flex fixed top-0 left-0 z-20 flex-col flex-shrink-0 pt-16 w-64 h-full duration-75 lg:flex transition-width {$isSidebarOpen
 		? 'lg:w-64'
 		: 'lg:w-16 hidden'}"
 	aria-label="Sidebar"
 >
 	<div
-		class="flex relative flex-col flex-1 pt-0 min-h-0 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+		class="flex relative flex-col flex-1 pt-0 min-h-0 border-r"
 		on:mouseenter={() => onSidebarMouseEnter()}
 		on:mouseleave={() => onSidebarMouseLeave()}
 	>
 		<div class="flex overflow-y-auto flex-col flex-1 pt-5 pb-4">
-			<div
-				class="flex-1 px-3 space-y-1 bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700"
-			>
+			<div class="flex-1 px-3 space-y-1 divide-y">
 				<ul class="pb-2 space-y-2">
 					<li>
 						<form action="#" method="GET" class="lg:hidden">
@@ -50,11 +48,9 @@
 					<li>
 						<a
 							href="/next"
-							class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 group dark:text-gray-200 dark:hover:bg-gray-700"
+							class="flex items-center p-2 text-base font-normal rounded-lg group"
 						>
-							<IconChartPie
-								class="w-6 h-6 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
-							/>
+							<IconChartPie class="w-6 h-6 transition duration-75 " />
 							<span
 								class="ml-3 {!$isSidebarOpen && $isLargeScreen
 									? 'lg:hidden lg:absolute'
