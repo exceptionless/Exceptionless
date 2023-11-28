@@ -44,7 +44,7 @@ public sealed class EventValidatorTests : TestWithServices
     [InlineData("", false)]
     [InlineData("1", true)]
     [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
-    public void ValidateTag(string tag, bool isValid)
+    public void ValidateTag(string? tag, bool isValid)
     {
         var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
         ev.Tags ??= new TagSet();
@@ -59,7 +59,7 @@ public sealed class EventValidatorTests : TestWithServices
     [InlineData("", false)]
     [InlineData("1", true)]
     [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
-    public async Task ValidateTagAsync(string tag, bool isValid)
+    public async Task ValidateTagAsync(string? tag, bool isValid)
     {
         var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
         ev.Tags ??= new TagSet();
@@ -74,7 +74,7 @@ public sealed class EventValidatorTests : TestWithServices
     [InlineData("12345678", true)]
     [InlineData("1234567890123456", true)]
     [InlineData("123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123123456789012345678901234567890123", false)]
-    public void ValidateReferenceId(string referenceId, bool isValid)
+    public void ValidateReferenceId(string? referenceId, bool isValid)
     {
         var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, ReferenceId = referenceId, Date = SystemClock.OffsetNow, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
         Assert.Equal(isValid, result.IsValid);

@@ -579,7 +579,7 @@ public class EventControllerTests : IntegrationTestsBase
     {
         await CreateStacksAndEventsAsync();
 
-        string[] modes = new[] { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
+        string[] modes = { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
         foreach (string mode in modes)
         {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
@@ -656,7 +656,7 @@ public class EventControllerTests : IntegrationTestsBase
     [InlineData("@!status:open OR status:regressed")]
     [InlineData("@!(status:open OR status:regressed)")]
     [Theory]
-    public async Task WillExcludeDeletedStacks(string filter)
+    public async Task WillExcludeDeletedStacks(string? filter)
     {
         var utcNow = SystemClock.UtcNow;
 
@@ -1506,7 +1506,7 @@ public class EventControllerTests : IntegrationTestsBase
         return parameters?.GetValue(name);
     }
 
-    private static IDictionary<string, string> ParseLinkHeaderValue(string[] links)
+    private static Dictionary<string, string> ParseLinkHeaderValue(string[] links)
     {
         if (links is not { Length: > 0 })
             return new Dictionary<string, string>(0);

@@ -81,7 +81,7 @@ public sealed class GeoTests : TestWithServices
     [InlineData("Invalid")]
     [InlineData("x,y")]
     [InlineData("190,180")]
-    public async Task WillResetLocation(string geo)
+    public async Task WillResetLocation(string? geo)
     {
         var resolver = await GetResolverAsync(Log);
         if (resolver is NullGeoIpService)
@@ -297,7 +297,7 @@ public sealed class GeoTests : TestWithServices
     /// <summary>
     /// Takes in 32.8489,-96.9667 and only checks to one decimal place.
     /// </summary>
-    private void AssertCoordinatesAreEqual(string expected, string? actual)
+    private static void AssertCoordinatesAreEqual(string expected, string? actual)
     {
         if (String.Equals(actual, expected))
             return;

@@ -5,7 +5,7 @@
     <Product>Exceptionless</Product>
     <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
     <MinVerTagPrefix>v</MinVerTagPrefix>
-    <Copyright>Copyright (c) 2022 Exceptionless.  All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2023 Exceptionless.  All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
     <Authors>Exceptionless</Authors>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
     <PackageReference Include="AsyncFixer" Version="1.6.0" PrivateAssets="All" />
     <PackageReference Include="MinVer" Version="4.3.0" PrivateAssets="All" />
   </ItemGroup>
