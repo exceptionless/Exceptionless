@@ -36,6 +36,7 @@
 		class="flex relative flex-col flex-1 pt-0 min-h-0 border-r"
 		on:mouseenter={() => onSidebarMouseEnter()}
 		on:mouseleave={() => onSidebarMouseLeave()}
+		role="none"
 	>
 		<div class="flex overflow-y-auto flex-col flex-1 pt-5 pb-4">
 			<div class="flex-1 px-3 space-y-1 divide-y">
