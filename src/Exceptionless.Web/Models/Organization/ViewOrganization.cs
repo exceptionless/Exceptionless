@@ -113,11 +113,13 @@ public static class ViewOrganizationExtensions
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
             .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .OrderBy(u => u.Date)
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
             .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .OrderBy(u => u.Date)
             .ToList();
     }
 }
