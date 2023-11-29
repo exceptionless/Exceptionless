@@ -84,11 +84,13 @@ public static class ProjectExtensions
         // keep 1 year of usage
         project.Usage = project.Usage.Except(project.Usage
             .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .OrderBy(u => u.Date)
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         project.UsageHours = project.UsageHours.Except(project.UsageHours
             .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .OrderBy(u => u.Date)
             .ToList();
     }
 
