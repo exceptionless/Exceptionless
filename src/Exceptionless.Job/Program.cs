@@ -136,9 +136,9 @@ public class Program
         services.AddJobLifetimeService();
 
         if (options.CleanupData)
-            services.AddJob<CleanupDataJob>();
+            services.AddCronJob<CleanupDataJob>("30 */4 * * *");
         if (options.CleanupOrphanedData)
-            services.AddJob<CleanupOrphanedDataJob>();
+            services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         if (options.CloseInactiveSessions)
             services.AddJob<CloseInactiveSessionsJob>(true);
         if (options.DailySummary)
@@ -146,7 +146,7 @@ public class Program
         if (options.DataMigration)
             services.AddJob<DataMigrationJob>(true);
         if (options.DownloadGeoIPDatabase)
-            services.AddJob<DownloadGeoIPDatabaseJob>(true);
+            services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
         if (options.EventNotifications)
             services.AddJob<EventNotificationsJob>(true);
         if (options.EventPosts)
@@ -158,7 +158,7 @@ public class Program
         if (options.MailMessage)
             services.AddJob<MailMessageJob>(true);
         if (options.MaintainIndexes)
-            services.AddJob<MaintainIndexesJob>();
+            services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
         if (options.Migration)
             services.AddJob<MigrationJob>(true);
         if (options.StackStatus)
