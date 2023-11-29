@@ -39,9 +39,11 @@
 
 			if (
 				typeof ctx.response?.data === 'object' &&
-				(ctx.response.data as any).resultCount === undefined
+				(ctx.response.data as { resultCount?: number | null }).resultCount === undefined
 			) {
-				(ctx.response.data as any).resultCount = !isNaN(resultCountHeaderValue)
+				(ctx.response.data as { resultCount?: number | null }).resultCount = !isNaN(
+					resultCountHeaderValue
+				)
 					? resultCountHeaderValue
 					: null;
 			}

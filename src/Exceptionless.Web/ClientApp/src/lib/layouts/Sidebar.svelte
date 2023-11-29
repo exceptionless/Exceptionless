@@ -1,7 +1,6 @@
 <script lang="ts">
 	import IconChartPie from '~icons/mdi/chart-pie';
 
-	import { page } from '$app/stores';
 	import { isSidebarOpen, isSidebarExpanded, isLargeScreen } from '$lib/stores/sidebar';
 	import SearchInput from '$comp/SearchInput.svelte';
 
@@ -65,11 +64,10 @@
 	</div>
 </aside>
 
-<div
+<button
 	class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!$isLargeScreen && $isSidebarOpen
 		? ''
 		: 'hidden'}"
 	aria-label="Close sidebar"
 	on:click={onBackdropClick}
-	role="none"
-></div>
+></button>
