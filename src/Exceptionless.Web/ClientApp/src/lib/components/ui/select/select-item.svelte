@@ -4,7 +4,6 @@
 	import { Check } from 'radix-icons-svelte';
 
 	type $$Props = SelectPrimitive.ItemProps;
-	type $$Events = Required<SelectPrimitive.ItemEvents>;
 
 	let className: $$Props['class'] = undefined;
 	export let value: $$Props['value'];
