@@ -3,7 +3,6 @@
 	import { cn } from '$lib/utils';
 
 	type $$Props = SwitchPrimitive.Props;
-	type $$Events = SwitchPrimitive.Events;
 
 	let className: $$Props['class'] = undefined;
 	export let checked: $$Props['checked'] = undefined;

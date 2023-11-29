@@ -4,7 +4,6 @@
 	import { DotFilled } from 'radix-icons-svelte';
 
 	type $$Props = DropdownMenuPrimitive.RadioItemProps;
-	type $$Events = DropdownMenuPrimitive.RadioItemEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let value: DropdownMenuPrimitive.RadioItemProps['value'];
