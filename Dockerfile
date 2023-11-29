@@ -144,7 +144,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 8.0 --quality preview --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 8.0 --quality ga --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200
@@ -200,7 +200,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 8.0 --quality preview --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 8.0 --quality ga --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200

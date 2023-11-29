@@ -32,7 +32,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.*
-          dotnet-quality: preview
+          #dotnet-quality: preview
 
       - name: Version
         id: version
@@ -58,7 +58,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.*
-          dotnet-quality: preview
+          #dotnet-quality: preview
 
       - name: Start Services
         working-directory: docker
@@ -124,7 +124,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.*
-          dotnet-quality: preview
+          #dotnet-quality: preview
 
       - name: Cache node_modules
         uses: actions/cache@v3
