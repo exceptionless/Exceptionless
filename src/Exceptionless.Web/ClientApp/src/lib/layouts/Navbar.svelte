@@ -2,7 +2,7 @@
 	import IconSearch from '~icons/mdi/search';
 
 	import logo from '$lib/assets/exceptionless-48.png';
-	import { isPageWithSidebar, isSidebarOpen, isSidebarExpanded } from '$lib/stores/sidebar';
+	import { isSidebarOpen, isSidebarExpanded } from '$lib/stores/sidebar';
 	import * as Avatar from '$comp/ui/avatar';
 	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import SearchInput from '$comp/SearchInput.svelte';
