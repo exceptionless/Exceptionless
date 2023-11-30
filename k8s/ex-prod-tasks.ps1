@@ -58,7 +58,10 @@ helm upgrade --reset-values --namespace ingress-nginx -f nginx-values.yaml ingre
 # upgrade cert-manager
 # https://github.com/jetstack/cert-manager/releases
 helm repo update
-helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset-values --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --dry-run
+helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset-values --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --set installCRDs=true --dry-run
+
+# upgrade kube-state-metrics
+helm upgrade --namespace elastic-system kube-state-metrics prometheus-community/kube-state-metrics --reset-values
 
 # upgrade dashboard
 # https://github.com/kubernetes/dashboard/releases

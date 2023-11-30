@@ -116,8 +116,7 @@ az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
 # https://github.com/jetstack/cert-manager/releases
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --set installCRDs=true
 kubectl apply -f cluster-issuer.yaml
 
 # install kubecost
