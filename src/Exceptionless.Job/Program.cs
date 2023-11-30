@@ -135,18 +135,28 @@ public class Program
     {
         services.AddJobLifetimeService();
 
-        if (options.CleanupData)
+        if (options is { CleanupData: true, AllJobs: true })
             services.AddCronJob<CleanupDataJob>("30 */4 * * *");
-        if (options.CleanupOrphanedData)
+        if (options is { CleanupData: true, AllJobs: false })
+            services.AddJob<CleanupDataJob>();
+
+        if (options is { CleanupOrphanedData: true, AllJobs: true })
             services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
+        if (options is { CleanupOrphanedData: true, AllJobs: false })
+            services.AddJob<CleanupOrphanedDataJob>();
+
         if (options.CloseInactiveSessions)
             services.AddJob<CloseInactiveSessionsJob>(true);
         if (options.DailySummary)
             services.AddJob<DailySummaryJob>(true);
         if (options.DataMigration)
             services.AddJob<DataMigrationJob>(true);
-        if (options.DownloadGeoIPDatabase)
+
+        if (options is { DownloadGeoIPDatabase: true, AllJobs: true })
             services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
+        if (options is { DownloadGeoIPDatabase: true, AllJobs: false })
+            services.AddJob<DownloadGeoIPDatabaseJob>(true);
+
         if (options.EventNotifications)
             services.AddJob<EventNotificationsJob>(true);
         if (options.EventPosts)
@@ -157,8 +167,12 @@ public class Program
             services.AddJob<EventUserDescriptionsJob>(true);
         if (options.MailMessage)
             services.AddJob<MailMessageJob>(true);
-        if (options.MaintainIndexes)
+
+        if (options is { MaintainIndexes: true, AllJobs: true })
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
+        if (options is { MaintainIndexes: true, AllJobs: false })
+            services.AddJob<MaintainIndexesJob>();
+
         if (options.Migration)
             services.AddJob<MigrationJob>(true);
         if (options.StackStatus)
