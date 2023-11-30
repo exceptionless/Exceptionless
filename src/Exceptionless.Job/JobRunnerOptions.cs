@@ -7,6 +7,8 @@ public class JobRunnerOptions
         if (args.Length > 1)
             throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
 
+        AllJobs = args.Length == 0;
+
         CleanupData = args.Length == 0 || args.Contains(nameof(CleanupData), StringComparer.OrdinalIgnoreCase);
         if (CleanupData && args.Length != 0)
             JobName = nameof(CleanupData);
@@ -77,6 +79,7 @@ public class JobRunnerOptions
     }
 
     public string JobName { get; } = "All";
+    public bool AllJobs { get; }
     public bool CleanupData { get; }
     public bool CleanupOrphanedData { get; }
     public bool CloseInactiveSessions { get; }
