@@ -60,8 +60,8 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl create -f https://download.elastic.co/downloads/eck/2.9.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.9.0/operator.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.10.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.10.0/operator.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
@@ -116,7 +116,7 @@ az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
 # https://github.com/jetstack/cert-manager/releases
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.12.2/cert-manager.crds.yaml
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml
 helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
 kubectl apply -f cluster-issuer.yaml
 
