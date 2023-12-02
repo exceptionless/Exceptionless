@@ -53,12 +53,12 @@
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <Card.Root>
-	<Card.Title class="mb-2 p-6 text-xl font-bold">Events</Card.Title>
+	<Card.Title class="p-6 pb-4 text-xl font-bold">Events</Card.Title>
 	<Card.Content>
 		{#if $liveMode}
 			<EventsTailLogTable on:rowclick={onRowClick} {filter}>
 				<div slot="header" let:table>
-					<div class="flex justify-between items-center pb-4">
+					<div class="flex justify-between items-center p-2 pb-4">
 						<div class="w-2/4">
 							<SearchInput value={$filter} onChanged={onFilterInputChanged} />
 						</div>
@@ -72,7 +72,7 @@
 		{:else}
 			<EventsTable on:rowclick={onRowClick} {filter} {time}>
 				<div slot="header" let:table>
-					<div class="flex justify-between items-center pb-4">
+					<div class="flex justify-between items-center px-2 pb-4">
 						<div class="w-2/4">
 							<SearchInput value={$filter} onChanged={onFilterInputChanged} />
 						</div>

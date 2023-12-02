@@ -36,5 +36,8 @@
 		"source.fixAll": true
 	},
 	"editor.formatOnSave": true,
-	"svelte.plugin.svelte.defaultScriptLanguage": "ts"
+	"svelte.plugin.svelte.defaultScriptLanguage": "ts",
+	"tailwindCSS.includeLanguages": {
+		"svelte": "html"
+	}
 }
