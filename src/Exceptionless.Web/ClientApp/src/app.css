@@ -3,66 +3,66 @@
 @tailwind utilities;
 
 @layer base {
-	:root {
+    :root {
 		--background: 0 0% 100%;
-		--foreground: 240 10% 3.9%;
+		--foreground: 221 39% 11%;
 
-		--muted: 240 4.8% 95.9%;
+		--muted: 210 20% 98%;
 		--muted-foreground: 240 3.8% 46.1%;
 
-		--popover: 240 4.8% 95.9%;
-		--popover-foreground: 240 5.9% 10%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 221 39% 11%;
 
-		--card: 240 4.8% 95.9%;
-		--card-foreground: 240 5.9% 10%;
+		--card: 0 0% 100%;
+		--card-foreground: 221 39% 11%;
 
-		--border: 240 5.9% 90%;
-		--input: 240 5.9% 90%;
+		--border: 220 13% 91%;
+		--input: 220 13% 91%;
 
 		--primary: 96 64% 46%;
-		--primary-foreground: 0 0% 98%;
+		--primary-foreground: 0 0% 100%;
 
-		--secondary: 240 4.8% 95.9%;
+		--secondary: 210 20% 98%;
 		--secondary-foreground: 240 5.9% 10%;
 
-		--accent: 240 4.8% 95.9%;
+		--accent: 210 20% 98%;
 		--accent-foreground: 240 5.9% 10%;
 
 		--destructive: 0 72.2% 50.6%;
-		--destructive-foreground: 0 0% 98%;
+		--destructive-foreground: 0 0% 100%;
 
-		--ring: 240 10% 3.9%;
+		--ring: 221 39% 11%;
 
 		--radius: 0.5rem;
 	}
 
-	.dark {
-		--background: 240 10% 3.9%;
-		--foreground: 0 0% 98%;
+    	.dark {
+		--background: 215 28% 17%;
+		--foreground: 0 0% 100%;
 
-		--muted: 240 3.7% 15.9%;
+		--muted: 221 39% 11%;
 		--muted-foreground: 240 5% 64.9%;
 
-		--popover: 240 3.7% 15.9%;
-		--popover-foreground: 0 0% 98%;
+		--popover: 215 28% 17%;
+		--popover-foreground: 0 0% 100%;
 
-		--card: 240 3.7% 15.9%;
-		--card-foreground: 0 0% 98%;
+		--card: 215 28% 17%;
+		--card-foreground: 0 0% 100%;
 
-		--border: 240 3.7% 15.9%;
-		--input: 240 3.7% 15.9%;
+		--border: 217 19% 27%;
+		--input: 217 19% 27%;
 
 		--primary: 96 64% 46%;
 		--primary-foreground: 240 5.9% 10%;
 
-		--secondary: 240 3.7% 15.9%;
-		--secondary-foreground: 0 0% 98%;
+		--secondary: 221 39% 11%;
+		--secondary-foreground: 0 0% 100%;
 
-		--accent: 240 3.7% 15.9%;
-		--accent-foreground: 0 0% 98%;
+		--accent: 221 39% 11%;
+		--accent-foreground: 0 0% 100%;
 
 		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 0 0% 98%;
+		--destructive-foreground: 0 0% 100%;
 
 		--ring: 240 4.9% 83.9%;
 	}

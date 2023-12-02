@@ -18,10 +18,10 @@
 	}
 </script>
 
-<nav class="fixed z-30 w-full border-b bg-secondary text-secondary-foreground">
-	<div class="py-3 px-3 lg:px-5 lg:pl-3">
-		<div class="flex justify-between items-center">
-			<div class="flex justify-start items-center">
+<nav class="fixed z-30 w-full border-b bg-background text-foreground">
+	<div class="px-3 py-3 lg:px-5 lg:pl-3">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center justify-start">
 				<button
 					id="toggleSidebar"
 					aria-expanded="true"
@@ -77,7 +77,7 @@
 					</svg>
 				</button>
 				<a href="./" class="flex mr-14">
-					<img src={logo} class="mr-3 h-8" alt="Exceptionless Logo" />
+					<img src={logo} class="h-8 mr-3" alt="Exceptionless Logo" />
 					<span
 						class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"
 						>Exceptionless</span
@@ -110,9 +110,9 @@
 								builders={[builder]}
 								size="icon"
 								variant="ghost"
-								class="focus:ring-4 rounded-full"
+								class="rounded-full"
 							>
-								<Avatar.Root title="TODO">
+								<Avatar.Root title="TODO" class="h-7 w-7">
 									<Avatar.Image
 										src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
 										alt="gravatar"
