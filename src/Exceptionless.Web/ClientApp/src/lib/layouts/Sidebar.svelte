@@ -26,7 +26,7 @@
 
 <aside
 	id="sidebar"
-	class="flex fixed top-0 left-0 z-20 flex-col flex-shrink-0 pt-16 w-64 h-full duration-75 lg:flex transition-width {$isSidebarOpen
+	class="flex fixed top-0 left-0 z-20 flex-col flex-shrink-0 pt-16 w-64 h-full duration-75 lg:flex transition-width bg-background text-foreground {$isSidebarOpen
 		? 'lg:w-64'
 		: 'lg:w-16 hidden'}"
 	aria-label="Sidebar"
@@ -70,6 +70,7 @@
 	class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!$isLargeScreen && $isSidebarOpen
 		? ''
 		: 'hidden'}"
+    title="Close sidebar"
 	aria-label="Close sidebar"
 	on:click={onBackdropClick}
 ></button>
