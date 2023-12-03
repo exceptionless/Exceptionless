@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Input from '$comp/ui/input/input.svelte';
+	import { Label } from '$comp/ui/label';
 	import type { ProblemDetails } from '$lib/api/FetchClient';
 
 	export let name: string;
@@ -20,27 +22,26 @@
 	}
 </script>
 
-<div class="form-control">
-	<label for={name} class="label">
-		<span class="label-text">{label}</span>
+<div class="space-y-2">
+	<Label for={name} class={error ? 'text-destructive' : ''}>
+		{label}
 		<slot name="label" />
-	</label>
-	<input
+	</Label>
+	<Input
 		id={name}
 		type="text"
 		{autocomplete}
 		{placeholder}
 		{minlength}
 		{maxlength}
-		class="input input-bordered input-primary w-full"
-		class:input-error={error}
+		class="w-full"
 		on:change={clearError}
 		bind:value
 		{required}
 	/>
 	{#if error}
-		<label for={name} class="label">
-			<span class="label-text text-error">{error.join(' ')}</span>
-		</label>
+		<Label for={name} class="text-[0.8rem] font-medium text-destructive"
+			>{error.join(' ')}</Label
+		>
 	{/if}
 </div>
