@@ -40,7 +40,7 @@
 						<Checkbox
 							id={getColumnId(column)}
 							checked={column.getIsVisible()}
-							on:click={column.getToggleVisibilityHandler()}
+							on:click={() => column.toggleVisibility()}
 							>{column.columnDef.header}</Checkbox
 						>
 					</div>
