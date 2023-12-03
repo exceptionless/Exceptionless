@@ -1,4 +1,6 @@
 <script lang="ts">
+	import IconClose from '~icons/mdi/close';
+	import IconMenu from '~icons/mdi/menu';
 	import IconSearch from '~icons/mdi/search';
 
 	import logo from '$lib/assets/exceptionless-48.png';
@@ -22,60 +24,28 @@
 	<div class="px-3 py-3 lg:px-5 lg:pl-3">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center justify-start">
-				<button
-					id="toggleSidebar"
-					aria-expanded="true"
-					aria-controls="sidebar"
+				<Button
 					on:click={onHamburgerClick}
-					class="hidden p-2 mr-3 rounded cursor-pointer lg:inline"
-				>
-					<svg
-						class="w-6 h-6"
-						fill="currentColor"
-						viewBox="0 0 20 20"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-							clip-rule="evenodd"
-						></path>
-					</svg>
-				</button>
-				<button
-					id="toggleSidebarMobile"
-					aria-expanded="true"
+					variant="outline"
+					size="icon"
+					class="hidden p-1 mr-3 lg:block"
 					aria-controls="sidebar"
-					on:click={onHamburgerClick}
-					class="p-2 mr-2 rounded cursor-pointer lg:hidden focus:ring-2"
 				>
-					<svg
-						id="toggleSidebarMobileHamburger"
-						class="w-6 h-6"
-						fill="currentColor"
-						viewBox="0 0 20 20"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-							clip-rule="evenodd"
-						></path>
-					</svg>
-					<svg
-						id="toggleSidebarMobileClose"
-						class="hidden w-6 h-6"
-						fill="currentColor"
-						viewBox="0 0 20 20"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-							clip-rule="evenodd"
-						></path>
-					</svg>
-				</button>
+					<IconMenu class="w-6 h-6" />
+				</Button>
+				<Button
+					on:click={onHamburgerClick}
+					variant="outline"
+					size="icon"
+					class="mr-2 lg:hidden"
+					aria-controls="sidebar"
+				>
+					{#if $isSidebarOpen}
+						<IconClose class="w-6 h-6" />
+					{:else}
+						<IconMenu class="w-6 h-6" />
+					{/if}
+				</Button>
 				<a href="./" class="flex mr-14">
 					<img src={logo} class="h-8 mr-3" alt="Exceptionless Logo" />
 					<span
@@ -89,83 +59,81 @@
 					</div>
 				</form>
 			</div>
-			<div class="flex items-center">
-				<button
-					id="toggleSidebarMobileSearch"
-					type="button"
+			<div class="flex items-center gap-x-2 lg:gap-x-3">
+				<Button
+					variant="outline"
+					size="icon"
 					on:click={() => isSidebarOpen.set(!$isSidebarOpen)}
-					class="p-2 rounded-lg lg:hidden"
+					class="lg:hidden"
 				>
 					<span class="sr-only">Search</span>
 
 					<IconSearch class="w-6 h-6" />
-				</button>
+				</Button>
 
 				<DarkModeButton></DarkModeButton>
 
-				<div class="ml-3">
-					<DropdownMenu.Root positioning={{ placement: 'bottom-end' }}>
-						<DropdownMenu.Trigger asChild let:builder>
-							<Button
-								builders={[builder]}
-								size="icon"
-								variant="ghost"
-								class="rounded-full"
-							>
-								<Avatar.Root title="TODO" class="h-7 w-7">
-									<Avatar.Image
-										src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
-										alt="gravatar"
-									/>
-									<Avatar.Fallback>TODO</Avatar.Fallback>
-								</Avatar.Root>
-							</Button>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content class="w-56">
-							<DropdownMenu.Label>My Account</DropdownMenu.Label>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Group>
-								<DropdownMenu.Item>
-									Profile
-									<DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-								<DropdownMenu.Item>
-									Billing
-									<DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-								<DropdownMenu.Item>
-									Settings
-									<DropdownMenu.Shortcut>⌘S</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-								<DropdownMenu.Item>
-									Keyboard shortcuts
-									<DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-							</DropdownMenu.Group>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Group>
-								<DropdownMenu.Item>Team</DropdownMenu.Item>
-								<DropdownMenu.Item>
-									Invite users
-									<DropdownMenu.Shortcut>⌘+I</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-								<DropdownMenu.Item>
-									New Team
-									<DropdownMenu.Shortcut>⌘+T</DropdownMenu.Shortcut>
-								</DropdownMenu.Item>
-							</DropdownMenu.Group>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Item>GitHub</DropdownMenu.Item>
-							<DropdownMenu.Item>Support</DropdownMenu.Item>
-							<DropdownMenu.Item>API</DropdownMenu.Item>
-							<DropdownMenu.Separator />
+				<DropdownMenu.Root positioning={{ placement: 'bottom-end' }}>
+					<DropdownMenu.Trigger asChild let:builder>
+						<Button
+							builders={[builder]}
+							size="icon"
+							variant="ghost"
+							class="rounded-full"
+						>
+							<Avatar.Root title="TODO" class="h-7 w-7">
+								<Avatar.Image
+									src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100"
+									alt="gravatar"
+								/>
+								<Avatar.Fallback>TODO</Avatar.Fallback>
+							</Avatar.Root>
+						</Button>
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content class="w-56">
+						<DropdownMenu.Label>My Account</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
 							<DropdownMenu.Item>
-								Sign out
-								<DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
+								Profile
+								<DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
-				</div>
+							<DropdownMenu.Item>
+								Billing
+								<DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item>
+								Settings
+								<DropdownMenu.Shortcut>⌘S</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item>
+								Keyboard shortcuts
+								<DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							<DropdownMenu.Item>Team</DropdownMenu.Item>
+							<DropdownMenu.Item>
+								Invite users
+								<DropdownMenu.Shortcut>⌘+I</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item>
+								New Team
+								<DropdownMenu.Shortcut>⌘+T</DropdownMenu.Shortcut>
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item>GitHub</DropdownMenu.Item>
+						<DropdownMenu.Item>Support</DropdownMenu.Item>
+						<DropdownMenu.Item>API</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item>
+							Sign out
+							<DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 			</div>
 		</div>
 	</div>

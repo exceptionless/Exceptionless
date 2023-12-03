@@ -7,7 +7,7 @@
 	import IconWeb from '~icons/mdi/web';
 </script>
 
-<Card.Root class="my-6 mx-4">
+<Card.Root class="mx-4 my-6">
 	<Card.Content class="pt-6 mx-4 md:flex md:items-center md:justify-between">
 		<ul class="flex flex-wrap items-center mb-6 space-y-1 md:mb-0">
 			<li>
@@ -45,6 +45,7 @@
 			<a
 				href="https://www.facebook.com/exceptionless/"
 				target="_blank"
+				class="text-muted-foreground hover:text-foreground"
 				aria-label="Exceptionless Facebook Website"
 			>
 				<IconFacebook class="w-5 h-5" />
@@ -52,6 +53,7 @@
 			<a
 				href="https://x.com/Exceptionless"
 				target="_blank"
+				class="text-muted-foreground hover:text-foreground"
 				aria-label="Exceptionless Twitter Website"
 			>
 				<IconTwitter class="w-5 h-5" />
@@ -59,11 +61,17 @@
 			<a
 				href="https://github.com/exceptionless"
 				target="_blank"
+				class="text-muted-foreground hover:text-foreground"
 				aria-label="Exceptionless GitHub Website"
 			>
 				<IconGitHub class="w-5 h-5" />
 			</a>
-			<a href="https://exceptionless.com/" target="_blank" aria-label="Exceptionless Website">
+			<a
+				href="https://exceptionless.com/"
+				class="text-muted-foreground hover:text-foreground"
+				target="_blank"
+				aria-label="Exceptionless Website"
+			>
 				<IconWeb class="w-5 h-5" />
 			</a>
 		</div>
