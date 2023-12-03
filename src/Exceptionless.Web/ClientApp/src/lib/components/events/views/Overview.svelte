@@ -24,6 +24,7 @@
 	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 	import { Badge } from '$comp/ui/badge';
+	import { Button } from '$comp/ui/button';
 
 	export let event: PersistentEvent;
 
@@ -81,7 +82,7 @@
 				<Table.Cell>
 					{#if !event.data?.sessionend}
 						<span
-							class="bg-green-500 rounded-full inline-flex items-center w-2 h-2 animate-pulse"
+							class="inline-flex items-center w-2 h-2 bg-green-500 rounded-full animate-pulse"
 							title="Online"
 						></span>
 					{/if}
@@ -214,8 +215,12 @@
 						>{requestUrl}</ClickableStringFilter
 					>
 
-					<a href={requestUrl} target="_blank" class="link" title="Open in new window"
-						><IconOpenInNew /></a
+					<Button
+						href={requestUrl}
+						target="_blank"
+						variant="outline"
+						size="icon"
+						title="Open in new window"><IconOpenInNew /></Button
 					></Table.Cell
 				>
 			</Table.Row>
@@ -224,7 +229,7 @@
 </Table.Root>
 
 {#if userEmail || userIdentity || userName || userDescription}
-	<h4 class="text-lg mt-4 mb-2">User Info</h4>
+	<h4 class="mt-4 mb-2 text-lg">User Info</h4>
 	<Table.Root>
 		<Table.Body>
 			{#if userEmail}

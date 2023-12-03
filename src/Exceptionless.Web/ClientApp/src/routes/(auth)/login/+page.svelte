@@ -26,6 +26,7 @@
 	import { Login } from '$lib/models/api';
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
+	import { Button } from '$comp/ui/button';
 
 	const data = new Login();
 	data.invite_token = $page.url.searchParams.get('token');
@@ -51,9 +52,12 @@
 	<title>Log in</title>
 </svelte:head>
 
-<h2 class="mt-4 mb-2 text-center text-2xl font-bold leading-9 tracking-tight">
+<h2
+	class="mt-4 mb-2 text-3xl font-semibold leading-9 tracking-tight text-center transition-colors scroll-m-20 first:mt-0"
+>
 	Log in to your account
 </h2>
+
 <form on:submit|preventDefault={onLogin}>
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	<EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}
@@ -68,81 +72,72 @@
 		{problem}
 		placeholder="Enter password"
 	>
-		<span slot="label" class="label-text-alt text-sm">
-			<a href="/forgot-password" class="link link-secondary" tabindex="-1">Forgot password?</a
+		<span slot="label" class="text-sm label-text-alt">
+			<Button href="/forgot-password" variant="link" class="h-0 px-0 py-0"
+				>Forgot password?</Button
 			>
 		</span>
 	</PasswordInput>
 	<div class="my-4">
-		<button type="submit" class="btn btn-primary btn-block">
+		<Button type="submit">
 			{#if $loading}
 				<Loading></Loading> Logging in...
 			{:else}
 				Login
 			{/if}
-		</button>
+		</Button>
 	</div>
 </form>
 
 {#if enableOAuthLogin}
-	<div class="my-4 flex w-full items-center">
+	<div class="flex items-center w-full my-4">
 		<hr class="w-full" />
 		<p class="px-3">OR</p>
 		<hr class="w-full" />
 	</div>
-	<div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
+	<div class="grid grid-flow-col grid-rows-2 gap-4 auto-cols-2">
 		{#if liveClientId}
-			<button
-				class="btn"
-				aria-label="Login with Microsoft"
-				on:click={() => liveLogin(redirectUrl)}
-			>
+			<Button aria-label="Login with Microsoft" on:click={() => liveLogin(redirectUrl)}>
 				<IconMicrosoft /> Microsoft
-			</button>
+			</Button>
 		{/if}
 		{#if googleClientId}
-			<button
-				class="btn"
-				aria-label="Login with Google"
-				on:click={() => googleLogin(redirectUrl)}
-			>
+			<Button aria-label="Login with Google" on:click={() => googleLogin(redirectUrl)}>
 				<IconGoogle /> Google
-			</button>
+			</Button>
 		{/if}
 		{#if facebookClientId}
-			<button
-				class="btn"
-				aria-label="Login with Facebook"
-				on:click={() => facebookLogin(redirectUrl)}
-			>
+			<Button aria-label="Login with Facebook" on:click={() => facebookLogin(redirectUrl)}>
 				<IconFacebook /> Facebook
-			</button>
+			</Button>
 		{/if}
 		{#if gitHubClientId}
-			<button
-				class="btn"
-				aria-label="Login with GitHub"
-				on:click={() => githubLogin(redirectUrl)}
-			>
+			<Button aria-label="Login with GitHub" on:click={() => githubLogin(redirectUrl)}>
 				<IconGitHub /> GitHub
-			</button>
+			</Button>
 		{/if}
 	</div>
 {/if}
 
 {#if enableAccountCreation}
-	<p class="mt-5 text-center text-sm">
+	<p class="mt-5 text-sm text-center">
 		Not a member?
-		<a href="/signup" class="link link-primary">Start a free trial</a>
+		<Button href="/signup" variant="link" class="h-0 px-0 py-0">Start a free trial</Button>
 	</p>
 
-	<p class="mt-5 text-center text-sm">
-		By signing up, you agree to our <a
+	<p class="mt-5 text-sm text-center">
+		By signing up, you agree to our <Button
 			href="https://exceptionless.com/privacy"
 			target="_blank"
-			class="link">Privacy Policy</a
+			variant="link"
+			class="h-0 px-0 py-0">Privacy Policy</Button
 		>
 		and
-		<a href="https://exceptionless.com/terms" target="_blank" class="link">Terms of Service</a>.
+		<Button
+			href="https://exceptionless.com/terms"
+			target="_blank"
+			variant="link"
+			class="h-0 px-0 py-0">Terms of Service</Button
+		>.
 	</p>
 {/if}

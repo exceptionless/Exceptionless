@@ -5,5 +5,5 @@
 </script>
 
 {#if text}
-	<p class="text-error">{text}</p>
+	<p class="text-[0.8rem] font-medium text-destructive">{text}</p>
 {/if}

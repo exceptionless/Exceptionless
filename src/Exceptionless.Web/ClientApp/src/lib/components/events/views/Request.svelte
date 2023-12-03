@@ -5,6 +5,7 @@
 	import type { PersistentEvent } from '$lib/models/api';
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 	import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
+	import { Button } from '$comp/ui/button';
 
 	export let event: PersistentEvent;
 
@@ -60,8 +61,12 @@
 						>{requestUrl}</ClickableStringFilter
 					>
 
-					<a href={requestUrl} target="_blank" class="link" title="Open in new window"
-						><IconOpenInNew /></a
+					<Button
+						href={requestUrl}
+						target="_blank"
+						variant="outline"
+						size="icon"
+						title="Open in new window"><IconOpenInNew /></Button
 					></Table.Cell
 				>
 			</Table.Row>
@@ -162,7 +167,7 @@
 {/if}
 
 {#if hasHeaders}
-	<h4 class="text-lg mt-4 mb-2">Headers</h4>
+	<h4 class="mt-4 mb-2 text-lg">Headers</h4>
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
@@ -182,7 +187,7 @@
 {/if}
 
 {#if hasCookies}
-	<h4 class="text-lg mt-4 mb-2">Cookie Values</h4>
+	<h4 class="mt-4 mb-2 text-lg">Cookie Values</h4>
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
