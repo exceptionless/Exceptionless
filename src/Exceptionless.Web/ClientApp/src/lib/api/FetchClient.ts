@@ -334,9 +334,8 @@ export class FetchClient {
 			!response.ok ||
 			response.headers.get('Content-Type')?.startsWith('application/problem+json')
 		) {
-
 			jsonResponse.problem = new ProblemDetails();
-            Object.assign(jsonResponse.problem, data);
+			Object.assign(jsonResponse.problem, data);
 			jsonResponse.data = null;
 			return jsonResponse;
 		}

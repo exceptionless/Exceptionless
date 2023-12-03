@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
-
+	import { ModeWatcher } from 'mode-watcher';
 	import { Toasts } from 'svoast';
+
 	import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient';
 	import { accessToken } from '$api/auth';
 	import '../app.css';
@@ -13,11 +14,12 @@
 	const queryClient = new QueryClient();
 </script>
 
-<QueryClientProvider client={queryClient}>
-	<div class="bg-background text-foreground">
+<div class="bg-background text-foreground">
+	<ModeWatcher defaultMode={'dark'} />
+	<QueryClientProvider client={queryClient}>
 		<slot />
-	</div>
-	<SvelteQueryDevtools />
-</QueryClientProvider>
+		<SvelteQueryDevtools />
+	</QueryClientProvider>
 
-<Toasts position="bottom-right" />
+	<Toasts position="bottom-right" />
+</div>
