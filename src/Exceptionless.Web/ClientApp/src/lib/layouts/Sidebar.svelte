@@ -70,7 +70,7 @@
 	class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!$isLargeScreen && $isSidebarOpen
 		? ''
 		: 'hidden'}"
-    title="Close sidebar"
+	title="Close sidebar"
 	aria-label="Close sidebar"
 	on:click={onBackdropClick}
 ></button>

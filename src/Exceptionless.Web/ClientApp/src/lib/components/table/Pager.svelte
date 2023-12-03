@@ -3,30 +3,36 @@
 	import NavigateBeforeIcon from '~icons/mdi/navigate-before';
 	import NavigateNextIcon from '~icons/mdi/navigate-next';
 	import { createEventDispatcher } from 'svelte';
+	import { Button } from '$comp/ui/button';
 
 	export let canNavigateToFirstPage: boolean;
 	export let hasPrevious: boolean;
 	export let hasNext: boolean;
 
 	const dispatch = createEventDispatcher();
+
+	function navigateToFirstPage(e: Event) {
+		e.preventDefault();
+		dispatch('navigatetofirstpage');
+	}
+
+	function navigateToPreviousPage(e: Event) {
+		e.preventDefault();
+		dispatch('previous');
+	}
+
+	function navigateToNextPage(e: Event) {
+		e.preventDefault();
+		dispatch('next');
+	}
 </script>
 
-<div class="join text-gray-900 dark:text-white">
-	{#if canNavigateToFirstPage}
-		<button
-			class="btn btn-square btn-outline join-item btn-sm"
-			on:click|preventDefault={() => dispatch('navigatetofirstpage')}
-			><FirstPageIcon /></button
-		>
-	{/if}
-	<button
-		class="btn btn-square btn-outline join-item btn-sm"
-		disabled={!hasPrevious}
-		on:click|preventDefault={() => dispatch('previous')}><NavigateBeforeIcon /></button
-	>
-	<button
-		class="btn btn-square btn-outline join-item btn-sm"
-		disabled={!hasNext}
-		on:click|preventDefault={() => dispatch('next')}><NavigateNextIcon /></button
-	>
-</div>
+{#if canNavigateToFirstPage}
+	<Button on:click={navigateToFirstPage} variant="outline" size="icon"><FirstPageIcon /></Button>
+{/if}
+<Button disabled={!hasPrevious} on:click={navigateToPreviousPage} variant="outline" size="icon"
+	><NavigateBeforeIcon /></Button
+>
+<Button disabled={!hasNext} on:click={navigateToNextPage} variant="outline" size="icon"
+	><NavigateNextIcon /></Button
+>

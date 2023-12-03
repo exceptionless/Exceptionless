@@ -5,6 +5,8 @@
 	import IconGitHub from '~icons/mdi/github';
 	import IconTwitter from '~icons/mdi/twitter';
 	import IconWeb from '~icons/mdi/web';
+
+	const currentYear = new Date().getFullYear();
 </script>
 
 <Card.Root class="mx-4 my-6">
@@ -77,8 +79,8 @@
 		</div>
 	</Card.Content>
 </Card.Root>
-<p class="my-10 text-sm text-center text-gray-500">
-	&copy; 2023 <a href="https://exceptionless.com" class="hover:underline" target="_blank"
-		>Exceptionless</a
-	>. All rights reserved.
+<p class="my-10 text-sm text-center text-muted-foreground">
+	&copy; {currentYear}
+	<a href="https://exceptionless.com" class="hover:underline" target="_blank">Exceptionless</a>.
+	All rights reserved.
 </p>
