@@ -36,7 +36,7 @@
 </div>
 
 {#if source.data.Path}
-	<div class="hidden sm:block ml-6 text-sm text-gray-500 dark:text-gray-400">
+	<div class="hidden ml-6 text-sm sm:block text-muted-foreground">
 		<IconChevronRight class="inline" />
 		<span class="inline line-clamp-1">{source.data.Path}</span>
 	</div>

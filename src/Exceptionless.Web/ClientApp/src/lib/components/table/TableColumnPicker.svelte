@@ -39,8 +39,8 @@
 					<div class="flex items-center space-x-2">
 						<Checkbox
 							id={getColumnId(column)}
-							checked={$table.getIsAllColumnsVisible()}
-							on:click={(e) => $table.getToggleAllColumnsVisibilityHandler()(e)}
+							checked={column.getIsVisible()}
+							on:click={column.getToggleVisibilityHandler()}
 							>{column.columnDef.header}</Checkbox
 						>
 					</div>
