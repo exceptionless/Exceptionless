@@ -16,8 +16,10 @@
 
 <div class="bg-background text-foreground">
 	<ModeWatcher defaultMode={'dark'} />
+
 	<QueryClientProvider client={queryClient}>
 		<slot />
+
 		<SvelteQueryDevtools />
 	</QueryClientProvider>
 

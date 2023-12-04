@@ -1,17 +1,29 @@
 <script lang="ts">
 	import IconMoonWaningCrescent from '~icons/mdi/moon-waning-crescent';
 	import IconWhiteBalanceSunny from '~icons/mdi/white-balance-sunny';
+	import * as ContextMenu from '$lib/components/ui/context-menu';
 	import { Button } from '$comp/ui/button';
 
-	import { toggleMode } from 'mode-watcher';
+	import { setMode, toggleMode, userPrefersMode } from 'mode-watcher';
 </script>
 
-<Button on:click={toggleMode} variant="outline" size="icon" title="Toggle dark mode">
-	<IconWhiteBalanceSunny
-		class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-	/>
-	<IconMoonWaningCrescent
-		class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-	/>
-	<span class="sr-only">Toggle theme</span>
-</Button>
+<ContextMenu.Root>
+	<ContextMenu.Trigger>
+		<Button on:click={toggleMode} variant="outline" size="icon" title="Toggle dark mode">
+			<IconWhiteBalanceSunny
+				class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+			/>
+			<IconMoonWaningCrescent
+				class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+			/>
+			<span class="sr-only">Toggle theme</span>
+		</Button>
+	</ContextMenu.Trigger>
+	<ContextMenu.Content>
+		<ContextMenu.RadioGroup bind:value={$userPrefersMode} onValueChange={setMode}>
+			<ContextMenu.RadioItem value="light">Light</ContextMenu.RadioItem>
+			<ContextMenu.RadioItem value="dark">Dark</ContextMenu.RadioItem>
+			<ContextMenu.RadioItem value="system">System</ContextMenu.RadioItem>
+		</ContextMenu.RadioGroup>
+	</ContextMenu.Content>
+</ContextMenu.Root>
