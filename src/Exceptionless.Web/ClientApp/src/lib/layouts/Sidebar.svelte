@@ -1,25 +1,12 @@
 <script lang="ts">
 	import IconChartPie from '~icons/mdi/chart-pie';
 
-	import { isSidebarOpen, isSidebarExpanded, isLargeScreen } from '$lib/stores/sidebar';
+	import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
 	import SearchInput from '$comp/SearchInput.svelte';
 
 	let filter = '';
 
-	function onSidebarMouseEnter(): void {
-		if (!$isSidebarExpanded) {
-			isSidebarOpen.set(true);
-		}
-	}
-
-	function onSidebarMouseLeave(): void {
-		if (!$isSidebarExpanded) {
-			isSidebarOpen.set(false);
-		}
-	}
-
 	function onBackdropClick() {
-		isSidebarExpanded.set(false);
 		isSidebarOpen.set(false);
 	}
 </script>
@@ -33,8 +20,6 @@
 >
 	<div
 		class="relative flex flex-col flex-1 min-h-0 pt-0 border-r"
-		on:mouseenter={() => onSidebarMouseEnter()}
-		on:mouseleave={() => onSidebarMouseLeave()}
 		role="none"
 	>
 		<div class="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">

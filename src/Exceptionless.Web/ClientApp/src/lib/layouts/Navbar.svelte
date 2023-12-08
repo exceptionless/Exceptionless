@@ -4,7 +4,7 @@
 	import IconSearch from '~icons/mdi/search';
 
 	import logo from '$lib/assets/exceptionless-48.png';
-	import { isSidebarOpen, isSidebarExpanded } from '$lib/stores/sidebar';
+	import { isSidebarOpen } from '$lib/stores/sidebar';
 	import * as Avatar from '$comp/ui/avatar';
 	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import SearchInput from '$comp/SearchInput.svelte';
@@ -14,9 +14,7 @@
 	let filter = '';
 
 	function onHamburgerClick(): void {
-		const shouldExpand = !$isSidebarExpanded;
-		isSidebarExpanded.set(shouldExpand);
-		isSidebarOpen.set(shouldExpand);
+		isSidebarOpen.set(!$isSidebarOpen);
 	}
 </script>
 
