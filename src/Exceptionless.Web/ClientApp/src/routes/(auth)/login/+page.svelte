@@ -30,6 +30,7 @@
 	import A from '$comp/typography/A.svelte';
 	import H2 from '$comp/typography/H2.svelte';
 	import P from '$comp/typography/P.svelte';
+	import Muted from "$comp/typography/Muted.svelte";
 
 	const data = new Login();
 	data.invite_token = $page.url.searchParams.get('token');
@@ -71,14 +72,14 @@
 		{problem}
 		placeholder="Enter password"
 	>
-		<span slot="label" class="text-sm label-text-alt">
+		<Muted slot="label" class="float-right">
 			<A href="/forgot-password">Forgot password?</A>
-		</span>
+		</Muted>
 	</PasswordInput>
 	<div class="my-4">
 		<Button type="submit">
 			{#if $loading}
-				<Loading></Loading> Logging in...
+				<Loading class="mr-2" variant="secondary"></Loading> Logging in...
 			{:else}
 				Login
 			{/if}
