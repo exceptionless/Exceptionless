@@ -222,6 +222,7 @@
 						target="_blank"
 						variant="outline"
 						size="icon"
+                        rel="noopener noreferrer"
 						title="Open in new window"><IconOpenInNew /></Button
 					></Table.Cell
 				>
