@@ -3,7 +3,6 @@ import { persisted } from 'svelte-local-storage-store';
 import { mediaQuery } from 'svelte-legos';
 
 export const isSidebarOpen = persisted('sidebar-open', false);
-export const isSidebarExpanded = persisted('sidebar-expanded', false);
 export const isPageWithSidebar: Writable<boolean> = writable(true);
 
 // Helper functions
