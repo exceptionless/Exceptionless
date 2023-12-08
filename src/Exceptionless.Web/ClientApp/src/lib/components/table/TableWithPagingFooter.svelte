@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
+	import Muted from '$comp/typography/Muted.svelte';
 	import {
 		DEFAULT_LIMIT,
 		canNavigateToFirstPage,
@@ -23,7 +24,7 @@
 	export let onNextPage: () => void;
 </script>
 
-<div class="flex items-center justify-between flex-1 text-sm text-muted-foreground">
+<Muted class="flex items-center justify-between flex-1">
 	<div class="py-2">
 		{#if loading}
 			<Loading></Loading>
@@ -46,4 +47,4 @@
 			></Pager>
 		</div>
 	{/if}
-</div>
+</Muted>

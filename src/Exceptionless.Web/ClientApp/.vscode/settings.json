@@ -33,7 +33,7 @@
 	},
 	"prettier.documentSelectors": ["**/*.svelte"],
 	"editor.codeActionsOnSave": {
-		"source.fixAll": true
+		"source.fixAll": "explicit"
 	},
 	"editor.formatOnSave": true,
 	"svelte.plugin.svelte.defaultScriptLanguage": "ts",

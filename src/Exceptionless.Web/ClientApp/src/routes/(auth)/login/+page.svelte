@@ -27,6 +27,9 @@
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import { Button } from '$comp/ui/button';
+	import A from '$comp/typography/A.svelte';
+	import H2 from '$comp/typography/H2.svelte';
+	import P from '$comp/typography/P.svelte';
 
 	const data = new Login();
 	data.invite_token = $page.url.searchParams.get('token');
@@ -52,11 +55,7 @@
 	<title>Log in</title>
 </svelte:head>
 
-<h2
-	class="mt-4 mb-2 text-3xl font-semibold leading-9 tracking-tight text-center transition-colors scroll-m-20 first:mt-0"
->
-	Log in to your account
-</h2>
+<H2 class="mt-4 mb-2 leading-9 text-center">Log in to your account</H2>
 
 <form on:submit|preventDefault={onLogin}>
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
@@ -73,9 +72,7 @@
 		placeholder="Enter password"
 	>
 		<span slot="label" class="text-sm label-text-alt">
-			<Button href="/forgot-password" variant="link" class="h-0 px-0 py-0"
-				>Forgot password?</Button
-			>
+			<A href="/forgot-password">Forgot password?</A>
 		</span>
 	</PasswordInput>
 	<div class="my-4">
@@ -92,7 +89,7 @@
 {#if enableOAuthLogin}
 	<div class="flex items-center w-full my-4">
 		<hr class="w-full" />
-		<p class="px-3">OR</p>
+		<P class="px-3">OR</P>
 		<hr class="w-full" />
 	</div>
 	<div class="grid grid-flow-col grid-rows-2 gap-4 auto-cols-2">
@@ -120,24 +117,16 @@
 {/if}
 
 {#if enableAccountCreation}
-	<p class="mt-5 text-sm text-center">
+	<P class="text-sm text-center">
 		Not a member?
-		<Button href="/signup" variant="link" class="h-0 px-0 py-0">Start a free trial</Button>
-	</p>
+		<A href="/signup">Start a free trial</A>
+	</P>
 
-	<p class="mt-5 text-sm text-center">
-		By signing up, you agree to our <Button
-			href="https://exceptionless.com/privacy"
-			target="_blank"
-			variant="link"
-			class="h-0 px-0 py-0">Privacy Policy</Button
+	<P class="text-sm text-center">
+		By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank"
+			>Privacy Policy</A
 		>
 		and
-		<Button
-			href="https://exceptionless.com/terms"
-			target="_blank"
-			variant="link"
-			class="h-0 px-0 py-0">Terms of Service</Button
-		>.
-	</p>
+		<A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.
+	</P>
 {/if}

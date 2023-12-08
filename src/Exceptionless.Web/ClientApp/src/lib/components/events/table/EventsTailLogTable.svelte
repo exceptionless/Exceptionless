@@ -27,6 +27,7 @@
 	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
+	import Muted from '$comp/typography/Muted.svelte';
 
 	export let filter: Readable<string>;
 
@@ -165,7 +166,7 @@
 		{loading}
 		{lastUpdated}
 	>
-		<p class="py-2 text-sm text-center text-muted-foreground">
+		<Muted class="py-2 text-center">
 			{#if $loading}
 				<Loading></Loading>
 			{:else if response?.problem?.errors.general}
@@ -175,6 +176,6 @@
 					><TimeAgo value={lastUpdated}></TimeAgo></span
 				>
 			{/if}
-		</p>
+		</Muted>
 	</slot>
 </Table>

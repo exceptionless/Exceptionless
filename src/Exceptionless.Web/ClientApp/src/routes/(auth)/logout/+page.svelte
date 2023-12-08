@@ -8,6 +8,8 @@
 	import { isAuthenticated, logout } from '$api/auth';
 	import Loading from '$comp/Loading.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
+	import { Button } from '$comp/ui/button';
+	import H2 from '$comp/typography/H2.svelte';
 
 	$: if (!$isAuthenticated) {
 		goto('next/login', { replaceState: true });
@@ -36,20 +38,16 @@
 	<title>Log out</title>
 </svelte:head>
 
-<h2
-	class="mt-4 mb-2 text-3xl font-semibold leading-9 tracking-tight text-center transition-colors scroll-m-20 first:mt-0"
->
-	Log out?
-</h2>
+<H2 class="mt-4 mb-2 leading-9 text-center">Log out?</H2>
 <form on:submit|preventDefault={onLogout}>
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
 	<div class="my-4">
-		<button type="submit" class="btn btn-primary btn-block">
+		<Button type="submit">
 			{#if $loading}
 				<Loading></Loading> Logging out...
 			{:else}
 				Logout
 			{/if}
-		</button>
+		</Button>
 	</div>
 </form>

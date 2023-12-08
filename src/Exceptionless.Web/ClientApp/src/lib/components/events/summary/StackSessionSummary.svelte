@@ -1,4 +1,5 @@
 <script lang="ts">
+	import A from '$comp/typography/A.svelte';
 	import { Badge } from '$comp/ui/badge';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
@@ -20,7 +21,7 @@
 		<strong>Session</strong>:&nbsp;
 	{/if}
 
-	<a href="app.stack/{source.id}" class="inline">
+	<A href="app.stack/{source.id}" class="inline">
 		{source.title}
-	</a>
+	</A>
 </div>

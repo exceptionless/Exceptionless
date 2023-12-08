@@ -6,6 +6,7 @@
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 	import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
 	import { Button } from '$comp/ui/button';
+	import H4 from '$comp/typography/H4.svelte';
 
 	export let event: PersistentEvent;
 
@@ -167,7 +168,7 @@
 {/if}
 
 {#if hasHeaders}
-	<h4 class="mt-4 mb-2 text-lg">Headers</h4>
+	<H4 class="mt-4 mb-2">Headers</H4>
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
@@ -187,7 +188,7 @@
 {/if}
 
 {#if hasCookies}
-	<h4 class="mt-4 mb-2 text-lg">Cookie Values</h4>
+	<H4 class="mt-4 mb-2">Cookie Values</H4>
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import { Badge } from '$comp/ui/badge';
+	import A from '$comp/typography/A.svelte';
 
 	export let badgeClass: string;
 	export let showBadge: boolean;
@@ -20,11 +21,11 @@
 		<strong>Log source:</strong>&nbsp;
 	{/if}
 
-	<a href="/stack/{source.id}" class="inline">
+	<A href="/stack/{source.id}" class="inline">
 		{#if source.data?.Source}
 			<abbr title={source.data.Source}>{source.data.SourceShortName}</abbr>
 		{:else}
 			{source.title}
 		{/if}
-	</a>
+	</A>
 </div>

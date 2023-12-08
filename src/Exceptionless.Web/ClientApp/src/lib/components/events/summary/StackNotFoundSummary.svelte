@@ -1,4 +1,5 @@
 <script lang="ts">
+	import A from '$comp/typography/A.svelte';
 	import { Badge } from '$comp/ui/badge';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
@@ -19,7 +20,7 @@
 	{#if showType}
 		<strong>404</strong>:&nbsp;
 	{/if}
-	<a href="/stack/{source.id}" class="inline">
+	<A href="/stack/{source.id}" class="inline">
 		{source.title}
-	</a>
+	</A>
 </div>

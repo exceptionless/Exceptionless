@@ -5,12 +5,6 @@
 	export { className as class };
 </script>
 
-<div
-	class={cn(
-		'text-lg font-semibold',
-		className
-	)}
-	{...$$restProps}
->
+<div class={cn('text-lg font-semibold', className)} {...$$restProps}>
 	<slot />
 </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Table from '$comp/ui/table';
+	import List from './typography/List.svelte';
 
 	export let value: unknown;
 
@@ -33,11 +34,9 @@
 {#if isEmptyValue}
 	(Empty)
 {:else if Array.isArray(value)}
-	<ul>
-		{#each value as item}
-			<li><svelte:self value={item} /></li>
-		{/each}
-	</ul>
+	<List items={value} let:item>
+		<svelte:self value={item} />
+	</List>
 {:else if isObject}
 	<Table.Root>
 		<Table.Body>

@@ -2,6 +2,8 @@
 	import { Badge } from '$comp/ui/badge';
 	import IconChevronRight from '~icons/mdi/chevron-right';
 	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+	import Muted from '$comp/typography/Muted.svelte';
+	import A from '$comp/typography/A.svelte';
 
 	export let badgeClass: string;
 	export let showBadge: boolean;
@@ -20,14 +22,14 @@
 		<abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>:
 	</strong>
 
-	<a href="app.stack/{source.id}" class="inline">
+	<A href="app.stack/{source.id}" class="inline">
 		{source.title}
-	</a>
+	</A>
 </div>
 
 {#if source.data.Path}
-	<div class="hidden ml-6 text-sm sm:block text-muted-foreground">
+	<Muted class="hidden ml-6 sm:block">
 		<IconChevronRight class="inline" />
 		<span class="inline line-clamp-1">{source.data.Path}</span>
-	</div>
+	</Muted>
 {/if}
