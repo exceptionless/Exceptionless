@@ -1,4 +1,5 @@
 <script lang="ts">
+	import A from '$comp/typography/A.svelte';
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
 	export let showType: boolean;
@@ -19,12 +20,12 @@
 		</strong>:&nbsp;
 	{/if}
 
-	<a href="/event/{source.id}" class="inline">
+	<A href="/event/{source.id}" class="inline">
 		{#if source.data.Name || source.data.Identity || source.data.SessionId}
 			{source.data.Name || source.data.Identity || source.data.SessionId}
 			{#if source.data.Name && source.data.Identity}
 				<span class="text-muted"> ({source.data.Identity})</span>
 			{/if}
 		{/if}
-	</a>
+	</A>
 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Muted from '$comp/typography/Muted.svelte';
 	import { getPageEnd, getPageStart } from '$lib/helpers/api';
 	import NumberFormatter from '../formatters/Number.svelte';
 
@@ -12,16 +13,16 @@
 </script>
 
 {#if pageTotal !== 0 && total !== 0}
-	<p class="text-sm">
-		<span class="text-muted-foreground">Showing</span>
+	<Muted>
+		Showing
 		<span class="font-bold"><NumberFormatter value={start}></NumberFormatter></span>-<span
 			class="font-bold"
 		>
 			<NumberFormatter value={end}></NumberFormatter>
 		</span>
-		<span class="text-muted-foreground">of</span>
+		of
 		<span class="font-bold">
 			<NumberFormatter value={total}></NumberFormatter>
 		</span>
-	</p>
+	</Muted>
 {/if}

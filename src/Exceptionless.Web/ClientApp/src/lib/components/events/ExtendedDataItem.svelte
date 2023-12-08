@@ -5,6 +5,8 @@
 	import ObjectDump from '$comp/ObjectDump.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { Button } from '$comp/ui/button';
+	import H4 from '$comp/typography/H4.svelte';
+	import Code from '$comp/typography/Code.svelte';
 
 	export let title: string;
 	export let data: unknown;
@@ -66,7 +68,7 @@
 
 {#if hasData}
 	<div class="flex justify-between">
-		<h4 class="text-lg mb-2">{title}</h4>
+		<H4 class="mb-2">{title}</H4>
 		<div class="flex justify-end gap-x-1">
 			<Button variant="outline" on:click={onToggleView}>Toggle View</Button>
 
@@ -87,7 +89,7 @@
 	</div>
 
 	{#if showRaw}
-		<pre class="whitespace-pre-wrap break-words overflow-auto p-2 text-xs"><code>{json}</code
+		<pre class="p-2 overflow-auto text-xs break-words whitespace-pre-wrap"><Code>{json}</Code
 			></pre>
 	{:else}
 		<ObjectDump value={filteredData} />

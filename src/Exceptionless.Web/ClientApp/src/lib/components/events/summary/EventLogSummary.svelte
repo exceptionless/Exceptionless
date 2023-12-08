@@ -1,4 +1,5 @@
 <script lang="ts">
+	import A from '$comp/typography/A.svelte';
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import LogLevel from '../LogLevel.svelte';
 
@@ -26,5 +27,5 @@
 		</strong>
 	{/if}
 	{#if showType || source.data.Source}:&nbsp;{/if}
-	<a href="/event/{source.id}" class="inline">{source.data.Message}</a>
+	<A href="/event/{source.id}" class="inline">{source.data.Message}</A>
 </div>

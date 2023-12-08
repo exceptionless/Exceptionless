@@ -1,11 +1,9 @@
 <script lang="ts">
+	import List from '$comp/typography/List.svelte';
+
 	export let logs: string[] | undefined;
 </script>
 
 {#if logs}
-	<ul>
-		{#each logs || [] as log}
-			<li>{log}</li>
-		{/each}
-	</ul>
+	<List items={logs} />
 {/if}

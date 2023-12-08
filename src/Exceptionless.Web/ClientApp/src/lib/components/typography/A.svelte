@@ -8,9 +8,10 @@
 </script>
 
 <a
-    {href}
+	{href}
 	class={cn('underline underline-offset-4 hover:text-primary', className)}
 	{...$$restProps}
+	on:click
 >
 	<slot />
 </a>
