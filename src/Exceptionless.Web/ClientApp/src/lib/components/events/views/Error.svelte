@@ -13,6 +13,7 @@
 	import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
+	import H4 from '$comp/typography/H4.svelte';
 
 	export let event: PersistentEvent;
 
@@ -66,13 +67,13 @@
 </Table.Root>
 
 <div class="flex justify-between mt-4 mb-2">
-	<h4 class="text-lg">Stack Trace</h4>
+	<H4>Stack Trace</H4>
 	<div class="flex justify-end">
 		<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
 		></CopyToClipboardButton>
 	</div>
 </div>
-<div class="overflow-auto p-2 mt-2 text-xs">
+<div class="p-2 mt-2 overflow-auto text-xs">
 	{#if event.data?.['@error']}
 		<StackTrace error={event.data['@error']} />
 	{:else}
@@ -87,8 +88,8 @@
 {/each}
 
 {#if modules.length}
-	<div class="flex justify-between items-center mt-4 mb-2">
-		<h4 class="text-lg">Modules</h4>
+	<div class="flex items-center justify-between mt-4 mb-2">
+		<H4>Modules</H4>
 	</div>
 	<Table.Root>
 		<Table.Header>

@@ -25,6 +25,8 @@
 	import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
 	import { Badge } from '$comp/ui/badge';
 	import { Button } from '$comp/ui/button';
+	import H4 from '$comp/typography/H4.svelte';
+	import A from '$comp/typography/A.svelte';
 
 	export let event: PersistentEvent;
 
@@ -229,7 +231,7 @@
 </Table.Root>
 
 {#if userEmail || userIdentity || userName || userDescription}
-	<h4 class="mt-4 mb-2 text-lg">User Info</h4>
+	<H4 class="mt-4 mb-2">User Info</H4>
 	<Table.Root>
 		<Table.Body>
 			{#if userEmail}
@@ -239,8 +241,8 @@
 						><ClickableStringFilter term="user.email" value={userEmail}
 							>{userEmail}</ClickableStringFilter
 						>
-						<a href="mailto:{userEmail}" title="Send email to {userEmail}"
-							><IconEmail /></a
+						<A href="mailto:{userEmail}" title="Send email to {userEmail}"
+							><IconEmail /></A
 						></Table.Cell
 					>
 				</Table.Row>
@@ -281,7 +283,7 @@
 
 {#if hasError}
 	<div class="flex justify-between mt-4 mb-2">
-		<h4 class="text-lg">Stack Trace</h4>
+		<H4>Stack Trace</H4>
 		<div class="flex justify-end">
 			<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
 			></CopyToClipboardButton>

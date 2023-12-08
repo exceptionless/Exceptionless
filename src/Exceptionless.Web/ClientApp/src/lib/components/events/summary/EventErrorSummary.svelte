@@ -1,6 +1,8 @@
 <script lang="ts">
 	import IconChevronRight from '~icons/mdi/chevron-right';
 	import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+	import Muted from '$comp/typography/Muted.svelte';
+	import A from '$comp/typography/A.svelte';
 
 	export let summary: SummaryModel<SummaryTemplateKeys>;
 	const source = summary as EventSummaryModel<'event-error-summary'>;
@@ -22,14 +24,14 @@
 		</strong>
 	{/if}
 
-	<a href="/event/{source.id}" class="inline">
+	<A href="/event/{source.id}" class="inline">
 		{source.data.Message}
-	</a>
+	</A>
 </div>
 
 {#if source.data.Path}
-	<div class="hidden ml-6 text-sm sm:block text-muted-foreground">
+	<Muted class="hidden ml-6 sm:block">
 		<IconChevronRight class="inline" />
 		<span class="inline line-clamp-1">{source.data.Path}</span>
-	</div>
+	</Muted>
 {/if}

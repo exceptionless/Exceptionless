@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button } from '$comp/ui/button';
+	import A from '$comp/typography/A.svelte';
 	import { ReferenceFilter } from './filters';
 
 	export let referenceId: string;
@@ -16,6 +16,6 @@
 	}
 </script>
 
-<Button variant="link" on:click={onSearchClick} {title}>
+<A on:click={onSearchClick} {title}>
 	<slot />
-</Button>
+</A>
