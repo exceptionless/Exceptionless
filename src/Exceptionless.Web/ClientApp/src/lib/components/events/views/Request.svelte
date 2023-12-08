@@ -67,7 +67,7 @@
 						target="_blank"
 						variant="outline"
 						size="icon"
-                        rel="noopener noreferrer"
+						rel="noopener noreferrer"
 						title="Open in new window"><IconOpenInNew /></Button
 					></Table.Cell
 				>
@@ -91,7 +91,7 @@
 						href={request.referrer}
 						target="_blank"
 						class="link"
-                        rel="noopener noreferrer"
+						rel="noopener noreferrer"
 						title="Open in new window"><IconOpenInNew /></a
 					></Table.Cell
 				>
