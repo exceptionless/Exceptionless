@@ -18,10 +18,7 @@
 		: 'lg:w-16 hidden'}"
 	aria-label="Sidebar"
 >
-	<div
-		class="relative flex flex-col flex-1 min-h-0 pt-0 border-r"
-		role="none"
-	>
+	<div class="relative flex flex-col flex-1 min-h-0 pt-0 border-r" role="none">
 		<div class="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
 			<div class="flex-1 px-3 space-y-1 divide-y">
 				<ul class="pb-2 space-y-2">
