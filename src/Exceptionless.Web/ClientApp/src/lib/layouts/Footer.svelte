@@ -18,35 +18,39 @@
 				<li>
 					<A
 						href="https://exceptionless.com/news/"
-						class="mr-4 no-underline md:mr-6 hover:underline hover:text-foreground"
+                        variant="navigation"
+						class="mr-4 md:mr-6"
 						>News</A
 					>
 				</li>
 				<li>
 					<A
 						href="https://exceptionless.com/terms/"
-						class="mr-4 no-underline md:mr-6 hover:underline hover:text-foreground"
+                        variant="navigation"
+						class="mr-4 md:mr-6"
 						>Terms of Use</A
 					>
 				</li>
 				<li>
 					<A
 						href="https://exceptionless.com/privacy/"
-						class="mr-4 no-underline md:mr-6 hover:underline hover:text-foreground"
+                        variant="navigation"
+						class="mr-4 md:mr-6"
 						>Privacy Policy</A
 					>
 				</li>
 				<li>
 					<A
 						href="https://exceptionless.com"
-						class="mr-4 no-underline md:mr-6 hover:underline hover:text-foreground"
+                        variant="navigation"
+						class="mr-4 md:mr-6"
 						>Contact</A
 					>
 				</li>
 				<li>
 					<A
 						href="https://github.com/exceptionless/Exceptionless/releases"
-						class="no-underline hover:underline hover:text-foreground">9.0-TODO</A
+                        variant="navigation">9.0-TODO</A
 					>
 				</li>
 			</ul>
@@ -55,7 +59,7 @@
 			<A
 				href="https://www.facebook.com/exceptionless/"
 				target="_blank"
-				class="hover:text-foreground"
+                variant="navigation"
 				aria-label="Exceptionless Facebook Website"
 			>
 				<IconFacebook class="w-5 h-5" />
@@ -63,7 +67,7 @@
 			<A
 				href="https://x.com/Exceptionless"
 				target="_blank"
-				class="hover:text-foreground"
+                variant="navigation"
 				aria-label="Exceptionless Twitter Website"
 			>
 				<IconTwitter class="w-5 h-5" />
@@ -71,15 +75,15 @@
 			<A
 				href="https://github.com/exceptionless"
 				target="_blank"
-				class="hover:text-foreground"
+                variant="navigation"
 				aria-label="Exceptionless GitHub Website"
 			>
 				<IconGitHub class="w-5 h-5" />
 			</A>
 			<A
 				href="https://exceptionless.com/"
-				class="hover:text-foreground"
 				target="_blank"
+                variant="navigation"
 				aria-label="Exceptionless Website"
 			>
 				<IconWeb class="w-5 h-5" />
@@ -89,6 +93,6 @@
 </Card.Root>
 <Muted class="my-10 text-center">
 	&copy; {currentYear}
-	<A href="https://exceptionless.com" class="no-underline" target="_blank">Exceptionless</A>. All
+	<A href="https://exceptionless.com" variant="navigation" target="_blank">Exceptionless</A>. All
 	rights reserved.
 </Muted>
