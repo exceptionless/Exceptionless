@@ -4,7 +4,7 @@
 	import NavbarLayout from '$lib/layouts/Navbar.svelte';
 	import SidebarLayout from '$lib/layouts/Sidebar.svelte';
 	import FooterLayout from '$lib/layouts/Footer.svelte';
-	import { isSidebarExpanded, isSidebarOpen, isSmallScreen } from '$lib/stores/sidebar';
+	import { isSidebarOpen, isSmallScreen } from '$lib/stores/sidebar';
 
 	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
 	import { WebSocketClient } from '$lib/api/WebSocketClient';
@@ -81,7 +81,6 @@
 	// Close Sidebar on page change on mobile
 	page.subscribe(() => {
 		if ($isSmallScreen === true) {
-			isSidebarExpanded.set(false);
 			isSidebarOpen.set(false);
 		}
 	});
