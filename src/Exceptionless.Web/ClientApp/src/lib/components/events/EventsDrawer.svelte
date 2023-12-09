@@ -32,13 +32,13 @@
 		| 'Request'
 		| 'Trace Log'
 		| 'Extended Data'
-		| string
-		| null;
-	let activeTab: TabType = null;
+		| string;
+
+	let activeTab: TabType = 'Overview';
 	const tabs: Writable<TabType[]> = writable([]);
 	tabs.subscribe((items) => {
 		if (!items) {
-			activeTab = null;
+			activeTab = 'Overview';
 		}
 
 		if (!items.includes(activeTab)) {

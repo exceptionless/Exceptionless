@@ -5,6 +5,10 @@
 	import { Button } from '$comp/ui/button';
 
 	import { setMode, toggleMode, userPrefersMode } from 'mode-watcher';
+
+	function onUserThemePreferenceChange(mode?: string) {
+		setMode(mode as 'dark' | 'light' | 'system');
+	}
 </script>
 
 <ContextMenu.Root>
@@ -20,7 +24,10 @@
 		</Button>
 	</ContextMenu.Trigger>
 	<ContextMenu.Content>
-		<ContextMenu.RadioGroup bind:value={$userPrefersMode} onValueChange={setMode}>
+		<ContextMenu.RadioGroup
+			bind:value={$userPrefersMode}
+			onValueChange={onUserThemePreferenceChange}
+		>
 			<ContextMenu.RadioItem value="light">Light</ContextMenu.RadioItem>
 			<ContextMenu.RadioItem value="dark">Dark</ContextMenu.RadioItem>
 			<ContextMenu.RadioItem value="system">System</ContextMenu.RadioItem>

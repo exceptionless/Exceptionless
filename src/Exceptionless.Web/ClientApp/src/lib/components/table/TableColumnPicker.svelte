@@ -17,11 +17,11 @@
 	}
 </script>
 
-<DropdownMenu.Root positioning={{ placement: 'bottom-end' }}>
+<DropdownMenu.Root>
 	<DropdownMenu.Trigger asChild let:builder>
 		<Button builders={[builder]} variant="outline" size="icon"><ViewColumnIcon /></Button>
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Content class="w-44">
+	<DropdownMenu.Content class="w-44" align="end">
 		<DropdownMenu.Label>
 			<div class="flex items-center space-x-2">
 				<Checkbox
