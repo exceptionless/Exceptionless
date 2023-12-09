@@ -1,5 +1,6 @@
 <script lang="ts">
 	import IconChartPie from '~icons/mdi/chart-pie';
+	import IconStream from '~icons/mdi/view-stream';
 
 	import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
 	import SearchInput from '$comp/SearchInput.svelte';
@@ -29,25 +30,16 @@
 						</form>
 					</li>
 					<li>
-						<a
-							href="/next"
-							title="Dashboard"
-							class="flex items-center p-2 text-base font-normal rounded-lg group hover:bg-accent hover:text-accent-foreground"
-						>
-							<IconChartPie
-								class="w-6 h-6 transition duration-75 text-muted-foreground group-hover:text-foreground"
-							/>
-							<span
-								class="ml-3 {!$isSidebarOpen && $isLargeScreen
-									? 'lg:hidden lg:absolute'
-									: ''}">Dashboard</span
-							>
-						</a>
-					</li>
-					<li>
-						<SidebarMenuItem name="Stream" href="/next/stream">
+						<SidebarMenuItem title="Dashboard" href="/next">
 							<span slot="icon" let:iconClass>
 								<IconChartPie class={iconClass}></IconChartPie>
+							</span>
+						</SidebarMenuItem>
+					</li>
+					<li>
+						<SidebarMenuItem title="Stream" href="/next/stream">
+							<span slot="icon" let:iconClass>
+								<IconStream class={iconClass}></IconStream>
 							</span>
 						</SidebarMenuItem>
 					</li>
