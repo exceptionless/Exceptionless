@@ -71,7 +71,7 @@
 
 				<DarkModeButton></DarkModeButton>
 
-				<DropdownMenu.Root positioning={{ placement: 'bottom-end' }}>
+				<DropdownMenu.Root>
 					<DropdownMenu.Trigger asChild let:builder>
 						<Button
 							builders={[builder]}
@@ -88,7 +88,7 @@
 							</Avatar.Root>
 						</Button>
 					</DropdownMenu.Trigger>
-					<DropdownMenu.Content class="w-56">
+					<DropdownMenu.Content class="w-56" align="end">
 						<DropdownMenu.Label>My Account</DropdownMenu.Label>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
