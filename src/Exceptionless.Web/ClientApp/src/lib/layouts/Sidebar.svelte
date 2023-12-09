@@ -3,6 +3,7 @@
 
 	import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
 	import SearchInput from '$comp/SearchInput.svelte';
+	import SidebarMenuItem from './SidebarMenuItem.svelte';
 
 	let filter = '';
 
@@ -30,6 +31,7 @@
 					<li>
 						<a
 							href="/next"
+							title="Dashboard"
 							class="flex items-center p-2 text-base font-normal rounded-lg group hover:bg-accent hover:text-accent-foreground"
 						>
 							<IconChartPie
@@ -41,6 +43,13 @@
 									: ''}">Dashboard</span
 							>
 						</a>
+					</li>
+					<li>
+						<SidebarMenuItem name="Stream" href="/next/stream">
+							<span slot="icon" let:iconClass>
+								<IconChartPie class={iconClass}></IconChartPie>
+							</span>
+						</SidebarMenuItem>
 					</li>
 				</ul>
 			</div>
