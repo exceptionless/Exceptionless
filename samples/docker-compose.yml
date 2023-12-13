@@ -21,8 +21,7 @@ services:
       #ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
       EX_RunJobsInProcess: "false"
     ports:
-      - 5200:80
-      - 5201:443
+      - 5200:8080
     volumes:
       - ex_appdata:/app/storage
       - ex_ssldata:/https
