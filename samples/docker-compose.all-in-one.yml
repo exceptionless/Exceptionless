@@ -4,7 +4,7 @@ services:
   exceptionless:
     image: exceptionless/exceptionless:latest
     ports:
-      - 5200:80
+      - 5200:8080
       - 9200:9200
     environment:
       EX_AppMode: Production
