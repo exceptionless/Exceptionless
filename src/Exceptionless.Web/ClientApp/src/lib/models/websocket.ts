@@ -53,14 +53,14 @@ export type WebSocketMessageType =
 export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'PlanChanged'
 	? PlanChanged
 	: T extends 'PlanOverage'
-	  ? PlanOverage
-	  : T extends 'UserMembershipChanged'
-	    ? UserMembershipChanged
-	    : T extends 'ReleaseNotification'
-	      ? ReleaseNotification
-	      : T extends 'SystemNotification'
-	        ? SystemNotification
-	        : EntityChanged;
+		? PlanOverage
+		: T extends 'UserMembershipChanged'
+			? UserMembershipChanged
+			: T extends 'ReleaseNotification'
+				? ReleaseNotification
+				: T extends 'SystemNotification'
+					? SystemNotification
+					: EntityChanged;
 
 export interface WebSocketMessage<T extends WebSocketMessageType> {
 	type: T;
