@@ -213,10 +213,10 @@ namespace OpenTelemetry
         public ApmConfig(IConfigurationRoot config, string processName, string? serviceVersion, bool enableRedis)
         {
             _apmConfig = config.GetSection("Apm");
-            processName = processName.StartsWith("-") ? processName : "-" + processName;
+            processName = processName.StartsWith('-') ? processName : "-" + processName;
 
             ServiceName = _apmConfig.GetValue("ServiceName", "") + processName;
-            if (ServiceName.StartsWith("-"))
+            if (ServiceName.StartsWith('-'))
                 ServiceName = ServiceName.Substring(1);
 
             ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "") ?? throw new InvalidOperationException();

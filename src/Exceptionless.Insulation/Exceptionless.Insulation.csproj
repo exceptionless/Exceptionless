@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
-    <PackageReference Include="MaxMind.GeoIP2" Version="5.1.0" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="5.2.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.6.1" />
     <PackageReference Include="Foundatio.AWS" Version="10.6.1" />
     <PackageReference Include="Foundatio.AzureStorage" Version="10.6.1" />
@@ -21,7 +21,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="4.0.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.7.4" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.10" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
   </ItemGroup>
   <ItemGroup>
