@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { writable, type Readable } from 'svelte/store';
+	import { writable, type Readable, type Writable } from 'svelte/store';
 	import {
 		createSvelteTable,
-		flexRender,
 		getCoreRowModel,
-		type ColumnDef,
 		type TableOptions,
 		type Updater,
 		type VisibilityState,
@@ -14,104 +12,39 @@
 		EventSummaryModel,
 		GetEventsMode,
 		IGetEventsParams,
-		StackSummaryModel,
 		SummaryModel,
 		SummaryTemplateKeys
 	} from '$lib/models/api';
-	import Summary from '$comp/events/summary/Summary.svelte';
-	import { nameof } from '$lib/utils';
-	import NumberFormatter from '$comp/formatters/Number.svelte';
-	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import {
 		type FetchClientResponse,
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
 	import { persisted } from 'svelte-local-storage-store';
-	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-	import StackUsersSummaryColumn from './StackUsersSummaryColumn.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-	import DataTable from '$comp/data-table/data-table.svelte';
+
+	import * as DataTable from '$comp/data-table';
+	import { Button } from '$comp/ui/button';
+	import {
+		ArrowDown,
+		ArrowRight,
+		ArrowUp,
+		CheckCircled,
+		Circle,
+		Cross2,
+		CrossCircled,
+		QuestionMarkCircled,
+		Stopwatch
+	} from 'radix-icons-svelte';
+	import { Input } from '$comp/ui/input';
+	import { StackStatus } from '$lib/models/api.generated';
+	import { getColumns } from './options';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
 	export let time: Readable<string>;
 
-	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
-		{
-			header: 'Summary',
-			enableHiding: false,
-			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
-		}
-	];
-
-	const isEventSummary = mode === 'summary';
-	if (isEventSummary) {
-		defaultColumns.push(
-			{
-				id: 'user',
-				header: 'User',
-				enableSorting: false,
-				meta: {
-					class: 'w-28'
-				},
-				cell: (prop) =>
-					flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
-			},
-			{
-				id: 'date',
-				header: 'Date',
-				accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-				meta: {
-					class: 'w-36'
-				},
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-			}
-		);
-	} else {
-		defaultColumns.push(
-			{
-				id: 'users',
-				header: 'Users',
-				enableSorting: false,
-				meta: {
-					class: 'w-24'
-				},
-				cell: (prop) => flexRender(StackUsersSummaryColumn, { summary: prop.row.original })
-			},
-			{
-				id: 'events',
-				header: 'Events',
-				enableSorting: false,
-				meta: {
-					class: 'w-24'
-				},
-				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-				cell: (prop) => flexRender(NumberFormatter, { value: prop.getValue() as number })
-			},
-			{
-				id: 'first',
-				header: 'First',
-				enableSorting: false,
-				meta: {
-					class: 'w-36'
-				},
-				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-			},
-			{
-				id: 'last',
-				header: 'Last',
-				enableSorting: false,
-				meta: {
-					class: 'w-36'
-				},
-				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-			}
-		);
-	}
-
+	const columns = getColumns(mode);
 	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {
@@ -162,7 +95,7 @@
 	};
 
 	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
-		columns: defaultColumns,
+		columns,
 		data: [],
 		enableSortingRemoval: false,
 		manualSorting: true,
@@ -175,6 +108,8 @@
 		getCoreRowModel: getCoreRowModel(),
 		getRowId: (originalRow) => originalRow.id
 	});
+
+	// TODO: https://tanstack.com/table/v8/docs/api/features/pagination#setpagesize
 
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 
@@ -208,8 +143,105 @@
 			if (response.meta?.total) total = response.meta.total as number;
 		}
 	}
+
+	const statuses = [
+		{
+			value: StackStatus.Open,
+			label: 'Open',
+			icon: QuestionMarkCircled
+		},
+		{
+			value: StackStatus.Fixed,
+			label: 'Fixed',
+			icon: Circle
+		},
+		{
+			value: StackStatus.Regressed,
+			label: 'Regressed',
+			icon: Stopwatch
+		},
+		{
+			value: StackStatus.Snoozed,
+			label: 'Snoozed',
+			icon: CheckCircled
+		},
+		{
+			value: StackStatus.Ignored,
+			label: 'Ignored',
+			icon: CrossCircled
+		},
+		{
+			value: StackStatus.Discarded,
+			label: 'Discarded',
+			icon: CrossCircled
+		}
+	];
+
+	const priorities = [
+		{
+			label: 'Low',
+			value: 'low',
+			icon: ArrowDown
+		},
+		{
+			label: 'Medium',
+			value: 'medium',
+			icon: ArrowRight
+		},
+		{
+			label: 'High',
+			value: 'high',
+			icon: ArrowUp
+		}
+	];
+
+	const filterValue: Writable<string> = writable('');
+	const filterValues: Writable<{
+		status: string[];
+		priority: string[];
+	}> = writable({
+		status: [],
+		priority: []
+	});
+
+	$: showReset = Object.values($filterValues).some((v) => v.length > 0);
 </script>
 
 <CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
 
-<DataTable {table}></DataTable>
+<DataTable.Root>
+	<DataTable.Toolbar {table}>
+		<Input
+			placeholder="Filter tasks..."
+			class="h-8 w-[150px] lg:w-[250px]"
+			type="text"
+			bind:value={$filterValue}
+		/>
+
+		<DataTable.FacetedFilter
+			bind:filterValues={$filterValues.status}
+			title="Status"
+			options={statuses}
+		/>
+		<DataTable.FacetedFilter
+			bind:filterValues={$filterValues.priority}
+			title="Priority"
+			options={priorities}
+		/>
+		{#if showReset}
+			<Button
+				on:click={() => {
+					$filterValues.status = [];
+					$filterValues.priority = [];
+				}}
+				variant="ghost"
+				class="h-8 px-2 lg:px-3"
+			>
+				Reset
+				<Cross2 class="w-4 h-4 ml-2" />
+			</Button>
+		{/if}
+	</DataTable.Toolbar>
+	<DataTable.Body {table}></DataTable.Body>
+	<DataTable.Pagination {table}></DataTable.Pagination>
+</DataTable.Root>

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
 	import * as Card from '$comp/ui/card';
+	import { persisted } from 'svelte-local-storage-store';
 	import { writable } from 'svelte/store';
 
 	let filter = writable('');
-	let time = writable('');
+	let time = persisted<string>('filter.time', '');
 </script>
 
 <svelte:head>

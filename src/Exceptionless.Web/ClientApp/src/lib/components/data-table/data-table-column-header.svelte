@@ -3,41 +3,32 @@
 	import { Button } from '$comp/ui/button';
 	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import { cn } from '$lib/utils';
+	import type { Column } from '@tanstack/svelte-table';
+
+	type TData = $$Generic;
+	export let column: Column<TData, unknown>;
 
 	let className: string | undefined | null = undefined;
 	export { className as class };
-	export let props: {
-		sort: {
-			order: 'desc' | 'asc' | undefined;
-			toggle: (event: Event) => void;
-			clear: () => void;
-			disabled: boolean;
-		};
-	} = {
-		sort: {
-			order: undefined,
-			toggle: () => {},
-			clear: () => {},
-			disabled: false
-		}
-	};
 
 	function handleAscSort(e: Event) {
-		if (props.sort.order === 'asc') {
+		if (column.getIsSorted() === 'asc') {
 			return;
 		}
-		props.sort.toggle(e);
+
+		column.getToggleSortingHandler()?.(e);
 	}
 
 	function handleDescSort(e: Event) {
-		if (props.sort.order === 'desc') {
+		if (column.getIsSorted() === 'desc') {
 			return;
 		}
-		props.sort.toggle(e);
+
+		column.getToggleSortingHandler()?.(e);
 	}
 </script>
 
-{#if !props.sort.disabled}
+{#if column.getCanSort()}
 	<div class={cn('flex items-center', className)}>
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger asChild let:builder>
@@ -47,9 +38,9 @@
 					class="-ml-3 h-8 data-[state=open]:bg-accent"
 				>
 					<slot />
-					{#if props.sort.order === 'desc'}
+					{#if column.getIsSorted() === 'desc'}
 						<ArrowDown class="w-4 h-4 ml-2" />
-					{:else if props.sort.order === 'asc'}
+					{:else if column.getIsSorted() === 'asc'}
 						<ArrowUp class="w-4 h-4 ml-2" />
 					{:else}
 						<CaretSort class="w-4 h-4 ml-2" />

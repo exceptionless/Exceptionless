@@ -2,23 +2,18 @@
 	import { writable, type Readable } from 'svelte/store';
 	import {
 		createSvelteTable,
-		flexRender,
 		getCoreRowModel,
-		type ColumnDef,
 		type TableOptions,
 		type Updater,
 		type VisibilityState
 	} from '@tanstack/svelte-table';
 	import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
-	import Summary from '$comp/events/summary/Summary.svelte';
-	import { nameof } from '$lib/utils';
 	import {
 		type FetchClientResponse,
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
 	import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
-	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
 	import Table from '$comp/table/Table.svelte';
@@ -28,35 +23,11 @@
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 	import Muted from '$comp/typography/Muted.svelte';
+	import { getColumns } from './options';
 
 	export let filter: Readable<string>;
 
-	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
-		{
-			header: 'Summary',
-			enableHiding: false,
-			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
-		},
-		{
-			id: 'user',
-			header: 'User',
-			meta: {
-				class: 'w-28'
-			},
-			cell: (prop) =>
-				flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
-		},
-		{
-			id: 'date',
-			header: 'Date',
-			meta: {
-				class: 'w-36'
-			},
-			accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-			cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-		}
-	];
-
+	const columns = getColumns('summary');
 	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {
@@ -76,7 +47,7 @@
 
 	const options = writable<TableOptions<EventSummaryModel<SummaryTemplateKeys>>>({
 		data: [],
-		columns: defaultColumns,
+		columns,
 		enableSorting: false,
 		state: {
 			columnVisibility: $columnVisibility

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { StackStatus } from '$lib/models/api.generated';
 	import {
 		QuestionMarkCircled,
 		Circle,
@@ -9,28 +10,33 @@
 
 	const statuses = [
 		{
-			value: 'backlog',
-			label: 'Backlog',
+			value: StackStatus.Open,
+			label: 'Open',
 			icon: QuestionMarkCircled
 		},
 		{
-			value: 'todo',
-			label: 'Todo',
+			value: StackStatus.Fixed,
+			label: 'Fixed',
 			icon: Circle
 		},
 		{
-			value: 'in progress',
-			label: 'In Progress',
+			value: StackStatus.Regressed,
+			label: 'Regressed',
 			icon: Stopwatch
 		},
 		{
-			value: 'done',
-			label: 'Done',
+			value: StackStatus.Snoozed,
+			label: 'Snoozed',
 			icon: CheckCircled
 		},
 		{
-			value: 'canceled',
-			label: 'Canceled',
+			value: StackStatus.Ignored,
+			label: 'Ignored',
+			icon: CrossCircled
+		},
+		{
+			value: StackStatus.Discarded,
+			label: 'Discarded',
 			icon: CrossCircled
 		}
 	];
