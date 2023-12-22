@@ -66,14 +66,14 @@
 					{/each}
 				</Table.Header>
 				<Table.Body>
-					<Table.Row class="hidden only:table-row text-center">
+					<Table.Row class="hidden text-center only:table-row">
 						<Table.Cell colspan={$table.getVisibleLeafColumns().length}>
 							No data was found with the current filter.
 						</Table.Cell>
 					</Table.Row>
 					{#each $table.getRowModel().rows as row}
 						<Table.Row
-							class="hover cursor-pointer"
+							class="cursor-pointer hover"
 							on:click={() => dispatch('rowclick', row.original)}
 						>
 							{#each row.getVisibleCells() as cell}
