@@ -2,9 +2,7 @@
 	import { writable, type Readable } from 'svelte/store';
 	import {
 		createSvelteTable,
-		flexRender,
 		getCoreRowModel,
-		type ColumnDef,
 		type TableOptions,
 		type Updater,
 		type VisibilityState,
@@ -14,14 +12,9 @@
 		EventSummaryModel,
 		GetEventsMode,
 		IGetEventsParams,
-		StackSummaryModel,
 		SummaryModel,
 		SummaryTemplateKeys
 	} from '$lib/models/api';
-	import Summary from '$comp/events/summary/Summary.svelte';
-	import { nameof } from '$lib/utils';
-	import NumberFormatter from '$comp/formatters/Number.svelte';
-	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 	import {
@@ -32,89 +25,14 @@
 	import TableWithPaging from '$comp/table/TableWithPaging.svelte';
 	import TableWithPagingFooter from '$comp/table/TableWithPagingFooter.svelte';
 	import { persisted } from 'svelte-local-storage-store';
-	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-	import StackUsersSummaryColumn from './StackUsersSummaryColumn.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
+	import { getColumns } from './options';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
 	export let time: Readable<string>;
 
-	const defaultColumns: ColumnDef<SummaryModel<SummaryTemplateKeys>>[] = [
-		{
-			header: 'Summary',
-			enableHiding: false,
-			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
-		}
-	];
-
-	const isEventSummary = mode === 'summary';
-	if (isEventSummary) {
-		defaultColumns.push(
-			{
-				id: 'user',
-				header: 'User',
-				enableSorting: false,
-				meta: {
-					class: 'w-28'
-				},
-				cell: (prop) =>
-					flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
-			},
-			{
-				id: 'date',
-				header: 'Date',
-				accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-				meta: {
-					class: 'w-36'
-				},
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-			}
-		);
-	} else {
-		defaultColumns.push(
-			{
-				id: 'users',
-				header: 'Users',
-				enableSorting: false,
-				meta: {
-					class: 'w-24'
-				},
-				cell: (prop) => flexRender(StackUsersSummaryColumn, { summary: prop.row.original })
-			},
-			{
-				id: 'events',
-				header: 'Events',
-				enableSorting: false,
-				meta: {
-					class: 'w-24'
-				},
-				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-				cell: (prop) => flexRender(NumberFormatter, { value: prop.getValue() as number })
-			},
-			{
-				id: 'first',
-				header: 'First',
-				enableSorting: false,
-				meta: {
-					class: 'w-36'
-				},
-				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-			},
-			{
-				id: 'last',
-				header: 'Last',
-				enableSorting: false,
-				meta: {
-					class: 'w-36'
-				},
-				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-			}
-		);
-	}
-
+	const columns = getColumns(mode);
 	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {
@@ -165,7 +83,7 @@
 	};
 
 	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
-		columns: defaultColumns,
+		columns,
 		data: [],
 		enableSortingRemoval: false,
 		manualSorting: true,

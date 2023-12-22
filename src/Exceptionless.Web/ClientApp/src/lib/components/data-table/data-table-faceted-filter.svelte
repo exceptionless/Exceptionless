@@ -1,13 +1,5 @@
 <script lang="ts">
-	import {
-		PlusCircled,
-		Check,
-		CheckCircled,
-		Circle,
-		CrossCircled,
-		QuestionMarkCircled,
-		Stopwatch
-	} from 'radix-icons-svelte';
+	import { PlusCircled, Check } from 'radix-icons-svelte';
 	import * as Command from '$comp/ui/command';
 	import * as Popover from '$comp/ui/popover';
 	import { Button } from '$comp/ui/button';
@@ -15,37 +7,15 @@
 	import Separator from '$comp/ui/separator/separator.svelte';
 	import Badge from '$comp/ui/badge/badge.svelte';
 
-	const statuses = [
-		{
-			value: 'backlog',
-			label: 'Backlog',
-			icon: QuestionMarkCircled
-		},
-		{
-			value: 'todo',
-			label: 'Todo',
-			icon: Circle
-		},
-		{
-			value: 'in progress',
-			label: 'In Progress',
-			icon: Stopwatch
-		},
-		{
-			value: 'done',
-			label: 'Done',
-			icon: CheckCircled
-		},
-		{
-			value: 'canceled',
-			label: 'Canceled',
-			icon: CrossCircled
-		}
-	];
+	type Option = {
+		value: string;
+		label: string;
+		icon: unknown; // SvelteComponent
+	};
 
 	export let filterValues: string[] = [];
 	export let title: string;
-	export let options = [] as typeof statuses;
+	export let options: Option[] = [];
 
 	let open = false;
 
