@@ -183,6 +183,8 @@
 	parameters.subscribe(async () => await loadData());
 	filter.subscribe(async () => await loadData());
 	time.subscribe(async () => await loadData());
+	let total = 0;
+	console.log(total);
 
 	async function loadData() {
 		if ($loading) {
