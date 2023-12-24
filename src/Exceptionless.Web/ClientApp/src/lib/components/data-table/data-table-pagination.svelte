@@ -3,37 +3,31 @@
 	import type { Table } from '@tanstack/svelte-table';
 
 	import { Button } from '$comp/ui/button';
-	import {
-		ChevronRight,
-		ChevronLeft,
-		DoubleArrowRight,
-		DoubleArrowLeft
-	} from 'radix-icons-svelte';
+	import { ChevronRight, ChevronLeft, DoubleArrowLeft } from 'radix-icons-svelte';
 	import * as Select from '$comp/ui/select';
+	import Number from '$comp/formatters/Number.svelte';
 
 	type TData = $$Generic;
 	export let table: Readable<Table<TData>>;
 
 	const rows = derived(table, ($table) => $table.getRowModel().rows);
 	const selectedDataIds = writable([]); // TODO
-	const pageSize = writable(20); // TODO
-	const pageIndex = writable(1); // TODO
-	const pageCount = writable(10); // TODO
-	const hasPreviousPage = writable(false); // TODO
-	const hasNextPage = writable(false); // TODO
-	const pageRows = writable([]); // TODO
+	let pageSize = writable(20); // TODO
+	const pageIndex = derived(table, ($table) => $table.getState().pagination.pageIndex);
 </script>
 
 <div class="flex items-center justify-between px-2">
 	<div class="flex-1 text-sm text-muted-foreground">
-		{Object.keys($selectedDataIds).length} of{' '}
-		{$rows.length} row(s) selected.
+		{#if $selectedDataIds.length == 0}
+			{Object.keys($selectedDataIds).length} of{' '}
+			{$rows.length} row(s) selected.
+		{/if}
 	</div>
 	<div class="flex items-center space-x-6 lg:space-x-8">
 		<div class="flex items-center space-x-2">
 			<p class="text-sm font-medium">Rows per page</p>
 			<Select.Root
-				onSelectedChange={(selected) => pageSize.set(Number(selected?.value))}
+				onSelectedChange={(selected) => pageSize.set(selected?.value ?? 0)}
 				selected={{ value: 10, label: '10' }}
 			>
 				<Select.Trigger class="w-[180px]">
@@ -49,23 +43,24 @@
 			</Select.Root>
 		</div>
 		<div class="flex w-[100px] items-center justify-center text-sm font-medium">
-			Page {$pageIndex + 1} of {$pageCount}
+			Page <Number value={$pageIndex + 1} /> of <Number value={$table.getPageCount()} />
 		</div>
 		<div class="flex items-center space-x-2">
-			<Button
-				variant="outline"
-				class="hidden w-8 h-8 p-0 lg:flex"
-				on:click={() => ($pageIndex = 0)}
-				disabled={!$hasPreviousPage}
-			>
-				<span class="sr-only">Go to first page</span>
-				<DoubleArrowLeft size={15} />
-			</Button>
+			{#if $pageIndex > 1}
+				<Button
+					variant="outline"
+					class="hidden w-8 h-8 p-0 lg:flex"
+					on:click={() => $table.resetPageIndex(true)}
+				>
+					<span class="sr-only">Go to first page</span>
+					<DoubleArrowLeft size={15} />
+				</Button>
+			{/if}
 			<Button
 				variant="outline"
 				class="w-8 h-8 p-0"
-				on:click={() => ($pageIndex = $pageIndex - 1)}
-				disabled={!$hasPreviousPage}
+				disabled={!$table.getCanPreviousPage()}
+				on:click={() => $table.previousPage()}
 			>
 				<span class="sr-only">Go to previous page</span>
 				<ChevronLeft size={15} />
@@ -73,20 +68,11 @@
 			<Button
 				variant="outline"
 				class="w-8 h-8 p-0"
-				disabled={!$hasNextPage}
-				on:click={() => ($pageIndex = $pageIndex + 1)}
+				disabled={!$table.getCanNextPage()}
+				on:click={() => $table.nextPage()}
 			>
 				<span class="sr-only">Go to next page</span>
 				<ChevronRight size={15} />
-			</Button>
-			<Button
-				variant="outline"
-				class="hidden w-8 h-8 p-0 lg:flex"
-				disabled={!$hasNextPage}
-				on:click={() => ($pageIndex = Math.ceil($rows.length / $pageRows.length) - 1)}
-			>
-				<span class="sr-only">Go to last page</span>
-				<DoubleArrowRight size={15} />
 			</Button>
 		</div>
 	</div>
