@@ -6,7 +6,8 @@
 		type TableOptions,
 		type Updater,
 		type VisibilityState,
-		type ColumnSort
+		type ColumnSort,
+		type PaginationState
 	} from '@tanstack/svelte-table';
 	import type {
 		EventSummaryModel,
@@ -38,88 +39,21 @@
 	} from 'radix-icons-svelte';
 	import { Input } from '$comp/ui/input';
 	import { StackStatus } from '$lib/models/api.generated';
-	import { getColumns } from './options';
+	import { getOptions } from './options';
+	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
 	export let time: Readable<string>;
 
-	const columns = getColumns(mode);
-	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
-	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
-		if (updaterOrValue instanceof Function) {
-			columnVisibility.update(() => updaterOrValue($columnVisibility));
-		} else {
-			columnVisibility.update(() => updaterOrValue);
-		}
-
-		options.update((old) => ({
-			...old,
-			state: {
-				...old.state,
-				...{ columnVisibility: $columnVisibility }
-			}
-		}));
-	};
-
-	let sorting: ColumnSort[] = [
-		{
-			id: 'date',
-			desc: true
-		}
-	];
-	const setSorting = (updaterOrValue: Updater<ColumnSort[]>) => {
-		if (updaterOrValue instanceof Function) {
-			sorting = updaterOrValue(sorting);
-		} else {
-			sorting = updaterOrValue;
-		}
-
-		options.update((old) => ({
-			...old,
-			state: {
-				...old.state,
-				sorting
-			}
-		}));
-
-		parameters.update((params) => ({
-			...params,
-			before: undefined,
-			after: undefined,
-			sort:
-				sorting.length > 0
-					? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',')
-					: undefined
-		}));
-	};
-
-	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
-		columns,
-		data: [],
-		enableSortingRemoval: false,
-		manualSorting: true,
-		state: {
-			columnVisibility: $columnVisibility,
-			sorting
-		},
-		onColumnVisibilityChange: setColumnVisibility,
-		onSortingChange: setSorting,
-		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow) => originalRow.id
-	});
-
-	// TODO: https://tanstack.com/table/v8/docs/api/features/pagination#setpagesize
-
+	const parameters = writable<IGetEventsParams>({ mode });
+	const options = getOptions(parameters);
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
-	const parameters = writable<IGetEventsParams>({ mode });
 	parameters.subscribe(async () => await loadData());
 	filter.subscribe(async () => await loadData());
 	time.subscribe(async () => await loadData());
-	let total = 0;
-	console.log(total);
 
 	async function loadData() {
 		if ($loading) {
@@ -136,11 +70,14 @@
 		});
 
 		if (response.ok) {
+			let total = (response.meta?.total as number) ?? 0;
 			options.update((options) => ({
 				...options,
-				data: response.data || []
+				data: response.data || [],
+				page: $parameters.page ?? 0,
+				pageCount: Math.ceil(total / ($parameters.limit ?? DEFAULT_LIMIT)),
+				meta: response.meta
 			}));
-			if (response.meta?.total) total = response.meta.total as number;
 		}
 	}
 
