@@ -10,16 +10,15 @@
 	type TData = $$Generic;
 	export let table: Readable<Table<TData>>;
 
-	const rows = derived(table, ($table) => $table.getRowModel().rows);
-	const selectedDataIds = writable([]); // TODO
-	let pageSize = writable(20); // TODO
 	const pageIndex = derived(table, ($table) => $table.getState().pagination.pageIndex);
+	const rows = derived(table, ($table) => $table.getRowModel().rows);
+	const selectedRows = derived(table, ($table) => $table.getSelectedRowModel().rows);
 </script>
 
 <div class="flex items-center justify-between px-2">
 	<div class="flex-1 text-sm text-muted-foreground">
-		{#if $selectedDataIds.length == 0}
-			{Object.keys($selectedDataIds).length} of{' '}
+		{#if $selectedRows.length > 0}
+			{Object.keys($selectedRows).length} of{' '}
 			{$rows.length} row(s) selected.
 		{/if}
 	</div>
@@ -27,7 +26,7 @@
 		<div class="flex items-center space-x-2">
 			<p class="text-sm font-medium">Rows per page</p>
 			<Select.Root
-				onSelectedChange={(selected) => pageSize.set(selected?.value ?? 0)}
+				onSelectedChange={(selected) => $table.setPageSize(selected?.value ?? 10)}
 				selected={{ value: 10, label: '10' }}
 			>
 				<Select.Trigger class="w-[180px]">
