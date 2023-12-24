@@ -113,7 +113,7 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 	const columns = getColumns(get(parameters).mode);
 	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 
-	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
+	const onColumnVisibilityChange = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {
 			columnVisibility.update(() => updaterOrValue(get(columnVisibility)));
 		} else {
@@ -129,18 +129,18 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 		}));
 	};
 
-	let sorting: ColumnSort[] = [
-		{
-			id: 'date',
-			desc: true
-		}
-	];
-
 	let pagination: PaginationState = {
 		pageIndex: 0,
 		pageSize: DEFAULT_LIMIT
 	};
-	const setPagination = (updaterOrValue: Updater<PaginationState>) => {
+
+	const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
+		const { loading = false } = get(options).meta as { loading: boolean };
+		if (loading) {
+			console.log('already loading');
+			return;
+		}
+
 		const previousPageIndex = pagination.pageIndex;
 		if (updaterOrValue instanceof Function) {
 			pagination = updaterOrValue(pagination);
@@ -153,6 +153,10 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 			state: {
 				...old.state,
 				pagination: pagination
+			},
+			meta: {
+				...old.meta,
+				loading: true
 			}
 		}));
 
@@ -172,7 +176,14 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 		}));
 	};
 
-	const setSorting = (updaterOrValue: Updater<ColumnSort[]>) => {
+	let sorting: ColumnSort[] = [
+		{
+			id: 'date',
+			desc: true
+		}
+	];
+
+	const onSortingChange = (updaterOrValue: Updater<ColumnSort[]>) => {
 		if (updaterOrValue instanceof Function) {
 			sorting = updaterOrValue(sorting);
 		} else {
@@ -201,6 +212,8 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
 		columns,
 		data: [],
+		enableRowSelection: true,
+		enableMultiRowSelection: true,
 		enableSortingRemoval: false,
 		manualSorting: true,
 		manualPagination: true,
@@ -208,11 +221,11 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 			columnVisibility: get(columnVisibility),
 			sorting
 		},
-		onColumnVisibilityChange: setColumnVisibility,
-		onPaginationChange: setPagination,
-		onSortingChange: setSorting,
 		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow) => originalRow.id
+		getRowId: (originalRow) => originalRow.id,
+		onColumnVisibilityChange,
+		onPaginationChange,
+		onSortingChange
 	});
 
 	return options;
