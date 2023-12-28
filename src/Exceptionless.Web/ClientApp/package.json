@@ -18,15 +18,16 @@
 		"generate-models": "swagger-typescript-api -p http://localhost:5200/docs/v2/swagger.json -o ./src/lib/models -n api.generated.ts --no-client --templates api-templates",
 		"generate-templates": "swagger-typescript-api generate-templates -o api-templates",
 		"test:integration": "playwright test",
-		"test:unit": "vitest"
+		"test:unit": "vitest",
+		"upgrade": "ncu -i"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.40.1",
 		"@sveltejs/adapter-static": "^3.0.1",
 		"@sveltejs/kit": "^2.0.6",
 		"@sveltejs/vite-plugin-svelte": "^3.0.1",
-		"@typescript-eslint/eslint-plugin": "^6.15.0",
-		"@typescript-eslint/parser": "^6.15.0",
+		"@typescript-eslint/eslint-plugin": "^6.16.0",
+		"@typescript-eslint/parser": "^6.16.0",
 		"autoprefixer": "^10.4.16",
 		"cross-env": "^7.0.3",
 		"eslint": "^8.56.0",
@@ -48,8 +49,8 @@
 	"dependencies": {
 		"@exceptionless/browser": "^3.0.5",
 		"@iconify-json/mdi": "^1.1.63",
-		"@tanstack/svelte-query": "^5.14.2",
-		"@tanstack/svelte-query-devtools": "^5.14.5",
+		"@tanstack/svelte-query": "^5.15.0",
+		"@tanstack/svelte-query-devtools": "^5.15.0",
 		"@tanstack/svelte-table": "^8.11.2",
 		"@web3-storage/parse-link-header": "^3.1.0",
 		"bits-ui": "^0.11.8",
