@@ -137,7 +137,6 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 	const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
 		const { loading = false } = get(options).meta as { loading: boolean };
 		if (loading) {
-			console.log('already loading');
 			return;
 		}
 
@@ -161,7 +160,6 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 		}));
 
 		const meta = get(options).meta as FetchClientResponse<unknown>['meta'];
-		console.log({ updatedPageIndex: pagination.pageIndex, previousPageIndex, meta });
 		parameters.update((params) => ({
 			...params,
 			before:

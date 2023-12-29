@@ -114,31 +114,11 @@
 		}
 	];
 
-	const priorities = [
-		{
-			label: 'Low',
-			value: 'low',
-			icon: ArrowDown
-		},
-		{
-			label: 'Medium',
-			value: 'medium',
-			icon: ArrowRight
-		},
-		{
-			label: 'High',
-			value: 'high',
-			icon: ArrowUp
-		}
-	];
-
 	const filterValue: Writable<string> = writable('');
 	const filterValues: Writable<{
 		status: string[];
-		priority: string[];
 	}> = writable({
-		status: [],
-		priority: []
+		status: []
 	});
 
 	$: showReset = Object.values($filterValues).some((v) => v.length > 0);
@@ -160,16 +140,11 @@
 			title="Status"
 			options={statuses}
 		/>
-		<DataTable.FacetedFilter
-			bind:filterValues={$filterValues.priority}
-			title="Priority"
-			options={priorities}
-		/>
+
 		{#if showReset}
 			<Button
 				on:click={() => {
 					$filterValues.status = [];
-					$filterValues.priority = [];
 				}}
 				variant="ghost"
 				class="h-8 px-2 lg:px-3"
