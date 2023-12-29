@@ -4,7 +4,6 @@ import Toolbar from './data-table-toolbar.svelte';
 import FacetedFilter from './data-table-faceted-filter.svelte';
 import Pagination from './data-table-pagination.svelte';
 
-import PriorityCell from './data-table-priority-cell.svelte';
 import StatusCell from './data-table-status-cell.svelte';
 import TitleCell from './data-table-title-cell.svelte';
 
@@ -14,7 +13,6 @@ export {
 	Toolbar,
 	FacetedFilter,
 	Pagination,
-	PriorityCell,
 	StatusCell,
 	TitleCell,
 	//
@@ -23,7 +21,6 @@ export {
 	Toolbar as DataTableToolbar,
 	FacetedFilter as DataTableFacetedFilter,
 	Pagination as DataTablePagination,
-	PriorityCell as DataTablePriorityCell,
 	StatusCell as DataTableStatusCell,
 	TitleCell as DataTableTitleCell
 };
