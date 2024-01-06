@@ -66,7 +66,7 @@ public class Bootstrapper
         RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
         RegisterStorage(services, appOptions.StorageOptions);
 
-        var healthCheckBuilder = RegisterHealthChecks(services, appOptions);
+        var healthCheckBuilder = RegisterHealthChecks(services);
 
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
         {
@@ -75,7 +75,7 @@ public class Bootstrapper
         }
     }
 
-    private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services, AppOptions appOptions)
+    private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services)
     {
         services.AddStartupActionToWaitForHealthChecks("Critical");
 
@@ -106,7 +106,7 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.Data));
+            container.ReplaceSingleton(s => GetRedisConnection(options.Data, s.GetRequiredService<ILoggerFactory>()));
 
             if (!String.IsNullOrEmpty(options.Scope))
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
@@ -121,7 +121,7 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.Data));
+            container.ReplaceSingleton(s => GetRedisConnection(options.Data, s.GetRequiredService<ILoggerFactory>()));
 
             container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions
             {
@@ -143,9 +143,9 @@ public class Bootstrapper
         }
     }
 
-    private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options)
+    private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options, ILoggerFactory loggerFactory)
     {
-        return ConnectionMultiplexer.Connect(options.GetString("server"));
+        return ConnectionMultiplexer.Connect(options.GetString("server"), o => o.LoggerFactory = loggerFactory);
     }
 
     private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks)
