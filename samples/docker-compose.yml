@@ -63,7 +63,7 @@ services:
       - 5601:5601
 
   redis:
-    image: redis:6.0-alpine
+    image: redis:7.2-alpine
     ports:
       - 6379:6379
 
