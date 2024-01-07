@@ -1,12 +1,13 @@
 import {
-	flexRender,
 	type ColumnDef,
 	getCoreRowModel,
 	type ColumnSort,
 	type PaginationState,
 	type TableOptions,
 	type Updater,
-	type VisibilityState
+	type VisibilityState,
+	renderComponent,
+	type RowSelectionState
 } from '@tanstack/svelte-table';
 import { persisted } from 'svelte-local-storage-store';
 import { get, writable, type Writable } from 'svelte/store';
@@ -27,15 +28,40 @@ import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 import StackUsersSummaryColumn from './StackUsersSummaryColumn.svelte';
 import { DEFAULT_LIMIT } from '$lib/helpers/api';
 import type { FetchClientResponse } from '$api/FetchClient';
+import { Checkbox } from '$comp/ui/checkbox';
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
 	mode: GetEventsMode = 'summary'
 ): ColumnDef<TSummaryModel>[] {
 	const columns: ColumnDef<TSummaryModel>[] = [
 		{
+			id: 'select',
+			header: ({ table }) =>
+				renderComponent(Checkbox, {
+					checked:
+						table.getIsAllRowsSelected() || table.getIsSomeRowsSelected()
+							? 'indeterminate'
+							: false,
+					click: table.getToggleAllRowsSelectedHandler()
+				}),
+			cell: (props) =>
+				renderComponent(Checkbox, {
+					checked:
+						props.row.getIsSelected() || props.row.getIsSomeSelected()
+							? 'indeterminate'
+							: false,
+					disabled: !props.row.getCanSelect(),
+					click: props.row.getToggleSelectedHandler(),
+					'aria-label': 'Select row',
+					class: 'translate-y-[2px]'
+				}),
+			enableHiding: false,
+			enableSorting: false
+		},
+		{
 			header: 'Summary',
 			enableHiding: false,
-			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
+			cell: (prop) => renderComponent(Summary, { summary: prop.row.original })
 		}
 	];
 
@@ -50,7 +76,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-28'
 				},
 				cell: (prop) =>
-					flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
+					renderComponent(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
 			},
 			{
 				id: 'date',
@@ -59,7 +85,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 				meta: {
 					class: 'w-36'
 				},
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
+				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue() })
 			}
 		);
 	} else {
@@ -71,7 +97,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 				meta: {
 					class: 'w-24'
 				},
-				cell: (prop) => flexRender(StackUsersSummaryColumn, { summary: prop.row.original })
+				cell: (prop) =>
+					renderComponent(StackUsersSummaryColumn, { summary: prop.row.original })
 			},
 			{
 				id: 'events',
@@ -81,7 +108,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-24'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-				cell: (prop) => flexRender(NumberFormatter, { value: prop.getValue() as number })
+				cell: (prop) =>
+					renderComponent(NumberFormatter, { value: prop.getValue() as number })
 			},
 			{
 				id: 'first',
@@ -91,7 +119,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
+				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue() })
 			},
 			{
 				id: 'last',
@@ -101,7 +129,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-				cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
+				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue() })
 			}
 		);
 	}
@@ -174,6 +202,24 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 		}));
 	};
 
+	let rowSelection: RowSelectionState = {};
+
+	const onRowSelectionChange = (updaterOrValue: Updater<RowSelectionState>) => {
+		if (updaterOrValue instanceof Function) {
+			rowSelection = updaterOrValue(rowSelection);
+		} else {
+			rowSelection = updaterOrValue;
+		}
+
+		options.update((old) => ({
+			...old,
+			state: {
+				...old.state,
+				rowSelection: rowSelection
+			}
+		}));
+	};
+
 	let sorting: ColumnSort[] = [
 		{
 			id: 'date',
@@ -217,12 +263,14 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 		manualPagination: true,
 		state: {
 			columnVisibility: get(columnVisibility),
+			rowSelection,
 			sorting
 		},
 		getCoreRowModel: getCoreRowModel(),
 		getRowId: (originalRow) => originalRow.id,
 		onColumnVisibilityChange,
 		onPaginationChange,
+		onRowSelectionChange,
 		onSortingChange
 	});
 
