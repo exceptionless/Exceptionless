@@ -2,7 +2,7 @@ version: "2.2"
 
 services:
   elasticsearch:
-    image: exceptionless/elasticsearch:8.11.1
+    image: exceptionless/elasticsearch:8.11.3
     environment:
       node.name: elasticsearch
       cluster.name: exceptionless
@@ -18,14 +18,14 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:8.11.1
+    image: docker.elastic.co/kibana/kibana:8.11.3
     environment:
       xpack.security.enabled: "false"
     ports:
       - 5601:5601
 
   redis:
-    image: redis:6-alpine
+    image: redis:7.2-alpine
     ports:
       - 6379:6379
 
