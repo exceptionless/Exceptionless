@@ -77,29 +77,3 @@
 		@apply bg-secondary text-foreground;
 	}
 }
-:root {
-	/* Spacing for the container and between each toast */
-	--svoast-offset: 16px;
-	--svoast-gap: 16px;
-	/* The toast itself. */
-	--svoast-bg: theme('colors.background');
-	--svoast-text: theme('colors.foreground');
-	--svoast-padding: theme('spacing.6');
-	--svoast-radius: theme('borderRadius.lg');
-	--svoast-shadow: theme('boxShadow.xl');
-	--svoast-font-size: theme('fontSize.sm');
-	--svoast-dismiss-gap: 8px;
-	--svoast-max-width: unset;
-	/* The current colour of the toast, depending on the type */
-	--svoast-colour: '';
-	/* Colour for each type */
-	--svoast-info-colour: theme('colors.blue.500');
-	--svoast-attention-colour: theme('colors.zinc.500');
-	--svoast-success-colour: theme('colors.primary.DEFAULT');
-	--svoast-warning-colour: theme('colors.orange.500');
-	--svoast-error-colour: theme('colors.destructive.DEFAULT');
-	/* The coloured bar */
-	--svoast-bar-width: 3px;
-	/* Icons */
-	--svoast-icon-padding: 2px;
-}
