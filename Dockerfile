@@ -153,7 +153,7 @@ ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # completely self-contained 7.x
 
-FROM exceptionless/elasticsearch:7.17.14 AS exceptionless7
+FROM exceptionless/elasticsearch:7.17.16 AS exceptionless7
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
