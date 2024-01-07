@@ -38,20 +38,24 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 			id: 'select',
 			header: ({ table }) =>
 				renderComponent(Checkbox, {
-					checked:
-						table.getIsAllRowsSelected() || table.getIsSomeRowsSelected()
+					checked: table.getIsAllRowsSelected()
+						? true
+						: table.getIsSomeRowsSelected()
 							? 'indeterminate'
 							: false,
-					click: table.getToggleAllRowsSelectedHandler()
+					onCheckedChange: (checked: boolean) =>
+						table.getToggleAllRowsSelectedHandler()({ target: { checked } })
 				}),
 			cell: (props) =>
 				renderComponent(Checkbox, {
-					checked:
-						props.row.getIsSelected() || props.row.getIsSomeSelected()
+					checked: props.row.getIsSelected()
+						? true
+						: props.row.getIsSomeSelected()
 							? 'indeterminate'
 							: false,
 					disabled: !props.row.getCanSelect(),
-					click: props.row.getToggleSelectedHandler(),
+					onCheckedChange: (checked: boolean) =>
+						props.row.getToggleSelectedHandler()({ target: { checked } }),
 					'aria-label': 'Select row',
 					class: 'translate-y-[2px]'
 				}),
