@@ -24,10 +24,10 @@
 	"devDependencies": {
 		"@playwright/test": "^1.40.1",
 		"@sveltejs/adapter-static": "^3.0.1",
-		"@sveltejs/kit": "^2.0.6",
+		"@sveltejs/kit": "^2.1.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.1",
-		"@typescript-eslint/eslint-plugin": "^6.18.0",
-		"@typescript-eslint/parser": "^6.18.0",
+		"@typescript-eslint/eslint-plugin": "^6.18.1",
+		"@typescript-eslint/parser": "^6.18.1",
 		"autoprefixer": "^10.4.16",
 		"cross-env": "^7.0.3",
 		"eslint": "^8.56.0",
@@ -49,11 +49,11 @@
 	"dependencies": {
 		"@exceptionless/browser": "^3.0.5",
 		"@iconify-json/mdi": "^1.1.64",
-		"@tanstack/svelte-query": "^5.17.7",
-		"@tanstack/svelte-query-devtools": "^5.17.7",
+		"@tanstack/svelte-query": "^5.17.9",
+		"@tanstack/svelte-query-devtools": "^5.17.9",
 		"@tanstack/svelte-table": "^8.11.3",
 		"@web3-storage/parse-link-header": "^3.1.0",
-		"bits-ui": "^0.13.3",
+		"bits-ui": "^0.13.6",
 		"class-validator": "^0.14.0",
 		"clsx": "^2.1.0",
 		"cmdk-sv": "^0.0.12",
@@ -68,7 +68,7 @@
 		"tailwind-merge": "^2.2.0",
 		"tailwind-variants": "^0.1.20",
 		"tailwindcss": "^3.4.1",
-		"unplugin-icons": "^0.18.1"
+		"unplugin-icons": "^0.18.2"
 	},
 	"type": "module"
 }
