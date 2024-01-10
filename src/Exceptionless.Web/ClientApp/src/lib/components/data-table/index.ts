@@ -6,7 +6,6 @@ import PageSize from './data-table-page-size.svelte';
 import Pagination from './data-table-pagination.svelte';
 
 import StatusCell from './data-table-status-cell.svelte';
-import TitleCell from './data-table-title-cell.svelte';
 
 export {
 	Root,
@@ -16,7 +15,6 @@ export {
 	PageSize,
 	Pagination,
 	StatusCell,
-	TitleCell,
 	//
 	Root as DataTable,
 	Body as DataTableBody,
@@ -24,6 +22,5 @@ export {
 	FacetedFilter as DataTableFacetedFilter,
 	PageSize as DataTablePageSize,
 	Pagination as DataTablePagination,
-	StatusCell as DataTableStatusCell,
-	TitleCell as DataTableTitleCell
+	StatusCell as DataTableStatusCell
 };
