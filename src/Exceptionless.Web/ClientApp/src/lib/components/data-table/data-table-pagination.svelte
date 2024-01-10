@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { derived, writable, type Readable } from 'svelte/store';
+	import { derived, type Readable } from 'svelte/store';
 	import type { Table } from '@tanstack/svelte-table';
 
 	import { Button } from '$comp/ui/button';
 	import { ChevronRight, ChevronLeft, DoubleArrowLeft } from 'radix-icons-svelte';
-	import * as Select from '$comp/ui/select';
 	import Number from '$comp/formatters/Number.svelte';
 
 	type TData = $$Generic;
@@ -23,24 +22,8 @@
 		{/if}
 	</div>
 	<div class="flex items-center space-x-6 lg:space-x-8">
-		<div class="flex items-center space-x-2">
-			<p class="text-sm font-medium">Rows per page</p>
-			<Select.Root
-				onSelectedChange={(selected) => $table.setPageSize(selected?.value ?? 10)}
-				selected={{ value: 10, label: '10' }}
-			>
-				<Select.Trigger class="w-[180px]">
-					<Select.Value placeholder="Select page size" />
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="10">10</Select.Item>
-					<Select.Item value="20">20</Select.Item>
-					<Select.Item value="30">30</Select.Item>
-					<Select.Item value="40">40</Select.Item>
-					<Select.Item value="50">50</Select.Item>
-				</Select.Content>
-			</Select.Root>
-		</div>
+		<slot />
+
 		<div class="flex w-[100px] items-center justify-center text-sm font-medium">
 			Page <Number value={$pageIndex + 1} /> of <Number value={$table.getPageCount()} />
 		</div>

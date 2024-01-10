@@ -163,7 +163,7 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 
 	let pagination: PaginationState = {
 		pageIndex: 0,
-		pageSize: DEFAULT_LIMIT
+		pageSize: get(parameters).limit ?? DEFAULT_LIMIT
 	};
 
 	const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
@@ -179,11 +179,15 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 			pagination = updaterOrValue;
 		}
 
+		// Force a reset of the row selection state until we get smarter about it.
+		rowSelection = {};
+
 		options.update((old) => ({
 			...old,
 			state: {
 				...old.state,
-				pagination: pagination
+				pagination,
+				rowSelection
 			},
 			meta: {
 				...old.meta,
