@@ -46,7 +46,8 @@
 	export let filter: Readable<string>;
 	export let time: Readable<string>;
 
-	const parameters = writable<IGetEventsParams>({ mode });
+	let limit = persisted<number>('events.limit', 10);
+	const parameters = writable<IGetEventsParams>({ mode, limit: $limit });
 	const options = getOptions(parameters);
 	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
 
@@ -78,6 +79,8 @@
 				pageCount: Math.ceil(total / ($parameters.limit ?? DEFAULT_LIMIT)),
 				meta: response.meta
 			}));
+
+			$table.resetRowSelection();
 		}
 	}
 
@@ -155,5 +158,7 @@
 		{/if}
 	</DataTable.Toolbar>
 	<DataTable.Body {table}></DataTable.Body>
-	<DataTable.Pagination {table}></DataTable.Pagination>
+	<DataTable.Pagination {table}>
+		<DataTable.PageSize {table} value={limit}></DataTable.PageSize>
+	</DataTable.Pagination>
 </DataTable.Root>
