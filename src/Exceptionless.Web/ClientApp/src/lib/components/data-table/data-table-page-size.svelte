@@ -8,7 +8,7 @@
 	type TData = $$Generic;
 	export let table: Readable<Table<TData>>;
 
-	export let value: Writable<number>;
+	export let value: number;
 	export let defaultValue: number = 10;
 
 	const items = [
@@ -19,10 +19,14 @@
 		{ value: 50, label: '50' }
 	];
 
-	let selected = items.find((item) => item.value === $value) || items[0];
+	let selected = items.find((item) => item.value === value) || items[0];
 	function onSelectedChange(selected: Selected<number> | undefined) {
 		const newValue = selected?.value ?? defaultValue;
-		value.set(newValue);
+		if (newValue === value) {
+			return;
+		}
+
+		value = newValue;
 		$table.setPageSize(newValue);
 	}
 </script>

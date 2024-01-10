@@ -15,7 +15,10 @@
 	let selected = items.find((item) => item.value === value) || items[items.length - 1];
 
 	function onSelectedChange(selected: Selected<string> | undefined) {
-		value = selected?.value ?? '';
+		const newValue = selected?.value ?? '';
+		if (newValue !== value) {
+			value = newValue;
+		}
 	}
 </script>
 

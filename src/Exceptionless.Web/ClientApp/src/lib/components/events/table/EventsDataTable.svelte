@@ -159,6 +159,6 @@
 	</DataTable.Toolbar>
 	<DataTable.Body {table}></DataTable.Body>
 	<DataTable.Pagination {table}>
-		<DataTable.PageSize {table} value={limit}></DataTable.PageSize>
+		<DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
 	</DataTable.Pagination>
 </DataTable.Root>
