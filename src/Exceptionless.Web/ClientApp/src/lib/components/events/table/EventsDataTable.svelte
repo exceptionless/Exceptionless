@@ -41,6 +41,7 @@
 	import { StackStatus } from '$lib/models/api.generated';
 	import { getOptions } from './options';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
+	import { createEventDispatcher } from 'svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -125,6 +126,7 @@
 	});
 
 	$: showReset = Object.values($filterValues).some((v) => v.length > 0);
+	const dispatch = createEventDispatcher();
 </script>
 
 <CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
@@ -157,7 +159,8 @@
 			</Button>
 		{/if}
 	</DataTable.Toolbar>
-	<DataTable.Body {table}></DataTable.Body>
+	<DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}
+	></DataTable.Body>
 	<DataTable.Pagination {table}>
 		<DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
 	</DataTable.Pagination>
