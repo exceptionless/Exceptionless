@@ -1,14 +1,6 @@
 <script lang="ts">
 	import { writable, type Readable, type Writable } from 'svelte/store';
-	import {
-		createSvelteTable,
-		getCoreRowModel,
-		type TableOptions,
-		type Updater,
-		type VisibilityState,
-		type ColumnSort,
-		type PaginationState
-	} from '@tanstack/svelte-table';
+	import { createSvelteTable } from '@tanstack/svelte-table';
 	import type {
 		EventSummaryModel,
 		GetEventsMode,
@@ -27,9 +19,6 @@
 	import * as DataTable from '$comp/data-table';
 	import { Button } from '$comp/ui/button';
 	import {
-		ArrowDown,
-		ArrowRight,
-		ArrowUp,
 		CheckCircled,
 		Circle,
 		Cross2,
