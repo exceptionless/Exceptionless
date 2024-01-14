@@ -5,6 +5,7 @@
 		"digitalbrainstem.javascript-ejs-support",
 		"dbaeumer.vscode-eslint",
 		"esbenp.prettier-vscode",
-		"selemondev.vscode-shadcn-svelte"
+		"selemondev.vscode-shadcn-svelte",
+		"zixuanchen.vitest-explorer"
 	]
 }

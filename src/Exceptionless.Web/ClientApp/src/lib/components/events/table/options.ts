@@ -23,9 +23,9 @@ import type {
 import Summary from '$comp/events/summary/Summary.svelte';
 import { nameof } from '$lib/utils';
 import NumberFormatter from '$comp/formatters/Number.svelte';
-import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
+import EventsUserIdentitySummaryCell from './EventsUserIdentitySummaryCell.svelte';
 import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-import StackUsersSummaryColumn from './StackUsersSummaryColumn.svelte';
+import StackUsersSummaryCell from './StackUsersSummaryCell.svelte';
 import { DEFAULT_LIMIT } from '$lib/helpers/api';
 import type { FetchClientResponse } from '$api/FetchClient';
 import { Checkbox } from '$comp/ui/checkbox';
@@ -43,7 +43,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 						: table.getIsSomeRowsSelected()
 							? 'indeterminate'
 							: false,
-					onCheckedChange: (checked: boolean) =>
+					onCheckedChange: (checked: boolean | 'indeterminate') =>
 						table.getToggleAllRowsSelectedHandler()({ target: { checked } })
 				}),
 			cell: (props) =>
@@ -54,7 +54,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 							? 'indeterminate'
 							: false,
 					disabled: !props.row.getCanSelect(),
-					onCheckedChange: (checked: boolean) =>
+					onCheckedChange: (checked: boolean | 'indeterminate') =>
 						props.row.getToggleSelectedHandler()({ target: { checked } }),
 					'aria-label': 'Select row',
 					class: 'translate-y-[2px]'
@@ -80,7 +80,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-28'
 				},
 				cell: (prop) =>
-					renderComponent(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
+					renderComponent(EventsUserIdentitySummaryCell, { summary: prop.row.original })
 			},
 			{
 				id: 'date',
@@ -89,7 +89,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 				meta: {
 					class: 'w-36'
 				},
-				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue() })
+				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() })
 			}
 		);
 	} else {
@@ -102,7 +102,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-24'
 				},
 				cell: (prop) =>
-					renderComponent(StackUsersSummaryColumn, { summary: prop.row.original })
+					renderComponent(StackUsersSummaryCell, { summary: prop.row.original })
 			},
 			{
 				id: 'events',
@@ -112,8 +112,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-24'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-				cell: (prop) =>
-					renderComponent(NumberFormatter, { value: prop.getValue() as number })
+				cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() })
 			},
 			{
 				id: 'first',
@@ -123,7 +122,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue() })
+				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() })
 			},
 			{
 				id: 'last',
@@ -133,7 +132,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'w-36'
 				},
 				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue() })
+				cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() })
 			}
 		);
 	}
