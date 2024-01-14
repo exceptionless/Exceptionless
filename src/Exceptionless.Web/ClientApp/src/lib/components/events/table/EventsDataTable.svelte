@@ -17,13 +17,11 @@
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
 	import * as DataTable from '$comp/data-table';
-	import { Button } from '$comp/ui/button';
 	import { Input } from '$comp/ui/input';
 	import { getOptions } from './options';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 	import { createEventDispatcher } from 'svelte';
 	import { statuses } from '../stack';
-	import { Cross2 } from 'radix-icons-svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -74,7 +72,6 @@
 		status: []
 	});
 
-	$: showReset = Object.values($filterValues).some((v) => v.length > 0);
 	const dispatch = createEventDispatcher();
 </script>
 
@@ -82,31 +79,22 @@
 
 <DataTable.Root>
 	<DataTable.Toolbar {table}>
-		<Input
-			placeholder="Filter tasks..."
-			class="h-8 w-[150px] lg:w-[250px]"
-			type="text"
-			bind:value={$filterValue}
-		/>
+		<slot>
+			<Input
+				placeholder="Filter tasks..."
+				class="h-8 w-[150px] lg:w-[250px]"
+				type="text"
+				bind:value={$filterValue}
+			/>
 
-		<DataTable.FacetedFilter
-			bind:filterValues={$filterValues.status}
-			title="Status"
-			options={statuses}
-		/>
-
-		{#if showReset}
-			<Button
-				on:click={() => {
-					$filterValues.status = [];
-				}}
-				variant="ghost"
-				class="h-8 px-2 lg:px-3"
-			>
-				Reset
-				<Cross2 class="w-4 h-4 ml-2" />
-			</Button>
-		{/if}
+			<DataTable.FacetedFilterContainer {filterValues}>
+				<DataTable.FacetedFilter
+					bind:filterValues={$filterValues.status}
+					title="Status"
+					options={statuses}
+				></DataTable.FacetedFilter>
+			</DataTable.FacetedFilterContainer>
+		</slot>
 	</DataTable.Toolbar>
 	<DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}
 	></DataTable.Body>
