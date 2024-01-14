@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Table } from '@tanstack/svelte-table';
 	import type { Selected } from 'bits-ui';
-	import type { Readable, Writable } from 'svelte/store';
+	import type { Readable } from 'svelte/store';
 
 	import * as Select from '$comp/ui/select';
 

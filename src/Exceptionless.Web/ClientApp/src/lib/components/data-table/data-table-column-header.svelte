@@ -1,9 +1,9 @@
 <script lang="ts">
+	import type { Column } from '@tanstack/svelte-table';
 	import { ArrowDown, ArrowUp, CaretSort } from 'radix-icons-svelte';
 	import { Button } from '$comp/ui/button';
 	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import { cn } from '$lib/utils';
-	import type { Column } from '@tanstack/svelte-table';
 
 	type TData = $$Generic;
 	export let column: Column<TData, unknown>;

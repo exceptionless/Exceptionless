@@ -27,7 +27,7 @@
 
 	export let filter: Readable<string>;
 
-	const columns = getColumns('summary');
+	const columns = getColumns<EventSummaryModel<SummaryTemplateKeys>>('summary');
 	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
 		if (updaterOrValue instanceof Function) {

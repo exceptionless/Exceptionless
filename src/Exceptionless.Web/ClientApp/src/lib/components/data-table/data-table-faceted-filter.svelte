@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { PlusCircled, Check } from 'radix-icons-svelte';
+	import type { ComponentType } from 'svelte';
 	import * as Command from '$comp/ui/command';
 	import * as Popover from '$comp/ui/popover';
 	import { Button } from '$comp/ui/button';
@@ -10,7 +11,7 @@
 	type Option = {
 		value: string;
 		label: string;
-		icon: unknown; // SvelteComponent
+		icon: ComponentType;
 	};
 
 	export let filterValues: string[] = [];

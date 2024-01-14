@@ -18,19 +18,12 @@
 
 	import * as DataTable from '$comp/data-table';
 	import { Button } from '$comp/ui/button';
-	import {
-		CheckCircled,
-		Circle,
-		Cross2,
-		CrossCircled,
-		QuestionMarkCircled,
-		Stopwatch
-	} from 'radix-icons-svelte';
 	import { Input } from '$comp/ui/input';
-	import { StackStatus } from '$lib/models/api.generated';
 	import { getOptions } from './options';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 	import { createEventDispatcher } from 'svelte';
+	import { statuses } from '../stack';
+	import { Cross2 } from 'radix-icons-svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -73,39 +66,6 @@
 			$table.resetRowSelection();
 		}
 	}
-
-	const statuses = [
-		{
-			value: StackStatus.Open,
-			label: 'Open',
-			icon: QuestionMarkCircled
-		},
-		{
-			value: StackStatus.Fixed,
-			label: 'Fixed',
-			icon: Circle
-		},
-		{
-			value: StackStatus.Regressed,
-			label: 'Regressed',
-			icon: Stopwatch
-		},
-		{
-			value: StackStatus.Snoozed,
-			label: 'Snoozed',
-			icon: CheckCircled
-		},
-		{
-			value: StackStatus.Ignored,
-			label: 'Ignored',
-			icon: CrossCircled
-		},
-		{
-			value: StackStatus.Discarded,
-			label: 'Discarded',
-			icon: CrossCircled
-		}
-	];
 
 	const filterValue: Writable<string> = writable('');
 	const filterValues: Writable<{
