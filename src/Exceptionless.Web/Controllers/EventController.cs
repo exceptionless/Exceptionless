@@ -1076,7 +1076,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         ev.Geo = geo?.ToString();
                     break;
                 case "tags":
-                    ev.Tags.AddRange(kvp.Value.SelectMany(t => t?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>()).Distinct());
+                    ev.Tags.AddRange(kvp.Value.SelectMany(t => t?.Split([","], StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>()).Distinct());
                     break;
                 case "identity":
                     identity = kvp.Value.FirstOrDefault();
