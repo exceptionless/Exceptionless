@@ -19,7 +19,6 @@
 	import { getOptions } from './options';
 	import SearchInput from '$comp/SearchInput.svelte';
 	import { limit, onFilterInputChanged } from '$lib/stores/events';
-	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 
 	export let filter: Readable<string>;
 
