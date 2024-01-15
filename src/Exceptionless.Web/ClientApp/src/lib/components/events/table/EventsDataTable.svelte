@@ -2,15 +2,8 @@
 	import { createSvelteTable } from '@tanstack/svelte-table';
 	import { createEventDispatcher } from 'svelte';
 	import { writable, type Readable } from 'svelte/store';
-	import { persisted } from 'svelte-local-storage-store';
 
-	import type {
-		EventSummaryModel,
-		GetEventsMode,
-		IGetEventsParams,
-		SummaryModel,
-		SummaryTemplateKeys
-	} from '$lib/models/api';
+	import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
 	import {
 		type FetchClientResponse,
 		globalFetchClient as api,
@@ -22,15 +15,14 @@
 	import { getOptions } from './options';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 	import SearchInput from '$comp/SearchInput.svelte';
+	import { limit, onFilterInputChanged } from '$lib/stores/events';
 
-	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
 	export let time: Readable<string>;
 
-	let limit = persisted<number>('events.limit', 10);
-	const parameters = writable<IGetEventsParams>({ mode, limit: $limit });
-	const options = getOptions(parameters);
-	const table = createSvelteTable<SummaryModel<SummaryTemplateKeys>>(options);
+	const parameters = writable<IGetEventsParams>({ mode: 'summary', limit: $limit });
+	const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters);
+	const table = createSvelteTable(options);
 
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	parameters.subscribe(async () => await loadData());
@@ -44,10 +36,9 @@
 
 		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
 			params: {
-				mode: 'summary',
+				...$parameters,
 				filter: $filter,
-				time: $time,
-				...$parameters
+				time: $time
 			}
 		});
 
@@ -73,7 +64,11 @@
 <DataTable.Root>
 	<DataTable.Toolbar {table}>
 		<slot name="toolbar">
-			<SearchInput class="h-8 w-[150px] lg:w-[250px]" bind:value={$filter} />
+			<SearchInput
+				class="h-8 w-[150px] lg:w-[250px]"
+				value={$filter}
+				on:input={onFilterInputChanged}
+			/>
 		</slot>
 	</DataTable.Toolbar>
 	<DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}

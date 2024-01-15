@@ -13,6 +13,7 @@ import {
 import { persisted } from 'svelte-local-storage-store';
 import { derived, get } from 'svelte/store';
 
+export const limit = persisted<number>('events.limit', 10);
 export const time = persisted<string>('filter.time', '');
 const filters = persisted<IFilter[]>('filters', [], { serializer: new FilterSerializer() });
 
