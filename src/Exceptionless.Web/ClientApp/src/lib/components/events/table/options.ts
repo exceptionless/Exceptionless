@@ -140,8 +140,13 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 	return columns;
 }
 
-export function getOptions(parameters: Writable<IGetEventsParams>) {
-	const columns = getColumns(get(parameters).mode);
+export function getOptions<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
+	parameters: Writable<IGetEventsParams>,
+	configureOptions: (options: TableOptions<TSummaryModel>) => TableOptions<TSummaryModel> = (
+		options
+	) => options
+) {
+	const columns = getColumns<TSummaryModel>(get(parameters).mode);
 	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
 
 	const onColumnVisibilityChange = (updaterOrValue: Updater<VisibilityState>) => {
@@ -166,7 +171,9 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 	};
 
 	const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
-		const { loading = false } = get(options).meta as { loading: boolean };
+		const { loading = false } = (get(options).meta as { loading: boolean }) ?? {
+			loading: false
+		};
 		if (loading) {
 			return;
 		}
@@ -260,26 +267,28 @@ export function getOptions(parameters: Writable<IGetEventsParams>) {
 		}));
 	};
 
-	const options = writable<TableOptions<SummaryModel<SummaryTemplateKeys>>>({
-		columns,
-		data: [],
-		enableRowSelection: true,
-		enableMultiRowSelection: true,
-		enableSortingRemoval: false,
-		manualSorting: true,
-		manualPagination: true,
-		state: {
-			columnVisibility: get(columnVisibility),
-			rowSelection,
-			sorting
-		},
-		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow) => originalRow.id,
-		onColumnVisibilityChange,
-		onPaginationChange,
-		onRowSelectionChange,
-		onSortingChange
-	});
+	const options = writable<TableOptions<TSummaryModel>>(
+		configureOptions({
+			columns,
+			data: [],
+			enableRowSelection: true,
+			enableMultiRowSelection: true,
+			enableSortingRemoval: false,
+			manualSorting: true,
+			manualPagination: true,
+			state: {
+				columnVisibility: get(columnVisibility),
+				rowSelection,
+				sorting
+			},
+			getCoreRowModel: getCoreRowModel(),
+			getRowId: (originalRow) => originalRow.id,
+			onColumnVisibilityChange,
+			onPaginationChange,
+			onRowSelectionChange,
+			onSortingChange
+		})
+	);
 
 	return options;
 }

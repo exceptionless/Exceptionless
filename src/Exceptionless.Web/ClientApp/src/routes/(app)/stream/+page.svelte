@@ -1,18 +1,11 @@
 <script lang="ts">
 	import * as Card from '$comp/ui/card';
 	import * as Sheet from '$comp/ui/sheet';
-	import EventsTailLogTable from '$comp/events/table/EventsTailLogTable.svelte';
-	import TableColumnPicker from '$comp/table/TableColumnPicker.svelte';
+	import EventsTailLogDataTable from '$comp/events/table/EventsTailLogDataTable.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-	import {
-		filter,
-		filterWithFaceted,
-		onFilterChanged,
-		onFilterInputChanged
-	} from '$lib/stores/events';
+	import { filter, onFilterChanged } from '$lib/stores/events';
 
-	import SearchInput from '$comp/SearchInput.svelte';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 
 	let selectedEventId: string | null = null;
@@ -30,18 +23,7 @@
 <Card.Root>
 	<Card.Title class="p-6 pb-4 text-xl font-bold">Event Stream</Card.Title>
 	<Card.Content>
-		<EventsTailLogTable on:rowclick={onRowClick} filter={filterWithFaceted}>
-			<div slot="header" let:table>
-				<div class="flex items-center justify-between p-2 pb-4">
-					<div class="w-2/4">
-						<SearchInput value={$filter} on:input={onFilterInputChanged} />
-					</div>
-					<div class="flex items-center space-x-2">
-						<TableColumnPicker {table}></TableColumnPicker>
-					</div>
-				</div>
-			</div>
-		</EventsTailLogTable>
+		<EventsTailLogDataTable on:rowclick={onRowClick} {filter}></EventsTailLogDataTable>
 	</Card.Content></Card.Root
 >
 
