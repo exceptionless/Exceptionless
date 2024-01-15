@@ -29,6 +29,7 @@ import StackUsersSummaryCell from './StackUsersSummaryCell.svelte';
 import { DEFAULT_LIMIT } from '$lib/helpers/api';
 import type { FetchClientResponse } from '$api/FetchClient';
 import { Checkbox } from '$comp/ui/checkbox';
+import StackStatusCell from './StackStatusCell.svelte';
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
 	mode: GetEventsMode = 'summary'
@@ -94,6 +95,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 		);
 	} else {
 		columns.push(
+			{
+				id: 'status',
+				header: 'Status',
+				enableSorting: false,
+				meta: {
+					class: 'w-36'
+				},
+				accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
+				cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<string>() })
+			},
 			{
 				id: 'users',
 				header: 'Users',
