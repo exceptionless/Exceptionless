@@ -1,8 +1,15 @@
+import type { StackStatus } from '$lib/models/api.generated';
 import type { Serializer } from 'svelte-local-storage-store';
 
 export interface IFilter {
 	readonly type: string;
 	toFilter(): string;
+}
+
+export interface IFacetedFilter extends IFilter {
+	term: string;
+	values: unknown[];
+	faceted: boolean;
 }
 
 export class BooleanFilter implements IFilter {
@@ -88,6 +95,26 @@ export class SessionFilter implements IFilter {
 	}
 }
 
+export class StatusFilter implements IFacetedFilter {
+	constructor(public values: StackStatus[]) {}
+
+	public term: string = 'status';
+	public type: string = 'status';
+	public faceted: boolean = true;
+
+	public toFilter(): string {
+		if (this.values.length == 0) {
+			return '';
+		}
+
+		if (this.values.length == 1) {
+			return `status:${this.values[0]}`;
+		}
+
+		return `(${this.values.map((val) => `status:${val}`).join(' OR ')})`;
+	}
+}
+
 export class StringFilter implements IFilter {
 	constructor(
 		public term: string,
@@ -140,8 +167,9 @@ export function quote(value?: string | null): string | undefined {
 	return value ? `"${value}"` : undefined;
 }
 
-export function toFilter(filters: IFilter[]): string {
+export function toFilter(filters: IFilter[], includeFaceted: boolean = false): string {
 	return filters
+		.filter((f) => includeFaceted || !isFaceted(f))
 		.map((f) => f.toFilter())
 		.join(' ')
 		.trim();
@@ -153,15 +181,52 @@ export function toFilter(filters: IFilter[]): string {
  * @param filter The filter to add or remove
  * @returns The updated filters
  */
-export function updateFilters(filters: IFilter[], filter: IFilter): IFilter[] {
-	const index = filters.findIndex((f) => f.toFilter() === filter.toFilter());
-	if (index !== -1) {
+export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
+	const index = filters.findIndex(
+		(f) =>
+			(f.type === filter.type && isFaceted(f) && isFaceted(filter)) ||
+			f.toFilter() === filter.toFilter()
+	);
+
+	if (index >= 0) {
 		filters.splice(index, 1);
 	} else {
 		filters.push(filter);
 	}
 
 	return filters;
+}
+
+/**
+ *  Adds or updates a given faceted filter if it has values, otherwise it will be removed
+ * @param filters The filters
+ * @param filter The filter to add, update or remove.
+ * @returns true if filters has been modified
+ */
+export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFilter): boolean {
+	const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
+
+	// If the filter has no values, remove it.
+	if (!filter.values || filter.values.length == 0) {
+		if (index >= 0) {
+			filters.splice(index, 1);
+			return true;
+		}
+
+		return false;
+	}
+
+	if (index >= 0) {
+		if (filter.toFilter() === filters[index].toFilter()) {
+			return false;
+		}
+
+		filters[index] = filter;
+	} else {
+		filters.push(filter);
+	}
+
+	return true;
 }
 
 /**
@@ -175,9 +240,14 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
 
 	const keywordFilterParts = [];
 	for (const filter of filters) {
+		if (isFaceted(filter)) {
+			resolvedFilters.push(filter);
+			continue;
+		}
+
 		input = input?.trim();
 		if (!input) {
-			break;
+			continue;
 		}
 
 		// NOTE: This is a super naive implementation...
@@ -204,40 +274,68 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
 	return resolvedFilters;
 }
 
+export function getFilter(filter: Record<string, unknown>): IFilter | undefined {
+	switch (filter.type) {
+		case 'boolean':
+			return new BooleanFilter(filter.term as string, filter.value as boolean);
+		case 'date':
+			return new DateFilter(filter.term as string, filter.value as Date);
+		case 'keyword':
+			return new KeywordFilter(filter.keyword as string);
+		case 'number':
+			return new NumberFilter(filter.term as string, filter.value as number);
+		case 'reference':
+			return new ReferenceFilter(filter.referenceId as string);
+		case 'session':
+			return new SessionFilter(filter.sessionId as string);
+		case 'status':
+			return new StatusFilter(filter.values as StackStatus[]);
+		case 'string':
+			return new StringFilter(filter.term as string, filter.value as string);
+		case 'version':
+			return new VersionFilter(filter.term as string, filter.value as string);
+	}
+}
+
+function isFaceted(filter: IFilter): filter is IFacetedFilter {
+	return 'faceted' in filter;
+}
+
+const FACETED_FILTER_TYPES = ['status'];
+export function toFacetedValues(filters: IFilter[]): Record<string, unknown[]> {
+	const values: Record<string, unknown[]> = {};
+	for (const filterType of FACETED_FILTER_TYPES) {
+		const filter = filters.find((f) => f.type === filterType && isFaceted(f)) as
+			| IFacetedFilter
+			| undefined;
+		values[filterType] = filter?.values ?? [];
+	}
+
+	return values;
+}
+
+export function resetFacetedValues(filters: IFilter[]): IFilter[] {
+	for (const filter of filters) {
+		if (isFaceted(filter)) {
+			upsertOrRemoveFacetFilter(filters, { ...filter, values: [] });
+		}
+	}
+
+	return filters;
+}
+
 export class FilterSerializer implements Serializer<IFilter[]> {
 	public parse(text: string): IFilter[] {
 		if (!text) {
 			return [];
 		}
 
-		const data = JSON.parse(text);
+		const data: unknown[] = JSON.parse(text);
 		const filters: IFilter[] = [];
-		for (const filter of data) {
-			switch (filter.type) {
-				case 'boolean':
-					filters.push(new BooleanFilter(filter.term, filter.value));
-					break;
-				case 'date':
-					filters.push(new DateFilter(filter.term, filter.value));
-					break;
-				case 'keyword':
-					filters.push(new KeywordFilter(filter.keyword));
-					break;
-				case 'number':
-					filters.push(new NumberFilter(filter.term, filter.value));
-					break;
-				case 'reference':
-					filters.push(new ReferenceFilter(filter.referenceId));
-					break;
-				case 'session':
-					filters.push(new SessionFilter(filter.sessionId));
-					break;
-				case 'string':
-					filters.push(new StringFilter(filter.term, filter.value));
-					break;
-				case 'version':
-					filters.push(new VersionFilter(filter.term, filter.value));
-					break;
+		for (const filterData of data) {
+			const filter = getFilter(filterData as Record<string, unknown>);
+			if (filter) {
+				filters.push(filter);
 			}
 		}
 
