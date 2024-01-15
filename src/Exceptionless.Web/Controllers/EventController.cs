@@ -918,12 +918,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">No project was found.</response>
     [HttpGet("submit")]
     [ConfigurationResponseFilter]
+#pragma warning disable IDE0060
     public Task<ActionResult> GetSubmitEventV2Async(string? type = null, string? source = null, string? message = null, string? reference = null,
         string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
         string? identityname = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(null, 2, null, userAgent, parameters);
     }
+#pragma warning restore IDE0060
 
     /// <summary>
     /// Submit event type by GET
@@ -955,12 +957,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <response code="404">No project was found.</response>
     [HttpGet("submit/{type:minlength(1)}")]
     [ConfigurationResponseFilter]
+#pragma warning disable IDE0060
     public Task<ActionResult> GetSubmitEventByTypeV2Async(string type, string? source = null, string? message = null, string? reference = null,
         string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
         string? identityname = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(null, 2, type, userAgent, parameters);
     }
+#pragma warning restore IDE0060
 
     /// <summary>
     /// Submit event type by GET for a specific project
@@ -994,12 +998,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit")]
     [HttpGet("~/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}")]
     [ConfigurationResponseFilter]
+#pragma warning disable IDE0060
     public Task<ActionResult> GetSubmitEventByProjectV2Async(string projectId, string? type = null, string? source = null, string? message = null, string? reference = null,
         string? date = null, int? count = null, decimal? value = null, string? geo = null, string? tags = null, string? identity = null,
         string? identityname = null, [FromHeader][UserAgent] string? userAgent = null, [FromQuery][QueryStringParameters] IQueryCollection? parameters = null)
     {
         return GetSubmitEventAsync(projectId, 2, type, userAgent, parameters);
     }
+#pragma warning restore IDE0060
 
     private async Task<ActionResult> GetSubmitEventAsync(string? projectId = null, int apiVersion = 2, string? type = null, string? userAgent = null, IQueryCollection? parameters = null)
     {
