@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { writable, type Readable, type Writable } from 'svelte/store';
 	import { createSvelteTable } from '@tanstack/svelte-table';
+	import { createEventDispatcher } from 'svelte';
+	import { writable, type Readable } from 'svelte/store';
+	import { persisted } from 'svelte-local-storage-store';
+
 	import type {
 		EventSummaryModel,
 		GetEventsMode,
@@ -13,15 +16,12 @@
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
-	import { persisted } from 'svelte-local-storage-store';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
 	import * as DataTable from '$comp/data-table';
-	import { Input } from '$comp/ui/input';
 	import { getOptions } from './options';
 	import { DEFAULT_LIMIT } from '$lib/helpers/api';
-	import { createEventDispatcher } from 'svelte';
-	import { statuses } from '../stack';
+	import SearchInput from '$comp/SearchInput.svelte';
 
 	export let mode: GetEventsMode = 'summary';
 	export let filter: Readable<string>;
@@ -65,13 +65,6 @@
 		}
 	}
 
-	const filterValue: Writable<string> = writable('');
-	const filterValues: Writable<{
-		status: string[];
-	}> = writable({
-		status: []
-	});
-
 	const dispatch = createEventDispatcher();
 </script>
 
@@ -79,21 +72,8 @@
 
 <DataTable.Root>
 	<DataTable.Toolbar {table}>
-		<slot>
-			<Input
-				placeholder="Filter tasks..."
-				class="h-8 w-[150px] lg:w-[250px]"
-				type="text"
-				bind:value={$filterValue}
-			/>
-
-			<DataTable.FacetedFilterContainer {filterValues}>
-				<DataTable.FacetedFilter
-					bind:filterValues={$filterValues.status}
-					title="Status"
-					options={statuses}
-				></DataTable.FacetedFilter>
-			</DataTable.FacetedFilterContainer>
+		<slot name="toolbar">
+			<SearchInput class="h-8 w-[150px] lg:w-[250px]" bind:value={$filter} />
 		</slot>
 	</DataTable.Toolbar>
 	<DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}

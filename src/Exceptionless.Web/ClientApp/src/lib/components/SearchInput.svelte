@@ -1,16 +1,22 @@
 <script lang="ts">
+	import type { HTMLInputAttributes } from 'svelte/elements';
 	import IconSearch from '~icons/mdi/search';
+
 	import { Input } from '$comp/ui/input';
+	import { cn } from '$lib/utils';
 
-	export let id: string = 'search';
-	export let placeholder: string = 'Search...';
-	export let value: string;
+	type $$Props = HTMLInputAttributes;
 
-	export let onChanged: (event: Event) => void = () => {};
+	let className: $$Props['class'] = undefined;
+	export { className as class };
+	export let value: $$Props['value'] = undefined;
+
+	export let id: string | null | undefined = 'search';
+	export let placeholder: string | null | undefined = 'Search...';
 </script>
 
-<label for={id} class="sr-only">Search</label>
 <div class="relative">
+	<label for={id} class="sr-only">Search</label>
 	<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
 		<IconSearch class="w-5 h-5" />
 	</div>
@@ -18,9 +24,23 @@
 		type="text"
 		name="search"
 		{id}
+		class={cn('pl-10', className)}
 		bind:value
-		on:change={onChanged}
-		class="pl-10"
+		on:blur
+		on:change
+		on:click
+		on:focus
+		on:focusin
+		on:focusout
+		on:keydown
+		on:keypress
+		on:keyup
+		on:mouseover
+		on:mouseenter
+		on:mouseleave
+		on:paste
+		on:input
 		{placeholder}
+		{...$$restProps}
 	/>
 </div>

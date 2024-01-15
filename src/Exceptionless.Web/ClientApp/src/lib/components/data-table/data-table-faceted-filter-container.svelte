@@ -1,24 +1,15 @@
 <script lang="ts">
-	import { type Writable, derived } from 'svelte/store';
+	import { derived, type Readable } from 'svelte/store';
 
 	import { Button } from '$comp/ui/button';
 	import { Cross2 } from 'radix-icons-svelte';
 
-	export let filterValues: Writable<Record<string, string[]>>;
+	export let filterValues: Readable<Record<string, unknown[]>>;
+	export let resetFilterValues: () => void;
 
 	const showReset = derived(filterValues, ($filterValues) => {
 		return Object.values($filterValues).some((v) => v.length > 0);
 	});
-
-	function resetFilterValues() {
-		filterValues.update((values) => {
-			Object.keys(values).forEach((key) => {
-				values[key] = [];
-			});
-
-			return values;
-		});
-	}
 </script>
 
 <slot />
