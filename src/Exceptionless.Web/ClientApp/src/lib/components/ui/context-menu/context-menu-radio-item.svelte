@@ -27,7 +27,7 @@
 >
 	<span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
 		<ContextMenuPrimitive.RadioIndicator>
-			<DotFilled class="w-4 h-4 fill-current" />
+			<DotFilled class="h-4 w-4 fill-current" />
 		</ContextMenuPrimitive.RadioIndicator>
 	</span>
 	<slot />

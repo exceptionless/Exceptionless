@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Select from '$comp/ui/select';
+	import type { Selected } from 'bits-ui';
 
 	export let value: string;
 
@@ -13,8 +14,11 @@
 
 	let selected = items.find((item) => item.value === value) || items[items.length - 1];
 
-	function onSelectedChange(item: { value: string; label: string }) {
-		value = item.value;
+	function onSelectedChange(selected: Selected<string> | undefined) {
+		const newValue = selected?.value ?? '';
+		if (newValue !== value) {
+			value = newValue;
+		}
 	}
 </script>
 

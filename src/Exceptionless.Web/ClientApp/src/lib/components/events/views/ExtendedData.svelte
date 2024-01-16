@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { toast } from 'svoast';
+	import { toast } from 'svelte-sonner';
+
 	import type { PersistentEvent, ViewProject } from '$lib/models/api';
 	import ExtendedDataItem from '../ExtendedDataItem.svelte';
 	import { getExtendedDataItems } from '$lib/helpers/persistent-event';
