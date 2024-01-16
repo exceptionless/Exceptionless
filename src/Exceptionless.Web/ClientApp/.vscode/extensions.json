@@ -4,6 +4,8 @@
 		"bradlc.vscode-tailwindcss",
 		"digitalbrainstem.javascript-ejs-support",
 		"dbaeumer.vscode-eslint",
-		"esbenp.prettier-vscode"
+		"esbenp.prettier-vscode",
+		"selemondev.vscode-shadcn-svelte",
+		"zixuanchen.vitest-explorer"
 	]
 }

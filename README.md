@@ -17,6 +17,7 @@ Refer to the [Exceptionless documentation](https://exceptionless.com/docs/).
 We provide very reasonably priced hosting at [Exceptionless](https://exceptionless.com). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 
 Exceptionless can easily be run locally using Docker:
+
 - `docker run --rm -it -p 5200:8080 exceptionless/exceptionless:latest`
 - Open `http://localhost:5200`
 - Create an account. The first account in the system will automatically be an admin.
@@ -25,12 +26,12 @@ This will run a completely self-contained simple instance of Exceptionless. It i
 
 ## Contributing
 
-_In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](https://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan._
+_In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](https://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to <team@exceptionless.io> with the name of your organization and we will upgrade you to a paid plan._
 
 - Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md)
 - Requirements
   - [Docker](https://www.docker.com/get-docker)
-  - [.NET 7.0](https://dotnet.microsoft.com/)
+  - [.NET 8.0](https://dotnet.microsoft.com/)
   - [Node 18+](https://nodejs.org/)
 - Visual Studio Code
   - Open Visual Studio Code and then open the Exceptionless root folder

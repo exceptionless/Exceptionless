@@ -97,7 +97,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, messageOrSource.Truncate(120))}*";
         return new SlackMessage(subject)
         {
-            Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            Attachments = [attachment]
         };
     }
 }

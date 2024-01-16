@@ -1,92 +1,38 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import { writable, type Readable } from 'svelte/store';
-	import {
-		createSvelteTable,
-		flexRender,
-		getCoreRowModel,
-		type ColumnDef,
-		type TableOptions,
-		type Updater,
-		type VisibilityState
-	} from '@tanstack/svelte-table';
+	import { createSvelteTable } from '@tanstack/svelte-table';
+	import * as DataTable from '$comp/data-table';
 	import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
-	import Summary from '$comp/events/summary/Summary.svelte';
-	import { nameof } from '$lib/utils';
 	import {
 		type FetchClientResponse,
 		globalFetchClient as api,
 		globalLoading as loading
 	} from '$api/FetchClient';
 	import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
-	import EventsUserIdentitySummaryColumn from './EventsUserIdentitySummaryColumn.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
 	import Loading from '$comp/Loading.svelte';
-	import Table from '$comp/table/Table.svelte';
-	import { createEventDispatcher } from 'svelte';
-	import { persisted } from 'svelte-local-storage-store';
 	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
 	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 	import Muted from '$comp/typography/Muted.svelte';
+	import { getOptions } from './options';
+	import SearchInput from '$comp/SearchInput.svelte';
+	import { limit, onFilterInputChanged } from '$lib/stores/events';
 
 	export let filter: Readable<string>;
 
-	const defaultColumns: ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] = [
-		{
-			header: 'Summary',
-			enableHiding: false,
-			cell: (prop) => flexRender(Summary, { summary: prop.row.original })
-		},
-		{
-			id: 'user',
-			header: 'User',
-			meta: {
-				class: 'w-28'
-			},
-			cell: (prop) =>
-				flexRender(EventsUserIdentitySummaryColumn, { summary: prop.row.original })
-		},
-		{
-			id: 'date',
-			header: 'Date',
-			meta: {
-				class: 'w-36'
-			},
-			accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-			cell: (prop) => flexRender(TimeAgo, { value: prop.getValue() })
-		}
-	];
-
-	const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
-	const setColumnVisibility = (updaterOrValue: Updater<VisibilityState>) => {
-		if (updaterOrValue instanceof Function) {
-			columnVisibility.update(() => updaterOrValue($columnVisibility));
-		} else {
-			columnVisibility.update(() => updaterOrValue);
-		}
-
-		options.update((old) => ({
-			...old,
-			state: {
-				...old.state,
-				...{ columnVisibility: $columnVisibility }
-			}
-		}));
-	};
-
-	const options = writable<TableOptions<EventSummaryModel<SummaryTemplateKeys>>>({
-		data: [],
-		columns: defaultColumns,
-		enableSorting: false,
-		state: {
-			columnVisibility: $columnVisibility
-		},
-		onColumnVisibilityChange: setColumnVisibility,
-		getCoreRowModel: getCoreRowModel(),
-		getRowId: (originalRow) => originalRow.id
-	});
-
-	const table = createSvelteTable<EventSummaryModel<SummaryTemplateKeys>>(options);
+	const parameters = writable<IGetEventsParams>({ mode: 'summary', limit: $limit });
+	const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
+		...options,
+		columns: options.columns
+			.filter((c) => c.id !== 'select')
+			.map((c) => ({ ...c, enableSorting: false })),
+		enableRowSelection: false,
+		enableMultiRowSelection: false,
+		manualSorting: false
+	}));
+	const table = createSvelteTable(options);
 
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
@@ -94,7 +40,7 @@
 	let lastUpdated: Date;
 	let before: string | undefined;
 
-	const defaultParams: IGetEventsParams = { mode: 'summary' };
+	parameters.subscribe(async () => await loadData());
 	filter.subscribe(async () => {
 		before = undefined;
 		data.set([]);
@@ -108,7 +54,7 @@
 
 		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
 			params: {
-				...defaultParams,
+				...$parameters,
 				filter: $filter,
 				before
 			}
@@ -131,7 +77,8 @@
 	data.subscribe((data) => {
 		options.update((options) => ({
 			...options,
-			data
+			data,
+			meta: response?.meta
 		}));
 	});
 
@@ -148,24 +95,26 @@
 		}
 	}
 
-	loadData();
-
 	const dispatch = createEventDispatcher();
 </script>
 
 <CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
-<Table {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}>
-	<slot slot="header" name="header" {table} />
-	<slot
-		slot="footer"
-		name="footer"
-		{table}
-		error={response?.problem?.errors.general}
-		{loading}
-		{lastUpdated}
-	>
+<DataTable.Root>
+	<DataTable.Toolbar {table}>
+		<slot name="toolbar">
+			<SearchInput
+				class="h-8 w-[120px] lg:w-[350px] xl:w-[550px]"
+				value={$filter}
+				on:input={onFilterInputChanged}
+			/>
+		</slot>
+	</DataTable.Toolbar>
+	<DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}
+	></DataTable.Body>
+	<Muted class="flex items-center justify-between flex-1">
+		<DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
 		<Muted class="py-2 text-center">
 			{#if $loading}
 				<Loading></Loading>
@@ -177,5 +126,6 @@
 				>
 			{/if}
 		</Muted>
-	</slot>
-</Table>
+		<div></div>
+	</Muted>
+</DataTable.Root>

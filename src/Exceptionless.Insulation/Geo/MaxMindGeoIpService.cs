@@ -28,7 +28,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
     public async Task<GeoResult?> ResolveIpAsync(string ip, CancellationToken cancellationToken = new())
     {
-        if (String.IsNullOrEmpty(ip) || (!ip.Contains(".") && !ip.Contains(":")))
+        if (String.IsNullOrEmpty(ip) || (!ip.Contains('.') && !ip.Contains(':')))
             return null;
 
         ip = ip.Trim();
@@ -103,7 +103,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         _logger.LogInformation("Loading GeoIP database.");
         try
         {
-            using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, cancellationToken).AnyContext())
+            using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, StreamMode.Read, cancellationToken).AnyContext())
                 _database = new DatabaseReader(stream);
         }
         catch (Exception ex)
