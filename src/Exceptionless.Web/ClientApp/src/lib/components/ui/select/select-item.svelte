@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 	import { Select as SelectPrimitive } from 'bits-ui';
-	import { Check } from 'radix-icons-svelte';
+	import IconCheck from '~icons/mdi/check';
 
 	type $$Props = SelectPrimitive.ItemProps;
 
@@ -27,7 +27,7 @@
 >
 	<span class="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
 		<SelectPrimitive.ItemIndicator>
-			<Check class="h-4 w-4" />
+			<IconCheck class="w-4 h-4" />
 		</SelectPrimitive.ItemIndicator>
 	</span>
 	<slot />

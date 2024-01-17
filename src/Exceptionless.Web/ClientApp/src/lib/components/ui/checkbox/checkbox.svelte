@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Checkbox as CheckboxPrimitive } from 'bits-ui';
-	import { Check, Minus } from 'radix-icons-svelte';
+	import IconCheck from '~icons/mdi/check';
+	import IconRemove from '~icons/mdi/remove';
 	import { cn } from '$lib/utils';
 
 	type $$Props = CheckboxPrimitive.Props;
@@ -25,9 +26,9 @@
 		let:isIndeterminate
 	>
 		{#if isIndeterminate}
-			<Minus class="h-3.5 w-3.5" />
+			<IconRemove class="h-3.5 w-3.5" />
 		{:else}
-			<Check class={cn('h-3.5 w-3.5', !isChecked && 'text-transparent')} />
+			<IconCheck class={cn('h-3.5 w-3.5', !isChecked && 'text-transparent')} />
 		{/if}
 	</CheckboxPrimitive.Indicator>
 </CheckboxPrimitive.Root>

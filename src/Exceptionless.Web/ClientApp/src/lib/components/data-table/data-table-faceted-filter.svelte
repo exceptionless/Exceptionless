@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { PlusCircled, Check } from 'radix-icons-svelte';
+	import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
+	import IconCheck from '~icons/mdi/check';
 	import type { ComponentType } from 'svelte';
 	import * as Command from '$comp/ui/command';
 	import * as Popover from '$comp/ui/popover';
@@ -39,7 +40,7 @@
 <Popover.Root bind:open>
 	<Popover.Trigger asChild let:builder>
 		<Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
-			<PlusCircled class="w-4 h-4 mr-2" />
+			<IconAddCircleOutline class="w-4 h-4 mr-2" />
 			{title}
 
 			{#if values.length > 0}
@@ -79,7 +80,7 @@
 										: 'opacity-50 [&_svg]:invisible'
 								)}
 							>
-								<Check className={cn('h-4 w-4')} />
+								<IconCheck className={cn('h-4 w-4')} />
 							</div>
 							<span>
 								{option.label}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils';
-	import { ChevronRight } from 'radix-icons-svelte';
+	import IconChevronRight from '~icons/mdi/chevron-right';
 
 	type $$Props = ContextMenuPrimitive.SubTriggerProps & {
 		inset?: boolean;
@@ -27,5 +27,5 @@
 	on:pointermove
 >
 	<slot />
-	<ChevronRight class="ml-auto h-4 w-4" />
+	<IconChevronRight class="w-4 h-4 ml-auto" />
 </ContextMenuPrimitive.SubTrigger>

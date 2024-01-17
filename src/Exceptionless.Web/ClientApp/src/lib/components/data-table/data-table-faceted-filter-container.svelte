@@ -2,7 +2,7 @@
 	import { derived, type Readable } from 'svelte/store';
 
 	import { Button } from '$comp/ui/button';
-	import { Cross2 } from 'radix-icons-svelte';
+	import IconClose from '~icons/mdi/close';
 
 	export let filterValues: Readable<Record<string, unknown[]>>;
 	export let resetFilterValues: () => void;
@@ -17,6 +17,6 @@
 {#if $showReset}
 	<Button on:click={() => resetFilterValues()} variant="ghost" class="h-8 px-2 lg:px-3">
 		Reset
-		<Cross2 class="w-4 h-4 ml-2" />
+		<IconClose class="w-4 h-4 ml-2" />
 	</Button>
 {/if}
