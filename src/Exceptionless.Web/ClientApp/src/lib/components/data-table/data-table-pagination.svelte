@@ -3,7 +3,9 @@
 	import type { Table } from '@tanstack/svelte-table';
 
 	import { Button } from '$comp/ui/button';
-	import { ChevronRight, ChevronLeft, DoubleArrowLeft } from 'radix-icons-svelte';
+	import IconChevronLeft from '~icons/mdi/chevron-left';
+	import IconChevronRight from '~icons/mdi/chevron-right';
+	import IconChevronDoubleLeft from '~icons/mdi/chevron-double-left';
 	import Number from '$comp/formatters/Number.svelte';
 
 	type TData = $$Generic;
@@ -35,7 +37,7 @@
 					on:click={() => $table.resetPageIndex(true)}
 				>
 					<span class="sr-only">Go to first page</span>
-					<DoubleArrowLeft size={15} />
+					<IconChevronDoubleLeft class="w-4 h-4 mr-2" />
 				</Button>
 			{/if}
 			<Button
@@ -45,7 +47,7 @@
 				on:click={() => $table.previousPage()}
 			>
 				<span class="sr-only">Go to previous page</span>
-				<ChevronLeft size={15} />
+				<IconChevronLeft class="w-4 h-4 mr-2" />
 			</Button>
 			<Button
 				variant="outline"
@@ -54,7 +56,7 @@
 				on:click={() => $table.nextPage()}
 			>
 				<span class="sr-only">Go to next page</span>
-				<ChevronRight size={15} />
+				<IconChevronRight class="w-4 h-4 mr-2" />
 			</Button>
 		</div>
 	</div>

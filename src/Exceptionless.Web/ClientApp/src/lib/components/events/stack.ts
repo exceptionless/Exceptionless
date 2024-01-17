@@ -1,41 +1,28 @@
 import { StackStatus } from '$lib/models/api.generated';
-import {
-	QuestionMarkCircled,
-	Circle,
-	Stopwatch,
-	CheckCircled,
-	CrossCircled
-} from 'radix-icons-svelte';
 
 export const statuses = [
 	{
 		value: StackStatus.Open,
-		label: 'Open',
-		icon: QuestionMarkCircled
+		label: 'Open'
 	},
 	{
 		value: StackStatus.Fixed,
-		label: 'Fixed',
-		icon: Circle
+		label: 'Fixed'
 	},
 	{
 		value: StackStatus.Regressed,
-		label: 'Regressed',
-		icon: Stopwatch
+		label: 'Regressed'
 	},
 	{
 		value: StackStatus.Snoozed,
-		label: 'Snoozed',
-		icon: CheckCircled
+		label: 'Snoozed'
 	},
 	{
 		value: StackStatus.Ignored,
-		label: 'Ignored',
-		icon: CrossCircled
+		label: 'Ignored'
 	},
 	{
 		value: StackStatus.Discarded,
-		label: 'Discarded',
-		icon: CrossCircled
+		label: 'Discarded'
 	}
 ];

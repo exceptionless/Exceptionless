@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Column } from '@tanstack/svelte-table';
-	import { ArrowDown, ArrowUp, CaretSort } from 'radix-icons-svelte';
+	import IconArrowDownward from '~icons/mdi/arrow-downward';
+	import IconArrowUpward from '~icons/mdi/arrow-upward';
+	import IconUnfoldMore from '~icons/mdi/unfold-more-horizontal';
 	import { Button } from '$comp/ui/button';
 	import * as DropdownMenu from '$comp/ui/dropdown-menu';
 	import { cn } from '$lib/utils';
@@ -39,11 +41,11 @@
 				>
 					<slot />
 					{#if column.getIsSorted() === 'desc'}
-						<ArrowDown class="w-4 h-4 ml-2" />
+						<IconArrowDownward class="w-4 h-4 ml-2" />
 					{:else if column.getIsSorted() === 'asc'}
-						<ArrowUp class="w-4 h-4 ml-2" />
+						<IconArrowUpward class="w-4 h-4 ml-2" />
 					{:else}
-						<CaretSort class="w-4 h-4 ml-2" />
+						<IconUnfoldMore class="w-4 h-4 ml-2" />
 					{/if}
 				</Button>
 			</DropdownMenu.Trigger>
