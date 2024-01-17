@@ -12,8 +12,8 @@
 
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger asChild let:builder>
-		<Button variant="outline" size="sm" class="hidden h-8 ml-auto lg:flex" builders={[builder]}>
-			<IconViewColumn class="w-4 h-4 mr-2" />
+		<Button variant="outline" size="sm" class="ml-auto hidden h-8 lg:flex" builders={[builder]}>
+			<IconViewColumn class="mr-2 h-4 w-4" />
 			View
 		</Button>
 	</DropdownMenu.Trigger>

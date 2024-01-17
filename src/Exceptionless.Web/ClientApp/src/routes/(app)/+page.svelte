@@ -61,7 +61,7 @@
 </Card.Root>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
-	<Sheet.Content class="w-full md:w-5/6 sm:max-w-full">
+	<Sheet.Content class="w-full sm:max-w-full md:w-5/6">
 		<Sheet.Header>
 			<Sheet.Title>Event Details</Sheet.Title>
 			<Sheet.Description>

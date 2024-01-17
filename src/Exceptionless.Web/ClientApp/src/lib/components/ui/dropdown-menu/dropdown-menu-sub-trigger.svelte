@@ -26,5 +26,5 @@
 	on:pointermove
 >
 	<slot />
-	<IconChevronRight class="w-4 h-4 ml-auto" />
+	<IconChevronRight class="ml-auto h-4 w-4" />
 </DropdownMenuPrimitive.SubTrigger>

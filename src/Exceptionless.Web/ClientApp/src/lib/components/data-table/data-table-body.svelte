@@ -38,7 +38,7 @@
 	}
 </script>
 
-<div class="border rounded-md">
+<div class="rounded-md border">
 	<Table.Root>
 		<Table.Header>
 			{#each $table.getHeaderGroups() as headerGroup}

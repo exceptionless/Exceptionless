@@ -109,11 +109,11 @@
 
 {#if $isAuthenticated}
 	<NavbarLayout></NavbarLayout>
-	<div class="flex pt-16 overflow-hidden">
+	<div class="flex overflow-hidden pt-16">
 		<SidebarLayout />
 
 		<div
-			class="bg-secondary text-secondary-foreground relative h-full w-full overflow-y-auto {$isSidebarOpen
+			class="relative h-full w-full overflow-y-auto bg-secondary text-secondary-foreground {$isSidebarOpen
 				? 'lg:ml-64'
 				: 'lg:ml-16'}"
 		>

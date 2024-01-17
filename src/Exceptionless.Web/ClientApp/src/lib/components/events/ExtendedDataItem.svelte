@@ -89,7 +89,7 @@
 	</div>
 
 	{#if showRaw}
-		<pre class="p-2 overflow-auto text-xs break-words whitespace-pre-wrap"><Code>{json}</Code
+		<pre class="overflow-auto whitespace-pre-wrap break-words p-2 text-xs"><Code>{json}</Code
 			></pre>
 	{:else}
 		<ObjectDump value={filteredData} />

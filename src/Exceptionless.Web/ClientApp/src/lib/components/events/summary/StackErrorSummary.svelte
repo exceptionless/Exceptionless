@@ -38,8 +38,8 @@
 </div>
 
 {#if source.data.Path}
-	<Muted class="hidden ml-6 sm:block">
+	<Muted class="ml-6 hidden sm:block">
 		<IconChevronRight class="inline" />
-		<span class="inline line-clamp-1">{source.data.Path}</span>
+		<span class="line-clamp-1 inline">{source.data.Path}</span>
 	</Muted>
 {/if}

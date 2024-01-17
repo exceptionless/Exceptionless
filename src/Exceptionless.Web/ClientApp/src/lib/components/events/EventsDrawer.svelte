@@ -165,8 +165,8 @@
 		</Table.Body>
 	</Table.Root>
 
-	<Tabs.Root value={activeTab} class="mt-4 mb-4">
-		<Tabs.List class="w-full mb-4 justify-normal">
+	<Tabs.Root value={activeTab} class="mb-4 mt-4">
+		<Tabs.List class="mb-4 w-full justify-normal">
 			{#each $tabs as tab}
 				<Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
 			{/each}

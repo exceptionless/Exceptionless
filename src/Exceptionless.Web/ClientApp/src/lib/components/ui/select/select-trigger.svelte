@@ -18,6 +18,6 @@
 >
 	<slot />
 	<div>
-		<IconUnfoldMore class="w-4 h-4 opacity-50" />
+		<IconUnfoldMore class="h-4 w-4 opacity-50" />
 	</div>
 </SelectPrimitive.Trigger>

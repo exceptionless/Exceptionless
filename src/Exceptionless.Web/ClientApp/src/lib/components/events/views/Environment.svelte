@@ -111,7 +111,7 @@
 			<Table.Row>
 				<Table.Head class="whitespace-nowrap">Command Line</Table.Head>
 				<Table.Cell
-					><span class="inline line-clamp-2">{environment.command_line}</span></Table.Cell
+					><span class="line-clamp-2 inline">{environment.command_line}</span></Table.Cell
 				>
 			</Table.Row>
 		{/if}
