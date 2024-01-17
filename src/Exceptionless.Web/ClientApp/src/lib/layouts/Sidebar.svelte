@@ -15,15 +15,15 @@
 
 <aside
 	id="sidebar"
-	class="flex fixed top-0 left-0 z-20 flex-col flex-shrink-0 pt-16 w-64 h-full duration-75 lg:flex transition-width bg-background text-foreground {$isSidebarOpen
+	class="transition-width fixed left-0 top-0 z-20 flex h-full w-64 flex-shrink-0 flex-col bg-background pt-16 text-foreground duration-75 lg:flex {$isSidebarOpen
 		? 'lg:w-64'
-		: 'lg:w-16 hidden'}"
+		: 'hidden lg:w-16'}"
 	aria-label="Sidebar"
 >
-	<div class="relative flex flex-col flex-1 min-h-0 pt-0 border-r" role="none">
-		<div class="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-			<div class="flex-1 px-3 space-y-1 divide-y">
-				<ul class="pb-2 space-y-2">
+	<div class="relative flex min-h-0 flex-1 flex-col border-r pt-0" role="none">
+		<div class="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
+			<div class="flex-1 space-y-1 divide-y px-3">
+				<ul class="space-y-2 pb-2">
 					<li>
 						<form action="#" method="GET" class="lg:hidden">
 							<SearchInput id="mobile-search" value={filter} />

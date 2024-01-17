@@ -56,7 +56,7 @@
 	<title>Log in</title>
 </svelte:head>
 
-<H2 class="mt-4 mb-2 leading-9 text-center">Log in to your account</H2>
+<H2 class="mb-2 mt-4 text-center leading-9">Log in to your account</H2>
 
 <form on:submit|preventDefault={onLogin}>
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
@@ -88,12 +88,12 @@
 </form>
 
 {#if enableOAuthLogin}
-	<div class="flex items-center w-full my-4">
+	<div class="my-4 flex w-full items-center">
 		<hr class="w-full" />
 		<P class="px-3">OR</P>
 		<hr class="w-full" />
 	</div>
-	<div class="grid grid-flow-col grid-rows-2 gap-4 auto-cols-2">
+	<div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
 		{#if liveClientId}
 			<Button aria-label="Login with Microsoft" on:click={() => liveLogin(redirectUrl)}>
 				<IconMicrosoft /> Microsoft
@@ -118,12 +118,12 @@
 {/if}
 
 {#if enableAccountCreation}
-	<P class="text-sm text-center">
+	<P class="text-center text-sm">
 		Not a member?
 		<A href="/signup">Start a free trial</A>
 	</P>
 
-	<P class="text-sm text-center">
+	<P class="text-center text-sm">
 		By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank"
 			>Privacy Policy</A
 		>

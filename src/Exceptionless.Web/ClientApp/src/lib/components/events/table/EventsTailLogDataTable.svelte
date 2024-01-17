@@ -113,7 +113,7 @@
 	</DataTable.Toolbar>
 	<DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}
 	></DataTable.Body>
-	<Muted class="flex items-center justify-between flex-1">
+	<Muted class="flex flex-1 items-center justify-between">
 		<DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
 		<Muted class="py-2 text-center">
 			{#if $loading}

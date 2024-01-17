@@ -8,8 +8,8 @@
 	export let value: string = '';
 </script>
 
-<div class="flex items-center px-3 border-b" data-cmdk-input-wrapper="">
-	<IconSearch class="w-4 h-4 mr-2 opacity-50 shrink-0" />
+<div class="flex items-center border-b px-3" data-cmdk-input-wrapper="">
+	<IconSearch class="mr-2 h-4 w-4 shrink-0 opacity-50" />
 	<CommandPrimitive.Input
 		class={cn(
 			'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',

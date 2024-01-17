@@ -12,9 +12,9 @@
 </script>
 
 <Card.Root class="mx-4 my-6">
-	<Card.Content class="pt-6 mx-4 md:flex md:items-center md:justify-between">
+	<Card.Content class="mx-4 pt-6 md:flex md:items-center md:justify-between">
 		<Muted>
-			<ul class="flex flex-wrap items-center mb-6 md:mb-0">
+			<ul class="mb-6 flex flex-wrap items-center md:mb-0">
 				<li>
 					<A
 						href="https://exceptionless.com/news/"
@@ -56,7 +56,7 @@
 				variant="navigation"
 				aria-label="Exceptionless Facebook Website"
 			>
-				<IconFacebook class="w-5 h-5" />
+				<IconFacebook class="h-5 w-5" />
 			</A>
 			<A
 				href="https://x.com/Exceptionless"
@@ -64,7 +64,7 @@
 				variant="navigation"
 				aria-label="Exceptionless Twitter Website"
 			>
-				<IconTwitter class="w-5 h-5" />
+				<IconTwitter class="h-5 w-5" />
 			</A>
 			<A
 				href="https://github.com/exceptionless"
@@ -72,7 +72,7 @@
 				variant="navigation"
 				aria-label="Exceptionless GitHub Website"
 			>
-				<IconGitHub class="w-5 h-5" />
+				<IconGitHub class="h-5 w-5" />
 			</A>
 			<A
 				href="https://exceptionless.com/"
@@ -80,7 +80,7 @@
 				variant="navigation"
 				aria-label="Exceptionless Website"
 			>
-				<IconWeb class="w-5 h-5" />
+				<IconWeb class="h-5 w-5" />
 			</A>
 		</Muted>
 	</Card.Content>

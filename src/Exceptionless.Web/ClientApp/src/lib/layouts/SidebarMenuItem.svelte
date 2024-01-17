@@ -13,7 +13,7 @@
 <a
 	{href}
 	{title}
-	class="flex items-center p-2 text-base font-normal rounded-lg group hover:bg-accent hover:text-accent-foreground"
+	class="group flex items-center rounded-lg p-2 text-base font-normal hover:bg-accent hover:text-accent-foreground"
 	class:bg-accent={$active}
 	class:text-accent-foreground={$active}
 >
@@ -23,7 +23,7 @@
 			? 'text-foreground'
 			: ''}"
 	/>
-	<span class="ml-3 {!$isSidebarOpen && $isLargeScreen ? 'lg:hidden lg:absolute' : ''}"
+	<span class="ml-3 {!$isSidebarOpen && $isLargeScreen ? 'lg:absolute lg:hidden' : ''}"
 		>{title}</span
 	>
 </a>

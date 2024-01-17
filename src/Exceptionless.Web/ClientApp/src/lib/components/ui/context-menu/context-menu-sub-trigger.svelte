@@ -14,7 +14,7 @@
 
 <ContextMenuPrimitive.SubTrigger
 	class={cn(
-		'flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
+		'flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[state=open]:bg-accent data-[highlighted]:text-accent-foreground data-[state=open]:text-accent-foreground',
 		inset && 'pl-8',
 		className
 	)}
@@ -27,5 +27,5 @@
 	on:pointermove
 >
 	<slot />
-	<IconChevronRight class="w-4 h-4 ml-auto" />
+	<IconChevronRight class="ml-auto h-4 w-4" />
 </ContextMenuPrimitive.SubTrigger>

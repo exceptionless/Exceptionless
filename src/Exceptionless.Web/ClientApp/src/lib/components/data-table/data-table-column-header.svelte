@@ -41,11 +41,11 @@
 				>
 					<slot />
 					{#if column.getIsSorted() === 'desc'}
-						<IconArrowDownward class="w-4 h-4 ml-2" />
+						<IconArrowDownward class="ml-2 h-4 w-4" />
 					{:else if column.getIsSorted() === 'asc'}
-						<IconArrowUpward class="w-4 h-4 ml-2" />
+						<IconArrowUpward class="ml-2 h-4 w-4" />
 					{:else}
-						<IconUnfoldMore class="w-4 h-4 ml-2" />
+						<IconUnfoldMore class="ml-2 h-4 w-4" />
 					{/if}
 				</Button>
 			</DropdownMenu.Trigger>

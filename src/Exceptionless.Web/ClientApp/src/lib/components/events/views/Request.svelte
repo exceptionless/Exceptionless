@@ -170,7 +170,7 @@
 {/if}
 
 {#if hasHeaders}
-	<H4 class="mt-4 mb-2">Headers</H4>
+	<H4 class="mb-2 mt-4">Headers</H4>
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
@@ -182,7 +182,7 @@
 			{#each Object.entries(sortedHeaders) as [key, value]}
 				<Table.Row>
 					<Table.Cell>{key}</Table.Cell>
-					<Table.Cell><span class="inline line-clamp-3">{value}</span></Table.Cell>
+					<Table.Cell><span class="line-clamp-3 inline">{value}</span></Table.Cell>
 				</Table.Row>
 			{/each}
 		</Table.Body>
@@ -190,7 +190,7 @@
 {/if}
 
 {#if hasCookies}
-	<H4 class="mt-4 mb-2">Cookie Values</H4>
+	<H4 class="mb-2 mt-4">Cookie Values</H4>
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
@@ -202,7 +202,7 @@
 			{#each Object.entries(request.cookies || {}) as [key, value]}
 				<Table.Row>
 					<Table.Cell>{key}</Table.Cell>
-					<Table.Cell><span class="inline line-clamp-3">{value}</span></Table.Cell>
+					<Table.Cell><span class="line-clamp-3 inline">{value}</span></Table.Cell>
 				</Table.Row>
 			{/each}
 		</Table.Body>

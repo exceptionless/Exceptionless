@@ -84,7 +84,7 @@
 				<Table.Cell>
 					{#if !event.data?.sessionend}
 						<span
-							class="inline-flex items-center w-2 h-2 bg-green-500 rounded-full animate-pulse"
+							class="inline-flex h-2 w-2 animate-pulse items-center rounded-full bg-green-500"
 							title="Online"
 						></span>
 					{/if}
@@ -232,7 +232,7 @@
 </Table.Root>
 
 {#if userEmail || userIdentity || userName || userDescription}
-	<H4 class="mt-4 mb-2">User Info</H4>
+	<H4 class="mb-2 mt-4">User Info</H4>
 	<Table.Root>
 		<Table.Body>
 			{#if userEmail}
@@ -283,14 +283,14 @@
 {/if}
 
 {#if hasError}
-	<div class="flex justify-between mt-4 mb-2">
+	<div class="mb-2 mt-4 flex justify-between">
 		<H4>Stack Trace</H4>
 		<div class="flex justify-end">
 			<CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}
 			></CopyToClipboardButton>
 		</div>
 	</div>
-	<div class="max-h-[150px] overflow-auto p-2 mt-2 text-xs">
+	<div class="mt-2 max-h-[150px] overflow-auto p-2 text-xs">
 		{#if event.data?.['@error']}
 			<StackTrace error={event.data['@error']} />
 		{:else}

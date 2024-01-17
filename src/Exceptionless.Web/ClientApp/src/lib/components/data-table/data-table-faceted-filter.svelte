@@ -40,22 +40,22 @@
 <Popover.Root bind:open>
 	<Popover.Trigger asChild let:builder>
 		<Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
-			<IconAddCircleOutline class="w-4 h-4 mr-2" />
+			<IconAddCircleOutline class="mr-2 h-4 w-4" />
 			{title}
 
 			{#if values.length > 0}
-				<Separator orientation="vertical" class="h-4 mx-2" />
-				<Badge variant="secondary" class="px-1 font-normal rounded-sm lg:hidden">
+				<Separator orientation="vertical" class="mx-2 h-4" />
+				<Badge variant="secondary" class="rounded-sm px-1 font-normal lg:hidden">
 					{values.length}
 				</Badge>
 				<div class="hidden space-x-1 lg:flex">
 					{#if values.length > 2}
-						<Badge variant="secondary" class="px-1 font-normal rounded-sm">
+						<Badge variant="secondary" class="rounded-sm px-1 font-normal">
 							{values.length} Selected
 						</Badge>
 					{:else}
 						{#each values as option}
-							<Badge variant="secondary" class="px-1 font-normal rounded-sm">
+							<Badge variant="secondary" class="rounded-sm px-1 font-normal">
 								{option}
 							</Badge>
 						{/each}

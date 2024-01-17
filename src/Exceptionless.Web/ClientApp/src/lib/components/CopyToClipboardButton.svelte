@@ -24,6 +24,6 @@
 	on:copy-error={handleCopyError}
 >
 	<Button {title} {size}>
-		<slot><IconContentCopy class="w-4 h-4" /></slot>
+		<slot><IconContentCopy class="h-4 w-4" /></slot>
 	</Button>
 </div>

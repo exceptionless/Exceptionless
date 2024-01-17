@@ -26,10 +26,10 @@
 					on:click={onHamburgerClick}
 					variant="outline"
 					size="icon"
-					class="hidden p-1 mr-3 lg:block"
+					class="mr-3 hidden p-1 lg:block"
 					aria-controls="sidebar"
 				>
-					<IconMenu class="w-6 h-6" />
+					<IconMenu class="h-6 w-6" />
 				</Button>
 				<Button
 					on:click={onHamburgerClick}
@@ -39,15 +39,15 @@
 					aria-controls="sidebar"
 				>
 					{#if $isSidebarOpen}
-						<IconClose class="w-6 h-6" />
+						<IconClose class="h-6 w-6" />
 					{:else}
-						<IconMenu class="w-6 h-6" />
+						<IconMenu class="h-6 w-6" />
 					{/if}
 				</Button>
-				<a href="./" class="flex mr-14">
-					<img src={logo} class="h-8 mr-3" alt="Exceptionless Logo" />
+				<a href="./" class="mr-14 flex">
+					<img src={logo} class="mr-3 h-8" alt="Exceptionless Logo" />
 					<span
-						class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"
+						class="self-center whitespace-nowrap text-2xl font-semibold dark:text-white"
 						>Exceptionless</span
 					>
 				</a>
@@ -66,7 +66,7 @@
 				>
 					<span class="sr-only">Search</span>
 
-					<IconSearch class="w-6 h-6" />
+					<IconSearch class="h-6 w-6" />
 				</Button>
 
 				<DarkModeButton></DarkModeButton>
