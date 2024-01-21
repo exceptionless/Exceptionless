@@ -15,13 +15,13 @@
 </script>
 
 <svelte:head>
-	<title>Exceptionless</title>
+	<title>Event Stream - Exceptionless</title>
 </svelte:head>
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <Card.Root>
-	<Card.Title class="p-6 pb-4 text-xl font-bold">Event Stream</Card.Title>
+	<Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>
 	<Card.Content>
 		<EventsTailLogDataTable on:rowclick={onRowClick} {filter}></EventsTailLogDataTable>
 	</Card.Content></Card.Root

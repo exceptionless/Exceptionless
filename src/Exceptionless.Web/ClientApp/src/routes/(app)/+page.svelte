@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>Exceptionless</title>
+	<title>Event Dashboard - Exceptionless</title>
 </svelte:head>
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
