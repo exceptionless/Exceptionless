@@ -15,7 +15,7 @@
 <slot />
 
 {#if $showReset}
-	<Button on:click={() => resetFilterValues()} variant="ghost" class="h-8 px-2 lg:px-3">
+	<Button on:click={resetFilterValues} variant="ghost" class="h-8 px-2 lg:px-3">
 		Reset
 		<IconClose class="ml-2 h-4 w-4" />
 	</Button>

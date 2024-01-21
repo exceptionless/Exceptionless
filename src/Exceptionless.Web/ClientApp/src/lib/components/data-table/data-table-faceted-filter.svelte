@@ -1,7 +1,6 @@
 <script lang="ts">
 	import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
 	import IconCheck from '~icons/mdi/check';
-	import type { ComponentType } from 'svelte';
 	import * as Command from '$comp/ui/command';
 	import * as Popover from '$comp/ui/popover';
 	import { Button } from '$comp/ui/button';
@@ -12,7 +11,6 @@
 	type Option = {
 		value: unknown;
 		label: string;
-		icon: ComponentType;
 	};
 
 	export let title: string;
