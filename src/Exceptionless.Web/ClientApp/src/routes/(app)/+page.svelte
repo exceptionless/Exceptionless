@@ -3,6 +3,7 @@
 	import * as DataTable from '$comp/data-table';
 	import * as Sheet from '$comp/ui/sheet';
 	import SearchInput from '$comp/SearchInput.svelte';
+	import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
 
 	import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
@@ -59,6 +60,8 @@
 		</EventsDataTable>
 	</Card.Content>
 </Card.Root>
+
+<PieChartCard title="Status"></PieChartCard>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
 	<Sheet.Content class="w-full sm:max-w-full md:w-5/6">
