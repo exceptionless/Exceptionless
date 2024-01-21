@@ -38,6 +38,7 @@
 		"source.fixAll": "explicit"
 	},
 	"editor.formatOnSave": true,
+	"eslint.validate": ["javascript", "svelte"],
 	"svelte.plugin.svelte.defaultScriptLanguage": "ts",
 	"tailwindCSS.includeLanguages": {
 		"svelte": "html"
