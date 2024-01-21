@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* These hsl values are also present in the ThemePreview component */
 @layer base {
 	:root {
 		--background: 0 0% 100%;
