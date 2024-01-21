@@ -34,7 +34,7 @@
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <Card.Root>
-	<Card.Title class="p-6 pb-4 text-xl font-bold">Events</Card.Title>
+	<Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
 	<Card.Content>
 		<EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
 			<svelte:fragment slot="toolbar">
