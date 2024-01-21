@@ -9,10 +9,10 @@
 	export let required: boolean = false;
 
 	export let autocomplete: string | null = null;
-	export let label: string | undefined;
-	export let minlength: number | undefined;
-	export let maxlength: number | undefined;
-	export let placeholder: string | undefined;
+	export let label: string | undefined = undefined;
+	export let minlength: number | undefined = undefined;
+	export let maxlength: number | undefined = undefined;
+	export let placeholder: string | undefined = undefined;
 
 	$: error = problem?.errors?.[name];
 	$: label = label ?? name.charAt(0).toUpperCase() + name.slice(1);

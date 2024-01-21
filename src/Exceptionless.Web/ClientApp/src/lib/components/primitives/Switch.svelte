@@ -2,7 +2,7 @@
 	import { Switch } from '$comp/ui/switch';
 	import Label from '$comp/ui/label/label.svelte';
 
-	export let checked: boolean;
+	export let checked: boolean | undefined;
 	export let disabled: boolean = false;
 	export let id: string;
 </script>
