@@ -92,41 +92,50 @@
 						<DropdownMenu.Label>My Account</DropdownMenu.Label>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
-							<DropdownMenu.Item>
+							<DropdownMenu.Item href="/next/account/manage">
 								Profile
 								<DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item>
-								Billing
-								<DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
-							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+						<DropdownMenu.Label>My Organization</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
 							<DropdownMenu.Item>
 								Settings
 								<DropdownMenu.Shortcut>⌘S</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item>
-								Keyboard shortcuts
-								<DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
-							</DropdownMenu.Item>
-						</DropdownMenu.Group>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Group>
 							<DropdownMenu.Item>Team</DropdownMenu.Item>
 							<DropdownMenu.Item>
 								Invite users
 								<DropdownMenu.Shortcut>⌘+I</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item>
-								New Team
-								<DropdownMenu.Shortcut>⌘+T</DropdownMenu.Shortcut>
+							<DropdownMenu.Item href="/account/manage">
+								Billing
+								<DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
 							</DropdownMenu.Item>
 						</DropdownMenu.Group>
+						<DropdownMenu.Label>Documentation</DropdownMenu.Label>
 						<DropdownMenu.Separator />
-						<DropdownMenu.Item>GitHub</DropdownMenu.Item>
-						<DropdownMenu.Item>Support</DropdownMenu.Item>
-						<DropdownMenu.Item>API</DropdownMenu.Item>
-						<DropdownMenu.Separator />
+						<DropdownMenu.Item href="https://exceptionless.com/docs/" target="_blank"
+							>Documentation</DropdownMenu.Item
+						>
+						<DropdownMenu.Item
+							href="https://github.com/exceptionless/Exceptionless/issues"
+							target="_blank">Support</DropdownMenu.Item
+						>
+						<DropdownMenu.Item
+							href="https://github.com/exceptionless/Exceptionless"
+							target="_blank">GitHub</DropdownMenu.Item
+						>
+						<DropdownMenu.Item href="/docs/index.html" target="_blank"
+							>API</DropdownMenu.Item
+						>
 						<DropdownMenu.Item>
+							Keyboard shortcuts
+							<DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item href="/next/logout">
 							Sign out
 							<DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
 						</DropdownMenu.Item>

@@ -30,7 +30,7 @@
 						</form>
 					</li>
 					<li>
-						<SidebarMenuItem title="Dashboard" href="/next">
+						<SidebarMenuItem title="Dashboard" href="/next/">
 							<span slot="icon" let:iconClass>
 								<IconChartPie class={iconClass}></IconChartPie>
 							</span>
