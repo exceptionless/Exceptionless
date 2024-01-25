@@ -34,34 +34,36 @@
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
-<Card.Root>
-	<Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
-	<Card.Content>
-		<EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
-			<svelte:fragment slot="toolbar">
-				<SearchInput
-					class="h-8 w-[150px] lg:w-[250px]"
-					value={$filter}
-					on:input={onFilterInputChanged}
-				/>
+<div class="flex flex-col space-y-4">
+	<Card.Root>
+		<Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
+		<Card.Content>
+			<EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
+				<svelte:fragment slot="toolbar">
+					<SearchInput
+						class="h-8 w-[150px] lg:w-[250px]"
+						value={$filter}
+						on:input={onFilterInputChanged}
+					/>
 
-				<DataTable.FacetedFilterContainer {filterValues} {resetFilterValues}>
-					<DataTable.FacetedFilter
-						title="Status"
-						key="status"
-						values={$filterValues.status}
-						options={statuses}
-						onValueChange={onFacetValuesChanged}
-					></DataTable.FacetedFilter>
-				</DataTable.FacetedFilterContainer>
+					<DataTable.FacetedFilterContainer {filterValues} {resetFilterValues}>
+						<DataTable.FacetedFilter
+							title="Status"
+							key="status"
+							values={$filterValues.status}
+							options={statuses}
+							onValueChange={onFacetValuesChanged}
+						></DataTable.FacetedFilter>
+					</DataTable.FacetedFilterContainer>
 
-				<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
-			</svelte:fragment>
-		</EventsDataTable>
-	</Card.Content>
-</Card.Root>
+					<DateRangeDropdown bind:value={$time}></DateRangeDropdown>
+				</svelte:fragment>
+			</EventsDataTable>
+		</Card.Content>
+	</Card.Root>
 
-<PieChartCard title="Status"></PieChartCard>
+	<PieChartCard title="Status"></PieChartCard>
+</div>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
 	<Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
