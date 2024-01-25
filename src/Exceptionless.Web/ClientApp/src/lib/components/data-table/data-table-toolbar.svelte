@@ -8,10 +8,12 @@
 	export let table: Readable<Table<TData>>;
 </script>
 
-<div class="flex items-center justify-between">
+<div class="flex items-center justify-between space-x-2">
 	<div class="flex flex-1 items-center space-x-2">
 		<slot />
 	</div>
 
-	<DataTableViewOptions {table} />
+	<div class="ml-auto flex">
+		<DataTableViewOptions {table} />
+	</div>
 </div>

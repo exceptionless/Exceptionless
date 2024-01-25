@@ -107,7 +107,7 @@
 	<DataTable.Toolbar {table}>
 		<slot name="toolbar">
 			<SearchInput
-				class="h-8 w-[120px] lg:w-[350px] xl:w-[550px]"
+				class="h-8 w-80 lg:w-[350px] xl:w-[550px]"
 				value={$filter}
 				on:input={onFilterInputChanged}
 			/>
