@@ -43,12 +43,13 @@
 		});
 
 		if (response.ok) {
-			let total = (response.meta?.total as number) ?? 0;
+			const limit = $parameters.limit ?? DEFAULT_LIMIT;
+			const total = (response.meta?.total as number) ?? 0;
 			options.update((options) => ({
 				...options,
 				data: response.data || [],
 				page: $parameters.page ?? 0,
-				pageCount: Math.ceil(total / ($parameters.limit ?? DEFAULT_LIMIT)),
+				pageCount: Math.ceil(total / limit),
 				meta: response.meta
 			}));
 
