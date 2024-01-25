@@ -19,6 +19,7 @@
 	import { getOptions } from './options';
 	import SearchInput from '$comp/SearchInput.svelte';
 	import { limit, onFilterInputChanged } from '$lib/stores/events';
+	import { DEFAULT_LIMIT } from '$lib/helpers/api';
 
 	export let filter: Readable<string>;
 
@@ -35,21 +36,20 @@
 	const table = createSvelteTable(options);
 
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
-	const data = writable<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
 	let lastUpdated: Date;
 	let before: string | undefined;
 
-	parameters.subscribe(async () => await loadData());
-	filter.subscribe(async () => {
-		before = undefined;
-		data.set([]);
-		await loadData();
-	});
+	parameters.subscribe(async () => await loadData(true));
+	filter.subscribe(async () => await loadData(true));
 
-	async function loadData() {
-		if ($loading) {
+	async function loadData(filterChanged: boolean = false) {
+		if ($loading && filterChanged && !before) {
 			return;
+		}
+
+		if (filterChanged) {
+			before = undefined;
 		}
 
 		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
@@ -64,23 +64,22 @@
 			lastUpdated = new Date();
 			before = response.meta.links.previous?.before;
 
-			data.update((data) => {
-				for (const summary of response.data?.reverse() || []) {
-					data.push(summary);
-				}
+			const data = filterChanged ? [] : [...$options.data];
+			for (const summary of response.data?.reverse() || []) {
+				data.push(summary);
+			}
 
-				return data.slice(-10);
-			});
+			const limit = $parameters.limit ?? DEFAULT_LIMIT;
+			const total = (response.meta?.total as number) ?? 0;
+			options.update((options) => ({
+				...options,
+				data: data.slice(-limit),
+				page: $parameters.page ?? 0,
+				pageCount: Math.ceil(total / limit),
+				meta: response.meta
+			}));
 		}
 	}
-
-	data.subscribe((data) => {
-		options.update((options) => ({
-			...options,
-			data,
-			meta: response?.meta
-		}));
-	});
 
 	async function onPersistentEvent({
 		detail
@@ -90,7 +89,10 @@
 			case ChangeType.Saved:
 				return await loadData();
 			case ChangeType.Removed:
-				data.update((data) => data.filter((doc) => doc.id !== detail.id));
+				options.update((options) => ({
+					...options,
+					data: options.data.filter((doc) => doc.id !== detail.id)
+				}));
 				break;
 		}
 	}
@@ -98,7 +100,7 @@
 	const dispatch = createEventDispatcher();
 </script>
 
-<CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
+<CustomEventMessage type="refresh" on:message={() => loadData()}></CustomEventMessage>
 <WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
 
 <DataTable.Root>
