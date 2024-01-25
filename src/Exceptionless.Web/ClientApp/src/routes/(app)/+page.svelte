@@ -64,12 +64,10 @@
 <PieChartCard title="Status"></PieChartCard>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
-	<Sheet.Content class="w-full sm:max-w-full md:w-5/6">
+	<Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
 		<Sheet.Header>
 			<Sheet.Title>Event Details</Sheet.Title>
-			<Sheet.Description>
-				<EventsDrawer id={selectedEventId || ''}></EventsDrawer>
-			</Sheet.Description>
 		</Sheet.Header>
+		<EventsDrawer id={selectedEventId || ''}></EventsDrawer>
 	</Sheet.Content>
 </Sheet.Root>
