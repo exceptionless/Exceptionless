@@ -1,11 +1,11 @@
 <script lang="ts">
-	import EmailInput from '$comp/form/EmailInput.svelte';
-	import PasswordInput from '$comp/form/PasswordInput.svelte';
-
 	import IconFacebook from '~icons/mdi/facebook';
 	import IconGitHub from '~icons/mdi/github';
 	import IconGoogle from '~icons/mdi/google';
 	import IconMicrosoft from '~icons/mdi/microsoft';
+
+	import EmailInput from '$comp/form/EmailInput.svelte';
+	import PasswordInput from '$comp/form/PasswordInput.svelte';
 
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -58,10 +58,12 @@
 
 <H2 class="mb-2 mt-4 text-center leading-9">Log in to your account</H2>
 
-<form on:submit|preventDefault={onLogin}>
+<form on:submit|preventDefault={onLogin} class="space-y-2">
 	<ErrorMessage message={problem.errors.general}></ErrorMessage>
+
 	<EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}
 	></EmailInput>
+
 	<PasswordInput
 		name="password"
 		bind:value={data.password}
@@ -76,7 +78,8 @@
 			<A href="/forgot-password">Forgot password?</A>
 		</Muted>
 	</PasswordInput>
-	<div class="my-4">
+
+	<div class="pt-2">
 		<Button type="submit">
 			{#if $loading}
 				<Loading class="mr-2" variant="secondary"></Loading> Logging in...

@@ -44,7 +44,7 @@
 			</Label>
 		</RadioGroup.Root>
 
-		<div class="my-4">
+		<div class="pt-2">
 			<Button type="submit">Save</Button>
 		</div>
 	</form>

@@ -37,7 +37,7 @@
 	</div>
 	<Separator />
 
-	<form on:submit|preventDefault={onSave}>
+	<form on:submit|preventDefault={onSave} class="space-y-2">
 		<ErrorMessage message={problem.errors.general}></ErrorMessage>
 
 		<H4 class="mb-4">Email Notifications</H4>
@@ -50,7 +50,7 @@
 			></Switch>
 		</div>
 
-		<div class="my-4">
+		<div class="pt-2">
 			<Button type="submit">
 				{#if $loading}
 					<Loading class="mr-2" variant="secondary"></Loading> Saving...
