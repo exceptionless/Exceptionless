@@ -67,7 +67,7 @@
 		"tailwind-merge": "^2.2.1",
 		"tailwind-variants": "^0.1.20",
 		"tailwindcss": "^3.4.1",
-		"unplugin-icons": "^0.18.2"
+		"unplugin-icons": "^0.18.3"
 	},
 	"type": "module"
 }
