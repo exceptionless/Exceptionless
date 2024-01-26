@@ -10,11 +10,19 @@
 		},
 		{
 			title: 'Appearance',
-			href: '/next/account/manage/appearance'
+			href: '/next/account/appearance'
 		},
 		{
 			title: 'Notifications',
-			href: '/next/account/manage/notifications'
+			href: '/next/account/notifications'
+		},
+		{
+			title: 'Password and authentication',
+			href: '/next/account/security'
+		},
+		{
+			title: 'Sessions',
+			href: '/next/account/sessions'
 		}
 	];
 </script>
@@ -29,7 +37,7 @@
 		>Manage your account settings and set e-mail preferences.</Card.Description
 	>
 
-	<Separator class="w-auto mx-6 my-6" />
+	<Separator class="mx-6 my-6 w-auto" />
 
 	<Card.Content>
 		<div class="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
