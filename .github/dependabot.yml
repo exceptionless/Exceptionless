@@ -1,8 +1,12 @@
 version: 2
 updates:
+
 - package-ecosystem: nuget
   directory: "/"
   schedule:
     interval: weekly
-    time: "11:00"
-  open-pull-requests-limit: 10
+
+- package-ecosystem: "npm"
+  directory: "/src/Exceptionless.Web/ClientApp"
+  schedule:
+    interval: "weekly"
