@@ -8,7 +8,7 @@
 	import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-	import { statuses } from '$comp/events/stack';
+	import { eventTypes, stackStatuses } from '$comp/events/options';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 	import {
 		filter,
@@ -51,7 +51,15 @@
 							title="Status"
 							key="status"
 							values={$filterValues.status}
-							options={statuses}
+							options={stackStatuses}
+							onValueChange={onFacetValuesChanged}
+						></DataTable.FacetedFilter>
+
+						<DataTable.FacetedFilter
+							title="Type"
+							key="type"
+							values={$filterValues.type}
+							options={eventTypes}
 							onValueChange={onFacetValuesChanged}
 						></DataTable.FacetedFilter>
 					</DataTable.FacetedFilterContainer>
