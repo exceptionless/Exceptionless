@@ -33,7 +33,7 @@
 		:&nbsp;
 	{/if}
 
-	<A href="/stack/{source.id}" class="inline">
+	<A class="inline">
 		{source.title}
 	</A>
 </div>
