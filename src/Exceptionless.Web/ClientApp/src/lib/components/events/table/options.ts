@@ -61,7 +61,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 					class: 'translate-y-[2px]'
 				}),
 			enableHiding: false,
-			enableSorting: false
+			enableSorting: false,
+			meta: {
+				class: 'w-6'
+			}
 		},
 		{
 			header: 'Summary',
