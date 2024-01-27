@@ -23,7 +23,7 @@
 </script>
 
 <Select.Root {items} bind:selected {onSelectedChange}>
-	<Select.Trigger class="w-[180px]">
+	<Select.Trigger class="w-[135px]">
 		<Select.Value placeholder="" />
 	</Select.Trigger>
 	<Select.Content>
