@@ -1,3 +1,4 @@
+import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api.generated';
 import type { Serializer } from 'svelte-local-storage-store';
 
@@ -108,10 +109,10 @@ export class StatusFilter implements IFacetedFilter {
 		}
 
 		if (this.values.length == 1) {
-			return `status:${this.values[0]}`;
+			return `${this.term}:${this.values[0]}`;
 		}
 
-		return `(${this.values.map((val) => `status:${val}`).join(' OR ')})`;
+		return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
 	}
 }
 
@@ -129,6 +130,26 @@ export class StringFilter implements IFilter {
 		}
 
 		return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+	}
+}
+
+export class TypeFilter implements IFacetedFilter {
+	constructor(public values: PersistentEventKnownTypes[]) {}
+
+	public term: string = 'type';
+	public type: string = 'type';
+	public faceted: boolean = true;
+
+	public toFilter(): string {
+		if (this.values.length == 0) {
+			return '';
+		}
+
+		if (this.values.length == 1) {
+			return `${this.term}:${this.values[0]}`;
+		}
+
+		return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
 	}
 }
 
@@ -292,6 +313,8 @@ export function getFilter(filter: Record<string, unknown>): IFilter | undefined 
 			return new StatusFilter(filter.values as StackStatus[]);
 		case 'string':
 			return new StringFilter(filter.term as string, filter.value as string);
+		case 'type':
+			return new TypeFilter(filter.values as PersistentEventKnownTypes[]);
 		case 'version':
 			return new VersionFilter(filter.term as string, filter.value as string);
 	}
@@ -301,7 +324,7 @@ function isFaceted(filter: IFilter): filter is IFacetedFilter {
 	return 'faceted' in filter;
 }
 
-const FACETED_FILTER_TYPES = ['status'];
+const FACETED_FILTER_TYPES = ['status', 'type'];
 export function toFacetedValues(filters: IFilter[]): Record<string, unknown[]> {
 	const values: Record<string, unknown[]> = {};
 	for (const filterType of FACETED_FILTER_TYPES) {

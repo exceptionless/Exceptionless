@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { statuses } from '../stack';
+	import { stackStatuses } from '../options';
 
 	export let value: string;
-	const status = statuses.find((status) => status.value === value);
+	const status = stackStatuses.find((status) => status.value === value);
 </script>
 
 {#if status}
