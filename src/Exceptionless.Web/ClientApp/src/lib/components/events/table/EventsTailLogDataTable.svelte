@@ -11,9 +11,7 @@
 	} from '$api/FetchClient';
 	import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
 	import ErrorMessage from '$comp/ErrorMessage.svelte';
-	import Loading from '$comp/Loading.svelte';
 	import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
-	import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 	import Muted from '$comp/typography/Muted.svelte';
 	import { getOptions } from './options';
@@ -37,7 +35,6 @@
 
 	let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 
-	let lastUpdated: Date;
 	let before: string | undefined;
 
 	parameters.subscribe(async () => await loadData(true));
@@ -61,7 +58,6 @@
 		});
 
 		if (response.ok) {
-			lastUpdated = new Date();
 			before = response.meta.links.previous?.before;
 
 			const data = filterChanged ? [] : [...$options.data];
@@ -118,14 +114,8 @@
 	<Muted class="flex flex-1 items-center justify-between">
 		<DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
 		<Muted class="py-2 text-center">
-			{#if $loading}
-				<Loading></Loading>
-			{:else if response?.problem?.errors.general}
+			{#if response?.problem?.errors.general}
 				<ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
-			{:else}
-				Streaming events... Last updated <span class="font-medium"
-					><TimeAgo value={lastUpdated}></TimeAgo></span
-				>
 			{/if}
 		</Muted>
 		<div></div>
