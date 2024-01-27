@@ -21,7 +21,7 @@
 		<strong>Log source:</strong>&nbsp;
 	{/if}
 
-	<A href="/stack/{source.id}" class="inline">
+	<A class="inline">
 		{#if source.data?.Source}
 			<abbr title={source.data.Source}>{source.data.SourceShortName}</abbr>
 		{:else}

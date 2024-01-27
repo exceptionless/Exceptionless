@@ -22,9 +22,7 @@
 		<abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>:
 	</strong>
 
-	<A href="app.stack/{source.id}" class="inline">
-		{source.title}
-	</A>
+	<A class="inline">{source.title}</A>
 </div>
 
 {#if source.data.Path}

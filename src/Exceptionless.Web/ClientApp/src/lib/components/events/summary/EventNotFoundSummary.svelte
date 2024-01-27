@@ -11,5 +11,5 @@
 	{#if showType}
 		<strong>404</strong>:&nbsp;
 	{/if}
-	<A href="/event/{source.id}" class="inline">{source.data.Source}</A>
+	<A class="inline">{source.data.Source}</A>
 </div>

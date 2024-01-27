@@ -24,7 +24,7 @@
 		</strong>
 	{/if}
 
-	<A href="/event/{source.id}" class="inline">
+	<A class="inline">
 		{source.data.Message}
 	</A>
 </div>

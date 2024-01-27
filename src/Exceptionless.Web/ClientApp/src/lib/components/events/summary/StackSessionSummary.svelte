@@ -21,7 +21,7 @@
 		<strong>Session</strong>:&nbsp;
 	{/if}
 
-	<A href="app.stack/{source.id}" class="inline">
+	<A class="inline">
 		{source.title}
 	</A>
 </div>
