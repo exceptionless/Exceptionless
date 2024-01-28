@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 
-	import NavbarLayout from '$lib/layouts/Navbar.svelte';
-	import SidebarLayout from '$lib/layouts/Sidebar.svelte';
-	import FooterLayout from '$lib/layouts/Footer.svelte';
+	import NavbarLayout from './(components)/layouts/Navbar.svelte';
+	import SidebarLayout from './(components)/layouts/Sidebar.svelte';
+	import FooterLayout from './(components)/layouts/Footer.svelte';
 	import { isSidebarOpen, isSmallScreen } from '$lib/stores/sidebar';
 
 	import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
