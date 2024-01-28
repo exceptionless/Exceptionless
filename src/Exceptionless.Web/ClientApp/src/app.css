@@ -47,7 +47,7 @@
 		--popover: 222 17% 11%;
 		--popover-foreground: 0 0% 100%;
 
-		--card: 222 17% 11%;
+		--card: 216 28% 7%;
 		--card-foreground: 0 0% 100%;
 
 		--border: 216 13% 15%;
@@ -75,6 +75,6 @@
 	}
 
 	body {
-		@apply bg-secondary text-foreground;
+		@apply bg-background text-foreground;
 	}
 }

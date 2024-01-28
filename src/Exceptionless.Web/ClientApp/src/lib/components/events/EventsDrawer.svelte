@@ -18,7 +18,6 @@
 	import { getStackByIdQuery } from '$api/queries/stacks';
 	import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
 	import PromotedExtendedData from './views/PromotedExtendedData.svelte';
-	import { Button } from '$comp/ui/button';
 	import * as Table from '$comp/ui/table';
 	import * as Tabs from '$comp/ui/tabs';
 	import P from '$comp/typography/P.svelte';
@@ -200,8 +199,6 @@
 			</Tabs.Content>
 		{/each}
 	</Tabs.Root>
-
-	<Button class="flex justify-center" href="/event/{id}">View Event</Button>
 {:else}
 	<ErrorMessage message={$eventResponse.error?.errors.general}></ErrorMessage>
 {/if}

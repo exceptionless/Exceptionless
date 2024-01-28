@@ -7,6 +7,7 @@
 
 	import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
 	import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+	import IconOpenInNew from '~icons/mdi/open-in-new';
 	import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 	import { eventTypes, stackStatuses } from '$comp/events/options';
 	import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
@@ -21,6 +22,7 @@
 		time
 	} from '$lib/stores/events';
 	import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
+	import { Button } from '$comp/ui/button';
 
 	let selectedEventId: string | null = null;
 	function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
@@ -76,7 +78,14 @@
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
 	<Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
 		<Sheet.Header>
-			<Sheet.Title>Event Details</Sheet.Title>
+			<Sheet.Title
+				>Event Details <Button
+					href="/event/{selectedEventId}"
+					variant="ghost"
+					size="sm"
+					title="Open in new window"><IconOpenInNew /></Button
+				></Sheet.Title
+			>
 		</Sheet.Header>
 		<EventsDrawer id={selectedEventId || ''}></EventsDrawer>
 	</Sheet.Content>
