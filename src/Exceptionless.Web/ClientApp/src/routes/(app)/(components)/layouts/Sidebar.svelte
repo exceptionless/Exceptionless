@@ -1,5 +1,6 @@
 <script lang="ts">
 	import IconChartPie from '~icons/mdi/chart-pie';
+	import IconMdiFormatListChecks from '~icons/mdi/format-list-checks';
 	import IconStream from '~icons/mdi/view-stream';
 
 	import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
@@ -33,6 +34,14 @@
 						<SidebarMenuItem title="Dashboard" href="/next/">
 							<span slot="icon" let:iconClass>
 								<IconChartPie class={iconClass}></IconChartPie>
+							</span>
+						</SidebarMenuItem>
+					</li>
+					<li>
+						<SidebarMenuItem title="To-do List" href="/next/to-do-list">
+							<span slot="icon" let:iconClass>
+								<IconMdiFormatListChecks class={iconClass}
+								></IconMdiFormatListChecks>
 							</span>
 						</SidebarMenuItem>
 					</li>

@@ -275,7 +275,9 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
 		const part = filter.toFilter();
 		if (part) {
 			// Check for whole word / phrase match
-			const regex = new RegExp(`(^|\\s)${part}(\\s|$)`);
+			const regex = new RegExp(
+				`(^|\\s)${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`
+			);
 			if (regex.test(input)) {
 				input = input.replace(regex, '');
 				if (filter instanceof KeywordFilter) {

@@ -3,7 +3,12 @@
 	import { createEventDispatcher } from 'svelte';
 	import { writable, type Readable } from 'svelte/store';
 
-	import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
+	import type {
+		EventSummaryModel,
+		GetEventsMode,
+		IGetEventsParams,
+		SummaryTemplateKeys
+	} from '$lib/models/api';
 	import {
 		type FetchClientResponse,
 		globalFetchClient as api,
@@ -18,9 +23,11 @@
 	import { limit, onFilterInputChanged } from '$lib/stores/events';
 
 	export let filter: Readable<string>;
+	export let pageFilter: string | undefined = undefined;
 	export let time: Readable<string>;
+	export let mode: GetEventsMode = 'summary';
 
-	const parameters = writable<IGetEventsParams>({ mode: 'summary', limit: $limit });
+	const parameters = writable<IGetEventsParams>({ mode, limit: $limit });
 	const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters);
 	const table = createSvelteTable(options);
 
@@ -37,7 +44,7 @@
 		response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
 			params: {
 				...$parameters,
-				filter: $filter,
+				filter: [pageFilter, $filter].filter(Boolean).join(' '),
 				time: $time
 			}
 		});
