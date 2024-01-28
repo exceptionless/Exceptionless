@@ -65,8 +65,8 @@
 					<Button
 						href={requestUrl}
 						target="_blank"
-						variant="outline"
-						size="icon"
+						variant="ghost"
+						size="sm"
 						rel="noopener noreferrer"
 						title="Open in new window"><IconOpenInNew /></Button
 					></Table.Cell

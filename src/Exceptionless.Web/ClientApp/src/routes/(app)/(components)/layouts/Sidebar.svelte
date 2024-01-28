@@ -1,7 +1,7 @@
 <script lang="ts">
-	import IconChartPie from '~icons/mdi/chart-pie';
-	import IconMdiFormatListChecks from '~icons/mdi/format-list-checks';
-	import IconStream from '~icons/mdi/view-stream';
+	import IconEvents from '~icons/mdi/calendar-month-outline';
+	import IconStacks from '~icons/mdi/checkbox-multiple-marked-outline';
+	import IconEventLog from '~icons/mdi/sort-clock-descending-outline';
 
 	import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
 	import SearchInput from '$comp/SearchInput.svelte';
@@ -33,22 +33,21 @@
 					<li>
 						<SidebarMenuItem title="Dashboard" href="/next/">
 							<span slot="icon" let:iconClass>
-								<IconChartPie class={iconClass}></IconChartPie>
+								<IconEvents class={iconClass}></IconEvents>
 							</span>
 						</SidebarMenuItem>
 					</li>
 					<li>
 						<SidebarMenuItem title="To-do List" href="/next/to-do-list">
 							<span slot="icon" let:iconClass>
-								<IconMdiFormatListChecks class={iconClass}
-								></IconMdiFormatListChecks>
+								<IconStacks class={iconClass}></IconStacks>
 							</span>
 						</SidebarMenuItem>
 					</li>
 					<li>
 						<SidebarMenuItem title="Stream" href="/next/stream">
 							<span slot="icon" let:iconClass>
-								<IconStream class={iconClass}></IconStream>
+								<IconEventLog class={iconClass}></IconEventLog>
 							</span>
 						</SidebarMenuItem>
 					</li>

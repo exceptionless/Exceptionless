@@ -113,12 +113,12 @@
 		<SidebarLayout />
 
 		<div
-			class="relative h-full w-full overflow-y-auto bg-secondary text-secondary-foreground {$isSidebarOpen
+			class="relative h-full w-full overflow-y-auto text-secondary-foreground {$isSidebarOpen
 				? 'lg:ml-64'
 				: 'lg:ml-16'}"
 		>
 			<main>
-				<div class="px-4 pt-6">
+				<div class="px-4 pt-4">
 					<slot />
 				</div>
 			</main>
