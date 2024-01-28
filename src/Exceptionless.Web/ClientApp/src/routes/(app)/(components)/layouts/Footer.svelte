@@ -1,7 +1,5 @@
 <script lang="ts">
 	import A from '$comp/typography/A.svelte';
-	import Muted from '$comp/typography/Muted.svelte';
-	import * as Card from '$comp/ui/card';
 
 	import IconFacebook from '~icons/mdi/facebook';
 	import IconGitHub from '~icons/mdi/github';
