@@ -53,7 +53,7 @@
 		"@tanstack/svelte-query-devtools": "^5.17.21",
 		"@tanstack/svelte-table": "^8.11.7",
 		"@web3-storage/parse-link-header": "^3.1.0",
-		"bits-ui": "^0.15.1",
+		"bits-ui": "^0.16.0",
 		"class-validator": "^0.14.1",
 		"clsx": "^2.1.0",
 		"cmdk-sv": "^0.0.13",
