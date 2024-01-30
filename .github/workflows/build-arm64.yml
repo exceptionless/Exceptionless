@@ -9,7 +9,7 @@ on:
         type: boolean
         description: 'Debug with tmate set "debug_enabled"'
         required: false
-        default: false
+        default: true
 
 jobs:
   build:
