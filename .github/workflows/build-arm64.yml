@@ -1,8 +1,8 @@
 name: Build release arm64 docker images
 on:
   push:
-    tags:
-      - "v*"
+#    tags:
+#      - "v*"
 
 jobs:
   build:
@@ -51,5 +51,5 @@ jobs:
         run: |
           # tag and push docker image
           for image in {"api","job","app","exceptionless"}; do
-            docker buildx build --target $image --platform linux/arm64 --output "type=image,push=true" . --tag exceptionless/$image:$VERSION-arm64 --tag exceptionless/$image:latest-arm64
+            docker buildx build --target $image --platform linux/arm64 --output "type=image,push=false" . --tag exceptionless/$image:$VERSION-arm64 --tag exceptionless/$image:latest-arm64
           done
