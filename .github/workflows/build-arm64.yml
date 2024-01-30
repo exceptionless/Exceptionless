@@ -34,7 +34,9 @@ jobs:
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
       - name: Install Docker
         run: |
-          brew install docker
+          brew install --cask docker 
+          open /Applications/Docker.app
+          docker ps
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
