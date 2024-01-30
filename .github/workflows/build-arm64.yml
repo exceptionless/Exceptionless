@@ -39,6 +39,13 @@ jobs:
           echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
+      - name: Set up Docker
+        uses: crazy-max/ghaction-setup-docker@v3
+        with:
+          version: v24.0.5
+        env:
+          SIGN_QEMU_BINARY: "1"
+          COLIMA_START_ARGS: --cpu 3 --memory 10 --disk 12
       - name: tmate debugging session
         uses: mxschmitt/action-tmate@v3
         #if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
