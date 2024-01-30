@@ -32,6 +32,8 @@ jobs:
           echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
+      - name: Set up Docker
+        uses: crazy-max/ghaction-setup-docker@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
