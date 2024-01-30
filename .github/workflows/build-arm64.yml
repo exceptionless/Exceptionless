@@ -3,6 +3,13 @@ on:
   push:
 #    tags:
 #      - "v*"
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Debug with tmate set "debug_enabled"'
+        required: false
+        default: false
 
 jobs:
   build:
@@ -32,6 +39,12 @@ jobs:
           echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
+      - name: tmate debugging session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
+        with:
+          limit-access-to-actor: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Docker
         run: |
           brew install --cask docker 
