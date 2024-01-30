@@ -9,7 +9,7 @@ on:
         type: boolean
         description: 'Debug with tmate set "debug_enabled"'
         required: false
-        default: true
+        default: false
 
 jobs:
   build:
@@ -41,7 +41,7 @@ jobs:
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
       - name: tmate debugging session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
+        #if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
         with:
           limit-access-to-actor: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
