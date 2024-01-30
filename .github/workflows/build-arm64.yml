@@ -32,11 +32,9 @@ jobs:
           echo "MINVERVERSIONOVERRIDE=$version" >> $GITHUB_ENV
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "### Version: $version" >> $GITHUB_STEP_SUMMARY
-      - name: Install Lima
+      - name: Install Docker
         run: |
-          brew cask install docker
-      - name: Set up Docker
-        uses: crazy-max/ghaction-setup-docker@v3
+          brew install docker
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
