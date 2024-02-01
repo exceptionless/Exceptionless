@@ -21,10 +21,10 @@
 		: 'hidden lg:w-16'}"
 	aria-label="Sidebar"
 >
-	<div class="relative flex min-h-0 flex-1 flex-col border-r pt-0" role="none">
-		<div class="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
-			<div class="flex-1 space-y-1 divide-y px-3">
-				<ul class="space-y-2 pb-2">
+	<div class="relative flex flex-col flex-1 min-h-0 pt-0 border-r" role="none">
+		<div class="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
+			<div class="flex-1 px-3 space-y-1 divide-y">
+				<ul class="pb-2 space-y-2">
 					<li>
 						<form action="#" method="GET" class="lg:hidden">
 							<SearchInput id="mobile-search" value={filter} />
@@ -38,7 +38,7 @@
 						</SidebarMenuItem>
 					</li>
 					<li>
-						<SidebarMenuItem title="Issues" href="/next/to-do-list">
+						<SidebarMenuItem title="Issues" href="/next/issues">
 							<span slot="icon" let:iconClass>
 								<IconStacks class={iconClass}></IconStacks>
 							</span>
