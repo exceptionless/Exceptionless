@@ -31,21 +31,21 @@
 						</form>
 					</li>
 					<li>
-						<SidebarMenuItem title="Dashboard" href="/next/">
+						<SidebarMenuItem title="Events" href="/next/">
 							<span slot="icon" let:iconClass>
 								<IconEvents class={iconClass}></IconEvents>
 							</span>
 						</SidebarMenuItem>
 					</li>
 					<li>
-						<SidebarMenuItem title="To-do List" href="/next/to-do-list">
+						<SidebarMenuItem title="Issues" href="/next/to-do-list">
 							<span slot="icon" let:iconClass>
 								<IconStacks class={iconClass}></IconStacks>
 							</span>
 						</SidebarMenuItem>
 					</li>
 					<li>
-						<SidebarMenuItem title="Stream" href="/next/stream">
+						<SidebarMenuItem title="Event Stream" href="/next/stream">
 							<span slot="icon" let:iconClass>
 								<IconEventLog class={iconClass}></IconEventLog>
 							</span>
