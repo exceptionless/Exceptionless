@@ -2,9 +2,9 @@
 	import IconClose from '~icons/mdi/close';
 	import IconMenu from '~icons/mdi/menu';
 	import IconSearch from '~icons/mdi/search';
-    import IconExceptionlessLogo from '~icons/exceptionless/logo';
-    import IconExceptionlessLogoDark from '~icons/exceptionless/logo-dark';
 
+	import logo from '$lib/assets/logo.svg';
+	import logoDark from '$lib/assets/logo-dark.svg';
 	import logoSmall from '$lib/assets/exceptionless-48.png';
 	import { isLargeScreen, isSidebarOpen } from '$lib/stores/sidebar';
 	import * as Avatar from '$comp/ui/avatar';
@@ -28,10 +28,10 @@
 					on:click={onHamburgerClick}
 					variant="outline"
 					size="icon"
-					class="hidden p-1 mr-3 lg:block"
+					class="mr-3 hidden p-1 lg:block"
 					aria-controls="sidebar"
 				>
-					<IconMenu class="w-6 h-6" />
+					<IconMenu class="h-6 w-6" />
 				</Button>
 				<Button
 					on:click={onHamburgerClick}
@@ -41,17 +41,25 @@
 					aria-controls="sidebar"
 				>
 					{#if $isSidebarOpen}
-						<IconClose class="w-6 h-6" />
+						<IconClose class="h-6 w-6" />
 					{:else}
-						<IconMenu class="w-6 h-6" />
+						<IconMenu class="h-6 w-6" />
 					{/if}
 				</Button>
-				<a href="./" class="flex mr-14 dark:text-white">
+				<a href="./" class="mr-14 flex min-w-[250px] dark:text-white">
 					{#if $isLargeScreen}
-                        <IconExceptionlessLogo class="dark:hidden" />
-                        <IconExceptionlessLogoDark class="hidden dark:block" />
+						<img
+							src={logo}
+							class="absolute top-[1px] mr-3 h-[67px] dark:hidden"
+							alt="Exceptionless Logo"
+						/>
+						<img
+							src={logoDark}
+							class="absolute top-[1px] mr-3 hidden h-[67px] dark:block"
+							alt="Exceptionless Logo"
+						/>
 					{:else}
-						<img src={logoSmall} class="h-8 mr-3" alt="Exceptionless Logo" />
+						<img src={logoSmall} class="mr-3 h-8" alt="Exceptionless Logo" />
 					{/if}
 				</a>
 				<form action="/" method="GET" class="hidden lg:block lg:pl-2">
@@ -69,7 +77,7 @@
 				>
 					<span class="sr-only">Search</span>
 
-					<IconSearch class="w-6 h-6" />
+					<IconSearch class="h-6 w-6" />
 				</Button>
 
 				<DarkModeButton></DarkModeButton>
