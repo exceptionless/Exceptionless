@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import Icons from 'unplugin-icons/vite';
+import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import { defineConfig } from 'vitest/config';
 
 const aspNetConfig = getAspNetConfig();
@@ -8,7 +9,10 @@ export default defineConfig({
 	plugins: [
 		sveltekit(),
 		Icons({
-			compiler: 'svelte'
+			compiler: 'svelte',
+			customCollections: {
+				exceptionless: FileSystemIconLoader('./src/lib/assets/icons')
+			}
 		})
 	],
 	test: {

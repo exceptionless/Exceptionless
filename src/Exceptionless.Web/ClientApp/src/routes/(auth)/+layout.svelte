@@ -1,10 +1,13 @@
 <script lang="ts">
-	import logo from '$lib/assets/exceptionless-350.png';
+    import IconExceptionlessLogo from '~icons/exceptionless/logo';
+    import IconExceptionlessLogoDark from '~icons/exceptionless/logo-dark';
 </script>
 
 <div class="flex h-screen">
-	<div class="m-auto w-full rounded-md p-6 shadow-md lg:max-w-lg">
-		<img class="mx-auto" src={logo} alt="Exceptionless" />
+	<div class="w-full p-6 m-auto rounded-md shadow-md lg:max-w-lg">
+        <IconExceptionlessLogo class="mx-auto dark:hidden" />
+        <IconExceptionlessLogoDark class="hidden mx-auto dark:block" />
+
 		<slot />
 	</div>
 </div>
