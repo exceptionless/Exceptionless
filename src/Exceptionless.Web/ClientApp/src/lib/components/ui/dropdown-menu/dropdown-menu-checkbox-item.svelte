@@ -4,6 +4,7 @@
 	import IconCheck from '~icons/mdi/check';
 
 	type $$Props = DropdownMenuPrimitive.CheckboxItemProps;
+	type $$Events = DropdownMenuPrimitive.CheckboxItemEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let checked: $$Props['checked'] = undefined;

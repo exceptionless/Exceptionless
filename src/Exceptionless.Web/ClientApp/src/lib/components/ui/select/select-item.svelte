@@ -4,6 +4,7 @@
 	import IconCheck from '~icons/mdi/check';
 
 	type $$Props = SelectPrimitive.ItemProps;
+	type $$Events = Required<SelectPrimitive.ItemEvents>;
 
 	let className: $$Props['class'] = undefined;
 	export let value: $$Props['value'];

@@ -6,6 +6,7 @@
 	type $$Props = ContextMenuPrimitive.SubTriggerProps & {
 		inset?: boolean;
 	};
+	type $$Events = ContextMenuPrimitive.SubTriggerEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let inset: $$Props['inset'] = undefined;

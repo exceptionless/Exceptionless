@@ -3,6 +3,8 @@
 	import IconSearch from '~icons/mdi/search';
 	import { cn } from '$lib/utils';
 
+	type $$Props = CommandPrimitive.InputProps;
+
 	let className: string | undefined | null = undefined;
 	export { className as class };
 	export let value: string = '';
