@@ -22,7 +22,7 @@
 		"upgrade": "ncu -i"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.41.1",
+		"@playwright/test": "^1.41.2",
 		"@sveltejs/adapter-static": "^3.0.1",
 		"@sveltejs/kit": "^2.5.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.2",
@@ -49,9 +49,9 @@
 	"dependencies": {
 		"@exceptionless/browser": "^3.0.5",
 		"@iconify-json/mdi": "^1.1.64",
-		"@tanstack/svelte-query": "^5.18.0",
-		"@tanstack/svelte-query-devtools": "^5.18.0",
-		"@tanstack/svelte-table": "^8.11.7",
+		"@tanstack/svelte-query": "^5.18.1",
+		"@tanstack/svelte-query-devtools": "^5.18.1",
+		"@tanstack/svelte-table": "^8.11.8",
 		"@web3-storage/parse-link-header": "^3.1.0",
 		"bits-ui": "^0.16.0",
 		"chart.js": "^4.4.1",
