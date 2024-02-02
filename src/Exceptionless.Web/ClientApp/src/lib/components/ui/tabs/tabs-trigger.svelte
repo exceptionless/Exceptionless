@@ -3,6 +3,7 @@
 	import { cn } from '$lib/utils';
 
 	type $$Props = TabsPrimitive.TriggerProps;
+	type $$Events = TabsPrimitive.TriggerEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let value: $$Props['value'];

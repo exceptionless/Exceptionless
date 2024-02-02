@@ -4,6 +4,7 @@
 	import IconCheck from '~icons/mdi/check';
 
 	type $$Props = ContextMenuPrimitive.CheckboxItemProps;
+	type $$Events = ContextMenuPrimitive.CheckboxItemEvents;
 
 	let className: $$Props['class'] = undefined;
 	export { className as class };

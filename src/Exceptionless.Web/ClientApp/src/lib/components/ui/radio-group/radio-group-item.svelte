@@ -6,6 +6,7 @@
 	type $$Props = RadioGroupPrimitive.ItemProps & {
 		value: string;
 	};
+	type $$Events = RadioGroupPrimitive.ItemEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let value: $$Props['value'];

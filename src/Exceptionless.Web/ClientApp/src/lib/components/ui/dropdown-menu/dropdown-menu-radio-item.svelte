@@ -4,6 +4,7 @@
 	import IconCircle from '~icons/mdi/circle';
 
 	type $$Props = DropdownMenuPrimitive.RadioItemProps;
+	type $$Events = DropdownMenuPrimitive.RadioItemEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let value: DropdownMenuPrimitive.RadioItemProps['value'];

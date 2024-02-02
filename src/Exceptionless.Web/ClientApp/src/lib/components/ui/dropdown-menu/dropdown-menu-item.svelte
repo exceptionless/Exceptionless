@@ -5,6 +5,7 @@
 	type $$Props = DropdownMenuPrimitive.ItemProps & {
 		inset?: boolean;
 	};
+	type $$Events = DropdownMenuPrimitive.ItemEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let inset: $$Props['inset'] = undefined;
