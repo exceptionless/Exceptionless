@@ -62,12 +62,12 @@
 						<img src={logoSmall} class="mr-3 h-8" alt="Exceptionless Logo" />
 					{/if}
 				</a>
-				<form action="/" method="GET" class="hidden lg:block lg:pl-2">
-					<div class="mt-1 lg:w-96">
-						<SearchInput id="topbar-search" value={filter} />
-					</div>
-				</form>
 			</div>
+			<form action="/" method="GET" class="hidden lg:block lg:pl-2">
+				<div class="mt-1 w-[350px] xl:w-[550px]">
+					<SearchInput id="topbar-search" value={filter} />
+				</div>
+			</form>
 			<div class="flex items-center gap-x-2 lg:gap-x-3">
 				<Button
 					variant="outline"
