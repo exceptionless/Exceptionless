@@ -1,11 +1,8 @@
 <script lang="ts">
-    import IconEvents from '~icons/mdi/calendar-month-outline';
-    import IconStacks from '~icons/mdi/checkbox-multiple-marked-outline';
-    import IconEventLog from '~icons/mdi/sort-clock-descending-outline';
-
     import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
     import SearchInput from '$comp/SearchInput.svelte';
     import SidebarMenuItem from './SidebarMenuItem.svelte';
+    import { routes } from './routes';
 
     let filter = '';
 
@@ -30,27 +27,15 @@
                             <SearchInput id="mobile-search" value={filter} />
                         </form>
                     </li>
-                    <li>
-                        <SidebarMenuItem title="Events" href="/next/">
-                            <span slot="icon" let:iconClass>
-                                <IconEvents class={iconClass}></IconEvents>
-                            </span>
-                        </SidebarMenuItem>
-                    </li>
-                    <li>
-                        <SidebarMenuItem title="Issues" href="/next/issues">
-                            <span slot="icon" let:iconClass>
-                                <IconStacks class={iconClass}></IconStacks>
-                            </span>
-                        </SidebarMenuItem>
-                    </li>
-                    <li>
-                        <SidebarMenuItem title="Event Stream" href="/next/stream">
-                            <span slot="icon" let:iconClass>
-                                <IconEventLog class={iconClass}></IconEventLog>
-                            </span>
-                        </SidebarMenuItem>
-                    </li>
+                    {#each routes as route}
+                        <li>
+                            <SidebarMenuItem title={route.title} href={route.href}>
+                                <span slot="icon" let:iconClass>
+                                    <svelte:component this={route.icon} class={iconClass} />
+                                </span>
+                            </SidebarMenuItem>
+                        </li>
+                    {/each}
                 </ul>
             </div>
         </div>
