@@ -42,5 +42,6 @@
     "svelte.plugin.svelte.defaultScriptLanguage": "ts",
     "tailwindCSS.includeLanguages": {
         "svelte": "html"
-    }
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }
