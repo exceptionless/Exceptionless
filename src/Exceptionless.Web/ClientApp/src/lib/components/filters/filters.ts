@@ -3,197 +3,194 @@ import type { StackStatus } from '$lib/models/api.generated';
 import type { Serializer } from 'svelte-local-storage-store';
 
 export interface IFilter {
-	readonly type: string;
-	toFilter(): string;
+    readonly type: string;
+    toFilter(): string;
 }
 
 export interface IFacetedFilter extends IFilter {
-	term: string;
-	values: unknown[];
-	faceted: boolean;
+    term: string;
+    values: unknown[];
+    faceted: boolean;
 }
 
 export class BooleanFilter implements IFilter {
-	constructor(
-		public term: string,
-		public value?: boolean
-	) {}
+    constructor(
+        public term: string,
+        public value?: boolean
+    ) {}
 
-	public type: string = 'boolean';
+    public type: string = 'boolean';
 
-	public toFilter(): string {
-		if (this.value === undefined) {
-			return `_missing_:${this.term}`;
-		}
+    public toFilter(): string {
+        if (this.value === undefined) {
+            return `_missing_:${this.term}`;
+        }
 
-		return `${this.term}:${this.value}`;
-	}
+        return `${this.term}:${this.value}`;
+    }
 }
 
 export class DateFilter implements IFilter {
-	constructor(
-		public term: string,
-		public value?: Date | string
-	) {}
+    constructor(
+        public term: string,
+        public value?: Date | string
+    ) {}
 
-	public type: string = 'date';
+    public type: string = 'date';
 
-	public toFilter(): string {
-		if (this.value === undefined) {
-			return `_missing_:${this.term}`;
-		}
+    public toFilter(): string {
+        if (this.value === undefined) {
+            return `_missing_:${this.term}`;
+        }
 
-		const date = this.value instanceof Date ? this.value.toISOString() : this.value;
-		return `${this.term}:${quoteIfSpecialCharacters(date)}`;
-	}
+        const date = this.value instanceof Date ? this.value.toISOString() : this.value;
+        return `${this.term}:${quoteIfSpecialCharacters(date)}`;
+    }
 }
 
 export class KeywordFilter implements IFilter {
-	constructor(public keyword: string) {}
+    constructor(public keyword: string) {}
 
-	public type: string = 'keyword';
+    public type: string = 'keyword';
 
-	public toFilter(): string {
-		return this.keyword;
-	}
+    public toFilter(): string {
+        return this.keyword;
+    }
 }
 
 export class NumberFilter implements IFilter {
-	constructor(
-		public term: string,
-		public value?: number
-	) {}
+    constructor(
+        public term: string,
+        public value?: number
+    ) {}
 
-	public type: string = 'number';
+    public type: string = 'number';
 
-	public toFilter(): string {
-		if (this.value === undefined) {
-			return `_missing_:${this.term}`;
-		}
+    public toFilter(): string {
+        if (this.value === undefined) {
+            return `_missing_:${this.term}`;
+        }
 
-		return `${this.term}:${this.value}`;
-	}
+        return `${this.term}:${this.value}`;
+    }
 }
 
 export class ReferenceFilter implements IFilter {
-	constructor(public referenceId: string) {}
+    constructor(public referenceId: string) {}
 
-	public type: string = 'reference';
+    public type: string = 'reference';
 
-	public toFilter(): string {
-		return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
-	}
+    public toFilter(): string {
+        return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
+    }
 }
 
 export class SessionFilter implements IFilter {
-	constructor(public sessionId: string) {}
+    constructor(public sessionId: string) {}
 
-	public type: string = 'session';
+    public type: string = 'session';
 
-	public toFilter(): string {
-		const session = quoteIfSpecialCharacters(this.sessionId);
-		return `(reference:${session} OR ref.session:${session})`;
-	}
+    public toFilter(): string {
+        const session = quoteIfSpecialCharacters(this.sessionId);
+        return `(reference:${session} OR ref.session:${session})`;
+    }
 }
 
 export class StatusFilter implements IFacetedFilter {
-	constructor(public values: StackStatus[]) {}
+    constructor(public values: StackStatus[]) {}
 
-	public term: string = 'status';
-	public type: string = 'status';
-	public faceted: boolean = true;
+    public term: string = 'status';
+    public type: string = 'status';
+    public faceted: boolean = true;
 
-	public toFilter(): string {
-		if (this.values.length == 0) {
-			return '';
-		}
+    public toFilter(): string {
+        if (this.values.length == 0) {
+            return '';
+        }
 
-		if (this.values.length == 1) {
-			return `${this.term}:${this.values[0]}`;
-		}
+        if (this.values.length == 1) {
+            return `${this.term}:${this.values[0]}`;
+        }
 
-		return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
-	}
+        return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
+    }
 }
 
 export class StringFilter implements IFilter {
-	constructor(
-		public term: string,
-		public value?: string | null
-	) {}
+    constructor(
+        public term: string,
+        public value?: string | null
+    ) {}
 
-	public type: string = 'string';
+    public type: string = 'string';
 
-	public toFilter(): string {
-		if (this.value === undefined) {
-			return `_missing_:${this.term}`;
-		}
+    public toFilter(): string {
+        if (this.value === undefined) {
+            return `_missing_:${this.term}`;
+        }
 
-		return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
-	}
+        return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+    }
 }
 
 export class TypeFilter implements IFacetedFilter {
-	constructor(public values: PersistentEventKnownTypes[]) {}
+    constructor(public values: PersistentEventKnownTypes[]) {}
 
-	public term: string = 'type';
-	public type: string = 'type';
-	public faceted: boolean = true;
+    public term: string = 'type';
+    public type: string = 'type';
+    public faceted: boolean = true;
 
-	public toFilter(): string {
-		if (this.values.length == 0) {
-			return '';
-		}
+    public toFilter(): string {
+        if (this.values.length == 0) {
+            return '';
+        }
 
-		if (this.values.length == 1) {
-			return `${this.term}:${this.values[0]}`;
-		}
+        if (this.values.length == 1) {
+            return `${this.term}:${this.values[0]}`;
+        }
 
-		return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
-	}
+        return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
+    }
 }
 
 export class VersionFilter implements IFilter {
-	constructor(
-		public term: string,
-		public value?: string
-	) {}
+    constructor(
+        public term: string,
+        public value?: string
+    ) {}
 
-	public type: string = 'version';
+    public type: string = 'version';
 
-	public toFilter(): string {
-		if (this.value === undefined) {
-			return `_missing_:${this.term}`;
-		}
+    public toFilter(): string {
+        if (this.value === undefined) {
+            return `_missing_:${this.term}`;
+        }
 
-		return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
-	}
+        return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+    }
 }
 
 export function quoteIfSpecialCharacters(value?: string | null): string | null | undefined {
-	// Check for lucene special characters or whitespace
-	const regex = new RegExp(
-		'\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s',
-		'g'
-	);
+    // Check for lucene special characters or whitespace
+    const regex = new RegExp('\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s', 'g');
 
-	if (value && value.match(regex)) {
-		return quote(value);
-	}
+    if (value && value.match(regex)) {
+        return quote(value);
+    }
 
-	return value;
+    return value;
 }
 
 export function quote(value?: string | null): string | undefined {
-	return value ? `"${value}"` : undefined;
+    return value ? `"${value}"` : undefined;
 }
 
 export function toFilter(filters: IFilter[], includeFaceted: boolean = false): string {
-	return filters
-		.filter((f) => includeFaceted || !isFaceted(f))
-		.map((f) => f.toFilter())
-		.join(' ')
-		.trim();
+    return filters
+        .filter((f) => includeFaceted || !isFaceted(f))
+        .map((f) => f.toFilter())
+        .join(' ')
+        .trim();
 }
 
 /**
@@ -203,19 +200,15 @@ export function toFilter(filters: IFilter[], includeFaceted: boolean = false): s
  * @returns The updated filters
  */
 export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
-	const index = filters.findIndex(
-		(f) =>
-			(f.type === filter.type && isFaceted(f) && isFaceted(filter)) ||
-			f.toFilter() === filter.toFilter()
-	);
+    const index = filters.findIndex((f) => (f.type === filter.type && isFaceted(f) && isFaceted(filter)) || f.toFilter() === filter.toFilter());
 
-	if (index >= 0) {
-		filters.splice(index, 1);
-	} else {
-		filters.push(filter);
-	}
+    if (index >= 0) {
+        filters.splice(index, 1);
+    } else {
+        filters.push(filter);
+    }
 
-	return filters;
+    return filters;
 }
 
 /**
@@ -225,29 +218,29 @@ export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
  * @returns true if filters has been modified
  */
 export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFilter): boolean {
-	const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
+    const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
 
-	// If the filter has no values, remove it.
-	if (!filter.values || filter.values.length == 0) {
-		if (index >= 0) {
-			filters.splice(index, 1);
-			return true;
-		}
+    // If the filter has no values, remove it.
+    if (!filter.values || filter.values.length == 0) {
+        if (index >= 0) {
+            filters.splice(index, 1);
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	if (index >= 0) {
-		if (filter.toFilter() === filters[index].toFilter()) {
-			return false;
-		}
+    if (index >= 0) {
+        if (filter.toFilter() === filters[index].toFilter()) {
+            return false;
+        }
 
-		filters[index] = filter;
-	} else {
-		filters.push(filter);
-	}
+        filters[index] = filter;
+    } else {
+        filters.push(filter);
+    }
 
-	return true;
+    return true;
 }
 
 /**
@@ -257,117 +250,113 @@ export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFi
  * @returns The updated filter
  */
 export function parseFilter(filters: IFilter[], input: string): IFilter[] {
-	const resolvedFilters: IFilter[] = [];
+    const resolvedFilters: IFilter[] = [];
 
-	const keywordFilterParts = [];
-	for (const filter of filters) {
-		if (isFaceted(filter)) {
-			resolvedFilters.push(filter);
-			continue;
-		}
+    const keywordFilterParts = [];
+    for (const filter of filters) {
+        if (isFaceted(filter)) {
+            resolvedFilters.push(filter);
+            continue;
+        }
 
-		input = input?.trim();
-		if (!input) {
-			continue;
-		}
+        input = input?.trim();
+        if (!input) {
+            continue;
+        }
 
-		// NOTE: This is a super naive implementation...
-		const part = filter.toFilter();
-		if (part) {
-			// Check for whole word / phrase match
-			const regex = new RegExp(
-				`(^|\\s)${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`
-			);
-			if (regex.test(input)) {
-				input = input.replace(regex, '');
-				if (filter instanceof KeywordFilter) {
-					keywordFilterParts.push(part);
-				} else {
-					resolvedFilters.push(filter);
-				}
-			}
-		}
-	}
+        // NOTE: This is a super naive implementation...
+        const part = filter.toFilter();
+        if (part) {
+            // Check for whole word / phrase match
+            const regex = new RegExp(`(^|\\s)${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`);
+            if (regex.test(input)) {
+                input = input.replace(regex, '');
+                if (filter instanceof KeywordFilter) {
+                    keywordFilterParts.push(part);
+                } else {
+                    resolvedFilters.push(filter);
+                }
+            }
+        }
+    }
 
-	input = `${keywordFilterParts.join(' ')} ${input ?? ''}`.trim();
-	if (input) {
-		resolvedFilters.push(new KeywordFilter(input));
-	}
+    input = `${keywordFilterParts.join(' ')} ${input ?? ''}`.trim();
+    if (input) {
+        resolvedFilters.push(new KeywordFilter(input));
+    }
 
-	return resolvedFilters;
+    return resolvedFilters;
 }
 
 export function getFilter(filter: Record<string, unknown>): IFilter | undefined {
-	switch (filter.type) {
-		case 'boolean':
-			return new BooleanFilter(filter.term as string, filter.value as boolean);
-		case 'date':
-			return new DateFilter(filter.term as string, filter.value as Date);
-		case 'keyword':
-			return new KeywordFilter(filter.keyword as string);
-		case 'number':
-			return new NumberFilter(filter.term as string, filter.value as number);
-		case 'reference':
-			return new ReferenceFilter(filter.referenceId as string);
-		case 'session':
-			return new SessionFilter(filter.sessionId as string);
-		case 'status':
-			return new StatusFilter(filter.values as StackStatus[]);
-		case 'string':
-			return new StringFilter(filter.term as string, filter.value as string);
-		case 'type':
-			return new TypeFilter(filter.values as PersistentEventKnownTypes[]);
-		case 'version':
-			return new VersionFilter(filter.term as string, filter.value as string);
-	}
+    switch (filter.type) {
+        case 'boolean':
+            return new BooleanFilter(filter.term as string, filter.value as boolean);
+        case 'date':
+            return new DateFilter(filter.term as string, filter.value as Date);
+        case 'keyword':
+            return new KeywordFilter(filter.keyword as string);
+        case 'number':
+            return new NumberFilter(filter.term as string, filter.value as number);
+        case 'reference':
+            return new ReferenceFilter(filter.referenceId as string);
+        case 'session':
+            return new SessionFilter(filter.sessionId as string);
+        case 'status':
+            return new StatusFilter(filter.values as StackStatus[]);
+        case 'string':
+            return new StringFilter(filter.term as string, filter.value as string);
+        case 'type':
+            return new TypeFilter(filter.values as PersistentEventKnownTypes[]);
+        case 'version':
+            return new VersionFilter(filter.term as string, filter.value as string);
+    }
 }
 
 function isFaceted(filter: IFilter): filter is IFacetedFilter {
-	return 'faceted' in filter;
+    return 'faceted' in filter;
 }
 
 const FACETED_FILTER_TYPES = ['status', 'type'];
 export function toFacetedValues(filters: IFilter[]): Record<string, unknown[]> {
-	const values: Record<string, unknown[]> = {};
-	for (const filterType of FACETED_FILTER_TYPES) {
-		const filter = filters.find((f) => f.type === filterType && isFaceted(f)) as
-			| IFacetedFilter
-			| undefined;
-		values[filterType] = filter?.values ?? [];
-	}
+    const values: Record<string, unknown[]> = {};
+    for (const filterType of FACETED_FILTER_TYPES) {
+        const filter = filters.find((f) => f.type === filterType && isFaceted(f)) as IFacetedFilter | undefined;
+        values[filterType] = filter?.values ?? [];
+    }
 
-	return values;
+    return values;
 }
 
 export function resetFacetedValues(filters: IFilter[]): IFilter[] {
-	for (const filter of filters) {
-		if (isFaceted(filter)) {
-			upsertOrRemoveFacetFilter(filters, { ...filter, values: [] });
-		}
-	}
+    for (const filter of filters) {
+        if (isFaceted(filter)) {
+            upsertOrRemoveFacetFilter(filters, { ...filter, values: [] });
+        }
+    }
 
-	return filters;
+    return filters;
 }
 
 export class FilterSerializer implements Serializer<IFilter[]> {
-	public parse(text: string): IFilter[] {
-		if (!text) {
-			return [];
-		}
+    public parse(text: string): IFilter[] {
+        if (!text) {
+            return [];
+        }
 
-		const data: unknown[] = JSON.parse(text);
-		const filters: IFilter[] = [];
-		for (const filterData of data) {
-			const filter = getFilter(filterData as Record<string, unknown>);
-			if (filter) {
-				filters.push(filter);
-			}
-		}
+        const data: unknown[] = JSON.parse(text);
+        const filters: IFilter[] = [];
+        for (const filterData of data) {
+            const filter = getFilter(filterData as Record<string, unknown>);
+            if (filter) {
+                filters.push(filter);
+            }
+        }
 
-		return filters;
-	}
+        return filters;
+    }
 
-	public stringify(object: IFilter[]): string {
-		return JSON.stringify(object);
-	}
+    public stringify(object: IFilter[]): string {
+        return JSON.stringify(object);
+    }
 }
