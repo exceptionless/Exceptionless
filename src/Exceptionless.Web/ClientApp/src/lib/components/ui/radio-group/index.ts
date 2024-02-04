@@ -5,11 +5,11 @@ import Item from './radio-group-item.svelte';
 const Input = RadioGroupPrimitive.Input;
 
 export {
-	Root,
-	Input,
-	Item,
-	//
-	Root as RadioGroup,
-	Input as RadioGroupInput,
-	Item as RadioGroupItem
+    Root,
+    Input,
+    Item,
+    //
+    Root as RadioGroup,
+    Input as RadioGroupInput,
+    Item as RadioGroupItem
 };
