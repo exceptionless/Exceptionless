@@ -24,7 +24,7 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title tag="h2" class="p-6 pb-4 text-2xl">To-do List</Card.Title>
+        <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Issues</Card.Title>
         <Card.Content>
             <EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
                 <svelte:fragment slot="toolbar">
