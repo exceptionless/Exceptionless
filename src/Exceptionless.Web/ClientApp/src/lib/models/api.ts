@@ -4,7 +4,7 @@ import { PersistentEvent as PersistentEventBase, StackStatus, UserDescription } 
 
 import type { EnvironmentInfo, ErrorInfo, LogLevel, ManualStackingInfo, RequestInfo, SimpleErrorInfo, UserInfo } from './client-data';
 
-export { Login, ViewProject, Stack, TokenResult } from './api.generated';
+export { Login, ViewProject, Stack, StackStatus, TokenResult, User } from './api.generated';
 
 export type PersistentEventKnownTypes = '404' | 'error' | 'heartbeat' | 'log' | 'usage' | 'session' | 'sessionend' | string;
 
