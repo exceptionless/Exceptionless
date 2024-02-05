@@ -1,30 +1,8 @@
 <script lang="ts">
     import * as Card from '$comp/ui/card';
     import { Separator } from '$comp/ui/separator';
+    import { routes } from './routes';
     import SidebarNav from './(components)/sidebar-nav.svelte';
-
-    const sidebarNavItems = [
-        {
-            title: 'Account',
-            href: '/next/account/manage'
-        },
-        {
-            title: 'Appearance',
-            href: '/next/account/appearance'
-        },
-        {
-            title: 'Notifications',
-            href: '/next/account/notifications'
-        },
-        {
-            title: 'Password and authentication',
-            href: '/next/account/security'
-        },
-        {
-            title: 'Sessions',
-            href: '/next/account/sessions'
-        }
-    ];
 </script>
 
 <Card.Root>
@@ -36,7 +14,7 @@
     <Card.Content>
         <div class="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
             <aside class="-mx-4 lg:w-1/5">
-                <SidebarNav items={sidebarNavItems} />
+                <SidebarNav {routes} />
             </aside>
             <div class="flex-1">
                 <slot />
