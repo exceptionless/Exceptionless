@@ -14,10 +14,6 @@
     }
 </script>
 
-<svelte:head>
-    <title>Event Stream - Exceptionless</title>
-</svelte:head>
-
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <Card.Root>

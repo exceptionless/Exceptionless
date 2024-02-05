@@ -30,10 +30,6 @@
     }
 </script>
 
-<svelte:head>
-    <title>Event Dashboard - Exceptionless</title>
-</svelte:head>
-
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">

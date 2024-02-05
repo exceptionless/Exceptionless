@@ -20,10 +20,6 @@
     }
 </script>
 
-<svelte:head>
-    <title>To-do List - Exceptionless</title>
-</svelte:head>
-
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">

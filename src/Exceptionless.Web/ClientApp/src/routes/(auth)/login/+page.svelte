@@ -52,10 +52,6 @@
     }
 </script>
 
-<svelte:head>
-    <title>Log in - Exceptionless</title>
-</svelte:head>
-
 <H2 class="mb-2 mt-4 text-center leading-9">Log in to your account</H2>
 
 <form on:submit|preventDefault={onLogin} class="space-y-2">
