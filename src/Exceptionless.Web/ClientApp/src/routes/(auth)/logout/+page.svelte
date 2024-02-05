@@ -28,10 +28,6 @@
     }
 </script>
 
-<svelte:head>
-    <title>Log out - Exceptionless</title>
-</svelte:head>
-
 <H2 class="mb-2 mt-4 text-center leading-9">Log out?</H2>
 <form on:submit|preventDefault={onLogout} class="space-y-2">
     <ErrorMessage message={problem.errors.general}></ErrorMessage>

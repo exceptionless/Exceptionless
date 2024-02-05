@@ -27,10 +27,6 @@
     ];
 </script>
 
-<svelte:head>
-    <title>My Account - Exceptionless</title>
-</svelte:head>
-
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-0 text-2xl">Settings</Card.Title>
     <Card.Description class="pl-6">Manage your account settings and set e-mail preferences.</Card.Description>

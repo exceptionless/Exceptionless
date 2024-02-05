@@ -32,8 +32,19 @@
     setDefaultBaseUrl('api/v2');
     setAccessTokenStore(accessToken);
 
+    page.subscribe(($page) => {
+        const currentRoute = routes.find((route) => $page.url.pathname === route.href);
+        if (currentRoute) {
+            document.title = `${currentRoute.title} - Exceptionless`;
+        } else {
+            document.title = 'Exceptionless';
+        }
+    });
+
     const queryClient = new QueryClient();
     const userQuery = getMeQuery(queryClient);
+
+    // TODO: Pass these down into the sidebar.
     const filteredRoutes = derived(userQuery, ($userResponse) => {
         const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
