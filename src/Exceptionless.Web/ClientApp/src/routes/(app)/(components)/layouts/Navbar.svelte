@@ -78,11 +78,15 @@
                         <DropdownMenu.Separator />
                         <DropdownMenu.Group>
                             <DropdownMenu.Item href="/next/account/manage">
-                                Profile
+                                Account
                                 <DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
+                            <DropdownMenu.Item href="/next/account/notifications">
+                                Notifications
+                                <DropdownMenu.Shortcut>⇧⌘N</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
                         </DropdownMenu.Group>
-                        <DropdownMenu.Label>My Organization</DropdownMenu.Label>
+                        <!-- <DropdownMenu.Label>My Organization</DropdownMenu.Label>
                         <DropdownMenu.Separator />
                         <DropdownMenu.Group>
                             <DropdownMenu.Item>
@@ -98,17 +102,19 @@
                                 Billing
                                 <DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
-                        </DropdownMenu.Group>
+                        </DropdownMenu.Group> -->
                         <DropdownMenu.Label>Documentation</DropdownMenu.Label>
                         <DropdownMenu.Separator />
-                        <DropdownMenu.Item href="https://exceptionless.com/docs/" target="_blank">Documentation</DropdownMenu.Item>
-                        <DropdownMenu.Item href="https://github.com/exceptionless/Exceptionless/issues" target="_blank">Support</DropdownMenu.Item>
-                        <DropdownMenu.Item href="https://github.com/exceptionless/Exceptionless" target="_blank">GitHub</DropdownMenu.Item>
-                        <DropdownMenu.Item href="/docs/index.html" target="_blank">API</DropdownMenu.Item>
-                        <DropdownMenu.Item>
+                        <DropdownMenu.Group>
+                            <DropdownMenu.Item href="https://exceptionless.com/docs/" target="_blank">Documentation</DropdownMenu.Item>
+                            <DropdownMenu.Item href="https://github.com/exceptionless/Exceptionless/issues" target="_blank">Support</DropdownMenu.Item>
+                            <DropdownMenu.Item href="https://github.com/exceptionless/Exceptionless" target="_blank">GitHub</DropdownMenu.Item>
+                            <DropdownMenu.Item href="/docs/index.html" target="_blank">API</DropdownMenu.Item>
+                            <!-- <DropdownMenu.Item>
                             Keyboard shortcuts
                             <DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
-                        </DropdownMenu.Item>
+                        </DropdownMenu.Item> -->
+                        </DropdownMenu.Group>
                         <DropdownMenu.Separator />
                         <DropdownMenu.Item href="/next/logout">
                             Sign out
