@@ -7,7 +7,7 @@
     import H3 from '$comp/typography/H3.svelte';
     import H4 from '$comp/typography/H4.svelte';
     import Muted from '$comp/typography/Muted.svelte';
-    import { User } from '$lib/models/api.generated';
+    import { User } from '$lib/models/api';
     import { ProblemDetails, globalLoading as loading } from '$lib/api/FetchClient';
     import Switch from '$comp/primitives/Switch.svelte';
 
