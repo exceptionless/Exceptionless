@@ -2,12 +2,8 @@ import IconEvents from '~icons/mdi/calendar-month-outline';
 import IconStacks from '~icons/mdi/checkbox-multiple-marked-outline';
 import IconEventLog from '~icons/mdi/sort-clock-descending-outline';
 
-export type NavigationItem = {
-    group: string;
-    title: string;
-    href: string;
-    icon: ConstructorOfATypedSvelteComponent;
-};
+import type { NavigationItem } from '../routes';
+import { routes as accountRoutes } from './account/routes';
 
 export const routes: NavigationItem[] = [
     {
@@ -27,5 +23,6 @@ export const routes: NavigationItem[] = [
         title: 'Event Stream',
         href: '/next/stream',
         icon: IconEventLog
-    }
+    },
+    ...accountRoutes
 ];
