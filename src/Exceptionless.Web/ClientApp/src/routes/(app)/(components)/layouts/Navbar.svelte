@@ -6,14 +6,13 @@
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import { isLargeScreen, isSidebarOpen } from '$lib/stores/sidebar';
+    import { isCommandOpen, isLargeScreen, isSidebarOpen } from '$lib/stores/app';
     import * as Avatar from '$comp/ui/avatar';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import SearchInput from '$comp/SearchInput.svelte';
+    import Loading from '$comp/Loading.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import { Button } from '$comp/ui/button';
     import { getGravatarFromCurrentUserSrc } from '$api/gravatar';
-    let filter = '';
 
     function onHamburgerClick(): void {
         isSidebarOpen.set(!$isSidebarOpen);
@@ -45,13 +44,8 @@
                     {/if}
                 </a>
             </div>
-            <form action="/" method="GET" class="hidden lg:block lg:pl-2">
-                <div class="mt-1 w-[350px] xl:w-[550px]">
-                    <SearchInput id="topbar-search" value={filter} />
-                </div>
-            </form>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button variant="outline" size="icon" on:click={() => isSidebarOpen.set(!$isSidebarOpen)} class="lg:hidden">
+                <Button variant="outline" size="icon" on:click={() => isCommandOpen.set(true)}>
                     <span class="sr-only">Search</span>
 
                     <IconSearch class="h-6 w-6" />

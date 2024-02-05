@@ -4,7 +4,7 @@
     import NavbarLayout from './(components)/layouts/Navbar.svelte';
     import SidebarLayout from './(components)/layouts/Sidebar.svelte';
     import FooterLayout from './(components)/layouts/Footer.svelte';
-    import { isSidebarOpen, isSmallScreen } from '$lib/stores/sidebar';
+    import { isSidebarOpen, isSmallScreen } from '$lib/stores/app';
 
     import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
     import { WebSocketClient } from '$lib/api/WebSocketClient';

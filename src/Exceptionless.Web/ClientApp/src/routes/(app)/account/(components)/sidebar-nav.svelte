@@ -5,9 +5,10 @@
     import { page } from '$app/stores';
     import { Button } from '$comp/ui/button';
     import { cn } from '$lib/utils';
+    import type { NavigationItem } from '../../../routes';
 
     let className: string | undefined | null = undefined;
-    export let items: { href: string; title: string }[];
+    export let routes: NavigationItem[];
     export { className as class };
 
     const [send, receive] = crossfade({
@@ -17,11 +18,11 @@
 </script>
 
 <nav class={cn('flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1', className)}>
-    {#each items as item}
-        {@const isActive = $page.url.pathname === item.href}
+    {#each routes as route}
+        {@const isActive = $page.url.pathname === route.href}
 
         <Button
-            href={item.href}
+            href={route.href}
             variant="ghost"
             class={cn(!isActive && 'hover:underline', 'relative justify-start hover:bg-transparent')}
             data-sveltekit-noscroll
@@ -30,7 +31,7 @@
                 <div class="absolute inset-0 rounded-md bg-muted" in:send={{ key: 'active-sidebar-tab' }} out:receive={{ key: 'active-sidebar-tab' }} />
             {/if}
             <div class="relative">
-                {item.title}
+                {route.title}
             </div>
         </Button>
     {/each}
