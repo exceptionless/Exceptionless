@@ -6,7 +6,7 @@ import { derived, get } from 'svelte/store';
 
 import { globalFetchClient } from './FetchClient';
 
-import type { Login, TokenResult } from '$lib/models/api.generated';
+import type { Login, TokenResult } from '$lib/models/api';
 export const accessToken = persisted<string | null>('satellizer_token', null, {
     serializer: { parse: (s) => s, stringify: (s) => s as string }
 });

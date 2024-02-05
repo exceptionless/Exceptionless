@@ -21,7 +21,7 @@
     import { Button } from '$comp/ui/button';
     import Loading from '$comp/Loading.svelte';
 
-    import { User } from '$lib/models/api.generated';
+    import { User } from '$lib/models/api';
     import { ProblemDetails, globalLoading as loading } from '$lib/api/FetchClient';
     import PasswordInput from '$comp/form/PasswordInput.svelte';
     import H3 from '$comp/typography/H3.svelte';

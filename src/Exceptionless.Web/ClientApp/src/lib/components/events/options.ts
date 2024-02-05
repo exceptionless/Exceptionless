@@ -1,5 +1,5 @@
 import type { PersistentEventKnownTypes } from '$lib/models/api';
-import { StackStatus } from '$lib/models/api.generated';
+import { StackStatus } from '$lib/models/api';
 
 export const eventTypes: { value: PersistentEventKnownTypes; label: string }[] = [
     {
