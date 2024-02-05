@@ -1,14 +1,21 @@
 <script lang="ts">
-    import { isSidebarOpen, isLargeScreen } from '$lib/stores/sidebar';
-    import SearchInput from '$comp/SearchInput.svelte';
+    import { derived } from 'svelte/store';
+    import { isAuthenticated } from '$api/auth';
+    import { isSidebarOpen, isLargeScreen } from '$lib/stores/app';
     import SidebarMenuItem from './SidebarMenuItem.svelte';
-    import { routes } from './routes';
-
-    let filter = '';
+    import { getMeQuery } from '$api/queries/users';
+    import { routes } from '../../routes';
+    import type { NavigationItemContext } from '../../../routes';
 
     function onBackdropClick() {
         isSidebarOpen.set(false);
     }
+
+    const userQuery = getMeQuery();
+    const derivedRoutes = derived(userQuery, ($userResponse) => {
+        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
+        return routes.filter((route) => route.group === 'Dashboards' && (route.show ? route.show(context) : true));
+    });
 </script>
 
 <aside
@@ -22,12 +29,7 @@
         <div class="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
             <div class="flex-1 space-y-1 divide-y px-3">
                 <ul class="space-y-2 pb-2">
-                    <li>
-                        <form action="#" method="GET" class="lg:hidden">
-                            <SearchInput id="mobile-search" value={filter} />
-                        </form>
-                    </li>
-                    {#each routes as route}
+                    {#each $derivedRoutes as route}
                         <li>
                             <SidebarMenuItem title={route.title} href={route.href}>
                                 <span slot="icon" let:iconClass>

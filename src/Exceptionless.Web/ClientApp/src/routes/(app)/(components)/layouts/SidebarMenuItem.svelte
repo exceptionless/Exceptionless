@@ -1,13 +1,13 @@
 <script lang="ts">
     import type { HTMLAnchorAttributes } from 'svelte/elements';
-    import { isLargeScreen, isSidebarOpen } from '$lib/stores/sidebar';
+    import { isLargeScreen, isSidebarOpen } from '$lib/stores/app';
     import { page } from '$app/stores';
     import { derived } from 'svelte/store';
 
     export let href: HTMLAnchorAttributes['href'];
     export let title: string;
 
-    const active = derived(page, ($page) => $page.url.pathname == href);
+    const active = derived(page, ($page) => $page.url.pathname === href);
 </script>
 
 <a
