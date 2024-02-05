@@ -12,12 +12,14 @@
     import SearchInput from '$comp/SearchInput.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import { Button } from '$comp/ui/button';
-
+    import { getGravatarFromCurrentUserSrc } from '$api/gravatar';
     let filter = '';
 
     function onHamburgerClick(): void {
         isSidebarOpen.set(!$isSidebarOpen);
     }
+
+    const gravatarSrc = getGravatarFromCurrentUserSrc();
 </script>
 
 <nav class="fixed z-30 w-full border-b bg-background text-foreground">
@@ -60,9 +62,14 @@
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild let:builder>
                         <Button builders={[builder]} size="icon" variant="ghost" class="rounded-full">
-                            <Avatar.Root title="TODO" class="h-7 w-7">
-                                <Avatar.Image src="//www.gravatar.com/avatar/89b10deee628535a5510db131f983541?default=mm&size=100" alt="gravatar" />
-                                <Avatar.Fallback>TODO</Avatar.Fallback>
+                            <Avatar.Root title="Profile Image" class="h-7 w-7">
+                                {#await $gravatarSrc}
+                                    <Avatar.Fallback><Loading /></Avatar.Fallback>
+                                {:then src}
+                                    <Avatar.Image {src} alt="gravatar" />
+                                {:catch}
+                                    <Avatar.Fallback>Error</Avatar.Fallback>
+                                {/await}
                             </Avatar.Root>
                         </Button>
                     </DropdownMenu.Trigger>
