@@ -4,7 +4,7 @@
     import NavbarLayout from './(components)/layouts/Navbar.svelte';
     import SidebarLayout from './(components)/layouts/Sidebar.svelte';
     import FooterLayout from './(components)/layouts/Footer.svelte';
-    import { isSidebarOpen, isSmallScreen } from '$lib/stores/app';
+    import { isCommandOpen, isSidebarOpen, isSmallScreen } from '$lib/stores/app';
 
     import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
     import { WebSocketClient } from '$lib/api/WebSocketClient';
@@ -14,6 +14,10 @@
     import { onMount } from 'svelte';
 
     import { useQueryClient } from '@tanstack/svelte-query';
+    import NavigationCommand from './(components)/NavigationCommand.svelte';
+    import { derived } from 'svelte/store';
+    import { getMeQuery } from '$api/queries/users';
+    import { routes, type NavigationItemContext } from '../routes';
 
     isAuthenticated.subscribe(async (authenticated) => {
         if (!authenticated) {
@@ -75,7 +79,9 @@
     });
 
     onMount(() => {
-        if (!$isAuthenticated) return;
+        if (!$isAuthenticated) {
+            return;
+        }
 
         const ws = new WebSocketClient();
         ws.onMessage = onMessage;
@@ -94,16 +100,23 @@
             ws?.close();
         };
     });
+
+    const userQuery = getMeQuery();
+    const filteredRoutes = derived(userQuery, ($userResponse) => {
+        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
+        return routes.filter((route) => (route.show ? route.show(context) : true));
+    });
 </script>
 
 {#if $isAuthenticated}
     <NavbarLayout></NavbarLayout>
     <div class="flex overflow-hidden pt-16">
-        <SidebarLayout />
+        <SidebarLayout routes={$filteredRoutes} />
 
         <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {$isSidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}">
             <main>
                 <div class="px-4 pt-4">
+                    <NavigationCommand bind:open={$isCommandOpen} routes={$filteredRoutes} />
                     <slot />
                 </div>
             </main>

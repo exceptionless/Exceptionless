@@ -2,7 +2,7 @@
     import A from '$comp/typography/A.svelte';
     import * as Command from '$comp/ui/command';
     import { isCommandOpen } from '$lib/stores/app';
-    import type { NavigationItem } from '../routes';
+    import type { NavigationItem } from '../../routes';
 
     export let open: boolean;
     export let routes: NavigationItem[];

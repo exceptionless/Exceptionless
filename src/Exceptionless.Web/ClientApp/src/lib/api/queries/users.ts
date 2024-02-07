@@ -1,5 +1,5 @@
 import { derived } from 'svelte/store';
-import { type QueryClient, createQuery } from '@tanstack/svelte-query';
+import { createQuery } from '@tanstack/svelte-query';
 
 import { FetchClient, type ProblemDetails } from '$api/FetchClient';
 import type { User } from '$lib/models/api';
@@ -7,7 +7,7 @@ import { accessToken } from '$api/auth';
 
 export const queryKey: string = 'User';
 
-export function getMeQuery(queryClient: QueryClient | undefined = undefined) {
+export function getMeQuery() {
     return createQuery<User, ProblemDetails>(
         derived(accessToken, ($accessToken) => ({
             enabled: !!$accessToken,
@@ -24,7 +24,6 @@ export function getMeQuery(queryClient: QueryClient | undefined = undefined) {
 
                 throw response.problem;
             }
-        })),
-        queryClient
+        }))
     );
 }
