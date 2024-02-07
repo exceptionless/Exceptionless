@@ -1,21 +1,14 @@
 <script lang="ts">
-    import { derived } from 'svelte/store';
-    import { isAuthenticated } from '$api/auth';
     import { isSidebarOpen, isLargeScreen } from '$lib/stores/app';
     import SidebarMenuItem from './SidebarMenuItem.svelte';
-    import { getMeQuery } from '$api/queries/users';
-    import { routes } from '../../routes';
-    import type { NavigationItemContext } from '../../../routes';
+    import type { NavigationItem } from '../../../routes';
+
+    export let routes: NavigationItem[];
+    const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
 
     function onBackdropClick() {
         isSidebarOpen.set(false);
     }
-
-    const userQuery = getMeQuery();
-    const derivedRoutes = derived(userQuery, ($userResponse) => {
-        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
-        return routes.filter((route) => route.group === 'Dashboards' && (route.show ? route.show(context) : true));
-    });
 </script>
 
 <aside
@@ -29,7 +22,7 @@
         <div class="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
             <div class="flex-1 space-y-1 divide-y px-3">
                 <ul class="space-y-2 pb-2">
-                    {#each $derivedRoutes as route}
+                    {#each dashboardRoutes as route}
                         <li>
                             <SidebarMenuItem title={route.title} href={route.href}>
                                 <span slot="icon" let:iconClass>
