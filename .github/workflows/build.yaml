@@ -5,6 +5,7 @@ env:
   DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_NOLOGO: true
+  MSBUILDTERMINALLOGGER: auto
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
@@ -19,7 +20,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -29,7 +30,7 @@ jobs:
         run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.*
           #dotnet-quality: preview
@@ -50,12 +51,12 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.*
           #dotnet-quality: preview
@@ -64,7 +65,7 @@ jobs:
         working-directory: docker
         run: docker compose up -d elasticsearch &
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
             path: ~/.nuget/packages
             key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
@@ -116,27 +117,27 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.*
           #dotnet-quality: preview
 
       - name: Cache node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Npm Packages
         run: npm ci
@@ -161,13 +162,13 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             fetch-depth: 0
 
       - name: Set up Docker Buildx
         if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           platforms: linux/amd64
 
@@ -199,7 +200,7 @@ jobs:
 
       - name: Login to GitHub Container Registry
         if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -207,7 +208,7 @@ jobs:
 
       - name: Login to DockerHub
         if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -260,7 +261,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             fetch-depth: 0
 

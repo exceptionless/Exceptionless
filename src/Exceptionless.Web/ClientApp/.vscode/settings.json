@@ -1,46 +1,47 @@
 {
-	"debug.allowBreakpointsEverywhere": true,
-	"cSpell.words": [
-		"clsx",
-		"colour",
-		"haserror",
-		"iconify",
-		"keyof",
-		"legos",
-		"lucene",
-		"nameof",
-		"navigatetofirstpage",
-		"oidc",
-		"promotedtabs",
-		"rowclick",
-		"satellizer",
-		"sessionend",
-		"shadcn",
-		"tailwindcss",
-		"tanstack"
-	],
-	"css.customData": [".vscode/tailwind.json"],
-	"css.lint.unknownAtRules": "ignore",
-	"[javascript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"[typescript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"[svelte]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"[json]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"prettier.documentSelectors": ["**/*.svelte"],
-	"editor.codeActionsOnSave": {
-		"source.fixAll": "explicit"
-	},
-	"editor.formatOnSave": true,
-	"eslint.validate": ["javascript", "svelte"],
-	"svelte.plugin.svelte.defaultScriptLanguage": "ts",
-	"tailwindCSS.includeLanguages": {
-		"svelte": "html"
-	}
+    "debug.allowBreakpointsEverywhere": true,
+    "cSpell.words": [
+        "clsx",
+        "colour",
+        "haserror",
+        "iconify",
+        "keyof",
+        "legos",
+        "lucene",
+        "nameof",
+        "navigatetofirstpage",
+        "oidc",
+        "promotedtabs",
+        "rowclick",
+        "satellizer",
+        "sessionend",
+        "shadcn",
+        "tailwindcss",
+        "tanstack"
+    ],
+    "css.customData": [".vscode/tailwind.json"],
+    "css.lint.unknownAtRules": "ignore",
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[svelte]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "prettier.documentSelectors": ["**/*.svelte"],
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "eslint.validate": ["javascript", "svelte"],
+    "svelte.plugin.svelte.defaultScriptLanguage": "ts",
+    "tailwindCSS.includeLanguages": {
+        "svelte": "html"
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }

@@ -1,47 +1,47 @@
 <script lang="ts">
-	import type { Table } from '@tanstack/svelte-table';
-	import type { Selected } from 'bits-ui';
-	import type { Readable } from 'svelte/store';
+    import type { Table } from '@tanstack/svelte-table';
+    import type { Selected } from 'bits-ui';
+    import type { Readable } from 'svelte/store';
 
-	import * as Select from '$comp/ui/select';
+    import * as Select from '$comp/ui/select';
 
-	type TData = $$Generic;
-	export let table: Readable<Table<TData>>;
+    type TData = $$Generic;
+    export let table: Readable<Table<TData>>;
 
-	export let value: number;
-	export let defaultValue: number = 10;
+    export let value: number;
+    export let defaultValue: number = 10;
 
-	const items = [
-		{ value: 5, label: '5' },
-		{ value: 10, label: '10' },
-		{ value: 20, label: '20' },
-		{ value: 30, label: '30' },
-		{ value: 40, label: '40' },
-		{ value: 50, label: '50' }
-	];
+    const items = [
+        { value: 5, label: '5' },
+        { value: 10, label: '10' },
+        { value: 20, label: '20' },
+        { value: 30, label: '30' },
+        { value: 40, label: '40' },
+        { value: 50, label: '50' }
+    ];
 
-	let selected = items.find((item) => item.value === value) || items[0];
-	function onSelectedChange(selected: Selected<number> | undefined) {
-		const newValue = selected?.value ?? defaultValue;
-		if (newValue === value) {
-			return;
-		}
+    let selected = items.find((item) => item.value === value) || items[0];
+    function onSelectedChange(selected: Selected<number> | undefined) {
+        const newValue = selected?.value ?? defaultValue;
+        if (newValue === value) {
+            return;
+        }
 
-		value = newValue;
-		$table.setPageSize(newValue);
-	}
+        value = newValue;
+        $table.setPageSize(newValue);
+    }
 </script>
 
 <div class="flex items-center space-x-2">
-	<p class="text-sm font-medium">Rows per page</p>
-	<Select.Root {items} bind:selected {onSelectedChange}>
-		<Select.Trigger class="w-[180px]">
-			<Select.Value placeholder="Select page size" />
-		</Select.Trigger>
-		<Select.Content>
-			{#each items as item}
-				<Select.Item value={item.value}>{item.label}</Select.Item>
-			{/each}
-		</Select.Content>
-	</Select.Root>
+    <p class="text-sm font-medium">Rows per page</p>
+    <Select.Root {items} bind:selected {onSelectedChange}>
+        <Select.Trigger class="w-[180px]">
+            <Select.Value placeholder="Select page size" />
+        </Select.Trigger>
+        <Select.Content>
+            {#each items as item}
+                <Select.Item value={item.value}>{item.label}</Select.Item>
+            {/each}
+        </Select.Content>
+    </Select.Root>
 </div>
