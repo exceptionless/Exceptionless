@@ -4,7 +4,7 @@
     import { createSvelteTable } from '@tanstack/svelte-table';
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
-    import { type FetchClientResponse, globalFetchClient as api, globalLoading as loading } from '$api/FetchClient';
+    import { type FetchClientResponse, FetchClient } from '$api/FetchClient';
     import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
@@ -34,6 +34,7 @@
     parameters.subscribe(async () => await loadData(true));
     filter.subscribe(async () => await loadData(true));
 
+    const { getJSON, loading } = new FetchClient();
     async function loadData(filterChanged: boolean = false) {
         if ($loading && filterChanged && !before) {
             return;
@@ -43,7 +44,7 @@
             before = undefined;
         }
 
-        response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...$parameters,
                 filter: $filter,
@@ -98,7 +99,7 @@
         </slot>
     </DataTable.Toolbar>
     <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
-    <Muted class="flex flex-1 items-center justify-between">
+    <Muted class="flex items-center justify-between flex-1">
         <DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
         <Muted class="py-2 text-center">
             {#if response?.problem?.errors.general}

@@ -12,8 +12,8 @@ export function getProjectByIdQuery(id: string | Readable<string | null>) {
             enabled: !!$id,
             queryKey: [queryKey, $id],
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const api = new FetchClient();
-                const response = await api.getJSON<ViewProject>(`projects/${$id}`, {
+                const { getJSON } = new FetchClient();
+                const response = await getJSON<ViewProject>(`projects/${$id}`, {
                     signal
                 });
 
@@ -32,8 +32,8 @@ export function mutatePromoteTab(id: string) {
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: [queryKey, id],
         mutationFn: async ({ name }) => {
-            const api = new FetchClient();
-            const response = await api.post(`projects/${id}/promotedtabs`, undefined, {
+            const { post } = new FetchClient();
+            const response = await post(`projects/${id}/promotedtabs`, undefined, {
                 params: { name }
             });
 
@@ -54,8 +54,8 @@ export function mutateDemoteTab(id: string) {
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: [queryKey, id],
         mutationFn: async ({ name }) => {
-            const api = new FetchClient();
-            const response = await api.delete(`projects/${id}/promotedtabs`, {
+            const { remove } = new FetchClient();
+            const response = await remove(`projects/${id}/promotedtabs`, {
                 params: { name }
             });
 

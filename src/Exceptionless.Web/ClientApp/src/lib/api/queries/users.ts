@@ -13,8 +13,8 @@ export function getMeQuery() {
             enabled: !!$accessToken,
             queryKey: [queryKey],
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const api = new FetchClient();
-                const response = await api.getJSON<User>('users/me', {
+                const { getJSON } = new FetchClient();
+                const response = await getJSON<User>('users/me', {
                     signal
                 });
 

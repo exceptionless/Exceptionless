@@ -22,7 +22,7 @@
         gitHubClientId,
         liveClientId
     } from '$api/auth';
-    import { ProblemDetails, globalLoading as loading } from '$lib/api/FetchClient';
+    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
     import { Login } from '$lib/models/api';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
@@ -38,6 +38,7 @@
     let problem = new ProblemDetails();
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
+    const { loading } = new FetchClient();
     async function onLogin() {
         if ($loading) {
             return;

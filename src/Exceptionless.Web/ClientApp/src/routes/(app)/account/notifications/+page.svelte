@@ -8,7 +8,7 @@
     import H4 from '$comp/typography/H4.svelte';
     import Muted from '$comp/typography/Muted.svelte';
     import { User } from '$lib/models/api';
-    import { ProblemDetails, globalLoading as loading } from '$lib/api/FetchClient';
+    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
     import Switch from '$comp/primitives/Switch.svelte';
 
     const data = new User();
@@ -16,6 +16,7 @@
 
     let problem = new ProblemDetails();
 
+    const { loading } = new FetchClient();
     async function onSave() {
         if ($loading) {
             return;
