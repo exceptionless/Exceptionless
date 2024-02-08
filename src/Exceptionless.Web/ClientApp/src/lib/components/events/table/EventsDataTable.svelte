@@ -4,7 +4,7 @@
     import { writable, type Readable } from 'svelte/store';
 
     import type { EventSummaryModel, GetEventsMode, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
-    import { type FetchClientResponse, globalFetchClient as api, globalLoading as loading } from '$api/FetchClient';
+    import { FetchClient, type FetchClientResponse } from '$api/FetchClient';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
     import * as DataTable from '$comp/data-table';
@@ -22,6 +22,7 @@
     const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters);
     const table = createSvelteTable(options);
 
+    const { getJSON, loading } = new FetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
     parameters.subscribe(async () => await loadData());
     filter.subscribe(async () => await loadData());
@@ -32,7 +33,7 @@
             return;
         }
 
-        response = await api.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...$parameters,
                 filter: [pageFilter, $filter].filter(Boolean).join(' '),

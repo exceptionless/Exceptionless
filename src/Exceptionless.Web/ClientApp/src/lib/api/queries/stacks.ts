@@ -12,8 +12,8 @@ export function getStackByIdQuery(id: string | Readable<string | null>) {
             enabled: !!$id,
             queryKey: [queryKey, $id],
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const api = new FetchClient();
-                const response = await api.getJSON<Stack>(`stacks/${$id}`, {
+                const { getJSON } = new FetchClient();
+                const response = await getJSON<Stack>(`stacks/${$id}`, {
                     signal
                 });
 

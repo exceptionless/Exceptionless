@@ -22,7 +22,7 @@
     import Loading from '$comp/Loading.svelte';
 
     import { User } from '$lib/models/api';
-    import { ProblemDetails, globalLoading as loading } from '$lib/api/FetchClient';
+    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
     import PasswordInput from '$comp/form/PasswordInput.svelte';
     import H3 from '$comp/typography/H3.svelte';
     import Muted from '$comp/typography/Muted.svelte';
@@ -30,6 +30,7 @@
     const data = new User();
     let problem = new ProblemDetails();
 
+    const { loading } = new FetchClient();
     async function onSave() {
         if ($loading) {
             return;

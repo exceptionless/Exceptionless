@@ -107,7 +107,7 @@ export class FetchClient {
         this.middleware.push(...mw);
     }
 
-    async get(url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
+    public get = async (url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> => {
         options = { ...defaultOptions, ...options };
         const response = await this.fetchInternal(
             url,
@@ -122,13 +122,13 @@ export class FetchClient {
         );
 
         return response;
-    }
+    };
 
-    getJSON<T>(url: string, options?: RequestOptions): Promise<FetchClientResponse<T>> {
+    public getJSON = <T>(url: string, options?: RequestOptions): Promise<FetchClientResponse<T>> => {
         return this.get(url, options) as Promise<FetchClientResponse<T>>;
-    }
+    };
 
-    async post(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
+    public post = async (url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> => {
         options = { ...defaultOptions, ...options };
         const problem = await this.validate(body, options);
         if (problem) return this.problemToResponse(problem, url);
@@ -144,13 +144,13 @@ export class FetchClient {
         );
 
         return response;
-    }
+    };
 
-    postJSON<T>(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<T>> {
+    public postJSON = <T>(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<T>> => {
         return this.post(url, body, options) as Promise<FetchClientResponse<T>>;
-    }
+    };
 
-    async put(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
+    public put = async (url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> => {
         options = { ...defaultOptions, ...options };
         const problem = await this.validate(body, options);
         if (problem) return this.problemToResponse(problem, url);
@@ -166,13 +166,13 @@ export class FetchClient {
         );
 
         return response;
-    }
+    };
 
-    putJSON<T>(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<T>> {
+    public putJSON = <T>(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<T>> => {
         return this.put(url, body, options) as Promise<FetchClientResponse<T>>;
-    }
+    };
 
-    async patch(url: string, body?: object | string, options?: RequestOptions): Promise<Response> {
+    public patch = async (url: string, body?: object | string, options?: RequestOptions): Promise<Response> => {
         options = { ...defaultOptions, ...options };
         const problem = await this.validate(body, options);
         if (problem) return this.problemToResponse(problem, url);
@@ -188,13 +188,13 @@ export class FetchClient {
         );
 
         return response;
-    }
+    };
 
-    patchJSON<T>(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<T>> {
+    public patchJSON = <T>(url: string, body?: object | string, options?: RequestOptions): Promise<FetchClientResponse<T>> => {
         return this.patch(url, body, options) as Promise<FetchClientResponse<T>>;
-    }
+    };
 
-    async delete(url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> {
+    public remove = async (url: string, options?: RequestOptions): Promise<FetchClientResponse<unknown>> => {
         options = { ...defaultOptions, ...options };
         return await this.fetchInternal(
             url,
@@ -204,7 +204,7 @@ export class FetchClient {
             },
             options
         );
-    }
+    };
 
     private async validate(data: unknown, options?: RequestOptions): Promise<ProblemDetails | null> {
         if (typeof data !== 'object' || (options && options.shouldValidateModel === false)) return null;
@@ -219,7 +219,7 @@ export class FetchClient {
         return problem;
     }
 
-    private async fetchInternal<T>(url: string, init?: RequestInit, options?: RequestOptions): Promise<FetchClientResponse<T>> {
+    private fetchInternal = async <T>(url: string, init?: RequestInit, options?: RequestOptions): Promise<FetchClientResponse<T>> => {
         url = this.buildUrl(url, options);
 
         const accessToken = get(accessTokenStore);
@@ -271,9 +271,9 @@ export class FetchClient {
         this.validateResponse(context.response, options);
 
         return context.response as FetchClientResponse<T>;
-    }
+    };
 
-    private async invokeMiddleware(context: FetchClientContext, middleware: FetchClientMiddleware[]): Promise<void> {
+    private invokeMiddleware = async (context: FetchClientContext, middleware: FetchClientMiddleware[]): Promise<void> => {
         if (!middleware.length) return;
 
         const mw = middleware[0];
@@ -281,7 +281,7 @@ export class FetchClient {
         return await mw(context, async () => {
             await this.invokeMiddleware(context, middleware.slice(1));
         });
-    }
+    };
 
     private async getJSONResponse<T>(response: Response): Promise<FetchClientResponse<T>> {
         let data = null;
