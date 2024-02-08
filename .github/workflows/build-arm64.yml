@@ -3,6 +3,12 @@ on:
   push:
     tags:
       - "v*"
+env:
+  TERM: xterm
+  DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+  MSBUILDTERMINALLOGGER: auto
 
 jobs:
   build:
