@@ -32,7 +32,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 - Requirements
   - [Docker](https://www.docker.com/get-docker)
   - [.NET 8.0](https://dotnet.microsoft.com/)
-  - [Node 18+](https://nodejs.org/)
+  - [Node 20+](https://nodejs.org/)
 - Visual Studio Code
   - Open Visual Studio Code and then open the Exceptionless root folder
   - Go to the `Terminal` menu and select `Run Task...` and then select `Start Elasticsearch` (you can stop the service when you are done using the `Stop Elasticsearch` task)
