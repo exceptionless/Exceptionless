@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+    import { createEventDispatcher, onMount } from 'svelte';
 
-	export let type: 'Refresh' | string;
+    export let type: 'Refresh' | string;
 
-	function onMessage({ detail }: CustomEvent<unknown>) {
-		dispatch('message', detail);
-	}
+    function onMessage({ detail }: CustomEvent<unknown>) {
+        dispatch('message', detail);
+    }
 
-	onMount(() => {
-		document.addEventListener(type, onMessage);
+    onMount(() => {
+        document.addEventListener(type, onMessage);
 
-		return () => {
-			document.removeEventListener(type, onMessage);
-		};
-	});
+        return () => {
+            document.removeEventListener(type, onMessage);
+        };
+    });
 
-	const dispatch = createEventDispatcher();
+    const dispatch = createEventDispatcher();
 </script>

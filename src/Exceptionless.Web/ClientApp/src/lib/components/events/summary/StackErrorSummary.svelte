@@ -1,45 +1,45 @@
 <script lang="ts">
-	import { Badge } from '$comp/ui/badge';
-	import IconChevronRight from '~icons/mdi/chevron-right';
-	import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-	import Muted from '$comp/typography/Muted.svelte';
-	import A from '$comp/typography/A.svelte';
+    import { Badge } from '$comp/ui/badge';
+    import IconChevronRight from '~icons/mdi/chevron-right';
+    import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+    import Muted from '$comp/typography/Muted.svelte';
+    import A from '$comp/typography/A.svelte';
 
-	export let badgeClass: string;
-	export let showBadge: boolean;
-	export let summary: SummaryModel<SummaryTemplateKeys>;
-	const source = summary as StackSummaryModel<'stack-error-summary'>;
+    export let badgeClass: string;
+    export let showBadge: boolean;
+    export let summary: SummaryModel<SummaryTemplateKeys>;
+    const source = summary as StackSummaryModel<'stack-error-summary'>;
 </script>
 
 <div class="line-clamp-2">
-	{#if showBadge}
-		<Badge class={badgeClass}>
-			{source.status}
-		</Badge>
-	{/if}
+    {#if showBadge}
+        <Badge class={badgeClass}>
+            {source.status}
+        </Badge>
+    {/if}
 
-	<strong>
-		<abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>
-		{#if !source.data.Method}
-			:
-		{/if}
-	</strong>
+    <strong>
+        <abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>
+        {#if !source.data.Method}
+            :
+        {/if}
+    </strong>
 
-	{#if source.data.Method}
-		in
-		<strong>
-			<abbr title={source.data.MethodFullName}>{source.data.Method}</abbr>
-		</strong>
-	{/if}
+    {#if source.data.Method}
+        in
+        <strong>
+            <abbr title={source.data.MethodFullName}>{source.data.Method}</abbr>
+        </strong>
+    {/if}
 
-	<A href="/stack/{source.id}" class="inline">
-		{source.title}
-	</A>
+    <A class="inline">
+        {source.title}
+    </A>
 </div>
 
 {#if source.data.Path}
-	<Muted class="ml-6 hidden sm:block">
-		<IconChevronRight class="inline" />
-		<span class="line-clamp-1 inline">{source.data.Path}</span>
-	</Muted>
+    <Muted class="ml-6 hidden sm:block">
+        <IconChevronRight class="inline" />
+        <span class="line-clamp-1 inline">{source.data.Path}</span>
+    </Muted>
 {/if}

@@ -7,19 +7,19 @@ import PageSize from './data-table-page-size.svelte';
 import Pagination from './data-table-pagination.svelte';
 
 export {
-	Root,
-	Body,
-	Toolbar,
-	FacetedFilterContainer,
-	FacetedFilter,
-	PageSize,
-	Pagination,
-	//
-	Root as DataTable,
-	Body as DataTableBody,
-	Toolbar as DataTableToolbar,
-	FacetedFilterContainer as DataTableFacetedFilterContainer,
-	FacetedFilter as DataTableFacetedFilter,
-	PageSize as DataTablePageSize,
-	Pagination as DataTablePagination
+    Root,
+    Body,
+    Toolbar,
+    FacetedFilterContainer,
+    FacetedFilter,
+    PageSize,
+    Pagination,
+    //
+    Root as DataTable,
+    Body as DataTableBody,
+    Toolbar as DataTableToolbar,
+    FacetedFilterContainer as DataTableFacetedFilterContainer,
+    FacetedFilter as DataTableFacetedFilter,
+    PageSize as DataTablePageSize,
+    Pagination as DataTablePagination
 };

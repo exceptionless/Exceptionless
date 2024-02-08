@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { WebSocketMessageType } from '$lib/models/websocket';
-	import CustomEventMessage from './CustomEventMessage.svelte';
+    import type { WebSocketMessageType } from '$lib/models/websocket';
+    import CustomEventMessage from './CustomEventMessage.svelte';
 
-	export let type: WebSocketMessageType;
+    export let type: WebSocketMessageType;
 </script>
 
 <CustomEventMessage {type} on:message></CustomEventMessage>

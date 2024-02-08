@@ -13,25 +13,25 @@ import Shortcut from './command-shortcut.svelte';
 const Loading = CommandPrimitive.Loading;
 
 export {
-	Root,
-	Dialog,
-	Empty,
-	Group,
-	Item,
-	Input,
-	List,
-	Separator,
-	Shortcut,
-	Loading,
-	//
-	Root as Command,
-	Dialog as CommandDialog,
-	Empty as CommandEmpty,
-	Group as CommandGroup,
-	Item as CommandItem,
-	Input as CommandInput,
-	List as CommandList,
-	Separator as CommandSeparator,
-	Shortcut as CommandShortcut,
-	Loading as CommandLoading
+    Root,
+    Dialog,
+    Empty,
+    Group,
+    Item,
+    Input,
+    List,
+    Separator,
+    Shortcut,
+    Loading,
+    //
+    Root as Command,
+    Dialog as CommandDialog,
+    Empty as CommandEmpty,
+    Group as CommandGroup,
+    Item as CommandItem,
+    Input as CommandInput,
+    List as CommandList,
+    Separator as CommandSeparator,
+    Shortcut as CommandShortcut,
+    Loading as CommandLoading
 };

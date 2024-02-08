@@ -54,11 +54,13 @@ public class Program
             .AddCommandLine(args)
             .Build();
 
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(config)
+            .CreateBootstrapLogger()
+            .ForContext<Program>();
+
         var options = AppOptions.ReadFromConfiguration(config);
         var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
-
-        var loggerConfig = new LoggerConfiguration().ReadFrom.Configuration(config);
-        Log.Logger = loggerConfig.CreateBootstrapLogger().ForContext<Program>();
 
         var configDictionary = config.ToDictionary("Serilog");
         Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
@@ -68,12 +70,12 @@ public class Program
             .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
             .UseSerilog((ctx, sp, c) =>
             {
-                c.ReadFrom.Configuration(config);
+                c.ReadFrom.Configuration(ctx.Configuration);
                 c.ReadFrom.Services(sp);
                 c.Enrich.WithMachineName();
 
                 if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
-                    loggerConfig.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
+                    c.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
             }, writeToProviders: true)
             .ConfigureWebHostDefaults(webBuilder =>
             {

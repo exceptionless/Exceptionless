@@ -2,7 +2,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Utility;
 using Newtonsoft.Json;
