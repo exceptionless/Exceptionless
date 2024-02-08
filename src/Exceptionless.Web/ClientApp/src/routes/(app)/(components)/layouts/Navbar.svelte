@@ -45,10 +45,10 @@
                 </a>
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button variant="outline" size="icon" on:click={() => isCommandOpen.set(true)}>
-                    <span class="sr-only">Search</span>
-
+                <Button variant="outline" size="default" on:click={() => isCommandOpen.set(true)}>
                     <IconSearch class="h-6 w-6" />
+                    Search
+                    <DropdownMenu.Shortcut class="ml-12">⌘K</DropdownMenu.Shortcut>
                 </Button>
 
                 <DarkModeButton></DarkModeButton>
