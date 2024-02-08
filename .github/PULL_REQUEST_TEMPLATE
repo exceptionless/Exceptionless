@@ -1,0 +1,26 @@
+# Change Summary
+
+Briefly describe the nature of the change, including the issue being addressed
+and the motivation behind it. If applicable, mention any dependencies required
+for this change.
+
+## Type of Change
+
+- [ ] Bug fix (non-breaking change resolving an issue)
+- [ ] New feature (non-breaking change introducing additional functionality)
+- [ ] Breaking change (fix or feature causing existing functionality to break)
+- [ ] Code style update (formatting, renaming)
+- [ ] Refactoring (no functional changes, no API changes)
+- [ ] Build-related changes
+- [ ] Documentation content changes
+- [ ] Test Coverage
+- [ ] Other (please describe):
+
+## Checklist
+
+- [ ] My code follows the style guidelines of this project (`dotnet format` / `npm run format`)
+- [ ] I have thoroughly commented my code, especially in hard-to-understand areas and all public APIs
+- [ ] Corresponding changes have been made to the documentation
+- [ ] I have implemented test coverage to prove the effectiveness of my fix or the functionality of my feature
+- [ ] The GitHub pull request (PR) is up to date with the latest changes in the target branch
+- [ ] PR tags accurately reflect the nature of the change (e.g., bug fix, enhancement)
