@@ -6,7 +6,7 @@
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import { isCommandOpen, isLargeScreen, isSidebarOpen } from '$lib/stores/app';
+    import { isCommandOpen, isMediumScreen, isSidebarOpen } from '$lib/stores/app';
     import * as Avatar from '$comp/ui/avatar';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import Loading from '$comp/Loading.svelte';
@@ -36,9 +36,9 @@
                     {/if}
                 </Button>
                 <a href="./" class="mr-14 flex min-w-[250px] dark:text-white">
-                    {#if $isLargeScreen}
-                        <img src={logo} class="absolute top-[1px] mr-3 h-[67px] dark:hidden" alt="Exceptionless Logo" />
-                        <img src={logoDark} class="absolute top-[1px] mr-3 hidden h-[67px] dark:block" alt="Exceptionless Logo" />
+                    {#if $isMediumScreen}
+                        <img src={logo} class="absolute top-[0px] mr-3 h-[65px] dark:hidden" alt="Exceptionless Logo" />
+                        <img src={logoDark} class="absolute top-[0px] mr-3 hidden h-[65px] dark:block" alt="Exceptionless Logo" />
                     {:else}
                         <img src={logoSmall} class="mr-3 h-8" alt="Exceptionless Logo" />
                     {/if}
