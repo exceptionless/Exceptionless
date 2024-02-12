@@ -66,7 +66,7 @@
         "svelte-sonner": "^0.3.16",
         "svelte-time": "^0.8.2",
         "tailwind-merge": "^2.2.1",
-        "tailwind-variants": "^0.1.20",
+        "tailwind-variants": "^0.2.0",
         "tailwindcss": "^3.4.1",
         "unplugin-icons": "^0.18.5"
     },
