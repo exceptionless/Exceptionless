@@ -1,4 +1,4 @@
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
@@ -14,6 +14,8 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
     {
         foreach (var plugin in Plugins.Values.ToList())
         {
+            using var _ = _logger.BeginScope(s => s.Property("PluginName", plugin.Name));
+
             try
             {
                 var result = plugin.GetStackSummaryData(stack);
@@ -36,6 +38,8 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
     {
         foreach (var plugin in Plugins.Values.ToList())
         {
+            using var _ = _logger.BeginScope(s => s.Property("PluginName", plugin.Name));
+
             try
             {
                 var result = plugin.GetEventSummaryData(ev);
@@ -58,6 +62,8 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
     {
         foreach (var plugin in Plugins.Values.ToList())
         {
+            using var _ = _logger.BeginScope(s => s.Property("PluginName", plugin.Name));
+
             try
             {
                 string? result = plugin.GetStackTitle(ev);
@@ -80,6 +86,8 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
     {
         foreach (var plugin in Plugins.Values.ToList())
         {
+            using var _ = _logger.BeginScope(s => s.Property("PluginName", plugin.Name));
+
             try
             {
                 var result = plugin.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
@@ -102,6 +110,8 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
     {
         foreach (var plugin in Plugins.Values.ToList())
         {
+            using var _ = _logger.BeginScope(s => s.Property("PluginName", plugin.Name));
+
             try
             {
                 var message = plugin.GetSlackEventNotification(ev, project, isCritical, isNew, isRegression);
