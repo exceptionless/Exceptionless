@@ -120,7 +120,7 @@ public class SlackService
         var message = _pluginManager.GetSlackEventNotificationMessage(ev, project, isCritical, isNew, isRegression);
         if (message is null)
         {
-            _logger.LogWarning("Unable to create event notification slack message for event {id}.", ev.Id);
+            _logger.LogWarning("Unable to create event notification slack message for event {Id}", ev.Id);
             return false;
         }
 
