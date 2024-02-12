@@ -305,9 +305,8 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         string? sessionStartEventId = await GetSessionStartEventIdAsync(projectId, sessionId).AnyContext();
         if (!String.IsNullOrEmpty(sessionStartEventId))
         {
-            await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, lastActivityUtc, isSessionEnd, hasError).AnyContext();
-
-            if (isSessionEnd)
+            bool isValidSessionStartEvent = await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, lastActivityUtc, isSessionEnd, hasError).AnyContext();
+            if (!isValidSessionStartEvent || isSessionEnd)
                 await _cache.RemoveAsync(GetSessionStartEventIdCacheKey(projectId, sessionId)).AnyContext();
         }
 

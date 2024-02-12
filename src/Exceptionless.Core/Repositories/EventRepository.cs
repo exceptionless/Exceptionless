@@ -38,9 +38,15 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
     }
 
+    /// <summary>
+    /// Updates the session start last activity time if the id is a valid session start event.
+    /// </summary>
     public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true)
     {
         var ev = await GetByIdAsync(id).AnyContext();
+        if (ev is null)
+            return false;
+
         if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
             return false;
 
