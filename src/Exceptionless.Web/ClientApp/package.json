@@ -49,7 +49,7 @@
         "@exceptionless/browser": "^3.0.5",
         "@iconify-json/mdi": "^1.1.64",
         "@tanstack/svelte-query": "^5.18.1",
-        "@tanstack/svelte-query-devtools": "^5.18.1",
+        "@tanstack/svelte-query-devtools": "^5.20.1",
         "@tanstack/svelte-table": "^8.11.8",
         "@web3-storage/parse-link-header": "^3.1.0",
         "bits-ui": "^0.17.0",
