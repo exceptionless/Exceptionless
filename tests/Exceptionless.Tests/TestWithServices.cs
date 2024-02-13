@@ -11,7 +11,7 @@ using Foundatio.Metrics;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Xunit.Abstractions;
-using IAsyncLifetime = Foundatio.Utility.IAsyncLifetime;
+using IAsyncLifetime = Xunit.IAsyncLifetime;
 
 namespace Exceptionless.Tests;
 
@@ -71,9 +71,9 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         return services.BuildServiceProvider();
     }
 
-    public ValueTask DisposeAsync()
+    public Task DisposeAsync()
     {
         _testSystemClock.Dispose();
-        return new ValueTask(Task.CompletedTask);
+        return Task.CompletedTask;
     }
 }

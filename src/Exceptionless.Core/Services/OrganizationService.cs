@@ -18,18 +18,18 @@ public class OrganizationService : IStartupAction
     private readonly IUserRepository _userRepository;
     private readonly IWebHookRepository _webHookRepository;
     private readonly ICacheClient _cache;
-    private readonly StripeOptions _stripeOptions;
+    private readonly AppOptions _appOptions;
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, StripeOptions stripeOptions, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ICacheClient cache, AppOptions appOptions, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
         _cache = cache;
-        _stripeOptions = stripeOptions;
+        _appOptions = appOptions;
         _usageService = usageService;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
     }
@@ -61,7 +61,7 @@ public class OrganizationService : IStartupAction
         if (String.IsNullOrEmpty(organization.StripeCustomerId))
             return;
 
-        var client = new StripeClient(_stripeOptions.StripeApiKey);
+        var client = new StripeClient(_appOptions.StripeOptions.StripeApiKey);
         var subscriptionService = new SubscriptionService(client);
         var subscriptions = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId }).AnyContext();
         foreach (var subscription in subscriptions.Where(s => !s.CanceledAt.HasValue))
