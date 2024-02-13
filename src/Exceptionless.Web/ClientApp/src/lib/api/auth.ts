@@ -1,6 +1,6 @@
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
-import { PUBLIC_ENABLE_ACCOUNT_CREATION, PUBLIC_FACEBOOK_APPID, PUBLIC_GITHUB_APPID, PUBLIC_GOOGLE_APPID, PUBLIC_LIVE_APPID } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { persisted } from 'svelte-local-storage-store';
 import { derived, get } from 'svelte/store';
 
@@ -11,12 +11,12 @@ export const accessToken = persisted<string | null>('satellizer_token', null, {
     serializer: { parse: (s) => s, stringify: (s) => s as string }
 });
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
-export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
-export const facebookClientId = PUBLIC_FACEBOOK_APPID;
-export const gitHubClientId = PUBLIC_GITHUB_APPID;
-export const googleClientId = PUBLIC_GOOGLE_APPID;
-export const liveClientId = PUBLIC_LIVE_APPID;
-export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || liveClientId;
+export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
+export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
+export const gitHubClientId = env.PUBLIC_GITHUB_APPID;
+export const googleClientId = env.PUBLIC_GOOGLE_APPID;
+export const microsoftClientId = env.PUBLIC_MICROSOFT_APPID;
+export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
 
 export async function login(email: string, password: string) {
     const data: Login = { email, password };
@@ -46,13 +46,13 @@ export async function logout() {
 }
 
 export async function liveLogin(redirectUrl?: string) {
-    if (!liveClientId) {
+    if (!microsoftClientId) {
         throw new Error('Live client id not set');
     }
 
     await oauthLogin({
         provider: 'live',
-        clientId: liveClientId,
+        clientId: microsoftClientId,
         authUrl: 'https://login.live.com/oauth20_authorize.srf',
         scope: 'wl.emails',
         extraParams: {
