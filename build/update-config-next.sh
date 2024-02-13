@@ -53,7 +53,7 @@ config="
 
 config_footer="
     };
-}());"
+})(this);"
 
 echo "Exceptionless UI Config"
 echo "$config"

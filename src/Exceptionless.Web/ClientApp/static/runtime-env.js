@@ -16,4 +16,4 @@
         PUBLIC_INTERCOM_APPID: '',
         PUBLIC_SLACK_APPID: ''
     };
-}(this));
+})(this);
