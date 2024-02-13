@@ -24,6 +24,10 @@ else
     update-config
     popd
 
+    pushd /app/wwwroot/next
+    update-config-next
+    popd
+
     supervisord -c /etc/supervisord.conf
 
     while [ ! -f /var/log/supervisor/elasticsearch.log ]; do sleep 1; done
