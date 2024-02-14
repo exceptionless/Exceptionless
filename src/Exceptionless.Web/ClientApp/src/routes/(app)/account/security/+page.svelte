@@ -13,7 +13,7 @@
         enableOAuthLogin,
         facebookClientId,
         gitHubClientId,
-        liveClientId
+        microsoftClientId
     } from '$api/auth';
 
     import ErrorMessage from '$comp/ErrorMessage.svelte';
@@ -112,7 +112,7 @@
         <Separator />
 
         <ul class="divide-y divide-border">
-            {#if !liveClientId}
+            {#if !microsoftClientId}
                 <li class="pb-4">
                     <div class="flex items-center space-x-4">
                         <IconMicrosoft />

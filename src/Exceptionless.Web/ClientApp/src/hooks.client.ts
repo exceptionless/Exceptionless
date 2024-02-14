@@ -1,10 +1,23 @@
-import { PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONLESS_SERVER_URL } from '$env/static/public';
-
 import { Exceptionless, toError } from '@exceptionless/browser';
 
+import { env } from '$env/dynamic/public';
+const { __env = {} } = globalThis as unknown as { __env: typeof env };
+
+// if we are in production, we will use the environment variables that were injected via docker configuration.
+if (__env && import.meta.env.PROD) {
+    Object.assign(env, __env);
+}
+
+// If the PUBLIC_BASE_URL is set in local storage, we will use that instead of the one from the environment variables.
+// This allows you to target other environments from your browser.
+const PUBLIC_BASE_URL = localStorage?.getItem('PUBLIC_BASE_URL');
+if (PUBLIC_BASE_URL) {
+    env.PUBLIC_BASE_URL = PUBLIC_BASE_URL;
+}
+
 await Exceptionless.startup((c) => {
-    c.apiKey = PUBLIC_EXCEPTIONLESS_API_KEY;
-    c.serverUrl = PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
+    c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
+    c.serverUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
 
     c.defaultTags.push('UI', 'Svelte');
     c.settings['@@log:*'] = 'debug';
