@@ -19,6 +19,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 {
     private readonly IDisposable _testSystemClock = TestSystemClock.Install();
     private readonly IServiceProvider _container;
+    private static bool _startupActionsRun;
 
     public TestWithServices(ITestOutputHelper output) : base(output)
     {
@@ -33,9 +34,14 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 
     public virtual async Task InitializeAsync()
     {
+        if (_startupActionsRun)
+            return;
+
         var result = await _container.RunStartupActionsAsync();
         if (!result.Success)
             throw new ApplicationException($"Startup action \"{result.FailedActionName}\" failed");
+
+        _startupActionsRun = true;
     }
 
     protected TService GetService<TService>() where TService : class
