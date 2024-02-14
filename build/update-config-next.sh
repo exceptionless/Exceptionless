@@ -31,15 +31,12 @@ do
   fi
 done
 
-config_header="(function (window) {
-    'use strict';
-
-    window.__env = {"
+config_header="export const env={"
 
 config="
     PUBLIC_BASE_URL: '$ApiUrl' || window.location.origin,
-    PUBLIC_USE_SSL: $EnableSsl,
-    PUBLIC_ENABLE_ACCOUNT_CREATION: $EnableAccountCreation,
+    PUBLIC_USE_SSL: '$EnableSsl',
+    PUBLIC_ENABLE_ACCOUNT_CREATION: '$EnableAccountCreation',
     PUBLIC_SYSTEM_NOTIFICATION_MESSAGE: '$EX_NotificationMessage',
     PUBLIC_EXCEPTIONLESS_API_KEY: '$EX_ExceptionlessApiKey',
     PUBLIC_EXCEPTIONLESS_SERVER_URL: '$EX_ExceptionlessServerUrl',
@@ -51,15 +48,13 @@ config="
     PUBLIC_INTERCOM_APPID: '$IntercomAppId',
     PUBLIC_SLACK_APPID: '$SlackAppId'"
 
-config_footer="
-    };
-})(this);"
+config_footer="};"
 
 echo "Exceptionless UI Config"
 echo "$config"
 
 checksum=`echo -n $config | md5sum | cut -c 1-32`
-echo "$config_header$config$config_footer" > "runtime-env.$checksum.js"
+echo "$config_header$config$config_footer" > "_app/env.js"
 
 CONTENT=$(cat index.html)
-echo "$CONTENT" | sed -E "s/runtime-env\..+\.js/runtime-env.$checksum.js/" > index.html
+echo "$CONTENT" | sed -E "s|/next/_app/env.js|/next/_app/env.js?v=$checksum|g" > index.html
