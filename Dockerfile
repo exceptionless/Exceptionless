@@ -82,6 +82,7 @@ WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
+COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
@@ -90,6 +91,7 @@ ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
 
 RUN chmod +x /app/app-docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/update-config
+RUN chmod +x /usr/local/bin/update-config-next
 
 EXPOSE 8080
 
@@ -104,6 +106,7 @@ COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
+COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -136,6 +139,7 @@ ENV discovery.type=single-node \
 
 RUN chmod +x /app/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/update-config && \
+    chmod +x /usr/local/bin/update-config-next && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
@@ -160,6 +164,7 @@ COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
+COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -192,6 +197,7 @@ ENV discovery.type=single-node \
 
 RUN chmod +x /app/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/update-config && \
+    chmod +x /usr/local/bin/update-config-next && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor

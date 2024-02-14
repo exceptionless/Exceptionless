@@ -20,7 +20,7 @@
         enableOAuthLogin,
         facebookClientId,
         gitHubClientId,
-        liveClientId
+        microsoftClientId
     } from '$api/auth';
     import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
     import { Login } from '$lib/models/api';
@@ -93,7 +93,7 @@
         <hr class="w-full" />
     </div>
     <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
-        {#if liveClientId}
+        {#if microsoftClientId}
             <Button aria-label="Login with Microsoft" on:click={() => liveLogin(redirectUrl)}>
                 <IconMicrosoft /> Microsoft
             </Button>
