@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ApiUrl="${EX_ApiUrl:-}"
-EnableSsl="${EX_EnableSsl:-false}"
 EnableAccountCreation="${EX_EnableAccountCreation:-true}"
 
 OAuth="${EX_ConnectionStrings__OAuth:-}"
@@ -35,7 +34,6 @@ config_header="export const env={"
 
 config="
     PUBLIC_BASE_URL: '$ApiUrl' || window.location.origin,
-    PUBLIC_USE_SSL: '$EnableSsl',
     PUBLIC_ENABLE_ACCOUNT_CREATION: '$EnableAccountCreation',
     PUBLIC_SYSTEM_NOTIFICATION_MESSAGE: '$EX_NotificationMessage',
     PUBLIC_EXCEPTIONLESS_API_KEY: '$EX_ExceptionlessApiKey',

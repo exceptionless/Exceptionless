@@ -62,6 +62,8 @@ public class AppOptions
 
     public string? InformationalVersion { get; internal set; }
 
+    public string? NotificationMessage { get; internal set; }
+
     public string? GoogleGeocodingApiKey { get; internal set; }
 
     public string? MaxMindGeoIpKey { get; internal set; }
@@ -101,6 +103,8 @@ public class AppOptions
         options.DisabledPlugins = config.GetValueList(nameof(options.DisabledPlugins));
         options.MaximumEventPostSize = config.GetValue(nameof(options.MaximumEventPostSize), 200000).NormalizeValue();
         options.MaximumRetentionDays = config.GetValue(nameof(options.MaximumRetentionDays), 180).NormalizeValue();
+
+        options.NotificationMessage = config.GetValue<string>(nameof(options.NotificationMessage));
 
         options.GoogleGeocodingApiKey = config.GetValue<string>(nameof(options.GoogleGeocodingApiKey));
         options.MaxMindGeoIpKey = config.GetValue<string>(nameof(options.MaxMindGeoIpKey));
