@@ -107,30 +107,30 @@ public class Program
 
     private static void SetClientEnvironmentVariablesInDevelopmentMode(AppOptions options)
     {
-        if (options.AppMode is AppMode.Development)
+        if (options.AppMode is not AppMode.Development)
+            return;
+
+        Log.Debug("Updating client environment variables");
+        try
         {
-            Log.Debug("Updating client environment variables");
-            try
-            {
-                Environment.SetEnvironmentVariable("PUBLIC_BASE_URL", options.BaseURL);
-                Environment.SetEnvironmentVariable("PUBLIC_ENABLE_ACCOUNT_CREATION",
-                    options.AuthOptions.EnableAccountCreation.ToString().ToLower());
-                Environment.SetEnvironmentVariable("PUBLIC_SYSTEM_NOTIFICATION_MESSAGE", options.NotificationMessage);
-                Environment.SetEnvironmentVariable("PUBLIC_EXCEPTIONLESS_API_KEY", options.ExceptionlessApiKey);
-                Environment.SetEnvironmentVariable("PUBLIC_EXCEPTIONLESS_SERVER_URL", options.ExceptionlessServerUrl);
-                Environment.SetEnvironmentVariable("PUBLIC_STRIPE_PUBLISHABLE_KEY",
-                    options.StripeOptions.StripePublishableApiKey);
-                Environment.SetEnvironmentVariable("PUBLIC_FACEBOOK_APPID", options.AuthOptions.FacebookId);
-                Environment.SetEnvironmentVariable("PUBLIC_GITHUB_APPID", options.AuthOptions.GitHubId);
-                Environment.SetEnvironmentVariable("PUBLIC_GOOGLE_APPID", options.AuthOptions.GoogleId);
-                Environment.SetEnvironmentVariable("PUBLIC_MICROSOFT_APPID", options.AuthOptions.MicrosoftId);
-                Environment.SetEnvironmentVariable("PUBLIC_INTERCOM_APPID", options.IntercomOptions.IntercomId);
-                Environment.SetEnvironmentVariable("PUBLIC_SLACK_APPID", options.SlackOptions.SlackId);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error updating client environment variables");
-            }
+            Environment.SetEnvironmentVariable("PUBLIC_BASE_URL", options.BaseURL);
+            Environment.SetEnvironmentVariable("PUBLIC_ENABLE_ACCOUNT_CREATION",
+                options.AuthOptions.EnableAccountCreation.ToString().ToLower());
+            Environment.SetEnvironmentVariable("PUBLIC_SYSTEM_NOTIFICATION_MESSAGE", options.NotificationMessage);
+            Environment.SetEnvironmentVariable("PUBLIC_EXCEPTIONLESS_API_KEY", options.ExceptionlessApiKey);
+            Environment.SetEnvironmentVariable("PUBLIC_EXCEPTIONLESS_SERVER_URL", options.ExceptionlessServerUrl);
+            Environment.SetEnvironmentVariable("PUBLIC_STRIPE_PUBLISHABLE_KEY",
+                options.StripeOptions.StripePublishableApiKey);
+            Environment.SetEnvironmentVariable("PUBLIC_FACEBOOK_APPID", options.AuthOptions.FacebookId);
+            Environment.SetEnvironmentVariable("PUBLIC_GITHUB_APPID", options.AuthOptions.GitHubId);
+            Environment.SetEnvironmentVariable("PUBLIC_GOOGLE_APPID", options.AuthOptions.GoogleId);
+            Environment.SetEnvironmentVariable("PUBLIC_MICROSOFT_APPID", options.AuthOptions.MicrosoftId);
+            Environment.SetEnvironmentVariable("PUBLIC_INTERCOM_APPID", options.IntercomOptions.IntercomId);
+            Environment.SetEnvironmentVariable("PUBLIC_SLACK_APPID", options.SlackOptions.SlackId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating client environment variables");
         }
     }
 }
