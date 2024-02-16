@@ -7,9 +7,8 @@ import { derived, get } from 'svelte/store';
 import { globalFetchClient } from './FetchClient';
 
 import type { Login, TokenResult } from '$lib/models/api';
-export const accessToken = persisted<string | null>('satellizer_token', null, {
-    serializer: { parse: (s) => s, stringify: (s) => s as string }
-});
+
+export const accessToken = persisted<string | null>('satellizer_token', null);
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
@@ -34,10 +33,10 @@ export async function login(email: string, password: string) {
 }
 
 export async function gotoLogin() {
-    const currentPage = get(page);
-    const isAuthPath = currentPage.url.pathname.startsWith('/next/login') || currentPage.url.pathname.startsWith('/next/logout');
-    const url = currentPage.url.pathname === '/next' || isAuthPath ? '/next/login' : `/next/login?redirect=${location.href}`;
-    await goto(url, { replaceState: true });
+    const { url } = get(page);
+    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
+    const redirect = url.pathname === '/next/' || isAuthPath ? '/next/login' : `/next/login?redirect=${url.pathname}`;
+    await goto(redirect, { replaceState: true });
 }
 
 export async function logout() {
