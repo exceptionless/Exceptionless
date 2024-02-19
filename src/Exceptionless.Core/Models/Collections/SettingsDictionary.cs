@@ -132,7 +132,7 @@ public class SettingsDictionary : ObservableDictionary<string, string>
         if (String.IsNullOrEmpty(value))
             return Enumerable.Empty<string>();
 
-        string[] values = value.Split(new[] { ",", ";", Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+        string[] values = value.Split([",", ";", Environment.NewLine], StringSplitOptions.RemoveEmptyEntries);
 
         for (int i = 0; i < values.Length; i++)
             values[i] = values[i].Trim();

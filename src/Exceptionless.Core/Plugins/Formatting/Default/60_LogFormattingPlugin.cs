@@ -115,13 +115,10 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
         var attachment = new SlackMessage.SlackAttachment(ev)
         {
-            Fields = new List<SlackMessage.SlackAttachmentFields> {
-                    new()
-                    {
-                        Title = "Source",
-                        Value = source.Truncate(60)
-                    }
-                }
+            Fields =
+            [
+                new() { Title = "Source", Value = source.Truncate(60) }
+            ]
         };
 
         if (!String.IsNullOrEmpty(ev.Message))
@@ -159,7 +156,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, source.Truncate(120))}*";
         return new SlackMessage(subject)
         {
-            Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            Attachments = [attachment]
         };
     }
 }

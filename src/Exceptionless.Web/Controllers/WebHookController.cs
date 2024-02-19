@@ -123,7 +123,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         {
             OrganizationId = organizationId,
             ProjectId = projectId,
-            EventTypes = new[] { eventType },
+            EventTypes = [eventType],
             Url = url,
             Version = new Version(apiVersion >= 0 ? apiVersion : 0, 0)
         };

@@ -41,9 +41,9 @@ public static class ConfigurationExtensions
     {
         string? value = config.GetValue<string>(key);
         if (String.IsNullOrEmpty(value))
-            return new List<string>();
+            return [];
 
-        separators ??= new[] { ',' };
+        separators ??= [','];
         return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
     }
 

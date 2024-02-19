@@ -30,7 +30,7 @@ public record SlackMessage
     [JsonProperty("text")]
     public string Text { get; init; }
     [JsonProperty("attachments")]
-    public List<SlackAttachment> Attachments { get; init; } = new();
+    public List<SlackAttachment> Attachments { get; init; } = [];
 
     public class SlackAttachment
     {
@@ -79,9 +79,9 @@ public record SlackMessage
         [JsonProperty("color")]
         public string Color { get; set; } = "#5E9A00";
         [JsonProperty("fields")]
-        public List<SlackAttachmentFields> Fields { get; init; } = new();
+        public List<SlackAttachmentFields> Fields { get; init; } = [];
         [JsonProperty("mrkdwn_in")]
-        public string[] SupportedMarkdownFields { get; init; } = { "text", "fields" };
+        public string[] SupportedMarkdownFields { get; init; } = ["text", "fields"];
         [JsonProperty("ts")]
         public long TimeStamp { get; init; }
     }

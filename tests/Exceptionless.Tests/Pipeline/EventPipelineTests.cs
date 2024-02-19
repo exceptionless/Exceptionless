@@ -251,10 +251,11 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(2, results.Total);
         Assert.Equal(1, results.Documents.Count(e => e.IsSessionStart()));
 
-        events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate.AddSeconds(10), identity, Event.KnownTypes.Session),
-                GenerateEvent(firstEventDate.AddSeconds(20), identity, Event.KnownTypes.SessionEnd)
-            };
+        events =
+        [
+            GenerateEvent(firstEventDate.AddSeconds(10), identity, Event.KnownTypes.Session),
+            GenerateEvent(firstEventDate.AddSeconds(20), identity, Event.KnownTypes.SessionEnd)
+        ];
 
         await RefreshDataAsync();
         contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -314,7 +315,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var stack = await _stackRepository.GetByIdAsync(sessionStart.StackId);
         Assert.NotNull(stack);
-        Assert.True(stack.Status == StackStatus.Ignored);
+        Assert.Equal(StackStatus.Ignored, stack.Status);
     }
 
     [Fact]
@@ -461,10 +462,11 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
         Assert.Contains(contexts, c => c.IsProcessed);
 
-        events = new List<PersistentEvent> {
-                GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
-                GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
-            };
+        events =
+        [
+            GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
+            GenerateEvent(firstEventDate.AddSeconds(20), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
+        ];
 
         await RefreshDataAsync();
         contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -527,7 +529,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var stack = await _stackRepository.GetByIdAsync(sessionStart.StackId);
         Assert.NotNull(stack);
-        Assert.True(stack.Status == StackStatus.Ignored);
+        Assert.Equal(StackStatus.Ignored, stack.Status);
     }
 
     [Fact]
@@ -575,7 +577,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         const string Tag2_Lowercase = "tag two";
 
         var ev = GenerateEvent(SystemClock.UtcNow);
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
         ev.Tags.Add(Tag1);
 
         var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -589,7 +591,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(new[] { Tag1 }, stack.Tags.ToArray());
 
         ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
         ev.Tags.Add(Tag2);
 
         await RefreshDataAsync();
@@ -599,7 +601,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(new[] { Tag1, Tag2 }, stack.Tags.ToArray());
 
         ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
         ev.Tags.Add(Tag2_Lowercase);
 
         await RefreshDataAsync();
@@ -615,7 +617,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         string LargeRemovedTags = new('x', 150);
 
         var ev = GenerateEvent(SystemClock.UtcNow);
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
         ev.Tags.Add(LargeRemovedTags);
 
         var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -647,7 +649,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(50, stack.Tags.Count);
 
         ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
         ev.Tags.Add(new string('x', 150));
         ev.Tags.AddRange(Enumerable.Range(100, 200).Select(i => i.ToString()));
         ev.Tags.Add(Event.KnownTags.Critical);
@@ -747,10 +749,19 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(0, contexts.Count(c => c.IsRegression));
         Assert.Equal(2, contexts.Count(c => !c.IsRegression));
 
-        contexts = new List<EventContext> {
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
-            };
+        contexts =
+        [
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)),
+                OrganizationData.GenerateSampleOrganization(_billingManager, _plans),
+                ProjectData.GenerateSampleProject()),
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)),
+                OrganizationData.GenerateSampleOrganization(_billingManager, _plans),
+                ProjectData.GenerateSampleProject())
+        ];
 
         await RefreshDataAsync();
         await _pipeline.RunAsync(contexts);
@@ -758,10 +769,19 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(1, contexts.Count(c => c.IsRegression));
         Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
-        contexts = new List<EventContext> {
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)), OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject())
-            };
+        contexts =
+        [
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)),
+                OrganizationData.GenerateSampleOrganization(_billingManager, _plans),
+                ProjectData.GenerateSampleProject()),
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1)),
+                OrganizationData.GenerateSampleOrganization(_billingManager, _plans),
+                ProjectData.GenerateSampleProject())
+        ];
 
         await RefreshDataAsync();
         await _pipeline.RunAsync(contexts);
@@ -803,12 +823,25 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(0, contexts.Count(c => c.IsRegression));
         Assert.Equal(3, contexts.Count(c => !c.IsRegression));
 
-        contexts = new List<EventContext> {
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.0"), organization, project),
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc1"), organization, project),
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1), semver: "1.0.1-rc3"), organization, project),
-                new(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.1-rc3"), organization, project)
-            };
+        contexts =
+        [
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1),
+                    semver: "1.0.0"), organization, project),
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1),
+                    semver: "1.0.1-rc1"), organization, project),
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(1),
+                    semver: "1.0.1-rc3"), organization, project),
+            new(
+                EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId,
+                    organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1),
+                    semver: "1.0.1-rc3"), organization, project)
+        ];
 
         await RefreshDataAsync();
         await _pipeline.RunAsync(contexts);
@@ -1098,7 +1131,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         {
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "ErrorData"), "*.expected.json", SearchOption.AllDirectories))
-                result.Add(new object[] { file });
+                result.Add([file]);
 
             return result.ToArray();
         }

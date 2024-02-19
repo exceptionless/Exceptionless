@@ -162,7 +162,7 @@ public static class PersistentEventExtensions
         if (isSessionEnd)
         {
             ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
-            ev.CopyDataToIndex(new[] { Event.KnownDataKeys.SessionEnd });
+            ev.CopyDataToIndex([Event.KnownDataKeys.SessionEnd]);
         }
         else
         {

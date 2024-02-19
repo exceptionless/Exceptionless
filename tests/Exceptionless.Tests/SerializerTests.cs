@@ -109,7 +109,7 @@ public class SerializerTests : TestWithServices
         var hook = new WebHook
         {
             Id = "test",
-            EventTypes = new[] { "NewError" },
+            EventTypes = ["NewError"],
             Version = WebHook.KnownVersions.Version2
         };
 

@@ -17,13 +17,18 @@ internal static class OrganizationData
 
     public static List<Organization> GenerateSampleOrganizations(BillingManager billingManager, BillingPlans plans)
     {
-        return new List<Organization> {
-                GenerateSampleOrganization(billingManager, plans),
-                GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId2, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
-                GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId3, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
-                GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId4, inviteEmail: TestConstants.InvitedOrganizationUserEmail),
-                GenerateOrganization(billingManager, plans, id: TestConstants.SuspendedOrganizationId, inviteEmail: TestConstants.InvitedOrganizationUserEmail, isSuspended: true),
-            };
+        return
+        [
+            GenerateSampleOrganization(billingManager, plans),
+            GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId2,
+                inviteEmail: TestConstants.InvitedOrganizationUserEmail),
+            GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId3,
+                inviteEmail: TestConstants.InvitedOrganizationUserEmail),
+            GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId4,
+                inviteEmail: TestConstants.InvitedOrganizationUserEmail),
+            GenerateOrganization(billingManager, plans, id: TestConstants.SuspendedOrganizationId,
+                inviteEmail: TestConstants.InvitedOrganizationUserEmail, isSuspended: true)
+        ];
     }
 
     public static Organization GenerateSampleOrganization(BillingManager billingManager, BillingPlans plans)

@@ -72,7 +72,7 @@ public sealed class StackIndex : VersionedIndex<Stack>
     {
         string dateFixedFieldName = InferPropertyName(f => f.DateFixed);
         config
-            .SetDefaultFields(new[] { "id", Alias.Title, Alias.Description, Alias.Tags, Alias.References })
+            .SetDefaultFields(["id", Alias.Title, Alias.Description, Alias.Tags, Alias.References])
             .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName))
             .UseFieldMap(new Dictionary<string, string> {
                     { Alias.Stack, "id" }

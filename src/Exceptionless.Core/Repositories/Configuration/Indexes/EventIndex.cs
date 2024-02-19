@@ -132,21 +132,21 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
     protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config)
     {
         config
-            .SetDefaultFields(new[] {
-                    "id",
-                    "source",
-                    "message",
-                    "tags",
-                    "path",
-                    "error.code",
-                    "error.type",
-                    "error.targettype",
-                    "error.targetmethod",
-                    $"data.{Event.KnownDataKeys.UserDescription}.description",
-                    $"data.{Event.KnownDataKeys.UserDescription}.email_address",
-                    $"data.{Event.KnownDataKeys.UserInfo}.identity",
-                    $"data.{Event.KnownDataKeys.UserInfo}.name"
-            })
+            .SetDefaultFields([
+                "id",
+                "source",
+                "message",
+                "tags",
+                "path",
+                "error.code",
+                "error.type",
+                "error.targettype",
+                "error.targetmethod",
+                $"data.{Event.KnownDataKeys.UserDescription}.description",
+                $"data.{Event.KnownDataKeys.UserDescription}.email_address",
+                $"data.{Event.KnownDataKeys.UserInfo}.identity",
+                $"data.{Event.KnownDataKeys.UserInfo}.name"
+            ])
             .AddQueryVisitor(new EventFieldsQueryVisitor())
             .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, $"data.{Event.KnownDataKeys.RequestInfo}.data.{RequestInfo.KnownDataKeys.BrowserVersion}" },

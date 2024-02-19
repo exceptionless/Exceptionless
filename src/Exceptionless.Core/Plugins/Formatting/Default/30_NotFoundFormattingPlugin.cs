@@ -87,20 +87,23 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         var attachment = new SlackMessage.SlackAttachment(ev)
         {
             Color = "#BB423F",
-            Fields = new List<SlackMessage.SlackAttachmentFields> {
-                    new()
-                    {
-                        Title = "Url",
-                        Value = requestInfo is not null ? requestInfo.GetFullPath(true, true, true) : ev.Source?.Truncate(60)
-                    }
+            Fields =
+            [
+                new()
+                {
+                    Title = "Url",
+                    Value = requestInfo is not null
+                        ? requestInfo.GetFullPath(true, true, true)
+                        : ev.Source?.Truncate(60)
                 }
+            ]
         };
 
         AddDefaultSlackFields(ev, attachment.Fields, false);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
-            Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            Attachments = [attachment]
         };
     }
 }

@@ -19,7 +19,7 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.CompletedTask;
 
-        _connections.AddOrUpdate(key, new HashSet<string>(new[] { connectionId }), (_, hs) =>
+        _connections.AddOrUpdate(key, [.. new[] { connectionId }], (_, hs) =>
         {
             hs.Add(connectionId);
             return hs;
@@ -33,7 +33,7 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.FromResult<ICollection<string>>(new List<string>());
 
-        return Task.FromResult<ICollection<string>>(_connections.GetOrAdd(key, new HashSet<string>()));
+        return Task.FromResult<ICollection<string>>(_connections.GetOrAdd(key, []));
     }
 
     public Task<int> GetConnectionCountAsync(string key)
@@ -53,7 +53,7 @@ public class ConnectionMapping : IConnectionMapping
             return Task.CompletedTask;
 
         bool shouldRemove = false;
-        _connections.AddOrUpdate(key, new HashSet<string>(), (_, hs) =>
+        _connections.AddOrUpdate(key, [], (_, hs) =>
         {
             hs.Remove(connectionId);
             if (hs.Count == 0)

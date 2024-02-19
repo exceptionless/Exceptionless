@@ -24,7 +24,7 @@ public static class StringExtensions
         if (String.IsNullOrEmpty(ip) || String.Equals(ip, "::1"))
             return ip;
 
-        string[] parts = ip.Split(new[] { ':' }, 9);
+        string[] parts = ip.Split([':'], 9);
         if (parts.Length == 2)  // 1.2.3.4:port
             return parts[0];
         if (parts.Length > 8) // 1:2:3:4:5:6:7:8:port
@@ -204,7 +204,7 @@ public static class StringExtensions
         if (String.IsNullOrEmpty(delimiter))
             delimiter = ",";
 
-        return value.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries).ToArray();
+        return value.Split([delimiter], StringSplitOptions.RemoveEmptyEntries).ToArray();
     }
 
     public static string ToLowerUnderscoredWords(this string value, char delimiter = '_')

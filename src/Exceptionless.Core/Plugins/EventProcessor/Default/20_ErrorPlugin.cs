@@ -26,13 +26,13 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (context.StackSignatureData.Count > 0)
             return Task.CompletedTask;
 
-        string[]? userCommonMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
+        string[]? userCommonMethods = ["DataContext.SubmitChanges", "Entities.SaveChanges"];
         if (context.HasProperty("CommonMethods"))
-            userCommonMethods = context.GetProperty<string>("CommonMethods")?.SplitAndTrim(new[] { ',' });
+            userCommonMethods = context.GetProperty<string>("CommonMethods")?.SplitAndTrim([',']);
 
         string[]? userNamespaces = null;
         if (context.HasProperty("UserNamespaces"))
-            userNamespaces = context.GetProperty<string>("UserNamespaces")?.SplitAndTrim(new[] { ',' });
+            userNamespaces = context.GetProperty<string>("UserNamespaces")?.SplitAndTrim([',']);
 
         var signature = new ErrorSignature(error, userNamespaces, userCommonMethods);
         if (signature.SignatureInfo.Count <= 0)

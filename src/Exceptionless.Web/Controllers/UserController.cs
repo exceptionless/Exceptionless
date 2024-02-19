@@ -130,7 +130,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? new[] { CurrentUser.Id } : Array.Empty<string>();
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : Array.Empty<string>();
         return DeleteImplAsync(userIds);
     }
 
@@ -265,7 +265,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public async Task<IActionResult> UnverifyEmailAddressAsync()
     {
         using var reader = new StreamReader(HttpContext.Request.Body);
-        string[] emailAddresses = (await reader.ReadToEndAsync()).SplitAndTrim(new[] { ',' });
+        string[] emailAddresses = (await reader.ReadToEndAsync()).SplitAndTrim([',']);
 
         foreach (string emailAddress in emailAddresses)
         {

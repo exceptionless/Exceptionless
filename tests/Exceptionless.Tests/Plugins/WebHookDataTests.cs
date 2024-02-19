@@ -81,7 +81,7 @@ public sealed class WebHookDataTests : TestWithServices
             OrganizationId = TestConstants.OrganizationId,
             ProjectId = TestConstants.ProjectId,
             Url = "http://localhost:40000/test",
-            EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted },
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
             Version = version,
             CreatedUtc = SystemClock.UtcNow
         };

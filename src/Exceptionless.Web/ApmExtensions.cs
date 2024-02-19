@@ -318,7 +318,10 @@ public static class CustomFilterProcessorExtensions
     {
         // use reflection to call the method
         var exporterExtensionsType = typeof(OtlpExporterOptions).Assembly.GetType("OpenTelemetry.Exporter.OtlpExporterOptionsExtensions");
-        exporterExtensionsType?.GetMethod("TryEnableIHttpClientFactoryIntegration")?.Invoke(null, new object[] { options, serviceProvider!, httpClientName });
+        exporterExtensionsType?.GetMethod("TryEnableIHttpClientFactoryIntegration")?.Invoke(null, [options,
+            serviceProvider!,
+            httpClientName
+        ]);
     }
 }
 

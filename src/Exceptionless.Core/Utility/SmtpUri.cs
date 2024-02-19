@@ -22,7 +22,7 @@ public class SmtpUri
             throw new ArgumentException("Invalid SMTP scheme", nameof(uri.Scheme));
         }
 
-        string[] parts = uri.UserInfo.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = uri.UserInfo.Split([":"], StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 1)
         {
             User = WebUtility.UrlDecode(parts[0]);

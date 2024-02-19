@@ -11,17 +11,17 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 public sealed class RequestInfoPlugin : EventProcessorPluginBase
 {
     public const int MAX_VALUE_LENGTH = 1000;
-    public static readonly List<string> DefaultExclusions = new()
-    {
-            "*VIEWSTATE*",
-            "*EVENTVALIDATION*",
-            "*ASPX*",
-            "__RequestVerificationToken",
-            "ASP.NET_SessionId",
-            "__LastErrorId",
-            "WAWebSiteID",
-            "ARRAffinity"
-        };
+    public static readonly List<string> DefaultExclusions =
+    [
+        "*VIEWSTATE*",
+        "*EVENTVALIDATION*",
+        "*ASPX*",
+        "__RequestVerificationToken",
+        "ASP.NET_SessionId",
+        "__LastErrorId",
+        "WAWebSiteID",
+        "ARRAffinity"
+    ];
 
     private readonly UserAgentParser _parser;
 

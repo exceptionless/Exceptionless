@@ -23,7 +23,7 @@ public static class DelegateFactory
     public static LateBoundMethod CreateMethod(MethodBase method)
     {
         var dynamicMethod = CreateDynamicMethod(method.ToString() ?? throw new InvalidOperationException(),
-            typeof(object), new[] { typeof(object), typeof(object[]) },
+            typeof(object), [typeof(object), typeof(object[])],
             method.DeclaringType ?? throw new InvalidOperationException());
         var generator = dynamicMethod.GetILGenerator();
 
@@ -104,7 +104,7 @@ public static class DelegateFactory
         if (getMethod is null)
             throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a getter.");
 
-        var dynamicMethod = CreateDynamicMethod("Get" + propertyInfo.Name, typeof(object), new[] { typeof(object) }, propertyInfo.DeclaringType ?? throw new InvalidOperationException());
+        var dynamicMethod = CreateDynamicMethod("Get" + propertyInfo.Name, typeof(object), [typeof(object)], propertyInfo.DeclaringType ?? throw new InvalidOperationException());
         var generator = dynamicMethod.GetILGenerator();
 
         if (!getMethod.IsStatic)
@@ -119,7 +119,7 @@ public static class DelegateFactory
 
     public static LateBoundGet CreateGet(FieldInfo fieldInfo)
     {
-        var dynamicMethod = CreateDynamicMethod("Get" + fieldInfo.Name, typeof(object), new[] { typeof(object) }, fieldInfo.DeclaringType ?? throw new InvalidOperationException());
+        var dynamicMethod = CreateDynamicMethod("Get" + fieldInfo.Name, typeof(object), [typeof(object)], fieldInfo.DeclaringType ?? throw new InvalidOperationException());
 
         var generator = dynamicMethod.GetILGenerator();
 
@@ -139,7 +139,7 @@ public static class DelegateFactory
         if (setMethod is null)
             throw new InvalidOperationException($"Property '{propertyInfo.Name}' does not have a setter.");
 
-        var dynamicMethod = CreateDynamicMethod("Set" + propertyInfo.Name, null!, new[] { typeof(object), typeof(object) }, propertyInfo.DeclaringType ?? throw new InvalidOperationException());
+        var dynamicMethod = CreateDynamicMethod("Set" + propertyInfo.Name, null!, [typeof(object), typeof(object)], propertyInfo.DeclaringType ?? throw new InvalidOperationException());
         var generator = dynamicMethod.GetILGenerator();
 
         if (!setMethod.IsStatic)
@@ -155,7 +155,7 @@ public static class DelegateFactory
 
     public static LateBoundSet CreateSet(FieldInfo fieldInfo)
     {
-        var dynamicMethod = CreateDynamicMethod("Set" + fieldInfo.Name, null!, new[] { typeof(object), typeof(object) }, fieldInfo.DeclaringType ?? throw new InvalidOperationException());
+        var dynamicMethod = CreateDynamicMethod("Set" + fieldInfo.Name, null!, [typeof(object), typeof(object)], fieldInfo.DeclaringType ?? throw new InvalidOperationException());
         var generator = dynamicMethod.GetILGenerator();
 
         if (!fieldInfo.IsStatic)

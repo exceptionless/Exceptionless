@@ -579,7 +579,7 @@ public class EventControllerTests : IntegrationTestsBase
     {
         await CreateStacksAndEventsAsync();
 
-        string[] modes = { "stack_recent", "stack_frequent", "stack_new", "stack_users" };
+        string[] modes = ["stack_recent", "stack_frequent", "stack_new", "stack_users"];
         foreach (string mode in modes)
         {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r

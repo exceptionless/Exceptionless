@@ -202,7 +202,7 @@ public abstract class ExceptionlessApiController : Controller
 
     protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link)
     {
-        return OkWithLinks(content, new[] { link });
+        return OkWithLinks(content, [link]);
     }
 
     protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string?[] links)

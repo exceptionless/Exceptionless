@@ -25,11 +25,15 @@ public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedD
         public const string Version2 = "v2";
     }
 
-    public static readonly string[] AllKnownEventTypes = new[]
-    {
-        KnownEventTypes.NewError, KnownEventTypes.CriticalError, KnownEventTypes.NewEvent,
-        KnownEventTypes.CriticalEvent, KnownEventTypes.StackRegression, KnownEventTypes.StackPromoted
-    };
+    public static readonly string[] AllKnownEventTypes =
+    [
+        KnownEventTypes.NewError,
+        KnownEventTypes.CriticalError,
+        KnownEventTypes.NewEvent,
+        KnownEventTypes.CriticalEvent,
+        KnownEventTypes.StackRegression,
+        KnownEventTypes.StackPromoted
+    ];
 
     public static class KnownEventTypes
     {

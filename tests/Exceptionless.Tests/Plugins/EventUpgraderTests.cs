@@ -37,7 +37,7 @@ public sealed class EventUpgraderTests : TestWithServices
         {
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "ErrorData"), "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
-                result.Add(new object[] { Path.GetFullPath(file) });
+                result.Add([Path.GetFullPath(file)]);
 
             return result.ToArray();
         }

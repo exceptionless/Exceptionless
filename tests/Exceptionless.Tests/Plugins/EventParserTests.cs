@@ -17,16 +17,16 @@ public sealed class EventParserTests : TestWithServices
     }
 
     public static IEnumerable<object?[]> EventData => new[] {
-            new object?[] { " \t", 0, null, Event.KnownTypes.Log },
-            new object?[] { "simple string", 1, new [] { "simple string" }, Event.KnownTypes.Log },
-            new object?[] { " \r\nsimple string", 1, new [] { "simple string" }, Event.KnownTypes.Log },
-            new object?[] { "{simple string", 1, new [] { "{simple string" }, Event.KnownTypes.Log },
-            new object?[] { "{simple string,simple string}", 1, new [] { "{simple string,simple string}" }, Event.KnownTypes.Log },
-            new object?[] { "{ \"name\": \"value\" }", 1, new string?[] { null }, Event.KnownTypes.Log },
-            new object?[] { "{ \"message\": \"simple string\" }", 1, new [] { "simple string" }, Event.KnownTypes.Log },
-            new object?[] { "{ \"message\": \"simple string\", \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, new [] { "simple string" }, Event.KnownTypes.Error },
-            new object?[] { "[simple string", 1, new [] { "[simple string" }, Event.KnownTypes.Log },
-            new object?[] { "[simple string,simple string]", 1, new [] { "[simple string,simple string]" }, Event.KnownTypes.Log },
+        [" \t", 0, null, Event.KnownTypes.Log], ["simple string", 1, new [] { "simple string" }, Event.KnownTypes.Log],
+        [" \r\nsimple string", 1, new [] { "simple string" }, Event.KnownTypes.Log], ["{simple string", 1, new [] { "{simple string" }, Event.KnownTypes.Log
+        ],
+        ["{simple string,simple string}", 1, new [] { "{simple string,simple string}" }, Event.KnownTypes.Log],
+        ["{ \"name\": \"value\" }", 1, new string?[] { null }, Event.KnownTypes.Log],
+        ["{ \"message\": \"simple string\" }", 1, new [] { "simple string" }, Event.KnownTypes.Log],
+        ["{ \"message\": \"simple string\", \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, new [] { "simple string" }, Event.KnownTypes.Error
+        ],
+        ["[simple string", 1, new [] { "[simple string" }, Event.KnownTypes.Log], ["[simple string,simple string]", 1, new [] { "[simple string,simple string]" }, Event.KnownTypes.Log
+        ],
             new object?[] { "simple string\r\nsimple string", 2, new [] { "simple string", "simple string" }, Event.KnownTypes.Log }
         };
 
@@ -75,7 +75,7 @@ public sealed class EventParserTests : TestWithServices
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                 if (!file.EndsWith("summary.json"))
-                    result.Add(new object[] { Path.GetFullPath(file) });
+                    result.Add([Path.GetFullPath(file)]);
 
             return result.ToArray();
         }

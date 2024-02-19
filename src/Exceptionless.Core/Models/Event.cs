@@ -24,7 +24,7 @@ public class Event : IData
     /// <summary>
     /// A list of tags used to categorize this event.
     /// </summary>
-    public TagSet? Tags { get; set; } = new();
+    public TagSet? Tags { get; set; } = [];
 
     /// <summary>
     /// The event message.
@@ -72,7 +72,7 @@ public class Event : IData
         return Equals((Event)obj);
     }
 
-    private static readonly List<string> _exclusions = new() { KnownDataKeys.TraceLog };
+    private static readonly List<string> _exclusions = [KnownDataKeys.TraceLog];
     public override int GetHashCode()
     {
         unchecked

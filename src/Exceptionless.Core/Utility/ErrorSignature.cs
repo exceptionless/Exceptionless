@@ -9,7 +9,7 @@ public class ErrorSignature
 {
     private readonly HashSet<string> _userNamespaces;
     private readonly HashSet<string> _userCommonMethods;
-    private static readonly string[] _defaultNonUserNamespaces = { "System", "Microsoft" };
+    private static readonly string[] _defaultNonUserNamespaces = ["System", "Microsoft"];
     // TODO: Add support for user public key token on signed assemblies
 
     public ErrorSignature(Error error, IEnumerable<string>? userNamespaces = null, IEnumerable<string>? userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true)
@@ -17,12 +17,12 @@ public class ErrorSignature
         Error = error ?? throw new ArgumentNullException(nameof(error));
 
         _userNamespaces = userNamespaces is null
-            ? new HashSet<string>()
-            : new HashSet<string>(userNamespaces);
+            ? []
+            : [.. userNamespaces];
 
         _userCommonMethods = userCommonMethods is null
-            ? new HashSet<string>()
-            : new HashSet<string>(userCommonMethods);
+            ? []
+            : [.. userCommonMethods];
 
         EmptyNamespaceIsUserMethod = emptyNamespaceIsUserMethod;
 
