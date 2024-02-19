@@ -123,7 +123,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
         // we have records with the exact same occurrence date, we need to figure out the order of those
         // put our target error into the mix, sort it and return the result before the target
-        var unionResults = results.Documents.Union(new[] { ev })
+        var unionResults = results.Documents.Union([ev])
             .OrderBy(t => t.Date.UtcTicks).ThenBy(t => t.Id)
             .ToList();
 
@@ -163,7 +163,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
         // we have records with the exact same occurrence date, we need to figure out the order of those
         // put our target error into the mix, sort it and return the result after the target
-        var unionResults = results.Documents.Union(new[] { ev })
+        var unionResults = results.Documents.Union([ev])
             .OrderBy(t => t.Date.Ticks).ThenBy(t => t.Id)
             .ToList();
 

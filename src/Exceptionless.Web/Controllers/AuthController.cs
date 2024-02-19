@@ -33,7 +33,7 @@ public class AuthController : ExceptionlessApiController
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly ITokenRepository _tokenRepository;
-    private readonly ICacheClient _cache;
+    private readonly ScopedCacheClient _cache;
     private readonly IMailer _mailer;
     private readonly ILogger _logger;
 

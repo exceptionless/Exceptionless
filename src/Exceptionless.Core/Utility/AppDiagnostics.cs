@@ -159,5 +159,7 @@ public class HistogramTimer : IDisposable
         _disposed = true;
         _stopWatch.Stop();
         _histogram.Record((int)_stopWatch.ElapsedMilliseconds);
+
+        GC.SuppressFinalize(this);
     }
 }

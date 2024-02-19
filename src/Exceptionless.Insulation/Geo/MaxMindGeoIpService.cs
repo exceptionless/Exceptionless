@@ -121,5 +121,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
         _database.Dispose();
         _database = null;
+
+        GC.SuppressFinalize(this);
     }
 }

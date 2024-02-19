@@ -66,12 +66,12 @@ public class StackService
             int occurrenceCount = (int)countTask.Result;
             if (occurrenceCount <= 0)
             {
-                await _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey });
+                await _cache.RemoveAllAsync([minDateCacheKey, maxDateCacheKey]);
                 continue;
             }
 
             await Task.WhenAll(
-                _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey }),
+                _cache.RemoveAllAsync([minDateCacheKey, maxDateCacheKey]),
                 _cache.DecrementAsync(countCacheKey, occurrenceCount, _expireTimeout)
             );
 
