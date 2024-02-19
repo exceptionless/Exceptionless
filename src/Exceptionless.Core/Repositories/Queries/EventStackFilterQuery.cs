@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
@@ -122,7 +121,7 @@ namespace Exceptionless.Core.Repositories.Queries
             }
             else
             {
-                results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SearchAfterPaging().SoftDeleteMode(softDeleteMode)).AnyContext();
+                results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SearchAfterPaging().SoftDeleteMode(softDeleteMode));
                 stackTotal = results.Total;
             }
 
@@ -145,7 +144,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 }
                 else
                 {
-                    results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SearchAfterPaging().SoftDeleteMode(softDeleteMode)).AnyContext();
+                    results = await _stackRepository.GetIdsByQueryAsync(q => systemFilterQuery.As<Stack>(), o => o.PageLimit(10000).SearchAfterPaging().SoftDeleteMode(softDeleteMode));
                     stackTotal = results.Total;
                 }
             }

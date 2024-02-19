@@ -44,7 +44,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
     /// <param name="context">The context to run the actions with.</param>
     public virtual async Task<TContext> RunAsync(TContext context)
     {
-        await RunAsync(new[] { context }).AnyContext();
+        await RunAsync(new[] { context });
         return context;
     }
 
@@ -60,7 +60,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
         {
             string metricName = String.Concat(_metricPrefix, action.Name.ToLower());
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
-            await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName).AnyContext();
+            await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName);
             if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                 break;
         }

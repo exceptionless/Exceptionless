@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.WorkItems;
+﻿using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -34,10 +33,10 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
         using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId)))
         {
             Log.LogInformation("Received remove stacks work item for project: {ProjectId}", wi.ProjectId);
-            await context.ReportProgressAsync(0, "Starting soft deleting of stacks...").AnyContext();
-            long deleted = await _stackRepository.SoftDeleteByProjectIdAsync(wi.OrganizationId, wi.ProjectId).AnyContext();
+            await context.ReportProgressAsync(0, "Starting soft deleting of stacks...");
+            long deleted = await _stackRepository.SoftDeleteByProjectIdAsync(wi.OrganizationId, wi.ProjectId);
             await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", wi.OrganizationId, ":", wi.ProjectId));
-            await context.ReportProgressAsync(100, $"Stacks soft deleted: {deleted}").AnyContext();
+            await context.ReportProgressAsync(100, $"Stacks soft deleted: {deleted}");
         }
     }
 }

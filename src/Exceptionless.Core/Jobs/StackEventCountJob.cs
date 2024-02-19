@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Services;
+﻿using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -31,7 +30,7 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
     {
         _lastRun = SystemClock.UtcNow;
         _logger.LogTrace("Start save stack event counts.");
-        await _stackService.SaveStackUsagesAsync(cancellationToken: context.CancellationToken).AnyContext();
+        await _stackService.SaveStackUsagesAsync(cancellationToken: context.CancellationToken);
         _logger.LogTrace("Finished save stack event counts.");
         return JobResult.Success;
     }

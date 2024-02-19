@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
@@ -45,11 +44,11 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        await DeleteOrphanedEventsByStackAsync(context).AnyContext();
-        await DeleteOrphanedEventsByProjectAsync(context).AnyContext();
-        await DeleteOrphanedEventsByOrganizationAsync(context).AnyContext();
+        await DeleteOrphanedEventsByStackAsync(context);
+        await DeleteOrphanedEventsByProjectAsync(context);
+        await DeleteOrphanedEventsByOrganizationAsync(context);
 
-        await FixDuplicateStacks(context).AnyContext();
+        await FixDuplicateStacks(context);
 
         return JobResult.Success;
     }

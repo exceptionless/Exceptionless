@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Queues.Models;
+﻿using Exceptionless.Core.Queues.Models;
 using Foundatio.Queues;
 using Foundatio.Storage;
 using Foundatio.Utility;
@@ -37,16 +36,16 @@ public class EventPostService
         var saveTask = data.ShouldArchive ? _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken) : Task.FromResult(true);
         var savePayloadTask = _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken);
 
-        if (!await saveTask.AnyContext())
+        if (!await saveTask)
         {
             using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
                 _logger.LogError("Unable to save event post info");
 
-            await savePayloadTask.AnyContext();
+            await savePayloadTask;
             return null;
         }
 
-        if (!await savePayloadTask.AnyContext())
+        if (!await savePayloadTask)
         {
             using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
                 _logger.LogError("Unable to save event post payload");
@@ -54,7 +53,7 @@ public class EventPostService
             return null;
         }
 
-        return await _queue.EnqueueAsync(data).AnyContext();
+        return await _queue.EnqueueAsync(data);
     }
 
     public async Task<byte[]?> GetEventPostPayloadAsync(string path)
@@ -65,7 +64,7 @@ public class EventPostService
         byte[] data;
         try
         {
-            data = await _storage.GetFileContentsRawAsync(path).AnyContext();
+            data = await _storage.GetFileContentsRawAsync(path);
         }
         catch (Exception ex)
         {
@@ -92,10 +91,10 @@ public class EventPostService
                 string archivePath = GetArchivePath(created, projectId, Path.GetFileName(path));
                 var renameTask = _storage.RenameFileAsync(path, archivePath);
                 var renamePayLoadTask = _storage.RenameFileAsync(Path.ChangeExtension(path, ".payload"), Path.ChangeExtension(archivePath, ".payload"));
-                return await renameTask.AnyContext() && await renamePayLoadTask.AnyContext();
+                return await renameTask && await renamePayLoadTask;
             }
 
-            return await _storage.DeleteFileAsync(Path.ChangeExtension(path, ".payload")).AnyContext();
+            return await _storage.DeleteFileAsync(Path.ChangeExtension(path, ".payload"));
         }
         catch (Exception ex)
         {

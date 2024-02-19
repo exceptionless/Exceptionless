@@ -86,7 +86,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             });
 
             // try to update an existing session
-            string? sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null).AnyContext();
+            string? sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null);
 
             // do we already have a session start for this session id?
             if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent is not null)
@@ -113,7 +113,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 }
 
                 // create a new session start event
-                await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null).AnyContext();
+                await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null);
             }
         }
     }
@@ -157,7 +157,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                     ctx.IsCancelled = true;
                 });
 
-                string? sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key).AnyContext();
+                string? sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key);
 
                 // if session end, without any session events, cancel
                 if (String.IsNullOrEmpty(sessionId) && session.Count == 1 && firstSessionEvent.Event.IsSessionEnd())
@@ -185,11 +185,11 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                     }
                     else
                     {
-                        await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                        await CreateSessionStartEventAsync(firstSessionEvent, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd());
                     }
 
                     if (!lastSessionEvent.Event.IsSessionEnd())
-                        await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId).AnyContext();
+                        await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId);
                 }
                 else
                 {
@@ -200,7 +200,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                         sessionStartEvent.IsCancelled = true;
                     }
 
-                    await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd()).AnyContext();
+                    await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd());
                 }
             }
         }
@@ -244,9 +244,9 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     private async Task<string?> GetSessionStartEventIdAsync(string projectId, string sessionId)
     {
         string cacheKey = GetSessionStartEventIdCacheKey(projectId, sessionId);
-        string? eventId = await _cache.GetAsync<string?>(cacheKey, null).AnyContext();
+        string? eventId = await _cache.GetAsync<string?>(cacheKey, null);
         if (!String.IsNullOrEmpty(eventId))
-            await _cache.SetExpirationAsync(cacheKey, TimeSpan.FromDays(1)).AnyContext();
+            await _cache.SetExpirationAsync(cacheKey, TimeSpan.FromDays(1));
 
         return eventId;
     }
@@ -264,13 +264,13 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     private async Task<string?> GetIdentitySessionIdAsync(string projectId, string identity)
     {
         string cacheKey = GetIdentitySessionIdCacheKey(projectId, identity);
-        string? sessionId = await _cache.GetAsync<string?>(cacheKey, null).AnyContext();
+        string? sessionId = await _cache.GetAsync<string?>(cacheKey, null);
         if (!String.IsNullOrEmpty(sessionId))
         {
             await Task.WhenAll(
                 _cache.SetExpirationAsync(cacheKey, _sessionTimeout),
                 _cache.SetExpirationAsync(GetSessionStartEventIdCacheKey(projectId, sessionId), TimeSpan.FromDays(1))
-            ).AnyContext();
+            );
         }
 
         return sessionId;
@@ -289,25 +289,25 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             };
 
         if (_assignToStack.Enabled)
-            await _assignToStack.ProcessBatchAsync(startEventContexts).AnyContext();
+            await _assignToStack.ProcessBatchAsync(startEventContexts);
         if (_updateStats.Enabled)
-            await _updateStats.ProcessBatchAsync(startEventContexts).AnyContext();
-        await _eventRepository.AddAsync(startEvent).AnyContext();
+            await _updateStats.ProcessBatchAsync(startEventContexts);
+        await _eventRepository.AddAsync(startEvent);
         if (_locationPlugin.Enabled)
-            await _locationPlugin.EventBatchProcessedAsync(startEventContexts).AnyContext();
+            await _locationPlugin.EventBatchProcessedAsync(startEventContexts);
 
-        await SetSessionStartEventIdAsync(startContext.Project.Id, startContext.Event.GetSessionId()!, startEvent.Id).AnyContext();
+        await SetSessionStartEventIdAsync(startContext.Project.Id, startContext.Event.GetSessionId()!, startEvent.Id);
         return startEvent;
     }
 
     private async Task<string?> UpdateSessionStartEventAsync(string projectId, string sessionId, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false)
     {
-        string? sessionStartEventId = await GetSessionStartEventIdAsync(projectId, sessionId).AnyContext();
+        string? sessionStartEventId = await GetSessionStartEventIdAsync(projectId, sessionId);
         if (!String.IsNullOrEmpty(sessionStartEventId))
         {
-            bool isValidSessionStartEvent = await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, lastActivityUtc, isSessionEnd, hasError).AnyContext();
+            bool isValidSessionStartEvent = await _eventRepository.UpdateSessionStartLastActivityAsync(sessionStartEventId, lastActivityUtc, isSessionEnd, hasError);
             if (!isValidSessionStartEvent || isSessionEnd)
-                await _cache.RemoveAsync(GetSessionStartEventIdCacheKey(projectId, sessionId)).AnyContext();
+                await _cache.RemoveAsync(GetSessionStartEventIdCacheKey(projectId, sessionId));
         }
 
         return sessionStartEventId;

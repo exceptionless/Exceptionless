@@ -32,7 +32,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         ArgumentException.ThrowIfNullOrEmpty(token);
 
         var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
+        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
         return hit?.Document;
     }
 
@@ -41,7 +41,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         ArgumentException.ThrowIfNullOrEmpty(customerId);
 
         var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
+        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
         return hit?.Document;
     }
 
@@ -98,7 +98,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         var results = (await FindAsync(q => q
             .Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
-            .SortDescending(o => o.PlanId)).AnyContext()).Documents;
+            .SortDescending(o => o.PlanId))).Documents;
         var smallOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallPlan.Id) && o.BillingPrice > 0).ToList();
         var mediumOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.MediumPlan.Id) && o.BillingPrice > 0).ToList();
         var largeOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.LargePlan.Id) && o.BillingPrice > 0).ToList();

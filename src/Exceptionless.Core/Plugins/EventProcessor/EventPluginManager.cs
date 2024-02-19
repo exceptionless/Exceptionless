@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
@@ -17,7 +16,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
             try
             {
                 string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
-                await AppDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName);
             }
             catch (Exception ex)
             {
@@ -40,7 +39,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
             string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
             try
             {
-                await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName);
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }
@@ -65,7 +64,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
             string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
             try
             {
-                await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName);
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
                     break;
             }

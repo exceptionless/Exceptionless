@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Utility;
+﻿using Exceptionless.Core.Utility;
 using StackExchange.Redis;
 
 namespace Exceptionless.Insulation.Redis;
@@ -29,7 +28,7 @@ public sealed class RedisConnectionMapping : IConnectionMapping
         if (key is null)
             return new List<string>();
 
-        var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key)).AnyContext();
+        var values = await Database.SetMembersAsync(String.Concat(KeyPrefix, key));
         return values.Select(v => v.ToString()).ToList();
     }
 
@@ -38,7 +37,7 @@ public sealed class RedisConnectionMapping : IConnectionMapping
         if (key is null)
             return 0;
 
-        return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key)).AnyContext();
+        return (int)await Database.SetLengthAsync(String.Concat(KeyPrefix, key));
     }
 
     public Task RemoveAsync(string key, string connectionId)

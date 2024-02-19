@@ -20,7 +20,7 @@ public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBas
         if (String.IsNullOrEmpty(context.Event.ReferenceId))
             return;
 
-        if (await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromDays(1)).AnyContext())
+        if (await _cacheClient.AddAsync(GetCacheKey(context), true, TimeSpan.FromDays(1)))
         {
             context.SetProperty("AddedReferenceId", true);
             return;

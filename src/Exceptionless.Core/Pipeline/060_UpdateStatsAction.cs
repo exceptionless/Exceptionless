@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Plugins.EventProcessor;
+﻿using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Services;
 using Microsoft.Extensions.Logging;
 
@@ -26,7 +25,7 @@ public class UpdateStatsAction : EventPipelineActionBase
     {
         var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
         foreach (var stackGroup in stacks)
-            await IncrementEventCountersAsync(stackGroup).AnyContext();
+            await IncrementEventCountersAsync(stackGroup);
     }
 
     private async Task IncrementEventCountersAsync(IGrouping<string, EventContext> stackGroup)
@@ -38,7 +37,7 @@ public class UpdateStatsAction : EventPipelineActionBase
             int count = stackContexts.Count;
             var minDate = stackContexts.Min(s => s.Event.Date.UtcDateTime);
             var maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
-            await _stackService.IncrementStackUsageAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count).AnyContext();
+            await _stackService.IncrementStackUsageAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count);
 
             // Update stacks in memory since they are used in notifications.
             foreach (var ctx in stackContexts)

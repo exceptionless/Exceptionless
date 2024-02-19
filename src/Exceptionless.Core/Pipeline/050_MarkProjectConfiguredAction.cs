@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.WorkItems;
+﻿using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -32,7 +31,7 @@ public class MarkProjectConfiguredAction : EventPipelineActionBase
                 {
                     ProjectId = projectId,
                     IsConfigured = true
-                }).AnyContext();
+                });
             }
         }
         catch (Exception ex)

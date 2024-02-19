@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Foundatio.Caching;
+﻿using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
 using UAParser;
 
@@ -22,7 +21,7 @@ public sealed class UserAgentParser
         if (String.IsNullOrEmpty(userAgent))
             return null;
 
-        var cacheValue = await _localCache.GetAsync<ClientInfo>(userAgent).AnyContext();
+        var cacheValue = await _localCache.GetAsync<ClientInfo>(userAgent);
         if (cacheValue.HasValue)
             return cacheValue.Value;
 
@@ -36,7 +35,7 @@ public sealed class UserAgentParser
             _logger.LogWarning("Unable to parse user agent {UserAgent}. Exception: {Message}", userAgent, ex.Message);
         }
 
-        await _localCache.SetAsync(userAgent, info).AnyContext();
+        await _localCache.SetAsync(userAgent, info);
         return info;
     }
 }

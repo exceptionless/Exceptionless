@@ -62,25 +62,25 @@ public class OrganizationService : IStartupAction
 
         var client = new StripeClient(_appOptions.StripeOptions.StripeApiKey);
         var subscriptionService = new SubscriptionService(client);
-        var subscriptions = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId }).AnyContext();
+        var subscriptions = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
         foreach (var subscription in subscriptions.Where(s => !s.CanceledAt.HasValue))
         {
             _logger.LogInformation("Canceling stripe subscription ({SubscriptionId}) for {OrganizationName} ({organization})", subscription.Id, organization.Name, organization.Id);
-            await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions()).AnyContext();
+            await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions());
             _logger.LogInformation("Canceled stripe subscription ({SubscriptionId}) for {OrganizationName} ({organization})", subscription.Id, organization.Name, organization.Id);
         }
     }
 
     public async Task<long> RemoveUsersAsync(Organization organization, string? currentUserId)
     {
-        var users = await _userRepository.GetByOrganizationIdAsync(organization.Id, o => o.PageLimit(1000)).AnyContext();
+        var users = await _userRepository.GetByOrganizationIdAsync(organization.Id, o => o.PageLimit(1000));
         foreach (var user in users.Documents)
         {
             // delete the user if they are not associated to any other organizations and they are not the current user
             if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUserId))
             {
                 _logger.LogInformation("Removing user {User} as they do not belong to any other organizations.", user.Id);
-                await _userRepository.RemoveAsync(user.Id).AnyContext();
+                await _userRepository.RemoveAsync(user.Id);
             }
             else
             {
@@ -91,7 +91,7 @@ public class OrganizationService : IStartupAction
                 if (!user.IsEmailAddressVerified && String.IsNullOrEmpty(user.VerifyEmailAddressToken))
                     user.CreateVerifyEmailAddressToken();
 
-                await _userRepository.SaveAsync(user, o => o.Cache()).AnyContext();
+                await _userRepository.SaveAsync(user, o => o.Cache());
             }
         }
 
@@ -115,12 +115,12 @@ public class OrganizationService : IStartupAction
         if (organization.IsDeleted)
             return;
 
-        await RemoveTokensAsync(organization).AnyContext();
-        await RemoveWebHooksAsync(organization).AnyContext();
-        await CancelSubscriptionsAsync(organization).AnyContext();
-        await RemoveUsersAsync(organization, currentUserId).AnyContext();
+        await RemoveTokensAsync(organization);
+        await RemoveWebHooksAsync(organization);
+        await CancelSubscriptionsAsync(organization);
+        await RemoveUsersAsync(organization, currentUserId);
 
         organization.IsDeleted = true;
-        await _organizationRepository.SaveAsync(organization).AnyContext();
+        await _organizationRepository.SaveAsync(organization);
     }
 }

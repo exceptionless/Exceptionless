@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Exceptionless.Core.Configuration;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Utility;
@@ -45,7 +44,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         _logger.LogTrace("Connecting to SMTP server: {SmtpHost}:{SmtpPort} using {Encryption}", host, port, encryption);
 
         var sw = Stopwatch.StartNew();
-        await client.ConnectAsync(host, port, encryption).AnyContext();
+        await client.ConnectAsync(host, port, encryption);
         _logger.LogTrace("Connected to SMTP server took {Duration:g}", sw.Elapsed);
 
         // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
@@ -56,17 +55,17 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         {
             _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
             sw.Restart();
-            await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
+            await client.AuthenticateAsync(user, _emailOptions.SmtpPassword);
             _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", sw.Elapsed);
         }
 
         _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
         sw.Restart();
-        await client.SendAsync(message).AnyContext();
+        await client.SendAsync(message);
         _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);
 
         sw.Restart();
-        await client.DisconnectAsync(true).AnyContext();
+        await client.DisconnectAsync(true);
         _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
         sw.Stop();
 
@@ -123,7 +122,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             int port = _emailOptions.SmtpPort;
             var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
 
-            await client.ConnectAsync(host, port, encryption).AnyContext();
+            await client.ConnectAsync(host, port, encryption);
 
             // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
             client.AuthenticationMechanisms.Remove("XOAUTH2");
@@ -131,10 +130,10 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             string? user = _emailOptions.SmtpUser;
             if (!String.IsNullOrEmpty(user))
             {
-                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword).AnyContext();
+                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword);
             }
 
-            await client.DisconnectAsync(true).AnyContext();
+            await client.DisconnectAsync(true);
 
             _lastSuccessfulConnection = SystemClock.UtcNow;
         }

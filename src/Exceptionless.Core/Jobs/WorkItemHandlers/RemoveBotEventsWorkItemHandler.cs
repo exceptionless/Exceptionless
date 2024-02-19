@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
@@ -33,8 +32,8 @@ public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
         using var _ = Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId));
         Log.LogInformation("Received remove bot events work item OrganizationId={OrganizationId} ProjectId={ProjectId}, ClientIpAddress={ClientIpAddress}, UtcStartDate={UtcStartDate}, UtcEndDate={UtcEndDate}", wi.OrganizationId, wi.ProjectId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate);
 
-        await context.ReportProgressAsync(0, $"Starting deleting of bot events... OrganizationId={wi.OrganizationId}").AnyContext();
-        long deleted = await _eventRepository.RemoveAllAsync(wi.OrganizationId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate).AnyContext();
-        await context.ReportProgressAsync(100, $"Bot events deleted: {deleted} OrganizationId={wi.OrganizationId}").AnyContext();
+        await context.ReportProgressAsync(0, $"Starting deleting of bot events... OrganizationId={wi.OrganizationId}");
+        long deleted = await _eventRepository.RemoveAllAsync(wi.OrganizationId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate);
+        await context.ReportProgressAsync(100, $"Bot events deleted: {deleted} OrganizationId={wi.OrganizationId}");
     }
 }

@@ -23,7 +23,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         emailAddress = emailAddress.Trim().ToLowerInvariant();
-        var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.Cache(EmailCacheKey(emailAddress))).AnyContext();
+        var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.Cache(EmailCacheKey(emailAddress)));
         return hit?.Document;
     }
 
@@ -32,7 +32,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (String.IsNullOrEmpty(token))
             return null;
 
-        var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.PasswordResetToken, token))).AnyContext();
+        var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.PasswordResetToken, token)));
         return hit?.Document;
     }
 
@@ -43,7 +43,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
         provider = provider.ToLowerInvariant();
         var filter = Query<User>.Term(u => u.OAuthAccounts.First().ProviderUserId, providerUserId);
-        var results = (await FindAsync(q => q.ElasticFilter(filter)).AnyContext()).Documents;
+        var results = (await FindAsync(q => q.ElasticFilter(filter))).Documents;
         return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
     }
 
@@ -53,7 +53,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         var filter = Query<User>.Term(u => u.VerifyEmailAddressToken, token);
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter)).AnyContext();
+        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
         return hit?.Document;
     }
 
@@ -72,14 +72,14 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
     {
-        await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
+        await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
 
         var cacheEntries = new Dictionary<string, FindHit<User>>();
         foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.EmailAddress)))
             cacheEntries.Add(EmailCacheKey(hit.Document.EmailAddress), hit);
 
         if (cacheEntries.Count > 0)
-            await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn()).AnyContext();
+            await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
     }
 
     protected override Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<User>> documents, ChangeType? changeType = null)

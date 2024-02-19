@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Foundatio.Parsers.ElasticQueries.Visitors;
+﻿using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
@@ -39,7 +38,7 @@ public class AppQueryValidator : IAppQueryValidator
         try
         {
             var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Query };
-            parsedResult = await _parser.ParseAsync(query, context).AnyContext();
+            parsedResult = await _parser.ParseAsync(query, context);
             var validationResult = context.GetValidationResult();
             if (!validationResult.IsValid)
                 return new QueryProcessResult { Message = validationResult.Message };
@@ -50,12 +49,12 @@ public class AppQueryValidator : IAppQueryValidator
             return new QueryProcessResult { Message = ex.Message };
         }
 
-        return await ValidateQueryAsync(parsedResult).AnyContext();
+        return await ValidateQueryAsync(parsedResult);
     }
 
     public async Task<QueryProcessResult> ValidateQueryAsync(IQueryNode query)
     {
-        var info = await ValidationVisitor.RunAsync(query).AnyContext();
+        var info = await ValidationVisitor.RunAsync(query);
         return ApplyQueryRules(info);
     }
 
@@ -73,7 +72,7 @@ public class AppQueryValidator : IAppQueryValidator
         try
         {
             var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Aggregation };
-            parsedResult = await _parser.ParseAsync(aggs, context).AnyContext();
+            parsedResult = await _parser.ParseAsync(aggs, context);
             var validationResult = context.GetValidationResult();
             if (!validationResult.IsValid)
                 return new QueryProcessResult { Message = validationResult.Message };
@@ -84,12 +83,12 @@ public class AppQueryValidator : IAppQueryValidator
             return new QueryProcessResult { Message = ex.Message };
         }
 
-        return await ValidateAggregationsAsync(parsedResult).AnyContext();
+        return await ValidateAggregationsAsync(parsedResult);
     }
 
     public async Task<QueryProcessResult> ValidateAggregationsAsync(IQueryNode query)
     {
-        var info = await ValidationVisitor.RunAsync(query, new QueryVisitorContext()).AnyContext();
+        var info = await ValidationVisitor.RunAsync(query, new QueryVisitorContext());
         return ApplyAggregationRules(info);
     }
 

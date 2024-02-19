@@ -56,7 +56,7 @@ public class AssignToStackAction : EventPipelineActionBase
                 }
                 else
                 {
-                    ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();
+                    ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash);
                     if (ctx.Stack is not null)
                         stacks.Add(signatureHash, new StackInfo { IsNew = false, ShouldSave = false, Stack = ctx.Stack });
                 }
@@ -67,7 +67,7 @@ public class AssignToStackAction : EventPipelineActionBase
                     bool success = await _lockProvider.TryUsingAsync($"new-stack:{ctx.Event.ProjectId}:{signatureHash}", async () =>
                     {
                         // double check in case another process just created the stack
-                        var newStack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash).AnyContext();
+                        var newStack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash);
                         if (newStack is not null)
                         {
                             ctx.Stack = newStack;
@@ -97,7 +97,7 @@ public class AssignToStackAction : EventPipelineActionBase
                             stack.Status = StackStatus.Ignored;
 
                         ctx.Stack = stack;
-                        await _stackRepository.AddAsync(stack, o => o.Cache()).AnyContext();
+                        await _stackRepository.AddAsync(stack, o => o.Cache());
 
                         stacks.Add(signatureHash, new StackInfo { IsNew = true, ShouldSave = false, Stack = ctx.Stack });
                     }, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
@@ -111,7 +111,7 @@ public class AssignToStackAction : EventPipelineActionBase
             }
             else
             {
-                ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache()).AnyContext();
+                ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache());
                 if (ctx.Stack is null || ctx.Stack.ProjectId != ctx.Event.ProjectId)
                 {
                     ctx.SetError("Invalid StackId.");
@@ -164,12 +164,12 @@ public class AssignToStackAction : EventPipelineActionBase
                     { ExtendedEntityChanged.KnownKeys.OrganizationId, contexts.First().Organization.Id },
                     { ExtendedEntityChanged.KnownKeys.ProjectId, contexts.First().Project.Id }
                 }
-            }).AnyContext();
+            });
         }
 
         var stacksToSave = stacks.Where(s => s.Value.ShouldSave).Select(kvp => kvp.Value.Stack).ToList();
         if (stacksToSave.Count > 0)
-            await _stackRepository.SaveAsync(stacksToSave, o => o.Cache().Notifications(false)).AnyContext(); // notification will get sent later in the update stats step
+            await _stackRepository.SaveAsync(stacksToSave, o => o.Cache().Notifications(false)); // notification will get sent later in the update stats step
 
         // Set stack ids after they have been saved and created
         contexts.ForEach(ctx =>

@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
@@ -43,14 +42,14 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     /// </summary>
     public async Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true)
     {
-        var ev = await GetByIdAsync(id).AnyContext();
+        var ev = await GetByIdAsync(id);
         if (ev is null)
             return false;
 
         if (!ev.UpdateSessionStart(lastActivityUtc, isSessionEnd))
             return false;
 
-        await SaveAsync(ev, o => o.Notifications(sendNotifications)).AnyContext();
+        await SaveAsync(ev, o => o.Notifications(sendNotifications));
         return true;
     }
 
@@ -82,7 +81,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     {
         var previous = GetPreviousEventIdAsync(ev, systemFilter, utcStart, utcEnd);
         var next = GetNextEventIdAsync(ev, systemFilter, utcStart, utcEnd);
-        await Task.WhenAll(previous, next).AnyContext();
+        await Task.WhenAll(previous, next);
 
         return new PreviousAndNextEventIdResult
         {
@@ -113,7 +112,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .AppFilter(systemFilter)
             .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
             .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
-            .EnforceEventStackFilter(false), o => o.PageLimit(10)).AnyContext();
+            .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
             return null;
@@ -153,7 +152,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .AppFilter(systemFilter)
             .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
             .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
-            .EnforceEventStackFilter(false), o => o.PageLimit(10)).AnyContext();
+            .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
             return null;

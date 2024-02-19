@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Queues;
 using Foundatio.Utility;
@@ -32,7 +31,7 @@ public class QueueHealthCheck<T> : IHealthCheck where T : class
         var sw = Stopwatch.StartNew();
         try
         {
-            await _queue.GetQueueStatsAsync().AnyContext();
+            await _queue.GetQueueStatsAsync();
             return HealthCheckResult.Healthy();
         }
         catch (Exception ex)

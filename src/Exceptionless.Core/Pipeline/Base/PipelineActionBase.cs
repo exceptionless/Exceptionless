@@ -72,7 +72,7 @@ public abstract class PipelineActionBase<TContext> : IPipelineAction<TContext> w
         {
             try
             {
-                await ProcessAsync(ctx).AnyContext();
+                await ProcessAsync(ctx);
             }
             catch (Exception ex)
             {

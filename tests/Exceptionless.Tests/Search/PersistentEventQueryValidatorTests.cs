@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -59,7 +58,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
         IQueryNode result;
         try
         {
-            result = await _parser.ParseAsync(query, context).AnyContext();
+            result = await _parser.ParseAsync(query, context);
         }
         catch (Exception ex)
         {

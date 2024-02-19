@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
@@ -35,25 +34,25 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
 
     public async Task MarkDisabledAsync(string id)
     {
-        var webHook = await GetByIdAsync(id).AnyContext();
+        var webHook = await GetByIdAsync(id);
         if (!webHook.IsEnabled)
             return;
 
         webHook.IsEnabled = false;
-        await SaveAsync(webHook, o => o.Cache()).AnyContext();
+        await SaveAsync(webHook, o => o.Cache());
     }
 
 
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<WebHook>> documents, ChangeType? changeType = null)
     {
         var keysToRemove = documents.Select(d => d.Value).Select(CacheKey).Distinct();
-        await Cache.RemoveAllAsync(keysToRemove).AnyContext();
+        await Cache.RemoveAllAsync(keysToRemove);
 
         var pagedKeysToRemove = documents.Select(d => PagedCacheKey(d.Value.OrganizationId, d.Value.ProjectId)).Distinct();
         foreach (string key in pagedKeysToRemove)
-            await Cache.RemoveByPrefixAsync(key).AnyContext();
+            await Cache.RemoveByPrefixAsync(key);
 
-        await base.InvalidateCacheAsync(documents, changeType).AnyContext();
+        await base.InvalidateCacheAsync(documents, changeType);
     }
 
     private string CacheKey(WebHook webHook) => String.Concat("Organization:", webHook.OrganizationId, ":Project:", webHook.ProjectId);

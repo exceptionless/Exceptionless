@@ -46,7 +46,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context)
     {
         var wi = context.QueueEntry.Value;
-        var ev = await _eventRepository.GetByIdAsync(wi.EventId).AnyContext();
+        var ev = await _eventRepository.GetByIdAsync(wi.EventId);
         if (ev is null)
             return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");
 
@@ -54,7 +54,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         int sent = 0;
         if (shouldLog) _logger.LogTrace("Process notification: project={ProjectId} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
 
-        var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache()).AnyContext();
+        var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache());
         if (project is null)
             return JobResult.SuccessWithMessage($"Could not load project: {ev.ProjectId}.");
 
@@ -63,7 +63,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             if (shouldLog) _logger.LogTrace("Loaded project: name={ProjectName}", project.Name);
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
-            var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue).AnyContext();
+            var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
             if (wi.TotalOccurrences > 2 && !wi.IsRegression && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
@@ -76,7 +76,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             // don't send more than 10 notifications for a given project every 30 minutes
             var projectTimeWindow = TimeSpan.FromMinutes(30);
             string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", SystemClock.UtcNow.Floor(projectTimeWindow).Ticks);
-            double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow).AnyContext();
+            double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow);
             if (notificationCount > 10 && !wi.IsRegression)
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
@@ -107,7 +107,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                 {
                     var botPatterns = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
 
-                    var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
+                    var info = await _parser.ParseAsync(request.UserAgent);
                     if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
                     {
                         shouldReport = false;
@@ -122,8 +122,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                 {
                     Project.NotificationIntegrations.Slack => await _slackService
                         .SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression)
-                        .AnyContext(),
-                    _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog).AnyContext()
+                        ,
+                    _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog)
                 };
 
                 if (shouldLog) _logger.LogTrace("Finished processing notification: {Key}", kv.Key);
@@ -134,7 +134,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             // if we sent any notifications, mark the last time a notification for this stack was sent.
             if (sent > 0)
             {
-                await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15)).AnyContext();
+                await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15));
                 if (shouldLog) _logger.LogInformation("Notifications sent: event={id} stack={stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }
         }
@@ -143,7 +143,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
     private async Task<bool> SendEmailNotificationAsync(string userId, Project project, PersistentEvent ev, EventNotification wi, bool shouldLog)
     {
-        var user = await _userRepository.GetByIdAsync(userId, o => o.Cache()).AnyContext();
+        var user = await _userRepository.GetByIdAsync(userId, o => o.Cache());
         if (String.IsNullOrEmpty(user?.EmailAddress))
         {
             if (shouldLog) _logger.LogError("Could not load user {UserId} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");
@@ -178,6 +178,6 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         }
 
         if (shouldLog) _logger.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
-        return await _mailer.SendEventNoticeAsync(user, ev, project, wi.IsNew, wi.IsRegression, wi.TotalOccurrences).AnyContext();
+        return await _mailer.SendEventNoticeAsync(user, ev, project, wi.IsNew, wi.IsRegression, wi.TotalOccurrences);
     }
 }

@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.Data;
+﻿using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
@@ -26,7 +25,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 
         try
         {
-            await ProcessUserDescriptionAsync(context.QueueEntry.Value).AnyContext();
+            await ProcessUserDescriptionAsync(context.QueueEntry.Value);
             _logger.LogInformation("Processed user description: id={Id}", context.QueueEntry.Id);
         }
         catch (DocumentNotFoundException ex)
@@ -45,7 +44,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 
     private async Task ProcessUserDescriptionAsync(EventUserDescription description)
     {
-        var ev = (await _eventRepository.GetByReferenceIdAsync(description.ProjectId, description.ReferenceId).AnyContext()).Documents.FirstOrDefault();
+        var ev = (await _eventRepository.GetByReferenceIdAsync(description.ProjectId, description.ReferenceId)).Documents.FirstOrDefault();
         if (ev is null)
             throw new DocumentNotFoundException(description.ReferenceId);
 
@@ -60,6 +59,6 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 
         ev.SetUserDescription(ud);
 
-        await _eventRepository.SaveAsync(ev).AnyContext();
+        await _eventRepository.SaveAsync(ev);
     }
 }

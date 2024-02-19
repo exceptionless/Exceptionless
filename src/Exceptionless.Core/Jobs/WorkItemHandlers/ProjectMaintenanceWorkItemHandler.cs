@@ -34,7 +34,7 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
         var workItem = context.GetData<ProjectMaintenanceWorkItem>();
         Log.LogInformation("Received upgrade projects work item. Update Default Bot List: {UpdateDefaultBotList} IncrementConfigurationVersion: {IncrementConfigurationVersion}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
 
-        var results = await _projectRepository.GetAllAsync(o => o.PageLimit(LIMIT)).AnyContext();
+        var results = await _projectRepository.GetAllAsync(o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var project in results.Documents)
@@ -56,16 +56,16 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
             }
 
             if (workItem.UpdateDefaultBotList || workItem.IncrementConfigurationVersion || workItem.RemoveOldUsageStats)
-                await _projectRepository.SaveAsync(results.Documents).AnyContext();
+                await _projectRepository.SaveAsync(results.Documents);
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
+            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
 
-            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
+            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
 
             if (results.Documents.Count > 0)
-                await context.RenewLockAsync().AnyContext();
+                await context.RenewLockAsync();
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.WorkItems;
+﻿using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -34,11 +33,11 @@ public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase
         var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
         Log.LogInformation("Setting Is Configured for project: {ProjectId}", workItem.ProjectId);
 
-        var project = await _projectRepository.GetByIdAsync(workItem.ProjectId).AnyContext();
+        var project = await _projectRepository.GetByIdAsync(workItem.ProjectId);
         if (project is null || project.IsConfigured.GetValueOrDefault())
             return;
 
-        project.IsConfigured = workItem.IsConfigured || await _eventRepository.CountAsync(q => q.Project(project.Id)).AnyContext() > 0;
-        await _projectRepository.SaveAsync(project, o => o.Cache()).AnyContext();
+        project.IsConfigured = workItem.IsConfigured || await _eventRepository.CountAsync(q => q.Project(project.Id)) > 0;
+        await _projectRepository.SaveAsync(project, o => o.Cache());
     }
 }

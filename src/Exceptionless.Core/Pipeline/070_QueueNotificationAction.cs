@@ -42,9 +42,9 @@ public class QueueNotificationAction : EventPipelineActionBase
                 IsNew = ctx.IsNew,
                 IsRegression = ctx.IsRegression,
                 TotalOccurrences = ctx.Stack.TotalOccurrences
-            }).AnyContext();
+            });
 
-        var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId).AnyContext();
+        var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
         foreach (var hook in webHooks.Documents)
         {
             if (!ShouldCallWebHook(hook, ctx))
@@ -58,7 +58,7 @@ public class QueueNotificationAction : EventPipelineActionBase
                 WebHookId = hook.Id,
                 Url = hook.Url,
                 Type = WebHookType.General,
-                Data = await _webHookDataPluginManager.CreateFromEventAsync(context).AnyContext()
+                Data = await _webHookDataPluginManager.CreateFromEventAsync(context)
             };
 
             if (notification.Data is null)
@@ -67,7 +67,7 @@ public class QueueNotificationAction : EventPipelineActionBase
                 continue;
             }
 
-            await _webHookNotificationQueue.EnqueueAsync(notification).AnyContext();
+            await _webHookNotificationQueue.EnqueueAsync(notification);
             _logger.LogTrace("Web hook queued: project={ProjectId} url={Url}", ctx.Event.ProjectId, hook.Url);
         }
     }

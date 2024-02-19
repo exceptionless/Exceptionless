@@ -83,16 +83,16 @@ ctx._source.total_occurrences += params.count;";
             }
         };
 
-        var result = await _client.UpdateAsync(request).AnyContext();
+        var result = await _client.UpdateAsync(request);
         if (!result.IsValid)
         {
             _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
             return result.ServerError?.Status == 404;
         }
 
-        await Cache.RemoveAsync(stackId).AnyContext();
+        await Cache.RemoveAsync(stackId);
         if (sendNotifications)
-            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5)).AnyContext();
+            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5));
 
         return true;
     }
@@ -100,7 +100,7 @@ ctx._source.total_occurrences += params.count;";
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
         string key = GetStackSignatureCacheKey(projectId, signatureHash);
-        var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key)).AnyContext();
+        var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key));
         return hit?.Document;
     }
 
@@ -111,9 +111,9 @@ ctx._source.total_occurrences += params.count;";
 
     public async Task MarkAsRegressedAsync(string stackId)
     {
-        var stack = await GetByIdAsync(stackId).AnyContext();
+        var stack = await GetByIdAsync(stackId);
         stack.Status = StackStatus.Regressed;
-        await SaveAsync(stack, o => o.Cache()).AnyContext();
+        await SaveAsync(stack, o => o.Cache());
     }
 
     public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
@@ -129,7 +129,7 @@ ctx._source.total_occurrences += params.count;";
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options, bool isDirtyRead)
     {
-        await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead).AnyContext();
+        await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
 
         var cacheEntries = new Dictionary<string, FindHit<Stack>>();
         foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.SignatureHash)))
@@ -142,8 +142,8 @@ ctx._source.total_occurrences += params.count;";
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null)
     {
         var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
-        await Cache.RemoveAllAsync(keys).AnyContext();
-        await base.InvalidateCacheAsync(documents, changeType).AnyContext();
+        await Cache.RemoveAllAsync(keys);
+        await base.InvalidateCacheAsync(documents, changeType);
     }
 
     private string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);

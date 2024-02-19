@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail;
+﻿using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -23,7 +22,7 @@ public class MailMessageJob : QueueJobBase<MailMessage>
 
         try
         {
-            await _mailSender.SendAsync(context.QueueEntry.Value).AnyContext();
+            await _mailSender.SendAsync(context.QueueEntry.Value);
             _logger.LogInformation("Sent message: to={To} subject={Subject}", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
         }
         catch (Exception ex)

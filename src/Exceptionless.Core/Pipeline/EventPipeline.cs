@@ -50,7 +50,7 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
                 foreach (string key in project.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-            await AppDiagnostics.EventsProcessingTime.TimeAsync(() => base.RunAsync(contexts)).AnyContext();
+            await AppDiagnostics.EventsProcessingTime.TimeAsync(() => base.RunAsync(contexts));
 
             int cancelled = contexts.Count(c => c.IsCancelled);
             if (cancelled > 0)

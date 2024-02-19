@@ -57,7 +57,7 @@ public static class OrganizationExtensions
             return false;
 
         string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
-        var limit = await cacheClient.GetAsync<long>(cacheKey).AnyContext();
+        var limit = await cacheClient.GetAsync<long>(cacheKey);
         return limit.HasValue && limit.Value >= apiThrottleLimit;
     }
 
