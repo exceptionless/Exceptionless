@@ -33,7 +33,7 @@ internal class StringBuilderPool
         if (item is null || Interlocked.CompareExchange(ref firstItem, null, item) != item)
         {
             var items = this.items;
-            for (var i = 0; i < items.Length; i++)
+            for (int i = 0; i < items.Length; i++)
             {
                 item = items[i].Element;
                 if (item is not null && Interlocked.CompareExchange(ref items[i].Element!, null, item) == item)
@@ -61,7 +61,7 @@ internal class StringBuilderPool
         if (firstItem is not null || Interlocked.CompareExchange(ref firstItem, item, null) is not null)
         {
             var items = this.items;
-            for (var i = 0; i < items.Length && Interlocked.CompareExchange(ref items[i].Element, item, null) is not null; ++i)
+            for (int i = 0; i < items.Length && Interlocked.CompareExchange(ref items[i].Element, item, null) is not null; ++i)
             {
             }
         }

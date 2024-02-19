@@ -307,7 +307,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         var sw = Stopwatch.StartNew();
         for (int i = 0; i < iterations; i++)
         {
-            var eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
+            int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
             await _usageService.IncrementTotalAsync(organization.Id, project.Id);
         }
 

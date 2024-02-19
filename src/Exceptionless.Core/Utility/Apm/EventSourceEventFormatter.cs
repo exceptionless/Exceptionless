@@ -9,7 +9,7 @@ internal static class EventSourceEventFormatter
 
     public static string Format(EventWrittenEventArgs eventData)
     {
-        var payloadCollection = eventData.Payload?.ToArray() ?? EmptyPayload;
+        object[]? payloadCollection = eventData.Payload?.ToArray() ?? EmptyPayload;
         ProcessPayloadArray(payloadCollection!);
 
         if (eventData.Message is not null)

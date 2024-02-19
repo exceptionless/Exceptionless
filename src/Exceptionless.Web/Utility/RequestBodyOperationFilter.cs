@@ -9,7 +9,7 @@ public class RequestBodyOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        var attributes = context.MethodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).FirstOrDefault();
+        object? attributes = context.MethodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).FirstOrDefault();
         if (attributes is null)
             return;
 

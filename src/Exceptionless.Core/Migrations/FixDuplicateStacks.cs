@@ -61,7 +61,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                 string? signature = null;
                 try
                 {
-                    var parts = duplicateSignature.Key.Split(':');
+                    string[]? parts = duplicateSignature.Key.Split(':');
                     if (parts.Length != 2)
                     {
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key);
@@ -90,7 +90,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                     // use the stack that has the most events on it so we can reduce the number of updates
                     if (eventCountBuckets.Count > 0)
                     {
-                        var targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
+                        string? targetStackId = eventCountBuckets.OrderByDescending(b => b.Total).First().Key;
                         targetStack = stacks.Documents.Single(d => d.Id == targetStackId);
                         duplicateStacks = stacks.Documents.Where(d => d.Id != targetStackId).ToList();
                     }

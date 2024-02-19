@@ -44,7 +44,7 @@ public class StackService
         if (!stackUsageSet.HasValue)
             return;
 
-        foreach (var (organizationId, projectId, stackId) in stackUsageSet.Value)
+        foreach ((string? organizationId, string? projectId, string? stackId) in stackUsageSet.Value)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;

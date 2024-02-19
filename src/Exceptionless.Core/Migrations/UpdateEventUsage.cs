@@ -73,7 +73,7 @@ public sealed class UpdateEventUsage : MigrationBase
                     foreach (var dateHistogramBucket in dateAggs.Buckets)
                     {
                         var usage = organization.GetUsage(dateHistogramBucket.Date);
-                        var eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
+                        long eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
                         if (eventTotal > usage.Total)
                         {
                             _logger.LogInformation("Updating {OrganizationName} {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", organization.Name, usage.Date, usage.Total, eventTotal);
@@ -124,7 +124,7 @@ public sealed class UpdateEventUsage : MigrationBase
                     foreach (var dateHistogramBucket in dateAggs.Buckets)
                     {
                         var usage = project.GetUsage(dateHistogramBucket.Date);
-                        var eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
+                        long eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
                         if (eventTotal > usage.Total)
                         {
                             _logger.LogInformation("Updating {ProjectName} ({ProjectId}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Date, usage.Total, eventTotal);
