@@ -123,11 +123,11 @@ public class EventPostJobTests : IntegrationTestsBase
         await _stackRepository.SaveAsync(sessionStack, o => o.ImmediateConsistency());
 
         // Verify job processed discarded events.
-        Assert.NotNull(await EnqueueEventPostAsync(new List<PersistentEvent> {
+        Assert.NotNull(await EnqueueEventPostAsync([
             GenerateEvent(type: Event.KnownTypes.Session, sessionId: "abcdefghi"),
             GenerateEvent(type: Event.KnownTypes.Log, source: "test", sessionId: "abcdefghi"),
             GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test3")
-        }));
+        ]));
 
         result = await _job.RunAsync();
         Assert.True(result.IsSuccess);
@@ -232,7 +232,7 @@ public class EventPostJobTests : IntegrationTestsBase
 
     private Task<string?> EnqueueEventPostAsync(PersistentEvent ev)
     {
-        return EnqueueEventPostAsync(new List<PersistentEvent> { ev });
+        return EnqueueEventPostAsync([ev]);
     }
 
     private Task<string?> EnqueueEventPostAsync(List<PersistentEvent> ev)

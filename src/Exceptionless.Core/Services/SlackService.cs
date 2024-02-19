@@ -55,7 +55,7 @@ public class SlackService
         var token = new SlackToken
         {
             AccessToken = result.access_token!,
-            Scopes = result.scope?.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>(),
+            Scopes = result.scope?.Split([","], StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>(),
             UserId = result.user_id!,
             TeamId = result.team_id!,
             TeamName = result.team_name!

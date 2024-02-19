@@ -32,16 +32,16 @@ internal static class EventData
     public static PersistentEvent GenerateEvent(string? organizationId = null, string? projectId = null, string? stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string? referenceId = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
     {
         return GenerateEvent(
-            organizationId is not null ? new[] { organizationId } : null,
-            projectId is not null ? new[] { projectId } : null,
-            stackId is not null ? new[] { stackId } : null,
+            organizationId is not null ? [organizationId] : null,
+            projectId is not null ? [projectId] : null,
+            stackId is not null ? [stackId] : null,
             startDate,
             endDate,
             occurrenceDate,
             maxErrorNestingLevel,
             generateTags,
             generateData,
-            referenceId is not null ? new[] { referenceId } : null,
+            referenceId is not null ? [referenceId] : null,
             type,
             sessionId,
             userIdentity,
@@ -97,7 +97,7 @@ internal static class EventData
 
         if (generateTags)
         {
-            ev.Tags ??= new TagSet();
+            ev.Tags ??= [];
             for (int i = 0; i < RandomData.GetInt(1, 3); i++)
             {
                 string? tag = TestConstants.EventTags.Random();
@@ -112,7 +112,7 @@ internal static class EventData
 
             // limit error variation so that stacking will occur
             if (_randomErrors is null)
-                _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
+                _randomErrors = [.. Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel))];
 
             ev.Data ??= new DataDictionary();
             ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();

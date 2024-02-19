@@ -22,7 +22,7 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
     public bool Login(string username, string password)
     {
         using var de = new DirectoryEntry(_authOptions.LdapConnectionString, username, password, AuthenticationTypes.Secure);
-        using var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", new[] { AD_DISTINGUISHEDNAME });
+        using var ds = new DirectorySearcher(de, $"(&({AD_USERNAME}={username}))", [AD_DISTINGUISHEDNAME]);
         try
         {
             var result = ds.FindOne();
@@ -38,7 +38,7 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
     public string? GetUsernameFromEmailAddress(string email)
     {
         using var entry = new DirectoryEntry(_authOptions.LdapConnectionString);
-        using var searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", new[] { AD_USERNAME });
+        using var searcher = new DirectorySearcher(entry, $"(&({AD_EMAIL}={email}))", [AD_USERNAME]);
         var result = searcher.FindOne();
         return result?.Properties[AD_USERNAME][0].ToString();
     }
@@ -61,7 +61,10 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
     private SearchResult? FindUser(string username)
     {
         using var entry = new DirectoryEntry(_authOptions.LdapConnectionString);
-        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", new[] { AD_FIRSTNAME, AD_LASTNAME, AD_EMAIL });
+        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", [AD_FIRSTNAME,
+            AD_LASTNAME,
+            AD_EMAIL
+        ]);
         return searcher.FindOne();
     }
 }

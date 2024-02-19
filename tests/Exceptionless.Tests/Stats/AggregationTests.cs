@@ -91,7 +91,7 @@ public sealed class AggregationTests : IntegrationTestsBase
     {
         await CreateDataAsync(0, false);
 
-        decimal?[] values = new decimal?[] { null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+        decimal?[] values = [null, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
         foreach (decimal? value in values)
             await CreateEventsAsync(1, null, value);
 
@@ -215,7 +215,8 @@ public sealed class AggregationTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         if (eventCount > 0)
-            await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId });
+            await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : [TestConstants.ProjectId
+            ]);
     }
 
     private async Task CreateEventsAsync(int eventCount, string[]? projectIds, decimal? value = -1)

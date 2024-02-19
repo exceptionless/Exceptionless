@@ -41,13 +41,13 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
             return Task.CompletedTask;
         }
 
-        node.Field = GetCustomFieldName(node.Field, new[] { node.Term });
+        node.Field = GetCustomFieldName(node.Field, [node.Term]);
         return Task.CompletedTask;
     }
 
     public override Task VisitAsync(TermRangeNode node, IQueryVisitorContext context)
     {
-        node.Field = GetCustomFieldName(node.Field, new[] { node.Min, node.Max });
+        node.Field = GetCustomFieldName(node.Field, [node.Min, node.Max]);
         return Task.CompletedTask;
     }
 

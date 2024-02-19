@@ -251,7 +251,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return eventId;
     }
 
-    private Task SetSessionStartEventIdAsync(string projectId, string sessionId, string eventId)
+    private Task<bool> SetSessionStartEventIdAsync(string projectId, string sessionId, string eventId)
     {
         return _cache.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1));
     }
@@ -276,7 +276,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return sessionId;
     }
 
-    private Task SetIdentitySessionIdAsync(string projectId, string identity, string sessionId)
+    private Task<bool> SetIdentitySessionIdAsync(string projectId, string identity, string sessionId)
     {
         return _cache.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity), sessionId, _sessionTimeout);
     }

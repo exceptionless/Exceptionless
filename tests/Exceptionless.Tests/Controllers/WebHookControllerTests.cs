@@ -27,7 +27,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
            .AppendPath("webhooks")
            .Content(new NewWebHook
            {
-               EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted },
+               EventTypes = [WebHook.KnownEventTypes.StackPromoted],
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
                Url = "https://localhost/test"
@@ -45,7 +45,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
             .AppendPath("webhooks")
             .Content(new NewWebHook
             {
-                EventTypes = new[] { "Invalid" },
+                EventTypes = ["Invalid"],
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 ProjectId = SampleDataService.TEST_PROJECT_ID,
                 Url = "https://localhost/test"

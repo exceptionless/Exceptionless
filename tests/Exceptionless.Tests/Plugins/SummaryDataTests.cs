@@ -72,7 +72,7 @@ public class SummaryDataTests : TestWithServices
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                 if (!file.EndsWith("summary.json"))
-                    result.Add(new object[] { Path.GetFullPath(file) });
+                    result.Add([Path.GetFullPath(file)]);
 
             return result.ToArray();
         }
@@ -85,7 +85,7 @@ public class SummaryDataTests : TestWithServices
             var result = new List<object[]>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "stack*.json", SearchOption.AllDirectories))
                 if (!file.EndsWith("summary.json"))
-                    result.Add(new object[] { Path.GetFullPath(file) });
+                    result.Add([Path.GetFullPath(file)]);
 
             return result.ToArray();
         }

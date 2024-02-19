@@ -33,7 +33,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            {
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
-               Scopes = new HashSet<string> { AuthorizationRoles.Client, AuthorizationRoles.User }
+               Scopes = [AuthorizationRoles.Client, AuthorizationRoles.User]
            })
            .StatusCodeShouldBeCreated()
         );
@@ -91,7 +91,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            {
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
-               Scopes = new HashSet<string> { AuthorizationRoles.Client }
+               Scopes = [AuthorizationRoles.Client]
            })
            .StatusCodeShouldBeCreated()
         );

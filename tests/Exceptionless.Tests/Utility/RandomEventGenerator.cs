@@ -43,7 +43,7 @@ public class RandomEventGenerator
     public void PopulateEvent(Event ev, bool setUserIdentity = true)
     {
         ev.Data ??= new DataDictionary();
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
 
         if (MinDate.HasValue || MaxDate.HasValue)
             ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
@@ -112,16 +112,14 @@ public class RandomEventGenerator
             if (RandomData.GetBool())
             {
                 // limit error variation so that stacking will occur
-                if (_randomErrors is null)
-                    _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
+                _randomErrors ??= [.. Enumerable.Range(1, 25).Select(i => GenerateError())];
 
                 ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
             }
             else
             {
                 // limit error variation so that stacking will occur
-                if (_randomSimpleErrors is null)
-                    _randomSimpleErrors = new List<SimpleError>(Enumerable.Range(1, 25).Select(i => GenerateSimpleError()));
+                _randomSimpleErrors ??= [.. Enumerable.Range(1, 25).Select(i => GenerateSimpleError())];
 
                 ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
             }
@@ -205,127 +203,127 @@ public class RandomEventGenerator
 
     #region Sample Data
 
-    public readonly List<string> Identities = new()
-    {
-            "eric@exceptionless.io",
-            "blake@exceptionless.io",
-            "marylou@exceptionless.io"
-        };
+    public readonly List<string> Identities =
+    [
+        "eric@exceptionless.io",
+        "blake@exceptionless.io",
+        "support@exceptionless.io"
+    ];
 
-    public readonly List<string> MachineIpAddresses = new()
-    {
-            "127.34.36.89",
-            "45.66.89.98",
-            "10.12.18.193",
-            "16.89.17.197",
-            "43.10.99.234"
-        };
+    public readonly List<string> MachineIpAddresses =
+    [
+        "127.34.36.89",
+        "45.66.89.98",
+        "10.12.18.193",
+        "16.89.17.197",
+        "43.10.99.234"
+    ];
 
-    public readonly List<string> ClientIpAddresses = new()
-    {
-            "77.23.23.78",
-            "45.66.89.98",
-            "10.12.18.193",
-            "89.23.45.98",
-            "231.23.34.1"
-        };
+    public readonly List<string> ClientIpAddresses =
+    [
+        "77.23.23.78",
+        "45.66.89.98",
+        "10.12.18.193",
+        "89.23.45.98",
+        "231.23.34.1"
+    ];
 
-    public readonly List<string> LogSources = new()
-    {
-            "Some.Class",
-            "MyClass",
-            "CodeGenerator",
-            "Exceptionless.Core.Parser.SomeClass"
-        };
+    public readonly List<string> LogSources =
+    [
+        "Some.Class",
+        "MyClass",
+        "CodeGenerator",
+        "Exceptionless.Core.Parser.SomeClass"
+    ];
 
-    public readonly List<string> LogLevels = new()
-    {
-            "Trace",
-            "Info",
-            "Debug",
-            "Warn",
-            "Error",
-            "Custom"
-        };
+    public readonly List<string> LogLevels =
+    [
+        "Trace",
+        "Info",
+        "Debug",
+        "Warn",
+        "Error",
+        "Custom"
+    ];
 
-    public readonly List<string> FeatureNames = new()
-    {
-            "Feature1",
-            "Feature2",
-            "Feature3",
-            "Feature4"
-        };
+    public readonly List<string> FeatureNames =
+    [
+        "Feature1",
+        "Feature2",
+        "Feature3",
+        "Feature4"
+    ];
 
-    public readonly List<string> MachineNames = new()
-    {
-            "machine1",
-            "machine2",
-            "machine3",
-            "machine4"
-        };
+    public readonly List<string> MachineNames =
+    [
+        "machine1",
+        "machine2",
+        "machine3",
+        "machine4"
+    ];
 
-    public readonly List<string> PageNames = new()
-    {
-            "/page1",
-            "/page2",
-            "/page3",
-            "/page4"
-        };
+    public readonly List<string> PageNames =
+    [
+        "/page1",
+        "/page2",
+        "/page3",
+        "/page4"
+    ];
 
-    public readonly List<string> EventTypes = new()
-    {
-            Event.KnownTypes.Error,
-            Event.KnownTypes.FeatureUsage,
-            Event.KnownTypes.Log,
-            Event.KnownTypes.NotFound,
-            Event.KnownTypes.Session,
-            Event.KnownTypes.SessionEnd
-        };
+    public readonly List<string> EventTypes =
+    [
+        Event.KnownTypes.Error,
+        Event.KnownTypes.FeatureUsage,
+        Event.KnownTypes.Log,
+        Event.KnownTypes.NotFound,
+        Event.KnownTypes.Session,
+        Event.KnownTypes.SessionEnd
+    ];
 
-    public readonly List<string> ExceptionTypes = new()
-    {
-            "System.NullReferenceException",
-            "System.ApplicationException",
-            "System.AggregateException",
-            "System.InvalidArgumentException",
-            "System.InvalidOperationException"
-        };
+    public readonly List<string> ExceptionTypes =
+    [
+        "System.NullReferenceException",
+        "System.ApplicationException",
+        "System.AggregateException",
+        "System.InvalidArgumentException",
+        "System.InvalidOperationException"
+    ];
 
-    public readonly List<string> EventTags = new()
-    {
-            "Tag1",
-            "Tag2",
-            "Tag3",
-            "Tag4",
-            "Tag5",
-            "Tag6",
-            "Tag7",
-            "Tag8",
-            "Tag9",
-            "Tag10"
-        };
+    public readonly List<string> EventTags =
+    [
+        "Tag1",
+        "Tag2",
+        "Tag3",
+        "Tag4",
+        "Tag5",
+        "Tag6",
+        "Tag7",
+        "Tag8",
+        "Tag9",
+        "Tag10"
+    ];
 
-    public readonly List<string> Namespaces = new()
-    {
-            "System",
-            "System.IO",
-            "CodeSmith",
-            "CodeSmith.Generator",
-            "SomeOther.Blah"
-        };
+    public readonly List<string> Namespaces =
+    [
+        "System",
+        "System.IO",
+        "CodeSmith",
+        "CodeSmith.Generator",
+        "SomeOther.Blah"
+    ];
 
-    public readonly List<string> TypeNames = new()
-    {
-            "DateTime",
-            "SomeType",
-            "ProjectGenerator"
-        };
+    public readonly List<string> TypeNames =
+    [
+        "DateTime",
+        "SomeType",
+        "ProjectGenerator"
+    ];
 
-    public readonly List<string> MethodNames = new()
-    {
-            "SomeMethod",
-            "GenerateCode"
-        };
+    public readonly List<string> MethodNames =
+    [
+        "SomeMethod",
+        "GenerateCode"
+    ];
 
     #endregion
 }

@@ -502,7 +502,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        project.PromotedTabs ??= new HashSet<string>();
+        project.PromotedTabs ??= [];
         if (!project.PromotedTabs.Contains(name.Trim()))
         {
             project.PromotedTabs.Add(name.Trim());
@@ -792,7 +792,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project)
     {
-        return (await PopulateProjectStatsAsync(new List<ViewProject> { project })).Single();
+        return (await PopulateProjectStatsAsync([project])).Single();
     }
 
     private async Task<List<ViewProject>> PopulateProjectStatsAsync(List<ViewProject> viewProjects)

@@ -95,7 +95,7 @@ public static class NameValueCollectionExtensions
             value = defaultValues;
 
         if (separators is null)
-            separators = new[] { ',' };
+            separators = [','];
 
         return value?
             .Split(separators, StringSplitOptions.RemoveEmptyEntries)

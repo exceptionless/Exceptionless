@@ -85,7 +85,7 @@ public class RequestInfo : IData
         return Equals((RequestInfo)obj);
     }
 
-    private static readonly List<string> _cookieHashCodeExclusions = new() { "__LastReferenceId" };
+    private static readonly List<string> _cookieHashCodeExclusions = ["__LastReferenceId"];
 
     public override int GetHashCode()
     {

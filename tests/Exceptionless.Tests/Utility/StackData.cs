@@ -20,11 +20,13 @@ internal static class StackData
 
     public static List<Stack> GenerateSampleStacks()
     {
-        return new List<Stack> {
-                GenerateSampleStack(),
-                GenerateStack(id: TestConstants.StackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles),
-                GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId)
-            };
+        return
+        [
+            GenerateSampleStack(),
+            GenerateStack(id: TestConstants.StackId2, organizationId: TestConstants.OrganizationId,
+                projectId: TestConstants.ProjectIdWithNoRoles),
+            GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId)
+        ];
     }
 
     public static Stack GenerateSampleStack(string id = TestConstants.StackId)

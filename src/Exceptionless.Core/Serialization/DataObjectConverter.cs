@@ -17,7 +17,7 @@ public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData
     private static readonly ConcurrentDictionary<string, IMemberAccessor> _propertyAccessors = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Type> _dataTypeRegistry = new(StringComparer.OrdinalIgnoreCase);
     private readonly ILogger _logger;
-    private readonly char[] _filteredChars = { '.', '-', '_' };
+    private readonly char[] _filteredChars = ['.', '-', '_'];
 
     public DataObjectConverter(ILogger logger, IEnumerable<KeyValuePair<string, Type>>? knownDataTypes = null)
     {

@@ -47,90 +47,146 @@ public class FilterData
 {
     public static IEnumerable<object[]> TestCases()
     {
-        yield return new object[] { new FilterScenario {
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "blah",
                 Stack = "",
                 InvertedStack = "",
                 Event = "blah"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "status:fixed",
                 Stack = "status:fixed",
                 InvertedStack = "NOT status:fixed",
                 Event = ""
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "is_fixed:true",
                 Stack = "status:fixed",
                 InvertedStack = "NOT status:fixed",
                 Event = ""
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "is_regressed:true",
                 Stack = "status:regressed",
                 InvertedStack = "NOT status:regressed",
                 Event = ""
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "is_hidden:true",
                 Stack = "NOT (status:open OR status:regressed)",
                 InvertedStack = "(status:open OR status:regressed)",
                 Event = ""
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "is_hidden:false",
                 Stack = "(status:open OR status:regressed)",
                 InvertedStack = "NOT (status:open OR status:regressed)",
                 Event = ""
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "blah:true (status:fixed OR status:open)",
                 Stack = "(status:fixed OR status:open)",
                 InvertedStack = "NOT (status:fixed OR status:open)",
                 Event = "blah:true"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "blah:true",
                 Stack = "",
                 InvertedStack = "",
                 Event = "blah:true"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "type:session",
                 Stack = "type:session",
                 InvertedStack = "type:session",
                 Event = "type:session"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "(organization:123 AND type:log) AND (blah:true (status:fixed OR status:open))",
                 Stack = "(organization:123 AND type:log) AND (status:fixed OR status:open)",
                 InvertedStack = "(organization:123 AND type:log) AND NOT (status:fixed OR status:open)",
                 Event = "(organization:123 AND type:log) AND blah:true"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635)",
                 Stack = "project:123 (status:open OR status:regressed)",
                 InvertedStack = "project:123 NOT (status:open OR status:regressed)",
                 Event = "project:123 ref.session:5f3dce2668de920001466635"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "project:123 (status:open OR status:regressed) (ref.session:5f3dce2668de920001466635 OR project:234)",
                 Stack = "project:123 (status:open OR status:regressed) project:234",
                 InvertedStack = "project:123 NOT (status:open OR status:regressed) project:234",
                 Event = "project:123 (ref.session:5f3dce2668de920001466635 OR project:234)"
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed)",
                 Stack = "first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed)",
                 InvertedStack = "NOT (first_occurrence:[1608854400000 TO 1609188757249] AND (status:open OR status:regressed))",
                 Event = ""
-            }};
-        yield return new object[] { new FilterScenario {
+            }
+        ];
+        yield return
+        [
+            new FilterScenario
+            {
                 Source = "project:537650f3b77efe23a47914f4 first_occurrence:[1609459200000 TO 1609730450521] (status:open OR status:regressed)",
                 Stack = "project:537650f3b77efe23a47914f4 first_occurrence:[1609459200000 TO 1609730450521] (status:open OR status:regressed)",
                 InvertedStack = "project:537650f3b77efe23a47914f4 NOT (first_occurrence:[1609459200000 TO 1609730450521] (status:open OR status:regressed))",
                 Event = "project:537650f3b77efe23a47914f4"
-            }};
+            }
+        ];
     }
 }
 

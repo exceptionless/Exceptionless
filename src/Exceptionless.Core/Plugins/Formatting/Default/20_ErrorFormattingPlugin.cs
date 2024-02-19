@@ -150,13 +150,10 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         var attachment = new SlackMessage.SlackAttachment(ev)
         {
             Color = "#BB423F",
-            Fields = new List<SlackMessage.SlackAttachmentFields> {
-                    new()
-                    {
-                        Title = "Message",
-                        Value = stackingTarget.Error.Message?.Truncate(60)
-                    }
-                }
+            Fields =
+            [
+                new() { Title = "Message", Value = stackingTarget.Error.Message?.Truncate(60) }
+            ]
         };
 
         if (!String.IsNullOrEmpty(errorTypeName))
@@ -169,7 +166,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
-            Attachments = new List<SlackMessage.SlackAttachment> { attachment }
+            Attachments = [attachment]
         };
     }
 }

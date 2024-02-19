@@ -36,7 +36,7 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
 
 public class DelimitedQueryStringValueProviderFactory : IValueProviderFactory
 {
-    private static readonly char[] DefaultDelimiters = { ',' };
+    private static readonly char[] DefaultDelimiters = [','];
     private readonly char[] _delimiters;
 
     public DelimitedQueryStringValueProviderFactory() : this(DefaultDelimiters) { }

@@ -299,7 +299,7 @@ public class Mailer : IMailer
         });
     }
 
-    private Task QueueMessageAsync(MailMessage message, string metricsName)
+    private Task<string> QueueMessageAsync(MailMessage message, string metricsName)
     {
         CleanAddresses(message);
         AppDiagnostics.Counter($"mailer.{metricsName}");

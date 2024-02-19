@@ -97,7 +97,7 @@ public static class EventExtensions
     /// </summary>
     public static void MarkAsCritical(this Event ev)
     {
-        ev.Tags ??= new TagSet();
+        ev.Tags ??= [];
         ev.Tags.Add(Event.KnownTags.Critical);
         ev.Tags.RemoveExcessTags();
     }

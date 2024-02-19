@@ -79,7 +79,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <summary>
     /// Get all
     /// </summary>
-    /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
     public async Task<ActionResult<ViewOrganization>> GetAsync(string? mode = null)
     {
@@ -442,8 +442,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = new List<SubscriptionItemOptions>() };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
+                var update = new SubscriptionUpdateOptions { Items = [] };
+                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
@@ -660,7 +660,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [Route("{id:objectid}/data/{key:minlength(1)}")]
     public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value)
     {
-        if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
+        if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith('-'))
             return BadRequest();
 
         var organization = await GetModelAsync(id, false);
@@ -768,7 +768,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
         var projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0)
             return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 
         return await base.CanDeleteAsync(value);
@@ -807,7 +807,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
     private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization)
     {
-        return (await PopulateOrganizationStatsAsync(new List<ViewOrganization> { organization })).Single();
+        return (await PopulateOrganizationStatsAsync([organization])).Single();
     }
 
     private async Task<List<ViewOrganization>> PopulateOrganizationStatsAsync(List<ViewOrganization> viewOrganizations)

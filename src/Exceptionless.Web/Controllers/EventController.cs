@@ -185,7 +185,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
         var sf = new AppFilter(organization);
         var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
-        return OkWithLinks(model, new[] { GetEntityResourceLink(result.Previous, "previous"), GetEntityResourceLink(result.Next, "next"), GetEntityResourceLink<Stack>(model.StackId, "parent") });
+        return OkWithLinks(model, [GetEntityResourceLink(result.Previous, "previous"),
+            GetEntityResourceLink(result.Next, "next"),
+            GetEntityResourceLink<Stack>(model.StackId, "parent")
+        ]);
     }
 
     /// <summary>
@@ -816,7 +819,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return StatusCode(StatusCodes.Status202Accepted);
     }
 
-    [Obsolete]
+    [Obsolete("Use PATCH /api/v2/events")]
     [HttpPatch("~/api/v1/error/{id:objectid}")]
     [Consumes("application/json")]
     [ConfigurationResponseFilter]
@@ -877,7 +880,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return Ok();
     }
 
-    [Obsolete]
+    [Obsolete("Use GET /api/v2/events/submit")]
     [HttpGet("~/api/v1/events/submit")]
     [HttpGet("~/api/v1/events/submit/{type:minlength(1)}")]
     [HttpGet("~/api/v1/projects/{projectId:objectid}/events/submit")]
@@ -1137,7 +1140,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return Ok();
     }
 
-    [Obsolete]
+    [Obsolete("Use POST /api/v2/events")]
     [HttpPost("~/api/v1/error")]
     [Consumes("application/json", "text/plain")]
     [RequestBodyContentAttribute]
@@ -1147,7 +1150,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return PostAsync(null, 1, userAgent);
     }
 
-    [Obsolete]
+    [Obsolete("Use POST /api/v2/events")]
     [HttpPost("~/api/v1/events")]
     [HttpPost("~/api/v1/projects/{projectId:objectid}/events")]
     [Consumes("application/json", "text/plain")]

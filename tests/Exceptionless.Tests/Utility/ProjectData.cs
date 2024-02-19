@@ -15,11 +15,12 @@ internal static class ProjectData
 
     public static List<Project> GenerateSampleProjects()
     {
-        return new List<Project> {
-                GenerateSampleProject(),
-                GenerateProject(generateId: true, organizationId: TestConstants.OrganizationId2),
-                GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.SuspendedOrganizationId)
-            };
+        return
+        [
+            GenerateSampleProject(),
+            GenerateProject(generateId: true, organizationId: TestConstants.OrganizationId2),
+            GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.SuspendedOrganizationId)
+        ];
     }
 
     public static Project GenerateSampleProject()

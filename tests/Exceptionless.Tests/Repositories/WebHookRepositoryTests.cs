@@ -18,9 +18,32 @@ public sealed class WebHookRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetByOrganizationIdOrProjectIdAsync()
     {
-        await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
-        await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
-        await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
+        await _repository.AddAsync(new WebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            Url = "http://localhost:40000/test",
+            EventTypes =
+            [WebHook.KnownEventTypes.StackPromoted],
+            Version = WebHook.KnownVersions.Version2
+        });
+        await _repository.AddAsync(new WebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            Url = "http://localhost:40000/test1",
+            EventTypes =
+            [WebHook.KnownEventTypes.StackPromoted],
+            Version = WebHook.KnownVersions.Version2
+        });
+        await _repository.AddAsync(new WebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectIdWithNoRoles,
+            Url = "http://localhost:40000/test1",
+            EventTypes =
+            [WebHook.KnownEventTypes.StackPromoted],
+            Version = WebHook.KnownVersions.Version2
+        });
 
         await RefreshDataAsync();
         Assert.Equal(3, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
@@ -32,8 +55,24 @@ public sealed class WebHookRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task CanSaveWebHookVersionAsync()
     {
-        await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version1 });
-        await _repository.AddAsync(new WebHook { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Url = "http://localhost:40000/test1", EventTypes = new[] { WebHook.KnownEventTypes.StackPromoted }, Version = WebHook.KnownVersions.Version2 });
+        await _repository.AddAsync(new WebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            Url = "http://localhost:40000/test",
+            EventTypes =
+            [WebHook.KnownEventTypes.StackPromoted],
+            Version = WebHook.KnownVersions.Version1
+        });
+        await _repository.AddAsync(new WebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectIdWithNoRoles,
+            Url = "http://localhost:40000/test1",
+            EventTypes =
+            [WebHook.KnownEventTypes.StackPromoted],
+            Version = WebHook.KnownVersions.Version2
+        });
 
         await RefreshDataAsync();
         Assert.Equal(WebHook.KnownVersions.Version1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Documents.First().Version);

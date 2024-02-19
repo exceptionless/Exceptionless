@@ -23,7 +23,10 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     private const string ConsecutiveErrorsCacheKey = "errors";
     private const string FirstAttemptCacheKey = "first-attempt";
     private const string LastAttemptCacheKey = "last-attempt";
-    private static readonly string[] _cacheKeys = { ConsecutiveErrorsCacheKey, FirstAttemptCacheKey, LastAttemptCacheKey };
+    private static readonly string[] _cacheKeys = [ConsecutiveErrorsCacheKey,
+        FirstAttemptCacheKey,
+        LastAttemptCacheKey
+    ];
 
     private readonly IProjectRepository _projectRepository;
     private readonly SlackService _slackService;
