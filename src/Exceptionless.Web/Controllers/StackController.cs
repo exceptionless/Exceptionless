@@ -118,7 +118,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         }
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-        if (!stacks.Any())
+        if (stacks.Count is 0)
             return NotFound();
 
         if (stacks.Count > 0)
@@ -173,7 +173,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return BadRequest("Must snooze for at least 5 minutes.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-        if (!stacks.Any())
+        if (stacks.Count is 0)
             return NotFound();
 
         if (stacks.Count > 0)
@@ -286,7 +286,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     public async Task<IActionResult> MarkCriticalAsync(string ids)
     {
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-        if (!stacks.Any())
+        if (stacks.Count is 0)
             return NotFound();
 
         stacks = stacks.Where(s => !s.OccurrencesAreCritical).ToList();
@@ -313,7 +313,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     public async Task<IActionResult> MarkNotCriticalAsync(string ids)
     {
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-        if (!stacks.Any())
+        if (stacks.Count is 0)
             return NotFound();
 
         stacks = stacks.Where(s => s.OccurrencesAreCritical).ToList();
@@ -342,7 +342,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return BadRequest("Can't set stack status to regressed or snoozed.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
-        if (!stacks.Any())
+        if (stacks.Count is 0)
             return NotFound();
 
         stacks = stacks.Where(s => s.Status != status).ToList();
@@ -393,7 +393,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
         var promotedProjectHooks = (await _webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHook.KnownEventTypes.StackPromoted)).ToList();
-        if (!promotedProjectHooks.Any())
+        if (promotedProjectHooks.Count is 0)
             return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState()

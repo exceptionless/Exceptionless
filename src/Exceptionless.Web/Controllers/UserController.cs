@@ -94,7 +94,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (!Request.IsGlobalAdmin())
             users.ForEach(u => u.Roles.Remove(AuthorizationRoles.GlobalAdmin));
 
-        if (organization.Invites.Any())
+        if (organization.Invites.Count > 0)
         {
             users.AddRange(organization.Invites.Select(i => new ViewUser
             {
