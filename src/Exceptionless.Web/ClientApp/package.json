@@ -35,7 +35,7 @@
         "npm-run-all": "^4.1.5",
         "postcss": "^8.4.35",
         "prettier": "^3.2.5",
-        "prettier-plugin-svelte": "^3.1.2",
+        "prettier-plugin-svelte": "^3.2.1",
         "prettier-plugin-tailwindcss": "^0.5.11",
         "svelte": "^4.2.10",
         "svelte-check": "^3.6.4",
