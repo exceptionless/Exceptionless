@@ -503,7 +503,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task WillGetStackEvents()
     {
-        var (stacks, _) = await CreateDataAsync(d =>
+        (List<Stack>? stacks, _) = await CreateDataAsync(d =>
         {
             d.Event().TestProject();
         });

@@ -138,7 +138,7 @@ public class Mailer : IMailer
                 { "InviteToken", invite.Token }
             };
 
-        var body = RenderTemplate(template, data);
+        string body = RenderTemplate(template, data);
         return QueueMessageAsync(new MailMessage
         {
             To = invite.EmailAddress,

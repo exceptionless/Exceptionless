@@ -118,7 +118,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(0, project.StackCount);
         Assert.Equal(0, project.EventCount);
 
-        var (stacks, events) = await CreateDataAsync(d =>
+        (List<Stack>? stacks, List<PersistentEvent>? events) = await CreateDataAsync(d =>
         {
             d.Event().Message("test");
         });

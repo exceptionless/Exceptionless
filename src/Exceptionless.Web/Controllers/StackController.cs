@@ -420,7 +420,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             }
 
             var context = new WebHookDataContext(hook, organization, project, stack, null, stack.TotalOccurrences == 1, stack.Status == StackStatus.Regressed);
-            var data = await _webHookDataPluginManager.CreateFromStackAsync(context);
+            object? data = await _webHookDataPluginManager.CreateFromStackAsync(context);
             if (data is null)
             {
                 _logger.LogWarning("Unable to promote to WebHook with null payload Id={WebHookId}, Url={WebHookUrl}", hook.Id, hook.Url);

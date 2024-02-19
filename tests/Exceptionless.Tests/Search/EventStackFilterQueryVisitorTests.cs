@@ -38,7 +38,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
         Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
         var eventStackFilter = new EventStackFilter();
-        var stackFilter = await eventStackFilter.GetEventFilterAsync(scenario.Source);
+        string? stackFilter = await eventStackFilter.GetEventFilterAsync(scenario.Source);
         Assert.Equal(scenario.Event, stackFilter.Trim());
     }
 }
@@ -157,7 +157,7 @@ public class FilterScenario : IXunitSerializable
 
     public void Serialize(IXunitSerializationInfo info)
     {
-        var json = JsonConvert.SerializeObject(this);
+        string? json = JsonConvert.SerializeObject(this);
         info.AddValue("objValue", json);
     }
 }

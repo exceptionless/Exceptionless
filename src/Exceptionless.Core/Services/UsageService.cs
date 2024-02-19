@@ -64,7 +64,7 @@ public class UsageService
                 // Should we wait to remove this in case there is a failure? We should just remove the organization id once processed.
                 await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
 
-                foreach (var organizationId in organizationIdsValue.Value)
+                foreach (string? organizationId in organizationIdsValue.Value)
                 {
                     var organization = await _organizationRepository.GetByIdAsync(organizationId);
                     if (organization is null)
@@ -140,7 +140,7 @@ public class UsageService
             {
                 await _cache.RemoveAsync(GetProjectSetKey(bucketUtc));
 
-                foreach (var projectId in projectIdsValue.Value)
+                foreach (string? projectId in projectIdsValue.Value)
                 {
                     var project = await _projectRepository.GetByIdAsync(projectId);
                     if (project is null)
@@ -384,13 +384,13 @@ public class UsageService
 
         var utcNow = SystemClock.UtcNow;
 
-        var bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
+        long bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
         await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
 
         await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
         await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
-        var maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
+        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
 
         var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
@@ -464,7 +464,7 @@ public class UsageService
         if (timeLeftInMonth < TimeSpan.FromDays(1))
             return maxEventsPerMonth;
 
-        var bucketsLeftInMonth = timeLeftInMonth / _bucketSize;
+        double bucketsLeftInMonth = timeLeftInMonth / _bucketSize;
 
         // allow boosting to 10x the max / bucket if the events were divided evenly
         return (int)Math.Ceiling((maxEventsPerMonth / bucketsLeftInMonth) * 10);

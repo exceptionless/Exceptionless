@@ -19,7 +19,7 @@ public class MetricOptions
         options.Data = cs.ParseConnectionString();
         options.Provider = options.Data.GetString(nameof(options.Provider));
 
-        var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
+        string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
         if (!String.IsNullOrEmpty(providerConnectionString))
             options.Data.AddRange(providerConnectionString.ParseConnectionString());
 
