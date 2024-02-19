@@ -356,8 +356,7 @@ public static class EventExtensions
 
     public static void RemoveUserIdentity(this Event ev)
     {
-        if (ev.Data is not null)
-            ev.Data.Remove(Event.KnownDataKeys.UserInfo);
+        ev.Data?.Remove(Event.KnownDataKeys.UserInfo);
     }
 
     /// <summary>

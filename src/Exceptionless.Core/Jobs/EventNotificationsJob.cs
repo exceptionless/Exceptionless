@@ -14,7 +14,6 @@ using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
-#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs;
 
@@ -175,7 +174,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
         // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
-        if (_appOptions.AppMode != AppMode.Production && !_emailOptions.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v)))
+        if (_appOptions.AppMode != AppMode.Production && !_emailOptions.AllowedOutboundAddresses.Contains(v => user.EmailAddress.Contains(v, StringComparison.InvariantCultureIgnoreCase)))
         {
             if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
             return false;

@@ -473,7 +473,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
-        if (organizations.Count(o => !o.IsSuspended) == 0)
+        if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
         var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_options.MaximumRetentionDays));

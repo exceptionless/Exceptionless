@@ -9,14 +9,14 @@ internal static class EventSourceEventFormatter
 
     public static string Format(EventWrittenEventArgs eventData)
     {
-        object[]? payloadCollection = eventData.Payload?.ToArray() ?? EmptyPayload;
+        object?[] payloadCollection = eventData.Payload?.ToArray() ?? EmptyPayload;
         ProcessPayloadArray(payloadCollection!);
 
         if (eventData.Message is not null)
         {
             try
             {
-                return string.Format(CultureInfo.InvariantCulture, eventData.Message, payloadCollection);
+                return String.Format(CultureInfo.InvariantCulture, eventData.Message, payloadCollection);
             }
             catch (FormatException)
             {
@@ -29,7 +29,7 @@ internal static class EventSourceEventFormatter
         {
             stringBuilder.Append(eventData.EventName);
 
-            if (!string.IsNullOrWhiteSpace(eventData.Message))
+            if (!String.IsNullOrWhiteSpace(eventData.Message))
             {
                 stringBuilder.AppendLine();
                 stringBuilder.Append(nameof(eventData.Message)).Append(" = ").Append(eventData.Message);

@@ -17,7 +17,7 @@ public class SemanticVersionParser
 
     public SemanticVersion? Parse(string? version, IDictionary<string, SemanticVersion>? versionCache = null)
     {
-        if (string.IsNullOrEmpty(version))
+        if (String.IsNullOrEmpty(version))
             return null;
 
         if (versionCache is not null && versionCache.TryGetValue(version, out var cachedVersion))

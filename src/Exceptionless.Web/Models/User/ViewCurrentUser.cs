@@ -27,7 +27,7 @@ public record ViewCurrentUser : ViewUser
     public bool HasLocalAccount { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
 
-    private string? HMACSHA256HashString(string value, IntercomOptions options)
+    private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {
         if (!options.EnableIntercom)
             return null;
