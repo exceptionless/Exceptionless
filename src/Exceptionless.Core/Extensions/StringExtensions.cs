@@ -242,11 +242,11 @@ public static class StringExtensions
 
     private static bool CheckForMatch(string pattern, string value, bool ignoreCase = true)
     {
-        bool startsWithWildcard = pattern.StartsWith("*");
+        bool startsWithWildcard = pattern.StartsWith('*');
         if (startsWithWildcard)
             pattern = pattern.Substring(1);
 
-        bool endsWithWildcard = pattern.EndsWith("*");
+        bool endsWithWildcard = pattern.EndsWith('*');
         if (endsWithWildcard)
             pattern = pattern.Substring(0, pattern.Length - 1);
 

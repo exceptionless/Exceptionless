@@ -27,7 +27,7 @@ public static class PersistentEventExtensions
                 continue;
             }
 
-            if (field.StartsWith("@") || ev.Data[key] is null)
+            if (field.StartsWith('@') || ev.Data[key] is null)
                 continue;
 
             if (!field.IsValidFieldName())

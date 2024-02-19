@@ -31,8 +31,7 @@ public class ExceptionlessState : Dictionary<string, object?>
         if (TryGetValue(Tags, out object? v) && v is HashSet<string> t)
             tagList = t;
 
-        if (tagList is null)
-            tagList = new HashSet<string>();
+        tagList ??= new HashSet<string>();
 
         tagList.Add(tag);
         base[Tags] = tagList;
