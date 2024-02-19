@@ -27,14 +27,13 @@
     }));
     const table = createSvelteTable(options);
 
+    const { getJSON, loading } = new FetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
-
     let before: string | undefined;
 
     parameters.subscribe(async () => await loadData(true));
     filter.subscribe(async () => await loadData(true));
 
-    const { getJSON, loading } = new FetchClient();
     async function loadData(filterChanged: boolean = false) {
         if ($loading && filterChanged && !before) {
             return;
