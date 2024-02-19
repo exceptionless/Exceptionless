@@ -41,7 +41,7 @@
         "svelte-check": "^3.6.4",
         "swagger-typescript-api": "^13.0.3",
         "tslib": "^2.6.2",
-        "typescript": "^5.4.0-beta",
+        "typescript": "^5.4.0-dev.20240219",
         "vite": "^5.1.3",
         "vitest": "^1.3.0"
     },
