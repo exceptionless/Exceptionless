@@ -1036,7 +1036,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.Message = RandomData.GetSentence();
 
                 ev.Data ??= new DataDictionary();
-                var keysToRemove = ev.Data.Keys.Where(k => !k.StartsWith("@") && k != "MachineName" && k != "job" && k != "host" && k != "process").ToList();
+                var keysToRemove = ev.Data.Keys.Where(k => !k.StartsWith('@') && k != "MachineName" && k != "job" && k != "host" && k != "process").ToList();
                 foreach (string key in keysToRemove)
                     ev.Data.Remove(key);
 

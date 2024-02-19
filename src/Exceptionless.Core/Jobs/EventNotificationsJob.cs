@@ -118,16 +118,13 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                 if (!shouldReport)
                     continue;
 
-                bool processed;
-                switch (kv.Key)
+                bool processed = kv.Key switch
                 {
-                    case Project.NotificationIntegrations.Slack:
-                        processed = await _slackService.SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression).AnyContext();
-                        break;
-                    default:
-                        processed = await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog).AnyContext();
-                        break;
-                }
+                    Project.NotificationIntegrations.Slack => await _slackService
+                        .SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression)
+                        .AnyContext(),
+                    _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog).AnyContext()
+                };
 
                 if (shouldLog) _logger.LogTrace("Finished processing notification: {Key}", kv.Key);
                 if (processed)
