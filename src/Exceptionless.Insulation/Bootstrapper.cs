@@ -71,7 +71,7 @@ public class Bootstrapper
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
         {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-            healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => (MailKitMailSender)s.GetRequiredService<IMailSender>(), null, new[] { "Mail", "MailMessage", "AllJobs" }));
+            healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => (MailKitMailSender)s.GetRequiredService<IMailSender>(), null, ["Mail", "MailMessage", "AllJobs"]));
         }
     }
 

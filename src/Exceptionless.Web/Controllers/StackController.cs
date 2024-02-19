@@ -75,7 +75,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         _semanticVersionParser = semanticVersionParser;
         _options = options;
 
-        AllowedDateFields.AddRange(new[] { StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence });
+        AllowedDateFields.AddRange([StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence]);
         DefaultDateField = StackIndex.Alias.LastOccurrence;
     }
 

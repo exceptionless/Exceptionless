@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 public sealed class SessionPlugin : EventProcessorPluginBase
 {
     private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(15);
-    private readonly ICacheClient _cache;
+    private readonly ScopedCacheClient _cache;
     private readonly IEventRepository _eventRepository;
     private readonly UpdateStatsAction _updateStats;
     private readonly AssignToStackAction _assignToStack;

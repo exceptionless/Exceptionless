@@ -808,7 +808,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(ev);
 
         var stack = await _stackRepository.GetByIdAsync(ev.StackId);
-        stack.MarkFixed(new SemanticVersion(1, 0, 1, new[] { "rc2" }));
+        stack.MarkFixed(new SemanticVersion(1, 0, 1, ["rc2"]));
         await _stackRepository.SaveAsync(stack, o => o.Cache());
 
         var contexts = new List<EventContext> {
@@ -1125,15 +1125,15 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         }
     }
 
-    public static IEnumerable<object[]> Events
+    public static TheoryData<string> Events
     {
         get
         {
-            var result = new List<object[]>();
+            var result = new List<string>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "ErrorData"), "*.expected.json", SearchOption.AllDirectories))
-                result.Add([file]);
+                result.Add(file);
 
-            return result.ToArray();
+            return new TheoryData<string>(result);
         }
     }
 

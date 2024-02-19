@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Newtonsoft.Json;
@@ -68,16 +68,16 @@ public sealed class EventParserTests : TestWithServices
         Assert.NotNull(ev);
     }
 
-    public static IEnumerable<object[]> Events
+    public static TheoryData<string> Events
     {
         get
         {
-            var result = new List<object[]>();
+            var result = new List<string>();
             foreach (string file in Directory.GetFiles(Path.Combine("..", "..", "..", "Search", "Data"), "event*.json", SearchOption.AllDirectories))
                 if (!file.EndsWith("summary.json"))
-                    result.Add([Path.GetFullPath(file)]);
+                    result.Add(Path.GetFullPath(file));
 
-            return result.ToArray();
+            return new TheoryData<string>(result);
         }
     }
 }

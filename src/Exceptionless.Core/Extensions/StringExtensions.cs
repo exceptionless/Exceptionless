@@ -7,6 +7,9 @@ namespace Exceptionless.Core.Extensions;
 
 public static class StringExtensions
 {
+    private static readonly char[] _lineEndingCharacters = ['\r', '\n'];
+    private static readonly char[] _periodSeparator = ['.'];
+
     public static bool IsLocalHost(this string? ip)
     {
         if (String.IsNullOrEmpty(ip))
@@ -300,7 +303,7 @@ public static class StringExtensions
 
     public static IEnumerable<string> SplitLines(this string text)
     {
-        return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
+        return text.Split(_lineEndingCharacters, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
     }
 
     public static string StripInvisible(this string s)
@@ -334,7 +337,7 @@ public static class StringExtensions
 
     public static string TypeName(this string typeFullName)
     {
-        return typeFullName.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+        return typeFullName.Split(_periodSeparator, StringSplitOptions.RemoveEmptyEntries).Last();
     }
 
     public static string ToLowerFiltered(this string value, char[] charsToRemove)

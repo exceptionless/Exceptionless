@@ -191,13 +191,10 @@ public class RandomEventGenerator
             DeclaringNamespace = Namespaces.Random(),
             DeclaringType = TypeNames.Random(),
             Name = MethodNames.Random(),
-            Parameters = new ParameterCollection {
-                    new()
-                    {
-                        Type = "String",
-                        Name = "path"
-                    }
-                }
+            Parameters =
+            [
+                new Parameter { Type = "String", Name = "path" }
+            ]
         };
     }
 

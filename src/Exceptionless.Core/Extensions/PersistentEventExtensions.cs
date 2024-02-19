@@ -6,6 +6,8 @@ namespace Exceptionless;
 
 public static class PersistentEventExtensions
 {
+    private static readonly char[] _commaSeparator = [','];
+
     public static void CopyDataToIndex(this PersistentEvent ev, string[]? keysToCopy = null)
     {
         if (ev.Data is null)
@@ -248,14 +250,14 @@ public static class PersistentEventExtensions
         var ri = ev.GetRequestInfo();
         if (!String.IsNullOrEmpty(ri?.ClientIpAddress))
         {
-            foreach (string ip in ri.ClientIpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (string ip in ri.ClientIpAddress.Split(_commaSeparator, StringSplitOptions.RemoveEmptyEntries))
                 yield return ip.Trim();
         }
 
         var ei = ev.GetEnvironmentInfo();
         if (!String.IsNullOrEmpty(ei?.IpAddress))
         {
-            foreach (string ip in ei.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (string ip in ei.IpAddress.Split(_commaSeparator, StringSplitOptions.RemoveEmptyEntries))
                 yield return ip.Trim();
         }
     }
