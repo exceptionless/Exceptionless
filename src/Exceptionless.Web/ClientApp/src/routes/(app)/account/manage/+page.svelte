@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getGravatarFromCurrentUserSrc } from '$api/gravatar';
-    import { getMeQuery } from '$api/queries/users';
+    import { getMeQuery } from '$api/usersApi';
     import { derived } from 'svelte/store';
 
     import * as Avatar from '$comp/ui/avatar';
