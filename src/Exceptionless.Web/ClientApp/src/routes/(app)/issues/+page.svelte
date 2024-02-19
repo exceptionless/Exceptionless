@@ -2,7 +2,7 @@
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import SearchInput from '$comp/SearchInput.svelte';
-    import { getEventsByStackIdQuery } from '$api/queries/events';
+    import { getEventsByStackIdQuery } from '$api/eventsApi';
 
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';

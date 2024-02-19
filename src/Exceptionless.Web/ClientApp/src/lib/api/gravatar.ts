@@ -1,5 +1,5 @@
 import { derived } from 'svelte/store';
-import { getMeQuery } from './queries/users';
+import { getMeQuery } from './usersApi';
 
 export function getGravatarFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
     return derived(query ?? getMeQuery(), async ($userResponse) => {

@@ -4,7 +4,7 @@
     import type { PersistentEvent, ViewProject } from '$lib/models/api';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { getExtendedDataItems } from '$lib/helpers/persistent-event';
-    import { mutatePromoteTab } from '$api/queries/projects';
+    import { mutatePromoteTab } from '$api/projectsApi';
     import { createEventDispatcher } from 'svelte';
 
     export let event: PersistentEvent;

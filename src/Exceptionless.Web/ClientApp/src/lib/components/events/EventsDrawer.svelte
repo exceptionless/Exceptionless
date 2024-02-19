@@ -10,12 +10,12 @@
     import Request from './views/Request.svelte';
     import TraceLog from './views/TraceLog.svelte';
     import ExtendedData from './views/ExtendedData.svelte';
-    import { getEventByIdQuery } from '$api/queries/events';
+    import { getEventByIdQuery } from '$api/eventsApi';
     import DateTime from '$comp/formatters/DateTime.svelte';
     import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-    import { getProjectByIdQuery } from '$api/queries/projects';
-    import { getStackByIdQuery } from '$api/queries/stacks';
+    import { getProjectByIdQuery } from '$api/projectsApi';
+    import { getStackByIdQuery } from '$api/stacksApi';
     import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import PromotedExtendedData from './views/PromotedExtendedData.svelte';
     import * as Table from '$comp/ui/table';

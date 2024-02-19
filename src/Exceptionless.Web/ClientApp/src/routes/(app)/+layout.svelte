@@ -7,7 +7,7 @@
     import { isCommandOpen, isSidebarOpen, isSmallScreen } from '$lib/stores/app';
 
     import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
-    import { WebSocketClient } from '$lib/api/WebSocketClient';
+    import { WebSocketClient } from '$api/WebSocketClient';
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
     import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
     import { validate } from '$lib/validation/validation';
@@ -16,7 +16,7 @@
     import { useQueryClient } from '@tanstack/svelte-query';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
     import { derived } from 'svelte/store';
-    import { getMeQuery } from '$api/queries/users';
+    import { getMeQuery } from '$api/usersApi';
     import { routes, type NavigationItemContext } from '../routes';
 
     isAuthenticated.subscribe(async (authenticated) => {
