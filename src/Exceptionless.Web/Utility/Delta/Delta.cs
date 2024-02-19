@@ -93,8 +93,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
             else
             {
                 bool isGuid = cacheHit.MemberType == typeof(Guid) && value is string;
-                bool isEnum = cacheHit.MemberType.IsEnum && value is Int64 and <= Int32.MaxValue;
-                bool isInt32 = cacheHit.MemberType == typeof(int) && value is Int64 and <= Int32.MaxValue;
+                bool isEnum = cacheHit.MemberType.IsEnum && value is long and <= Int32.MaxValue;
+                bool isInt32 = cacheHit.MemberType == typeof(int) && value is long and <= Int32.MaxValue;
 
                 if (!cacheHit.MemberType.IsPrimitive && !isGuid && !isEnum && !cacheHit.MemberType.IsInstanceOfType(value))
                     return false;

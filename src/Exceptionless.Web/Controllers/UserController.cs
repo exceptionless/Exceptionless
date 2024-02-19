@@ -179,7 +179,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
-        user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.InvariantCultureIgnoreCase)) > 0;
+        user.IsEmailAddressVerified = user.OAuthAccounts.Any(oa => String.Equals(oa.EmailAddress(), email, StringComparison.InvariantCultureIgnoreCase));
         if (!user.IsEmailAddressVerified)
             user.CreateVerifyEmailAddressToken();
         else
@@ -312,9 +312,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
             return NotFound();
 
-        if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+        if (user.Roles.Remove(AuthorizationRoles.GlobalAdmin))
         {
-            user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
             await _repository.SaveAsync(user, o => o.Cache());
         }
 

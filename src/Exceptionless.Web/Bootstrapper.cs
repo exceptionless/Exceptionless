@@ -1,6 +1,5 @@
 using AutoMapper;
 using Exceptionless.Core;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models;
@@ -50,7 +49,7 @@ public class Bootstrapper
 
     public class ApiMappings : Profile
     {
-        public ApiMappings(BillingPlans plans)
+        public ApiMappings()
         {
             CreateMap<UserDescription, EventUserDescription>();
 

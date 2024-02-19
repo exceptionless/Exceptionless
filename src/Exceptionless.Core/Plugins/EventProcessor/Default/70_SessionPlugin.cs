@@ -236,7 +236,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return sessions;
     }
 
-    private string GetSessionStartEventIdCacheKey(string projectId, string sessionId)
+    private static string GetSessionStartEventIdCacheKey(string projectId, string sessionId)
     {
         return String.Concat(projectId, ":start:", sessionId);
     }
@@ -256,7 +256,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return _cache.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1));
     }
 
-    private string GetIdentitySessionIdCacheKey(string projectId, string identity)
+    private static string GetIdentitySessionIdCacheKey(string projectId, string identity)
     {
         return String.Concat(projectId, ":identity:", identity.ToSHA1());
     }
