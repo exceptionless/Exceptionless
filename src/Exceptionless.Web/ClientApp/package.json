@@ -50,7 +50,7 @@
         "@iconify-json/mdi": "^1.1.64",
         "@tanstack/svelte-query": "^5.20.1",
         "@tanstack/svelte-query-devtools": "^5.20.1",
-        "@tanstack/svelte-table": "^8.11.8",
+        "@tanstack/svelte-table": "^8.12.0",
         "@web3-storage/parse-link-header": "^3.1.0",
         "bits-ui": "^0.18.0",
         "chart.js": "^4.4.1",
