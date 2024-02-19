@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -23,7 +22,7 @@ public class CacheHealthCheck : IHealthCheck
         try
         {
             var cache = new ScopedCacheClient(_cache, "health");
-            var cacheValue = await cache.GetAsync<string>("__PING__").AnyContext();
+            var cacheValue = await cache.GetAsync<string>("__PING__");
             if (cacheValue.HasValue)
                 return HealthCheckResult.Unhealthy("Cache Not Working");
         }

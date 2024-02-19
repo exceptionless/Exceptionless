@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Plugins.EventProcessor;
+﻿using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -21,7 +20,7 @@ public class SaveEventAction : EventPipelineActionBase
     {
         try
         {
-            await _eventRepository.AddAsync(contexts.Select(c => c.Event).ToList()).AnyContext();
+            await _eventRepository.AddAsync(contexts.Select(c => c.Event).ToList());
         }
         catch (Exception ex)
         {

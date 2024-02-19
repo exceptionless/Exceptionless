@@ -53,13 +53,13 @@ public sealed class GeoPlugin : EventProcessorPluginBase
 
     private async Task UpdateGeoInformationAsync(EventContext context, IEnumerable<string?> ips)
     {
-        var result = await GetGeoFromIpAddressesAsync(ips).AnyContext();
+        var result = await GetGeoFromIpAddressesAsync(ips);
         UpdateGeoAndLocation(context.Event, result);
     }
 
     private async Task UpdateGeoInformationAsync(IEnumerable<EventContext> contexts, IEnumerable<string?> ips)
     {
-        var result = await GetGeoFromIpAddressesAsync(ips).AnyContext();
+        var result = await GetGeoFromIpAddressesAsync(ips);
         contexts.ForEach(c => UpdateGeoAndLocation(c.Event, result));
     }
 
@@ -80,7 +80,7 @@ public sealed class GeoPlugin : EventProcessorPluginBase
             if (String.IsNullOrEmpty(ip))
                 continue;
 
-            var result = await _geoIpService.ResolveIpAsync(ip.ToAddress()).AnyContext();
+            var result = await _geoIpService.ResolveIpAsync(ip.ToAddress());
             if (result is null || !result.IsValid())
                 continue;
 

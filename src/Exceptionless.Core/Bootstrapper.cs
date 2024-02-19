@@ -241,11 +241,11 @@ public class Bootstrapper
             return;
 
         var userRepository = container.GetRequiredService<IUserRepository>();
-        if (await userRepository.CountAsync().AnyContext() != 0)
+        if (await userRepository.CountAsync() != 0)
             return;
 
         var dataHelper = container.GetRequiredService<SampleDataService>();
-        await dataHelper.CreateDataAsync().AnyContext();
+        await dataHelper.CreateDataAsync();
     }
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)

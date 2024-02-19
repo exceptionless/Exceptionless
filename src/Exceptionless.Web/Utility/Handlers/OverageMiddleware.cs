@@ -76,12 +76,12 @@ public sealed class OverageMiddleware
         if (tooBig)
         {
             string? projectId = context.Request.GetDefaultProjectId();
-            await _usageService.IncrementTooBigAsync(organizationId, projectId).AnyContext();
+            await _usageService.IncrementTooBigAsync(organizationId, projectId);
             context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
             return;
         }
 
-        int eventsLeft = await _usageService.GetEventsLeftAsync(organizationId).AnyContext();
+        int eventsLeft = await _usageService.GetEventsLeftAsync(organizationId);
         if (eventsLeft <= 0)
         {
             string? projectId = context.Request.GetDefaultProjectId();

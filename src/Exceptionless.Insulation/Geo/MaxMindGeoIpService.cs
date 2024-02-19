@@ -35,12 +35,12 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         if (ip.IsPrivateNetwork())
             return null;
 
-        var cacheValue = await _localCache.GetAsync<GeoResult?>(ip).AnyContext();
+        var cacheValue = await _localCache.GetAsync<GeoResult?>(ip);
         if (cacheValue.HasValue)
             return cacheValue.Value;
 
         GeoResult? result = null;
-        var database = await GetDatabaseAsync(cancellationToken).AnyContext();
+        var database = await GetDatabaseAsync(cancellationToken);
         if (database is null)
             return null;
 
@@ -58,7 +58,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
                 };
             }
 
-            await _localCache.SetAsync(ip, result).AnyContext();
+            await _localCache.SetAsync(ip, result);
             return result;
         }
         catch (Exception ex)
@@ -66,7 +66,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
             if (ex is GeoIP2Exception)
             {
                 _logger.LogTrace(ex, ex.Message);
-                await _localCache.SetAsync<GeoResult?>(ip, null).AnyContext();
+                await _localCache.SetAsync<GeoResult?>(ip, null);
             }
             else
             {
@@ -94,7 +94,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
         _databaseLastChecked = SystemClock.UtcNow;
 
-        if (!await _storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH).AnyContext())
+        if (!await _storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH))
         {
             _logger.LogWarning("No GeoIP database was found.");
             return null;
@@ -103,7 +103,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         _logger.LogInformation("Loading GeoIP database.");
         try
         {
-            using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, StreamMode.Read, cancellationToken).AnyContext())
+            using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, StreamMode.Read, cancellationToken))
                 _database = new DatabaseReader(stream);
         }
         catch (Exception ex)

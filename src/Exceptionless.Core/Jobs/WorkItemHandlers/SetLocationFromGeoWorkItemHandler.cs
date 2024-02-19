@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Geo;
+﻿using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -39,12 +38,12 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
         if (!GeoResult.TryParse(workItem.Geo, out var result) || result is null)
             return;
 
-        var location = await _cache.GetAsync<Location?>(workItem.Geo, null).AnyContext();
+        var location = await _cache.GetAsync<Location?>(workItem.Geo, null);
         if (location is null)
         {
             try
             {
-                result = await _geocodeService.ReverseGeocodeAsync(result.Latitude.GetValueOrDefault(), result.Longitude.GetValueOrDefault()).AnyContext();
+                result = await _geocodeService.ReverseGeocodeAsync(result.Latitude.GetValueOrDefault(), result.Longitude.GetValueOrDefault());
                 location = result?.ToLocation();
                 AppDiagnostics.UsageGeocodingApi.Add(1);
             }
@@ -57,13 +56,13 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
         if (location is null)
             return;
 
-        await _cache.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3)).AnyContext();
+        await _cache.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3));
 
-        var ev = await _eventRepository.GetByIdAsync(workItem.EventId).AnyContext();
+        var ev = await _eventRepository.GetByIdAsync(workItem.EventId);
         if (ev is null)
             return;
 
         ev.SetLocation(location);
-        await _eventRepository.SaveAsync(ev).AnyContext();
+        await _eventRepository.SaveAsync(ev);
     }
 }

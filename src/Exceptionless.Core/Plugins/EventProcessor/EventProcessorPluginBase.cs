@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
 
@@ -20,7 +19,7 @@ public abstract class EventProcessorPluginBase : PluginBase, IEventProcessorPlug
         {
             try
             {
-                await EventProcessingAsync(ctx).AnyContext();
+                await EventProcessingAsync(ctx);
             }
             catch (Exception ex)
             {
@@ -48,7 +47,7 @@ public abstract class EventProcessorPluginBase : PluginBase, IEventProcessorPlug
         {
             try
             {
-                await EventProcessedAsync(ctx).AnyContext();
+                await EventProcessedAsync(ctx);
             }
             catch (Exception ex)
             {

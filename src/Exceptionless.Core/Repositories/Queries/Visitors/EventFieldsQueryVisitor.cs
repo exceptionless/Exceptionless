@@ -30,7 +30,7 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
 
         node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
         foreach (var child in node.Children)
-            await child.AcceptAsync(this, context).AnyContext();
+            await child.AcceptAsync(this, context);
     }
 
     public override Task VisitAsync(TermNode node, IQueryVisitorContext context)

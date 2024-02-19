@@ -36,7 +36,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
         _lastActivity = SystemClock.UtcNow;
-        var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SearchAfterPaging().PageLimit(100)).AnyContext();
+        var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SearchAfterPaging().PageLimit(100));
         int sessionsClosed = 0;
         int totalSessions = 0;
         if (results.Documents.Count == 0)
@@ -52,7 +52,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             foreach (var sessionStart in results.Documents)
             {
                 var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
-                var heartbeatResult = await GetHeartbeatAsync(sessionStart).AnyContext();
+                var heartbeatResult = await GetHeartbeatAsync(sessionStart);
 
                 bool closeDuplicate = heartbeatResult?.CacheKey is not null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
                 if (heartbeatResult?.CacheKey is not null && !closeDuplicate)
@@ -80,22 +80,22 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             sessionsClosed += sessionsToUpdate.Count;
 
             if (sessionsToUpdate.Count > 0)
-                await _eventRepository.SaveAsync(sessionsToUpdate).AnyContext();
+                await _eventRepository.SaveAsync(sessionsToUpdate);
 
             if (cacheKeysToRemove.Count > 0)
-                await _cache.RemoveAllAsync(cacheKeysToRemove).AnyContext();
+                await _cache.RemoveAllAsync(cacheKeysToRemove);
 
             _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate.Count, results.Documents.Count);
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
+            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
 
-            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
+            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
 
             if (results.Documents.Count > 0)
             {
-                await context.RenewLockAsync().AnyContext();
+                await context.RenewLockAsync();
                 _lastActivity = SystemClock.UtcNow;
             }
         }
@@ -109,7 +109,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         string? sessionId = sessionStart.GetSessionId();
         if (!String.IsNullOrWhiteSpace(sessionId))
         {
-            var result = await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}").AnyContext();
+            var result = await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}");
             if (result is not null)
                 return result;
         }
@@ -118,15 +118,15 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         if (String.IsNullOrWhiteSpace(user?.Identity))
             return null;
 
-        return await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}").AnyContext();
+        return await GetLastHeartbeatActivityUtcAsync($"Project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}");
     }
 
     private async Task<HeartbeatResult?> GetLastHeartbeatActivityUtcAsync(string cacheKey)
     {
-        var cacheValue = await _cache.GetAsync<DateTime>(cacheKey).AnyContext();
+        var cacheValue = await _cache.GetAsync<DateTime>(cacheKey);
         if (cacheValue.HasValue)
         {
-            bool close = await _cache.GetAsync($"{cacheKey}-close", false).AnyContext();
+            bool close = await _cache.GetAsync($"{cacheKey}-close", false);
             return new HeartbeatResult { ActivityUtc = cacheValue.Value, Close = close, CacheKey = cacheKey };
         }
 

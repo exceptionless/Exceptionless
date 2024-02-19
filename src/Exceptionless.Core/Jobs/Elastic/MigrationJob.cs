@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -23,18 +22,18 @@ public class MigrationJob : JobBase
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        await _configuration.ConfigureIndexesAsync(null, false).AnyContext();
-        await _migrationManager.RunMigrationsAsync().AnyContext();
+        await _configuration.ConfigureIndexesAsync(null, false);
+        await _migrationManager.RunMigrationsAsync();
 
         var tasks = _configuration.Indexes.OfType<VersionedIndex>().Select(ReindexIfNecessary);
-        await Task.WhenAll(tasks).AnyContext();
+        await Task.WhenAll(tasks);
 
         return JobResult.Success;
     }
 
     private async Task ReindexIfNecessary(VersionedIndex index)
     {
-        if (index.Version != await index.GetCurrentVersionAsync().AnyContext())
-            await index.ReindexAsync().AnyContext();
+        if (index.Version != await index.GetCurrentVersionAsync())
+            await index.ReindexAsync();
     }
 }

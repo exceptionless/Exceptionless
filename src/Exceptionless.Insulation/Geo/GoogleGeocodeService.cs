@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Geocoding.Google;
 
@@ -16,7 +15,7 @@ public class GoogleGeocodeService : IGeocodeService
 
     public async Task<GeoResult?> ReverseGeocodeAsync(double latitude, double longitude, CancellationToken cancellationToken = default)
     {
-        var addresses = await _geocoder.ReverseGeocodeAsync(latitude, longitude).AnyContext();
+        var addresses = await _geocoder.ReverseGeocodeAsync(latitude, longitude);
         var address = addresses.FirstOrDefault();
         if (address is null)
             return null;

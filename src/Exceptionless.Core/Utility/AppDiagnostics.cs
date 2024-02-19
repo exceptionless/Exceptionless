@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Reflection;
-using Exceptionless.Core.Extensions;
 
 namespace Exceptionless;
 
@@ -53,7 +52,7 @@ public static class AppDiagnostics
     public static async Task TimeAsync(Func<Task> action, string name)
     {
         using (StartTimer(name))
-            await action().AnyContext();
+            await action();
     }
 
     public static void Time(Action action, string name)
@@ -65,7 +64,7 @@ public static class AppDiagnostics
     public static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name)
     {
         using (StartTimer(name))
-            return await func().AnyContext();
+            return await func();
     }
 
     private class GaugeInfo
@@ -124,7 +123,7 @@ public static class MetricsClientExtensions
     public static async Task TimeAsync(this Histogram<double> histogram, Func<Task> action)
     {
         using (histogram.StartTimer())
-            await action().AnyContext();
+            await action();
     }
 
     public static void Time(this Histogram<double> histogram, Action action)
@@ -136,7 +135,7 @@ public static class MetricsClientExtensions
     public static async Task<T> TimeAsync<T>(this Histogram<double> histogram, Func<Task<T>> func)
     {
         using (histogram.StartTimer())
-            return await func().AnyContext();
+            return await func();
     }
 }
 

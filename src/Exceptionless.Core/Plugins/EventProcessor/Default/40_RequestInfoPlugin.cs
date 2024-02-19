@@ -53,7 +53,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
                 request.QueryString?.Clear();
             }
 
-            await SetBrowserOsAndDeviceFromUserAgent(request, context).AnyContext();
+            await SetBrowserOsAndDeviceFromUserAgent(request, context);
             context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
         }
     }
@@ -80,7 +80,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         if (String.IsNullOrEmpty(request.UserAgent))
             return;
 
-        var info = await _parser.ParseAsync(request.UserAgent).AnyContext();
+        var info = await _parser.ParseAsync(request.UserAgent);
         if (info is null)
             return;
 

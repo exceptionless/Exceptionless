@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -20,7 +19,7 @@ public static class EventRepositoryExtensions
 {
     public static async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(this IEventRepository repository, string id, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
-        var ev = await repository.GetByIdAsync(id, o => o.Cache()).AnyContext();
-        return await repository.GetPreviousAndNextEventIdsAsync(ev, systemFilter, utcStart, utcEnd).AnyContext();
+        var ev = await repository.GetByIdAsync(id, o => o.Cache());
+        return await repository.GetPreviousAndNextEventIdsAsync(ev, systemFilter, utcStart, utcEnd);
     }
 }

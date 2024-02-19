@@ -1,5 +1,4 @@
 using Elasticsearch.Net;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -39,7 +38,7 @@ public class DataMigrationJob : JobBase
         var cutOffDate = elasticOptions.ReindexCutOffDate;
 
         var client = _configuration.Client;
-        await _configuration.ConfigureIndexesAsync().AnyContext();
+        await _configuration.ConfigureIndexesAsync();
 
         var workItemQueue = new Queue<ReindexWorkItem>();
         workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}organizations-v1", "organization", $"{scope}organizations-v1", "updated_utc"));
@@ -62,7 +61,7 @@ public class DataMigrationJob : JobBase
 
         // Reset the alias cache
         var aliasCache = new ScopedCacheClient(_configuration.Cache, "alias");
-        await aliasCache.RemoveAllAsync().AnyContext();
+        await aliasCache.RemoveAllAsync();
 
         var started = SystemClock.UtcNow;
         var lastProgress = SystemClock.UtcNow;
@@ -82,7 +81,7 @@ public class DataMigrationJob : JobBase
                 {
                     try
                     {
-                        await dequeuedWorkItem.CreateIndex().AnyContext();
+                        await dequeuedWorkItem.CreateIndex();
                     }
                     catch (Exception ex)
                     {
@@ -120,7 +119,7 @@ public class DataMigrationJob : JobBase
                             return s.Source(dequeuedWorkItem.Script);
 
                         return null;
-                    })).AnyContext();
+                    }));
 
                 dequeuedWorkItem.Attempts += 1;
                 dequeuedWorkItem.TaskId = response.Task;
@@ -134,7 +133,7 @@ public class DataMigrationJob : JobBase
             double highestProgress = 0;
             foreach (var workItem in workingTasks.ToArray())
             {
-                var taskStatus = await client.Tasks.GetTaskAsync(workItem.TaskId, t => t.WaitForCompletion(false)).AnyContext();
+                var taskStatus = await client.Tasks.GetTaskAsync(workItem.TaskId, t => t.WaitForCompletion(false));
                 _logger.LogRequest(taskStatus);
 
                 var status = taskStatus?.Task?.Status;
@@ -167,7 +166,7 @@ public class DataMigrationJob : JobBase
                             workItemQueue.Enqueue(workItem);
                             totalTasks++;
                             retriesCount++;
-                            await Task.Delay(TimeSpan.FromSeconds(15)).AnyContext();
+                            await Task.Delay(TimeSpan.FromSeconds(15));
                         }
                         else
                         {
@@ -185,7 +184,7 @@ public class DataMigrationJob : JobBase
                 workingTasks.Remove(workItem);
                 workItem.LastTaskInfo = taskStatus.Task;
                 completedTasks.Add(workItem);
-                var targetCount = await client.CountAsync<object>(d => d.Index(workItem.TargetIndex)).AnyContext();
+                var targetCount = await client.CountAsync<object>(d => d.Index(workItem.TargetIndex));
 
                 _logger.LogInformation("COMPLETED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
             }
@@ -204,7 +203,7 @@ public class DataMigrationJob : JobBase
             var duration = TimeSpan.FromMilliseconds(task.LastTaskInfo.RunningTimeInNanoseconds * 0.000001);
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
-            var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex)).AnyContext();
+            var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
             _logger.LogInformation("SUCCESS - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
 

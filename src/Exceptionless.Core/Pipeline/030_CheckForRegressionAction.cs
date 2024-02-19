@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -66,7 +65,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
 
                 _logger.LogTrace("Marking stack and events as regressed in version: {Version}", regressedVersion);
                 stack.Status = StackStatus.Regressed;
-                await _stackRepository.MarkAsRegressedAsync(stack.Id).AnyContext();
+                await _stackRepository.MarkAsRegressedAsync(stack.Id);
 
                 foreach (var ctx in stackGroup)
                     ctx.IsRegression = ctx == regressedContext;

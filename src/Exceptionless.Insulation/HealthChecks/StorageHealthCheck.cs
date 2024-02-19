@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Exceptionless.Core.Extensions;
 using Foundatio.Storage;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -23,7 +22,7 @@ public class StorageHealthCheck : IHealthCheck
 
         try
         {
-            await _storage.GetFileListAsync(null, 1, cancellationToken: cancellationToken).AnyContext();
+            await _storage.GetFileListAsync(null, 1, cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {

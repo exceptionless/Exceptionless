@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging.Models;
+﻿using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -42,14 +41,14 @@ public class MessageService : IDisposable, IStartupAction
 
     private async Task BeforePublishStackEntityChanged(object sender, BeforePublishEntityChangedEventArgs<Stack> args)
     {
-        args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
+        args.Cancel = await GetNumberOfListeners(args.Message) == 0;
         if (args.Cancel)
             _logger.LogTrace("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
     }
 
     private async Task BeforePublishEventEntityChanged(object sender, BeforePublishEntityChangedEventArgs<PersistentEvent> args)
     {
-        args.Cancel = await GetNumberOfListeners(args.Message).AnyContext() == 0;
+        args.Cancel = await GetNumberOfListeners(args.Message) == 0;
         if (args.Cancel)
             _logger.LogTrace("Cancelled Persistent Event Entity Changed Message: {@Message}", args.Message);
     }

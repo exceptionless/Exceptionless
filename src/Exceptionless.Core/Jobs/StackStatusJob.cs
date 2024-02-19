@@ -35,22 +35,22 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
         _logger.LogTrace("Start save stack event counts.");
 
         // Get list of stacks where snooze has expired
-        var results = await _stackRepository.GetExpiredSnoozedStatuses(SystemClock.UtcNow, o => o.PageLimit(LIMIT)).AnyContext();
+        var results = await _stackRepository.GetExpiredSnoozedStatuses(SystemClock.UtcNow, o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var stack in results.Documents)
                 stack.MarkOpen();
 
-            await _stackRepository.SaveAsync(results.Documents).AnyContext();
+            await _stackRepository.SaveAsync(results.Documents);
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
+            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
 
-            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
+            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
 
             if (results.Documents.Count > 0)
-                await context.RenewLockAsync().AnyContext();
+                await context.RenewLockAsync();
         }
 
         _logger.LogTrace("Finished save stack event counts.");

@@ -1,6 +1,5 @@
 ﻿using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
@@ -57,7 +56,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         if (!_emailOptions.EnableDailySummary || _mailer is null)
             return JobResult.SuccessWithMessage("Summary notifications are disabled.");
 
-        var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9).AnyContext();
+        var results = await _projectRepository.GetByNextSummaryNotificationOffsetAsync(9);
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             _logger.LogTrace("Got {Count} projects to process. ", results.Documents.Count);
@@ -83,13 +82,13 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                         UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                     };
 
-                    bool summarySent = await SendSummaryNotificationAsync(project, notification).AnyContext();
+                    bool summarySent = await SendSummaryNotificationAsync(project, notification);
                     if (summarySent)
                     {
-                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project }).AnyContext();
+                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
 
                         // Sleep so we are not hammering the backend as we just generated a report.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
+                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
                     }
                     else
                     {
@@ -100,18 +99,18 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
 
             if (projectsToBulkUpdate.Count > 0)
             {
-                await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate).AnyContext();
+                await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate);
 
                 // Sleep so we are not hammering the backend
-                await SystemClock.SleepAsync(TimeSpan.FromSeconds(1)).AnyContext();
+                await SystemClock.SleepAsync(TimeSpan.FromSeconds(1));
             }
 
-            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync().AnyContext())
+            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
 
             if (results.Documents.Count > 0)
             {
-                await context.RenewLockAsync().AnyContext();
+                await context.RenewLockAsync();
                 _lastRun = SystemClock.UtcNow;
             }
         }
@@ -129,7 +128,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
             return false;
         }
 
-        var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache()).AnyContext();
+        var results = await _userRepository.GetByIdsAsync(userIds, o => o.Cache());
         var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
         if (users.Count == 0)
         {
@@ -138,7 +137,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         }
 
         // TODO: What should we do about suspended organizations.
-        var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache()).AnyContext();
+        var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null)
         {
             _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
@@ -149,7 +148,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         var sf = new AppFilter(project, organization);
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(data.UtcStartTime, data.UtcEndTime, (PersistentEvent e) => e.Date).Index(data.UtcStartTime, data.UtcEndTime);
         string filter = "type:error (status:open OR status:regressed)";
-        var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1")).AnyContext();
+        var result = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression("terms:(first @include:true) terms:(stack_id~3) cardinality:stack_id sum:count~1"));
 
         double total = result.Aggregations.Sum("sum_count")?.Value ?? result.Total;
         double newTotal = result.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
@@ -158,7 +157,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         bool isFreePlan = organization.PlanId == _plans.FreePlan.Id;
 
         string fixedFilter = "type:error status:fixed";
-        var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).EnforceEventStackFilter().AggregationsExpression("sum:count~1")).AnyContext();
+        var fixedResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(fixedFilter).EnforceEventStackFilter().AggregationsExpression("sum:count~1"));
         double fixedTotal = fixedResult.Aggregations.Sum("sum_count")?.Value ?? fixedResult.Total;
 
         var range = new DateTimeRange(data.UtcStartTime, data.UtcEndTime);
@@ -169,16 +168,16 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         IReadOnlyCollection<Stack>? mostFrequent = null;
         var stackTerms = result.Aggregations.Terms<string>("terms_stack_id");
         if (stackTerms?.Buckets.Count > 0)
-            mostFrequent = await _stackRepository.GetByIdsAsync(stackTerms.Buckets.Select(b => b.Key).ToArray()).AnyContext();
+            mostFrequent = await _stackRepository.GetByIdsAsync(stackTerms.Buckets.Select(b => b.Key).ToArray());
 
         IReadOnlyCollection<Stack>? newest = null;
         if (newTotal > 0)
-            newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3)).AnyContext()).Documents;
+            newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3))).Documents;
 
         foreach (var user in users)
         {
             _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
-            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan).AnyContext();
+            await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan);
         }
 
         _logger.LogInformation("Done sending daily summary: users={UserCount} project={ProjectName} events={EventCount}", users.Count, project.Name, total);

@@ -58,17 +58,17 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
         var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
 
-        byte[]? payload = await payloadTask.AnyContext();
+        byte[]? payload = await payloadTask;
         if (payload is null)
         {
-            await Task.WhenAll(AbandonEntryAsync(entry), projectTask, organizationTask).AnyContext();
+            await Task.WhenAll(AbandonEntryAsync(entry), projectTask, organizationTask);
             return JobResult.FailedWithMessage($"Unable to retrieve payload '{payloadPath}'.");
         }
 
         AppDiagnostics.PostsMessageSize.Record(payload.LongLength);
         if (payload.LongLength > _maximumEventPostFileSize)
         {
-            await Task.WhenAll(AppDiagnostics.PostsCompleteTime.TimeAsync(() => entry.CompleteAsync()), projectTask, organizationTask).AnyContext();
+            await Task.WhenAll(AppDiagnostics.PostsCompleteTime.TimeAsync(() => entry.CompleteAsync()), projectTask, organizationTask);
             return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({_appOptions.MaximumEventPostSize} bytes) reached.");
         }
 
@@ -84,11 +84,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={ProjectId} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
             }
 
-            var project = await projectTask.AnyContext();
+            var project = await projectTask;
             if (project is null)
             {
                 if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {Project}", payloadPath, ep.ProjectId);
-                await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask).AnyContext();
+                await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask);
                 return JobResult.Success;
             }
 
@@ -113,7 +113,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 catch (Exception ex)
                 {
                     AppDiagnostics.PostsDecompressionErrors.Add(1);
-                    await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask).AnyContext();
+                    await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask);
                     return JobResult.FailedWithMessage($"Unable to decompress EventPost data '{payloadPath}' ({payload.Length} bytes compressed): {ex.Message}");
                 }
             }
@@ -121,9 +121,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
             AppDiagnostics.PostsUncompressedSize.Record(payload.LongLength);
             if (uncompressedData.Length > maxEventPostSize)
             {
-                var org = await organizationTask.AnyContext();
-                await _usageService.IncrementTooBigAsync(org.Id, project.Id).AnyContext();
-                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow).AnyContext();
+                var org = await organizationTask;
+                await _usageService.IncrementTooBigAsync(org.Id, project.Id);
+                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow);
                 return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
             }
 
@@ -137,28 +137,28 @@ public class EventPostsJob : QueueJobBase<EventPost>
             var events = ParseEventPost(ep, createdUtc, uncompressedData, entry.Id, isInternalProject);
             if (events is null || events.Count == 0)
             {
-                await Task.WhenAll(CompleteEntryAsync(entry, ep, createdUtc), organizationTask).AnyContext();
+                await Task.WhenAll(CompleteEntryAsync(entry, ep, createdUtc), organizationTask);
                 return JobResult.Success;
             }
 
             if (context.CancellationToken.IsCancellationRequested)
             {
-                await Task.WhenAll(AbandonEntryAsync(entry), organizationTask).AnyContext();
+                await Task.WhenAll(AbandonEntryAsync(entry), organizationTask);
                 return JobResult.Cancelled;
             }
 
-            var organization = await organizationTask.AnyContext();
+            var organization = await organizationTask;
             if (organization is null)
             {
                 if (!isInternalProject)
                     _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {OrganizationId}", payloadPath, project.OrganizationId);
 
-                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow).AnyContext();
+                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow);
                 return JobResult.Success;
             }
 
             // Don't process all the events if it will put the account over its limits.
-            int eventsToProcess = await _usageService.GetEventsLeftAsync(organization.Id).AnyContext();
+            int eventsToProcess = await _usageService.GetEventsLeftAsync(organization.Id);
             if (eventsToProcess < 1)
             {
                 if (!isInternalProject)
@@ -166,7 +166,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
                 await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
 
-                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow).AnyContext();
+                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow);
                 return JobResult.Success;
             }
 
@@ -186,7 +186,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             var eventsToRetry = new List<PersistentEvent>();
             try
             {
-                var contexts = await _eventPipeline.RunAsync(events, organization, project, ep).AnyContext();
+                var contexts = await _eventPipeline.RunAsync(events, organization, project, ep);
                 if (!isInternalProject && isDebugLogLevelEnabled)
                 {
                     using (_logger.BeginScope(new ExceptionlessState().Value(contexts.Count)))
@@ -195,10 +195,10 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
                 // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
                 int processedEvents = contexts.Count(c => c.IsProcessed);
-                await _usageService.IncrementTotalAsync(organization.Id, project.Id, processedEvents).AnyContext();
+                await _usageService.IncrementTotalAsync(organization.Id, project.Id, processedEvents);
 
                 int discardedEvents = contexts.Count(c => c.IsDiscarded);
-                await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents).AnyContext();
+                await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents);
 
                 foreach (var ctx in contexts)
                 {
@@ -225,7 +225,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
                 if (ex is ArgumentException || ex is DocumentNotFoundException)
                 {
-                    await CompleteEntryAsync(entry, ep, createdUtc).AnyContext();
+                    await CompleteEntryAsync(entry, ep, createdUtc);
                     return JobResult.Success;
                 }
 
@@ -235,12 +235,12 @@ public class EventPostsJob : QueueJobBase<EventPost>
             }
 
             if (eventsToRetry.Count > 0)
-                await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject)).AnyContext();
+                await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject));
 
             if (isSingleEvent && errorCount > 0)
-                await AbandonEntryAsync(entry).AnyContext();
+                await AbandonEntryAsync(entry);
             else
-                await CompleteEntryAsync(entry, ep, createdUtc).AnyContext();
+                await CompleteEntryAsync(entry, ep, createdUtc);
 
             return JobResult.Success;
         }
@@ -314,7 +314,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     OrganizationId = ep.OrganizationId ?? project.OrganizationId,
                     ProjectId = ep.ProjectId ?? project.Id,
                     UserAgent = ep.UserAgent
-                }, stream).AnyContext();
+                }, stream);
             }
             catch (Exception ex)
             {
@@ -338,8 +338,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
     {
         return AppDiagnostics.PostsCompleteTime.TimeAsync(async () =>
         {
-            await entry.CompleteAsync().AnyContext();
-            await _eventPostService.CompleteEventPostAsync(entry.Value.FilePath, eventPostInfo.ProjectId, created, entry.Value.ShouldArchive).AnyContext();
+            await entry.CompleteAsync();
+            await _eventPostService.CompleteEventPostAsync(entry.Value.FilePath, eventPostInfo.ProjectId, created, entry.Value.ShouldArchive);
         });
     }
 

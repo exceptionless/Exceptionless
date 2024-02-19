@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -68,18 +67,18 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
         {
             Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
 
-            var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache()).AnyContext();
+            var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache());
             if (organization is null)
                 return;
 
             if (wi.IsOverMonthlyLimit)
-                await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit).AnyContext();
+                await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
         }, TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     private async Task SendOverageNotificationsAsync(Organization organization, bool isOverHourlyLimit, bool isOverMonthlyLimit)
     {
-        var results = await _userRepository.GetByOrganizationIdAsync(organization.Id).AnyContext();
+        var results = await _userRepository.GetByOrganizationIdAsync(organization.Id);
         foreach (var user in results.Documents)
         {
             if (!user.IsEmailAddressVerified)
@@ -95,7 +94,7 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
             }
 
             Log.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
-            await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit).AnyContext();
+            await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit);
         }
 
         Log.LogTrace("Done sending email.");

@@ -45,11 +45,11 @@ public sealed class LocationPlugin : EventProcessorPluginBase
 
     private async Task GetGeoLocationFromCacheAsync(IGrouping<string?, EventContext> geoGroup)
     {
-        var location = await _cacheClient.GetAsync<Location?>(geoGroup.Key, null).AnyContext();
+        var location = await _cacheClient.GetAsync<Location?>(geoGroup.Key, null);
         if (location is null)
             return;
 
-        await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3)).AnyContext();
+        await _cacheClient.SetExpirationAsync(geoGroup.Key, TimeSpan.FromDays(3));
         geoGroup.ForEach(c => c.Event.SetLocation(location));
     }
 }

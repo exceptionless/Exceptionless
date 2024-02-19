@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook;
 
@@ -19,7 +18,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             try
             {
                 object? data = null;
-                await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context).AnyContext(), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromEventAsync(context), metricName);
                 if (context.IsCancelled)
                     break;
 
@@ -49,7 +48,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             try
             {
                 object? data = null;
-                await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context).AnyContext(), metricName).AnyContext();
+                await AppDiagnostics.TimeAsync(async () => data = await plugin.CreateFromStackAsync(context), metricName);
                 if (context.IsCancelled)
                     break;
 

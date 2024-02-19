@@ -46,7 +46,7 @@ public sealed class UpdateEventUsage : MigrationBase
 
     private async Task UpdateOrganizationsUsageAsync(MigrationContext context)
     {
-        var organizationResults = await _organizationRepository.GetAllAsync(o => o.SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(5)).AnyContext();
+        var organizationResults = await _organizationRepository.GetAllAsync(o => o.SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(5));
         _logger.LogInformation("Updating usage for {OrganizationTotal} organization(s)", organizationResults.Total);
 
         var sw = Stopwatch.StartNew();
@@ -100,15 +100,15 @@ public sealed class UpdateEventUsage : MigrationBase
             }
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5)).AnyContext();
-            if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync().AnyContext())
+            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
                 break;
         }
     }
 
     private async Task UpdateProjectsUsageAsync(MigrationContext context, Organization organization)
     {
-        var projectResults = await _projectRepository.GetByOrganizationIdAsync(organization.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(100)).AnyContext();
+        var projectResults = await _projectRepository.GetByOrganizationIdAsync(organization.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All).SearchAfterPaging().PageLimit(100));
         _logger.LogInformation("Updating usage for {ProjectTotal} projects(s)", projectResults.Total);
 
         var sw = Stopwatch.StartNew();
@@ -143,7 +143,7 @@ public sealed class UpdateEventUsage : MigrationBase
                 }
             }
 
-            if (context.CancellationToken.IsCancellationRequested || !await projectResults.NextPageAsync().AnyContext())
+            if (context.CancellationToken.IsCancellationRequested || !await projectResults.NextPageAsync())
                 break;
         }
     }

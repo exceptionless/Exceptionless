@@ -1,5 +1,4 @@
 ﻿using System.IO.Compression;
-using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -45,7 +44,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
 
         try
         {
-            var fi = await _storage.GetFileInfoAsync(GEO_IP_DATABASE_PATH).AnyContext();
+            var fi = await _storage.GetFileInfoAsync(GEO_IP_DATABASE_PATH);
             if (fi is not null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay()))
             {
                 _logger.LogInformation("The GeoIP database is already up-to-date.");
@@ -55,13 +54,13 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
             _logger.LogInformation("Downloading GeoIP database.");
             var client = new HttpClient();
             string url = $"https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={licenseKey}&suffix=tar.gz";
-            var file = await client.GetAsync(url, context.CancellationToken).AnyContext();
+            var file = await client.GetAsync(url, context.CancellationToken);
             if (!file.IsSuccessStatusCode)
                 return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
             _logger.LogInformation("Extracting GeoIP database");
-            using (var decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync().AnyContext(), CompressionMode.Decompress))
-                await _storage.SaveFileAsync(GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken).AnyContext();
+            using (var decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync(), CompressionMode.Decompress))
+                await _storage.SaveFileAsync(GEO_IP_DATABASE_PATH, decompressionStream, context.CancellationToken);
         }
         catch (Exception ex)
         {

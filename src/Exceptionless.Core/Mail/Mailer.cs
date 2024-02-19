@@ -63,7 +63,7 @@ public class Mailer : IMailer
             To = user.EmailAddress,
             Subject = $"[{project.Name}] {result.Subject}",
             Body = RenderTemplate(template, messageData)
-        }, template).AnyContext();
+        }, template);
         return true;
     }
 

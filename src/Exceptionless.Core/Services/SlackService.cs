@@ -42,8 +42,8 @@ public class SlackService
             };
 
         string url = $"https://slack.com/api/oauth.access?{data!.ToQueryString()}";
-        var response = await _client.PostAsync(url).AnyContext();
-        byte[] body = await response.Content.ReadAsByteArrayAsync().AnyContext();
+        var response = await _client.PostAsync(url);
+        byte[] body = await response.Content.ReadAsByteArrayAsync();
         var result = _serializer.Deserialize<OAuthAccessResponse>(body);
 
         if (!result.ok)
@@ -80,8 +80,8 @@ public class SlackService
         ArgumentException.ThrowIfNullOrEmpty(token);
 
         string url = $"https://slack.com/api/auth.revoke?token={token}";
-        var response = await _client.PostAsync(url).AnyContext();
-        byte[] body = await response.Content.ReadAsByteArrayAsync().AnyContext();
+        var response = await _client.PostAsync(url);
+        byte[] body = await response.Content.ReadAsByteArrayAsync();
         var result = _serializer.Deserialize<AuthRevokeResponse>(body);
 
         if (result.ok && result.revoked || String.Equals(result.error, "invalid_auth"))

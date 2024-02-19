@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Utility;
@@ -34,13 +33,13 @@ public class StackService
             _cache.IncrementAsync(GetStackOccurrenceCountCacheKey(stackId), count, _expireTimeout),
             _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(stackId), minOccurrenceDateUtc, _expireTimeout),
             _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(stackId), maxOccurrenceDateUtc, _expireTimeout)
-        ).AnyContext();
+        );
     }
 
     public async Task SaveStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default)
     {
         string occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
-        var stackUsageSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey).AnyContext();
+        var stackUsageSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey);
         if (!stackUsageSet.HasValue)
             return;
 
@@ -62,29 +61,29 @@ public class StackService
                 countTask,
                 minDateTask,
                 maxDateTask
-            ).AnyContext();
+            );
 
             int occurrenceCount = (int)countTask.Result;
             if (occurrenceCount <= 0)
             {
-                await _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey }).AnyContext();
+                await _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey });
                 continue;
             }
 
             await Task.WhenAll(
                 _cache.RemoveAllAsync(new[] { minDateCacheKey, maxDateCacheKey }),
                 _cache.DecrementAsync(countCacheKey, occurrenceCount, _expireTimeout)
-            ).AnyContext();
+            );
 
             var occurrenceMinDate = minDateTask.Result;
             var occurrenceMaxDate = maxDateTask.Result;
             bool shouldRetry = false;
             try
             {
-                if (!await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications).AnyContext())
+                if (!await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications))
                 {
                     shouldRetry = true;
-                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount).AnyContext();
+                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
                 }
                 else
                 {
@@ -96,7 +95,7 @@ public class StackService
                 _logger.LogError(ex, "Error incrementing event count for organization: {OrganizationId} project:{ProjectId} stack:{StackId}", organizationId, projectId, stackId);
                 if (!shouldRetry)
                 {
-                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount).AnyContext();
+                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
                 }
             }
         }

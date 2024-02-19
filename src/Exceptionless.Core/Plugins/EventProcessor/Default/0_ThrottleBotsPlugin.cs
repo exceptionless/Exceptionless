@@ -41,15 +41,15 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
 
             var clientIpContexts = clientIpAddressGroup.ToList();
             string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", SystemClock.UtcNow.Floor(_throttlingPeriod).Ticks);
-            int? requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null).AnyContext();
+            int? requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null);
             if (requestCount.HasValue)
             {
-                await _cache.IncrementAsync(throttleCacheKey, clientIpContexts.Count).AnyContext();
+                await _cache.IncrementAsync(throttleCacheKey, clientIpContexts.Count);
                 requestCount += clientIpContexts.Count;
             }
             else
             {
-                await _cache.SetAsync(throttleCacheKey, clientIpContexts.Count, SystemClock.UtcNow.Ceiling(_throttlingPeriod)).AnyContext();
+                await _cache.SetAsync(throttleCacheKey, clientIpContexts.Count, SystemClock.UtcNow.Ceiling(_throttlingPeriod));
                 requestCount = clientIpContexts.Count;
             }
 
@@ -66,7 +66,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
                 ClientIpAddress = clientIpAddressGroup.Key,
                 UtcStartDate = SystemClock.UtcNow.Floor(_throttlingPeriod),
                 UtcEndDate = SystemClock.UtcNow.Ceiling(_throttlingPeriod)
-            }).AnyContext();
+            });
 
             clientIpContexts.ForEach(c =>
             {
