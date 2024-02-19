@@ -6,7 +6,7 @@ import { derived, readable, type Readable } from 'svelte/store';
 export const queryKey: string = 'PersistentEvent';
 
 export function getEventByIdQuery(id: string | Readable<string | null>) {
-    const readableId = typeof id === 'string' ? readable(id) : id;
+    const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<PersistentEvent, ProblemDetails>(
         derived(readableId, ($id) => ({
             enabled: !!$id,
@@ -28,7 +28,7 @@ export function getEventByIdQuery(id: string | Readable<string | null>) {
 }
 
 export function getEventsByStackIdQuery(stackId: string | Readable<string | null>, limit: number = 10) {
-    const readableStackId = typeof stackId === 'string' ? readable(stackId) : stackId;
+    const readableStackId = typeof stackId === 'string' || stackId === null ? readable(stackId) : stackId;
     return createQuery<PersistentEvent, ProblemDetails>(
         derived(readableStackId, ($id) => ({
             enabled: !!$id,

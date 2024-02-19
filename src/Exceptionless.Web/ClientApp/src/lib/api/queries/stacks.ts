@@ -6,7 +6,7 @@ import { derived, readable, type Readable } from 'svelte/store';
 export const queryKey: string = 'Stack';
 
 export function getStackByIdQuery(id: string | Readable<string | null>) {
-    const readableId = typeof id === 'string' ? readable(id) : id;
+    const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<Stack, ProblemDetails>(
         derived(readableId, ($id) => ({
             enabled: !!$id,

@@ -6,7 +6,7 @@ import { FetchClient, type FetchClientResponse, type ProblemDetails } from '$api
 export const queryKey: string = 'Project';
 
 export function getProjectByIdQuery(id: string | Readable<string | null>) {
-    const readableId = typeof id === 'string' ? readable(id) : id;
+    const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<ViewProject, ProblemDetails>(
         derived(readableId, ($id) => ({
             enabled: !!$id,
