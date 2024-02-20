@@ -198,7 +198,7 @@ function waitForUrl(popup: Window, redirectUri: string): Promise<{ state: string
                     popup?.close();
                 }
             } catch (error) {
-                console.log(error);
+                console.error(error);
                 // Ignore DOMException: Blocked a frame with origin from accessing a cross-origin frame.
                 // A hack to get around same-origin security policy errors in IE.
             }
