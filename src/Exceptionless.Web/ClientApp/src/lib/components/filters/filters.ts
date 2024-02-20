@@ -219,6 +219,7 @@ export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
  */
 export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFilter): boolean {
     const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
+    console.log('upsertOrRemoveFacetFilter', filter, index, filters);
 
     // If the filter has no values, remove it.
     if (!filter.values || filter.values.length == 0) {
@@ -288,7 +289,7 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
     return resolvedFilters;
 }
 
-export function getFilter(filter: Record<string, unknown>): IFilter | undefined {
+export function getFilter(filter: Omit<IFilter, 'toFilter'> & Record<string, unknown>): IFilter | undefined {
     switch (filter.type) {
         case 'boolean':
             return new BooleanFilter(filter.term as string, filter.value as boolean);
@@ -318,6 +319,18 @@ function isFaceted(filter: IFilter): filter is IFacetedFilter {
 }
 
 const FACETED_FILTER_TYPES = ['status', 'type'];
+export function toFilterTypes(filters: IFilter[]): string[] {
+    const types = new Set<string>();
+    for (const filter of filters) {
+        if (isFaceted(filter)) {
+            types.add(filter.type);
+        }
+    }
+
+    console.log(Array.from(types));
+    return Array.from(types);
+}
+
 export function toFacetedValues(filters: IFilter[]): Record<string, unknown[]> {
     const values: Record<string, unknown[]> = {};
     for (const filterType of FACETED_FILTER_TYPES) {
