@@ -1,6 +1,7 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
     import type { HTMLAttributes } from 'svelte/elements';
+    import { slide } from 'svelte/transition';
 
     type $$Props = HTMLAttributes<HTMLTableRowElement> & {
         'data-state'?: unknown;
@@ -10,6 +11,12 @@
     export { className as class };
 </script>
 
-<tr class={cn('border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted', className)} {...$$restProps} on:click on:keydown>
+<tr
+    class={cn('border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted', className)}
+    {...$$restProps}
+    on:click
+    on:keydown
+    transition:slide={{ delay: 0, duration: 250, axis: 'y' }}
+>
     <slot />
 </tr>

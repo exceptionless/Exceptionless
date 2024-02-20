@@ -38,7 +38,7 @@
         <Table.Header>
             {#each $table.getHeaderGroups() as headerGroup}
                 <Table.Row>
-                    {#each headerGroup.headers as header}
+                    {#each headerGroup.headers as header (header.id)}
                         <Table.Head class={getHeaderColumnClass(header)}>
                             <DataTableColumnHeader column={header.column}
                                 ><svelte:component this={flexRender(header.column.columnDef.header, header.getContext())} /></DataTableColumnHeader
@@ -52,9 +52,9 @@
             <Table.Row class="hidden text-center only:table-row">
                 <Table.Cell colspan={$table.getVisibleLeafColumns().length}>No data was found with the current filter.</Table.Cell>
             </Table.Row>
-            {#each $table.getRowModel().rows as row}
+            {#each $table.getRowModel().rows as row (row.id)}
                 <Table.Row>
-                    {#each row.getVisibleCells() as cell}
+                    {#each row.getVisibleCells() as cell (cell.id)}
                         <Table.Cell on:click={() => onCellClick(cell)} class={getCellClass(cell)}>
                             <svelte:component this={flexRender(cell.column.columnDef.cell, cell.getContext())} />
                         </Table.Cell>

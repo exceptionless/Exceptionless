@@ -153,12 +153,12 @@
 
     <Tabs.Root value={activeTab} class="mb-4 mt-4">
         <Tabs.List class="mb-4 w-full justify-normal">
-            {#each $tabs as tab}
+            {#each $tabs as tab (tab)}
                 <Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
             {/each}
         </Tabs.List>
 
-        {#each $tabs as tab}
+        {#each $tabs as tab (tab)}
             <Tabs.Content value={tab}>
                 {#if tab === 'Overview'}
                     <Overview event={$eventResponse.data}></Overview>

@@ -162,7 +162,7 @@
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">Tags</Table.Head>
                 <Table.Cell class="flex flex-wrap justify-start gap-2 overflow-auto">
-                    {#each event.tags as tag}
+                    {#each event.tags as tag (tag)}
                         <ClickableStringFilter term="tag" value={tag}><Badge color="dark">{tag}</Badge></ClickableStringFilter>
                     {/each}
                 </Table.Cell>
