@@ -5,6 +5,10 @@ import { defineConfig } from 'vitest/config';
 const aspNetConfig = getAspNetConfig();
 
 export default defineConfig({
+    build: {
+        sourcemap: true,
+        target: 'esnext'
+    },
     plugins: [
         sveltekit(),
         Icons({
@@ -13,9 +17,6 @@ export default defineConfig({
     ],
     test: {
         include: ['src/**/*.{test,spec}.{js,ts}']
-    },
-    build: {
-        target: 'esnext'
     },
     server: {
         port: 5173,
