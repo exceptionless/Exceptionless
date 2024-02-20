@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { derived, writable } from 'svelte/store';
+
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import SearchInput from '$comp/SearchInput.svelte';
@@ -10,14 +12,17 @@
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { filter, filterWithFaceted, onFilterChanged, onFilterInputChanged, time } from '$lib/stores/events';
     import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-    import { writable } from 'svelte/store';
 
     const selectedStackId = writable<string | null>(null);
-    const eventsResponse = getEventsByStackIdQuery(selectedStackId, 1);
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
-        // TODO: We need to load the latest event for the stack and display it in the sidebar.
         selectedStackId.set(detail.id);
     }
+
+    // Load the latest event for the stack and display it in the sidebar.
+    const eventsResponse = getEventsByStackIdQuery(selectedStackId, 1);
+    const eventId = derived(eventsResponse, ($eventsResponse) => {
+        return $eventsResponse?.data?.[0]?.id;
+    });
 </script>
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
@@ -37,11 +42,11 @@
     </Card.Root>
 </div>
 
-<Sheet.Root open={!!$eventsResponse.data} onOpenChange={() => selectedStackId.set(null)}>
+<Sheet.Root open={$eventsResponse.isSuccess} onOpenChange={() => selectedStackId.set(null)}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title>Event Details</Sheet.Title>
         </Sheet.Header>
-        <EventsDrawer id={$selectedStackId || ''}></EventsDrawer>
+        <EventsDrawer id={$eventId || ''}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>
