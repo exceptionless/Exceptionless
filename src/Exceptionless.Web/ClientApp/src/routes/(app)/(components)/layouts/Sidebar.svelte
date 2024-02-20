@@ -22,7 +22,7 @@
         <div class="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
             <div class="flex-1 space-y-1 divide-y px-3">
                 <ul class="space-y-2 pb-2">
-                    {#each dashboardRoutes as route}
+                    {#each dashboardRoutes as route (route.href)}
                         <li>
                             <SidebarMenuItem title={route.title} href={route.href}>
                                 <span slot="icon" let:iconClass>

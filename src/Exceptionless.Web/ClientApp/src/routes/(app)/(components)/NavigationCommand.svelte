@@ -17,9 +17,9 @@
     <Command.Input placeholder="Type a command or search..." />
     <Command.List>
         <Command.Empty>No results found.</Command.Empty>
-        {#each Object.entries(groupedRoutes) as [group, items], index}
+        {#each Object.entries(groupedRoutes) as [group, items], index (group)}
             <Command.Group heading={group}>
-                {#each items as route}
+                {#each items as route (route.href)}
                     <Command.Item>
                         <A href={route.href} class="flex gap-x-2" on:click={closeCommandWindow}>
                             <svelte:component this={route.icon} />

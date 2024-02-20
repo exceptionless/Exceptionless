@@ -52,7 +52,7 @@
                             {values.length} Selected
                         </Badge>
                     {:else}
-                        {#each values as option}
+                        {#each values as option (option)}
                             <Badge variant="secondary" class="rounded-sm px-1 font-normal">
                                 {option}
                             </Badge>
@@ -68,7 +68,7 @@
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
-                    {#each options as option}
+                    {#each options as option (option.value)}
                         <Command.Item value={option.value} onSelect={onValueSelected}>
                             <div
                                 class={cn(

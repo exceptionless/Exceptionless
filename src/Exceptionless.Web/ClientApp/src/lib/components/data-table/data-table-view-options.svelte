@@ -20,7 +20,7 @@
     <DropdownMenu.Content>
         <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
         <DropdownMenu.Separator />
-        {#each $table.getAllLeafColumns() as column}
+        {#each $table.getAllLeafColumns() as column (column.id)}
             {#if column.getCanHide()}
                 <DropdownMenu.CheckboxItem checked={column.getIsVisible()} on:click={() => column.toggleVisibility()}>
                     {column.columnDef.header}

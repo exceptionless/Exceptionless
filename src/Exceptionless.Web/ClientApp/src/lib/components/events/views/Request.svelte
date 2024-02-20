@@ -137,7 +137,7 @@
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {#each Object.entries(sortedHeaders) as [key, value]}
+            {#each Object.entries(sortedHeaders) as [key, value] (key)}
                 <Table.Row>
                     <Table.Cell>{key}</Table.Cell>
                     <Table.Cell><span class="line-clamp-3 inline">{value}</span></Table.Cell>
@@ -157,7 +157,7 @@
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {#each Object.entries(request.cookies || {}) as [key, value]}
+            {#each Object.entries(request.cookies || {}) as [key, value] (key)}
                 <Table.Row>
                     <Table.Cell>{key}</Table.Cell>
                     <Table.Cell><span class="line-clamp-3 inline">{value}</span></Table.Cell>
