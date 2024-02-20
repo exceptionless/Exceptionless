@@ -1,16 +1,22 @@
-import { createQuery } from '@tanstack/svelte-query';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { PersistentEvent } from '$lib/models/api';
 import { FetchClient, type ProblemDetails } from '$api/FetchClient';
 import { derived, readable, type Readable } from 'svelte/store';
 
-export const queryKey: string = 'PersistentEvent';
+export const queryKeys = {
+    all: ['PersistentEvent'] as const,
+    allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
+    stacks: (id: string | null) => [...queryKeys.all, 'stacks', id] as const,
+    stackWithFilters: (id: string | null, filters: string) => [...queryKeys.stacks(id), { filters }] as const,
+    id: (id: string | null) => [...queryKeys.all, id] as const
+};
 
 export function getEventByIdQuery(id: string | Readable<string | null>) {
     const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<PersistentEvent, ProblemDetails>(
         derived(readableId, ($id) => ({
             enabled: !!$id,
-            queryKey: [queryKey, $id],
+            queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
                 const { getJSON } = new FetchClient();
                 const response = await getJSON<PersistentEvent>(`events/${$id}`, {
@@ -28,14 +34,16 @@ export function getEventByIdQuery(id: string | Readable<string | null>) {
 }
 
 export function getEventsByStackIdQuery(stackId: string | Readable<string | null>, limit: number = 10) {
+    const queryClient = useQueryClient();
     const readableStackId = typeof stackId === 'string' || stackId === null ? readable(stackId) : stackId;
-    return createQuery<PersistentEvent, ProblemDetails>(
+    return createQuery<PersistentEvent[], ProblemDetails>(
         derived(readableStackId, ($id) => ({
             enabled: !!$id,
-            queryKey: [queryKey, 'stack', $id],
+            queryClient,
+            queryKey: queryKeys.stacks($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
                 const { getJSON } = new FetchClient();
-                const response = await getJSON<PersistentEvent>(`stacks/${$id}/events`, {
+                const response = await getJSON<PersistentEvent[]>(`stacks/${$id}/events`, {
                     signal,
                     params: {
                         limit
@@ -43,6 +51,10 @@ export function getEventsByStackIdQuery(stackId: string | Readable<string | null
                 });
 
                 if (response.ok) {
+                    response.data?.forEach((event) => {
+                        queryClient.setQueryData(queryKeys.id(event.id!), event);
+                    });
+
                     return response.data!;
                 }
 
