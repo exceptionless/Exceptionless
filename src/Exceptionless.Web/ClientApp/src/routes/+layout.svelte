@@ -38,7 +38,13 @@
         }
     });
 
-    const queryClient = new QueryClient();
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                staleTime: 5 * 60 * 1000
+            }
+        }
+    });
 </script>
 
 <div class="bg-background text-foreground">
