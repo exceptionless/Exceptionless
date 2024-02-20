@@ -13,12 +13,15 @@
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import {
         filter,
+        filterOptions,
         filterValues,
         filterWithFaceted,
         onFacetValuesChanged,
         onFilterChanged,
         onFilterInputChanged,
+        onToggleFacetFilterChanged,
         resetFilterValues,
+        selectedFilterTypes,
         time
     } from '$lib/stores/events';
     import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
@@ -41,16 +44,31 @@
                     <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
 
                     <DataTable.FacetedFilterContainer {filterValues} {resetFilterValues}>
-                        <DataTable.FacetedFilter
-                            title="Status"
-                            key="status"
-                            values={$filterValues.status}
-                            options={stackStatuses}
-                            onValueChange={onFacetValuesChanged}
-                        ></DataTable.FacetedFilter>
-
-                        <DataTable.FacetedFilter title="Type" key="type" values={$filterValues.type} options={eventTypes} onValueChange={onFacetValuesChanged}
-                        ></DataTable.FacetedFilter>
+                        <DataTable.FacetedFilterBuilder
+                            values={$selectedFilterTypes}
+                            options={filterOptions}
+                            onValueChange={onToggleFacetFilterChanged}
+                            let:type
+                        >
+                            {#if type === 'status'}
+                                <DataTable.FacetedFilter
+                                    title="Status"
+                                    key="status"
+                                    values={$filterValues.status}
+                                    options={stackStatuses}
+                                    onValueChange={onFacetValuesChanged}
+                                    onRemoveFilter={() => console.log('onRemoveFilter')}
+                                ></DataTable.FacetedFilter>
+                            {:else if type === 'type'}
+                                <DataTable.FacetedFilter
+                                    title="Type"
+                                    key="type"
+                                    values={$filterValues.type}
+                                    options={eventTypes}
+                                    onValueChange={onFacetValuesChanged}
+                                ></DataTable.FacetedFilter>
+                            {/if}
+                        </DataTable.FacetedFilterBuilder>
                     </DataTable.FacetedFilterContainer>
 
                     <DateRangeDropdown bind:value={$time}></DateRangeDropdown>

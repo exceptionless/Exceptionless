@@ -8,7 +8,8 @@ import {
     type IFacetedFilter,
     toggleFilter,
     parseFilter,
-    resetFacetedValues
+    resetFacetedValues,
+    toFilterTypes
 } from '$comp/filters/filters';
 import { persisted } from 'svelte-local-storage-store';
 import { derived, get } from 'svelte/store';
@@ -21,6 +22,18 @@ export const filter = derived(filters, ($filters) => toFilter($filters));
 export const filterWithFaceted = derived(filters, ($filters) => toFilter($filters, true));
 export const filterValues = derived(filters, ($filters) => toFacetedValues($filters));
 
+export const selectedFilterTypes = derived(filters, ($filters) => toFilterTypes($filters));
+export const filterOptions: { value: string; label: string }[] = [
+    {
+        value: 'status',
+        label: 'Status'
+    },
+    {
+        value: 'type',
+        label: 'Type'
+    }
+];
+
 export function updateFilter(filter: IFilter) {
     filters.set(toggleFilter(get(filters), filter));
 }
@@ -28,8 +41,10 @@ export function updateFilter(filter: IFilter) {
 export function updateFilterValues(key: string, values: unknown[]) {
     const filter = getFilter({ type: key, values }) as IFacetedFilter;
     const currentFilters = get(filters);
+    console.log('updateFilterValues', filter, currentFilters);
     if (filter && upsertOrRemoveFacetFilter(currentFilters, filter)) {
         filters.set(currentFilters);
+        console.log('updateFilterValues', currentFilters);
     }
 }
 
@@ -52,4 +67,18 @@ export function onFilterInputChanged(event: Event) {
 
 export function onFacetValuesChanged(facetKey: string, updatedValues: unknown[]) {
     updateFilterValues(facetKey, updatedValues);
+}
+
+export function onToggleFacetFilterChanged(facetKey: string) {
+    const currentFilters = get(filters);
+    const filter = currentFilters.find((f) => f.type === facetKey);
+    console.log(
+        facetKey,
+        currentFilters.find((f) => f.type === facetKey)
+    );
+    if (filter) {
+        toggleFilter(currentFilters, filter);
+    } else {
+        updateFilter(currentFilters, getFilter({ type: facetKey }));
+    }
 }
