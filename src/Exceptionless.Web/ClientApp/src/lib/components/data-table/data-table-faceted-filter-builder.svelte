@@ -13,12 +13,9 @@
         label: string;
     };
 
-    export let title: string;
-    export let key: string;
     export let values: unknown[] = [];
     export let options: Option[] = [];
-    export let onValueChange: (facetKey: string, updatedValues: unknown[]) => void;
-    export let onRemoveFilter: (() => void) | undefined = undefined;
+    export let onValueChange: (facetKey: string) => void;
 
     let open = false;
 
@@ -28,19 +25,20 @@
                 ? values.filter((v) => v !== currentValue)
                 : [...(Array.isArray(values) ? values : []), currentValue];
 
-        onValueChange(key, updatedValues);
+        console.log(onValueChange, updatedValues[0], updatedValues, []);
+        onValueChange(updatedValues[0] as string);
     }
 
     export function onClearFilters() {
-        onValueChange(key, []);
+        console.log('clear');
+        //onValueChange(key, []);
     }
 </script>
 
 <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
-            <IconAddCircleOutline class="mr-2 h-4 w-4" />
-            {title}
+            <IconAddCircleOutline class="h-4 w-4" />
 
             {#if values.length > 0}
                 <Separator orientation="vertical" class="mx-2 h-4" />
@@ -65,7 +63,7 @@
     </Popover.Trigger>
     <Popover.Content class="w-[200px] p-0" align="start" side="bottom">
         <Command.Root>
-            <Command.Input placeholder={title} />
+            <Command.Input placeholder={'Search...'} />
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
@@ -85,16 +83,15 @@
                         </Command.Item>
                     {/each}
                 </Command.Group>
-                {#if values.length > 0 || onRemoveFilter}
-                    <Command.Separator />
-                {/if}
                 {#if values.length > 0}
+                    <Command.Separator />
                     <Command.Item class="justify-center text-center" onSelect={onClearFilters}>Clear filters</Command.Item>
-                {/if}
-                {#if onRemoveFilter}
-                    <Command.Item class="justify-center text-center" onSelect={onRemoveFilter}>Remove filter</Command.Item>
                 {/if}
             </Command.List>
         </Command.Root>
     </Popover.Content>
 </Popover.Root>
+
+{#each values as type (type)}
+    <slot {type} />
+{/each}
