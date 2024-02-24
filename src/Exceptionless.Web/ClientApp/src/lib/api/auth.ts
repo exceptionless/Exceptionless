@@ -8,7 +8,13 @@ import { globalFetchClient } from './FetchClient';
 
 import type { Login, TokenResult } from '$lib/models/api';
 
-export const accessToken = persisted<string | null>('satellizer_token', null);
+export const accessToken = persisted<string | null>('satellizer_token', null, {
+    serializer: {
+        parse: (s) => (s === 'null' ? null : s),
+        stringify: (s) => s as string
+    }
+});
+
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
