@@ -23,7 +23,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
     public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
     {
         var stacks = contexts
-            .Where(c => c.Stack is not null && c.Stack.Status != StackStatus.Regressed && c.Stack.DateFixed.HasValue)
+            .Where(c => c.Stack is { Status: StackStatus.Fixed, DateFixed: not null })
             .OrderBy(c => c.Event.Date)
             .GroupBy(c => c.Event.StackId);
 
@@ -52,7 +52,16 @@ public class CheckForRegressionAction : EventPipelineActionBase
                     {
                         var version = _semanticVersionParser.Parse(versionGroup.Key, versionCache) ?? _semanticVersionParser.Default;
                         if (version < fixedInVersion)
+                        {
+                            foreach (var ctx in stackGroup.Where(s => s.Organization.HasPremiumFeatures))
+                            {
+                                _logger.LogDebug("Discarding fixed stack event: Version {Version} is older than fixed in version {FixedInVersion}", version, fixedInVersion);
+                                ctx.IsDiscarded = true;
+                                ctx.IsCancelled = true;
+                            }
+
                             continue;
+                        }
 
                         regressedVersion = version;
                         regressedContext = versionGroup.First();
@@ -63,7 +72,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
                 if (regressedContext is null)
                     return;
 
-                _logger.LogTrace("Marking stack and events as regressed in version: {Version}", regressedVersion);
+                _logger.LogDebug("Marking stack and events as regressed in version: {Version}", regressedVersion);
                 stack.Status = StackStatus.Regressed;
                 await _stackRepository.MarkAsRegressedAsync(stack.Id);
 
@@ -79,7 +88,10 @@ public class CheckForRegressionAction : EventPipelineActionBase
                     {
                         cont = HandleError(ex, context);
                     }
-                    catch { }
+                    catch (Exception hex)
+                    {
+                        _logger.LogError(hex, "Error calling HandleError: {Message}", ex.Message);
+                    }
 
                     if (!cont)
                         context.SetError(ex.Message, ex);
