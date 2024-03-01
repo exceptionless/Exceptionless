@@ -36,22 +36,22 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
         Assert.Equal(3, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
 
         await _repository.RemoveAllByProjectIdAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
-
         await RefreshDataAsync();
+
         Assert.Equal(4, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
         Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Total);
         Assert.Equal(3, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
 
         await _repository.RemoveAllByProjectIdAsync(TestConstants.OrganizationId, TestConstants.ProjectIdWithNoRoles);
-
         await RefreshDataAsync();
+
         Assert.Equal(3, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
         Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Total);
         Assert.Equal(2, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
 
         await _repository.RemoveAllByOrganizationIdAsync(TestConstants.OrganizationId);
-
         await RefreshDataAsync();
+
         Assert.Equal(0, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
         Assert.Equal(0, (await _repository.GetByProjectIdAsync(TestConstants.ProjectId)).Total);
         Assert.Equal(1, (await _repository.GetByProjectIdAsync(TestConstants.ProjectIdWithNoRoles)).Total);
@@ -68,8 +68,7 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
         Assert.Equal(1, (await _repository.GetByTypeAndUserIdAsync(TokenType.Access, TestConstants.UserId)).Total);
         Assert.Equal(1, (await _repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId)).Total);
 
-        await _repository.RemoveAllByUserIdAsync(TestConstants.UserId);
-        await RefreshDataAsync();
+        await _repository.RemoveAllByUserIdAsync(TestConstants.UserId, o => o.ImmediateConsistency());
         Assert.Equal(0, (await _repository.GetByTypeAndUserIdAsync(TokenType.Access, TestConstants.UserId)).Total);
         Assert.Equal(0, (await _repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId)).Total);
         Assert.Equal(1, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);

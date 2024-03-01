@@ -13,7 +13,7 @@
     <PackageReference Include="xunit" Version="2.7.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" PrivateAssets="All" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7" PrivateAssets="All" />
-    <PackageReference Include="coverlet.collector" Version="6.0.0">
+    <PackageReference Include="coverlet.collector" Version="6.0.1">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -12,6 +12,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
@@ -243,7 +244,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Contains(contexts, c => c.IsProcessed);
 
         await RefreshDataAsync();
@@ -304,7 +305,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
         await RefreshDataAsync();
@@ -459,7 +460,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Contains(contexts, c => c.IsProcessed);
 
         events =
@@ -518,7 +519,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
         await RefreshDataAsync();
@@ -929,7 +930,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
         var project = ProjectData.GenerateSampleProject();
 
-        var ev = EventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
         var context = await _pipeline.RunAsync(ev, organization, project);
         Assert.True(context.IsProcessed);
         Assert.False(context.HasError);
@@ -944,8 +945,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         stack.Status = StackStatus.Discarded;
         stack = await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
 
-
-        ev = EventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: ev.StackId, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
         context = await _pipeline.RunAsync(ev, organization, project);
         Assert.False(context.IsProcessed);
         Assert.False(context.HasError);
@@ -953,13 +953,93 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.True(context.IsDiscarded);
         await RefreshDataAsync();
 
-        ev = EventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
         context = await _pipeline.RunAsync(ev, organization, project);
         Assert.False(context.IsProcessed);
         Assert.False(context.HasError);
         Assert.True(context.IsCancelled);
         Assert.True(context.IsDiscarded);
+    }
+
+    [Theory]
+    [InlineData(StackStatus.Regressed, false, null, null)]
+    [InlineData(StackStatus.Fixed, true, "1.0.0", null)] // A fixed stack should not be marked as regressed if the event has no version.
+    [InlineData(StackStatus.Regressed, false, null, "1.0.0")]
+    [InlineData(StackStatus.Regressed, false, "1.0.0", "1.0.0")] // A fixed stack should not be marked as regressed if the event has the same version.
+    [InlineData(StackStatus.Fixed, true, "2.0.0", "1.0.0")]
+    [InlineData(StackStatus.Regressed, false, null, "1.0.1")]
+    [InlineData(StackStatus.Regressed, false, "1.0.0", "1.0.1")]
+    public async Task CanDiscardStackEventsBasedOnEventVersion(StackStatus expectedStatus, bool expectedDiscard, string? stackFixedInVersion, string? eventSemanticVersion)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId, o => o.Cache());
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId, o => o.Cache());
+
+        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        var context = await _pipeline.RunAsync(ev, organization, project);
+
+        var stack = context.Stack;
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+
+        Assert.True(context.IsProcessed);
+        Assert.False(context.HasError);
+        Assert.False(context.IsCancelled);
+        Assert.False(context.IsDiscarded);
+
+        var semanticVersionParser = GetService<SemanticVersionParser>();
+        var fixedInVersion = semanticVersionParser.Parse(stackFixedInVersion);
+        stack.MarkFixed(fixedInVersion);
+        await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+
         await RefreshDataAsync();
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow, semver: eventSemanticVersion);
+        context = await _pipeline.RunAsync(ev, organization, project);
+
+        stack = context.Stack;
+        Assert.NotNull(stack);
+        Assert.Equal(expectedStatus, stack.Status);
+        Assert.Equal(expectedDiscard, context.IsCancelled);
+        Assert.Equal(expectedDiscard, context.IsDiscarded);
+    }
+
+    [Theory]
+    [InlineData("1.0.0", null)] // A fixed stack should not be marked as regressed if the event has no version.
+    [InlineData("2.0.0", "1.0.0")]
+    public async Task WillNotDiscardStackEventsBasedOnEventVersionWithFreePlan(string stackFixedInVersion, string? eventSemanticVersion)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId3, o => o.Cache());
+
+        var plans = GetService<BillingPlans>();
+        Assert.Equal(plans.FreePlan.Id, organization.PlanId);
+
+        var project = await _projectRepository.AddAsync(ProjectData.GenerateProject(organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
+
+        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        var context = await _pipeline.RunAsync(ev, organization, project);
+
+        var stack = context.Stack;
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+
+        Assert.True(context.IsProcessed);
+        Assert.False(context.HasError);
+        Assert.False(context.IsCancelled);
+        Assert.False(context.IsDiscarded);
+
+        var semanticVersionParser = GetService<SemanticVersionParser>();
+        var fixedInVersion = semanticVersionParser.Parse(stackFixedInVersion);
+        stack.MarkFixed(fixedInVersion);
+        await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow, semver: eventSemanticVersion);
+        context = await _pipeline.RunAsync(ev, organization, project);
+
+        stack = context.Stack;
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Fixed, stack.Status);
+        Assert.False(context.IsCancelled);
+        Assert.False(context.IsDiscarded);
     }
 
     [Theory]
@@ -1164,10 +1244,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                 organization.SuspensionDate = SystemClock.UtcNow;
             }
 
-            await _organizationRepository.AddAsync(organization, o => o.Cache());
+            await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
         }
 
-        await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
+        await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency().Cache());
 
         foreach (var user in UserData.GenerateSampleUsers())
         {
@@ -1180,10 +1260,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             if (!user.IsEmailAddressVerified)
                 user.CreateVerifyEmailAddressToken();
 
-            await _userRepository.AddAsync(user, o => o.Cache());
+            await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache());
         }
-
-        await RefreshDataAsync();
     }
 
     private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)

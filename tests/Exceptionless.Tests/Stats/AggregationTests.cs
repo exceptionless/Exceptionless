@@ -207,16 +207,14 @@ public sealed class AggregationTests : IntegrationTestsBase
 
     private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true)
     {
-        var orgs = OrganizationData.GenerateSampleOrganizations(_billingManager, _plans);
-        await _organizationRepository.AddAsync(orgs, o => o.Cache());
+        var organizations = OrganizationData.GenerateSampleOrganizations(_billingManager, _plans);
+        await _organizationRepository.AddAsync(organizations, o => o.ImmediateConsistency().Cache());
 
         var projects = ProjectData.GenerateSampleProjects();
-        await _projectRepository.AddAsync(projects, o => o.Cache());
-        await RefreshDataAsync();
+        await _projectRepository.AddAsync(projects, o => o.ImmediateConsistency().Cache());
 
         if (eventCount > 0)
-            await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : [TestConstants.ProjectId
-            ]);
+            await CreateEventsAsync(eventCount, multipleProjects ? projects.Select(p => p.Id).ToArray() : [TestConstants.ProjectId]);
     }
 
     private async Task CreateEventsAsync(int eventCount, string[]? projectIds, decimal? value = -1)
