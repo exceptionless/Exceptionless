@@ -31,8 +31,7 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         var organization = new Organization { Name = "Test Organization", PlanId = _plans.FreePlan.Id };
         Assert.Null(organization.Id);
 
-        await _repository.AddAsync(organization);
-        await RefreshDataAsync();
+        await _repository.AddAsync(organization, o => o.ImmediateConsistency());
         Assert.NotNull(organization.Id);
 
         organization = await _repository.GetByIdAsync(organization.Id);
@@ -40,7 +39,6 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
 
         organization.Name = "New organization";
         await _repository.SaveAsync(organization);
-
         await _repository.RemoveAsync(organization.Id);
     }
 
@@ -51,8 +49,7 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         Assert.Null(organization.Id);
 
         Assert.Equal(0, _cache.Count);
-        await _repository.AddAsync(organization, o => o.Cache());
-        await RefreshDataAsync();
+        await _repository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
         Assert.NotNull(organization.Id);
         Assert.Equal(1, _cache.Count);
 
@@ -62,8 +59,7 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         Assert.NotNull(organization.Id);
         Assert.Equal(1, _cache.Count);
 
-        await _repository.RemoveAllAsync();
-        await RefreshDataAsync();
+        await _repository.RemoveAllAsync(o => o.ImmediateConsistency());
         Assert.Equal(0, _cache.Count);
     }
 }

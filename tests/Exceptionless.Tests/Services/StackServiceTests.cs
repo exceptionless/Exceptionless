@@ -43,8 +43,8 @@ public class StackServiceTests : IntegrationTestsBase
         Assert.True(occurrenceSet.IsNull || !occurrenceSet.HasValue || occurrenceSet.Value.Count == 0);
 
         var firstUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
-        await RefreshDataAsync();
         await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, firstUtcNow, firstUtcNow, 1);
+        await RefreshDataAsync();
 
         // Assert stack state has no change after increment usage
         stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
@@ -60,7 +60,6 @@ public class StackServiceTests : IntegrationTestsBase
         Assert.Single(occurrenceSet.Value);
 
         var secondUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
-        await RefreshDataAsync();
         await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, secondUtcNow, secondUtcNow, 2);
 
         // Assert state in cache has been changed after increment usage again

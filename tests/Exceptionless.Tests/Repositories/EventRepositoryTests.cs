@@ -133,7 +133,6 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         _logger.LogDebug("");
         _logger.LogDebug("Tests:");
-        await RefreshDataAsync();
         Assert.Equal(_ids.Count, await _repository.CountAsync());
         for (int i = 0; i < sortedIds.Count; i++)
         {
@@ -164,9 +163,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     public async Task GetByReferenceIdAsync()
     {
         string referenceId = ObjectId.GenerateNewId().ToString();
-        await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList());
+        await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList(), o => o.ImmediateConsistency());
 
-        await RefreshDataAsync();
         var results = await _repository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId);
         Assert.True(results.Total > 0);
         Assert.NotNull(results.Documents.First());
@@ -193,9 +191,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
                 closedSession
             };
 
-        await _repository.AddAsync(events);
+        await _repository.AddAsync(events, o => o.ImmediateConsistency());
 
-        await RefreshDataAsync();
         var results = await _repository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(30));
         Assert.Equal(3, results.Total);
     }
@@ -204,13 +201,12 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     public async Task RemoveAllByClientIpAndDateAsync()
     {
         const string _clientIpAddress = "123.123.12.255";
-
         const int NUMBER_OF_EVENTS_TO_CREATE = 50;
+
         var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, startDate: SystemClock.UtcNow.SubtractDays(2), endDate: SystemClock.UtcNow).ToList();
         events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
-        await _repository.AddAsync(events);
+        await _repository.AddAsync(events, o => o.ImmediateConsistency());
 
-        await RefreshDataAsync();
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
         events.ForEach(e =>
@@ -220,9 +216,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
 
-        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2));
+        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2), o => o.ImmediateConsistency());
 
-        await RefreshDataAsync();
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Empty(events);
     }
@@ -236,7 +231,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         var occurrenceDateMid = baseDate;
         var occurrenceDateEnd = baseDate.AddMinutes(30);
 
-        await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId));
+        await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
 
         var occurrenceDates = new List<DateTime> {
                 occurrenceDateStart,
@@ -255,10 +250,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         foreach (var date in occurrenceDates)
         {
-            var ev = await _repository.AddAsync(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: date));
+            var ev = await _repository.AddAsync(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: date), o => o.ImmediateConsistency());
             _ids.Add(Tuple.Create(ev.Id, date));
         }
-
-        await RefreshDataAsync();
     }
 }
