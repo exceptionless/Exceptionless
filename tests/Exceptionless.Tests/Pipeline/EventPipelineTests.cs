@@ -243,7 +243,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Contains(contexts, c => c.IsProcessed);
 
         await RefreshDataAsync();
@@ -304,7 +304,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
         await RefreshDataAsync();
@@ -459,7 +459,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Contains(contexts, c => c.IsProcessed);
 
         events =
@@ -518,7 +518,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var contexts = await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.DoesNotContain(contexts, c => c.HasError);
-        Assert.Equal(1, contexts.Count(c => c.IsCancelled && c.IsDiscarded));
+        Assert.Equal(1, contexts.Count(c => c is { IsCancelled: true, IsDiscarded: true }));
         Assert.Equal(0, contexts.Count(c => c.IsProcessed));
 
         await RefreshDataAsync();
@@ -1164,10 +1164,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                 organization.SuspensionDate = SystemClock.UtcNow;
             }
 
-            await _organizationRepository.AddAsync(organization, o => o.Cache());
+            await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
         }
 
-        await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
+        await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency().Cache());
 
         foreach (var user in UserData.GenerateSampleUsers())
         {
@@ -1180,10 +1180,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             if (!user.IsEmailAddressVerified)
                 user.CreateVerifyEmailAddressToken();
 
-            await _userRepository.AddAsync(user, o => o.Cache());
+            await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache());
         }
-
-        await RefreshDataAsync();
     }
 
     private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)

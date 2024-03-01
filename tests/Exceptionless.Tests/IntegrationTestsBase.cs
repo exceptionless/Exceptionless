@@ -125,8 +125,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         await stackRepository.AddAsync(stacks, o => o.ImmediateConsistency());
         await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
-        await RefreshDataAsync();
-
         return (stacks.ToList(), events.ToList());
     }
 
