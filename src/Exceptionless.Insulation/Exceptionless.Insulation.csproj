@@ -21,8 +21,8 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="4.0.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.7.17" />
-    <PackageReference Include="YamlDotNet" Version="15.1.1" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.27" />
+    <PackageReference Include="YamlDotNet" Version="15.1.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />
