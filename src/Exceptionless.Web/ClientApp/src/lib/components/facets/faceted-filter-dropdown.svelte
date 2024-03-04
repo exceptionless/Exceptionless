@@ -1,38 +1,40 @@
 <script lang="ts">
     import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
     import IconCheck from '~icons/mdi/check';
+
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import { Button } from '$comp/ui/button';
-    import { cn } from '$lib/utils';
+
     import Separator from '$comp/ui/separator/separator.svelte';
     import Badge from '$comp/ui/badge/badge.svelte';
+    import { cn } from '$lib/utils';
+    import { createEventDispatcher } from 'svelte';
 
     type Option = {
-        value: unknown;
+        value: string;
         label: string;
     };
 
     export let title: string;
-    export let key: string;
-    export let values: unknown[] = [];
+    export let values: string[] = [];
     export let options: Option[] = [];
-    export let onValueChange: (facetKey: string, updatedValues: unknown[]) => void;
-    export let onRemoveFilter: (() => void) | undefined = undefined;
 
     let open = false;
 
-    export function onValueSelected(currentValue: unknown) {
-        const updatedValues =
-            Array.isArray(values) && values.includes(currentValue)
-                ? values.filter((v) => v !== currentValue)
-                : [...(Array.isArray(values) ? values : []), currentValue];
-
-        onValueChange(key, updatedValues);
+    const dispatch = createEventDispatcher();
+    export function onValueSelected(currentValue: string) {
+        values = values.includes(currentValue) ? values.filter((v) => v !== currentValue) : [...values, currentValue];
+        dispatch('changed', values);
     }
 
-    export function onClearFilters() {
-        onValueChange(key, []);
+    export function onClearFilter() {
+        values = [];
+        dispatch('changed', values);
+    }
+
+    function onRemoveFilter(): void {
+        dispatch('remove');
     }
 </script>
 
@@ -53,10 +55,12 @@
                             {values.length} Selected
                         </Badge>
                     {:else}
-                        {#each values as option (option)}
-                            <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                                {option}
-                            </Badge>
+                        {#each options as option (option.value)}
+                            {#if values.includes(option.value)}
+                                <Badge variant="secondary" class="rounded-sm px-1 font-normal">
+                                    {option.label}
+                                </Badge>
+                            {/if}
                         {/each}
                     {/if}
                 </div>
@@ -85,15 +89,11 @@
                         </Command.Item>
                     {/each}
                 </Command.Group>
-                {#if values.length > 0 || onRemoveFilter}
-                    <Command.Separator />
-                {/if}
+                <Command.Separator />
                 {#if values.length > 0}
-                    <Command.Item class="justify-center text-center" onSelect={onClearFilters}>Clear filters</Command.Item>
+                    <Command.Item class="justify-center text-center" onSelect={onClearFilter}>Clear filter</Command.Item>
                 {/if}
-                {#if onRemoveFilter}
-                    <Command.Item class="justify-center text-center" onSelect={onRemoveFilter}>Remove filter</Command.Item>
-                {/if}
+                <Command.Item class="justify-center text-center" onSelect={onRemoveFilter}>Remove filter</Command.Item>
             </Command.List>
         </Command.Root>
     </Popover.Content>

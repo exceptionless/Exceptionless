@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Card from '$comp/ui/card';
-    import * as DataTable from '$comp/data-table';
     import * as Sheet from '$comp/ui/sheet';
+    import * as FacetedFilter from '$comp/facets';
     import SearchInput from '$comp/SearchInput.svelte';
     import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
 
@@ -9,28 +9,30 @@
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import IconOpenInNew from '~icons/mdi/open-in-new';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import { eventTypes, stackStatuses } from '$comp/events/options';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-    import {
-        filter,
-        filterOptions,
-        filterValues,
-        filterWithFaceted,
-        onFacetValuesChanged,
-        onFilterChanged,
-        onFilterInputChanged,
-        onToggleFacetFilterChanged,
-        resetFilterValues,
-        selectedFilterTypes,
-        time
-    } from '$lib/stores/events';
+    import { filter, filterWithFaceted, onFilterChanged, onFilterInputChanged, time } from '$lib/stores/events';
     import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
     import { Button } from '$comp/ui/button';
+    import StatusFacetedFilter from '$comp/events/facets/StatusFacetedFilter.svelte';
+    import TypeFacetedFilter from '$comp/events/facets/TypeFacetedFilter.svelte';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
         selectedEventId = detail.id;
     }
+
+    const facets = [
+        {
+            title: 'Status',
+            type: 'status',
+            component: StatusFacetedFilter
+        },
+        {
+            title: 'Type',
+            type: 'type',
+            component: TypeFacetedFilter
+        }
+    ];
 </script>
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
@@ -42,35 +44,7 @@
             <EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
                     <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
-
-                    <DataTable.FacetedFilterContainer {filterValues} {resetFilterValues}>
-                        <DataTable.FacetedFilterBuilder
-                            values={$selectedFilterTypes}
-                            options={filterOptions}
-                            onValueChange={onToggleFacetFilterChanged}
-                            let:type
-                        >
-                            {#if type === 'status'}
-                                <DataTable.FacetedFilter
-                                    title="Status"
-                                    key="status"
-                                    values={$filterValues.status}
-                                    options={stackStatuses}
-                                    onValueChange={onFacetValuesChanged}
-                                    onRemoveFilter={() => console.log('onRemoveFilter')}
-                                ></DataTable.FacetedFilter>
-                            {:else if type === 'type'}
-                                <DataTable.FacetedFilter
-                                    title="Type"
-                                    key="type"
-                                    values={$filterValues.type}
-                                    options={eventTypes}
-                                    onValueChange={onFacetValuesChanged}
-                                ></DataTable.FacetedFilter>
-                            {/if}
-                        </DataTable.FacetedFilterBuilder>
-                    </DataTable.FacetedFilterContainer>
-
+                    <FacetedFilter.Root {facets}></FacetedFilter.Root>
                     <DateRangeDropdown bind:value={$time}></DateRangeDropdown>
                 </svelte:fragment>
             </EventsDataTable>
