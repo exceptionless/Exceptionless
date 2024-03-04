@@ -35,10 +35,10 @@ export function mutatePromoteTab(id: string) {
     const client = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: queryKeys.id(id),
-        mutationFn: async ({ name }) => {
+        mutationFn: async (params: { name: string }) => {
             const { post } = new FetchClient();
             const response = await post(`projects/${id}/promotedtabs`, undefined, {
-                params: { name }
+                params
             });
 
             if (response.ok) {
