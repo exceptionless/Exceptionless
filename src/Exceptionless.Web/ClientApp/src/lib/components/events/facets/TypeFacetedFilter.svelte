@@ -2,14 +2,12 @@
     import { eventTypes } from '$comp/events/options';
     import { FacetedFilterDropdown } from '$comp/facets';
     import { TypeFilter } from '$comp/filters/filters';
-    import type { PersistentEventKnownTypes } from '$lib/models/api';
     import { createEventDispatcher } from 'svelte';
 
     const dispatch = createEventDispatcher();
-    const filter = new TypeFilter([]);
+    export let filter: TypeFilter;
 
-    function onChanged({ detail }: CustomEvent<PersistentEventKnownTypes[]>) {
-        filter.values = detail;
+    function onChanged() {
         dispatch('changed', filter);
     }
 
@@ -18,4 +16,4 @@
     }
 </script>
 
-<FacetedFilterDropdown title="Type" options={eventTypes} on:changed={onChanged} on:remove={onRemove}></FacetedFilterDropdown>
+<FacetedFilterDropdown title="Type" bind:values={filter.values} options={eventTypes} on:changed={onChanged} on:remove={onRemove}></FacetedFilterDropdown>
