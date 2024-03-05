@@ -11,34 +11,33 @@
     import { createEventDispatcher, type ComponentType } from 'svelte';
 
     const dispatch = createEventDispatcher();
-    let visible: string[] = [];
+    let visible: FacetedFilter[] = [];
 
-    type FacetedFilter = { title: string; type: string; component: ComponentType; filter?: IFilter };
+    type FacetedFilter = { title: string; component: ComponentType; filter: IFilter };
     export let facets: FacetedFilter[] = [];
 
     let open = false;
 
-    function onFacetSelected(type: string) {
-        if (visible.includes(type)) {
-            visible = visible.filter((item) => item !== type);
+    function onFacetSelected(facet: FacetedFilter) {
+        if (visible.includes(facet)) {
+            facet.filter.reset();
+            visible = visible.filter((f) => f !== facet);
         } else {
-            visible = [...visible, type];
+            visible = [...visible, facet];
         }
-        console.log('selected', visible);
     }
 
     function onChanged({ detail }: CustomEvent<IFilter>) {
-        console.log('changed', detail.toFilter());
         dispatch('changed', detail);
     }
 
     function onRemove({ detail }: CustomEvent<IFilter>) {
-        console.log('remove', detail.type);
-        visible = visible.filter((item) => item !== detail.type);
+        detail.reset();
+        visible = visible.filter((item) => item.filter.type !== detail.type);
     }
 
     function onRemoveAll() {
-        console.log('remove all');
+        facets.forEach((facet) => facet.filter.reset());
         visible = [];
     }
 </script>
@@ -55,12 +54,12 @@
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
-                    {#each facets as facet (facet.type)}
-                        <Command.Item value={facet.type} onSelect={onFacetSelected}>
+                    {#each facets as facet (facet.filter.type)}
+                        <Command.Item value={facet.filter.type} onSelect={() => onFacetSelected(facet)}>
                             <div
                                 class={cn(
                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                    visible.includes(facet.type) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                    visible.includes(facet) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                 )}
                             >
                                 <IconCheck className={cn('h-4 w-4')} />
@@ -80,9 +79,9 @@
     </Popover.Content>
 </Popover.Root>
 
-{#each facets as facet (facet.type)}
-    {#if visible.includes(facet.type)}
-        <svelte:component this={facet.component} on:changed={onChanged} on:remove={onRemove} />
+{#each facets as facet (facet.filter.type)}
+    {#if visible.includes(facet)}
+        <svelte:component this={facet.component} bind:filter={facet.filter} on:changed={onChanged} on:remove={onRemove} />
     {/if}
 {/each}
 

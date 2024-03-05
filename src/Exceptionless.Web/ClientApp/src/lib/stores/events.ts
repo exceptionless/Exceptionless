@@ -41,10 +41,8 @@ export function updateFilter(filter: IFilter) {
 export function updateFilterValues(key: string, values: unknown[]) {
     const filter = getFilter({ type: key, values }) as IFacetedFilter;
     const currentFilters = get(filters);
-    console.log('updateFilterValues', filter, currentFilters);
     if (filter && upsertOrRemoveFacetFilter(currentFilters, filter)) {
         filters.set(currentFilters);
-        console.log('updateFilterValues', currentFilters);
     }
 }
 
@@ -72,10 +70,6 @@ export function onFacetValuesChanged(facetKey: string, updatedValues: unknown[])
 export function onToggleFacetFilterChanged(facetKey: string) {
     const currentFilters = get(filters);
     const filter = currentFilters.find((f) => f.type === facetKey);
-    console.log(
-        facetKey,
-        currentFilters.find((f) => f.type === facetKey)
-    );
     if (filter) {
         toggleFilter(currentFilters, filter);
     } else {

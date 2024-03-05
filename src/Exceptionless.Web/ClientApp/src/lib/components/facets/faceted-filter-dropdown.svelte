@@ -34,6 +34,7 @@
     }
 
     function onRemoveFilter(): void {
+        values = [];
         dispatch('remove');
     }
 </script>

@@ -15,6 +15,7 @@
     import { Button } from '$comp/ui/button';
     import StatusFacetedFilter from '$comp/events/facets/StatusFacetedFilter.svelte';
     import TypeFacetedFilter from '$comp/events/facets/TypeFacetedFilter.svelte';
+    import { StatusFilter, TypeFilter } from '$comp/filters/filters';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
@@ -24,13 +25,13 @@
     const facets = [
         {
             title: 'Status',
-            type: 'status',
-            component: StatusFacetedFilter
+            component: StatusFacetedFilter,
+            filter: new StatusFilter([])
         },
         {
             title: 'Type',
-            type: 'type',
-            component: TypeFacetedFilter
+            component: TypeFacetedFilter,
+            filter: new TypeFilter([])
         }
     ];
 </script>

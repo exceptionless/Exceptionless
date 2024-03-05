@@ -5,8 +5,10 @@ import type { Serializer } from 'svelte-local-storage-store';
 export interface IFilter {
     readonly type: string;
     toFilter(): string;
+    reset(): void;
 }
 
+// TODO: Consider removing.
 export interface IFacetedFilter extends IFilter {
     term: string;
     values: unknown[];
@@ -28,6 +30,10 @@ export class BooleanFilter implements IFilter {
 
         return `${this.term}:${this.value}`;
     }
+
+    public reset(): void {
+        this.value = undefined;
+    }
 }
 
 export class DateFilter implements IFilter {
@@ -46,6 +52,10 @@ export class DateFilter implements IFilter {
         const date = this.value instanceof Date ? this.value.toISOString() : this.value;
         return `${this.term}:${quoteIfSpecialCharacters(date)}`;
     }
+
+    public reset(): void {
+        this.value = undefined;
+    }
 }
 
 export class KeywordFilter implements IFilter {
@@ -55,6 +65,10 @@ export class KeywordFilter implements IFilter {
 
     public toFilter(): string {
         return this.keyword;
+    }
+
+    public reset(): void {
+        this.keyword = '';
     }
 }
 
@@ -73,6 +87,10 @@ export class NumberFilter implements IFilter {
 
         return `${this.term}:${this.value}`;
     }
+
+    public reset(): void {
+        this.value = undefined;
+    }
 }
 
 export class ReferenceFilter implements IFilter {
@@ -82,6 +100,10 @@ export class ReferenceFilter implements IFilter {
 
     public toFilter(): string {
         return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
+    }
+
+    public reset(): void {
+        this.referenceId = '';
     }
 }
 
@@ -93,6 +115,10 @@ export class SessionFilter implements IFilter {
     public toFilter(): string {
         const session = quoteIfSpecialCharacters(this.sessionId);
         return `(reference:${session} OR ref.session:${session})`;
+    }
+
+    public reset(): void {
+        this.sessionId = '';
     }
 }
 
@@ -114,6 +140,10 @@ export class StatusFilter implements IFacetedFilter {
 
         return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
     }
+
+    public reset(): void {
+        this.values = [];
+    }
 }
 
 export class StringFilter implements IFilter {
@@ -130,6 +160,10 @@ export class StringFilter implements IFilter {
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+    }
+
+    public reset(): void {
+        this.value = undefined;
     }
 }
 
@@ -151,6 +185,10 @@ export class TypeFilter implements IFacetedFilter {
 
         return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
     }
+
+    public reset(): void {
+        this.values = [];
+    }
 }
 
 export class VersionFilter implements IFilter {
@@ -167,6 +205,10 @@ export class VersionFilter implements IFilter {
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+    }
+
+    public reset(): void {
+        this.value = undefined;
     }
 }
 
@@ -219,7 +261,6 @@ export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
  */
 export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFilter): boolean {
     const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
-    console.log('upsertOrRemoveFacetFilter', filter, index, filters);
 
     // If the filter has no values, remove it.
     if (!filter.values || filter.values.length == 0) {
@@ -289,7 +330,7 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
     return resolvedFilters;
 }
 
-export function getFilter(filter: Omit<IFilter, 'toFilter'> & Record<string, unknown>): IFilter | undefined {
+export function getFilter(filter: Omit<IFilter, 'toFilter' | 'reset'> & Record<string, unknown>): IFilter | undefined {
     switch (filter.type) {
         case 'boolean':
             return new BooleanFilter(filter.term as string, filter.value as boolean);
@@ -327,7 +368,6 @@ export function toFilterTypes(filters: IFilter[]): string[] {
         }
     }
 
-    console.log(Array.from(types));
     return Array.from(types);
 }
 
