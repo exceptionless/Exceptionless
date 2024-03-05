@@ -38,7 +38,7 @@ jobs:
       - name: Version
         id: version
         run: |
-          dotnet tool install --global minver-cli --version 4.3.0
+          dotnet tool install --global minver-cli --version 5.0.0
           version=$(minver --tag-prefix v)
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
