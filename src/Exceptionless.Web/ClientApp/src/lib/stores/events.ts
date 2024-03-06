@@ -11,7 +11,7 @@ import {
     resetFacetedValues,
     toFilterTypes
 } from '$comp/filters/filters';
-import { persisted } from 'svelte-local-storage-store';
+import { persisted } from 'svelte-persisted-store';
 import { derived, get } from 'svelte/store';
 
 export const limit = persisted<number>('events.limit', 10);
