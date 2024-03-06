@@ -1,6 +1,6 @@
 <script lang="ts">
     import { RadioGroup as RadioGroupPrimitive } from 'bits-ui';
-    import IconCheck from '~icons/mdi/check';
+    import Check from '~icons/mdi/check';
     import { cn } from '$lib/utils';
 
     type $$Props = RadioGroupPrimitive.ItemProps & {
@@ -24,7 +24,7 @@
 >
     <div class="flex items-center justify-center">
         <RadioGroupPrimitive.ItemIndicator>
-            <IconCheck class="h-3.5 w-3.5 fill-primary" />
+            <Check class="h-3.5 w-3.5 fill-primary" />
         </RadioGroupPrimitive.ItemIndicator>
     </div>
 </RadioGroupPrimitive.Item>
