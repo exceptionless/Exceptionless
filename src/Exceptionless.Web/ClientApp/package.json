@@ -62,7 +62,7 @@
         "pretty-ms": "^9.0.0",
         "svelte-echarts": "^0.1.1",
         "svelte-legos": "^0.2.2",
-        "svelte-local-storage-store": "^0.6.4",
+        "svelte-persisted-store": "^0.9.1",
         "svelte-sonner": "^0.3.19",
         "svelte-time": "^0.8.2",
         "tailwind-merge": "^2.2.1",

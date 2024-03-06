@@ -1,6 +1,6 @@
 import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
-import type { Serializer } from 'svelte-local-storage-store';
+import type { Serializer } from 'svelte-persisted-store';
 
 export interface IFilter {
     readonly type: string;
