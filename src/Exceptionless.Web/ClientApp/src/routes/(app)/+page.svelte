@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { derived } from 'svelte/store';
+    import { persisted } from 'svelte-persisted-store';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import * as FacetedFilter from '$comp/facets';
@@ -15,29 +17,36 @@
     import { Button } from '$comp/ui/button';
     import StatusFacetedFilter from '$comp/events/facets/StatusFacetedFilter.svelte';
     import TypeFacetedFilter from '$comp/events/facets/TypeFacetedFilter.svelte';
-    import { StatusFilter, TypeFilter } from '$comp/filters/filters';
+    import { StatusFilter, TypeFilter, type IFilter, FilterSerializer } from '$comp/filters/filters';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
         selectedEventId = detail.id;
     }
 
-    const facets = [
+    const defaultFilters = [new StatusFilter([]), new TypeFilter([])];
+    const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
+    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
+
+    const facets = derived(filters, ($filters) => [
         {
             title: 'Status',
             component: StatusFacetedFilter,
-            filter: new StatusFilter([])
+            filter: $filters.find((f) => f.type === 'status')!
         },
         {
             title: 'Type',
             component: TypeFacetedFilter,
-            filter: new TypeFilter([])
+            filter: $filters.find((f) => f.type === 'type')!
         }
-    ];
+    ]);
+
+    function onFiltersChanged({ detail }: CustomEvent<IFilter[]>) {
+        filters.set(detail);
+    }
 </script>
 
 <CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
-
 <div class="flex flex-col space-y-4">
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
@@ -45,7 +54,7 @@
             <EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
                     <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
-                    <FacetedFilter.Root {facets}></FacetedFilter.Root>
+                    <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
                     <DateRangeDropdown bind:value={$time}></DateRangeDropdown>
                 </svelte:fragment>
             </EventsDataTable>
