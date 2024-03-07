@@ -4,8 +4,9 @@ import type { Serializer } from 'svelte-persisted-store';
 
 export interface IFilter {
     readonly type: string;
-    toFilter(): string;
+    isEmpty(): boolean;
     reset(): void;
+    toFilter(): string;
 }
 
 // TODO: Consider removing.
@@ -23,16 +24,20 @@ export class BooleanFilter implements IFilter {
 
     public type: string = 'boolean';
 
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
 
         return `${this.term}:${this.value}`;
-    }
-
-    public reset(): void {
-        this.value = undefined;
     }
 }
 
@@ -44,6 +49,14 @@ export class DateFilter implements IFilter {
 
     public type: string = 'date';
 
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
@@ -52,10 +65,6 @@ export class DateFilter implements IFilter {
         const date = this.value instanceof Date ? this.value.toISOString() : this.value;
         return `${this.term}:${quoteIfSpecialCharacters(date)}`;
     }
-
-    public reset(): void {
-        this.value = undefined;
-    }
 }
 
 export class KeywordFilter implements IFilter {
@@ -63,12 +72,16 @@ export class KeywordFilter implements IFilter {
 
     public type: string = 'keyword';
 
-    public toFilter(): string {
-        return this.keyword;
+    public isEmpty(): boolean {
+        return !this.keyword.trim();
     }
 
     public reset(): void {
         this.keyword = '';
+    }
+
+    public toFilter(): string {
+        return this.keyword.trim();
     }
 }
 
@@ -80,16 +93,20 @@ export class NumberFilter implements IFilter {
 
     public type: string = 'number';
 
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
 
         return `${this.term}:${this.value}`;
-    }
-
-    public reset(): void {
-        this.value = undefined;
     }
 }
 
@@ -98,12 +115,16 @@ export class ReferenceFilter implements IFilter {
 
     public type: string = 'reference';
 
-    public toFilter(): string {
-        return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
+    public isEmpty(): boolean {
+        return !this.referenceId.trim();
     }
 
     public reset(): void {
         this.referenceId = '';
+    }
+
+    public toFilter(): string {
+        return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
     }
 }
 
@@ -112,13 +133,17 @@ export class SessionFilter implements IFilter {
 
     public type: string = 'session';
 
-    public toFilter(): string {
-        const session = quoteIfSpecialCharacters(this.sessionId);
-        return `(reference:${session} OR ref.session:${session})`;
+    public isEmpty(): boolean {
+        return !this.sessionId.trim();
     }
 
     public reset(): void {
         this.sessionId = '';
+    }
+
+    public toFilter(): string {
+        const session = quoteIfSpecialCharacters(this.sessionId);
+        return `(reference:${session} OR ref.session:${session})`;
     }
 }
 
@@ -128,6 +153,14 @@ export class StatusFilter implements IFacetedFilter {
     public term: string = 'status';
     public type: string = 'status';
     public faceted: boolean = true;
+
+    public isEmpty(): boolean {
+        return this.values.length === 0;
+    }
+
+    public reset(): void {
+        this.values = [];
+    }
 
     public toFilter(): string {
         if (this.values.length == 0) {
@@ -139,10 +172,6 @@ export class StatusFilter implements IFacetedFilter {
         }
 
         return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
-    }
-
-    public reset(): void {
-        this.values = [];
     }
 }
 
@@ -154,16 +183,20 @@ export class StringFilter implements IFilter {
 
     public type: string = 'string';
 
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
-    }
-
-    public reset(): void {
-        this.value = undefined;
     }
 }
 
@@ -173,6 +206,14 @@ export class TypeFilter implements IFacetedFilter {
     public term: string = 'type';
     public type: string = 'type';
     public faceted: boolean = true;
+
+    public isEmpty(): boolean {
+        return this.values.length === 0;
+    }
+
+    public reset(): void {
+        this.values = [];
+    }
 
     public toFilter(): string {
         if (this.values.length == 0) {
@@ -185,10 +226,6 @@ export class TypeFilter implements IFacetedFilter {
 
         return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
     }
-
-    public reset(): void {
-        this.values = [];
-    }
 }
 
 export class VersionFilter implements IFilter {
@@ -199,16 +236,20 @@ export class VersionFilter implements IFilter {
 
     public type: string = 'version';
 
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
-    }
-
-    public reset(): void {
-        this.value = undefined;
     }
 }
 
@@ -330,7 +371,7 @@ export function parseFilter(filters: IFilter[], input: string): IFilter[] {
     return resolvedFilters;
 }
 
-export function getFilter(filter: Omit<IFilter, 'toFilter' | 'reset'> & Record<string, unknown>): IFilter | undefined {
+export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'> & Record<string, unknown>): IFilter | undefined {
     switch (filter.type) {
         case 'boolean':
             return new BooleanFilter(filter.term as string, filter.value as boolean);
