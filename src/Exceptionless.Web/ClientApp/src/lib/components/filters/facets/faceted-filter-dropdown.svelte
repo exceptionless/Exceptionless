@@ -73,7 +73,7 @@
                         {#each options as option (option.value)}
                             {#if values.includes(option.value)}
                                 <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                                    {option.label}
+                                    <span class="max-w-14 truncate">{option.label}</span>
                                 </Badge>
                             {/if}
                         {/each}
