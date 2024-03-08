@@ -1,34 +1,40 @@
 <script lang="ts">
     import { derived } from 'svelte/store';
     import { persisted } from 'svelte-persisted-store';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
+
+    import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import * as FacetedFilter from '$comp/facets';
-    import SearchInput from '$comp/SearchInput.svelte';
-    import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
+    import * as FacetedFilter from '$comp/filters/facets';
 
+    import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-    import { filter, filterWithFaceted, onFilterChanged, onFilterInputChanged, time } from '$lib/stores/events';
     import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-    import { Button } from '$comp/ui/button';
+    import KeywordFacetedFilter from '$comp/events/facets/KeywordFacetedFilter.svelte';
     import StatusFacetedFilter from '$comp/events/facets/StatusFacetedFilter.svelte';
     import TypeFacetedFilter from '$comp/events/facets/TypeFacetedFilter.svelte';
-    import { StatusFilter, TypeFilter, type IFilter, FilterSerializer } from '$comp/filters/filters';
+    import { StatusFilter, TypeFilter, type IFilter, FilterSerializer, KeywordFilter, toFilter } from '$comp/filters/filters';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
         selectedEventId = detail.id;
     }
 
-    const defaultFilters = [new StatusFilter([]), new TypeFilter([])];
+    const time = persisted<string>('events.time', '');
+    const defaultFilters = [new KeywordFilter(''), new StatusFilter([]), new TypeFilter([])];
     const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
 
+    const filter = derived(filters, ($filters) => toFilter($filters, true));
     const facets = derived(filters, ($filters) => [
+        {
+            title: 'Search',
+            component: KeywordFacetedFilter,
+            filter: $filters.find((f) => f.type === 'keyword')!
+        },
         {
             title: 'Status',
             component: StatusFacetedFilter,
@@ -46,14 +52,12 @@
     }
 </script>
 
-<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 <div class="flex flex-col space-y-4">
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
+            <EventsDataTable {filter} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
-                    <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
                     <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
                     <DateRangeDropdown bind:value={$time}></DateRangeDropdown>
                 </svelte:fragment>
