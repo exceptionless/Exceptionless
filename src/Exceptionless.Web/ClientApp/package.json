@@ -23,7 +23,7 @@
     "devDependencies": {
         "@playwright/test": "^1.42.1",
         "@sveltejs/adapter-static": "^3.0.1",
-        "@sveltejs/kit": "^2.5.2",
+        "@sveltejs/kit": "^2.5.3",
         "@sveltejs/vite-plugin-svelte": "^3.0.2",
         "@typescript-eslint/eslint-plugin": "^7.1.1",
         "@typescript-eslint/parser": "^7.1.1",
@@ -52,7 +52,7 @@
         "@tanstack/svelte-query-devtools": "^5.25.0",
         "@tanstack/svelte-table": "^8.13.2",
         "@web3-storage/parse-link-header": "^3.1.0",
-        "bits-ui": "^0.19.5",
+        "bits-ui": "^0.19.6",
         "class-validator": "^0.14.1",
         "clsx": "^2.1.0",
         "cmdk-sv": "^0.0.15",
