@@ -1,6 +1,6 @@
 <script lang="ts">
     import { stackStatuses } from '$comp/events/options';
-    import { DropdownFacetedFilter } from '$comp/filters/facets';
+    import { DropdownFacetedFilter } from '$comp/faceted-filter';
     import { StatusFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
 

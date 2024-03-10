@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { KeywordFacetedFilter } from '$comp/filters/facets';
+    import { KeywordFacetedFilter } from '$comp/faceted-filter';
     import { KeywordFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
 

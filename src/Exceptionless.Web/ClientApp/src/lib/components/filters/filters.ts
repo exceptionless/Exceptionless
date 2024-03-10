@@ -9,13 +9,6 @@ export interface IFilter {
     toFilter(): string;
 }
 
-// TODO: Consider removing.
-export interface IFacetedFilter extends IFilter {
-    term: string;
-    values: unknown[];
-    faceted: boolean;
-}
-
 export class BooleanFilter implements IFilter {
     constructor(
         public term: string,
@@ -147,7 +140,7 @@ export class SessionFilter implements IFilter {
     }
 }
 
-export class StatusFilter implements IFacetedFilter {
+export class StatusFilter implements IFilter {
     constructor(public values: StackStatus[]) {}
 
     public term: string = 'status';
@@ -200,7 +193,7 @@ export class StringFilter implements IFilter {
     }
 }
 
-export class TypeFilter implements IFacetedFilter {
+export class TypeFilter implements IFilter {
     constructor(public values: PersistentEventKnownTypes[]) {}
 
     public term: string = 'type';
@@ -268,107 +261,11 @@ export function quote(value?: string | null): string | undefined {
     return value ? `"${value}"` : undefined;
 }
 
-export function toFilter(filters: IFilter[], includeFaceted: boolean = false): string {
+export function toFilter(filters: IFilter[]): string {
     return filters
-        .filter((f) => includeFaceted || !isFaceted(f))
         .map((f) => f.toFilter())
         .join(' ')
         .trim();
-}
-
-/**
- * Update the filters with the given filter. If the filter already exists, it will be removed.
- * @param filters The filters
- * @param filter The filter to add or remove
- * @returns The updated filters
- */
-export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
-    const index = filters.findIndex((f) => (f.type === filter.type && isFaceted(f) && isFaceted(filter)) || f.toFilter() === filter.toFilter());
-
-    if (index >= 0) {
-        filters.splice(index, 1);
-    } else {
-        filters.push(filter);
-    }
-
-    return filters;
-}
-
-/**
- *  Adds or updates a given faceted filter if it has values, otherwise it will be removed
- * @param filters The filters
- * @param filter The filter to add, update or remove.
- * @returns true if filters has been modified
- */
-export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFilter): boolean {
-    const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
-
-    // If the filter has no values, remove it.
-    if (!filter.values || filter.values.length == 0) {
-        if (index >= 0) {
-            filters.splice(index, 1);
-            return true;
-        }
-
-        return false;
-    }
-
-    if (index >= 0) {
-        if (filter.toFilter() === filters[index].toFilter()) {
-            return false;
-        }
-
-        filters[index] = filter;
-    } else {
-        filters.push(filter);
-    }
-
-    return true;
-}
-
-/**
- * Given the existing filters try and parse out any existing filters while adding new user filters as a keyword filter.
- * @param filters The current filters
- * @param filter The current filter string that was modified by the user
- * @returns The updated filter
- */
-export function parseFilter(filters: IFilter[], input: string): IFilter[] {
-    const resolvedFilters: IFilter[] = [];
-
-    const keywordFilterParts = [];
-    for (const filter of filters) {
-        if (isFaceted(filter)) {
-            resolvedFilters.push(filter);
-            continue;
-        }
-
-        input = input?.trim();
-        if (!input) {
-            continue;
-        }
-
-        // NOTE: This is a super naive implementation...
-        const part = filter.toFilter();
-        if (part) {
-            // Check for whole word / phrase match
-            const regex = new RegExp(`(^|\\s)${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`);
-            if (regex.test(input)) {
-                input = input.replace(regex, '');
-                if (filter instanceof KeywordFilter) {
-                    keywordFilterParts.push(part);
-                } else {
-                    resolvedFilters.push(filter);
-                }
-            }
-        }
-    }
-
-    input = `${keywordFilterParts.join(' ')} ${input ?? ''}`.trim();
-    if (input) {
-        resolvedFilters.push(new KeywordFilter(input));
-    }
-
-    return resolvedFilters;
 }
 
 export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'> & Record<string, unknown>): IFilter | undefined {
@@ -396,42 +293,6 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
     }
 }
 
-function isFaceted(filter: IFilter): filter is IFacetedFilter {
-    return 'faceted' in filter;
-}
-
-const FACETED_FILTER_TYPES = ['status', 'type'];
-export function toFilterTypes(filters: IFilter[]): string[] {
-    const types = new Set<string>();
-    for (const filter of filters) {
-        if (isFaceted(filter)) {
-            types.add(filter.type);
-        }
-    }
-
-    return Array.from(types);
-}
-
-export function toFacetedValues(filters: IFilter[]): Record<string, unknown[]> {
-    const values: Record<string, unknown[]> = {};
-    for (const filterType of FACETED_FILTER_TYPES) {
-        const filter = filters.find((f) => f.type === filterType && isFaceted(f)) as IFacetedFilter | undefined;
-        values[filterType] = filter?.values ?? [];
-    }
-
-    return values;
-}
-
-export function resetFacetedValues(filters: IFilter[]): IFilter[] {
-    for (const filter of filters) {
-        if (isFaceted(filter)) {
-            upsertOrRemoveFacetFilter(filters, { ...filter, values: [] });
-        }
-    }
-
-    return filters;
-}
-
 export class FilterSerializer implements Serializer<IFilter[]> {
     public parse(text: string): IFilter[] {
         if (!text) {
@@ -441,7 +302,7 @@ export class FilterSerializer implements Serializer<IFilter[]> {
         const data: unknown[] = JSON.parse(text);
         const filters: IFilter[] = [];
         for (const filterData of data) {
-            const filter = getFilter(filterData as Record<string, unknown>);
+            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
             if (filter) {
                 filters.push(filter);
             }
