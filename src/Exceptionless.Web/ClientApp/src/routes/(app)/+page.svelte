@@ -6,16 +6,16 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import * as FacetedFilter from '$comp/filters/facets';
+    import * as FacetedFilter from '$comp/faceted-filter';
 
     import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-    import KeywordFacetedFilter from '$comp/events/facets/KeywordFacetedFilter.svelte';
-    import StatusFacetedFilter from '$comp/events/facets/StatusFacetedFilter.svelte';
-    import TypeFacetedFilter from '$comp/events/facets/TypeFacetedFilter.svelte';
+    import KeywordFacetedFilter from '$comp/filters/facets/KeywordFacetedFilter.svelte';
+    import StatusFacetedFilter from '$comp/filters/facets/StatusFacetedFilter.svelte';
+    import TypeFacetedFilter from '$comp/filters/facets/TypeFacetedFilter.svelte';
     import { StatusFilter, TypeFilter, type IFilter, FilterSerializer, KeywordFilter, toFilter } from '$comp/filters/filters';
 
     let selectedEventId: string | null = null;
@@ -23,12 +23,13 @@
         selectedEventId = detail.id;
     }
 
+    const limit = persisted<number>('events.limit', 10);
     const time = persisted<string>('events.time', '');
     const defaultFilters = [new KeywordFilter(''), new StatusFilter([]), new TypeFilter([])];
     const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
 
-    const filter = derived(filters, ($filters) => toFilter($filters, true));
+    const filter = derived(filters, ($filters) => toFilter($filters));
     const facets = derived(filters, ($filters) => [
         {
             title: 'Search',
@@ -56,7 +57,7 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} {time} on:rowclick={onRowClick}>
+            <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
                     <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
                     <DateRangeDropdown bind:value={$time}></DateRangeDropdown>
