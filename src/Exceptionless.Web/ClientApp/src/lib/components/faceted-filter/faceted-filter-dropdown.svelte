@@ -78,7 +78,7 @@
         </Button>
     </Popover.Trigger>
     <Popover.Content class="p-0 lg:w-[350px] xl:w-[550px]" align="start" side="bottom">
-        <Command.Root filter={() => 1}>
+        <Command.Root>
             <Command.Input placeholder={title} />
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
@@ -102,7 +102,7 @@
                 <Command.Separator />
                 {#if $updatedValue !== value}
                     <Command.Item class="justify-center text-center font-bold text-primary" onSelect={() => open.set(false)}>Apply filter</Command.Item>
-                    <Command.Separator />
+                    <Command.Separator />   
                 {/if}
                 {#if $updatedValue?.trim()}
                     <Command.Item class="justify-center text-center" onSelect={onClearFilter}>Clear filter</Command.Item>
