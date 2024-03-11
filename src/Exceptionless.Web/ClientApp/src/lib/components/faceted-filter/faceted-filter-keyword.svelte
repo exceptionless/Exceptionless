@@ -48,7 +48,7 @@
             {#if value}
                 <Separator orientation="vertical" class="mx-2 h-4" />
                 <Badge variant="secondary" class="rounded-sm px-1 font-normal lg:hidden">
-                    <span class="max-w-16 truncate">{value}</span>
+                    <span class="max-w-24 truncate">{value}</span>
                 </Badge>
                 <div class="hidden space-x-1 lg:flex">
                     <Badge variant="secondary" class="rounded-sm px-1 font-normal">

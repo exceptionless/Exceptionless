@@ -1,6 +1,6 @@
 <script lang="ts">
     import { stackStatuses } from '$comp/events/options';
-    import { DropdownFacetedFilter } from '$comp/faceted-filter';
+    import { MultiselectFacetedFilter } from '$comp/faceted-filter';
     import { StatusFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
 
@@ -17,4 +17,4 @@
     }
 </script>
 
-<DropdownFacetedFilter {title} bind:values={filter.values} options={stackStatuses} on:changed={onChanged} on:remove={onRemove}></DropdownFacetedFilter>
+<MultiselectFacetedFilter {title} bind:values={filter.values} options={stackStatuses} on:changed={onChanged} on:remove={onRemove}></MultiselectFacetedFilter>

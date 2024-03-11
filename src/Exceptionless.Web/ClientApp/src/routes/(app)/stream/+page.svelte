@@ -11,10 +11,12 @@
     import EventsTailLogDataTable from '$comp/events/table/EventsTailLogDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+
     import KeywordFacetedFilter from '$comp/filters/facets/KeywordFacetedFilter.svelte';
+    import OrganizationFacetedFilter from '$comp/filters/facets/OrganizationFacetedFilter.svelte';
     import StatusFacetedFilter from '$comp/filters/facets/StatusFacetedFilter.svelte';
     import TypeFacetedFilter from '$comp/filters/facets/TypeFacetedFilter.svelte';
-    import { StatusFilter, TypeFilter, type IFilter, FilterSerializer, KeywordFilter, toFilter } from '$comp/filters/filters';
+    import { StatusFilter, TypeFilter, type IFilter, FilterSerializer, KeywordFilter, toFilter, OrganizationFilter } from '$comp/filters/filters';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
@@ -22,7 +24,7 @@
     }
 
     const limit = persisted<number>('events.stream.limit', 10);
-    const defaultFilters = [new KeywordFilter(''), new StatusFilter([]), new TypeFilter([])];
+    const defaultFilters = [new KeywordFilter(''), new OrganizationFilter(''), new StatusFilter([]), new TypeFilter([])];
     const filters = persisted<IFilter[]>('events.stream.filters', defaultFilters, { serializer: new FilterSerializer() });
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
 
@@ -32,6 +34,11 @@
             title: 'Search',
             component: KeywordFacetedFilter,
             filter: $filters.find((f) => f.type === 'keyword')!
+        },
+        {
+            title: 'Organization',
+            component: OrganizationFacetedFilter,
+            filter: $filters.find((f) => f.type === 'organization')!
         },
         {
             title: 'Status',
