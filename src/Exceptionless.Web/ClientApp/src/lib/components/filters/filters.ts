@@ -117,6 +117,10 @@ export class OrganizationFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.isEmpty()) {
+            return '';
+        }
+
         return `organization:${this.organization}`;
     }
 }
@@ -135,6 +139,10 @@ export class ReferenceFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.isEmpty()) {
+            return '';
+        }
+
         return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
     }
 }
@@ -153,6 +161,10 @@ export class SessionFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.isEmpty()) {
+            return '';
+        }
+
         const session = quoteIfSpecialCharacters(this.sessionId);
         return `(reference:${session} OR ref.session:${session})`;
     }
