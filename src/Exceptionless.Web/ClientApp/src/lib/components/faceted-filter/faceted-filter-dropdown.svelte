@@ -9,7 +9,7 @@
     import Separator from '$comp/ui/separator/separator.svelte';
     import Badge from '$comp/ui/badge/badge.svelte';
     import { createEventDispatcher } from 'svelte';
-    import { derived, writable } from 'svelte/store';
+    import { writable } from 'svelte/store';
     import { cn } from '$lib/utils';
     import { Loading } from '$comp/ui/command';
 
@@ -24,15 +24,11 @@
     export let options: Option[];
 
     const updatedValue = writable<string>(value);
-    const hasChanged = derived(updatedValue, ($updatedValue) => {
-        return $updatedValue !== value;
-    });
-
     const open = writable<boolean>(false);
     open.subscribe(($open) => {
         if ($open) {
             updatedValue.set(value);
-        } else if ($hasChanged) {
+        } else if ($updatedValue !== value) {
             value = $updatedValue;
             dispatch('changed', value);
         }
@@ -104,7 +100,7 @@
                     {/each}
                 </Command.Group>
                 <Command.Separator />
-                {#if $hasChanged}
+                {#if $updatedValue !== value}
                     <Command.Item class="justify-center text-center font-bold text-primary" onSelect={() => open.set(false)}>Apply filter</Command.Item>
                     <Command.Separator />
                 {/if}
