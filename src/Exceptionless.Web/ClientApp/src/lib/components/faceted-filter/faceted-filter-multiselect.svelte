@@ -8,10 +8,10 @@
 
     import Separator from '$comp/ui/separator/separator.svelte';
     import Badge from '$comp/ui/badge/badge.svelte';
+    import { cn } from '$lib/utils';
     import { createEventDispatcher } from 'svelte';
     import { derived, writable } from 'svelte/store';
-    import { cn } from '$lib/utils';
-    import { Loading } from '$comp/ui/command';
+    import Loading from '$comp/Loading.svelte';
 
     type Option = {
         value: string;
@@ -20,40 +20,38 @@
 
     export let loading: boolean = false;
     export let title: string;
-    export let value: string;
+    export let values: string[];
     export let options: Option[];
 
-    const updatedValue = writable<string>(value);
-    const hasChanged = derived(updatedValue, ($updatedValue) => {
-        return $updatedValue !== value;
+    const updatedValues = writable<string[]>(values);
+    const hasChanged = derived(updatedValues, ($updatedValues) => {
+        return $updatedValues.length !== values.length || $updatedValues.some((value) => !values.includes(value));
     });
 
     const open = writable<boolean>(false);
     open.subscribe(($open) => {
         if ($open) {
-            updatedValue.set(value);
+            updatedValues.set(values);
         } else if ($hasChanged) {
-            value = $updatedValue;
-            dispatch('changed', value);
+            values = $updatedValues;
+            dispatch('changed', values);
         }
     });
 
     const dispatch = createEventDispatcher();
     export function onValueSelected(currentValue: string) {
-        updatedValue.set(currentValue);
+        updatedValues.update(($updatedValues) =>
+            $updatedValues.includes(currentValue) ? $updatedValues.filter((v) => v !== currentValue) : [...$updatedValues, currentValue]
+        );
     }
 
     export function onClearFilter() {
-        updatedValue.set('');
+        updatedValues.set([]);
     }
 
     function onRemoveFilter(): void {
-        value = '';
+        values = [];
         dispatch('remove');
-    }
-
-    function displayValue(value: string) {
-        return options.find((option) => option.value === value)?.label ?? value;
     }
 </script>
 
@@ -68,21 +66,31 @@
                 <Badge variant="secondary" class="rounded-sm px-1 font-normal">
                     <Loading class="mr-2 h-4 w-4" /> Loading
                 </Badge>
-            {:else if value}
+            {:else if values.length > 0}
                 <Separator orientation="vertical" class="mx-2 h-4" />
                 <Badge variant="secondary" class="rounded-sm px-1 font-normal lg:hidden">
-                    <span class="max-w-24 truncate">{displayValue(value)}</span>
+                    {values.length}
                 </Badge>
                 <div class="hidden space-x-1 lg:flex">
-                    <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                        <span class="max-w-60 truncate">{displayValue(value)}</span>
-                    </Badge>
+                    {#if values.length > 2}
+                        <Badge variant="secondary" class="rounded-sm px-1 font-normal">
+                            {values.length} Selected
+                        </Badge>
+                    {:else}
+                        {#each options as option (option.value)}
+                            {#if values.includes(option.value)}
+                                <Badge variant="secondary" class="rounded-sm px-1 font-normal">
+                                    <span class="max-w-14 truncate">{option.label}</span>
+                                </Badge>
+                            {/if}
+                        {/each}
+                    {/if}
                 </div>
             {/if}
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="p-0 lg:w-[350px] xl:w-[550px]" align="start" side="bottom">
-        <Command.Root filter={() => 1}>
+    <Popover.Content class="w-[200px] p-0" align="start" side="bottom">
+        <Command.Root>
             <Command.Input placeholder={title} />
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
@@ -92,7 +100,7 @@
                             <div
                                 class={cn(
                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                    $updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                    $updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                 )}
                             >
                                 <IconCheck className={cn('h-4 w-4')} />
@@ -108,7 +116,7 @@
                     <Command.Item class="justify-center text-center font-bold text-primary" onSelect={() => open.set(false)}>Apply filter</Command.Item>
                     <Command.Separator />
                 {/if}
-                {#if $updatedValue?.trim()}
+                {#if $updatedValues.length > 0}
                     <Command.Item class="justify-center text-center" onSelect={onClearFilter}>Clear filter</Command.Item>
                 {/if}
                 <Command.Item class="justify-center text-center" onSelect={onRemoveFilter}>Remove filter</Command.Item>

@@ -103,6 +103,24 @@ export class NumberFilter implements IFilter {
     }
 }
 
+export class OrganizationFilter implements IFilter {
+    constructor(public organization: string) {}
+
+    public type: string = 'organization';
+
+    public isEmpty(): boolean {
+        return !this.organization.trim();
+    }
+
+    public reset(): void {
+        this.organization = '';
+    }
+
+    public toFilter(): string {
+        return `organization:${this.organization}`;
+    }
+}
+
 export class ReferenceFilter implements IFilter {
     constructor(public referenceId: string) {}
 
@@ -278,6 +296,8 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
             return new KeywordFilter(filter.keyword as string);
         case 'number':
             return new NumberFilter(filter.term as string, filter.value as number);
+        case 'organization':
+            return new OrganizationFilter(filter.organization as string);
         case 'reference':
             return new ReferenceFilter(filter.referenceId as string);
         case 'session':

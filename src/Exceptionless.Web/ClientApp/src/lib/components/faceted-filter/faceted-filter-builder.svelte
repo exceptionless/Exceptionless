@@ -103,7 +103,7 @@
 
 {#each $facets as facet (facet.filter.type)}
     {#if visible.includes(facet.filter.type)}
-        <svelte:component this={facet.component} {...facet} on:changed={onChanged} on:remove={onRemove} />
+        <svelte:component this={facet.component} filter={facet.filter} title={facet.title} on:changed={onChanged} on:remove={onRemove} />
     {/if}
 {/each}
 
