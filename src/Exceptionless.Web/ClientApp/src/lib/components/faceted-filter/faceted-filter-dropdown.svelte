@@ -102,7 +102,7 @@
                 <Command.Separator />
                 {#if $updatedValue !== value}
                     <Command.Item class="justify-center text-center font-bold text-primary" onSelect={() => open.set(false)}>Apply filter</Command.Item>
-                    <Command.Separator />   
+                    <Command.Separator />
                 {/if}
                 {#if $updatedValue?.trim()}
                     <Command.Item class="justify-center text-center" onSelect={onClearFilter}>Clear filter</Command.Item>
