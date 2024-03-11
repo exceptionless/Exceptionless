@@ -175,7 +175,6 @@ export class StatusFilter implements IFilter {
 
     public term: string = 'status';
     public type: string = 'status';
-    public faceted: boolean = true;
 
     public isEmpty(): boolean {
         return this.values.length === 0;
@@ -228,7 +227,6 @@ export class TypeFilter implements IFilter {
 
     public term: string = 'type';
     public type: string = 'type';
-    public faceted: boolean = true;
 
     public isEmpty(): boolean {
         return this.values.length === 0;
