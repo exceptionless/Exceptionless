@@ -36,7 +36,11 @@
 
     const dispatch = createEventDispatcher();
     export function onValueSelected(currentValue: string) {
-        updatedValue.set(currentValue);
+        if ($updatedValue === currentValue) {
+            updatedValue.set('');
+        } else {
+            updatedValue.set(currentValue);
+        }
     }
 
     export function onClearFilter() {
