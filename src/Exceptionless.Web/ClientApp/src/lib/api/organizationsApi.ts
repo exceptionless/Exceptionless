@@ -6,7 +6,7 @@ import { accessToken } from '$api/auth';
 
 export const queryKeys = {
     all: ['Organization'] as const,
-    allWithMode: (mode: 'stats' | null) => [...queryKeys.all, { filters: mode }] as const,
+    allWithMode: (mode: 'stats' | null) => [...queryKeys.all, { mode }] as const,
     id: (id: string | null) => [...queryKeys.all, id] as const
 };
 
