@@ -31,7 +31,7 @@
     const filter = derived(filters, ($filters) => toFilter($filters));
     const facets = derived(filters, ($filters) => [
         {
-            title: 'Search',
+            title: 'Keyword',
             component: KeywordFacetedFilter,
             filter: $filters.find((f) => f.type === 'keyword')!
         },
