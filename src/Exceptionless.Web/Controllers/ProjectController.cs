@@ -75,7 +75,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -created returns the results descending by the created date.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
@@ -105,7 +105,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="organizationId">The identifier of the organization.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -131,7 +131,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// Get by id
     /// </summary>
     /// <param name="id">The identifier of the project.</param>
-    /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetProjectById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
