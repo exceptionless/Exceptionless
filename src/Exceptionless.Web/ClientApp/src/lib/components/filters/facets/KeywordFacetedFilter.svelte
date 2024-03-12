@@ -16,4 +16,4 @@
     }
 </script>
 
-<KeywordFacetedFilter {title} bind:value={filter.keyword} on:changed={onChanged} on:remove={onRemove}></KeywordFacetedFilter>
+<KeywordFacetedFilter {title} bind:value={filter.value} on:changed={onChanged} on:remove={onRemove}></KeywordFacetedFilter>
