@@ -8,7 +8,6 @@
     import * as Sheet from '$comp/ui/sheet';
     import * as FacetedFilter from '$comp/faceted-filter';
 
-    import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
@@ -94,8 +93,6 @@
             </EventsDataTable>
         </Card.Content>
     </Card.Root>
-
-    <PieChartCard title="Status"></PieChartCard>
 </div>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
