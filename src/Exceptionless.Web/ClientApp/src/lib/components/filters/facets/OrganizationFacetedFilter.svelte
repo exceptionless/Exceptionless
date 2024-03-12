@@ -20,13 +20,13 @@
     });
 
     response.subscribe(($response) => {
-        if (!$response.isSuccess || !filter.organization) {
+        if (!$response.isSuccess || !filter.value) {
             return;
         }
 
-        const organization = $response.data.find((organization) => organization.id === filter.organization);
+        const organization = $response.data.find((organization) => organization.id === filter.value);
         if (!organization) {
-            filter.organization = '';
+            filter.value = '';
             dispatch('changed', filter);
         }
     });
@@ -40,5 +40,5 @@
     }
 </script>
 
-<DropdownFacetedFilter {title} bind:value={filter.organization} options={$options} loading={$response.isLoading} on:changed={onChanged} on:remove={onRemove}
+<DropdownFacetedFilter {title} bind:value={filter.value} options={$options} loading={$response.isLoading} on:changed={onChanged} on:remove={onRemove}
 ></DropdownFacetedFilter>

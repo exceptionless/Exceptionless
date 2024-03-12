@@ -61,20 +61,20 @@ export class DateFilter implements IFilter {
 }
 
 export class KeywordFilter implements IFilter {
-    constructor(public keyword: string) {}
+    constructor(public value: string) {}
 
     public type: string = 'keyword';
 
     public isEmpty(): boolean {
-        return !this.keyword.trim();
+        return !this.value.trim();
     }
 
     public reset(): void {
-        this.keyword = '';
+        this.value = '';
     }
 
     public toFilter(): string {
-        return this.keyword.trim();
+        return this.value.trim();
     }
 }
 
@@ -104,16 +104,16 @@ export class NumberFilter implements IFilter {
 }
 
 export class OrganizationFilter implements IFilter {
-    constructor(public organization: string) {}
+    constructor(public value: string) {}
 
     public type: string = 'organization';
 
     public isEmpty(): boolean {
-        return !this.organization.trim();
+        return !this.value.trim();
     }
 
     public reset(): void {
-        this.organization = '';
+        this.value = '';
     }
 
     public toFilter(): string {
@@ -121,21 +121,21 @@ export class OrganizationFilter implements IFilter {
             return '';
         }
 
-        return `organization:${this.organization}`;
+        return `organization:${this.value}`;
     }
 }
 
 export class ReferenceFilter implements IFilter {
-    constructor(public referenceId: string) {}
+    constructor(public value: string) {}
 
     public type: string = 'reference';
 
     public isEmpty(): boolean {
-        return !this.referenceId.trim();
+        return !this.value.trim();
     }
 
     public reset(): void {
-        this.referenceId = '';
+        this.value = '';
     }
 
     public toFilter(): string {
@@ -143,21 +143,21 @@ export class ReferenceFilter implements IFilter {
             return '';
         }
 
-        return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
+        return `reference:${quoteIfSpecialCharacters(this.value)}`;
     }
 }
 
 export class SessionFilter implements IFilter {
-    constructor(public sessionId: string) {}
+    constructor(public value: string) {}
 
     public type: string = 'session';
 
     public isEmpty(): boolean {
-        return !this.sessionId.trim();
+        return !this.value.trim();
     }
 
     public reset(): void {
-        this.sessionId = '';
+        this.value = '';
     }
 
     public toFilter(): string {
@@ -165,35 +165,34 @@ export class SessionFilter implements IFilter {
             return '';
         }
 
-        const session = quoteIfSpecialCharacters(this.sessionId);
+        const session = quoteIfSpecialCharacters(this.value);
         return `(reference:${session} OR ref.session:${session})`;
     }
 }
 
 export class StatusFilter implements IFilter {
-    constructor(public values: StackStatus[]) {}
+    constructor(public value: StackStatus[]) {}
 
-    public term: string = 'status';
     public type: string = 'status';
 
     public isEmpty(): boolean {
-        return this.values.length === 0;
+        return this.value.length === 0;
     }
 
     public reset(): void {
-        this.values = [];
+        this.value = [];
     }
 
     public toFilter(): string {
-        if (this.values.length == 0) {
+        if (this.value.length == 0) {
             return '';
         }
 
-        if (this.values.length == 1) {
-            return `${this.term}:${this.values[0]}`;
+        if (this.value.length == 1) {
+            return `status:${this.value[0]}`;
         }
 
-        return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
+        return `(${this.value.map((val) => `status:${val}`).join(' OR ')})`;
     }
 }
 
@@ -223,29 +222,28 @@ export class StringFilter implements IFilter {
 }
 
 export class TypeFilter implements IFilter {
-    constructor(public values: PersistentEventKnownTypes[]) {}
+    constructor(public value: PersistentEventKnownTypes[]) {}
 
-    public term: string = 'type';
     public type: string = 'type';
 
     public isEmpty(): boolean {
-        return this.values.length === 0;
+        return this.value.length === 0;
     }
 
     public reset(): void {
-        this.values = [];
+        this.value = [];
     }
 
     public toFilter(): string {
-        if (this.values.length == 0) {
+        if (this.value.length == 0) {
             return '';
         }
 
-        if (this.values.length == 1) {
-            return `${this.term}:${this.values[0]}`;
+        if (this.value.length == 1) {
+            return `type:${this.value[0]}`;
         }
 
-        return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
+        return `(${this.value.map((val) => `type:${val}`).join(' OR ')})`;
     }
 }
 
@@ -303,21 +301,21 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
         case 'date':
             return new DateFilter(filter.term as string, filter.value as Date);
         case 'keyword':
-            return new KeywordFilter(filter.keyword as string);
+            return new KeywordFilter(filter.value as string);
         case 'number':
             return new NumberFilter(filter.term as string, filter.value as number);
         case 'organization':
-            return new OrganizationFilter(filter.organization as string);
+            return new OrganizationFilter(filter.value as string);
         case 'reference':
-            return new ReferenceFilter(filter.referenceId as string);
+            return new ReferenceFilter(filter.value as string);
         case 'session':
-            return new SessionFilter(filter.sessionId as string);
+            return new SessionFilter(filter.value as string);
         case 'status':
-            return new StatusFilter(filter.values as StackStatus[]);
+            return new StatusFilter(filter.value as StackStatus[]);
         case 'string':
             return new StringFilter(filter.term as string, filter.value as string);
         case 'type':
-            return new TypeFilter(filter.values as PersistentEventKnownTypes[]);
+            return new TypeFilter(filter.value as PersistentEventKnownTypes[]);
         case 'version':
             return new VersionFilter(filter.term as string, filter.value as string);
     }

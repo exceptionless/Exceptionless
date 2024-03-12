@@ -17,4 +17,4 @@
     }
 </script>
 
-<MultiselectFacetedFilter {title} bind:values={filter.values} options={eventTypes} on:changed={onChanged} on:remove={onRemove}></MultiselectFacetedFilter>
+<MultiselectFacetedFilter {title} bind:values={filter.value} options={eventTypes} on:changed={onChanged} on:remove={onRemove}></MultiselectFacetedFilter>
