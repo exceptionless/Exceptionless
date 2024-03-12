@@ -12,8 +12,8 @@
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
 
+    import DateFacetedFilter from '$comp/filters/facets/DateFacetedFilter.svelte';
     import KeywordFacetedFilter from '$comp/filters/facets/KeywordFacetedFilter.svelte';
     import OrganizationFacetedFilter from '$comp/filters/facets/OrganizationFacetedFilter.svelte';
     import ProjectFacetedFilter from '$comp/filters/facets/ProjectFacetedFilter.svelte';
@@ -27,7 +27,8 @@
         KeywordFilter,
         toFilter,
         OrganizationFilter,
-        ProjectFilter
+        ProjectFilter,
+        DateFilter
     } from '$comp/filters/filters';
 
     const selectedStackId = writable<string | null>(null);
@@ -42,12 +43,18 @@
     });
 
     const limit = persisted<number>('events.issues.limit', 10);
-    const time = persisted<string>('events.issues.time', '');
-    const defaultFilters = [new OrganizationFilter(''), new ProjectFilter('', []), new StatusFilter([]), new TypeFilter([]), new KeywordFilter('')];
+    const defaultFilters = [
+        new OrganizationFilter(''),
+        new ProjectFilter('', []),
+        new StatusFilter([]),
+        new TypeFilter([]),
+        new DateFilter('date', 'last week'),
+        new KeywordFilter('')
+    ];
     const filters = persisted<IFilter[]>('events.issues.filters', defaultFilters, { serializer: new FilterSerializer() });
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
 
-    const filter = derived(filters, ($filters) => toFilter($filters));
+    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.type !== 'date')));
     const facets = derived(filters, ($filters) => [
         {
             title: 'Organization',
@@ -70,11 +77,17 @@
             filter: $filters.find((f) => f.type === 'type')!
         },
         {
+            title: 'Date Range',
+            component: DateFacetedFilter,
+            filter: $filters.find((f) => f.type === 'date')!
+        },
+        {
             title: 'Keyword',
             component: KeywordFacetedFilter,
             filter: $filters.find((f) => f.type === 'keyword')!
         }
     ]);
+    const time = derived(filters, ($filters) => ($filters.find((f) => f.type === 'date') as DateFilter).value as string);
 
     function onFiltersChanged({ detail }: CustomEvent<IFilter[]>) {
         const organizationFilter = detail.find((f) => f.type === 'organization') as OrganizationFilter;
@@ -95,7 +108,6 @@
             <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
                 <svelte:fragment slot="toolbar">
                     <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
-                    <DateRangeDropdown bind:value={$time}></DateRangeDropdown>
                 </svelte:fragment>
             </EventsDataTable>
         </Card.Content>
