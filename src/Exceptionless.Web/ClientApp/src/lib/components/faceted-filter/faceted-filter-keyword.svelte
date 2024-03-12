@@ -1,6 +1,4 @@
 <script lang="ts">
-    import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
-
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import { Button } from '$comp/ui/button';
@@ -38,7 +36,6 @@
 <Popover.Root bind:open={$open}>
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
-            <IconAddCircleOutline class="mr-2 h-4 w-4" />
             {title}
 
             {#if value}

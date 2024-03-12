@@ -4,7 +4,6 @@
 
     import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
     import IconCheck from '~icons/mdi/check';
-    import IconClose from '~icons/mdi/close';
 
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
@@ -106,10 +105,3 @@
         <svelte:component this={facet.component} filter={facet.filter} title={facet.title} on:changed={onChanged} on:remove={onRemove} />
     {/if}
 {/each}
-
-{#if visible.length > 0}
-    <Button on:click={onRemoveAll} variant="ghost" class="h-8 px-2 lg:px-3">
-        Reset
-        <IconClose class="ml-2 h-4 w-4" />
-    </Button>
-{/if}
