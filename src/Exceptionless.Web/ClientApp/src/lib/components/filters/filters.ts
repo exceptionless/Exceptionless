@@ -125,6 +125,35 @@ export class OrganizationFilter implements IFilter {
     }
 }
 
+export class ProjectFilter implements IFilter {
+    constructor(
+        public organization: string,
+        public value: string[]
+    ) {}
+
+    public type: string = 'project';
+
+    public isEmpty(): boolean {
+        return this.value.length === 0;
+    }
+
+    public reset(): void {
+        this.value = [];
+    }
+
+    public toFilter(): string {
+        if (this.value.length == 0) {
+            return '';
+        }
+
+        if (this.value.length == 1) {
+            return `project:${this.value[0]}`;
+        }
+
+        return `(${this.value.map((val) => `project:${val}`).join(' OR ')})`;
+    }
+}
+
 export class ReferenceFilter implements IFilter {
     constructor(public value: string) {}
 
@@ -306,6 +335,8 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
             return new NumberFilter(filter.term as string, filter.value as number);
         case 'organization':
             return new OrganizationFilter(filter.value as string);
+        case 'project':
+            return new ProjectFilter(filter.organization as string, filter.value as string[]);
         case 'reference':
             return new ReferenceFilter(filter.value as string);
         case 'session':
