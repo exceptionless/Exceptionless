@@ -464,13 +464,13 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
+    public async Task<ActionResult<IReadOnlyCollection<Stack>>> GetAllAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -522,7 +522,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="400">Invalid filter.</response>
@@ -552,7 +552,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="400">Invalid filter.</response>
