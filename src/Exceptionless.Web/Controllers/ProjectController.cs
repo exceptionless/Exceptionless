@@ -78,7 +78,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAllAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.Count == 0)
@@ -212,7 +212,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     #endregion
 
-    [Obsolete]
+    [Obsolete("Use /api/v2/projects/config instead")]
     [HttpGet("~/api/v1/project/config")]
     public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(int? v = null)
     {
@@ -473,9 +473,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
             return NotFound();
 
-        if (project.NotificationSettings.ContainsKey(userId))
+        if (project.NotificationSettings.Remove(userId))
         {
-            project.NotificationSettings.Remove(userId);
             await _repository.SaveAsync(project, o => o.Cache());
         }
 
