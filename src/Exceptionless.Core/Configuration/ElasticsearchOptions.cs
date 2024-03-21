@@ -51,25 +51,33 @@ public class ElasticsearchOptions
 
     private static void ParseConnectionString(string? connectionString, ElasticsearchOptions options, AppMode appMode)
     {
-        var pairs = connectionString.ParseConnectionString();
-        options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
+        try
+        {
+            var pairs = connectionString.ParseConnectionString();
+            options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
 
-        int shards = pairs.GetValueOrDefault<int>("shards", 1);
-        options.NumberOfShards = shards > 0 ? shards : 1;
+            int shards = pairs.GetValueOrDefault<int>("shards", 1);
+            options.NumberOfShards = shards > 0 ? shards : 1;
 
-        int replicas = pairs.GetValueOrDefault<int>("replicas", appMode == AppMode.Production ? 1 : 0);
-        options.NumberOfReplicas = replicas > 0 ? replicas : 0;
+            int replicas = pairs.GetValueOrDefault<int>("replicas", appMode == AppMode.Production ? 1 : 0);
+            options.NumberOfReplicas = replicas > 0 ? replicas : 0;
 
-        int fieldsLimit = pairs.GetValueOrDefault("field-limit", 1500);
-        options.FieldsLimit = fieldsLimit > 0 ? fieldsLimit : 1500;
+            int fieldsLimit = pairs.GetValueOrDefault("field-limit", 1500);
+            options.FieldsLimit = fieldsLimit > 0 ? fieldsLimit : 1500;
 
-        options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", appMode != AppMode.Development);
+            options.EnableMapperSizePlugin = pairs.GetValueOrDefault("enable-size-plugin", appMode != AppMode.Development);
 
-        options.UserName = pairs.GetString("username");
-        options.Password = pairs.GetString("password");
+            options.UserName = pairs.GetString("username");
+            options.Password = pairs.GetString("password");
 
-        string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
-        if (!String.IsNullOrEmpty(scope))
-            options.Scope = scope;
+            string scope = pairs.GetString(nameof(options.Scope).ToLowerInvariant());
+            if (!String.IsNullOrEmpty(scope))
+                options.Scope = scope;
+        }
+        catch
+        {
+            options.ServerUrl = connectionString ?? String.Empty;
+            return;
+        }
     }
 }
