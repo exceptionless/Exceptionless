@@ -16,4 +16,8 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api")
     .WithReference(elastic)
     .WithLaunchProfile("Exceptionless API");
 
+builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
+    .WithReference(api)
+    .WithEndpoint(containerPort: 5173, scheme: "http", env: "PORT");
+
 builder.Build().Run();
