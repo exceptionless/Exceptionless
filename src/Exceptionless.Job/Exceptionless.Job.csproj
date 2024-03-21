@@ -28,6 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Exceptionless.Web\ApmExtensions.cs" Link="ApmExtensions.cs" />
+    <Compile Include="..\Exceptionless.Web\ServiceDefaults.cs" Link="ServiceDefaults.cs" />
   </ItemGroup>
 </Project>

@@ -49,6 +49,7 @@ public class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
             .AddEnvironmentVariables("EX_")
             .AddEnvironmentVariables("ASPNETCORE_")
             .AddCommandLine(args)
@@ -60,7 +61,7 @@ public class Program
             .ForContext<Program>();
 
         var options = AppOptions.ReadFromConfiguration(config);
-        var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
+        var otelConfig = new OpenTelemetryConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.CacheOptions.Provider == "redis");
 
         var configDictionary = config.ToDictionary("Serilog");
         Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
@@ -100,8 +101,7 @@ public class Program
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                             app.UseExceptionless(ExceptionlessClient.Default);
 
-                        if (apmConfig.EnableMetrics)
-                            app.UseOpenTelemetryPrometheusScrapingEndpoint();
+                        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
                         app.UseHealthChecks("/health", new HealthCheckOptions
                         {
@@ -128,7 +128,7 @@ public class Program
                 Bootstrapper.RegisterServices(services, options);
                 Insulation.Bootstrapper.RegisterServices(services, options, true);
             })
-            .AddApm(apmConfig);
+            .AddServiceDefaults(otelConfig);
 
         return builder;
     }

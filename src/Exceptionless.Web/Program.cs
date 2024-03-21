@@ -43,6 +43,7 @@ public class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
             .AddEnvironmentVariables("EX_")
             .AddEnvironmentVariables("ASPNETCORE_")
             .AddCommandLine(args)
@@ -61,7 +62,7 @@ public class Program
             .ForContext<Program>();
 
         var options = AppOptions.ReadFromConfiguration(config);
-        var apmConfig = new ApmConfig(config, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
+        var apmConfig = new OpenTelemetryConfig(config, "web", options.CacheOptions.Provider == "redis");
 
         var configDictionary = config.ToDictionary("Serilog");
         Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
@@ -100,7 +101,7 @@ public class Program
                 services.AddAppOptions(options);
                 services.AddHttpContextAccessor();
             })
-            .AddApm(apmConfig);
+            .AddServiceDefaults(apmConfig);
 
         return builder;
     }

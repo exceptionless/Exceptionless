@@ -114,13 +114,8 @@ public class AppOptions
         options.EnableRepositoryNotifications = config.GetValue(nameof(options.EnableRepositoryNotifications), true);
         options.EnableWebSockets = config.GetValue(nameof(options.EnableWebSockets), true);
 
-        try
-        {
-            var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);
-            options.Version = versionInfo?.FileVersion;
-            options.InformationalVersion = versionInfo?.ProductVersion;
-        }
-        catch { }
+        options.Version = GetVersion();
+        options.InformationalVersion = GetInformationalVersion();
 
         options.CacheOptions = CacheOptions.ReadFromConfiguration(config, options);
         options.MessageBusOptions = MessageBusOptions.ReadFromConfiguration(config, options);
@@ -134,6 +129,40 @@ public class AppOptions
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
 
         return options;
+    }
+
+    private static string? _informationalVersion = null;
+    private static string? _version = null;
+
+    private static void GetVersionInternal()
+    {
+        try
+        {
+            var versionInfo = FileVersionInfo.GetVersionInfo(typeof(AppOptions).Assembly.Location);
+            _version = versionInfo?.FileVersion;
+            _informationalVersion = versionInfo?.ProductVersion;
+        }
+        catch { }
+    }
+
+    public static string GetVersion()
+    {
+        if (_version != null)
+            return _version;
+
+        GetVersionInternal();
+
+        return _version ?? string.Empty;
+    }
+
+    public static string GetInformationalVersion()
+    {
+        if (_informationalVersion != null)
+            return _informationalVersion;
+
+        GetVersionInternal();
+
+        return _informationalVersion ?? string.Empty;
     }
 }
 

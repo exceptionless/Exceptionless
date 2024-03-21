@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
 using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
@@ -182,10 +181,7 @@ public class Startup
         app.UseExceptionHandler();
         app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
-
-        var apmConfig = app.ApplicationServices.GetRequiredService<ApmConfig>();
-        if (apmConfig.EnableMetrics)
-            app.UseOpenTelemetryPrometheusScrapingEndpoint();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         app.UseHealthChecks("/health", new HealthCheckOptions
         {

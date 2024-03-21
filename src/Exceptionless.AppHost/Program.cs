@@ -1,6 +1,6 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var elastic = builder.AddElasticsearch("Elastic")
+var elastic = builder.AddElasticsearch("Elasticsearch")
     .WithKibana();
 
 var cache = builder.AddRedis("Redis")

@@ -11,7 +11,7 @@ namespace Aspire.Hosting;
 public static class ElasticsearchBuilderExtensions
 {
     /// <summary>
-    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch" and tag is "latest". This version the package defaults to the 8.12.2 tag of the redis container image
+    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch" and tag is "latest". This version the package defaults to the 8.12.2 tag of the Elasticsearch container image
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
@@ -19,16 +19,15 @@ public static class ElasticsearchBuilderExtensions
     /// <returns>A reference to the <see cref="IResourceBuilder{T}"/>.</returns>
     public static IResourceBuilder<ElasticsearchResource> AddElasticsearch(this IDistributedApplicationBuilder builder, string name, int? port = null)
     {
-        var redis = new ElasticsearchResource(name);
-        return builder.AddResource(redis)
-                      .WithHttpEndpoint(containerPort: 9200)
-                      .WithAnnotation(new ContainerImageAnnotation { Image = "docker.elastic.co/elasticsearch/elasticsearch", Tag = "8.12.2" })
-                      .WithEnvironment("discovery.type", "single-node")
-                      //.WithEnvironment("network.host", "0.0.0.0")
-                      .WithEnvironment("XPACK_SECURITY_ENABLED", "false")
-                      .WithEnvironment("action.destructive_requires_name", "false")
-                      .WithEnvironment("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-                  .PublishAsContainer();
+        var elasticsearch = new ElasticsearchResource(name);
+        return builder.AddResource(elasticsearch)
+            .WithHttpEndpoint(containerPort: 9200, hostPort: port, name: "http")
+            .WithAnnotation(new ContainerImageAnnotation { Image = "docker.elastic.co/elasticsearch/elasticsearch", Tag = "8.12.2" })
+            .WithEnvironment("discovery.type", "single-node")
+            .WithEnvironment("xpack.security.enabled", "false")
+            .WithEnvironment("action.destructive_requires_name", "false")
+            .WithEnvironment("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
+            .PublishAsConnectionString();
     }
 
     /// <summary>
@@ -78,14 +77,14 @@ public class ElasticsearchResource(string name) : ContainerResource(name), IReso
                 return connectionStringAnnotation.Resource.ConnectionStringExpression;
             }
 
-            return $"{{{Name}.bindings.tcp.host}}:{{{Name}.bindings.tcp.port}}";
+            return $"http://{{{Name}.bindings.tcp.host}}:{{{Name}.bindings.tcp.port}}";
         }
     }
 
     /// <summary>
     /// Gets the connection string for the Elasticsearch server.
     /// </summary>
-    /// <returns>A connection string for the redis server in the form "host:port".</returns>
+    /// <returns>A connection string for the Elasticsearch server in the form "host:port".</returns>
     public string? GetConnectionString()
     {
         if (this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation))
@@ -100,7 +99,7 @@ public class ElasticsearchResource(string name) : ContainerResource(name), IReso
 
         // We should only have one endpoint for Elasticsearch for local scenarios.
         var endpoint = allocatedEndpoints.Single();
-        return endpoint.EndPointString;
+        return $"http://{endpoint.EndPointString}";
     }
 }
 
