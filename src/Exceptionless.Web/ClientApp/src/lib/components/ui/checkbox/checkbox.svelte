@@ -2,7 +2,7 @@
     import { Checkbox as CheckboxPrimitive } from 'bits-ui';
     import Check from '~icons/mdi/check';
     import Minus from '~icons/mdi/remove';
-    import { cn } from '$lib/utils';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = CheckboxPrimitive.Props;
     type $$Events = CheckboxPrimitive.Events;

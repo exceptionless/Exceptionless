@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Select as SelectPrimitive } from 'bits-ui';
     import CaretSort from '~icons/mdi/unfold-more-horizontal';
-    import { cn } from '$lib/utils';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = SelectPrimitive.TriggerProps;
     type $$Events = SelectPrimitive.TriggerEvents;
