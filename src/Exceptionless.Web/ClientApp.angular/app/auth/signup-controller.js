@@ -148,7 +148,7 @@
 
                 this.$onInit = function $onInit() {
                     vm._source = "app.auth.Signup";
-                    vm._canSignup = !!ENABLE_ACCOUNT_CREATION;
+                    vm._canSignup = !!ENABLE_ACCOUNT_CREATION || !!$stateParams.token;
                     vm.authenticate = authenticate;
                     vm.isExternalLoginEnabled = isExternalLoginEnabled;
                     vm.signup = signup;
