@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher, type ComponentType } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
     import type { Readable } from 'svelte/store';
 
     import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
@@ -10,10 +10,10 @@
     import { Button } from '$comp/ui/button';
     import type { IFilter } from '$comp/filters/filters';
     import { cn } from '$lib/utils';
+    import type { FacetedFilter } from '.';
 
     const dispatch = createEventDispatcher();
 
-    type FacetedFilter = { title: string; component: ComponentType; filter: IFilter };
     export let facets: Readable<FacetedFilter[]>;
 
     let open = false;

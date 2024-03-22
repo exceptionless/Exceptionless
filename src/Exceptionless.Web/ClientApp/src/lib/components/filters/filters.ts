@@ -349,7 +349,60 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
             return new TypeFilter(filter.value as PersistentEventKnownTypes[]);
         case 'version':
             return new VersionFilter(filter.term as string, filter.value as string);
+        default:
+            throw new Error(`Unknown filter type: ${filter.type}`);
     }
+}
+
+export function defaultFilters(includeDates: boolean = true): IFilter[] {
+    return [
+        new OrganizationFilter(''),
+        new ProjectFilter('', []),
+        new StatusFilter([]),
+        new TypeFilter([]),
+        new DateFilter('date', 'last week'),
+        new KeywordFilter('')
+    ].filter((f) => includeDates || f.type !== 'date');
+}
+
+export function getFilterTypes(includeDates: boolean = true): string[] {
+    return ['organization', 'project', 'status', 'type', 'date', 'boolean', 'number', 'reference', 'session', 'string', 'version', 'keyword'].filter(
+        (f) => includeDates || f !== 'date'
+    );
+}
+
+export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
+    const existingFilter = filters.find((f) => f.type === filter.type && ('term' in f && 'term' in filter ? f.term === filter.term : true));
+    if (existingFilter) {
+        if ('value' in existingFilter && 'value' in filter) {
+            if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
+                existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
+            } else {
+                existingFilter.value = filter.value;
+            }
+        } else {
+            Object.assign(existingFilter, filter);
+        }
+    } else {
+        filters.push(filter);
+    }
+
+    return filters;
+}
+
+export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
+    const index = filters.findIndex((f) => f.type === filter.type && ('term' in f && 'term' in filter ? f.term === filter.term : true));
+    if (index >= 0) {
+        if (filters[index].toFilter() === filter.toFilter()) {
+            filters.splice(index, 1);
+        } else {
+            filters[index] = filter;
+        }
+    } else {
+        filters.push(filter);
+    }
+
+    return filters;
 }
 
 export class FilterSerializer implements Serializer<IFilter[]> {

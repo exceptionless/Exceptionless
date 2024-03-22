@@ -1,16 +1,17 @@
 <script lang="ts">
     import A from '$comp/typography/A.svelte';
-    import { SessionFilter } from './filters';
+    import { ProjectFilter } from './filters';
 
-    export let value: string;
+    export let organization: string;
+    export let value: string[];
 
-    const title = `Search ref.session:${value}`;
+    const title = `Search project:${value}`;
 
     function onSearchClick(e: Event) {
         e.preventDefault();
         document.dispatchEvent(
             new CustomEvent('filter', {
-                detail: new SessionFilter(value)
+                detail: new ProjectFilter(organization, value)
             })
         );
     }
