@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Command as CommandPrimitive } from 'cmdk-sv';
     import MagnifyingGlass from '~icons/mdi/search';
-    import { cn } from '$lib/utils';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = CommandPrimitive.InputProps;
 
