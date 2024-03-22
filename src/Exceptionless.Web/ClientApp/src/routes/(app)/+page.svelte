@@ -27,8 +27,11 @@
         toFilter,
         OrganizationFilter,
         ProjectFilter,
-        DateFilter
+        DateFilter,
+        setFilter
     } from '$comp/filters/filters';
+    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
+    import { toFacetedFilters } from '$comp/filters/facets';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
@@ -48,51 +51,47 @@
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
 
     const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.type !== 'date')));
-    const facets = derived(filters, ($filters) => [
-        {
-            title: 'Organization',
-            component: OrganizationFacetedFilter,
-            filter: $filters.find((f) => f.type === 'organization')!
-        },
-        {
-            title: 'Project',
-            component: ProjectFacetedFilter,
-            filter: $filters.find((f) => f.type === 'project')!
-        },
-        {
-            title: 'Status',
-            component: StatusFacetedFilter,
-            filter: $filters.find((f) => f.type === 'status')!
-        },
-        {
-            title: 'Type',
-            component: TypeFacetedFilter,
-            filter: $filters.find((f) => f.type === 'type')!
-        },
-        {
-            title: 'Date Range',
-            component: DateFacetedFilter,
-            filter: $filters.find((f) => f.type === 'date')!
-        },
-        {
-            title: 'Keyword',
-            component: KeywordFacetedFilter,
-            filter: $filters.find((f) => f.type === 'keyword')!
-        }
-    ]);
+    const facets = derived(filters, ($filters) => toFacetedFilters($filters));
     const time = derived(filters, ($filters) => ($filters.find((f) => f.type === 'date') as DateFilter).value as string);
 
     function onFiltersChanged({ detail }: CustomEvent<IFilter[]>) {
-        const organizationFilter = detail.find((f) => f.type === 'organization') as OrganizationFilter;
-        const projectFilter = detail.find((f) => f.type === 'project') as ProjectFilter;
-        if (organizationFilter.value !== projectFilter.organization) {
-            projectFilter.organization = organizationFilter.value;
-            projectFilter.value = [];
+        filters.set(processFilterRules(detail));
+    }
+
+    function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
+        console.log('Filter changed', detail);
+        filters.set(processFilterRules(setFilter($filters, detail)));
+    }
+
+    function processFilterRules(filters: IFilter[]): IFilter[] {
+        console.log('Running rules');
+        // Allow only one filter per type and term.
+        const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => `${f.type}:{${'term' in f ? f.term : ''}`);
+        const filtered: IFilter[] = [];
+        Object.entries(groupedFilters).forEach(([group, items]) => {
+            console.log('processing group', group, items[0]);
+            filtered.push(items[0]);
+        });
+
+        const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
+        if (projectFilter) {
+            const organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
+
+            // If there is a project filter, verify the organization filter is set
+            if (organizationFilter) {
+                if (organizationFilter.value !== projectFilter.organization) {
+                    organizationFilter.value = projectFilter.organization;
+                }
+            } else {
+                filtered.push(new OrganizationFilter(projectFilter.organization));
+            }
         }
 
-        filters.set(detail);
+        return filtered;
     }
 </script>
+
+<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">
     <Card.Root>

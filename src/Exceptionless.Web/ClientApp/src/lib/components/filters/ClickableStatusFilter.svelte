@@ -1,16 +1,17 @@
 <script lang="ts">
     import A from '$comp/typography/A.svelte';
-    import { SessionFilter } from './filters';
+    import type { StackStatus } from '$lib/models/api.generated';
+    import { StatusFilter } from './filters';
 
-    export let value: string;
+    export let value: StackStatus[];
 
-    const title = `Search ref.session:${value}`;
+    const title = `Search status:${value}`;
 
     function onSearchClick(e: Event) {
         e.preventDefault();
         document.dispatchEvent(
             new CustomEvent('filter', {
-                detail: new SessionFilter(value)
+                detail: new StatusFilter(value)
             })
         );
     }
