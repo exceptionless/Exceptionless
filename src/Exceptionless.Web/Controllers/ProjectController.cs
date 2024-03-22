@@ -331,7 +331,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             ProjectId = project.Id
         });
 
-        return WorkInProgress(new[] { workItemId });
+        return WorkInProgress([workItemId]);
     }
 
     [HttpGet("{id:objectid}/notifications")]
@@ -559,7 +559,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (String.IsNullOrWhiteSpace(name))
             return false;
 
-        var organizationIds = IsInOrganization(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
+        var organizationIds = IsInOrganization(organizationId) ? [organizationId] : GetAssociatedOrganizationIds();
         var projects = await _repository.GetByOrganizationIdsAsync(organizationIds);
 
         string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
@@ -579,7 +579,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value)
     {
-        if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
+        if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith('-'))
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
@@ -604,7 +604,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> DeleteDataAsync(string id, string key)
     {
-        if (String.IsNullOrWhiteSpace(key) || key.StartsWith("-"))
+        if (String.IsNullOrWhiteSpace(key) || key.StartsWith('-'))
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
