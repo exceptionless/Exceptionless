@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { stackStatuses } from '$comp/events/options';
-    import { MultiselectFacetedFilter } from '$comp/faceted-filter';
-    import { StatusFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
+    import { stackStatuses } from '$comp/events/options';
+    import { StatusFilter } from '$comp/filters/filters';
+    import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
 
     const dispatch = createEventDispatcher();
     export let filter: StatusFilter;

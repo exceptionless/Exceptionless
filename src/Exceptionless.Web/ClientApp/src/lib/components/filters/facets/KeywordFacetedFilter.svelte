@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { KeywordFacetedFilter } from '$comp/faceted-filter';
-    import { KeywordFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
+
+    import { KeywordFilter } from '$comp/filters/filters';
+    import KeywordFacetedFilter from './base/KeywordFacetedFilter.svelte';
 
     const dispatch = createEventDispatcher();
     export let filter: KeywordFilter;

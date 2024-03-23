@@ -48,16 +48,12 @@
     const facets = derived(filters, ($filters) => toFacetedFilters($filters));
     const time = derived(filters, ($filters) => ($filters.find((f) => f.type === 'date') as DateFilter).value as string);
 
-    function onFiltersChanged({ detail }: CustomEvent<IFilter[]>) {
-        filters.set(processFilterRules(detail));
-    }
-
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
         console.log('Filter changed', detail);
-        filters.set(processFilterRules(setFilter($filters, detail)));
+        filters.set(processFilterRules(setFilter($filters, detail), detail));
     }
 
-    function processFilterRules(filters: IFilter[]): IFilter[] {
+    function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
         console.log('Running rules');
         // Allow only one filter per type and term.
         const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => `${f.type}:{${'term' in f ? f.term : ''}`);
@@ -69,15 +65,23 @@
 
         const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
         if (projectFilter) {
-            const organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
+            let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
 
             // If there is a project filter, verify the organization filter is set
-            if (organizationFilter) {
-                if (organizationFilter.value !== projectFilter.organization) {
-                    organizationFilter.value = projectFilter.organization;
-                }
-            } else {
-                filtered.push(new OrganizationFilter(projectFilter.organization));
+            if (!organizationFilter) {
+                organizationFilter = new OrganizationFilter(projectFilter.organization);
+                filtered.push(organizationFilter);
+            }
+
+            // If the organization filter changes and organization is not set on the project filter, clear the project filter
+            if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
+                projectFilter.organization = organizationFilter.value;
+                projectFilter.value = [];
+            }
+
+            // If the project filter changes and the organization filter is not set, set it
+            if (organizationFilter.value !== projectFilter.organization) {
+                organizationFilter.value = projectFilter.organization;
             }
         }
 
@@ -93,7 +97,7 @@
         <Card.Content>
             <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
-                    <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
+                    <FacetedFilter.Root {facets} on:changed={onFilterChanged}></FacetedFilter.Root>
                 </svelte:fragment>
             </EventsDataTable>
         </Card.Content>
