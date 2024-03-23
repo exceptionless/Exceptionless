@@ -131,7 +131,7 @@ export class OrganizationFilter implements IFilter {
 
 export class ProjectFilter implements IFilter {
     constructor(
-        public organization: string,
+        public organization: string | undefined,
         public value: string[]
     ) {}
 

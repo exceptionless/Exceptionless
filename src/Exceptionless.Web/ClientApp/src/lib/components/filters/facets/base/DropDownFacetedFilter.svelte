@@ -51,7 +51,6 @@
     }
 
     function displayValue(value: string | undefined) {
-        console.log('displayValue', value, options, options.find((option) => option.value === value)?.label);
         return options.find((option) => option.value === value)?.label ?? value;
     }
 
