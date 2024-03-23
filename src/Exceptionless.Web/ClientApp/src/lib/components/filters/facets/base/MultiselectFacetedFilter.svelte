@@ -62,7 +62,7 @@
     }
 
     function filter(value: string, search: string) {
-		if (value.includes(search)) {
+        if (value.includes(search)) {
             return 1;
         }
 
@@ -72,7 +72,7 @@
         }
 
         return 0;
-	}
+    }
 </script>
 
 <Popover.Root bind:open={$open}>
