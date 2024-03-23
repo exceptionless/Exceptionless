@@ -2,6 +2,7 @@ import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { PersistentEvent } from '$lib/models/api';
 import { FetchClient, type ProblemDetails } from '$api/FetchClient';
 import { derived, readable, type Readable } from 'svelte/store';
+import { accessToken } from '$api/auth';
 
 export const queryKeys = {
     all: ['PersistentEvent'] as const,
@@ -14,8 +15,8 @@ export const queryKeys = {
 export function getEventByIdQuery(id: string | Readable<string | null>) {
     const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<PersistentEvent, ProblemDetails>(
-        derived(readableId, ($id) => ({
-            enabled: !!$id,
+        derived([accessToken, readableId], ([$accessToken, $id]) => ({
+            enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
                 const { getJSON } = new FetchClient();
@@ -37,8 +38,8 @@ export function getEventsByStackIdQuery(stackId: string | Readable<string | null
     const queryClient = useQueryClient();
     const readableStackId = typeof stackId === 'string' || stackId === null ? readable(stackId) : stackId;
     return createQuery<PersistentEvent[], ProblemDetails>(
-        derived(readableStackId, ($id) => ({
-            enabled: !!$id,
+        derived([accessToken, readableStackId], ([$accessToken, $id]) => ({
+            enabled: !!$accessToken && !!$id,
             queryClient,
             queryKey: queryKeys.stacks($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {

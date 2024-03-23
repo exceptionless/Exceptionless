@@ -2,6 +2,7 @@ import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-qu
 import { derived, readable, type Readable } from 'svelte/store';
 import type { ViewProject } from '$lib/models/api';
 import { FetchClient, type FetchClientResponse, type ProblemDetails } from '$api/FetchClient';
+import { accessToken } from '$api/auth';
 
 export const queryKeys = {
     all: ['Project'] as const,
@@ -14,8 +15,8 @@ export const queryKeys = {
 export function getProjectByIdQuery(id: string | Readable<string | null>) {
     const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<ViewProject, ProblemDetails>(
-        derived(readableId, ($id) => ({
-            enabled: !!$id,
+        derived([accessToken, readableId], ([$accessToken, $id]) => ({
+            enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
                 const { getJSON } = new FetchClient();
@@ -37,8 +38,8 @@ export function getProjectsByOrganizationIdQuery(organizationId: string | Readab
     const queryClient = useQueryClient();
     const readableOrganizationId = typeof organizationId === 'string' || organizationId === null ? readable(organizationId) : organizationId;
     return createQuery<ViewProject[], ProblemDetails>(
-        derived(readableOrganizationId, ($id) => ({
-            enabled: !!$id,
+        derived([accessToken, readableOrganizationId], ([$accessToken, $id]) => ({
+            enabled: !!$accessToken && !!$id,
             queryClient,
             queryKey: queryKeys.organization($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
