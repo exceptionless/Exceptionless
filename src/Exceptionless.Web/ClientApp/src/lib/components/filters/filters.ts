@@ -323,6 +323,7 @@ export function quote(value?: string | null): string | undefined {
 export function toFilter(filters: IFilter[]): string {
     return filters
         .map((f) => f.toFilter())
+        .filter(Boolean)
         .join(' ')
         .trim();
 }
