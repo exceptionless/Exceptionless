@@ -35,7 +35,7 @@
 
 <Popover.Root bind:open={$open}>
     <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
+        <Button builders={[builder]} variant="outline" size="sm" class="h-8">
             {title}
             <Separator orientation="vertical" class="mx-2 h-4" />
             {#if value}
