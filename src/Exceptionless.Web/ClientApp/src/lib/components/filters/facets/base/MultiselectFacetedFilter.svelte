@@ -29,9 +29,7 @@
 
     const displayValues = derived(updatedValues, ($updatedValues) => {
         const labelsInOptions = options.filter((o) => $updatedValues.includes(o.value)).map((o) => o.label);
-
         const valuesNotInOptions = $updatedValues.filter((value) => !options.some((o) => o.value === value));
-
         return [...labelsInOptions, ...valuesNotInOptions];
     });
 
@@ -103,7 +101,7 @@
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each options as option (option.value)}
-                        <Command.Item value={option.value} onSelect={onValueSelected}>
+                        <Command.Item id={option.value} value={option.value} onSelect={onValueSelected}>
                             <div
                                 class={cn(
                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
