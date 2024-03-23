@@ -12,12 +12,6 @@
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    import DateFacetedFilter from '$comp/filters/facets/DateFacetedFilter.svelte';
-    import KeywordFacetedFilter from '$comp/filters/facets/KeywordFacetedFilter.svelte';
-    import OrganizationFacetedFilter from '$comp/filters/facets/OrganizationFacetedFilter.svelte';
-    import ProjectFacetedFilter from '$comp/filters/facets/ProjectFacetedFilter.svelte';
-    import StatusFacetedFilter from '$comp/filters/facets/StatusFacetedFilter.svelte';
-    import TypeFacetedFilter from '$comp/filters/facets/TypeFacetedFilter.svelte';
     import {
         StatusFilter,
         TypeFilter,
