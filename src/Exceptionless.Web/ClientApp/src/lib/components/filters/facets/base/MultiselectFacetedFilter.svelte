@@ -93,7 +93,9 @@
     </Popover.Trigger>
     <Popover.Content class="p-0" align="start" side="bottom">
         <Command.Root {filter}>
-            <Command.Input placeholder={title} />
+            {#if options.length > 10}
+                <Command.Input placeholder={title} />
+            {/if}
             <Command.List>
                 {#if loading}
                     <Command.Loading><div class="flex p-2"><Loading class="mr-2 h-4 w-4" /> Loading...</div></Command.Loading>
