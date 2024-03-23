@@ -66,7 +66,7 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
+        <Button builders={[builder]} variant="outline" size="sm" class="h-8">
             <IconAddCircleOutline class="mr-2 h-4 w-4" /> Filter
         </Button>
     </Popover.Trigger>
