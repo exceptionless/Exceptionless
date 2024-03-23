@@ -6,9 +6,10 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
+    import Separator from '$comp/ui/separator/separator.svelte';
+    import Loading from '$comp/Loading.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
 
-    import Separator from '$comp/ui/separator/separator.svelte';
     import { cn } from '$lib/utils';
 
     type Option = {
@@ -59,6 +60,19 @@
         values = [];
         dispatch('remove');
     }
+
+    function filter(value: string, search: string) {
+		if (value.includes(search)) {
+            return 1;
+        }
+
+        var option = options.find((option) => option.value === value);
+        if (option?.label.toLowerCase().includes(search)) {
+            return 1;
+        }
+
+        return 0;
+	}
 </script>
 
 <Popover.Root bind:open={$open}>
@@ -78,9 +92,12 @@
         </Button>
     </Popover.Trigger>
     <Popover.Content class="p-0" align="start" side="bottom">
-        <Command.Root>
+        <Command.Root {filter}>
             <Command.Input placeholder={title} />
             <Command.List>
+                {#if loading}
+                    <Command.Loading><div class="flex p-2"><Loading class="mr-2 h-4 w-4" /> Loading...</div></Command.Loading>
+                {/if}
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each options as option (option.value)}

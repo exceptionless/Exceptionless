@@ -3,7 +3,7 @@
     import { writable } from 'svelte/store';
 
     import { Button } from '$comp/ui/button';
-    import * as Command from '$comp/ui/command';
+    import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
     import * as FacetedFilter from '$comp/faceted-filter';
     import Separator from '$comp/ui/separator/separator.svelte';
@@ -46,9 +46,9 @@
         </Button>
     </Popover.Trigger>
     <Popover.Content class="p-0" align="start" side="bottom">
-        <Command.Root filter={() => 1}>
-            <Command.Input placeholder={title} bind:value={$updatedValue} />
-        </Command.Root>
+        <div class="flex items-center border-b">
+            <Input type="text" placeholder={title} bind:value={$updatedValue} />
+        </div>
         <FacetedFilter.Actions
             showApply={$updatedValue !== value}
             onApply={() => open.set(false)}
