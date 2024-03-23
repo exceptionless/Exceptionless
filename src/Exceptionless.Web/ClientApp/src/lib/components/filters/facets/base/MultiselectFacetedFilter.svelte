@@ -122,10 +122,10 @@
         </Command.Root>
         <FacetedFilter.Actions
             showApply={$hasChanged}
-            onApply={() => open.set(false)}
+            on:apply={() => open.set(false)}
             showClear={$updatedValues.length > 0}
-            onClear={onClearFilter}
-            onRemove={onRemoveFilter}
+            on:clear={onClearFilter}
+            on:remove={onRemoveFilter}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>
