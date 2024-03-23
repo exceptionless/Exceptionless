@@ -2,20 +2,24 @@ import type { IFilter } from '$comp/filters/filters';
 import type { ComponentType } from 'svelte';
 
 import Root from './faceted-filter-builder.svelte';
-import Dropdown from './faceted-filter-dropdown.svelte';
-import Keyword from './faceted-filter-keyword.svelte';
-import Multiselect from './faceted-filter-multiselect.svelte';
+import Actions from './faceted-filter-actions.svelte';
+
+import BadgeLoading from './faceted-filter-badge-loading.svelte';
+import BadgeValue from './faceted-filter-badge-value.svelte';
+import BadgeValues from './faceted-filter-badge-values.svelte';
 
 export type FacetedFilter = { title: string; component: ComponentType; filter: IFilter };
 
 export {
     Root,
-    Dropdown,
-    Keyword,
-    Multiselect,
+    Actions,
+    BadgeLoading,
+    BadgeValue,
+    BadgeValues,
     //
     Root as FacetedFilterBuilder,
-    Dropdown as DropdownFacetedFilter,
-    Keyword as KeywordFacetedFilter,
-    Multiselect as MultiselectFacetedFilter
+    Actions as FacetedFilterActions,
+    BadgeLoading as FacetedFilterBadgeLoading,
+    BadgeValue as FacetedFilterBadgeValue,
+    BadgeValues as FacetedFilterBadgeValues
 };

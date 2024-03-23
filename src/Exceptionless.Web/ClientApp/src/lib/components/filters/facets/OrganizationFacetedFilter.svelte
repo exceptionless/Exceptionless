@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { getOrganizationQuery } from '$api/organizationsApi';
-    import { DropdownFacetedFilter } from '$comp/faceted-filter';
-    import { OrganizationFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
     import { derived } from 'svelte/store';
+
+    import { getOrganizationQuery } from '$api/organizationsApi';
+    import { OrganizationFilter } from '$comp/filters/filters';
+    import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
 
     const dispatch = createEventDispatcher();
     export let filter: OrganizationFilter;
@@ -40,5 +41,5 @@
     }
 </script>
 
-<DropdownFacetedFilter {title} bind:value={filter.value} options={$options} loading={$response.isLoading} on:changed={onChanged} on:remove={onRemove}
-></DropdownFacetedFilter>
+<DropDownFacetedFilter {title} bind:value={filter.value} options={$options} loading={$response.isLoading} on:changed={onChanged} on:remove={onRemove}
+></DropDownFacetedFilter>

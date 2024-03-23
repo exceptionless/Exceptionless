@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { getProjectsByOrganizationIdQuery } from '$api/projectsApi';
-    import { MultiselectFacetedFilter } from '$comp/faceted-filter';
-    import { ProjectFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
     import { derived, writable } from 'svelte/store';
+
+    import { getProjectsByOrganizationIdQuery } from '$api/projectsApi';
+    import { ProjectFilter } from '$comp/filters/filters';
+    import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
 
     const dispatch = createEventDispatcher();
     export let filter: ProjectFilter;

@@ -1,16 +1,15 @@
 <script lang="ts">
-    import IconCheck from '~icons/mdi/check';
-
-    import * as Command from '$comp/ui/command';
-    import * as Popover from '$comp/ui/popover';
-    import { Button } from '$comp/ui/button';
-
-    import Separator from '$comp/ui/separator/separator.svelte';
-    import Badge from '$comp/ui/badge/badge.svelte';
-    import { cn } from '$lib/utils';
     import { createEventDispatcher } from 'svelte';
     import { derived, writable } from 'svelte/store';
-    import Loading from '$comp/Loading.svelte';
+    import IconCheck from '~icons/mdi/check';
+
+    import { Button } from '$comp/ui/button';
+    import * as Command from '$comp/ui/command';
+    import * as Popover from '$comp/ui/popover';
+    import * as FacetedFilter from '$comp/faceted-filter';
+
+    import Separator from '$comp/ui/separator/separator.svelte';
+    import { cn } from '$lib/utils';
 
     type Option = {
         value: string;
@@ -25,6 +24,14 @@
     const updatedValues = writable<string[]>(values);
     const hasChanged = derived(updatedValues, ($updatedValues) => {
         return $updatedValues.length !== values.length || $updatedValues.some((value) => !values.includes(value));
+    });
+
+    const displayValues = derived(updatedValues, ($updatedValues) => {
+        const labelsInOptions = options.filter((o) => $updatedValues.includes(o.value)).map((o) => o.label);
+
+        const valuesNotInOptions = $updatedValues.filter((value) => !options.some((o) => o.value === value));
+
+        return [...labelsInOptions, ...valuesNotInOptions];
     });
 
     const open = writable<boolean>(false);
@@ -58,36 +65,19 @@
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
             {title}
-
+            <Separator orientation="vertical" class="mx-2 h-4" />
             {#if loading}
-                <Separator orientation="vertical" class="mx-2 h-4" />
-                <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                    <Loading class="mr-2 h-4 w-4" /> Loading
-                </Badge>
-            {:else if values.length > 0}
-                <Separator orientation="vertical" class="mx-2 h-4" />
-                <Badge variant="secondary" class="rounded-sm px-1 font-normal lg:hidden">
-                    {values.length}
-                </Badge>
-                <div class="hidden space-x-1 lg:flex">
-                    {#if values.length > 2}
-                        <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                            {values.length} Selected
-                        </Badge>
-                    {:else}
-                        {#each options as option (option.value)}
-                            {#if values.includes(option.value)}
-                                <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                                    <span class="max-w-14 truncate">{option.label}</span>
-                                </Badge>
-                            {/if}
-                        {/each}
-                    {/if}
-                </div>
+                <FacetedFilter.BadgeLoading />
+            {:else if $displayValues.length > 0}
+                <FacetedFilter.BadgeValues values={$displayValues} let:value>
+                    {value}
+                </FacetedFilter.BadgeValues>
+            {:else}
+                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
             {/if}
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="w-[200px] p-0" align="start" side="bottom">
+    <Popover.Content class="p-0" align="start" side="bottom">
         <Command.Root>
             <Command.Input placeholder={title} />
             <Command.List>
@@ -109,16 +99,14 @@
                         </Command.Item>
                     {/each}
                 </Command.Group>
-                <Command.Separator />
-                {#if $hasChanged}
-                    <Command.Item class="justify-center text-center font-bold text-primary" onSelect={() => open.set(false)}>Apply filter</Command.Item>
-                    <Command.Separator />
-                {/if}
-                {#if $updatedValues.length > 0}
-                    <Command.Item class="justify-center text-center" onSelect={onClearFilter}>Clear filter</Command.Item>
-                {/if}
-                <Command.Item class="justify-center text-center" onSelect={onRemoveFilter}>Remove filter</Command.Item>
             </Command.List>
         </Command.Root>
+        <FacetedFilter.Actions
+            showApply={$hasChanged}
+            onApply={() => open.set(false)}
+            showClear={$updatedValues.length > 0}
+            onClear={onClearFilter}
+            onRemove={onRemoveFilter}
+        ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

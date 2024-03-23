@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { DropdownFacetedFilter } from '$comp/faceted-filter';
-    import { DateFilter } from '$comp/filters/filters';
     import { createEventDispatcher } from 'svelte';
+
+    import { DateFilter } from '$comp/filters/filters';
+    import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
 
     const dispatch = createEventDispatcher();
     export let filter: DateFilter;
@@ -27,4 +28,4 @@
     }
 </script>
 
-<DropdownFacetedFilter {title} bind:value {options} on:changed={onChanged} on:remove={onRemove}></DropdownFacetedFilter>
+<DropDownFacetedFilter {title} bind:value {options} on:changed={onChanged} on:remove={onRemove}></DropDownFacetedFilter>

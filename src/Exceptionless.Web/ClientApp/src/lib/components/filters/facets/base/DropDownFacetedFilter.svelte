@@ -1,16 +1,15 @@
 <script lang="ts">
-    import IconCheck from '~icons/mdi/check';
-
-    import * as Command from '$comp/ui/command';
-    import * as Popover from '$comp/ui/popover';
-    import { Button } from '$comp/ui/button';
-
-    import Separator from '$comp/ui/separator/separator.svelte';
-    import Badge from '$comp/ui/badge/badge.svelte';
     import { createEventDispatcher } from 'svelte';
     import { writable } from 'svelte/store';
+    import IconCheck from '~icons/mdi/check';
+
+    import { Button } from '$comp/ui/button';
+    import * as Command from '$comp/ui/command';
+    import * as Popover from '$comp/ui/popover';
+
+    import Separator from '$comp/ui/separator/separator.svelte';
     import { cn } from '$lib/utils';
-    import { Loading } from '$comp/ui/command';
+    import * as FacetedFilter from '$comp/faceted-filter';
 
     type Option = {
         value: string;
@@ -60,26 +59,17 @@
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8 border-dashed">
             {title}
-
+            <Separator orientation="vertical" class="mx-2 h-4" />
             {#if loading}
-                <Separator orientation="vertical" class="mx-2 h-4" />
-                <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                    <Loading class="mr-2 h-4 w-4" /> Loading
-                </Badge>
+                <FacetedFilter.BadgeLoading />
             {:else if value}
-                <Separator orientation="vertical" class="mx-2 h-4" />
-                <Badge variant="secondary" class="rounded-sm px-1 font-normal lg:hidden">
-                    <span class="max-w-24 truncate">{displayValue(value)}</span>
-                </Badge>
-                <div class="hidden space-x-1 lg:flex">
-                    <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                        <span class="max-w-60 truncate">{displayValue(value)}</span>
-                    </Badge>
-                </div>
+                <FacetedFilter.BadgeValue>{displayValue(value)}</FacetedFilter.BadgeValue>
+            {:else}
+                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
             {/if}
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="p-0 lg:w-[350px] xl:w-[550px]" align="start" side="bottom">
+    <Popover.Content class="p-0" align="start" side="bottom">
         <Command.Root>
             <Command.Input placeholder={title} />
             <Command.List>
@@ -101,16 +91,14 @@
                         </Command.Item>
                     {/each}
                 </Command.Group>
-                <Command.Separator />
-                {#if $updatedValue !== value}
-                    <Command.Item class="justify-center text-center font-bold text-primary" onSelect={() => open.set(false)}>Apply filter</Command.Item>
-                    <Command.Separator />
-                {/if}
-                {#if $updatedValue?.trim()}
-                    <Command.Item class="justify-center text-center" onSelect={onClearFilter}>Clear filter</Command.Item>
-                {/if}
-                <Command.Item class="justify-center text-center" onSelect={onRemoveFilter}>Remove filter</Command.Item>
             </Command.List>
         </Command.Root>
+        <FacetedFilter.Actions
+            showApply={$updatedValue !== value}
+            onApply={() => open.set(false)}
+            showClear={!!$updatedValue?.trim()}
+            onClear={onClearFilter}
+            onRemove={onRemoveFilter}
+        ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

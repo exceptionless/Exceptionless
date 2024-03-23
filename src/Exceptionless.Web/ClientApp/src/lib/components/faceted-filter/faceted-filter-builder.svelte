@@ -29,18 +29,19 @@
 
             if (!facet.filter.isEmpty()) {
                 facet.filter.reset();
-                onChanged();
+                onFilterChanged(facet.filter);
             }
         } else {
             visible = [...visible, facet.filter.type];
         }
     }
 
-    function onChanged() {
-        dispatch(
-            'changed',
-            $facets.map((f) => f.filter)
-        );
+    function onChanged({ detail }: CustomEvent<IFilter>) {
+        onFilterChanged(detail);
+    }
+
+    function onFilterChanged(filter?: IFilter) {
+        dispatch('changed', filter);
     }
 
     function onRemove({ detail }: CustomEvent<IFilter>) {
@@ -48,7 +49,7 @@
 
         if (!detail.isEmpty()) {
             detail.reset();
-            onChanged();
+            onFilterChanged(detail);
         }
     }
 
@@ -59,7 +60,7 @@
         }
 
         $facets.forEach((facet) => facet.filter.reset());
-        onChanged();
+        onFilterChanged();
     }
 </script>
 
