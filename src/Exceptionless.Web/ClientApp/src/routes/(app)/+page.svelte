@@ -49,17 +49,14 @@
     const time = derived(filters, ($filters) => ($filters.find((f) => f.type === 'date') as DateFilter).value as string);
 
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        console.log('Filter changed', detail);
         filters.set(processFilterRules(setFilter($filters, detail), detail));
     }
 
     function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
-        console.log('Running rules');
         // Allow only one filter per type and term.
         const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => `${f.type}:{${'term' in f ? f.term : ''}`);
         const filtered: IFilter[] = [];
         Object.entries(groupedFilters).forEach(([group, items]) => {
-            console.log('processing group', group, items[0]);
             filtered.push(items[0]);
         });
 
