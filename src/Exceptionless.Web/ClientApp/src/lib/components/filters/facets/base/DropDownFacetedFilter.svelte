@@ -18,10 +18,10 @@
 
     export let loading: boolean = false;
     export let title: string;
-    export let value: string;
+    export let value: string | undefined;
     export let options: Option[];
 
-    const updatedValue = writable<string>(value);
+    const updatedValue = writable<string | undefined>(value);
     const open = writable<boolean>(false);
     open.subscribe(($open) => {
         if ($open) {
@@ -35,27 +35,28 @@
     const dispatch = createEventDispatcher();
     export function onValueSelected(currentValue: string) {
         if ($updatedValue === currentValue) {
-            updatedValue.set('');
+            updatedValue.set(undefined);
         } else {
             updatedValue.set(currentValue);
         }
     }
 
     export function onClearFilter() {
-        updatedValue.set('');
+        updatedValue.set(undefined);
     }
 
     function onRemoveFilter(): void {
-        value = '';
+        value = undefined;
         dispatch('remove');
     }
 
-    function displayValue(value: string) {
+    function displayValue(value: string | undefined) {
+        console.log('displayValue', value, options, options.find((option) => option.value === value)?.label);
         return options.find((option) => option.value === value)?.label ?? value;
     }
 
     function filter(value: string, search: string) {
-		if (value.includes(search)) {
+        if (value.includes(search)) {
             return 1;
         }
 
@@ -65,7 +66,7 @@
         }
 
         return 0;
-	}
+    }
 </script>
 
 <Popover.Root bind:open={$open}>
@@ -75,7 +76,7 @@
             <Separator orientation="vertical" class="mx-2 h-4" />
             {#if loading}
                 <FacetedFilter.BadgeLoading />
-            {:else if value}
+            {:else if value !== undefined}
                 <FacetedFilter.BadgeValue>{displayValue(value)}</FacetedFilter.BadgeValue>
             {:else}
                 <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
@@ -94,7 +95,7 @@
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each options as option (option.value)}
-                        <Command.Item value={option.value} onSelect={onValueSelected}>
+                        <Command.Item id={option.value} value={option.value} onSelect={onValueSelected}>
                             <div
                                 class={cn(
                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',

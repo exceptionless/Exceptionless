@@ -9,9 +9,9 @@
     import Separator from '$comp/ui/separator/separator.svelte';
 
     export let title: string = 'Keyword';
-    export let value: string;
+    export let value: string | undefined;
 
-    const updatedValue = writable<string>(value);
+    const updatedValue = writable<string | undefined>(value);
     const open = writable<boolean>(false);
     open.subscribe(($open) => {
         if ($open) {
@@ -24,11 +24,11 @@
 
     const dispatch = createEventDispatcher();
     export function onClearFilter() {
-        updatedValue.set('');
+        updatedValue.set(undefined);
     }
 
     function onRemoveFilter(): void {
-        value = '';
+        value = undefined;
         dispatch('remove');
     }
 </script>

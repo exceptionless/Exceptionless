@@ -61,19 +61,23 @@ export class DateFilter implements IFilter {
 }
 
 export class KeywordFilter implements IFilter {
-    constructor(public value: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'keyword';
 
     public isEmpty(): boolean {
-        return !this.value.trim();
+        return !this.value?.trim();
     }
 
     public reset(): void {
-        this.value = '';
+        this.value = undefined;
     }
 
     public toFilter(): string {
+        if (this.isEmpty()) {
+            return '';
+        }
+
         return this.value.trim();
     }
 }
@@ -104,16 +108,16 @@ export class NumberFilter implements IFilter {
 }
 
 export class OrganizationFilter implements IFilter {
-    constructor(public value: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'organization';
 
     public isEmpty(): boolean {
-        return !this.value.trim();
+        return !this.value?.trim();
     }
 
     public reset(): void {
-        this.value = '';
+        this.value = undefined;
     }
 
     public toFilter(): string {
@@ -155,16 +159,16 @@ export class ProjectFilter implements IFilter {
 }
 
 export class ReferenceFilter implements IFilter {
-    constructor(public value: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'reference';
 
     public isEmpty(): boolean {
-        return !this.value.trim();
+        return !this.value?.trim();
     }
 
     public reset(): void {
-        this.value = '';
+        this.value = undefined;
     }
 
     public toFilter(): string {
@@ -177,16 +181,16 @@ export class ReferenceFilter implements IFilter {
 }
 
 export class SessionFilter implements IFilter {
-    constructor(public value: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'session';
 
     public isEmpty(): boolean {
-        return !this.value.trim();
+        return !this.value?.trim();
     }
 
     public reset(): void {
-        this.value = '';
+        this.value = undefined;
     }
 
     public toFilter(): string {
@@ -228,7 +232,7 @@ export class StatusFilter implements IFilter {
 export class StringFilter implements IFilter {
     constructor(
         public term: string,
-        public value?: string | null
+        public value?: string
     ) {}
 
     public type: string = 'string';
