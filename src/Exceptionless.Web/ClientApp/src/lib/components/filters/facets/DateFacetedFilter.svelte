@@ -18,11 +18,6 @@
 
     let value = filter.value as string;
     function onChanged() {
-        // TODO: Log defect with shadcn
-        if (value === 'all time') {
-            value = '';
-        }
-
         filter.value = value;
         dispatch('changed', filter);
     }

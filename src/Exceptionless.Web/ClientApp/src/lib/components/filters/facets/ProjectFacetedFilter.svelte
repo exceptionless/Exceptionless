@@ -10,8 +10,8 @@
     export let filter: ProjectFilter;
     export let title: string = 'Status';
 
-    const organizationId = writable<string>(filter.organization);
-    $: organizationId.set(filter.organization);
+    const organizationId = writable<string | null>(filter.organization ?? null);
+    $: organizationId.set(filter.organization ?? null);
 
     const response = getProjectsByOrganizationIdQuery(organizationId);
     const options = derived(response, ($response) => {

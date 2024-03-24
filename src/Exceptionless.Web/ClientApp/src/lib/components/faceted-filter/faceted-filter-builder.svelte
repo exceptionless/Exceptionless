@@ -20,19 +20,19 @@
     let visible: string[] = [];
     facets.subscribe(($facets) => {
         // Add any new facets that have been synced from storage.
-        visible = [...visible, ...$facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.type)).map((f) => f.filter.type)];
+        visible = [...visible, ...$facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
     });
 
     function onFacetSelected(facet: FacetedFilter) {
-        if (visible.includes(facet.filter.type)) {
-            visible = visible.filter((type) => type !== facet.filter.type);
+        if (visible.includes(facet.filter.key)) {
+            visible = visible.filter((key) => key !== facet.filter.key);
 
             if (!facet.filter.isEmpty()) {
                 facet.filter.reset();
                 onFilterChanged(facet.filter);
             }
         } else {
-            visible = [...visible, facet.filter.type];
+            visible = [...visible, facet.filter.key];
         }
     }
 
@@ -45,7 +45,7 @@
     }
 
     function onRemove({ detail }: CustomEvent<IFilter>) {
-        visible = visible.filter((type) => type !== detail.type);
+        visible = visible.filter((key) => key !== detail.key);
 
         if (!detail.isEmpty()) {
             detail.reset();
@@ -76,12 +76,12 @@
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
-                    {#each $facets as facet (facet.filter.type)}
-                        <Command.Item value={facet.filter.type} onSelect={() => onFacetSelected(facet)}>
+                    {#each $facets as facet (facet.filter.key)}
+                        <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>
                             <div
                                 class={cn(
                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                    visible.includes(facet.filter.type) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                    visible.includes(facet.filter.key) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                 )}
                             >
                                 <IconCheck className={cn('h-4 w-4')} />
@@ -101,8 +101,8 @@
     </Popover.Content>
 </Popover.Root>
 
-{#each $facets as facet (facet.filter.type)}
-    {#if visible.includes(facet.filter.type)}
+{#each $facets as facet (facet.filter.key)}
+    {#if visible.includes(facet.filter.key)}
         <svelte:component this={facet.component} filter={facet.filter} title={facet.title} on:changed={onChanged} on:remove={onRemove} />
     {/if}
 {/each}

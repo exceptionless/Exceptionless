@@ -94,7 +94,7 @@
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each options as option (option.value)}
-                        <Command.Item id={option.value} value={option.value} onSelect={onValueSelected}>
+                        <Command.Item id={option.value} value={option.value} onSelect={() => onValueSelected(option.value)}>
                             <div
                                 class={cn(
                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
