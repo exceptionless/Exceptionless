@@ -4,6 +4,7 @@ import type { Serializer } from 'svelte-persisted-store';
 
 export interface IFilter {
     readonly type: string;
+    readonly key: string;
     isEmpty(): boolean;
     reset(): void;
     toFilter(): string;
@@ -16,6 +17,10 @@ export class BooleanFilter implements IFilter {
     ) {}
 
     public type: string = 'boolean';
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     public isEmpty(): boolean {
         return this.value === undefined;
@@ -42,6 +47,10 @@ export class DateFilter implements IFilter {
 
     public type: string = 'date';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
     public isEmpty(): boolean {
         return this.value === undefined;
     }
@@ -65,6 +74,10 @@ export class KeywordFilter implements IFilter {
 
     public type: string = 'keyword';
 
+    public get key(): string {
+        return this.type;
+    }
+
     public isEmpty(): boolean {
         return !this.value?.trim();
     }
@@ -78,7 +91,7 @@ export class KeywordFilter implements IFilter {
             return '';
         }
 
-        return this.value.trim();
+        return this.value!.trim();
     }
 }
 
@@ -89,6 +102,10 @@ export class NumberFilter implements IFilter {
     ) {}
 
     public type: string = 'number';
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     public isEmpty(): boolean {
         return this.value === undefined;
@@ -111,6 +128,10 @@ export class OrganizationFilter implements IFilter {
     constructor(public value?: string) {}
 
     public type: string = 'organization';
+
+    public get key(): string {
+        return this.type;
+    }
 
     public isEmpty(): boolean {
         return !this.value?.trim();
@@ -136,6 +157,10 @@ export class ProjectFilter implements IFilter {
     ) {}
 
     public type: string = 'project';
+
+    public get key(): string {
+        return this.type;
+    }
 
     public isEmpty(): boolean {
         return this.value.length === 0;
@@ -163,6 +188,10 @@ export class ReferenceFilter implements IFilter {
 
     public type: string = 'reference';
 
+    public get key(): string {
+        return this.type;
+    }
+
     public isEmpty(): boolean {
         return !this.value?.trim();
     }
@@ -184,6 +213,10 @@ export class SessionFilter implements IFilter {
     constructor(public value?: string) {}
 
     public type: string = 'session';
+
+    public get key(): string {
+        return this.type;
+    }
 
     public isEmpty(): boolean {
         return !this.value?.trim();
@@ -207,6 +240,10 @@ export class StatusFilter implements IFilter {
     constructor(public value: StackStatus[]) {}
 
     public type: string = 'status';
+
+    public get key(): string {
+        return this.type;
+    }
 
     public isEmpty(): boolean {
         return this.value.length === 0;
@@ -237,6 +274,10 @@ export class StringFilter implements IFilter {
 
     public type: string = 'string';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
     public isEmpty(): boolean {
         return this.value === undefined;
     }
@@ -258,6 +299,10 @@ export class TypeFilter implements IFilter {
     constructor(public value: PersistentEventKnownTypes[]) {}
 
     public type: string = 'type';
+
+    public get key(): string {
+        return this.type;
+    }
 
     public isEmpty(): boolean {
         return this.value.length === 0;
@@ -287,6 +332,10 @@ export class VersionFilter implements IFilter {
     ) {}
 
     public type: string = 'version';
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     public isEmpty(): boolean {
         return this.value === undefined;
@@ -377,7 +426,7 @@ export function getFilterTypes(includeDates: boolean = true): string[] {
 }
 
 export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
-    const existingFilter = filters.find((f) => f.type === filter.type && ('term' in f && 'term' in filter ? f.term === filter.term : true));
+    const existingFilter = filters.find((f) => f.key === filter.key && ('term' in f && 'term' in filter ? f.term === filter.term : true));
     if (existingFilter) {
         if ('value' in existingFilter && 'value' in filter) {
             if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
