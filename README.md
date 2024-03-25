@@ -3,6 +3,7 @@
 
 [![Build](https://github.com/exceptionless/Exceptionless/workflows/Build/badge.svg?branch=main)](https://github.com/exceptionless/Exceptionless/actions?query=branch%3Amain)
 [![Discord](https://img.shields.io/discord/715744504891703319)](https://discord.gg/6HxgFCx)
+[![BuiltWithDot.Net shield](https://builtwithdot.net/project/100/exceptionless-csharp-error-reporting/badge)](https://builtwithdot.net/project/100/exceptionless-csharp-error-reporting)
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](https://exceptionless.com) provides real-time error reporting for your JavaScript, Node, .NET Core, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
