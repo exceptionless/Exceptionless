@@ -42,19 +42,31 @@
         new KeywordFilter('')
     ];
     const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
-    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
+    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
 
-    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.type !== 'date')));
+    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.key !== 'date:date')));
     const facets = derived(filters, ($filters) => toFacetedFilters($filters));
-    const time = derived(filters, ($filters) => ($filters.find((f) => f.type === 'date') as DateFilter).value as string);
+    const time = derived(filters, ($filters) => ($filters.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
         filters.set(processFilterRules(setFilter($filters, detail), detail));
     }
 
+    function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
+        // If detail is undefined, remove all filters.
+        if (!detail) {
+            filters.set(defaultFilters);
+        } else if (defaultFilters.find((f) => f.key === detail.key)) {
+            filters.set(processFilterRules(setFilter($filters, detail)));
+        } else {
+            filters.set(processFilterRules($filters.filter((f) => f.key !== detail.key)));
+        }
+        console.log('filters', $filters)
+    }
+
     function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
         // Allow only one filter per type and term.
-        const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => `${f.type}:{${'term' in f ? f.term : ''}`);
+        const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => f.key);
         const filtered: IFilter[] = [];
         Object.entries(groupedFilters).forEach(([group, items]) => {
             filtered.push(items[0]);
@@ -94,7 +106,7 @@
         <Card.Content>
             <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
-                    <FacetedFilter.Root {facets} on:changed={onFilterChanged}></FacetedFilter.Root>
+                    <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
                 </svelte:fragment>
             </EventsDataTable>
         </Card.Content>
