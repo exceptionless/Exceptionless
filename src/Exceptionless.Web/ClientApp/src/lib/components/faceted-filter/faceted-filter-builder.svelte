@@ -49,8 +49,9 @@
 
         if (!detail.isEmpty()) {
             detail.reset();
-            onFilterChanged(detail);
         }
+
+        dispatch('remove', detail);
     }
 
     function onRemoveAll() {
@@ -60,7 +61,7 @@
         }
 
         $facets.forEach((facet) => facet.filter.reset());
-        onFilterChanged();
+        dispatch('remove');
     }
 </script>
 
