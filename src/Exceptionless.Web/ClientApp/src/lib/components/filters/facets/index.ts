@@ -19,11 +19,11 @@ export function toFacetedFilters(filters: IFilter[]): FacetedFilter[] {
         switch (filter.type) {
             case 'boolean': {
                 const booleanFilter = filter as BooleanFilter;
-                return { title: booleanFilter.term as string, component: BooleanFacetedFilter, filter };
+                return { title: (booleanFilter.term as string) ?? 'Boolean', component: BooleanFacetedFilter, filter };
             }
             case 'date': {
                 const dateFilter = filter as DateFilter;
-                const title = dateFilter.term === 'date' ? 'Date Range' : dateFilter.term;
+                const title = dateFilter.term === 'date' ? 'Date Range' : dateFilter.term ?? 'Date';
                 return { title, component: DateFacetedFilter, filter };
             }
             case 'keyword': {
@@ -31,7 +31,7 @@ export function toFacetedFilters(filters: IFilter[]): FacetedFilter[] {
             }
             case 'number': {
                 const numberFilter = filter as NumberFilter;
-                return { title: numberFilter.term as string, component: NumberFacetedFilter, filter: numberFilter };
+                return { title: (numberFilter.term as string) ?? 'Number', component: NumberFacetedFilter, filter: numberFilter };
             }
             case 'organization': {
                 return { title: 'Organization', component: OrganizationFacetedFilter, filter };
@@ -50,14 +50,14 @@ export function toFacetedFilters(filters: IFilter[]): FacetedFilter[] {
             }
             case 'string': {
                 const stringFilter = filter as StringFilter;
-                return { title: stringFilter.term as string, component: StringFacetedFilter, filter };
+                return { title: (stringFilter.term as string) ?? 'String', component: StringFacetedFilter, filter };
             }
             case 'type': {
-                return { title: 'Type' as string, component: TypeFacetedFilter, filter };
+                return { title: 'Type', component: TypeFacetedFilter, filter };
             }
             case 'version': {
                 const versionFilter = filter as VersionFilter;
-                return { title: versionFilter.term as string, component: VersionFacetedFilter, filter };
+                return { title: (versionFilter.term as string) ?? 'Version', component: VersionFacetedFilter, filter };
             }
             default: {
                 throw new Error(`Unknown filter type: ${filter.type}`);

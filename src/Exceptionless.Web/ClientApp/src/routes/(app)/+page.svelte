@@ -22,7 +22,13 @@
         OrganizationFilter,
         ProjectFilter,
         DateFilter,
-        setFilter
+        setFilter,
+        BooleanFilter,
+        NumberFilter,
+        ReferenceFilter,
+        SessionFilter,
+        StringFilter,
+        VersionFilter
     } from '$comp/filters/filters';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
@@ -34,12 +40,19 @@
 
     const limit = persisted<number>('events.limit', 10);
     const defaultFilters = [
-        new OrganizationFilter(''),
-        new ProjectFilter('', []),
+        new OrganizationFilter(),
+        new ProjectFilter(undefined, []),
         new StatusFilter([]),
         new TypeFilter([]),
         new DateFilter('date', 'last week'),
-        new KeywordFilter('')
+        new DateFilter(),
+        new StringFilter(),
+        new BooleanFilter(),
+        new NumberFilter(),
+        new ReferenceFilter(),
+        new SessionFilter(),
+        new VersionFilter(),
+        new KeywordFilter()
     ];
     const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
@@ -61,7 +74,6 @@
         } else {
             filters.set(processFilterRules($filters.filter((f) => f.key !== detail.key)));
         }
-        console.log('filters', $filters)
     }
 
     function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
