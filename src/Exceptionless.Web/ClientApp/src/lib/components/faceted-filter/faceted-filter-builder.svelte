@@ -1,15 +1,14 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     import type { Readable } from 'svelte/store';
+    import { toast } from 'svelte-sonner';
 
     import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
-    import IconCheck from '~icons/mdi/check';
 
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import { Button } from '$comp/ui/button';
     import type { IFilter } from '$comp/filters/filters';
-    import { cn } from '$lib/utils';
     import type { FacetedFilter } from '.';
 
     const dispatch = createEventDispatcher();
@@ -25,12 +24,7 @@
 
     function onFacetSelected(facet: FacetedFilter) {
         if (visible.includes(facet.filter.key)) {
-            visible = visible.filter((key) => key !== facet.filter.key);
-
-            if (!facet.filter.isEmpty()) {
-                facet.filter.reset();
-                onFilterChanged(facet.filter);
-            }
+            toast.error(`Only one ${facet.title} filter can be applied at a time.`);
         } else {
             visible = [...visible, facet.filter.key];
         }
@@ -78,19 +72,7 @@
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each $facets as facet (facet.filter.key)}
-                        <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>
-                            <div
-                                class={cn(
-                                    'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                    visible.includes(facet.filter.key) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
-                                )}
-                            >
-                                <IconCheck className={cn('h-4 w-4')} />
-                            </div>
-                            <span>
-                                {facet.title}
-                            </span>
-                        </Command.Item>
+                        <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>{facet.title}</Command.Item>
                     {/each}
                 </Command.Group>
                 {#if visible.length > 0}

@@ -12,7 +12,7 @@ export interface IFilter {
 
 export class BooleanFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: boolean
     ) {}
 
@@ -31,6 +31,10 @@ export class BooleanFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -41,7 +45,7 @@ export class BooleanFilter implements IFilter {
 
 export class DateFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: Date | string
     ) {}
 
@@ -60,6 +64,10 @@ export class DateFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -97,7 +105,7 @@ export class KeywordFilter implements IFilter {
 
 export class NumberFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: number
     ) {}
 
@@ -116,6 +124,10 @@ export class NumberFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -268,7 +280,7 @@ export class StatusFilter implements IFilter {
 
 export class StringFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: string
     ) {}
 
@@ -287,6 +299,10 @@ export class StringFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -327,7 +343,7 @@ export class TypeFilter implements IFilter {
 
 export class VersionFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: string
     ) {}
 
@@ -346,6 +362,10 @@ export class VersionFilter implements IFilter {
     }
 
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }

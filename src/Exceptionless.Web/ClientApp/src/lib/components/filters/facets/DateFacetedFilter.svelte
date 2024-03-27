@@ -16,6 +16,10 @@
         { value: '', label: 'All Time' }
     ];
 
+    if (isCustomDate(filter)) {
+        options.push({ value: filter.value as string, label: filter.value as string });
+    }
+
     let value = filter.value as string;
     function onChanged() {
         filter.value = value;
@@ -25,6 +29,18 @@
     function onRemove() {
         filter.value = value;
         dispatch('remove', filter);
+    }
+
+    function isCustomDate(filter: DateFilter) {
+        if (filter.value === undefined) {
+            return false;
+        }
+
+        if (filter.value === '' || (typeof filter.value === 'string' && filter.value.startsWith('last'))) {
+            return false;
+        }
+
+        return true;
     }
 </script>
 
