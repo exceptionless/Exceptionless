@@ -1,5 +1,5 @@
 import { writable, type Writable } from 'svelte/store';
-import { persisted } from 'svelte-local-storage-store';
+import { persisted } from 'svelte-persisted-store';
 import { mediaQuery } from 'svelte-legos';
 
 export const isSidebarOpen = persisted('sidebar-open', false);

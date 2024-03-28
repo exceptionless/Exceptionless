@@ -23,7 +23,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 
     public TestWithServices(ITestOutputHelper output) : base(output)
     {
-        Log.MinimumLevel = LogLevel.Information;
+        Log.DefaultMinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);

@@ -2,15 +2,15 @@
     import A from '$comp/typography/A.svelte';
     import { SessionFilter } from './filters';
 
-    export let sessionId: string;
+    export let value: string;
 
-    const title = `Search ref.session:${sessionId}`;
+    const title = `Search ref.session:${value}`;
 
     function onSearchClick(e: Event) {
         e.preventDefault();
         document.dispatchEvent(
             new CustomEvent('filter', {
-                detail: new SessionFilter(sessionId)
+                detail: new SessionFilter(value)
             })
         );
     }

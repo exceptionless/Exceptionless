@@ -9,7 +9,7 @@ import {
     renderComponent,
     type RowSelectionState
 } from '@tanstack/svelte-table';
-import { persisted } from 'svelte-local-storage-store';
+import { persisted } from 'svelte-persisted-store';
 import { get, writable, type Writable } from 'svelte/store';
 
 import type { EventSummaryModel, GetEventsMode, IGetEventsParams, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';

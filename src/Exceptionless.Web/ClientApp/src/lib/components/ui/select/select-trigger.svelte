@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Select as SelectPrimitive } from 'bits-ui';
-    import IconUnfoldMore from '~icons/mdi/unfold-more-horizontal';
-    import { cn } from '$lib/utils';
+    import CaretSort from '~icons/mdi/unfold-more-horizontal';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = SelectPrimitive.TriggerProps;
     type $$Events = SelectPrimitive.TriggerEvents;
@@ -19,6 +19,6 @@
 >
     <slot />
     <div>
-        <IconUnfoldMore class="h-4 w-4 opacity-50" />
+        <CaretSort class="h-4 w-4 opacity-50" />
     </div>
 </SelectPrimitive.Trigger>

@@ -8,7 +8,7 @@
     import H2 from '$comp/typography/H2.svelte';
 
     $: if (!$isAuthenticated) {
-        goto('next/login', { replaceState: true });
+        goto('/next/login', { replaceState: true });
     }
 
     let problem = new ProblemDetails();

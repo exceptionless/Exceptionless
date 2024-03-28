@@ -2,7 +2,6 @@
     "recommendations": [
         "svelte.svelte-vscode",
         "bradlc.vscode-tailwindcss",
-        "digitalbrainstem.javascript-ejs-support",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "selemondev.vscode-shadcn-svelte",
