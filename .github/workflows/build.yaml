@@ -121,17 +121,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.*
-          #dotnet-quality: preview
-
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
+          path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Setup Node.js environment
