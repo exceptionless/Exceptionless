@@ -23,12 +23,8 @@
         ProjectFilter,
         DateFilter,
         setFilter,
-        BooleanFilter,
-        NumberFilter,
         ReferenceFilter,
-        SessionFilter,
-        StringFilter,
-        VersionFilter
+        SessionFilter
     } from '$comp/filters/filters';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
@@ -45,13 +41,8 @@
         new StatusFilter([]),
         new TypeFilter([]),
         new DateFilter('date', 'last week'),
-        new DateFilter(),
-        new StringFilter(),
-        new BooleanFilter(),
-        new NumberFilter(),
         new ReferenceFilter(),
         new SessionFilter(),
-        new VersionFilter(),
         new KeywordFilter()
     ];
     const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
