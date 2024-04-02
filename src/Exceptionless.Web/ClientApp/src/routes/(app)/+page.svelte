@@ -61,9 +61,14 @@
         if (!detail) {
             filters.set(defaultFilters);
         } else if (defaultFilters.find((f) => f.key === detail.key)) {
-            filters.set(processFilterRules(setFilter($filters, detail)));
+            filters.set(processFilterRules(setFilter($filters, detail), detail));
         } else {
-            filters.set(processFilterRules($filters.filter((f) => f.key !== detail.key)));
+            filters.set(
+                processFilterRules(
+                    $filters.filter((f) => f.key !== detail.key),
+                    detail
+                )
+            );
         }
     }
 

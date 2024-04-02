@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import { derived } from 'svelte/store';
+    import { derived, type Writable } from 'svelte/store';
 
     import { getOrganizationQuery } from '$api/organizationsApi';
     import { OrganizationFilter } from '$comp/filters/filters';
@@ -9,6 +9,7 @@
     const dispatch = createEventDispatcher();
     export let filter: OrganizationFilter;
     export let title: string = 'Status';
+    export let open: Writable<boolean>;
 
     const response = getOrganizationQuery();
     const options = derived(response, ($response) => {
@@ -41,5 +42,13 @@
     }
 </script>
 
-<DropDownFacetedFilter {title} bind:value={filter.value} options={$options} loading={$response.isLoading} on:changed={onChanged} on:remove={onRemove}
+<DropDownFacetedFilter
+    {open}
+    {title}
+    bind:value={filter.value}
+    options={$options}
+    loading={$response.isLoading}
+    noOptionsText="No organizations found."
+    on:changed={onChanged}
+    on:remove={onRemove}
 ></DropDownFacetedFilter>

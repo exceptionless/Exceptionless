@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import { derived, writable } from 'svelte/store';
+    import { derived, writable, type Writable } from 'svelte/store';
 
     import { getProjectsByOrganizationIdQuery } from '$api/projectsApi';
     import { ProjectFilter } from '$comp/filters/filters';
@@ -9,6 +9,7 @@
     const dispatch = createEventDispatcher();
     export let filter: ProjectFilter;
     export let title: string = 'Status';
+    export let open: Writable<boolean>;
 
     const organizationId = writable<string | null>(filter.organization ?? null);
     $: organizationId.set(filter.organization ?? null);
@@ -44,5 +45,13 @@
     }
 </script>
 
-<MultiselectFacetedFilter {title} bind:values={filter.value} options={$options} loading={$response.isLoading} on:changed={onChanged} on:remove={onRemove}
+<MultiselectFacetedFilter
+    {open}
+    {title}
+    bind:values={filter.value}
+    options={$options}
+    loading={$response.isLoading}
+    noOptionsText="No projects found."
+    on:changed={onChanged}
+    on:remove={onRemove}
 ></MultiselectFacetedFilter>

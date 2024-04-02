@@ -23,11 +23,16 @@
     });
 
     function onFacetSelected(facet: FacetedFilter) {
+        $facets.forEach((f) => f.open.set(false));
+
         if (visible.includes(facet.filter.key)) {
             toast.error(`Only one ${facet.title} filter can be applied at a time.`);
         } else {
             visible = [...visible, facet.filter.key];
         }
+
+        open = false;
+        facet.open.set(true);
     }
 
     function onChanged({ detail }: CustomEvent<IFilter>) {
@@ -57,6 +62,10 @@
         $facets.forEach((facet) => facet.filter.reset());
         dispatch('remove');
     }
+
+    function onClose() {
+        open = false;
+    }
 </script>
 
 <Popover.Root bind:open>
@@ -75,10 +84,15 @@
                         <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>{facet.title}</Command.Item>
                     {/each}
                 </Command.Group>
+            </Command.List>
+        </Command.Root>
+        <Command.Root>
+            <Command.List>
+                <Command.Separator />
                 {#if visible.length > 0}
-                    <Command.Separator />
                     <Command.Item class="justify-center text-center" onSelect={onRemoveAll}>Clear filters</Command.Item>
                 {/if}
+                <Command.Item class="justify-center text-center" onSelect={onClose}>Close</Command.Item>
             </Command.List>
         </Command.Root>
     </Popover.Content>
@@ -86,6 +100,6 @@
 
 {#each $facets as facet (facet.filter.key)}
     {#if visible.includes(facet.filter.key)}
-        <svelte:component this={facet.component} filter={facet.filter} title={facet.title} on:changed={onChanged} on:remove={onRemove} />
+        <svelte:component this={facet.component} filter={facet.filter} title={facet.title} open={facet.open} on:changed={onChanged} on:remove={onRemove} />
     {/if}
 {/each}

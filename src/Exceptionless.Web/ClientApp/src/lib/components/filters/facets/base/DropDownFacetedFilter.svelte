@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import { writable } from 'svelte/store';
+    import { writable, type Writable } from 'svelte/store';
     import IconCheck from '~icons/mdi/check';
 
     import { Button } from '$comp/ui/button';
@@ -20,19 +20,25 @@
     export let title: string;
     export let value: string | undefined;
     export let options: Option[];
+    export let noOptionsText: string = 'No results found.';
+    export let open: Writable<boolean>;
 
     const updatedValue = writable<string | undefined>(value);
-    const open = writable<boolean>(false);
-    open.subscribe(($open) => {
-        if ($open) {
-            updatedValue.set(value);
-        } else if ($updatedValue !== value) {
+
+    // bind:open doesn't trigger subscriptions when the variable changes. It only updates the value of the variable.
+    open.subscribe(() => updatedValue.set(value));
+    $: updatedValue.set(value);
+
+    const dispatch = createEventDispatcher();
+    function onApplyFilter() {
+        if ($updatedValue !== value) {
             value = $updatedValue;
             dispatch('changed', value);
         }
-    });
 
-    const dispatch = createEventDispatcher();
+        open.set(false);
+    }
+
     export function onValueSelected(currentValue: string) {
         if ($updatedValue === currentValue) {
             updatedValue.set(undefined);
@@ -91,32 +97,34 @@
                 {#if loading}
                     <Command.Loading><div class="flex p-2"><Loading class="mr-2 h-4 w-4" /> Loading...</div></Command.Loading>
                 {/if}
-                <Command.Empty>No results found.</Command.Empty>
-                <Command.Group>
-                    {#each options as option (option.value)}
-                        <Command.Item id={option.value} value={option.value} onSelect={() => onValueSelected(option.value)}>
-                            <div
-                                class={cn(
-                                    'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                    $updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
-                                )}
-                            >
-                                <IconCheck className={cn('h-4 w-4')} />
-                            </div>
-                            <span>
-                                {option.label}
-                            </span>
-                        </Command.Item>
-                    {/each}
-                </Command.Group>
+                <Command.Empty>{noOptionsText}</Command.Empty>
+                {#if options.length > 0}
+                    <Command.Group>
+                        {#each options as option (option.value)}
+                            <Command.Item id={option.value} value={option.value} onSelect={() => onValueSelected(option.value)}>
+                                <div
+                                    class={cn(
+                                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                        $updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                    )}
+                                >
+                                    <IconCheck className={cn('h-4 w-4')} />
+                                </div>
+                                <span>
+                                    {option.label}
+                                </span>
+                            </Command.Item>
+                        {/each}
+                    </Command.Group>{/if}
             </Command.List>
         </Command.Root>
         <FacetedFilter.Actions
             showApply={$updatedValue !== value}
-            on:apply={() => open.set(false)}
+            on:apply={onApplyFilter}
             showClear={!!$updatedValue?.trim()}
             on:clear={onClearFilter}
             on:remove={onRemoveFilter}
+            on:close={() => open.set(false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>
