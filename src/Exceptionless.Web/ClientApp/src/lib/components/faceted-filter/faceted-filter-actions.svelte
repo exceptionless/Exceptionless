@@ -19,5 +19,6 @@
             <Command.Item class="justify-center text-center" onSelect={() => dispatch('clear')}>Clear filter</Command.Item>
         {/if}
         <Command.Item class="justify-center text-center" onSelect={() => dispatch('remove')}>Remove filter</Command.Item>
+        <Command.Item class="justify-center text-center" onSelect={() => dispatch('close')}>Close</Command.Item>
     </Command.List>
 </Command.Root>

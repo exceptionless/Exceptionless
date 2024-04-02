@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import { writable } from 'svelte/store';
+    import { writable, type Writable } from 'svelte/store';
 
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
@@ -10,19 +10,24 @@
 
     export let title: string;
     export let value: boolean | undefined;
+    export let open: Writable<boolean>;
 
     const updatedValue = writable<boolean | undefined>(value);
-    const open = writable<boolean>(false);
-    open.subscribe(($open) => {
-        if ($open) {
-            updatedValue.set(value);
-        } else if ($updatedValue !== value) {
+
+    // bind:open doesn't trigger subscriptions when the variable changes. It only updates the value of the variable.
+    open.subscribe(() => updatedValue.set(value));
+    $: updatedValue.set(value);
+
+    const dispatch = createEventDispatcher();
+    function onApplyFilter() {
+        if ($updatedValue !== value) {
             value = $updatedValue;
             dispatch('changed', value);
         }
-    });
 
-    const dispatch = createEventDispatcher();
+        open.set(false);
+    }
+
     export function onClearFilter() {
         updatedValue.set(undefined);
     }
@@ -51,10 +56,11 @@
         </div>
         <FacetedFilter.Actions
             showApply={$updatedValue !== value}
-            on:apply={() => open.set(false)}
+            on:apply={onApplyFilter}
             showClear={$updatedValue !== undefined}
             on:clear={onClearFilter}
             on:remove={onRemoveFilter}
+            on:close={() => open.set(false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

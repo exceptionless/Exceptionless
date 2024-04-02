@@ -1,5 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
+    import type { Writable } from 'svelte/store';
 
     import { DateFilter } from '$comp/filters/filters';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
@@ -7,6 +8,7 @@
     const dispatch = createEventDispatcher();
     export let filter: DateFilter;
     export let title: string = 'Date Range';
+    export let open: Writable<boolean>;
 
     const options = [
         { value: 'last hour', label: 'Last Hour' },
@@ -44,4 +46,4 @@
     }
 </script>
 
-<DropDownFacetedFilter {title} bind:value {options} on:changed={onChanged} on:remove={onRemove}></DropDownFacetedFilter>
+<DropDownFacetedFilter {open} {title} bind:value {options} on:changed={onChanged} on:remove={onRemove}></DropDownFacetedFilter>
