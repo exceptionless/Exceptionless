@@ -2,7 +2,10 @@
     "debug.allowBreakpointsEverywhere": true,
     "cSpell.words": [
         "clsx",
+        "cmdk",
         "colour",
+        "echarts",
+        "formsnap",
         "haserror",
         "iconify",
         "keyof",
@@ -16,6 +19,8 @@
         "satellizer",
         "sessionend",
         "shadcn",
+        "sonner",
+        "superforms",
         "tailwindcss",
         "tanstack"
     ],
