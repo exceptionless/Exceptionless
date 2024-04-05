@@ -76,8 +76,8 @@
         // Allow only one filter per type and term.
         const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => f.key);
         const filtered: IFilter[] = [];
-        Object.entries(groupedFilters).forEach(([group, items]) => {
-            console.log(group);
+        Object.entries(groupedFilters).forEach(([_, items]) => {
+            console.log(_);
             filtered.push(items[0]);
         });
 
