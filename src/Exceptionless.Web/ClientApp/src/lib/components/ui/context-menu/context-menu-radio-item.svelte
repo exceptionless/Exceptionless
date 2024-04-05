@@ -1,7 +1,7 @@
 <script lang="ts">
     import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
-    import { cn } from '$lib/utils.js';
     import DotFilled from '~icons/mdi/circle';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = ContextMenuPrimitive.RadioItemProps;
     type $$Events = ContextMenuPrimitive.RadioItemEvents;

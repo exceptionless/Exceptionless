@@ -52,6 +52,6 @@
     "workbench.editor.customLabels.patterns": {
         "**/routes/**/+page.svelte": "${dirname(1)}/${dirname}",
         "**/routes/**/+layout.svelte": "${dirname}/+layout.svelte",
-        "**/lib/**/index.ts": "${dirname}/index.ts",
+        "**/lib/**/index.ts": "${dirname}/index.ts"
     }
 }

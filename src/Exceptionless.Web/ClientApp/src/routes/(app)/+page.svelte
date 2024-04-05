@@ -77,6 +77,7 @@
         const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => f.key);
         const filtered: IFilter[] = [];
         Object.entries(groupedFilters).forEach(([group, items]) => {
+            console.log(group);
             filtered.push(items[0]);
         });
 
