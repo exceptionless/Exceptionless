@@ -20,6 +20,7 @@ public abstract class ExceptionlessApiController : Controller
     protected const int DEFAULT_LIMIT = 10;
     protected const int MAXIMUM_LIMIT = 100;
     protected const int MAXIMUM_SKIP = 1000;
+    protected static readonly char[] TIME_PARTS = ['|'];
 
     protected TimeSpan GetOffset(string? offset)
     {
@@ -35,9 +36,9 @@ public abstract class ExceptionlessApiController : Controller
     protected virtual TimeInfo GetTimeInfo(string? time, string? offset, DateTime? minimumUtcStartDate = null)
     {
         string field = DefaultDateField;
-        if (!String.IsNullOrEmpty(time) && time.Contains("|"))
+        if (!String.IsNullOrEmpty(time) && time.Contains('|'))
         {
-            string[] parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = time.Split(TIME_PARTS, StringSplitOptions.RemoveEmptyEntries);
             field = parts.Length > 0 && AllowedDateFields.Contains(parts[0]) ? parts[0] : DefaultDateField;
             time = parts.Length > 1 ? parts[1] : null;
         }
@@ -56,8 +57,7 @@ public abstract class ExceptionlessApiController : Controller
 
     protected int GetLimit(int limit, int maximumLimit = MAXIMUM_LIMIT)
     {
-        if (maximumLimit < MAXIMUM_LIMIT)
-            throw new ArgumentOutOfRangeException(nameof(maximumLimit));
+        ArgumentOutOfRangeException.ThrowIfLessThan(maximumLimit, MAXIMUM_LIMIT);
 
         if (limit < 1)
             limit = DEFAULT_LIMIT;

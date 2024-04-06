@@ -41,7 +41,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
     {
-        Log.MinimumLevel = LogLevel.Information;
+        Log.DefaultMinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
@@ -125,8 +125,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         await stackRepository.AddAsync(stacks, o => o.ImmediateConsistency());
         await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
-        await RefreshDataAsync();
-
         return (stacks.ToList(), events.ToList());
     }
 
@@ -135,8 +133,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         await _semaphoreSlim.WaitAsync();
         try
         {
-            var oldLoggingLevel = Log.MinimumLevel;
-            Log.MinimumLevel = LogLevel.Warning;
+            var oldLoggingLevel = Log.DefaultMinimumLevel;
+            Log.DefaultMinimumLevel = LogLevel.Warning;
 
             await RefreshDataAsync();
             if (!_indexesHaveBeenConfigured)
@@ -169,7 +167,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
             await GetService<IQueue<WorkItemData>>().DeleteQueueAsync();
 
-            Log.MinimumLevel = oldLoggingLevel;
+            Log.DefaultMinimumLevel = oldLoggingLevel;
         }
         finally
         {

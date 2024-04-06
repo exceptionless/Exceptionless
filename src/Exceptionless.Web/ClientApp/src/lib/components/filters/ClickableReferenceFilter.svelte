@@ -2,15 +2,15 @@
     import A from '$comp/typography/A.svelte';
     import { ReferenceFilter } from './filters';
 
-    export let referenceId: string;
+    export let value: string;
 
-    const title = `Search reference:${referenceId}`;
+    const title = `Search reference:${value}`;
 
     function onSearchClick(e: Event) {
         e.preventDefault();
         document.dispatchEvent(
             new CustomEvent('filter', {
-                detail: new ReferenceFilter(referenceId)
+                detail: new ReferenceFilter(value)
             })
         );
     }

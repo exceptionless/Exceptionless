@@ -38,7 +38,7 @@ jobs:
       - name: Version
         id: version
         run: |
-          dotnet tool install --global minver-cli --version 4.3.0
+          dotnet tool install --global minver-cli --version 5.0.0
           version=$(minver --tag-prefix v)
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
@@ -121,17 +121,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.*
-          #dotnet-quality: preview
-
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
+          path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Setup Node.js environment

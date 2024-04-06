@@ -88,7 +88,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -111,7 +111,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events/count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -137,7 +137,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -198,7 +198,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -210,7 +210,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     [ProducesResponseType(typeof(ICollection<EventSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<StackSummaryModel>), 200)]
     [ProducesResponseType(typeof(ICollection<PersistentEvent>), 200)]
-    public async Task<ActionResult<ICollection<PersistentEvent>>> GetAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
+    public async Task<ActionResult<ICollection<PersistentEvent>>> GetAllAsync(string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.All(o => o.IsSuspended))
@@ -421,7 +421,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -456,7 +456,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -495,7 +495,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -531,7 +531,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// </summary>
     /// <param name="referenceId">An identifier used that references an event instance.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -560,7 +560,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="referenceId">An identifier used that references an event instance.</param>
     /// <param name="projectId">The identifier of the project.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -599,7 +599,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -631,7 +631,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -669,7 +669,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -699,7 +699,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>
@@ -734,7 +734,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <param name="before">The before parameter is a cursor used for pagination and defines your place in the list of results.</param>

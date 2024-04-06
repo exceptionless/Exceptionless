@@ -11,11 +11,10 @@
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import Muted from '$comp/typography/Muted.svelte';
     import { getOptions } from './options';
-    import SearchInput from '$comp/SearchInput.svelte';
-    import { limit, onFilterInputChanged } from '$lib/stores/events';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
 
     export let filter: Readable<string>;
+    export let limit: Readable<number>;
 
     const parameters = writable<IGetEventsParams>({ mode: 'summary', limit: $limit });
     const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
@@ -93,9 +92,7 @@
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>
-        <slot name="toolbar">
-            <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
-        </slot>
+        <slot name="toolbar" />
     </DataTable.Toolbar>
     <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
     <Muted class="flex flex-1 items-center justify-between">
