@@ -21,6 +21,7 @@
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
     import P from '$comp/typography/P.svelte';
+    import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
 
     export let id: string;
 
@@ -136,7 +137,9 @@
                 <Table.Row>
                     <Table.Head class="whitespace-nowrap">Project</Table.Head>
                     <Table.Cell
-                        ><ClickableStringFilter term="project" value={$projectResponse.data.id}>{$projectResponse.data.name}</ClickableStringFilter></Table.Cell
+                        ><ClickableProjectFilter organization={$projectResponse.data.organization_id} value={[$projectResponse.data.id]}
+                            >{$projectResponse.data.name}</ClickableProjectFilter
+                        ></Table.Cell
                     >
                 </Table.Row>
             {/if}

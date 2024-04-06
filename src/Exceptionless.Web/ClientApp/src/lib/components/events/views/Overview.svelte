@@ -27,6 +27,7 @@
     import { Button } from '$comp/ui/button';
     import H4 from '$comp/typography/H4.svelte';
     import A from '$comp/typography/A.svelte';
+    import ClickableTypeFilter from '$comp/filters/ClickableTypeFilter.svelte';
 
     export let event: PersistentEvent;
 
@@ -97,9 +98,9 @@
                 <Table.Head class="whitespace-nowrap">Reference</Table.Head>
                 <Table.Cell>
                     {#if isSessionStart}
-                        <ClickableSessionFilter sessionId={event.reference_id}>{event.reference_id}</ClickableSessionFilter>
+                        <ClickableSessionFilter value={event.reference_id}>{event.reference_id}</ClickableSessionFilter>
                     {:else}
-                        <ClickableReferenceFilter referenceId={event.reference_id}>{event.reference_id}</ClickableReferenceFilter>
+                        <ClickableReferenceFilter value={event.reference_id}>{event.reference_id}</ClickableReferenceFilter>
                     {/if}
                 </Table.Cell>
             </Table.Row>
@@ -107,7 +108,7 @@
         {#each references as reference (reference.id)}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">{reference.name}</Table.Head>
-                <Table.Cell><ClickableReferenceFilter referenceId={reference.id}>{reference.id}</ClickableReferenceFilter></Table.Cell>
+                <Table.Cell><ClickableReferenceFilter value={reference.id}>{reference.id}</ClickableReferenceFilter></Table.Cell>
             </Table.Row>
         {/each}
         {#if level}
@@ -119,7 +120,7 @@
         {#if event.type !== 'error'}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell><ClickableStringFilter term="type" value={event.type}>{event.type}</ClickableStringFilter></Table.Cell>
+                <Table.Cell><ClickableTypeFilter value={[event.type]}>{event.type}</ClickableTypeFilter></Table.Cell>
             </Table.Row>
         {/if}
         {#if hasError}

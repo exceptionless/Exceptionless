@@ -10,11 +10,10 @@
     import * as DataTable from '$comp/data-table';
     import { getOptions } from './options';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
-    import SearchInput from '$comp/SearchInput.svelte';
-    import { limit, onFilterInputChanged } from '$lib/stores/events';
 
     export let filter: Readable<string>;
     export let pageFilter: string | undefined = undefined;
+    export let limit: Readable<number>;
     export let time: Readable<string>;
     export let mode: GetEventsMode = 'summary';
 
@@ -63,9 +62,7 @@
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>
-        <slot name="toolbar">
-            <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
-        </slot>
+        <slot name="toolbar" />
     </DataTable.Toolbar>
     <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
     <DataTable.Pagination {table}>
