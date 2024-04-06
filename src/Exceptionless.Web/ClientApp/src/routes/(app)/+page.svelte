@@ -1,32 +1,41 @@
 <script lang="ts">
+    import { derived } from 'svelte/store';
+    import { persisted } from 'svelte-persisted-store';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
+
+    import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
-    import * as DataTable from '$comp/data-table';
     import * as Sheet from '$comp/ui/sheet';
-    import SearchInput from '$comp/SearchInput.svelte';
-    import PieChartCard from '$comp/events/cards/pie-chart-card.svelte';
+    import * as FacetedFilter from '$comp/faceted-filter';
 
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import { eventTypes, stackStatuses } from '$comp/events/options';
+
+    import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-    import {
-        filter,
-        filterValues,
-        filterWithFaceted,
-        onFacetValuesChanged,
-        onFilterChanged,
-        onFilterInputChanged,
-        resetFilterValues,
-        time
-    } from '$lib/stores/events';
-    import DateRangeDropdown from '$comp/DateRangeDropdown.svelte';
-    import { Button } from '$comp/ui/button';
+    import { toFacetedFilters } from '$comp/filters/facets';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
         selectedEventId = detail.id;
+    }
+
+    const limit = persisted<number>('events.limit', 10);
+    const defaultFilters = getDefaultFilters();
+    const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
+    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
+
+    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.key !== 'date:date')));
+    const facets = derived(filters, ($filters) => toFacetedFilters($filters));
+    const time = derived(filters, ($filters) => ($filters.find((f) => f.key === 'date:date') as DateFilter).value as string);
+
+    function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
+        filterChanged(filters, detail);
+    }
+
+    function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
+        filterRemoved(filters, defaultFilters, detail);
     }
 </script>
 
@@ -36,30 +45,13 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable filter={filterWithFaceted} {time} on:rowclick={onRowClick}>
+            <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
-                    <SearchInput class="h-8 w-80 lg:w-[350px] xl:w-[550px]" value={$filter} on:input={onFilterInputChanged} />
-
-                    <DataTable.FacetedFilterContainer {filterValues} {resetFilterValues}>
-                        <DataTable.FacetedFilter
-                            title="Status"
-                            key="status"
-                            values={$filterValues.status}
-                            options={stackStatuses}
-                            onValueChange={onFacetValuesChanged}
-                        ></DataTable.FacetedFilter>
-
-                        <DataTable.FacetedFilter title="Type" key="type" values={$filterValues.type} options={eventTypes} onValueChange={onFacetValuesChanged}
-                        ></DataTable.FacetedFilter>
-                    </DataTable.FacetedFilterContainer>
-
-                    <DateRangeDropdown bind:value={$time}></DateRangeDropdown>
+                    <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
                 </svelte:fragment>
             </EventsDataTable>
         </Card.Content>
     </Card.Root>
-
-    <PieChartCard title="Status"></PieChartCard>
 </div>
 
 <Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>

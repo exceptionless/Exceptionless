@@ -81,7 +81,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// </summary>
     /// <param name="mode">If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
-    public async Task<ActionResult<ViewOrganization>> GetAsync(string? mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? mode = null)
     {
         var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
         var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
@@ -120,7 +120,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Get by id
     /// </summary>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="mode">If no mode is set then the a light weight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetOrganizationById")]
     public async Task<ActionResult<ViewOrganization>> GetAsync(string id, string? mode = null)
