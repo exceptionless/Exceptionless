@@ -1,6 +1,7 @@
 import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
 import type { Serializer } from 'svelte-persisted-store';
+import { get, type Writable } from 'svelte/store';
 
 export interface IFilter {
     readonly type: string;
@@ -428,23 +429,6 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
     }
 }
 
-export function defaultFilters(includeDates: boolean = true): IFilter[] {
-    return [
-        new OrganizationFilter(''),
-        new ProjectFilter('', []),
-        new StatusFilter([]),
-        new TypeFilter([]),
-        new DateFilter('date', 'last week'),
-        new KeywordFilter('')
-    ].filter((f) => includeDates || f.type !== 'date');
-}
-
-export function getFilterTypes(includeDates: boolean = true): string[] {
-    return ['organization', 'project', 'status', 'type', 'date', 'boolean', 'number', 'reference', 'session', 'string', 'version', 'keyword'].filter(
-        (f) => includeDates || f !== 'date'
-    );
-}
-
 export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
     const existingFilter = filters.find((f) => f.key === filter.key && ('term' in f && 'term' in filter ? f.term === filter.term : true));
     if (existingFilter) {
@@ -456,21 +440,6 @@ export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
             }
         } else {
             Object.assign(existingFilter, filter);
-        }
-    } else {
-        filters.push(filter);
-    }
-
-    return filters;
-}
-
-export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
-    const index = filters.findIndex((f) => f.type === filter.type && ('term' in f && 'term' in filter ? f.term === filter.term : true));
-    if (index >= 0) {
-        if (filters[index].toFilter() === filter.toFilter()) {
-            filters.splice(index, 1);
-        } else {
-            filters[index] = filter;
         }
     } else {
         filters.push(filter);
@@ -500,4 +469,72 @@ export class FilterSerializer implements Serializer<IFilter[]> {
     public stringify(object: IFilter[]): string {
         return JSON.stringify(object);
     }
+}
+
+export function getDefaultFilters(includeDateFilter = true): IFilter[] {
+    return [
+        new OrganizationFilter(),
+        new ProjectFilter(undefined, []),
+        new StatusFilter([]),
+        new TypeFilter([]),
+        new DateFilter('date', 'last week'),
+        new ReferenceFilter(),
+        new SessionFilter(),
+        new KeywordFilter()
+    ].filter((f) => includeDateFilter || f.type !== 'date');
+}
+
+export function filterChanged(filters: Writable<IFilter[]>, updated: IFilter): void {
+    filters.set(processFilterRules(setFilter(get(filters), updated), updated));
+}
+
+export function filterRemoved(filters: Writable<IFilter[]>, defaultFilters: IFilter[], removed?: IFilter): void {
+    // If detail is undefined, remove all filters.
+    if (!removed) {
+        filters.set(defaultFilters);
+    } else if (defaultFilters.find((f) => f.key === removed.key)) {
+        filters.set(processFilterRules(setFilter(get(filters), removed), removed));
+    } else {
+        filters.set(
+            processFilterRules(
+                get(filters).filter((f) => f.key !== removed.key),
+                removed
+            )
+        );
+    }
+}
+
+export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
+    // Allow only one filter per type and term.
+    const groupedFilters: Partial<Record<string, IFilter[]>> = Object.groupBy(filters, (f: IFilter) => f.key);
+    const filtered: IFilter[] = [];
+    Object.entries(groupedFilters).forEach(([, items]) => {
+        if (items && items.length > 0) {
+            filtered.push(items[0]);
+        }
+    });
+
+    const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
+    if (projectFilter) {
+        let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
+
+        // If there is a project filter, verify the organization filter is set
+        if (!organizationFilter) {
+            organizationFilter = new OrganizationFilter(projectFilter.organization);
+            filtered.push(organizationFilter);
+        }
+
+        // If the organization filter changes and organization is not set on the project filter, clear the project filter
+        if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
+            projectFilter.organization = organizationFilter.value;
+            projectFilter.value = [];
+        }
+
+        // If the project filter changes and the organization filter is not set, set it
+        if (organizationFilter.value !== projectFilter.organization) {
+            organizationFilter.value = projectFilter.organization;
+        }
+    }
+
+    return filtered;
 }

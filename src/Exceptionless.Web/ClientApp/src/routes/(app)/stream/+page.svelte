@@ -10,23 +10,11 @@
 
     import EventsTailLogDataTable from '$comp/events/table/EventsTailLogDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    import KeywordFacetedFilter from '$comp/filters/facets/KeywordFacetedFilter.svelte';
-    import OrganizationFacetedFilter from '$comp/filters/facets/OrganizationFacetedFilter.svelte';
-    import ProjectFacetedFilter from '$comp/filters/facets/ProjectFacetedFilter.svelte';
-    import StatusFacetedFilter from '$comp/filters/facets/StatusFacetedFilter.svelte';
-    import TypeFacetedFilter from '$comp/filters/facets/TypeFacetedFilter.svelte';
-    import {
-        StatusFilter,
-        TypeFilter,
-        type IFilter,
-        FilterSerializer,
-        KeywordFilter,
-        toFilter,
-        OrganizationFilter,
-        ProjectFilter
-    } from '$comp/filters/filters';
+    import { type IFilter, FilterSerializer, toFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters';
+    import { toFacetedFilters } from '$comp/filters/facets';
 
     let selectedEventId: string | null = null;
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
@@ -34,57 +22,32 @@
     }
 
     const limit = persisted<number>('events.stream.limit', 10);
-    const defaultFilters = [new OrganizationFilter(''), new ProjectFilter('', []), new StatusFilter([]), new TypeFilter([]), new KeywordFilter('')];
+    const defaultFilters = getDefaultFilters(false);
     const filters = persisted<IFilter[]>('events.stream.filters', defaultFilters, { serializer: new FilterSerializer() });
-    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
+    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
 
     const filter = derived(filters, ($filters) => toFilter($filters));
-    const facets = derived(filters, ($filters) => [
-        {
-            title: 'Organization',
-            component: OrganizationFacetedFilter,
-            filter: $filters.find((f) => f.type === 'organization')!
-        },
-        {
-            title: 'Project',
-            component: ProjectFacetedFilter,
-            filter: $filters.find((f) => f.type === 'project')!
-        },
-        {
-            title: 'Status',
-            component: StatusFacetedFilter,
-            filter: $filters.find((f) => f.type === 'status')!
-        },
-        {
-            title: 'Type',
-            component: TypeFacetedFilter,
-            filter: $filters.find((f) => f.type === 'type')!
-        },
-        {
-            title: 'Keyword',
-            component: KeywordFacetedFilter,
-            filter: $filters.find((f) => f.type === 'keyword')!
-        }
-    ]);
+    const facets = derived(filters, ($filters) => toFacetedFilters($filters));
 
-    function onFiltersChanged({ detail }: CustomEvent<IFilter[]>) {
-        const organizationFilter = detail.find((f) => f.type === 'organization') as OrganizationFilter;
-        const projectFilter = detail.find((f) => f.type === 'project') as ProjectFilter;
-        if (organizationFilter.value !== projectFilter.organization) {
-            projectFilter.organization = organizationFilter.value;
-            projectFilter.value = [];
+    function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
+        if (detail.key !== 'date:date') {
+            filterChanged(filters, detail);
         }
+    }
 
-        filters.set(detail);
+    function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
+        filterRemoved(filters, defaultFilters, detail);
     }
 </script>
+
+<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>
     <Card.Content>
         <EventsTailLogDataTable {filter} {limit} on:rowclick={onRowClick}>
             <svelte:fragment slot="toolbar">
-                <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
+                <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
             </svelte:fragment>
         </EventsTailLogDataTable>
     </Card.Content></Card.Root

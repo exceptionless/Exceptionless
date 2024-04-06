@@ -1,6 +1,6 @@
 import type { FacetedFilter } from '$comp/faceted-filter';
 import { writable } from 'svelte/store';
-import type { BooleanFilter, DateFilter, IFilter, NumberFilter, StringFilter, VersionFilter } from '../filters';
+import { type BooleanFilter, type DateFilter, type IFilter, type NumberFilter, type StringFilter, type VersionFilter } from '../filters';
 
 import BooleanFacetedFilter from './BooleanFacetedFilter.svelte';
 import DateFacetedFilter from './DateFacetedFilter.svelte';
