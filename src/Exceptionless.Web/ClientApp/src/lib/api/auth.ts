@@ -1,14 +1,20 @@
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { env } from '$env/dynamic/public';
-import { persisted } from 'svelte-local-storage-store';
+import { persisted } from 'svelte-persisted-store';
 import { derived, get } from 'svelte/store';
 
 import { globalFetchClient } from './FetchClient';
 
 import type { Login, TokenResult } from '$lib/models/api';
 
-export const accessToken = persisted<string | null>('satellizer_token', null);
+export const accessToken = persisted<string | null>('satellizer_token', null, {
+    serializer: {
+        parse: (s) => (s === 'null' ? null : s),
+        stringify: (s) => s as string
+    }
+});
+
 export const isAuthenticated = derived(accessToken, ($accessToken) => $accessToken !== null);
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;

@@ -1,8 +1,8 @@
 <script lang="ts">
     import { Checkbox as CheckboxPrimitive } from 'bits-ui';
-    import IconCheck from '~icons/mdi/check';
-    import IconRemove from '~icons/mdi/remove';
-    import { cn } from '$lib/utils';
+    import Check from '~icons/mdi/check';
+    import Minus from '~icons/mdi/remove';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = CheckboxPrimitive.Props;
     type $$Events = CheckboxPrimitive.Events;
@@ -23,9 +23,9 @@
 >
     <CheckboxPrimitive.Indicator class={cn('flex h-4 w-4 items-center justify-center text-current')} let:isChecked let:isIndeterminate>
         {#if isIndeterminate}
-            <IconRemove class="h-3.5 w-3.5" />
+            <Minus class="h-3.5 w-3.5" />
         {:else}
-            <IconCheck class={cn('h-3.5 w-3.5', !isChecked && 'text-transparent')} />
+            <Check class={cn('h-3.5 w-3.5', !isChecked && 'text-transparent')} />
         {/if}
     </CheckboxPrimitive.Indicator>
 </CheckboxPrimitive.Root>
