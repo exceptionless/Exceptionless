@@ -1,27 +1,41 @@
 import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
-import type { Serializer } from 'svelte-local-storage-store';
+import type { Serializer } from 'svelte-persisted-store';
+import { get, type Writable } from 'svelte/store';
 
 export interface IFilter {
     readonly type: string;
+    readonly key: string;
+    isEmpty(): boolean;
+    reset(): void;
     toFilter(): string;
-}
-
-export interface IFacetedFilter extends IFilter {
-    term: string;
-    values: unknown[];
-    faceted: boolean;
 }
 
 export class BooleanFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: boolean
     ) {}
 
     public type: string = 'boolean';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -32,13 +46,29 @@ export class BooleanFilter implements IFilter {
 
 export class DateFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: Date | string
     ) {}
 
     public type: string = 'date';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -49,24 +79,56 @@ export class DateFilter implements IFilter {
 }
 
 export class KeywordFilter implements IFilter {
-    constructor(public keyword: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'keyword';
 
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return !this.value?.trim();
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
-        return this.keyword;
+        if (this.isEmpty()) {
+            return '';
+        }
+
+        return this.value!.trim();
     }
 }
 
 export class NumberFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: number
     ) {}
 
     public type: string = 'number';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -75,56 +137,173 @@ export class NumberFilter implements IFilter {
     }
 }
 
+export class OrganizationFilter implements IFilter {
+    constructor(public value?: string) {}
+
+    public type: string = 'organization';
+
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return !this.value?.trim();
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
+    public toFilter(): string {
+        if (this.isEmpty()) {
+            return '';
+        }
+
+        return `organization:${this.value}`;
+    }
+}
+
+export class ProjectFilter implements IFilter {
+    constructor(
+        public organization: string | undefined,
+        public value: string[]
+    ) {}
+
+    public type: string = 'project';
+
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return this.value.length === 0;
+    }
+
+    public reset(): void {
+        this.value = [];
+    }
+
+    public toFilter(): string {
+        if (this.value.length == 0) {
+            return '';
+        }
+
+        if (this.value.length == 1) {
+            return `project:${this.value[0]}`;
+        }
+
+        return `(${this.value.map((val) => `project:${val}`).join(' OR ')})`;
+    }
+}
+
 export class ReferenceFilter implements IFilter {
-    constructor(public referenceId: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'reference';
 
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return !this.value?.trim();
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
-        return `reference:${quoteIfSpecialCharacters(this.referenceId)}`;
+        if (this.isEmpty()) {
+            return '';
+        }
+
+        return `reference:${quoteIfSpecialCharacters(this.value)}`;
     }
 }
 
 export class SessionFilter implements IFilter {
-    constructor(public sessionId: string) {}
+    constructor(public value?: string) {}
 
     public type: string = 'session';
 
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return !this.value?.trim();
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
-        const session = quoteIfSpecialCharacters(this.sessionId);
+        if (this.isEmpty()) {
+            return '';
+        }
+
+        const session = quoteIfSpecialCharacters(this.value);
         return `(reference:${session} OR ref.session:${session})`;
     }
 }
 
-export class StatusFilter implements IFacetedFilter {
-    constructor(public values: StackStatus[]) {}
+export class StatusFilter implements IFilter {
+    constructor(public value: StackStatus[]) {}
 
-    public term: string = 'status';
     public type: string = 'status';
-    public faceted: boolean = true;
+
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return this.value.length === 0;
+    }
+
+    public reset(): void {
+        this.value = [];
+    }
 
     public toFilter(): string {
-        if (this.values.length == 0) {
+        if (this.value.length == 0) {
             return '';
         }
 
-        if (this.values.length == 1) {
-            return `${this.term}:${this.values[0]}`;
+        if (this.value.length == 1) {
+            return `status:${this.value[0]}`;
         }
 
-        return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
+        return `(${this.value.map((val) => `status:${val}`).join(' OR ')})`;
     }
 }
 
 export class StringFilter implements IFilter {
     constructor(
-        public term: string,
-        public value?: string | null
+        public term?: string,
+        public value?: string
     ) {}
 
     public type: string = 'string';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -133,35 +312,61 @@ export class StringFilter implements IFilter {
     }
 }
 
-export class TypeFilter implements IFacetedFilter {
-    constructor(public values: PersistentEventKnownTypes[]) {}
+export class TypeFilter implements IFilter {
+    constructor(public value: PersistentEventKnownTypes[]) {}
 
-    public term: string = 'type';
     public type: string = 'type';
-    public faceted: boolean = true;
+
+    public get key(): string {
+        return this.type;
+    }
+
+    public isEmpty(): boolean {
+        return this.value.length === 0;
+    }
+
+    public reset(): void {
+        this.value = [];
+    }
 
     public toFilter(): string {
-        if (this.values.length == 0) {
+        if (this.value.length == 0) {
             return '';
         }
 
-        if (this.values.length == 1) {
-            return `${this.term}:${this.values[0]}`;
+        if (this.value.length == 1) {
+            return `type:${this.value[0]}`;
         }
 
-        return `(${this.values.map((val) => `${this.term}:${val}`).join(' OR ')})`;
+        return `(${this.value.map((val) => `type:${val}`).join(' OR ')})`;
     }
 }
 
 export class VersionFilter implements IFilter {
     constructor(
-        public term: string,
+        public term?: string,
         public value?: string
     ) {}
 
     public type: string = 'version';
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
+    public isEmpty(): boolean {
+        return this.value === undefined;
+    }
+
+    public reset(): void {
+        this.value = undefined;
+    }
+
     public toFilter(): string {
+        if (this.term === undefined) {
+            return '';
+        }
+
         if (this.value === undefined) {
             return `_missing_:${this.term}`;
         }
@@ -185,154 +390,59 @@ export function quote(value?: string | null): string | undefined {
     return value ? `"${value}"` : undefined;
 }
 
-export function toFilter(filters: IFilter[], includeFaceted: boolean = false): string {
+export function toFilter(filters: IFilter[]): string {
     return filters
-        .filter((f) => includeFaceted || !isFaceted(f))
         .map((f) => f.toFilter())
+        .filter(Boolean)
         .join(' ')
         .trim();
 }
 
-/**
- * Update the filters with the given filter. If the filter already exists, it will be removed.
- * @param filters The filters
- * @param filter The filter to add or remove
- * @returns The updated filters
- */
-export function toggleFilter(filters: IFilter[], filter: IFilter): IFilter[] {
-    const index = filters.findIndex((f) => (f.type === filter.type && isFaceted(f) && isFaceted(filter)) || f.toFilter() === filter.toFilter());
-
-    if (index >= 0) {
-        filters.splice(index, 1);
-    } else {
-        filters.push(filter);
-    }
-
-    return filters;
-}
-
-/**
- *  Adds or updates a given faceted filter if it has values, otherwise it will be removed
- * @param filters The filters
- * @param filter The filter to add, update or remove.
- * @returns true if filters has been modified
- */
-export function upsertOrRemoveFacetFilter(filters: IFilter[], filter: IFacetedFilter): boolean {
-    const index = filters.findIndex((f) => f.type === filter.type && isFaceted(f));
-
-    // If the filter has no values, remove it.
-    if (!filter.values || filter.values.length == 0) {
-        if (index >= 0) {
-            filters.splice(index, 1);
-            return true;
-        }
-
-        return false;
-    }
-
-    if (index >= 0) {
-        if (filter.toFilter() === filters[index].toFilter()) {
-            return false;
-        }
-
-        filters[index] = filter;
-    } else {
-        filters.push(filter);
-    }
-
-    return true;
-}
-
-/**
- * Given the existing filters try and parse out any existing filters while adding new user filters as a keyword filter.
- * @param filters The current filters
- * @param filter The current filter string that was modified by the user
- * @returns The updated filter
- */
-export function parseFilter(filters: IFilter[], input: string): IFilter[] {
-    const resolvedFilters: IFilter[] = [];
-
-    const keywordFilterParts = [];
-    for (const filter of filters) {
-        if (isFaceted(filter)) {
-            resolvedFilters.push(filter);
-            continue;
-        }
-
-        input = input?.trim();
-        if (!input) {
-            continue;
-        }
-
-        // NOTE: This is a super naive implementation...
-        const part = filter.toFilter();
-        if (part) {
-            // Check for whole word / phrase match
-            const regex = new RegExp(`(^|\\s)${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`);
-            if (regex.test(input)) {
-                input = input.replace(regex, '');
-                if (filter instanceof KeywordFilter) {
-                    keywordFilterParts.push(part);
-                } else {
-                    resolvedFilters.push(filter);
-                }
-            }
-        }
-    }
-
-    input = `${keywordFilterParts.join(' ')} ${input ?? ''}`.trim();
-    if (input) {
-        resolvedFilters.push(new KeywordFilter(input));
-    }
-
-    return resolvedFilters;
-}
-
-export function getFilter(filter: Record<string, unknown>): IFilter | undefined {
+export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'> & Record<string, unknown>): IFilter | undefined {
     switch (filter.type) {
         case 'boolean':
             return new BooleanFilter(filter.term as string, filter.value as boolean);
         case 'date':
             return new DateFilter(filter.term as string, filter.value as Date);
         case 'keyword':
-            return new KeywordFilter(filter.keyword as string);
+            return new KeywordFilter(filter.value as string);
         case 'number':
             return new NumberFilter(filter.term as string, filter.value as number);
+        case 'organization':
+            return new OrganizationFilter(filter.value as string);
+        case 'project':
+            return new ProjectFilter(filter.organization as string, filter.value as string[]);
         case 'reference':
-            return new ReferenceFilter(filter.referenceId as string);
+            return new ReferenceFilter(filter.value as string);
         case 'session':
-            return new SessionFilter(filter.sessionId as string);
+            return new SessionFilter(filter.value as string);
         case 'status':
-            return new StatusFilter(filter.values as StackStatus[]);
+            return new StatusFilter(filter.value as StackStatus[]);
         case 'string':
             return new StringFilter(filter.term as string, filter.value as string);
         case 'type':
-            return new TypeFilter(filter.values as PersistentEventKnownTypes[]);
+            return new TypeFilter(filter.value as PersistentEventKnownTypes[]);
         case 'version':
             return new VersionFilter(filter.term as string, filter.value as string);
+        default:
+            throw new Error(`Unknown filter type: ${filter.type}`);
     }
 }
 
-function isFaceted(filter: IFilter): filter is IFacetedFilter {
-    return 'faceted' in filter;
-}
-
-const FACETED_FILTER_TYPES = ['status', 'type'];
-export function toFacetedValues(filters: IFilter[]): Record<string, unknown[]> {
-    const values: Record<string, unknown[]> = {};
-    for (const filterType of FACETED_FILTER_TYPES) {
-        const filter = filters.find((f) => f.type === filterType && isFaceted(f)) as IFacetedFilter | undefined;
-        values[filterType] = filter?.values ?? [];
-    }
-
-    return values;
-}
-
-export function resetFacetedValues(filters: IFilter[]): IFilter[] {
-    for (const filter of filters) {
-        if (isFaceted(filter)) {
-            upsertOrRemoveFacetFilter(filters, { ...filter, values: [] });
+export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
+    const existingFilter = filters.find((f) => f.key === filter.key && ('term' in f && 'term' in filter ? f.term === filter.term : true));
+    if (existingFilter) {
+        if ('value' in existingFilter && 'value' in filter) {
+            if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
+                existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
+            } else {
+                existingFilter.value = filter.value;
+            }
+        } else {
+            Object.assign(existingFilter, filter);
         }
+    } else {
+        filters.push(filter);
     }
 
     return filters;
@@ -347,7 +457,7 @@ export class FilterSerializer implements Serializer<IFilter[]> {
         const data: unknown[] = JSON.parse(text);
         const filters: IFilter[] = [];
         for (const filterData of data) {
-            const filter = getFilter(filterData as Record<string, unknown>);
+            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
             if (filter) {
                 filters.push(filter);
             }
@@ -359,4 +469,72 @@ export class FilterSerializer implements Serializer<IFilter[]> {
     public stringify(object: IFilter[]): string {
         return JSON.stringify(object);
     }
+}
+
+export function getDefaultFilters(includeDateFilter = true): IFilter[] {
+    return [
+        new OrganizationFilter(),
+        new ProjectFilter(undefined, []),
+        new StatusFilter([]),
+        new TypeFilter([]),
+        new DateFilter('date', 'last week'),
+        new ReferenceFilter(),
+        new SessionFilter(),
+        new KeywordFilter()
+    ].filter((f) => includeDateFilter || f.type !== 'date');
+}
+
+export function filterChanged(filters: Writable<IFilter[]>, updated: IFilter): void {
+    filters.set(processFilterRules(setFilter(get(filters), updated), updated));
+}
+
+export function filterRemoved(filters: Writable<IFilter[]>, defaultFilters: IFilter[], removed?: IFilter): void {
+    // If detail is undefined, remove all filters.
+    if (!removed) {
+        filters.set(defaultFilters);
+    } else if (defaultFilters.find((f) => f.key === removed.key)) {
+        filters.set(processFilterRules(setFilter(get(filters), removed), removed));
+    } else {
+        filters.set(
+            processFilterRules(
+                get(filters).filter((f) => f.key !== removed.key),
+                removed
+            )
+        );
+    }
+}
+
+export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
+    // Allow only one filter per type and term.
+    const groupedFilters: Partial<Record<string, IFilter[]>> = Object.groupBy(filters, (f: IFilter) => f.key);
+    const filtered: IFilter[] = [];
+    Object.entries(groupedFilters).forEach(([, items]) => {
+        if (items && items.length > 0) {
+            filtered.push(items[0]);
+        }
+    });
+
+    const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
+    if (projectFilter) {
+        let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
+
+        // If there is a project filter, verify the organization filter is set
+        if (!organizationFilter) {
+            organizationFilter = new OrganizationFilter(projectFilter.organization);
+            filtered.push(organizationFilter);
+        }
+
+        // If the organization filter changes and organization is not set on the project filter, clear the project filter
+        if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
+            projectFilter.organization = organizationFilter.value;
+            projectFilter.value = [];
+        }
+
+        // If the project filter changes and the organization filter is not set, set it
+        if (organizationFilter.value !== projectFilter.organization) {
+            organizationFilter.value = projectFilter.organization;
+        }
+    }
+
+    return filtered;
 }

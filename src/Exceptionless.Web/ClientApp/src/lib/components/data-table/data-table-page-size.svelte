@@ -35,7 +35,7 @@
 <div class="flex items-center space-x-2">
     <p class="text-sm font-medium">Rows per page</p>
     <Select.Root {items} bind:selected {onSelectedChange}>
-        <Select.Trigger class="w-[180px]">
+        <Select.Trigger class="h-8 w-[70px]">
             <Select.Value placeholder="Select page size" />
         </Select.Trigger>
         <Select.Content>

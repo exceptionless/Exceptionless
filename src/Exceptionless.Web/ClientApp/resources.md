@@ -68,7 +68,7 @@
 
 ## Storage
 
--   <https://github.com/joshnuss/svelte-local-storage-store>
+-   <https://github.com/joshnuss/svelte-persisted-store>
 
 ## i18n
 

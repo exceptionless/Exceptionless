@@ -75,10 +75,10 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="sort">Controls the sort order that the data is returned in. In this example -created returns the results descending by the created date.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewProject>>> GetAllAsync(string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
     {
         var organizations = await GetSelectedOrganizationsAsync(_organizationRepository, _projectRepository, _stackRepository, filter);
         if (organizations.Count == 0)
@@ -105,7 +105,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <param name="organizationId">The identifier of the organization.</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The organization could not be found.</response>
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -131,7 +131,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// Get by id
     /// </summary>
     /// <param name="id">The identifier of the project.</param>
-    /// <param name="mode">If no mode is set then the a light weight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
+    /// <param name="mode">If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}", Name = "GetProjectById")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -212,7 +212,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     #endregion
 
-    [Obsolete]
+    [Obsolete("Use /api/v2/projects/config instead")]
     [HttpGet("~/api/v1/project/config")]
     public Task<ActionResult<ClientConfiguration>> GetV1ConfigAsync(int? v = null)
     {
@@ -331,7 +331,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             ProjectId = project.Id
         });
 
-        return WorkInProgress(new[] { workItemId });
+        return WorkInProgress([workItemId]);
     }
 
     [HttpGet("{id:objectid}/notifications")]
@@ -473,9 +473,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
             return NotFound();
 
-        if (project.NotificationSettings.ContainsKey(userId))
+        if (project.NotificationSettings.Remove(userId))
         {
-            project.NotificationSettings.Remove(userId);
             await _repository.SaveAsync(project, o => o.Cache());
         }
 
@@ -560,7 +559,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (String.IsNullOrWhiteSpace(name))
             return false;
 
-        var organizationIds = IsInOrganization(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
+        var organizationIds = IsInOrganization(organizationId) ? [organizationId] : GetAssociatedOrganizationIds();
         var projects = await _repository.GetByOrganizationIdsAsync(organizationIds);
 
         string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
@@ -580,7 +579,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> PostDataAsync(string id, string key, ValueFromBody<string> value)
     {
-        if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith("-"))
+        if (String.IsNullOrWhiteSpace(key) || String.IsNullOrWhiteSpace(value?.Value) || key.StartsWith('-'))
             return BadRequest();
 
         var project = await GetModelAsync(id, false);
@@ -605,7 +604,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> DeleteDataAsync(string id, string key)
     {
-        if (String.IsNullOrWhiteSpace(key) || key.StartsWith("-"))
+        if (String.IsNullOrWhiteSpace(key) || key.StartsWith('-'))
             return BadRequest();
 
         var project = await GetModelAsync(id, false);

@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { cn } from '$lib/utils';
     import { Select as SelectPrimitive } from 'bits-ui';
-    import IconCheck from '~icons/mdi/check';
+    import Check from '~icons/mdi/check';
+    import { cn } from '$lib/utils.js';
 
     type $$Props = SelectPrimitive.ItemProps;
     type $$Events = Required<SelectPrimitive.ItemEvents>;
@@ -28,8 +28,10 @@
 >
     <span class="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-            <IconCheck class="h-4 w-4" />
+            <Check class="h-4 w-4" />
         </SelectPrimitive.ItemIndicator>
     </span>
-    <slot />
+    <slot>
+        {label || value}
+    </slot>
 </SelectPrimitive.Item>

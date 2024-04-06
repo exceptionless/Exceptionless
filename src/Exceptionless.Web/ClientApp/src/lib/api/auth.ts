@@ -1,7 +1,7 @@
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { env } from '$env/dynamic/public';
-import { persisted } from 'svelte-local-storage-store';
+import { persisted } from 'svelte-persisted-store';
 import { derived, get } from 'svelte/store';
 
 import { globalFetchClient } from './FetchClient';
