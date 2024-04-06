@@ -31,13 +31,13 @@ public sealed class EventStackFilterTests : IntegrationTestsBase
     {
         await base.ResetDataAsync();
 
-        var oldLoggingLevel = Log.MinimumLevel;
-        Log.MinimumLevel = LogLevel.Warning;
+        var oldLoggingLevel = Log.DefaultMinimumLevel;
+        Log.DefaultMinimumLevel = LogLevel.Warning;
 
         await StackData.CreateSearchDataAsync(_stackRepository, GetService<JsonSerializer>());
         await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
 
-        Log.MinimumLevel = oldLoggingLevel;
+        Log.DefaultMinimumLevel = oldLoggingLevel;
     }
 
     [Theory]
