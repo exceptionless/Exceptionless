@@ -11,25 +11,11 @@
     import { getEventsByStackIdQuery } from '$api/eventsApi';
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    import DateFacetedFilter from '$comp/filters/facets/DateFacetedFilter.svelte';
-    import KeywordFacetedFilter from '$comp/filters/facets/KeywordFacetedFilter.svelte';
-    import OrganizationFacetedFilter from '$comp/filters/facets/OrganizationFacetedFilter.svelte';
-    import ProjectFacetedFilter from '$comp/filters/facets/ProjectFacetedFilter.svelte';
-    import StatusFacetedFilter from '$comp/filters/facets/StatusFacetedFilter.svelte';
-    import TypeFacetedFilter from '$comp/filters/facets/TypeFacetedFilter.svelte';
-    import {
-        StatusFilter,
-        TypeFilter,
-        type IFilter,
-        FilterSerializer,
-        KeywordFilter,
-        toFilter,
-        OrganizationFilter,
-        ProjectFilter,
-        DateFilter
-    } from '$comp/filters/filters';
+    import { type IFilter, FilterSerializer, toFilter, DateFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters';
+    import { toFacetedFilters } from '$comp/filters/facets';
 
     const selectedStackId = writable<string | null>(null);
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
@@ -43,63 +29,26 @@
     });
 
     const limit = persisted<number>('events.issues.limit', 10);
-    const defaultFilters = [
-        new OrganizationFilter(''),
-        new ProjectFilter('', []),
-        new StatusFilter([]),
-        new TypeFilter([]),
-        new DateFilter('date', 'last week'),
-        new KeywordFilter('')
-    ];
+    const defaultFilters = getDefaultFilters().filter((f) => f.key !== 'type');
     const filters = persisted<IFilter[]>('events.issues.filters', defaultFilters, { serializer: new FilterSerializer() });
-    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.type === df.type)));
+    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
 
-    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.type !== 'date')));
-    const facets = derived(filters, ($filters) => [
-        {
-            title: 'Organization',
-            component: OrganizationFacetedFilter,
-            filter: $filters.find((f) => f.type === 'organization')!
-        },
-        {
-            title: 'Project',
-            component: ProjectFacetedFilter,
-            filter: $filters.find((f) => f.type === 'project')!
-        },
-        {
-            title: 'Status',
-            component: StatusFacetedFilter,
-            filter: $filters.find((f) => f.type === 'status')!
-        },
-        {
-            title: 'Type',
-            component: TypeFacetedFilter,
-            filter: $filters.find((f) => f.type === 'type')!
-        },
-        {
-            title: 'Date Range',
-            component: DateFacetedFilter,
-            filter: $filters.find((f) => f.type === 'date')!
-        },
-        {
-            title: 'Keyword',
-            component: KeywordFacetedFilter,
-            filter: $filters.find((f) => f.type === 'keyword')!
+    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.key !== 'date:date')));
+    const facets = derived(filters, ($filters) => toFacetedFilters($filters));
+    const time = derived(filters, ($filters) => ($filters.find((f) => f.key === 'date:date') as DateFilter).value as string);
+
+    function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
+        if (detail.key !== 'type') {
+            filterChanged(filters, detail);
         }
-    ]);
-    const time = derived(filters, ($filters) => ($filters.find((f) => f.type === 'date') as DateFilter).value as string);
+    }
 
-    function onFiltersChanged({ detail }: CustomEvent<IFilter[]>) {
-        const organizationFilter = detail.find((f) => f.type === 'organization') as OrganizationFilter;
-        const projectFilter = detail.find((f) => f.type === 'project') as ProjectFilter;
-        if (organizationFilter.value !== projectFilter.organization) {
-            projectFilter.organization = organizationFilter.value;
-            projectFilter.value = [];
-        }
-
-        filters.set(detail);
+    function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
+        filterRemoved(filters, defaultFilters, detail);
     }
 </script>
+
+<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
@@ -107,7 +56,7 @@
         <Card.Content>
             <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
                 <svelte:fragment slot="toolbar">
-                    <FacetedFilter.Root {facets} on:changed={onFiltersChanged}></FacetedFilter.Root>
+                    <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
                 </svelte:fragment>
             </EventsDataTable>
         </Card.Content>

@@ -12,20 +12,7 @@
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    import {
-        StatusFilter,
-        TypeFilter,
-        type IFilter,
-        FilterSerializer,
-        KeywordFilter,
-        toFilter,
-        OrganizationFilter,
-        ProjectFilter,
-        DateFilter,
-        setFilter,
-        ReferenceFilter,
-        SessionFilter
-    } from '$comp/filters/filters';
+    import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
 
@@ -35,16 +22,7 @@
     }
 
     const limit = persisted<number>('events.limit', 10);
-    const defaultFilters = [
-        new OrganizationFilter(),
-        new ProjectFilter(undefined, []),
-        new StatusFilter([]),
-        new TypeFilter([]),
-        new DateFilter('date', 'last week'),
-        new ReferenceFilter(),
-        new SessionFilter(),
-        new KeywordFilter()
-    ];
+    const defaultFilters = getDefaultFilters();
     const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
     $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
 
@@ -53,57 +31,11 @@
     const time = derived(filters, ($filters) => ($filters.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        filters.set(processFilterRules(setFilter($filters, detail), detail));
+        filterChanged(filters, detail);
     }
 
     function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
-        // If detail is undefined, remove all filters.
-        if (!detail) {
-            filters.set(defaultFilters);
-        } else if (defaultFilters.find((f) => f.key === detail.key)) {
-            filters.set(processFilterRules(setFilter($filters, detail), detail));
-        } else {
-            filters.set(
-                processFilterRules(
-                    $filters.filter((f) => f.key !== detail.key),
-                    detail
-                )
-            );
-        }
-    }
-
-    function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
-        // Allow only one filter per type and term.
-        const groupedFilters: Record<string, IFilter[]> = Object.groupBy(filters, (f: IFilter) => f.key);
-        const filtered: IFilter[] = [];
-        Object.entries(groupedFilters).forEach(([_, items]) => {
-            console.log(_);
-            filtered.push(items[0]);
-        });
-
-        const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
-        if (projectFilter) {
-            let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
-
-            // If there is a project filter, verify the organization filter is set
-            if (!organizationFilter) {
-                organizationFilter = new OrganizationFilter(projectFilter.organization);
-                filtered.push(organizationFilter);
-            }
-
-            // If the organization filter changes and organization is not set on the project filter, clear the project filter
-            if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
-                projectFilter.organization = organizationFilter.value;
-                projectFilter.value = [];
-            }
-
-            // If the project filter changes and the organization filter is not set, set it
-            if (organizationFilter.value !== projectFilter.organization) {
-                organizationFilter.value = projectFilter.organization;
-            }
-        }
-
-        return filtered;
+        filterRemoved(filters, defaultFilters, detail);
     }
 </script>
 
