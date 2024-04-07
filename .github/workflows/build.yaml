@@ -282,7 +282,8 @@ jobs:
 
   finished:
     needs: [version, deploy]
+    if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Finished Build Pipeline
+      - name: Finished
         run: echo "Finished building version ${{needs.version.outputs.version}}"
