@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  
+
 env:
   TERM: xterm
   DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
@@ -265,9 +265,7 @@ jobs:
 
       - name: Install Helm
         if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.13.0
+        uses: azure/setup-helm@v4
 
       - name: Deploy Changes to Development Environment
         if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
