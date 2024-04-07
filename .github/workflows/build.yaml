@@ -279,3 +279,11 @@ jobs:
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
+
+  deploy-skipped:
+    if: "${{ !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) || github.event_name == 'pull_request' }}"
+    needs: [version,build-docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark Deploy as successful if skipped
+        run: echo "Deploy job was skipped, but we're marking this as successful."
