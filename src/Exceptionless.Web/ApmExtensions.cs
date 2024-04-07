@@ -18,7 +18,7 @@ public static partial class ApmExtensions
         var attributes = new Dictionary<string, object>()
         {
             { "service.namespace", config.ServiceNamespace },
-            { "service.environment", config.ServiceEnvironment }
+            { "deployment.environment", config.DeploymentEnvironment }
         };
 
         if (!String.IsNullOrEmpty(config.ServiceVersion))
@@ -148,7 +148,7 @@ public class ApmConfig
         if (ServiceName.StartsWith('-'))
             ServiceName = ServiceName.Substring(1);
 
-        ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "dev") ?? throw new InvalidOperationException();
+        DeploymentEnvironment = _apmConfig.GetValue("ServiceEnvironment", "dev") ?? throw new InvalidOperationException();
         ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName) ?? throw new InvalidOperationException();
         ServiceVersion = serviceVersion;
         EnableRedis = enableRedis;
@@ -156,7 +156,7 @@ public class ApmConfig
 
     public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
     public string ServiceName { get; }
-    public string ServiceEnvironment { get; }
+    public string DeploymentEnvironment { get; }
     public string ServiceNamespace { get; }
     public string? ServiceVersion { get; }
     public bool FullDetails => _apmConfig.GetValue("FullDetails", false);
