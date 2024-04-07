@@ -24,7 +24,7 @@ Serilog:
     Default: Warning
   WriteTo:
   - Name: Console
-    Args: 
+    Args:
       theme: "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme::None, Serilog.Sinks.Console"
 
 Apm:

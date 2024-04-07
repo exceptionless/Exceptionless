@@ -183,9 +183,7 @@ public class Startup
         app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
-        var apmConfig = app.ApplicationServices.GetRequiredService<ApmConfig>();
-        if (apmConfig.EnableMetrics)
-            app.UseOpenTelemetryPrometheusScrapingEndpoint();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         app.UseHealthChecks("/health", new HealthCheckOptions
         {

@@ -8,7 +8,6 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Serilog;
 
 namespace OpenTelemetry;
 
@@ -16,24 +15,10 @@ public static partial class ApmExtensions
 {
     public static IHostBuilder AddApm(this IHostBuilder builder, ApmConfig config)
     {
-        // check if everything is disabled
-        if (!config.IsEnabled)
-        {
-            Log.Information("APM is disabled");
-            return builder;
-        }
-
-        string apiKey = config.ApiKey;
-        if (!String.IsNullOrEmpty(apiKey) && apiKey.Length > 6)
-            apiKey = String.Concat(apiKey.AsSpan(0, 6), "***");
-
-        Log.Information("Configuring APM: Endpoint={Endpoint} ApiKey={ApiKey} EnableTracing={EnableTracing} EnableLogs={EnableLogs} FullDetails={FullDetails} EnableRedis={EnableRedis} SampleRate={SampleRate}",
-            config.Endpoint, apiKey, config.EnableTracing, config.EnableLogs, config.FullDetails, config.EnableRedis, config.SampleRate);
-
         var attributes = new Dictionary<string, object>()
         {
             { "service.namespace", config.ServiceNamespace },
-            { "service.environment", config.ServiceEnvironment }
+            { "deployment.environment", config.DeploymentEnvironment }
         };
 
         if (!String.IsNullOrEmpty(config.ServiceVersion))
@@ -45,90 +30,66 @@ public static partial class ApmExtensions
             services.AddSingleton(config);
             services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
-            if (config.EnableTracing)
-                services.AddOpenTelemetry().WithTracing(b =>
+            services.AddOpenTelemetry().WithTracing(b =>
+            {
+                b.AddProcessor<ElasticCompatibilityProcessor>();
+                b.SetResourceBuilder(resourceBuilder);
+
+                b.AddAspNetCoreInstrumentation(o =>
                 {
-                    b.SetResourceBuilder(resourceBuilder);
-
-                    b.AddAspNetCoreInstrumentation(o =>
+                    o.Filter = context =>
                     {
-                        o.Filter = context =>
-                        {
-                            return !context.Request.Headers.UserAgent.ToString().Contains("HealthChecker");
-                        };
-                    });
+                        if (context.Request.Path.StartsWithSegments("/api/v2/push", StringComparison.OrdinalIgnoreCase))
+                            return false;
 
-                    b.AddElasticsearchClientInstrumentation(c =>
-                    {
-                        c.SuppressDownstreamInstrumentation = true;
-                        c.ParseAndFormatRequest = config.FullDetails;
-                        c.Enrich = (activity, source, data) =>
-                        {
-                            // truncate statements
-                            if (activity.GetTagItem("db.statement") is string dbStatement && dbStatement.Length > 10000)
-                            {
-                                dbStatement = _stackIdListShortener.Replace(dbStatement, "$1...]");
-                                if (dbStatement.Length > 10000)
-                                    dbStatement = dbStatement.Substring(0, 10000);
+                        if (context.Request.Headers.UserAgent.ToString().Contains("HealthChecker"))
+                            return false;
 
-                                activity.SetTag("db.statement", dbStatement);
-                            }
-
-                            // 404s should not be error
-                            int? httpStatus = activity.GetTagItem("http.status_code") as int?;
-                            if (httpStatus.HasValue && httpStatus.Value == 404)
-                                activity.SetStatus(Status.Unset);
-                        };
-                    });
-
-                    b.AddHttpClientInstrumentation();
-                    b.AddSource("Exceptionless", "Foundatio");
-
-                    if (config.EnableRedis)
-                        b.AddRedisInstrumentation(c =>
-                        {
-                            c.EnrichActivityWithTimingEvents = false;
-                            c.SetVerboseDatabaseStatements = config.FullDetails;
-                        });
-
-                    b.SetSampler(new TraceIdRatioBasedSampler(config.SampleRate));
-
-                    if (config.Console)
-                        b.AddConsoleExporter();
-
-                    if (!String.IsNullOrEmpty(config.Endpoint))
-                    {
-                        if (config.MinDurationMs > 0)
-                        {
-                            // filter out insignificant activities
-                            b.AddFilteredOtlpExporter(c =>
-                            {
-                                if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                    c.Protocol = OtlpExportProtocol.HttpProtobuf;
-
-                                if (!String.IsNullOrEmpty(config.Endpoint))
-                                    c.Endpoint = new Uri(config.Endpoint);
-                                if (!String.IsNullOrEmpty(config.ApiKey))
-                                    c.Headers = $"api-key={config.ApiKey}";
-
-                                c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") is not null;
-                            });
-                        }
-                        else
-                        {
-                            b.AddOtlpExporter(c =>
-                            {
-                                if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                    c.Protocol = OtlpExportProtocol.HttpProtobuf;
-
-                                if (!String.IsNullOrEmpty(config.Endpoint))
-                                    c.Endpoint = new Uri(config.Endpoint);
-                                if (!String.IsNullOrEmpty(config.ApiKey))
-                                    c.Headers = $"api-key={config.ApiKey}";
-                            });
-                        }
-                    }
+                        return true;
+                    };
                 });
+
+                b.AddElasticsearchClientInstrumentation(c =>
+                {
+                    c.SuppressDownstreamInstrumentation = true;
+                    c.ParseAndFormatRequest = config.FullDetails;
+                    c.Enrich = (activity, source, data) =>
+                    {
+                        // truncate statements
+                        if (activity.GetTagItem("db.statement") is string dbStatement && dbStatement.Length > 10000)
+                        {
+                            dbStatement = _stackIdListShortener.Replace(dbStatement, "$1...]");
+                            if (dbStatement.Length > 10000)
+                                dbStatement = dbStatement.Substring(0, 10000);
+
+                            activity.SetTag("db.statement", dbStatement);
+                        }
+
+                        // 404s should not be error
+                        int? httpStatus = activity.GetTagItem("http.status_code") as int?;
+                        if (httpStatus.HasValue && httpStatus.Value == 404)
+                            activity.SetStatus(Status.Unset);
+                    };
+                });
+
+                b.AddHttpClientInstrumentation();
+                b.AddSource("Exceptionless", "Foundatio");
+
+                if (config.EnableRedis)
+                    b.AddRedisInstrumentation(c =>
+                    {
+                        c.EnrichActivityWithTimingEvents = false;
+                        c.SetVerboseDatabaseStatements = config.FullDetails;
+                    });
+
+                if (config.Console)
+                    b.AddConsoleExporter();
+
+                b.AddFilteredOtlpExporter(c =>
+                {
+                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") is not null;
+                });
+            });
 
             services.AddOpenTelemetry().WithMetrics(b =>
             {
@@ -138,6 +99,7 @@ public static partial class ApmExtensions
                 b.AddAspNetCoreInstrumentation();
                 b.AddMeter("Exceptionless", "Foundatio");
                 b.AddRuntimeInstrumentation();
+                b.AddProcessInstrumentation();
 
                 if (config.Console)
                     b.AddConsoleExporter((_, metricReaderOptions) =>
@@ -148,21 +110,7 @@ public static partial class ApmExtensions
                     });
 
                 b.AddPrometheusExporter();
-
-                if (!String.IsNullOrEmpty(config.Endpoint))
-                    b.AddOtlpExporter((c, o) =>
-                    {
-                        if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                            c.Protocol = OtlpExportProtocol.HttpProtobuf;
-
-                        // needed for newrelic compatibility until they support cumulative
-                        o.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
-
-                        if (!String.IsNullOrEmpty(config.Endpoint))
-                            c.Endpoint = new Uri(config.Endpoint);
-                        if (!String.IsNullOrEmpty(config.ApiKey))
-                            c.Headers = $"api-key={config.ApiKey}";
-                    });
+                b.AddOtlpExporter();
             });
         });
 
@@ -180,19 +128,7 @@ public static partial class ApmExtensions
                     if (config.Console)
                         o.AddConsoleExporter();
 
-                    if (!String.IsNullOrEmpty(config.Endpoint))
-                    {
-                        o.AddOtlpExporter(c =>
-                        {
-                            if (config.Insecure || !String.IsNullOrEmpty(config.SslThumbprint))
-                                c.Protocol = OtlpExportProtocol.HttpProtobuf;
-
-                            if (!String.IsNullOrEmpty(config.Endpoint))
-                                c.Endpoint = new Uri(config.Endpoint);
-                            if (!String.IsNullOrEmpty(config.ApiKey))
-                                c.Headers = $"api-key={config.ApiKey}";
-                        });
-                    }
+                    o.AddOtlpExporter();
                 });
             });
         }
@@ -219,28 +155,19 @@ public class ApmConfig
         if (ServiceName.StartsWith('-'))
             ServiceName = ServiceName.Substring(1);
 
-        ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "") ?? throw new InvalidOperationException();
+        DeploymentEnvironment = _apmConfig.GetValue("ServiceEnvironment", "dev") ?? throw new InvalidOperationException();
         ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName) ?? throw new InvalidOperationException();
         ServiceVersion = serviceVersion;
         EnableRedis = enableRedis;
     }
 
-    public bool IsEnabled => EnableLogs || EnableMetrics || EnableTracing;
-
     public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
-    public bool EnableMetrics => _apmConfig.GetValue("EnableMetrics", true);
-    public bool EnableTracing => _apmConfig.GetValue("EnableTracing", _apmConfig.GetValue("Enabled", false));
-    public bool Insecure => _apmConfig.GetValue("Insecure", false);
-    public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty) ?? throw new InvalidOperationException();
     public string ServiceName { get; }
-    public string ServiceEnvironment { get; }
+    public string DeploymentEnvironment { get; }
     public string ServiceNamespace { get; }
     public string? ServiceVersion { get; }
-    public string Endpoint => _apmConfig.GetValue("Endpoint", String.Empty) ?? throw new InvalidOperationException();
-    public string ApiKey => _apmConfig.GetValue("ApiKey", String.Empty) ?? throw new InvalidOperationException();
     public bool FullDetails => _apmConfig.GetValue("FullDetails", false);
-    public double SampleRate => _apmConfig.GetValue("SampleRate", 1.0);
-    public int MinDurationMs => _apmConfig.GetValue<int>("MinDurationMs", -1);
+    public int MinDurationMs => _apmConfig.GetValue("MinDurationMs", -1);
     public bool EnableRedis { get; }
     public bool Debug => _apmConfig.GetValue("Debug", false);
     public bool Console => _apmConfig.GetValue("Console", false);
@@ -328,4 +255,132 @@ public static class CustomFilterProcessorExtensions
 public class FilteredOtlpExporterOptions : OtlpExporterOptions
 {
     public Func<Activity, bool>? Filter { get; set; }
+}
+
+public class ElasticCompatibilityProcessor : BaseProcessor<Activity>
+{
+    private readonly AsyncLocal<ActivitySpanId?> _currentTransactionId = new();
+    public const string TransactionIdTagName = "transaction.id";
+
+	public override void OnEnd(Activity activity)
+	{
+        if (activity.Parent == null)
+            _currentTransactionId.Value = activity.SpanId;
+
+        if (_currentTransactionId.Value.HasValue)
+            activity.SetTag(TransactionIdTagName, _currentTransactionId.Value.Value.ToString());
+
+        if (activity.Kind == ActivityKind.Server)
+		{
+			string? httpScheme = null;
+			string? httpTarget = null;
+			string? urlScheme = null;
+			string? urlPath = null;
+			string? urlQuery = null;
+			string? netHostName = null;
+			int? netHostPort = null;
+			string? serverAddress = null;
+			int? serverPort = null;
+
+			foreach (var tag in activity.TagObjects)
+			{
+				if (tag.Key == TraceSemanticConventions.HttpScheme)
+					httpScheme = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.HttpTarget)
+					httpTarget = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.UrlScheme)
+					urlScheme = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.UrlPath)
+					urlPath = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.UrlQuery)
+					urlQuery = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.NetHostName)
+					netHostName = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.ServerAddress)
+					serverAddress = ProcessStringAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.NetHostPort)
+					netHostPort = ProcessIntAttribute(tag);
+
+				if (tag.Key == TraceSemanticConventions.ServerPort)
+					serverPort = ProcessIntAttribute(tag);
+			}
+
+			// Set the older semantic convention attributes
+			if (httpScheme is null && urlScheme is not null)
+				SetStringAttribute(TraceSemanticConventions.HttpScheme, urlScheme);
+
+			if (httpTarget is null && urlPath is not null)
+			{
+				var target = urlPath;
+
+				if (urlQuery is not null)
+					target += $"?{urlQuery}";
+
+				SetStringAttribute(TraceSemanticConventions.HttpTarget, target);
+			}
+
+			if (netHostName is null && serverAddress is not null)
+				SetStringAttribute(TraceSemanticConventions.NetHostName, serverAddress);
+
+			if (netHostPort is null && serverPort is not null)
+				SetIntAttribute(TraceSemanticConventions.NetHostPort, serverPort.Value);
+		}
+
+		string? ProcessStringAttribute(KeyValuePair<string, object?> tag)
+		{
+			if (tag.Value is string value)
+			{
+				return value;
+			}
+
+			return null;
+		}
+
+		int? ProcessIntAttribute(KeyValuePair<string, object?> tag)
+		{
+			if (tag.Value is int value)
+			{
+				return value;
+			}
+
+			return null;
+		}
+
+		void SetStringAttribute(string attributeName, string value)
+		{
+			activity.SetTag(attributeName, value);
+		}
+
+		void SetIntAttribute(string attributeName, int value)
+		{
+			activity.SetTag(attributeName, value);
+		}
+	}
+}
+
+internal static class TraceSemanticConventions
+{
+    // HTTP
+    public const string HttpScheme = "http.scheme";
+    public const string HttpTarget = "http.target";
+
+    // NET
+    public const string NetHostName = "net.host.name";
+    public const string NetHostPort = "net.host.port";
+
+    // SERVER
+    public const string ServerAddress = "server.address";
+    public const string ServerPort = "server.port";
+
+    // URL
+    public const string UrlPath = "url.path";
+    public const string UrlQuery = "url.query";
+    public const string UrlScheme = "url.scheme";
 }

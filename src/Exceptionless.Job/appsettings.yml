@@ -17,7 +17,7 @@ Serilog:
       Foundatio: Information
   WriteTo:
   - Name: Console
-    Args: 
+    Args:
       theme: "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Literate, Serilog.Sinks.Console"
   Enrich:
   - FromLogContext
@@ -27,8 +27,5 @@ Serilog:
 Apm:
   ServiceName: exceptionless
   EnableLogs: true
-  EnableTracing: true
-  EnableMetrics: true
-  SampleRate: 1.0
   FullDetails: true
   Debug: false

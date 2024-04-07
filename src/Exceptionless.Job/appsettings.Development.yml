@@ -16,11 +16,7 @@ Serilog:
     Default: Debug
 
 Apm:
-  #Endpoint: http://host.docker.internal:8200
-  Insecure: true
   EnableLogs: false
-  EnableTracing: false
-  EnableMetrics: true
   FullDetails: true
   Debug: false
   Console: false
