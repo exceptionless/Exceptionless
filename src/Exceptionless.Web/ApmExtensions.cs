@@ -148,21 +148,19 @@ public class ApmConfig
         if (ServiceName.StartsWith('-'))
             ServiceName = ServiceName.Substring(1);
 
-        ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "") ?? throw new InvalidOperationException();
+        ServiceEnvironment = _apmConfig.GetValue("ServiceEnvironment", "dev") ?? throw new InvalidOperationException();
         ServiceNamespace = _apmConfig.GetValue("ServiceNamespace", ServiceName) ?? throw new InvalidOperationException();
         ServiceVersion = serviceVersion;
         EnableRedis = enableRedis;
     }
 
     public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
-    public bool Insecure => _apmConfig.GetValue("Insecure", false);
-    public string SslThumbprint => _apmConfig.GetValue("SslThumbprint", String.Empty) ?? throw new InvalidOperationException();
     public string ServiceName { get; }
     public string ServiceEnvironment { get; }
     public string ServiceNamespace { get; }
     public string? ServiceVersion { get; }
     public bool FullDetails => _apmConfig.GetValue("FullDetails", false);
-    public int MinDurationMs => _apmConfig.GetValue<int>("MinDurationMs", -1);
+    public int MinDurationMs => _apmConfig.GetValue("MinDurationMs", -1);
     public bool EnableRedis { get; }
     public bool Debug => _apmConfig.GetValue("Debug", false);
     public bool Console => _apmConfig.GetValue("Console", false);
