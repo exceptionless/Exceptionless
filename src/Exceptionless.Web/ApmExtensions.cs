@@ -37,7 +37,16 @@ public static partial class ApmExtensions
 
                 b.AddAspNetCoreInstrumentation(o =>
                 {
-                    o.Filter = context => !context.Request.Headers.UserAgent.ToString().Contains("HealthChecker");
+                    o.Filter = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/api/v2/push", StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        if (context.Request.Headers.UserAgent.ToString().Contains("HealthChecker"))
+                            return false;
+
+                        return true;
+                    };
                 });
 
                 b.AddElasticsearchClientInstrumentation(c =>
@@ -72,8 +81,6 @@ public static partial class ApmExtensions
                         c.EnrichActivityWithTimingEvents = false;
                         c.SetVerboseDatabaseStatements = config.FullDetails;
                     });
-
-                //b.SetSampler(new TraceIdRatioBasedSampler(config.SampleRate));
 
                 if (config.Console)
                     b.AddConsoleExporter();
