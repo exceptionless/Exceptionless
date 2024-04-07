@@ -279,11 +279,3 @@ jobs:
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
-
-  finished:
-    needs: [version, deploy]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Finished
-        run: echo "Finished building version ${{needs.version.outputs.version}}"
