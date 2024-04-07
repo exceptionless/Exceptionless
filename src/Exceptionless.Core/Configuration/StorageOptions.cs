@@ -26,7 +26,10 @@ public class StorageOptions
         options.Provider = options.Data.GetString(nameof(options.Provider));
 
         string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-        options.ConnectionString = !String.IsNullOrEmpty(providerConnectionString) ? providerConnectionString : options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+        if (!String.IsNullOrEmpty(providerConnectionString))
+            options.Data.AddRange(providerConnectionString.ParseConnectionString());
+
+        options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
 
         return options;
     }
