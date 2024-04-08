@@ -66,7 +66,7 @@
         "svelte-persisted-store": "^0.9.1",
         "svelte-sonner": "^0.3.21",
         "svelte-time": "^0.8.2",
-        "sveltekit-superforms": "^2.12.2",
+        "sveltekit-superforms": "^2.12.3",
         "tailwind-merge": "^2.2.2",
         "tailwind-variants": "^0.2.1",
         "tailwindcss": "^3.4.3",
