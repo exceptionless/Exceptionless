@@ -66,8 +66,7 @@ public static partial class ApmExtensions
                         }
 
                         // 404s should not be error
-                        int? httpStatus = activity.GetTagItem("http.status_code") as int?;
-                        if (httpStatus.HasValue && httpStatus.Value == 404)
+                        if (activity.GetTagItem("http.status_code") is 404)
                             activity.SetStatus(Status.Unset);
                     };
                 });
@@ -197,10 +196,10 @@ public static class CustomFilterProcessorExtensions
 
         if (builder is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
         {
-            return deferredTracerProviderBuilder.Configure((sp, builder) =>
+            return deferredTracerProviderBuilder.Configure((sp, providerBuilder) =>
             {
                 var oltpOptions = sp.GetService<IOptions<FilteredOtlpExporterOptions>>()?.Value ?? new FilteredOtlpExporterOptions();
-                AddFilteredOtlpExporter(builder, oltpOptions, configure, sp);
+                AddFilteredOtlpExporter(providerBuilder, oltpOptions, configure, sp);
             });
         }
 
@@ -228,17 +227,14 @@ public static class CustomFilterProcessorExtensions
         {
             return builder.AddProcessor(new CustomFilterProcessor(new SimpleActivityExportProcessor(otlpExporter), exporterOptions.Filter));
         }
-        else
-        {
-            var batchOptions = exporterOptions.BatchExportProcessorOptions ?? new();
 
-            return builder.AddProcessor(new CustomFilterProcessor(new BatchActivityExportProcessor(
-                otlpExporter,
-                batchOptions.MaxQueueSize,
-                batchOptions.ScheduledDelayMilliseconds,
-                batchOptions.ExporterTimeoutMilliseconds,
-                batchOptions.MaxExportBatchSize), exporterOptions.Filter));
-        }
+        var batchOptions = exporterOptions.BatchExportProcessorOptions ?? new();
+        return builder.AddProcessor(new CustomFilterProcessor(new BatchActivityExportProcessor(
+            otlpExporter,
+            batchOptions.MaxQueueSize,
+            batchOptions.ScheduledDelayMilliseconds,
+            batchOptions.ExporterTimeoutMilliseconds,
+            batchOptions.MaxExportBatchSize), exporterOptions.Filter));
     }
 
     public static void TryEnableIHttpClientFactoryIntegration(this OtlpExporterOptions options, IServiceProvider? serviceProvider, string httpClientName)
