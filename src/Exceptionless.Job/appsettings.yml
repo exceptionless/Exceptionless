@@ -7,14 +7,16 @@ Serilog:
   MinimumLevel:
     Default: Information
     Override:
-      Microsoft: Warning
-      System: Warning
-      Foundatio.Utility.ScheduledTimer: Warning
+      Exceptionless.Job.Program: Information
       Foundatio.Metrics: Warning
+      Foundatio.Utility.ScheduledTimer: Warning
+      Microsoft: Warning
       Microsoft.AspNetCore.Hosting.Diagnostics: Warning
-      Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
-      Exceptionless: Information
-      Foundatio: Information
+      Microsoft.Hosting.Lifetime: Information
+      OpenTelemetry: Information
+      StackExchange.Redis: Warning
+      StartupActions: Information
+      System: Warning
   WriteTo:
   - Name: Console
     Args:
