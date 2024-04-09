@@ -82,17 +82,17 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     private async Task MarkTokensSuspended(JobContext context)
     {
-        var suspendedOrgs = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.IsSuspended, true).OnlyIds(), o => o.SearchAfterPaging().PageLimit(1000));
-        _logger.LogInformation("Found {SuspendedOrgCount} suspended orgs", suspendedOrgs.Total);
-        if (suspendedOrgs.Total == 0)
+        var suspendedOrganizations = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.IsSuspended, true).OnlyIds(), o => o.SearchAfterPaging().PageLimit(1000));
+        _logger.LogInformation("Found {SuspendedOrganizationCount} suspended organizations", suspendedOrganizations.Total);
+        if (suspendedOrganizations.Total == 0)
             return;
 
         do
         {
-            long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrgs.Hits.Select(o => o.Id)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
+            long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrganizations.Hits.Select(o => o.Id)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
             if (updatedCount > 0)
                 _logger.LogInformation("Marking {SuspendedTokenCount} tokens as suspended", updatedCount);
-        } while (!context.CancellationToken.IsCancellationRequested && await suspendedOrgs.NextPageAsync());
+        } while (!context.CancellationToken.IsCancellationRequested && await suspendedOrganizations.NextPageAsync());
     }
 
     private async Task CleanupSoftDeletedOrganizationsAsync(JobContext context)
