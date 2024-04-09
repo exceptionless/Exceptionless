@@ -84,10 +84,11 @@ public static partial class ApmExtensions
                 if (config.Console)
                     b.AddConsoleExporter();
 
-                b.AddFilteredOtlpExporter(c =>
-                {
-                    c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") is not null;
-                });
+                if (config.EnableExporter)
+                    b.AddFilteredOtlpExporter(c =>
+                    {
+                        c.Filter = a => a.Duration > TimeSpan.FromMilliseconds(config.MinDurationMs) || a.GetTagItem("db.system") is not null;
+                    });
             });
 
             services.AddOpenTelemetry().WithMetrics(b =>
@@ -109,7 +110,9 @@ public static partial class ApmExtensions
                     });
 
                 b.AddPrometheusExporter();
-                b.AddOtlpExporter();
+
+                if (config.EnableExporter)
+                    b.AddOtlpExporter();
             });
         });
 
@@ -127,7 +130,8 @@ public static partial class ApmExtensions
                     if (config.Console)
                         o.AddConsoleExporter();
 
-                    o.AddOtlpExporter();
+                    if (config.EnableExporter)
+                        o.AddOtlpExporter();
                 });
             });
         }
@@ -147,6 +151,8 @@ public class ApmConfig
 
     public ApmConfig(IConfigurationRoot config, string processName, string? serviceVersion, bool enableRedis)
     {
+        EnableExporter = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
+
         _apmConfig = config.GetSection("Apm");
         processName = processName.StartsWith('-') ? processName : "-" + processName;
 
@@ -160,6 +166,7 @@ public class ApmConfig
         EnableRedis = enableRedis;
     }
 
+    public bool EnableExporter { get; }
     public bool EnableLogs => _apmConfig.GetValue("EnableLogs", false);
     public string ServiceName { get; }
     public string DeploymentEnvironment { get; }
