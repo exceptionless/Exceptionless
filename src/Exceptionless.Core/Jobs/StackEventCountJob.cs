@@ -29,9 +29,9 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
         _lastRun = SystemClock.UtcNow;
-        _logger.LogTrace("Start save stack event counts.");
+        _logger.LogTrace("Start save stack event counts");
         await _stackService.SaveStackUsagesAsync(cancellationToken: context.CancellationToken);
-        _logger.LogTrace("Finished save stack event counts.");
+        _logger.LogTrace("Finished save stack event counts");
         return JobResult.Success;
     }
 

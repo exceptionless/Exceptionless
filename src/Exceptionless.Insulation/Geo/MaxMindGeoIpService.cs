@@ -96,11 +96,11 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 
         if (!await _storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH))
         {
-            _logger.LogWarning("No GeoIP database was found.");
+            _logger.LogWarning("No GeoIP database was found");
             return null;
         }
 
-        _logger.LogInformation("Loading GeoIP database.");
+        _logger.LogInformation("Loading GeoIP database");
         try
         {
             using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, StreamMode.Read, cancellationToken))
@@ -108,7 +108,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unable to open GeoIP database.");
+            _logger.LogError(ex, "Unable to open GeoIP database");
         }
 
         return _database;

@@ -32,7 +32,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
     {
         const int LIMIT = 100;
         _lastRun = SystemClock.UtcNow;
-        _logger.LogTrace("Start save stack event counts.");
+        _logger.LogTrace("Start save stack event counts");
 
         // Get list of stacks where snooze has expired
         var results = await _stackRepository.GetExpiredSnoozedStatuses(SystemClock.UtcNow, o => o.PageLimit(LIMIT));
@@ -53,7 +53,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
                 await context.RenewLockAsync();
         }
 
-        _logger.LogTrace("Finished save stack event counts.");
+        _logger.LogTrace("Finished save stack event counts");
         return JobResult.Success;
     }
 

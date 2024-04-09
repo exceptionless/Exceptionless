@@ -199,16 +199,16 @@ public class Bootstrapper
             return;
 
         if (String.IsNullOrEmpty(appOptions.CacheOptions.Provider))
-            logger.LogWarning("Distributed cache is NOT enabled on {MachineName}.", Environment.MachineName);
+            logger.LogWarning("Distributed cache is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (String.IsNullOrEmpty(appOptions.MessageBusOptions.Provider))
-            logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}.", Environment.MachineName);
+            logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (String.IsNullOrEmpty(appOptions.QueueOptions.Provider))
-            logger.LogWarning("Distributed queue is NOT enabled on {MachineName}.", Environment.MachineName);
+            logger.LogWarning("Distributed queue is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (String.IsNullOrEmpty(appOptions.StorageOptions.Provider))
-            logger.LogWarning("Distributed storage is NOT enabled on {MachineName}.", Environment.MachineName);
+            logger.LogWarning("Distributed storage is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (!appOptions.EnableWebSockets)
             logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
@@ -268,7 +268,7 @@ public class Bootstrapper
         services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
-        logger.LogWarning("Jobs running in process.");
+        logger.LogWarning("Jobs running in process");
     }
 
     public static DynamicTypeContractResolver GetJsonContractResolver()
