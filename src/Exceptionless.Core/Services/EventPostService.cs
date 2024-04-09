@@ -68,7 +68,7 @@ public class EventPostService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving event post payload: {Path}.", path);
+            _logger.LogError(ex, "Error retrieving event post payload: {Path}", path);
             return null;
         }
 
@@ -98,7 +98,7 @@ public class EventPostService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error archiving event post data {Path}.", path);
+            _logger.LogError(ex, "Error archiving event post data {Path}", path);
             return false;
         }
     }

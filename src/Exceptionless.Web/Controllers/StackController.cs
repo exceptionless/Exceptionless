@@ -508,7 +508,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         catch (ApplicationException ex)
         {
             using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, "An error has occurred. Please check your search filter.");
+                _logger.LogError(ex, "An error has occurred. Please check your search filter");
 
             return BadRequest("An error has occurred. Please check your search filter.");
         }

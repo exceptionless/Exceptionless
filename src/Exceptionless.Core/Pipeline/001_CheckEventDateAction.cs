@@ -23,7 +23,7 @@ public class CheckEventDateAction : EventPipelineActionBase
         double eventAgeInDays = SystemClock.UtcNow.Subtract(ctx.Event.Date.UtcDateTime).TotalDays;
         if (eventAgeInDays > 3 || ctx.Organization.RetentionDays > 0 && eventAgeInDays > ctx.Organization.RetentionDays)
         {
-            _logger.LogInformation("Discarding event that occurred more than three days ago or outside of organization retention limit.");
+            _logger.LogInformation("Discarding event that occurred more than three days ago or outside of organization retention limit");
 
             ctx.IsCancelled = true;
             ctx.IsDiscarded = true;

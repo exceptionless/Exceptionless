@@ -98,7 +98,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         var tokenRecord = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
         if (tokenRecord is null)
         {
-            Logger.LogInformation("Token {Token} for {Path} not found.", token, Request.Path);
+            Logger.LogInformation("Token {Token} for {Path} not found", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
@@ -106,14 +106,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (tokenRecord.IsDisabled || (Request.IsEventPost() && tokenRecord.IsSuspended))
         {
             AppDiagnostics.PostsBlocked.Add(1);
-            Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}.", token, Request.Path);
+            Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}", token, Request.Path);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
 
         if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow)
         {
-            Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}.", token, Request.Path, tokenRecord.ExpiresUtc.Value);
+            Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}", token, Request.Path, tokenRecord.ExpiresUtc.Value);
 
             return AuthenticateResult.Fail("Token is not valid");
         }
@@ -123,7 +123,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
             if (user is null)
             {
-                Logger.LogInformation("Could not find user for token {Token} with user {UserId} for {Path}.", token, tokenRecord.UserId, Request.Path);
+                Logger.LogInformation("Could not find user for token {Token} with user {UserId} for {Path}", token, tokenRecord.UserId, Request.Path);
 
                 return AuthenticateResult.Fail("Token is not valid");
             }

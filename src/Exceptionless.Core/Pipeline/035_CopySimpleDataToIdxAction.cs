@@ -21,7 +21,7 @@ public class CopySimpleDataToIdxAction : EventPipelineActionBase
         {
             var ev = ctx.Event;
             using (_logger.BeginScope(new ExceptionlessState().Organization(ctx.Organization.Id).Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags, ev.Idx })))
-                _logger.LogWarning("Event has {FieldCount} indexed fields.", fieldCount);
+                _logger.LogWarning("Event has {FieldCount} indexed fields", fieldCount);
         }
 
         return Task.CompletedTask;

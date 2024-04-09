@@ -74,7 +74,7 @@ public class AssignToStackAction : EventPipelineActionBase
                             return;
                         }
 
-                        _logger.LogTrace("Creating new event stack.");
+                        _logger.LogTrace("Creating new event stack");
                         ctx.IsNew = true;
 
                         string title = _formattingPluginManager.GetStackTitle(ctx.Event);

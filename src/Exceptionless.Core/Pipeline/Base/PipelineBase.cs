@@ -99,7 +99,7 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
         {
             if (_options.DisabledPipelineActions.Contains(type.Name, StringComparer.InvariantCultureIgnoreCase))
             {
-                _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed.", type.Name);
+                _logger.LogWarning("Pipeline Action {Name} is currently disabled and won't be executed", type.Name);
                 continue;
             }
 

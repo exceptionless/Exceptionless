@@ -57,7 +57,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             // cancel duplicate start events (1 per session id)
             session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev =>
             {
-                _logger.LogInformation("Discarding duplicate session start events.");
+                _logger.LogInformation("Discarding duplicate session start events");
                 ev.IsCancelled = true;
             });
             var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
@@ -69,7 +69,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             // cancel duplicate end events (1 per session id)
             session.Where(ev => ev.Event.IsSessionEnd()).Skip(1).ForEach(ev =>
             {
-                _logger.LogInformation("Discarding duplicate session end events.");
+                _logger.LogInformation("Discarding duplicate session end events");
                 ev.IsCancelled = true;
             });
             var sessionEndEvent = session.FirstOrDefault(ev => ev.Event.IsSessionEnd());
@@ -107,7 +107,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 // if session end, without any session events, cancel
                 if (session.Count(s => !s.IsCancelled) == 1 && firstSessionEvent.Event.IsSessionEnd())
                 {
-                    _logger.LogInformation("Discarding session end event with no session events.");
+                    _logger.LogInformation("Discarding session end event with no session events");
                     firstSessionEvent.IsCancelled = true;
                     continue;
                 }
@@ -141,7 +141,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 // cancel duplicate start events
                 session.Where(ev => ev.Event.IsSessionStart()).Skip(1).ForEach(ev =>
                 {
-                    _logger.LogInformation("Discarding duplicate session start events.");
+                    _logger.LogInformation("Discarding duplicate session start events");
                     ev.IsCancelled = true;
                 });
                 var sessionStartEvent = session.FirstOrDefault(ev => ev.Event.IsSessionStart());
@@ -162,7 +162,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                 // if session end, without any session events, cancel
                 if (String.IsNullOrEmpty(sessionId) && session.Count == 1 && firstSessionEvent.Event.IsSessionEnd())
                 {
-                    _logger.LogInformation("Discarding session end event with no session events.");
+                    _logger.LogInformation("Discarding session end event with no session events");
                     firstSessionEvent.IsCancelled = true;
                     continue;
                 }
@@ -196,7 +196,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                     // we already have a session start, cancel this one
                     if (sessionStartEvent is not null)
                     {
-                        _logger.LogInformation("Discarding duplicate session start event.");
+                        _logger.LogInformation("Discarding duplicate session start event");
                         sessionStartEvent.IsCancelled = true;
                     }
 

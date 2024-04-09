@@ -49,7 +49,7 @@ public sealed class MessageBusBroker : IStartupAction
     {
         if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
         {
-            _logger.LogTrace("Ignoring User Membership Changed message: No organization id.");
+            _logger.LogTrace("Ignoring User Membership Changed message: No organization id");
             return;
         }
 
@@ -78,7 +78,7 @@ public sealed class MessageBusBroker : IStartupAction
             // It's pointless to send a user added message to the new user.
             if (entityChanged.ChangeType == ChangeType.Added)
             {
-                _logger.LogTrace("Ignoring {UserTypeName} message for added user: {UserId}.", UserTypeName, entityChanged.Id);
+                _logger.LogTrace("Ignoring {UserTypeName} message for added user: {UserId}", UserTypeName, entityChanged.Id);
                 return;
             }
 
@@ -106,7 +106,7 @@ public sealed class MessageBusBroker : IStartupAction
 
             if (entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken))
             {
-                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {UserId}.", TokenTypeName, entityChanged.Id);
+                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {UserId}", TokenTypeName, entityChanged.Id);
                 return;
             }
 

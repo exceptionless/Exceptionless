@@ -111,7 +111,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
                     {
                         shouldReport = false;
-                        if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}.", request.UserAgent);
+                        if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}", request.UserAgent);
                     }
                 }
 
@@ -146,19 +146,19 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         var user = await _userRepository.GetByIdAsync(userId, o => o.Cache());
         if (String.IsNullOrEmpty(user?.EmailAddress))
         {
-            if (shouldLog) _logger.LogError("Could not load user {UserId} or blank email address {EmailAddress}.", userId, user?.EmailAddress ?? "");
+            if (shouldLog) _logger.LogError("Could not load user {UserId} or blank email address {EmailAddress}", userId, user?.EmailAddress ?? "");
             return false;
         }
 
         if (!user.IsEmailAddressVerified)
         {
-            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
+            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has not been verified", user.Id, user.EmailAddress);
             return false;
         }
 
         if (!user.EmailNotificationsEnabled)
         {
-            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
+            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled", user.Id, user.EmailAddress);
             return false;
         }
 
@@ -173,7 +173,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
         if (_appOptions.AppMode != AppMode.Production && !_emailOptions.AllowedOutboundAddresses.Contains(v => user.EmailAddress.Contains(v, StringComparison.InvariantCultureIgnoreCase)))
         {
-            if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode.");
+            if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode");
             return false;
         }
 

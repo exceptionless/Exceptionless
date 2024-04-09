@@ -16,7 +16,7 @@ public class MarkAsCriticalAction : EventPipelineActionBase
         if (ctx.Stack is null || !ctx.Stack.OccurrencesAreCritical)
             return Task.CompletedTask;
 
-        _logger.LogTrace("Marking error as critical.");
+        _logger.LogTrace("Marking error as critical");
         ctx.Event.MarkAsCritical();
 
         return Task.CompletedTask;

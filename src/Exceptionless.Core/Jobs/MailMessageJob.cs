@@ -18,7 +18,7 @@ public class MailMessageJob : QueueJobBase<MailMessage>
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context)
     {
-        _logger.LogTrace("Processing message {Id}.", context.QueueEntry.Id);
+        _logger.LogTrace("Processing message {Id}", context.QueueEntry.Id);
 
         try
         {

@@ -32,7 +32,7 @@ public class StripeController : ExceptionlessApiController
         {
             if (String.IsNullOrEmpty(json))
             {
-                _logger.LogWarning("Unable to get json of incoming event.");
+                _logger.LogWarning("Unable to get json of incoming event");
                 return BadRequest();
             }
 
@@ -49,7 +49,7 @@ public class StripeController : ExceptionlessApiController
 
             if (stripeEvent is null)
             {
-                _logger.LogWarning("Null stripe event.");
+                _logger.LogWarning("Null stripe event");
                 return BadRequest();
             }
 

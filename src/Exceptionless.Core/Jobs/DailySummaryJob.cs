@@ -124,7 +124,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary && !String.Equals(n.Key, Project.NotificationIntegrations.Slack)).Select(n => n.Key).ToList();
         if (userIds.Count == 0)
         {
-            _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
+            _logger.LogInformation("Project {ProjectName} has no users to send summary to", project.Name);
             return false;
         }
 
@@ -132,7 +132,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         var users = results.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(project.OrganizationId)).ToList();
         if (users.Count == 0)
         {
-            _logger.LogInformation("Project {ProjectName} has no users to send summary to.", project.Name);
+            _logger.LogInformation("Project {ProjectName} has no users to send summary to", project.Name);
             return false;
         }
 
@@ -140,7 +140,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null)
         {
-            _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent.", project.OrganizationId, project.Name);
+            _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent", project.OrganizationId, project.Name);
             return false;
         }
 
@@ -176,7 +176,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
 
         foreach (var user in users)
         {
-            _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}.", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
+            _logger.LogInformation("Queuing {ProjectName} daily summary email ({UtcStartTime}-{UtcEndTime}) for user {EmailAddress}", project.Name, data.UtcStartTime, data.UtcEndTime, user.EmailAddress);
             await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, data.UtcStartTime, hasSubmittedEvents, total, uniqueTotal, newTotal, fixedTotal, blockedTotal, tooBigTotal, isFreePlan);
         }
 

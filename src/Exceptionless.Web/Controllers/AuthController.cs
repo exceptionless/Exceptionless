@@ -86,13 +86,13 @@ public class AuthController : ExceptionlessApiController
 
         if (userLoginAttempts > 5)
         {
-            _logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time.", email, userLoginAttempts);
+            _logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time", email, userLoginAttempts);
             return Unauthorized();
         }
 
         if (ipLoginAttempts > 15)
         {
-            _logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time.", Request.GetClientIpAddress(), ipLoginAttempts);
+            _logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time", Request.GetClientIpAddress(), ipLoginAttempts);
             return Unauthorized();
         }
 
@@ -109,13 +109,13 @@ public class AuthController : ExceptionlessApiController
 
         if (user is null)
         {
-            _logger.LogError("Login failed for {EmailAddress}: User not found.", email);
+            _logger.LogError("Login failed for {EmailAddress}: User not found", email);
             return Unauthorized();
         }
 
         if (!user.IsActive)
         {
-            _logger.LogError("Login failed for {EmailAddress}: The user is inactive.", user.EmailAddress);
+            _logger.LogError("Login failed for {EmailAddress}: The user is inactive", user.EmailAddress);
             return Unauthorized();
         }
 
@@ -123,19 +123,19 @@ public class AuthController : ExceptionlessApiController
         {
             if (String.IsNullOrEmpty(user.Salt))
             {
-                _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined.", user.EmailAddress);
+                _logger.LogError("Login failed for {EmailAddress}: The user has no salt defined", user.EmailAddress);
                 return Unauthorized();
             }
 
             if (!user.IsCorrectPassword(model.Password))
             {
-                _logger.LogError("Login failed for {EmailAddress}: Invalid Password.", user.EmailAddress);
+                _logger.LogError("Login failed for {EmailAddress}: Invalid Password", user.EmailAddress);
                 return Unauthorized();
             }
 
             if (!PasswordMeetsRequirements(model.Password))
             {
-                _logger.LogError("Login denied for {EmailAddress} for invalid password.", email);
+                _logger.LogError("Login denied for {EmailAddress} for invalid password", email);
                 return StatusCode(423, "Password requirements have changed. Password needs to be reset to meet the new requirements.");
             }
         }
@@ -143,7 +143,7 @@ public class AuthController : ExceptionlessApiController
         {
             if (!IsValidActiveDirectoryLogin(email, model.Password))
             {
-                _logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account.", user.EmailAddress);
+                _logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account", user.EmailAddress);
                 return Unauthorized();
             }
         }
@@ -229,7 +229,7 @@ public class AuthController : ExceptionlessApiController
             long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (ipSignupAttempts > 10)
             {
-                _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time.", email, ipSignupAttempts);
+                _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time", email, ipSignupAttempts);
                 return BadRequest();
             }
         }
@@ -368,13 +368,13 @@ public class AuthController : ExceptionlessApiController
         {
             if (String.IsNullOrWhiteSpace(providerName) || String.IsNullOrWhiteSpace(providerUserId?.Value))
             {
-                _logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id.", CurrentUser?.EmailAddress);
+                _logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id", CurrentUser?.EmailAddress);
                 return BadRequest("Invalid Provider Name or Provider User Id.");
             }
 
             if (CurrentUser is null || CurrentUser.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(CurrentUser.Password))
             {
-                _logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login.", CurrentUser?.EmailAddress);
+                _logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", CurrentUser?.EmailAddress);
                 return BadRequest("You must set a local password before removing your external login.");
             }
 
@@ -409,7 +409,7 @@ public class AuthController : ExceptionlessApiController
         {
             if (model is null || CurrentUser is null || !PasswordMeetsRequirements(model.Password))
             {
-                _logger.LogError("Change password failed for {EmailAddress}: The New Password must be at least 6 characters long.", CurrentUser?.EmailAddress);
+                _logger.LogError("Change password failed for {EmailAddress}: The New Password must be at least 6 characters long", CurrentUser?.EmailAddress);
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -418,21 +418,21 @@ public class AuthController : ExceptionlessApiController
             {
                 if (String.IsNullOrWhiteSpace(model.CurrentPassword))
                 {
-                    _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect.", CurrentUser.EmailAddress);
+                    _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect", CurrentUser.EmailAddress);
                     return BadRequest("The current password is incorrect.");
                 }
 
                 string encodedPassword = model.CurrentPassword.ToSaltedHash(CurrentUser.Salt!);
                 if (!String.Equals(encodedPassword, CurrentUser.Password))
                 {
-                    _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect.", CurrentUser.EmailAddress);
+                    _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect", CurrentUser.EmailAddress);
                     return BadRequest("The current password is incorrect.");
                 }
 
                 string newPasswordHash = model.Password!.ToSaltedHash(CurrentUser.Salt!);
                 if (String.Equals(newPasswordHash, CurrentUser.Password))
                 {
-                    _logger.LogError("Change password failed for {EmailAddress}: The new password is the same as the current password.", CurrentUser.EmailAddress);
+                    _logger.LogError("Change password failed for {EmailAddress}: The new password is the same as the current password", CurrentUser.EmailAddress);
                     return BadRequest("The new password must be different than the previous password.");
                 }
             }
@@ -488,7 +488,7 @@ public class AuthController : ExceptionlessApiController
         {
             if (String.IsNullOrWhiteSpace(email))
             {
-                _logger.LogError("Forgot password failed: Please specify a valid Email Address.");
+                _logger.LogError("Forgot password failed: Please specify a valid Email Address");
                 return BadRequest("Please specify a valid Email Address.");
             }
 
@@ -497,7 +497,7 @@ public class AuthController : ExceptionlessApiController
             long attempts = await _cache.IncrementAsync(ipResetPasswordAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (attempts > 3)
             {
-                _logger.LogError("Login denied for {EmailAddress} for the {ResetPasswordAttempts} time.", email, attempts);
+                _logger.LogError("Login denied for {EmailAddress} for the {ResetPasswordAttempts} time", email, attempts);
                 return Ok();
             }
 
@@ -505,7 +505,7 @@ public class AuthController : ExceptionlessApiController
             var user = await _userRepository.GetByEmailAddressAsync(email);
             if (user is null)
             {
-                _logger.LogError("Forgot password failed for {EmailAddress}: No user was found.", email);
+                _logger.LogError("Forgot password failed for {EmailAddress}: No user was found", email);
                 return Ok();
             }
 
@@ -531,7 +531,7 @@ public class AuthController : ExceptionlessApiController
         if (String.IsNullOrEmpty(model?.PasswordResetToken))
         {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Reset Password").SetHttpContext(HttpContext)))
-                _logger.LogError("Reset password failed: Invalid Password Reset Token.");
+                _logger.LogError("Reset password failed: Invalid Password Reset Token");
             return BadRequest("Invalid Password Reset Token.");
         }
 
@@ -540,19 +540,19 @@ public class AuthController : ExceptionlessApiController
         {
             if (user is null)
             {
-                _logger.LogError("Reset password failed: Invalid Password Reset Token.");
+                _logger.LogError("Reset password failed: Invalid Password Reset Token");
                 return BadRequest("Invalid Password Reset Token.");
             }
 
             if (!user.HasValidPasswordResetTokenExpiration())
             {
-                _logger.LogError("Reset password failed for {EmailAddress}: Password Reset Token has expired.", user.EmailAddress);
+                _logger.LogError("Reset password failed for {EmailAddress}: Password Reset Token has expired", user.EmailAddress);
                 return BadRequest("Password Reset Token has expired.");
             }
 
             if (!PasswordMeetsRequirements(model.Password))
             {
-                _logger.LogError("Reset password failed for {EmailAddress}: The New Password must be at least 6 characters long.", user.EmailAddress);
+                _logger.LogError("Reset password failed for {EmailAddress}: The New Password must be at least 6 characters long", user.EmailAddress);
                 return BadRequest("The New Password must be at least 6 characters long.");
             }
 
@@ -562,7 +562,7 @@ public class AuthController : ExceptionlessApiController
                 string newPasswordHash = model.Password!.ToSaltedHash(user.Salt!);
                 if (String.Equals(newPasswordHash, user.Password))
                 {
-                    _logger.LogError("Reset password failed for {EmailAddress}: The new password is the same as the current password.", user.EmailAddress);
+                    _logger.LogError("Reset password failed for {EmailAddress}: The new password is the same as the current password", user.EmailAddress);
                     return BadRequest("The new password must be different than the previous password.");
                 }
             }
@@ -597,7 +597,7 @@ public class AuthController : ExceptionlessApiController
         if (String.IsNullOrEmpty(token))
         {
             using (_logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").SetHttpContext(HttpContext)))
-                _logger.LogError("Cancel reset password failed: Invalid Password Reset Token.");
+                _logger.LogError("Cancel reset password failed: Invalid Password Reset Token");
             return BadRequest("Invalid password reset token.");
         }
 
@@ -675,7 +675,7 @@ public class AuthController : ExceptionlessApiController
 
             if (user is null)
             {
-                _logger.LogCritical("External login failed for {EmailAddress}: Unable to process user info.", userInfo.Email);
+                _logger.LogCritical("External login failed for {EmailAddress}: Unable to process user info", userInfo.Email);
                 return BadRequest("Unable to process user info.");
             }
 

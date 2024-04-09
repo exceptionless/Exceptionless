@@ -66,7 +66,7 @@ public sealed class RecordSessionHeartbeatMiddleware
             if (projectId != _appOptions.InternalProjectId)
             {
                 using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Property("Id", id).Property("Close", close).SetHttpContext(context)))
-                    _logger.LogError(ex, "Error enqueuing session heartbeat.");
+                    _logger.LogError(ex, "Error enqueuing session heartbeat");
             }
 
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
