@@ -16,15 +16,15 @@
         {#if environment.machine_name}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">Machine Name</Table.Head>
-                <Table.Cell
-                    ><ClickableStringFilter term="machine" value={environment.machine_name}>{environment.machine_name}</ClickableStringFilter></Table.Cell
+                <Table.Cell class="flex items-center"
+                    >{environment.machine_name}<ClickableStringFilter term="machine" value={environment.machine_name} /></Table.Cell
                 >
             </Table.Row>
         {/if}
         {#if environment.ip_address}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">IP Address</Table.Head>
-                <Table.Cell><ClickableStringFilter term="ip" value={environment.ip_address}>{environment.ip_address}</ClickableStringFilter></Table.Cell>
+                <Table.Cell class="flex items-center">{environment.ip_address}<ClickableStringFilter term="ip" value={environment.ip_address} /></Table.Cell>
             </Table.Row>
         {/if}
         {#if environment.processor_count}
@@ -54,22 +54,22 @@
         {#if environment.o_s_name}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">OS Name</Table.Head>
-                <Table.Cell><ClickableStringFilter term="os" value={environment.o_s_name}>{environment.o_s_name}</ClickableStringFilter></Table.Cell>
+                <Table.Cell class="flex items-center">{environment.o_s_name}<ClickableStringFilter term="os" value={environment.o_s_name} /></Table.Cell>
             </Table.Row>
         {/if}
         {#if environment.o_s_version}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">OS Version</Table.Head>
-                <Table.Cell
-                    ><ClickableStringFilter term="os.version" value={environment.o_s_version}>{environment.o_s_version}</ClickableStringFilter></Table.Cell
+                <Table.Cell class="flex items-center"
+                    >{environment.o_s_version}<ClickableStringFilter term="os.version" value={environment.o_s_version} /></Table.Cell
                 >
             </Table.Row>
         {/if}
         {#if environment.architecture}
             <Table.Row>
                 <Table.Head class="whitespace-nowrap">Architecture</Table.Head>
-                <Table.Cell
-                    ><ClickableStringFilter term="architecture" value={environment.architecture}>{environment.architecture}</ClickableStringFilter></Table.Cell
+                <Table.Cell class="flex items-center"
+                    >{environment.architecture}<ClickableStringFilter term="architecture" value={environment.architecture} /></Table.Cell
                 >
             </Table.Row>
         {/if}
