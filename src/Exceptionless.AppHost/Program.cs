@@ -6,18 +6,16 @@ var elastic = builder.AddElasticsearch("Elasticsearch")
 var cache = builder.AddRedis("Redis")
     .WithRedisCommander();
 
-var job = builder.AddProject<Projects.Exceptionless_Job>("Jobs")
+var job = builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
     .WithReference(cache)
-    .WithReference(elastic)
-    .WithLaunchProfile("AllJobs");
+    .WithReference(elastic);
 
-var api = builder.AddProject<Projects.Exceptionless_Web>("Api")
+var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless API")
     .WithReference(cache)
-    .WithReference(elastic)
-    .WithLaunchProfile("Exceptionless API");
+    .WithReference(elastic);
 
 builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
     .WithReference(api)
-    .WithEndpoint(containerPort: 5173, scheme: "http", env: "PORT");
+    .WithEndpoint(port: 5173, scheme: "http", env: "PORT");
 
 builder.Build().Run();

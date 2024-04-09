@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Aspire.Hosting.Lifecycle;
-using Aspire.Hosting.Utils;
 using Microsoft.Extensions.Configuration;
 
 namespace Aspire.Hosting;
@@ -21,7 +20,7 @@ public static class ElasticsearchBuilderExtensions
     {
         var elasticsearch = new ElasticsearchResource(name);
         return builder.AddResource(elasticsearch)
-            .WithHttpEndpoint(containerPort: 9200, hostPort: port, name: "http")
+            .WithHttpEndpoint(port: 9200, targetPort: port, name: "http")
             .WithAnnotation(new ContainerImageAnnotation { Image = "docker.elastic.co/elasticsearch/elasticsearch", Tag = "8.12.2" })
             .WithEnvironment("discovery.type", "single-node")
             .WithEnvironment("xpack.security.enabled", "false")
@@ -52,7 +51,7 @@ public static class ElasticsearchBuilderExtensions
         builder.ApplicationBuilder.AddResource(resource)
                                   .WithAnnotation(new ContainerImageAnnotation { Image = "docker.elastic.co/kibana/kibana", Tag = "8.12.2" })
                                   .WithEnvironment("XPACK_SECURITY_ENABLED", "false")
-                                  .WithHttpEndpoint(containerPort: 5601, hostPort: hostPort, name: containerName)
+                                  .WithHttpEndpoint(targetPort: 5601, port: hostPort, name: containerName)
                                   .ExcludeFromManifest();
 
         return builder;
@@ -80,6 +79,8 @@ public class ElasticsearchResource(string name) : ContainerResource(name), IReso
             return $"http://{{{Name}.bindings.tcp.host}}:{{{Name}.bindings.tcp.port}}";
         }
     }
+
+    ReferenceExpression IResourceWithConnectionString.ConnectionStringExpression => throw new NotImplementedException();
 
     /// <summary>
     /// Gets the connection string for the Elasticsearch server.

@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,14 +6,13 @@
     <Nullable>enable</Nullable>
     <IsAspireHost>true</IsAspireHost>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting" Version="8.0.0-preview.4.24156.9" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Job\Exceptionless.Job.csproj" />
     <ProjectReference Include="..\Exceptionless.Web\Exceptionless.Web.csproj" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Redis" Version="8.0.0-preview.5.24201.12" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="8.0.0-preview.5.24201.12" />
+    <PackageReference Include="Aspire.Hosting.NodeJs" Version="8.0.0-preview.5.24201.12" />
+  </ItemGroup>
 </Project>
