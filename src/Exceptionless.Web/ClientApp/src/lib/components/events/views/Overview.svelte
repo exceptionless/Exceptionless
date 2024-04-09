@@ -1,6 +1,7 @@
 <script lang="ts">
     import IconEmail from '~icons/mdi/email';
     import IconOpenInNew from '~icons/mdi/open-in-new';
+    import IconSearch from '~icons/mdi/search';
     import type { PersistentEvent } from '$lib/models/api';
     import * as Table from '$comp/ui/table';
     import Duration from '$comp/formatters/Duration.svelte';
@@ -164,7 +165,9 @@
                 <Table.Head class="whitespace-nowrap">Tags</Table.Head>
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                     {#each event.tags as tag (tag)}
-                        <ClickableStringFilter term="tag" value={tag} class="ml-0"><Badge color="dark">{tag}</Badge></ClickableStringFilter>
+                        <ClickableStringFilter term="tag" value={tag} class="ml-0">
+                            <Badge color="dark">{tag}<IconSearch class="ml-2" /></Badge>
+                        </ClickableStringFilter>
                     {/each}
                 </Table.Cell>
             </Table.Row>
