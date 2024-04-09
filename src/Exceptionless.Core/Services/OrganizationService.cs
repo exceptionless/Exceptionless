@@ -79,7 +79,7 @@ public class OrganizationService : IStartupAction
             // delete the user if they are not associated to any other organizations and they are not the current user
             if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUserId))
             {
-                _logger.LogInformation("Removing user {User} as they do not belong to any other organizations.", user.Id);
+                _logger.LogInformation("Removing user {User} as they do not belong to any other organizations", user.Id);
                 await _userRepository.RemoveAsync(user.Id);
             }
             else

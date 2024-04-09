@@ -38,7 +38,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
         string? licenseKey = _options.MaxMindGeoIpKey;
         if (String.IsNullOrEmpty(licenseKey))
         {
-            _logger.LogInformation("Configure {SettingKey} to download GeoIP database.", nameof(AppOptions.MaxMindGeoIpKey));
+            _logger.LogInformation("Configure {SettingKey} to download GeoIP database", nameof(AppOptions.MaxMindGeoIpKey));
             return JobResult.Success;
         }
 
@@ -47,11 +47,11 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
             var fi = await _storage.GetFileInfoAsync(GEO_IP_DATABASE_PATH);
             if (fi is not null && fi.Modified.IsAfter(SystemClock.UtcNow.StartOfDay()))
             {
-                _logger.LogInformation("The GeoIP database is already up-to-date.");
+                _logger.LogInformation("The GeoIP database is already up-to-date");
                 return JobResult.Success;
             }
 
-            _logger.LogInformation("Downloading GeoIP database.");
+            _logger.LogInformation("Downloading GeoIP database");
             var client = new HttpClient();
             string url = $"https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={licenseKey}&suffix=tar.gz";
             var file = await client.GetAsync(url, context.CancellationToken);
@@ -64,11 +64,11 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while downloading the GeoIP database.");
+            _logger.LogError(ex, "An error occurred while downloading the GeoIP database");
             return JobResult.FromException(ex);
         }
 
-        _logger.LogInformation("Finished downloading GeoIP database.");
+        _logger.LogInformation("Finished downloading GeoIP database");
         return JobResult.Success;
     }
 

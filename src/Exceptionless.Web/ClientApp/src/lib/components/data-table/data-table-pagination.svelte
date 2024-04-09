@@ -38,11 +38,11 @@
             {/if}
             <Button variant="outline" class="h-8 w-8 p-0" disabled={!$table.getCanPreviousPage()} on:click={() => $table.previousPage()}>
                 <span class="sr-only">Go to previous page</span>
-                <IconChevronLeft class="mr-2 h-4 w-4" />
+                <IconChevronLeft class="h-4 w-4" />
             </Button>
             <Button variant="outline" class="h-8 w-8 p-0" disabled={!$table.getCanNextPage()} on:click={() => $table.nextPage()}>
                 <span class="sr-only">Go to next page</span>
-                <IconChevronRight class="mr-2 h-4 w-4" />
+                <IconChevronRight class="h-4 w-4" />
             </Button>
         </div>
     </div>

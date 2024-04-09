@@ -4,7 +4,7 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 8.11.1
+  version: 8.13.1
   nodeSets:
     - name: main
       count: 3
@@ -50,7 +50,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 8.11.1
+  version: 8.13.1
   count: 1
   elasticsearchRef:
     name: elastic-monitor
@@ -115,12 +115,12 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
   annotations:
-    kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
         - kibana.exceptionless.io
@@ -144,7 +144,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 8.11.1
+  version: 8.13.1
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -168,7 +168,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 8.11.1
+  version: 8.13.1
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:

@@ -38,7 +38,7 @@ public sealed class GeoTests : TestWithServices
     {
         if (String.IsNullOrEmpty(_options.MaxMindGeoIpKey))
         {
-            _logger.LogInformation("Configure {SettingKey} to run geo tests.", nameof(AppOptions.MaxMindGeoIpKey));
+            _logger.LogInformation("Configure {SettingKey} to run geo tests", nameof(AppOptions.MaxMindGeoIpKey));
             return new NullGeoIpService();
         }
 

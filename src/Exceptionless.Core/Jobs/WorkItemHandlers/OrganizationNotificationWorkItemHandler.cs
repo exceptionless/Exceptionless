@@ -83,13 +83,13 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
         {
             if (!user.IsEmailAddressVerified)
             {
-                Log.LogInformation("User {UserId} with email address {EmailAddress} has not been verified.", user.Id, user.EmailAddress);
+                Log.LogInformation("User {UserId} with email address {EmailAddress} has not been verified", user.Id, user.EmailAddress);
                 continue;
             }
 
             if (!user.EmailNotificationsEnabled)
             {
-                Log.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled.", user.Id, user.EmailAddress);
+                Log.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled", user.Id, user.EmailAddress);
                 continue;
             }
 
@@ -97,6 +97,6 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
             await _mailer.SendOrganizationNoticeAsync(user, organization, isOverMonthlyLimit, isOverHourlyLimit);
         }
 
-        Log.LogTrace("Done sending email.");
+        Log.LogTrace("Done sending email");
     }
 }

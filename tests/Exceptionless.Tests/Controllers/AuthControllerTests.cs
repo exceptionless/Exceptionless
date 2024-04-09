@@ -172,8 +172,8 @@ public class AuthControllerTests : IntegrationTestsBase
         string email = "testuser1@exceptionless.io";
         string password = "invalidAccount1";
 
-        var orgs = await _organizationRepository.GetAllAsync();
-        var organization = orgs.Documents.First();
+        var organizations = await _organizationRepository.GetAllAsync();
+        var organization = organizations.Documents.First();
         var invite = new Invite
         {
             Token = StringExtensions.GetNewToken(),
@@ -272,8 +272,8 @@ public class AuthControllerTests : IntegrationTestsBase
     {
         _authOptions.EnableAccountCreation = true;
 
-        var orgs = await _organizationRepository.GetAllAsync();
-        var organization = orgs.Documents.First();
+        var organizations = await _organizationRepository.GetAllAsync();
+        var organization = organizations.Documents.First();
         const string email = "test5@exceptionless.io";
         const string name = "Test";
         const string password = "Password1$";

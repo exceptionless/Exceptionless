@@ -254,7 +254,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error disposing resource.");
+                _logger?.LogError(ex, "Error disposing resource");
             }
         }
         return Task.CompletedTask;

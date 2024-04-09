@@ -5,19 +5,20 @@ Serilog:
   MinimumLevel:
     Default: Information
     Override:
-      Exceptionless.Web.Program: Information
-      Exceptionless.Job.Program: Information
-      StartupActions: Information
-      Microsoft: Warning
-      System: Warning
-      Foundatio.Utility.ScheduledTimer: Warning
-      Foundatio.Metrics: Warning
-      Microsoft.Hosting.Lifetime: Information
-      Microsoft.AspNetCore.Hosting.Diagnostics: Warning
-      Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       #Exceptionless.Core.Repositories.EventRepository: Verbose
       #Exceptionless.Core.Repositories.StackRepository: Verbose
       #Exceptionless.Core.Repositories: Verbose
+      Exceptionless.Web.Program: Information
+      Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
+      Foundatio.Metrics: Warning
+      Foundatio.Utility.ScheduledTimer: Warning
+      Microsoft: Warning
+      Microsoft.AspNetCore.Hosting.Diagnostics: Warning
+      Microsoft.Hosting.Lifetime: Information
+      OpenTelemetry: Information
+      StackExchange.Redis: Warning
+      StartupActions: Information
+      System: Warning
   WriteTo:
   - Name: Console
     Args:
@@ -31,8 +32,5 @@ Serilog:
 Apm:
   ServiceName: exceptionless
   EnableLogs: true
-  EnableTracing: true
-  EnableMetrics: true
-  SampleRate: 1.0
   FullDetails: true
   Debug: false
