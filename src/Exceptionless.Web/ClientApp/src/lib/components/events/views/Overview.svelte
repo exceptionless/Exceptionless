@@ -1,7 +1,7 @@
 <script lang="ts">
     import IconEmail from '~icons/mdi/email';
+    import IconFilter from '~icons/mdi/filter';
     import IconOpenInNew from '~icons/mdi/open-in-new';
-    import IconSearch from '~icons/mdi/search';
     import type { PersistentEvent } from '$lib/models/api';
     import * as Table from '$comp/ui/table';
     import Duration from '$comp/formatters/Duration.svelte';
@@ -82,7 +82,7 @@
     <Table.Body>
         {#if isSessionStart}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Duration</Table.Head>
+                <Table.Head class="whitespace-nowrap w-40">Duration</Table.Head>
                 <Table.Cell>
                     {#if !event.data?.sessionend}
                         <span class="inline-flex h-2 w-2 animate-pulse items-center rounded-full bg-green-500" title="Online"></span>
@@ -96,77 +96,77 @@
         {/if}
         {#if event.reference_id}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Reference</Table.Head>
+                <Table.Head class="whitespace-nowrap w-40">Reference</Table.Head>
                 <Table.Cell class="flex items-center">
                     {#if isSessionStart}
-                        {event.reference_id}<ClickableSessionFilter value={event.reference_id} />
+                        <ClickableSessionFilter value={event.reference_id} />{event.reference_id}
                     {:else}
-                        {event.reference_id}<ClickableReferenceFilter value={event.reference_id} />
+                        <ClickableReferenceFilter value={event.reference_id} />{event.reference_id}
                     {/if}
                 </Table.Cell>
             </Table.Row>
         {/if}
         {#each references as reference (reference.id)}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">{reference.name}</Table.Head>
-                <Table.Cell class="flex items-center">{reference.id}<ClickableReferenceFilter value={reference.id} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">{reference.name}</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableReferenceFilter value={reference.id} />{reference.id}</Table.Cell>
             </Table.Row>
         {/each}
         {#if level}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Level</Table.Head>
-                <Table.Cell class="flex items-center"><LogLevel {level}></LogLevel><ClickableStringFilter term="level" value={level} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Level</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableStringFilter term="level" value={level} /><LogLevel {level}></LogLevel></Table.Cell>
             </Table.Row>
         {/if}
         {#if event.type !== 'error'}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell class="flex items-center">{event.type}<ClickableTypeFilter value={[event.type]} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Event Type</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableTypeFilter value={[event.type]} />{event.type}</Table.Cell>
             </Table.Row>
         {/if}
         {#if hasError}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Error Type</Table.Head>
-                <Table.Cell class="flex items-center">{errorType}<ClickableStringFilter term="error.type" value={errorType} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Error Type</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableStringFilter term="error.type" value={errorType} />{errorType}</Table.Cell>
             </Table.Row>
         {/if}
         {#if event.source}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Source</Table.Head>
-                <Table.Cell class="flex items-center">{event.source}<ClickableStringFilter term="source" value={event.source} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Source</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableStringFilter term="source" value={event.source} />{event.source}</Table.Cell>
             </Table.Row>
         {/if}
         {#if !isSessionStart && event.value}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Value</Table.Head>
-                <Table.Cell class="flex items-center">{event.value}<ClickableNumberFilter term="value" value={event.value} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Value</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableNumberFilter term="value" value={event.value} />{event.value}</Table.Cell>
             </Table.Row>
         {/if}
         {#if message}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="flex items-center">{message}<ClickableStringFilter term="message" value={message} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Message</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableStringFilter term="message" value={message} />{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if version}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Version</Table.Head>
-                <Table.Cell class="flex items-center">{version}<ClickableVersionFilter term="version" value={version} /></Table.Cell>
+                <Table.Head class="whitespace-nowrap w-40">Version</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableVersionFilter term="version" value={version} />{version}</Table.Cell>
             </Table.Row>
         {/if}
         {#if location}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Geo</Table.Head>
+                <Table.Head class="whitespace-nowrap w-40">Geo</Table.Head>
                 <Table.Cell>{location}</Table.Cell>
             </Table.Row>
         {/if}
         {#if event.tags?.length}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Tags</Table.Head>
+                <Table.Head class="whitespace-nowrap w-40">Tags</Table.Head>
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                     {#each event.tags as tag (tag)}
-                        <ClickableStringFilter term="tag" value={tag} class="ml-0">
-                            <Badge color="dark">{tag}<IconSearch class="ml-2" /></Badge>
+                        <ClickableStringFilter term="tag" value={tag} class="mr-0">
+                            <Badge color="dark"><IconFilter class="mr-1" />{tag}</Badge>
                         </ClickableStringFilter>
                     {/each}
                 </Table.Cell>
@@ -174,9 +174,9 @@
         {/if}
         {#if requestUrl}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">URL</Table.Head>
+                <Table.Head class="whitespace-nowrap w-40">URL</Table.Head>
                 <Table.Cell class="flex items-center gap-x-1">
-                    {requestUrl}<ClickableStringFilter term="path" value={requestUrlPath} />
+                    <ClickableStringFilter term="path" value={requestUrlPath} />{requestUrl}
 
                     <Button href={requestUrl} target="_blank" variant="outline" size="icon" rel="noopener noreferrer" title="Open in new window"
                         ><IconOpenInNew /></Button
@@ -193,29 +193,29 @@
         <Table.Body>
             {#if userEmail}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">User Email</Table.Head>
+                    <Table.Head class="whitespace-nowrap w-40">User Email</Table.Head>
                     <Table.Cell class="flex items-center"
-                        >{userEmail}<ClickableStringFilter term="user.email" value={userEmail} />
+                        ><ClickableStringFilter term="user.email" value={userEmail} />{userEmail}
                         <A href="mailto:{userEmail}" title="Send email to {userEmail}"><IconEmail /></A></Table.Cell
                     >
                 </Table.Row>
             {/if}
             {#if userIdentity}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">User Identity</Table.Head>
-                    <Table.Cell class="flex items-center">{userIdentity}<ClickableStringFilter term="user" value={userIdentity} /></Table.Cell>
+                    <Table.Head class="whitespace-nowrap w-40">User Identity</Table.Head>
+                    <Table.Cell class="flex items-center"><ClickableStringFilter term="user" value={userIdentity} />{userIdentity}</Table.Cell>
                 </Table.Row>
             {/if}
             {#if userName}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">User Name</Table.Head>
-                    <Table.Cell class="flex items-center">{userName}<ClickableStringFilter term="user.name" value={userName} /></Table.Cell>
+                    <Table.Head class="whitespace-nowrap w-40">User Name</Table.Head>
+                    <Table.Cell class="flex items-center"><ClickableStringFilter term="user.name" value={userName} />{userName}</Table.Cell>
                 </Table.Row>
             {/if}
             {#if userDescription}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">User Description</Table.Head>
-                    <Table.Cell class="flex items-center">{userDescription}<ClickableStringFilter term="user.description" value={userDescription} /></Table.Cell
+                    <Table.Head class="whitespace-nowrap w-40">User Description</Table.Head>
+                    <Table.Cell class="flex items-center"><ClickableStringFilter term="user.description" value={userDescription} />{userDescription}</Table.Cell
                     >
                 </Table.Row>
             {/if}</Table.Body
