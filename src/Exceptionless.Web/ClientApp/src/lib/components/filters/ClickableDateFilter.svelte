@@ -23,5 +23,5 @@
 </script>
 
 <A on:click={onSearchClick} {title} class={cn('mr-2', className)}>
-    <slot><IconFilter class="text-muted-foreground hover:text-primary" /></slot>
+    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>
