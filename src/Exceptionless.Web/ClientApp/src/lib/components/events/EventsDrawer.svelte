@@ -126,30 +126,27 @@
     <Table.Root class="mt-4">
         <Table.Body>
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Occurred On</Table.Head>
+                <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
                 <Table.Cell class="flex items-center"
-                    ><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo value={$eventResponse.data.date}></TimeAgo>)<ClickableDateFilter
-                        term="date"
+                    ><ClickableDateFilter term="date" value={$eventResponse.data.date} /><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo
                         value={$eventResponse.data.date}
-                    /></Table.Cell
+                    ></TimeAgo>)</Table.Cell
                 >
             </Table.Row>
             {#if $projectResponse.data}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">Project</Table.Head>
+                    <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
                     <Table.Cell class="flex items-center"
-                        >{$projectResponse.data.name}<ClickableProjectFilter
-                            organization={$projectResponse.data.organization_id}
-                            value={[$projectResponse.data.id]}
-                        />
+                        ><ClickableProjectFilter organization={$projectResponse.data.organization_id} value={[$projectResponse.data.id]} />{$projectResponse
+                            .data.name}
                     </Table.Cell>
                 </Table.Row>
             {/if}
             {#if $stackResponse.data}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">Stack</Table.Head>
+                    <Table.Head class="w-40 whitespace-nowrap">Stack</Table.Head>
                     <Table.Cell class="flex items-center"
-                        >{$stackResponse.data.title}<ClickableStringFilter term="stack" value={$stackResponse.data.id} /></Table.Cell
+                        ><ClickableStringFilter term="stack" value={$stackResponse.data.id} />{$stackResponse.data.title}</Table.Cell
                     >
                 </Table.Row>
             {/if}

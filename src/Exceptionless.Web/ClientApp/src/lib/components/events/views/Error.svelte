@@ -25,24 +25,24 @@
 <Table.Root>
     <Table.Body>
         <Table.Row>
-            <Table.Head class="whitespace-nowrap">Error Type</Table.Head>
-            <Table.Cell class="flex items-center">{errorType}<ClickableStringFilter term="error.type" value={errorType} /></Table.Cell>
+            <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
+            <Table.Cell class="flex items-center"><ClickableStringFilter term="error.type" value={errorType} />{errorType}</Table.Cell>
         </Table.Row>
         {#if message}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="flex items-center">{message}<ClickableStringFilter term="error.message" value={message} /></Table.Cell>
+                <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableStringFilter term="error.message" value={message} />{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if code}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Code</Table.Head>
-                <Table.Cell class="flex items-center">{code}<ClickableVersionFilter term="error.code" value={code} /></Table.Cell>
+                <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
+                <Table.Cell class="flex items-center"><ClickableVersionFilter term="error.code" value={code} />{code}</Table.Cell>
             </Table.Row>
         {/if}
         {#if submissionMethod}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Submission Method</Table.Head>
+                <Table.Head class="w-40 whitespace-nowrap">Submission Method</Table.Head>
                 <Table.Cell>{submissionMethod}</Table.Cell>
             </Table.Row>
         {/if}</Table.Body

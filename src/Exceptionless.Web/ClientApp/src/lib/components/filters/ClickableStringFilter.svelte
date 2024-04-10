@@ -1,5 +1,5 @@
 <script lang="ts">
-    import IconSearch from '~icons/mdi/search';
+    import IconFilter from '~icons/mdi/filter';
     import A from '$comp/typography/A.svelte';
     import { cn } from '$lib/utils';
     import { StringFilter } from './filters';
@@ -22,6 +22,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={cn('ml-2', className)}>
-    <slot><IconSearch /></slot>
+<A on:click={onSearchClick} {title} class={cn('mr-2', className)}>
+    <slot><IconFilter class="text-muted-foreground hover:text-primary" /></slot>
 </A>

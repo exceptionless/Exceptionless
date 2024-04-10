@@ -42,7 +42,7 @@
         <Table.Body>
             {#each Object.entries(value || {}) as [key, val] (key)}
                 <Table.Row>
-                    <Table.Head class="whitespace-nowrap">{key}</Table.Head>
+                    <Table.Head class="w-48 whitespace-nowrap">{key}</Table.Head>
                     <Table.Cell><svelte:self value={val} /></Table.Cell>
                 </Table.Row>
             {/each}
