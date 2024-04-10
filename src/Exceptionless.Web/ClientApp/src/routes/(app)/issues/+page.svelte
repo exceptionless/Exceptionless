@@ -42,7 +42,7 @@
             filterChanged(filters, detail);
         }
 
-        selectedStackId.set(null)
+        selectedStackId.set(null);
     }
 
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
