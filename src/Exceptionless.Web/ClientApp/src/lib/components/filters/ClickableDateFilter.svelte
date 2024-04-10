@@ -1,7 +1,6 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
     import A from '$comp/typography/A.svelte';
-    import { cn } from '$lib/utils';
     import { DateFilter } from './filters';
 
     export let term: string;
@@ -22,6 +21,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={cn('mr-2', className)}>
+<A on:click={onSearchClick} {title} class={className}>
     <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>

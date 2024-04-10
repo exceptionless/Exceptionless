@@ -12,7 +12,6 @@
     import ExtendedData from './views/ExtendedData.svelte';
     import { getEventByIdQuery } from '$api/eventsApi';
     import DateTime from '$comp/formatters/DateTime.svelte';
-    import ClickableDateFilter from '$comp/filters/ClickableDateFilter.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import { getProjectByIdQuery } from '$api/projectsApi';
     import { getStackByIdQuery } from '$api/stacksApi';
@@ -125,29 +124,33 @@
 {:else if $eventResponse.isSuccess}
     <Table.Root class="mt-4">
         <Table.Body>
-            <Table.Row>
+            <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center"
-                    ><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo
-                        value={$eventResponse.data.date}
-                    ></TimeAgo>)</Table.Cell
+                    ><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo value={$eventResponse.data.date}></TimeAgo>)</Table.Cell
                 >
             </Table.Row>
             {#if $projectResponse.data}
-                <Table.Row>
+                <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
-                    <Table.Cell class="flex items-center"
-                        ><ClickableProjectFilter organization={$projectResponse.data.organization_id} value={[$projectResponse.data.id]} />{$projectResponse
-                            .data.name}
-                    </Table.Cell>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                        ><ClickableProjectFilter
+                            organization={$projectResponse.data.organization_id}
+                            value={[$projectResponse.data.id]}
+                            class="mr-0"
+                        /></Table.Cell
+                    >
+                    <Table.Cell>{$projectResponse.data.name}</Table.Cell>
                 </Table.Row>
             {/if}
             {#if $stackResponse.data}
-                <Table.Row>
+                <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">Stack</Table.Head>
-                    <Table.Cell class="flex items-center"
-                        ><ClickableStringFilter term="stack" value={$stackResponse.data.id} />{$stackResponse.data.title}</Table.Cell
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                        ><ClickableStringFilter term="stack" value={$stackResponse.data.id} class="mr-0" /></Table.Cell
                     >
+                    <Table.Cell>{$stackResponse.data.title}</Table.Cell>
                 </Table.Row>
             {/if}
         </Table.Body>
