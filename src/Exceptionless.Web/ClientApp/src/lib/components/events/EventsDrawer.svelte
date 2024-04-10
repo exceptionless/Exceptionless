@@ -128,7 +128,7 @@
             <Table.Row>
                 <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
                 <Table.Cell class="flex items-center"
-                    ><ClickableDateFilter term="date" value={$eventResponse.data.date} /><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo
+                    ><DateTime value={$eventResponse.data.date}></DateTime> (<TimeAgo
                         value={$eventResponse.data.date}
                     ></TimeAgo>)</Table.Cell
                 >
