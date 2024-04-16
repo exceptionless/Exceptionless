@@ -28,7 +28,7 @@ internal class FieldAccessor : MemberAccessor
         _hasGetter = true;
         _lateBoundGet = new Lazy<LateBoundGet>(() => DelegateFactory.CreateGet(_fieldInfo));
 
-        _hasSetter = !fieldInfo.IsInitOnly && !fieldInfo.IsLiteral;
+        _hasSetter = fieldInfo is { IsInitOnly: false, IsLiteral: false };
         if (_hasSetter)
             _lateBoundSet = new Lazy<LateBoundSet>(() => DelegateFactory.CreateSet(_fieldInfo));
     }
