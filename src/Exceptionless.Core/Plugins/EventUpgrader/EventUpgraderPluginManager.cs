@@ -7,7 +7,7 @@ public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin
     public EventUpgraderPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
-    /// Runs all of the event upgrade plugins upgrade method.
+    /// Runs all the event upgrade plugins upgrade method.
     /// </summary>
     public void Upgrade(EventUpgraderContext context)
     {
