@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using OpenTelemetry;
 using Serilog;
 using Serilog.Events;
 using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;

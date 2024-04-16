@@ -130,7 +130,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : Array.Empty<string>();
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : [];
         return DeleteImplAsync(userIds);
     }
 
@@ -346,7 +346,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
     {
         if (CurrentUser is null)
-            return base.GetModelsAsync(Array.Empty<string>());
+            return base.GetModelsAsync([]);
 
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);

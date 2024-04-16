@@ -99,7 +99,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (tokenRecord is null)
         {
             Logger.LogInformation("Token {Token} for {Path} not found", token, Request.Path);
-
             return AuthenticateResult.Fail("Token is not valid");
         }
 

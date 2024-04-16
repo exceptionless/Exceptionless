@@ -553,7 +553,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         ev.Data.Add("Address", new { State = "Texas" });
         ev.SetSessionId("123456789");
 
-        ev.CopyDataToIndex(Array.Empty<string>());
+        ev.CopyDataToIndex([]);
 
         Assert.False(ev.Idx.ContainsKey("first-name-s"));
         Assert.True(ev.Idx.ContainsKey("isverified-b"));
