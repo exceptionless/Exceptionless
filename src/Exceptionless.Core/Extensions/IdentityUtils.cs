@@ -16,7 +16,7 @@ public static class IdentityUtils
 
     public static ClaimsIdentity ToIdentity(this Token token)
     {
-        if (token is null || token.Type != TokenType.Access)
+        if (token.Type != TokenType.Access)
             return new ClaimsIdentity();
 
         if (!String.IsNullOrEmpty(token.UserId))
@@ -144,7 +144,7 @@ public static class IdentityUtils
     {
         string? ids = GetClaimValue(principal, OrganizationIdsClaim);
         if (String.IsNullOrEmpty(ids))
-            return Array.Empty<string>();
+            return [];
 
         return ids.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
     }

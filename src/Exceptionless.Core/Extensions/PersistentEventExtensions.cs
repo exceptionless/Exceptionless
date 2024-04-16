@@ -237,7 +237,7 @@ public static class PersistentEventExtensions
             startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
 
         if (hasPremiumFeatures)
-            startEvent.CopyDataToIndex(Array.Empty<string>());
+            startEvent.CopyDataToIndex([]);
 
         return startEvent;
     }

@@ -53,12 +53,12 @@ internal static class EventData
 
     public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string? sessionId = null, string? userIdentity = null, decimal? value = -1)
     {
-        return GenerateEvent(projectIds: Array.Empty<string>(), type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
+        return GenerateEvent(projectIds: [], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
     }
 
     public static PersistentEvent GenerateSessionEndEvent(DateTimeOffset occurrenceDate, string? sessionId = null, string? userIdentity = null)
     {
-        return GenerateEvent(projectIds: Array.Empty<string>(), type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
+        return GenerateEvent(projectIds: [], type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
     }
 
     public static PersistentEvent GenerateEvent(string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
@@ -205,7 +205,7 @@ internal static class EventData
                     ev.CreatedUtc = SystemClock.UtcNow;
                 }
 
-                ev.CopyDataToIndex(Array.Empty<string>());
+                ev.CopyDataToIndex([]);
             }
 
             await eventRepository.AddAsync(events, o => o.ImmediateConsistency());

@@ -53,13 +53,13 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
 
     public override Task VisitAsync(ExistsNode node, IQueryVisitorContext context)
     {
-        node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
+        node.Field = GetCustomFieldName(node.Field, []);
         return Task.CompletedTask;
     }
 
     public override Task VisitAsync(MissingNode node, IQueryVisitorContext context)
     {
-        node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
+        node.Field = GetCustomFieldName(node.Field, []);
         return Task.CompletedTask;
     }
 

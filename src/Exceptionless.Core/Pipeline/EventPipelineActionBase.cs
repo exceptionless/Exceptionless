@@ -8,7 +8,7 @@ public abstract class EventPipelineActionBase : PipelineActionBase<EventContext>
     public EventPipelineActionBase(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
 
     protected virtual bool IsCritical => false;
-    protected virtual string[] ErrorTags => Array.Empty<string>();
+    protected virtual string[] ErrorTags => [];
     protected virtual string? ErrorMessage => null;
 
     public override bool HandleError(Exception ex, EventContext ctx)

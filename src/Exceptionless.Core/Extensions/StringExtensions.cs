@@ -202,7 +202,7 @@ public static class StringExtensions
     public static string[] FromDelimitedString(this string value, string delimiter = ",")
     {
         if (String.IsNullOrEmpty(value))
-            return Array.Empty<string>();
+            return [];
 
         if (String.IsNullOrEmpty(delimiter))
             delimiter = ",";
@@ -370,7 +370,7 @@ public static class StringExtensions
     public static string[] SplitAndTrim(this string s, char[] separator)
     {
         if (s.IsNullOrEmpty())
-            return Array.Empty<string>();
+            return [];
 
         string[] result = s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < result.Length; i++)
