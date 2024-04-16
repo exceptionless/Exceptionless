@@ -56,7 +56,7 @@ public static partial class ApmExtensions
                     c.Enrich = (activity, source, data) =>
                     {
                         // truncate statements
-                        if (activity.GetTagItem("db.statement") is string dbStatement && dbStatement.Length > 10000)
+                        if (activity.GetTagItem("db.statement") is string { Length: > 10000 } dbStatement)
                         {
                             dbStatement = _stackIdListShortener.Replace(dbStatement, "$1...]");
                             if (dbStatement.Length > 10000)

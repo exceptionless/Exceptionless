@@ -32,7 +32,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     {
         foreach (var plugin in Plugins.Values)
         {
-            var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+            var contextsToProcess = contexts.Where(c => c is { IsCancelled: false, HasError: false }).ToList();
             if (contextsToProcess.Count == 0)
                 break;
 
@@ -57,7 +57,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     {
         foreach (var plugin in Plugins.Values)
         {
-            var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+            var contextsToProcess = contexts.Where(c => c is { IsCancelled: false, HasError: false }).ToList();
             if (contextsToProcess.Count == 0)
                 break;
 

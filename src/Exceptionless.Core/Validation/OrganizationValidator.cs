@@ -25,6 +25,6 @@ public class OrganizationValidator : AbstractValidator<Organization>
         RuleFor(o => o.SuspensionDate).Equal((DateTime?)null).Unless(o => o.IsSuspended).WithMessage("The suspension date cannot be set while an organization is not suspended.");
         RuleFor(o => o.SuspendedByUserId).NotEmpty().When(o => o.IsSuspended).WithMessage("Please specify a user id of user that suspended this organization.");
         RuleFor(o => o.SuspendedByUserId).Null().Unless(o => o.IsSuspended).WithMessage("The suspended by user id cannot be set while an organization is not suspended.");
-        RuleFor(o => o.SuspensionNotes).NotEmpty().When(o => o.IsSuspended && o.SuspensionCode.HasValue && o.SuspensionCode == SuspensionCode.Other).WithMessage("Please specify a suspension note.");
+        RuleFor(o => o.SuspensionNotes).NotEmpty().When(o => o.IsSuspended && o.SuspensionCode is SuspensionCode.Other).WithMessage("Please specify a suspension note.");
     }
 }

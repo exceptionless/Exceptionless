@@ -65,7 +65,7 @@ public static class NameValueCollectionExtensions
         string? value = GetValue(collection, name);
         if (value is null)
         {
-            if (defaultValue.HasValue && defaultValue is T)
+            if (defaultValue is T)
                 return (T)defaultValue;
 
             throw new Exception($"The configuration key '{name}' was not found and no default value was specified.");
@@ -77,7 +77,7 @@ public static class NameValueCollectionExtensions
         }
         catch (ArgumentException ex)
         {
-            if (defaultValue.HasValue && defaultValue is T)
+            if (defaultValue is T)
                 return (T)defaultValue;
 
             string message = $"Configuration key '{name}' has value '{value}' that could not be parsed as a member of the {typeof(T).Name} enum type.";

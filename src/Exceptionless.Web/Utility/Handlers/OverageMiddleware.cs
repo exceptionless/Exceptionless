@@ -48,7 +48,7 @@ public sealed class OverageMiddleware
         bool tooBig = false;
         if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers is not null)
         {
-            if (context.Request.Headers.ContentLength.HasValue && context.Request.Headers.ContentLength.Value <= 0)
+            if (context.Request.Headers.ContentLength is <= 0)
             {
                 AppDiagnostics.PostsBlocked.Add(1);
                 context.Response.StatusCode = StatusCodes.Status411LengthRequired;
