@@ -24,7 +24,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling GetStackSummaryHtml for stack {stack} in plugin {PluginName}: {Message}", stack.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling GetStackSummaryHtml for stack {Stack} in plugin {PluginName}: {Message}", stack.Id, plugin.Name, ex.Message);
             }
         }
 

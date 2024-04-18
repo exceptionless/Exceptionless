@@ -130,7 +130,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 if (!tooManyStacksCheck.HasValue)
                     await _cacheClient.SetAsync(GetQueryHash(systemFilterQuery), stackTotal, TimeSpan.FromMinutes(15));
 
-                _logger.LogTrace("Query: {query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
+                _logger.LogTrace("Query: {Query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
                 isStackIdsNegated = !isStackIdsNegated;
                 stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
                 systemFilterQuery.FilterExpression(stackFilterValue);

@@ -115,7 +115,7 @@ public sealed class MessageBusBroker : IStartupAction
 
         if (!String.IsNullOrEmpty(entityChanged.OrganizationId))
         {
-            _logger.LogTrace("Sending {MessageType} message to organization: {organization}", entityChanged.Type, entityChanged.OrganizationId);
+            _logger.LogTrace("Sending {MessageType} message to organization: {Organization}", entityChanged.Type, entityChanged.OrganizationId);
             await GroupSendAsync(entityChanged.OrganizationId, entityChanged);
         }
     }
@@ -124,7 +124,7 @@ public sealed class MessageBusBroker : IStartupAction
     {
         if (planOverage is not null)
         {
-            _logger.LogTrace("Sending plan overage message to organization: {organization}", planOverage.OrganizationId);
+            _logger.LogTrace("Sending plan overage message to organization: {Organization}", planOverage.OrganizationId);
             return GroupSendAsync(planOverage.OrganizationId, planOverage);
         }
 
@@ -135,7 +135,7 @@ public sealed class MessageBusBroker : IStartupAction
     {
         if (planChanged is not null)
         {
-            _logger.LogTrace("Sending plan changed message to organization: {organization}", planChanged.OrganizationId);
+            _logger.LogTrace("Sending plan changed message to organization: {Organization}", planChanged.OrganizationId);
             return GroupSendAsync(planChanged.OrganizationId, planChanged);
         }
 
