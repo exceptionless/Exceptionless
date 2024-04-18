@@ -1,3 +1,5 @@
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -14,11 +16,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IUserRepository _userRepository;
+    private readonly IMailer _mailer;
     private readonly ILockProvider _lockProvider;
 
-    public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient,
+        IMessageBus messageBus, IMailer mailer, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _userRepository = userRepository;
+        _mailer = mailer;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -32,19 +37,15 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         const int LIMIT = 100;
 
         var workItem = context.GetData<UserMaintenanceWorkItem>();
-        Log.LogInformation("Received user maintenance work item. Normalize: {Normalize}", workItem.Normalize);
+        Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResendVerifyEmailAddressEmails={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResendVerifyEmailAddressEmails);
 
         var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
-            foreach (var user in results.Documents)
-            {
-                if (workItem.Normalize)
-                    NormalizeUser(user);
-            }
-
             if (workItem.Normalize)
-                await _userRepository.SaveAsync(results.Documents);
+                await NormalizeUsersAsync(results.Documents);
+            if (workItem.ResendVerifyEmailAddressEmails)
+                await ResendVerifyEmailAddressEmailsAsync(results.Documents);
 
             // Sleep so we are not hammering the backend.
             await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
@@ -57,15 +58,34 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         }
     }
 
-    private void NormalizeUser(User user)
+    private Task NormalizeUsersAsync(IReadOnlyCollection<User> users)
     {
-        user.FullName = user.FullName.Trim();
-
-        string email = user.EmailAddress.Trim().ToLowerInvariant();
-        if (!String.Equals(user.EmailAddress, email))
+        foreach (var user in users)
         {
-            Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
-            user.EmailAddress = email;
+            user.FullName = user.FullName.Trim();
+            string email = user.EmailAddress.Trim().ToLowerInvariant();
+            if (!String.Equals(user.EmailAddress, email))
+            {
+                Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
+                user.EmailAddress = email;
+            }
         }
+
+        return _userRepository.SaveAsync(users);
+    }
+
+    private async Task ResendVerifyEmailAddressEmailsAsync(IReadOnlyCollection<User> users)
+    {
+        var unverifiedUsers = users.Where(u => !u.IsEmailAddressVerified).ToList();
+        if (unverifiedUsers.Count is 0)
+            return;
+
+        foreach (var user in unverifiedUsers)
+            user.MarkEmailAddressUnverified();
+
+        await _userRepository.SaveAsync(unverifiedUsers);
+
+        foreach (var user in unverifiedUsers)
+            await _mailer.SendUserEmailVerifyAsync(user);
     }
 }

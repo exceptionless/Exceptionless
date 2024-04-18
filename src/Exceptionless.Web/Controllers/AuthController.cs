@@ -225,7 +225,7 @@ public class AuthController : ExceptionlessApiController
         bool hasValidInviteToken = !String.IsNullOrWhiteSpace(model.InviteToken) && await _organizationRepository.GetByInviteTokenAsync(model.InviteToken) is not null;
         if (!hasValidInviteToken)
         {
-            // Only allow 10 sign ups per hour period by a single ip.
+            // Only allow 10 sign-ups per hour period by a single ip.
             long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
             if (ipSignupAttempts > 10)
             {
@@ -247,7 +247,12 @@ public class AuthController : ExceptionlessApiController
             EmailAddress = email,
             IsEmailAddressVerified = _authOptions.EnableActiveDirectoryAuth
         };
-        user.CreateVerifyEmailAddressToken();
+
+        if (user.IsEmailAddressVerified)
+            user.MarkEmailAddressVerified();
+        else
+            user.MarkEmailAddressUnverified();
+
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
         await AddGlobalAdminRoleIfFirstUserAsync(user);
@@ -698,7 +703,7 @@ public class AuthController : ExceptionlessApiController
             {
                 if (existingUser.Id != CurrentUser?.Id)
                 {
-                    // Existing user account is not the current user. Remove it and we'll add it to the current user below.
+                    // Existing user account is not the current user. Remove it, and we'll add it to the current user below.
                     if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                     {
                         using (_logger.BeginScope(new ExceptionlessState().Tag("External Login").Identity(CurrentUser!.EmailAddress).Property("User Info", userInfo).Property("User", CurrentUser).Property("ExistingUser", existingUser).SetHttpContext(HttpContext)))
@@ -856,7 +861,7 @@ public class AuthController : ExceptionlessApiController
             ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
             CreatedBy = user.Id,
             Type = TokenType.Authentication
-        }, o => o.ImmediateConsistency(true).Cache());
+        }, o => o.Cache());
 
         return token.Id;
     }

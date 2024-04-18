@@ -340,7 +340,7 @@ public sealed class MailerTests : TestWithServices
     public async Task SendUserEmailVerifyAsync()
     {
         var user = UserData.GenerateSampleUser();
-        user.CreateVerifyEmailAddressToken();
+        user.MarkEmailAddressUnverified();
 
         await _mailer.SendUserEmailVerifyAsync(user);
         await RunMailJobAsync();

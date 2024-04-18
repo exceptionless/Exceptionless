@@ -14,21 +14,11 @@ public static class UserExtensions
         return String.Equals(encodedPassword, user.Password);
     }
 
-    public static void ResetVerifyEmailAddressToken(this User user)
+    public static void MarkEmailAddressUnverified(this User user)
     {
-        user.VerifyEmailAddressToken = null;
-        user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
-    }
-
-    public static void CreateVerifyEmailAddressToken(this User user)
-    {
+        user.IsEmailAddressVerified = false;
         user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
         user.VerifyEmailAddressTokenExpiration = SystemClock.UtcNow.AddMinutes(1440);
-    }
-
-    public static bool HasValidVerifyEmailAddressTokenExpiration(this User user)
-    {
-        return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= SystemClock.UtcNow;
     }
 
     public static void MarkEmailAddressVerified(this User user)
@@ -36,6 +26,11 @@ public static class UserExtensions
         user.IsEmailAddressVerified = true;
         user.VerifyEmailAddressToken = null;
         user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
+    }
+
+    public static bool HasValidVerifyEmailAddressTokenExpiration(this User user)
+    {
+        return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= SystemClock.UtcNow;
     }
 
     public static void ResetPasswordResetToken(this User user)
