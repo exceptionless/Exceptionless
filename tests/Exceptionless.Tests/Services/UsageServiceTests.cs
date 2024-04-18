@@ -40,7 +40,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po =>
         {
-            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
+            _logger.LogInformation("Plan Overage for {Organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
         });
 
@@ -116,7 +116,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         var countdown = new AsyncCountdownEvent(2);
         await messageBus.SubscribeAsync<PlanOverage>(po =>
         {
-            _logger.LogInformation("Plan Overage for {organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
+            _logger.LogInformation("Plan Overage for {Organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
         });
 

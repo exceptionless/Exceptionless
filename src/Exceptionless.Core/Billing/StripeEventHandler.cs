@@ -156,26 +156,26 @@ public class StripeEventHandler
             return;
         }
 
-        _logger.LogInformation("Stripe payment succeeded. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName}", inv.CustomerId, org.Id, org.Name);
+        _logger.LogInformation("Stripe payment succeeded. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", inv.CustomerId, org.Id, org.Name);
     }
 
-    private async Task InvoicePaymentFailedAsync(Invoice inv)
+    private async Task InvoicePaymentFailedAsync(Invoice invoice)
     {
-        var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId);
+        var org = await _organizationRepository.GetByStripeCustomerIdAsync(invoice.CustomerId);
         if (org is null)
         {
-            _logger.LogError("Unknown customer id in payment failed notification: {CustomerId}", inv.CustomerId);
+            _logger.LogError("Unknown customer id in payment failed notification: {CustomerId}", invoice.CustomerId);
             return;
         }
 
         var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId);
         if (user is null)
         {
-            _logger.LogError("Unable to find billing user: {0}", org.BillingChangedByUserId);
+            _logger.LogError("Unable to find billing user: {UserId}", org.BillingChangedByUserId);
             return;
         }
 
-        _logger.LogInformation("Stripe payment failed. Customer: {CustomerId} Org: {organization} Org Name: {OrganizationName} Email: {EmailAddress}", inv.CustomerId, org.Id, org.Name, user.EmailAddress);
+        _logger.LogInformation("Stripe payment failed. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName} Email: {EmailAddress}", invoice.CustomerId, org.Id, org.Name, user.EmailAddress);
         await _mailer.SendOrganizationPaymentFailedAsync(user, org);
     }
 }

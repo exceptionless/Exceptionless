@@ -65,8 +65,7 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 
         return _lockProvider.TryUsingAsync(cacheKey, async () =>
         {
-            Log.LogInformation("Received organization notification work item for: {organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
-
+            Log.LogInformation("Received organization notification work item for: {Organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
             var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache());
             if (organization is null)
                 return;

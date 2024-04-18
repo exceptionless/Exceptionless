@@ -39,7 +39,7 @@ public sealed class CheckForDuplicateReferenceIdPlugin : EventProcessorPluginBas
         return _cacheClient.SetAllAsync(values, TimeSpan.FromDays(1));
     }
 
-    private string GetCacheKey(EventContext context)
+    private static string GetCacheKey(EventContext context)
     {
         return String.Concat("Project:", context.Project.Id, ":", context.Event.ReferenceId);
     }
