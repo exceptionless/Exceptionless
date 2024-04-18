@@ -43,9 +43,16 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             if (workItem.Normalize)
+            {
                 await NormalizeUsersAsync(results.Documents);
+                continue;
+            }
+
             if (workItem.ResendVerifyEmailAddressEmails)
+            {
                 await ResendVerifyEmailAddressEmailsAsync(results.Documents);
+                continue;
+            }
 
             // Sleep so we are not hammering the backend.
             await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
@@ -86,6 +93,9 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         await _userRepository.SaveAsync(unverifiedUsers);
 
         foreach (var user in unverifiedUsers)
+        {
+            Log.LogInformation("Resending verify email address email to {EmailAddress}", user.EmailAddress);
             await _mailer.SendUserEmailVerifyAsync(user);
+        }
     }
 }
