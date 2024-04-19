@@ -268,7 +268,7 @@ public class SampleDataService
             CreatedUtc = SystemClock.UtcNow,
             UpdatedUtc = SystemClock.UtcNow,
             Type = TokenType.Access
-        }, o => o);
+        });
 
         user.OrganizationIds.Add(organization.Id);
         await _userRepository.SaveAsync(user, o => o.Cache());
