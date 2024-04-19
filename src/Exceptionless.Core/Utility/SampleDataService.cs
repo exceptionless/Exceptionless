@@ -232,7 +232,7 @@ public class SampleDataService
                     UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 }
-            }, o => o.Cache());
+            }, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);
         await _userRepository.SaveAsync(user, o => o.Cache());
