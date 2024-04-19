@@ -251,7 +251,7 @@ public class AuthController : ExceptionlessApiController
         if (user.IsEmailAddressVerified)
             user.MarkEmailAddressVerified();
         else
-            user.MarkEmailAddressUnverified();
+            user.ResetVerifyEmailAddressTokenAndExpiration();
 
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);

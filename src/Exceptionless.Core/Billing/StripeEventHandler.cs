@@ -140,12 +140,12 @@ public class StripeEventHandler
         await _organizationRepository.SaveAsync(org, o => o.Cache().Originals());
     }
 
-    private async Task InvoicePaymentSucceededAsync(Invoice inv)
+    private async Task InvoicePaymentSucceededAsync(Invoice invoice)
     {
-        var org = await _organizationRepository.GetByStripeCustomerIdAsync(inv.CustomerId);
+        var org = await _organizationRepository.GetByStripeCustomerIdAsync(invoice.CustomerId);
         if (org is null)
         {
-            _logger.LogError("Unknown customer id in payment succeeded notification: {CustomerId}", inv.CustomerId);
+            _logger.LogError("Unknown customer id in payment succeeded notification: {CustomerId}", invoice.CustomerId);
             return;
         }
 
@@ -156,7 +156,7 @@ public class StripeEventHandler
             return;
         }
 
-        _logger.LogInformation("Stripe payment succeeded. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", inv.CustomerId, org.Id, org.Name);
+        _logger.LogInformation("Stripe payment succeeded. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", invoice.CustomerId, org.Id, org.Name);
     }
 
     private async Task InvoicePaymentFailedAsync(Invoice invoice)

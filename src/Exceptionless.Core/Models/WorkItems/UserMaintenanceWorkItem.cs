@@ -3,5 +3,5 @@
 public record UserMaintenanceWorkItem
 {
     public bool Normalize { get; init; }
-    public bool ResendVerifyEmailAddressEmails { get; init; }
+    public bool ResetVerifyEmailAddressToken { get; init; }
 }

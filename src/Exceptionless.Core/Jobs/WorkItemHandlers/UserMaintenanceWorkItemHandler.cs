@@ -1,5 +1,4 @@
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -16,14 +15,12 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IUserRepository _userRepository;
-    private readonly IMailer _mailer;
     private readonly ILockProvider _lockProvider;
 
     public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient,
-        IMessageBus messageBus, IMailer mailer, ILoggerFactory loggerFactory) : base(loggerFactory)
+        IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _userRepository = userRepository;
-        _mailer = mailer;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -37,7 +34,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         const int LIMIT = 100;
 
         var workItem = context.GetData<UserMaintenanceWorkItem>();
-        Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResendVerifyEmailAddressEmails={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResendVerifyEmailAddressEmails);
+        Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResetVerifyEmailAddressToken={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResetVerifyEmailAddressToken);
 
         var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
@@ -48,9 +45,9 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
                 continue;
             }
 
-            if (workItem.ResendVerifyEmailAddressEmails)
+            if (workItem.ResetVerifyEmailAddressToken)
             {
-                await ResendVerifyEmailAddressEmailsAsync(results.Documents);
+                await ResetVerifyEmailAddressTokenAndExpirationAsync(results.Documents);
                 continue;
             }
 
@@ -65,37 +62,38 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         }
     }
 
-    private Task NormalizeUsersAsync(IReadOnlyCollection<User> users)
+    private async Task NormalizeUsersAsync(IReadOnlyCollection<User> users)
     {
+        var usersToSave = new List<User>(users.Count);
         foreach (var user in users)
         {
-            user.FullName = user.FullName.Trim();
+            string fullName = user.FullName.Trim();
             string email = user.EmailAddress.Trim().ToLowerInvariant();
-            if (!String.Equals(user.EmailAddress, email))
-            {
-                Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
-                user.EmailAddress = email;
-            }
+            if (String.Equals(user.FullName, fullName) || String.Equals(user.EmailAddress, email))
+                continue;
+
+            Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
+            user.FullName = fullName;
+            user.EmailAddress = email;
+            usersToSave.Add(user);
         }
 
-        return _userRepository.SaveAsync(users);
+        if (usersToSave.Count > 0)
+            await _userRepository.SaveAsync(usersToSave);
     }
 
-    private async Task ResendVerifyEmailAddressEmailsAsync(IReadOnlyCollection<User> users)
+    private async Task ResetVerifyEmailAddressTokenAndExpirationAsync(IEnumerable<User> users)
     {
         var unverifiedUsers = users.Where(u => !u.IsEmailAddressVerified).ToList();
         if (unverifiedUsers.Count is 0)
             return;
 
         foreach (var user in unverifiedUsers)
-            user.MarkEmailAddressUnverified();
+        {
+            user.ResetVerifyEmailAddressTokenAndExpiration();
+            Log.LogInformation("Reset verify email address token and expiration for {EmailAddress}", user.EmailAddress);
+        }
 
         await _userRepository.SaveAsync(unverifiedUsers);
-
-        foreach (var user in unverifiedUsers)
-        {
-            Log.LogInformation("Resending verify email address email to {EmailAddress}", user.EmailAddress);
-            await _mailer.SendUserEmailVerifyAsync(user);
-        }
     }
 }

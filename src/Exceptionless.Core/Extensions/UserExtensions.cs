@@ -14,7 +14,7 @@ public static class UserExtensions
         return String.Equals(encodedPassword, user.Password);
     }
 
-    public static void MarkEmailAddressUnverified(this User user)
+    public static void ResetVerifyEmailAddressTokenAndExpiration(this User user)
     {
         user.IsEmailAddressVerified = false;
         user.VerifyEmailAddressToken = StringExtensions.GetNewToken();

@@ -224,7 +224,7 @@ public class EventPostJobTests : IntegrationTestsBase
             }
 
             if (!user.IsEmailAddressVerified)
-                user.MarkEmailAddressUnverified();
+                user.ResetVerifyEmailAddressTokenAndExpiration();
 
             await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
         }
