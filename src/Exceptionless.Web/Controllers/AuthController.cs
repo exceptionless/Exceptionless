@@ -861,7 +861,7 @@ public class AuthController : ExceptionlessApiController
             ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
             CreatedBy = user.Id,
             Type = TokenType.Authentication
-        }, o => o.Cache());
+        }, o => o.ImmediateConsistency().Cache());
 
         return token.Id;
     }
