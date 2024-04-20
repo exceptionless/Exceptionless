@@ -9,7 +9,7 @@
     <Card.Content>
         <div class="w-[200px] border">
             <svg viewBox="0 0 20 20">
-                <circle r="10" cx="10" cy="10" fill="white" />
+                <circle r="10" cx="10" cy="10" fill="white"></circle>
                 <circle
                     r="5"
                     cx="10"
@@ -19,7 +19,7 @@
                     stroke-width="10"
                     stroke-dasharray="calc(35 * 31.4 / 100) 31.4"
                     transform="rotate(-90) translate(-20)"
-                />
+                ></circle>
             </svg>
         </div>
     </Card.Content>
