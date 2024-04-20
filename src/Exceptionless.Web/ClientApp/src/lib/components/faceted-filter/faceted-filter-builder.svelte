@@ -55,10 +55,6 @@
 
     function onRemoveAll() {
         visible = [];
-        if ($facets.every((f) => f.filter.isEmpty())) {
-            return;
-        }
-
         $facets.forEach((facet) => facet.filter.reset());
         dispatch('remove');
     }
