@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
@@ -14,6 +14,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
     public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
+        DefaultConsistency = Consistency.Immediate;
         AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
     }
 

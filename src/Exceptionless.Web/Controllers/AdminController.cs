@@ -168,6 +168,9 @@ public class AdminController : ExceptionlessApiController
             case "normalize-user-email-address":
                 await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { Normalize = true });
                 break;
+            case "reset-verify-email-address-token-and-expiration":
+                await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { ResetVerifyEmailAddressToken = true });
+                break;
             default:
                 return NotFound();
         }

@@ -70,28 +70,28 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
                     if (utcStartTime < processSummariesNewerThan)
                     {
-                    _logger.LogInformation("Skipping daily summary older than two days for project: {Name}", project.Name);
-                    projectsToBulkUpdate.Add(project);
-                    continue;
-                }
+                        _logger.LogInformation("Skipping daily summary older than two days for project: {Name}", project.Name);
+                        projectsToBulkUpdate.Add(project);
+                        continue;
+                    }
 
-                var notification = new SummaryNotification
-                {
-                    Id = project.Id,
-                    UtcStartTime = utcStartTime,
-                    UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
-                };
+                    var notification = new SummaryNotification
+                    {
+                        Id = project.Id,
+                        UtcStartTime = utcStartTime,
+                        UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
+                    };
 
-                bool summarySent = await SendSummaryNotificationAsync(project, notification);
-                if (summarySent)
-                {
-                    await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
+                    bool summarySent = await SendSummaryNotificationAsync(project, notification);
+                    if (summarySent)
+                    {
+                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
 
-                    // Sleep so we are not hammering the backend as we just generated a report.
-                    await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
-                }
-                else
-                {
+                        // Sleep so we are not hammering the backend as we just generated a report.
+                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+                    }
+                    else
+                    {
                         projectsToBulkUpdate.Add(project);
                     }
                 }

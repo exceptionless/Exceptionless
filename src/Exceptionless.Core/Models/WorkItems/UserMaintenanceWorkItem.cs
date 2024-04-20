@@ -1,6 +1,7 @@
 ﻿namespace Exceptionless.Core.Models.WorkItems;
 
-public class UserMaintenanceWorkItem
+public record UserMaintenanceWorkItem
 {
-    public bool Normalize { get; set; }
+    public bool Normalize { get; init; }
+    public bool ResetVerifyEmailAddressToken { get; init; }
 }

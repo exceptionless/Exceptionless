@@ -212,7 +212,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
             }
 
             if (!user.IsEmailAddressVerified)
-                user.CreateVerifyEmailAddressToken();
+                user.ResetVerifyEmailAddressTokenAndExpiration();
 
             await _userRepository.AddAsync(user, o => o.Cache());
         }
