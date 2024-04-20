@@ -161,6 +161,18 @@ public class AuthControllerTests : IntegrationTestsBase
 
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
+
+        var user = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(user);
+        Assert.Equal("Test", user.FullName);
+        Assert.Equal(email, user.EmailAddress);
+        Assert.NotEqual(password, user.Password);
+        Assert.Contains(user.OrganizationIds, o => String.Equals(o, organization.Id));
+
+        // Assert user is verified due to the invite.
+        Assert.True(user.IsEmailAddressVerified);
+        Assert.Null(user.VerifyEmailAddressToken);
+        Assert.Equal(DateTime.MinValue, user.VerifyEmailAddressTokenExpiration);
     }
 
     [Fact]
@@ -169,8 +181,8 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = true;
 
-        string email = "testuser1@exceptionless.io";
-        string password = "invalidAccount1";
+        const string email = "test-user1@exceptionless.io";
+        const string password = "invalidAccount1";
 
         var organizations = await _organizationRepository.GetAllAsync();
         var organization = organizations.Documents.First();
@@ -204,14 +216,17 @@ public class AuthControllerTests : IntegrationTestsBase
     {
         _authOptions.EnableAccountCreation = true;
 
+        const string email = "test4@exceptionless.io";
+        const string password = "Password1$";
+
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
            .AppendPath("auth/signup")
            .Content(new Signup
            {
                Name = "Test",
-               Email = "test4@exceptionless.io",
-               Password = "Password1$",
+               Email = email,
+               Password = password,
                InviteToken = null
            })
            .StatusCodeShouldBeOk()
@@ -219,6 +234,17 @@ public class AuthControllerTests : IntegrationTestsBase
 
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
+
+        var user = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(user);
+        Assert.Equal("Test", user.FullName);
+        Assert.Equal(email, user.EmailAddress);
+        Assert.NotEqual(password, user.Password);
+        Assert.Empty(user.OrganizationIds);
+
+        Assert.False(user.IsEmailAddressVerified);
+        Assert.NotNull(user.VerifyEmailAddressToken);
+        Assert.NotEqual(DateTime.MinValue, user.VerifyEmailAddressTokenExpiration);
     }
 
     [Fact]
@@ -374,7 +400,7 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
-        string email = "testuser4@exceptionless.io";
+        string email = "test-user4@exceptionless.io";
         var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
         var invite = new Invite
@@ -404,8 +430,6 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task SignupShouldFailWhenUsingExistingAccountWithNoPasswordOrInvalidPassword()
     {
-        var userRepo = GetService<IUserRepository>();
-
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
         const string salt = "1234567890123456";
@@ -416,10 +440,11 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 6"
         };
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
             .Post()
@@ -460,10 +485,11 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 6"
         };
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
@@ -495,11 +521,11 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 7"
         };
 
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
            .Post()
@@ -527,10 +553,11 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 8"
         };
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
            .Post()
@@ -554,11 +581,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var user = new User
         {
             EmailAddress = email,
-            IsEmailAddressVerified = true,
             FullName = "User 6"
         };
 
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
@@ -628,10 +655,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var user = new User
         {
             EmailAddress = email,
-            IsEmailAddressVerified = true,
             FullName = "User 6"
         };
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
            .Post()
@@ -655,10 +683,11 @@ public class AuthControllerTests : IntegrationTestsBase
         var user = new User
         {
             EmailAddress = email,
-            IsEmailAddressVerified = true,
             FullName = "User 6"
         };
-        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
             .Post()
@@ -685,12 +714,12 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 6",
             Roles = AuthorizationRoles.AllScopes
         };
 
-        await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -746,12 +775,12 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 6",
             Roles = AuthorizationRoles.AllScopes
         };
 
-        await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -802,13 +831,13 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 6",
             Roles = AuthorizationRoles.AllScopes
         };
 
+        user.MarkEmailAddressVerified();
         user.CreatePasswordResetToken();
-        await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -860,13 +889,13 @@ public class AuthControllerTests : IntegrationTestsBase
             EmailAddress = email,
             Password = passwordHash,
             Salt = salt,
-            IsEmailAddressVerified = true,
             FullName = "User 6",
             Roles = AuthorizationRoles.AllScopes
         };
 
+        user.MarkEmailAddressVerified();
         user.CreatePasswordResetToken();
-        await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()

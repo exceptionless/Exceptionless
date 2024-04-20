@@ -63,77 +63,77 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             if (shouldLog) _logger.LogTrace("Loaded project: name={ProjectName}", project.Name);
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
-        var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
-        if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
-        {
-            if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
-            return JobResult.Success;
-        }
-
-        if (context.CancellationToken.IsCancellationRequested)
-            return JobResult.Cancelled;
-
-        // don't send more than 10 notifications for a given project every 30 minutes
-        var projectTimeWindow = TimeSpan.FromMinutes(30);
-        string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", SystemClock.UtcNow.Floor(projectTimeWindow).Ticks);
-        double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow);
-        if (notificationCount > 10 && !wi.IsRegression)
-        {
-            if (shouldLog) _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
-            return JobResult.Success;
-        }
-
-        foreach (var kv in project.NotificationSettings)
-        {
-            var settings = kv.Value;
-            if (shouldLog) _logger.LogTrace("Processing notification: {Key}", kv.Key);
-
-            bool isCritical = ev.IsCritical();
-            bool shouldReportNewError = settings.ReportNewErrors && wi.IsNew && ev.IsError();
-            bool shouldReportCriticalError = settings.ReportCriticalErrors && isCritical && ev.IsError();
-            bool shouldReportRegression = settings.ReportEventRegressions && wi.IsRegression;
-            bool shouldReportNewEvent = settings.ReportNewEvents && wi.IsNew;
-            bool shouldReportCriticalEvent = settings.ReportCriticalEvents && isCritical;
-            bool shouldReport = shouldReportNewError || shouldReportCriticalError || shouldReportRegression || shouldReportNewEvent || shouldReportCriticalEvent;
-
-            if (shouldLog)
+            var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
+            if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
             {
-                _logger.LogTrace("Settings: new error={ReportNewErrors} critical error={ReportCriticalErrors} regression={ReportEventRegressions} new={ReportNewEvents} critical={ReportCriticalEvents}", settings.ReportNewErrors, settings.ReportCriticalErrors, settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents);
-                _logger.LogTrace("Should process: new error={ShouldReportNewError} critical error={ShouldReportCriticalError} regression={ShouldReportRegression} new={ShouldReportNewEvent} critical={ShouldReportCriticalEvent}", shouldReportNewError, shouldReportCriticalError, shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent);
+                if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
+                return JobResult.Success;
             }
-            var request = ev.GetRequestInfo();
-            // check for known bots if the user has elected to not report them
-            if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent))
-            {
-                var botPatterns = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
 
-                var info = await _parser.ParseAsync(request.UserAgent);
-                if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
+            if (context.CancellationToken.IsCancellationRequested)
+                return JobResult.Cancelled;
+
+            // don't send more than 10 notifications for a given project every 30 minutes
+            var projectTimeWindow = TimeSpan.FromMinutes(30);
+            string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", SystemClock.UtcNow.Floor(projectTimeWindow).Ticks);
+            double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow);
+            if (notificationCount > 10 && !wi.IsRegression)
+            {
+                if (shouldLog) _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
+                return JobResult.Success;
+            }
+
+            foreach (var kv in project.NotificationSettings)
+            {
+                var settings = kv.Value;
+                if (shouldLog) _logger.LogTrace("Processing notification: {Key}", kv.Key);
+
+                bool isCritical = ev.IsCritical();
+                bool shouldReportNewError = settings.ReportNewErrors && wi.IsNew && ev.IsError();
+                bool shouldReportCriticalError = settings.ReportCriticalErrors && isCritical && ev.IsError();
+                bool shouldReportRegression = settings.ReportEventRegressions && wi.IsRegression;
+                bool shouldReportNewEvent = settings.ReportNewEvents && wi.IsNew;
+                bool shouldReportCriticalEvent = settings.ReportCriticalEvents && isCritical;
+                bool shouldReport = shouldReportNewError || shouldReportCriticalError || shouldReportRegression || shouldReportNewEvent || shouldReportCriticalEvent;
+
+                if (shouldLog)
                 {
-                    shouldReport = false;
-                    if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}", request.UserAgent);
+                    _logger.LogTrace("Settings: new error={ReportNewErrors} critical error={ReportCriticalErrors} regression={ReportEventRegressions} new={ReportNewEvents} critical={ReportCriticalEvents}", settings.ReportNewErrors, settings.ReportCriticalErrors, settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents);
+                    _logger.LogTrace("Should process: new error={ShouldReportNewError} critical error={ShouldReportCriticalError} regression={ShouldReportRegression} new={ShouldReportNewEvent} critical={ShouldReportCriticalEvent}", shouldReportNewError, shouldReportCriticalError, shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent);
                 }
+                var request = ev.GetRequestInfo();
+                // check for known bots if the user has elected to not report them
+                if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent))
+                {
+                    var botPatterns = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.UserAgentBotPatterns).ToList();
+
+                    var info = await _parser.ParseAsync(request.UserAgent);
+                    if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
+                    {
+                        shouldReport = false;
+                        if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}", request.UserAgent);
+                    }
+                }
+
+                if (!shouldReport)
+                    continue;
+
+                bool processed = kv.Key switch
+                {
+                    Project.NotificationIntegrations.Slack => await _slackService
+                        .SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression)
+                    ,
+                    _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog)
+                };
+
+                if (shouldLog) _logger.LogTrace("Finished processing notification: {Key}", kv.Key);
+                if (processed)
+                    sent++;
             }
 
-            if (!shouldReport)
-                continue;
-
-            bool processed = kv.Key switch
+            // if we sent any notifications, mark the last time a notification for this stack was sent.
+            if (sent > 0)
             {
-                Project.NotificationIntegrations.Slack => await _slackService
-                    .SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression)
-                ,
-                _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog)
-            };
-
-            if (shouldLog) _logger.LogTrace("Finished processing notification: {Key}", kv.Key);
-            if (processed)
-                sent++;
-        }
-
-        // if we sent any notifications, mark the last time a notification for this stack was sent.
-        if (sent > 0)
-        {
                 await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15));
                 if (shouldLog) _logger.LogInformation("Notifications sent: event={Id} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }

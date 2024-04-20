@@ -68,7 +68,7 @@ public class SampleDataService
             EmailAddress = TEST_USER_EMAIL
         };
 
-        user.CreateVerifyEmailAddressToken();
+        user.ResetVerifyEmailAddressTokenAndExpiration();
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
         user.Roles.Add(AuthorizationRoles.GlobalAdmin);
@@ -76,7 +76,7 @@ public class SampleDataService
         user.Salt = StringExtensions.GetRandomString(16);
         user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
 
-        user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache());
+        user = await _userRepository.AddAsync(user, o => o.Cache());
         _logger.LogDebug("Created Global Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
         await CreateOrganizationAndProjectAsync(user);
         await CreateInternalOrganizationAndProjectAsync(user.Id);
@@ -95,7 +95,7 @@ public class SampleDataService
             EmailAddress = TEST_ORG_USER_EMAIL
         };
 
-        user.CreateVerifyEmailAddressToken();
+        user.ResetVerifyEmailAddressTokenAndExpiration();
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
 
@@ -104,7 +104,7 @@ public class SampleDataService
 
         user.OrganizationIds.Add(TEST_ORG_ID);
 
-        user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache());
+        user = await _userRepository.AddAsync(user, o => o.Cache());
         _logger.LogDebug("Created Org Admin {FullName} - {EmailAddress}", user.FullName, user.EmailAddress);
     }
 
@@ -171,7 +171,7 @@ public class SampleDataService
             }, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);
-        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _userRepository.SaveAsync(user, o => o.Cache());
         _logger.LogDebug("Created Organization {OrganizationName} and Projects {DisintegratingPistolProjectName}, {RocketShipProjectName}", organization.Name, disintegratingPistolProject.Name, rocketShipProject.Name);
     }
 
@@ -186,14 +186,14 @@ public class SampleDataService
             EmailAddress = FREE_USER_EMAIL
         };
 
-        user.CreateVerifyEmailAddressToken();
+        user.ResetVerifyEmailAddressTokenAndExpiration();
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
 
         user.Salt = StringExtensions.GetRandomString(16);
         user.Password = FREE_USER_PASSWORD.ToSaltedHash(user.Salt);
 
-        user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency().Cache());
+        user = await _userRepository.AddAsync(user, o => o.Cache());
 
         if (await _tokenRepository.ExistsAsync(FREE_API_KEY))
             return;
@@ -235,7 +235,7 @@ public class SampleDataService
             }, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);
-        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _userRepository.SaveAsync(user, o => o.Cache());
         _logger.LogDebug("Created Free Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
     }
 
@@ -271,7 +271,7 @@ public class SampleDataService
         }, o => o.ImmediateConsistency());
 
         user.OrganizationIds.Add(organization.Id);
-        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _userRepository.SaveAsync(user, o => o.Cache());
         _logger.LogDebug("Created Internal Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
     }
 }
