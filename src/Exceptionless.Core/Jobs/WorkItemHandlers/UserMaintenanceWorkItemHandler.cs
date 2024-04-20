@@ -69,7 +69,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         {
             string fullName = user.FullName.Trim();
             string email = user.EmailAddress.Trim().ToLowerInvariant();
-            if (String.Equals(user.FullName, fullName) || String.Equals(user.EmailAddress, email))
+            if (String.Equals(user.FullName, fullName) && String.Equals(user.EmailAddress, email))
                 continue;
 
             Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
