@@ -33,7 +33,7 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "[svelte]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "svelte.svelte-vscode"
     },
     "[json]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
