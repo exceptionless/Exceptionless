@@ -7,6 +7,24 @@ export function getGravatarFromCurrentUserSrc(query?: ReturnType<typeof getMeQue
     });
 }
 
+export function getUserInitialsFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
+    return derived(query ?? getMeQuery(), async ($userResponse) => {
+        const fullName = $userResponse.data?.full_name;
+        if (!fullName) {
+            return 'NA';
+        }
+
+        const initials = fullName
+            .split(' ')
+            .map((name) => name.trim())
+            .filter((name) => name.length > 0)
+            .map((name) => name[0])
+            .join('');
+
+        return initials.length > 2 ? initials.substring(0, 2) : initials;
+    });
+}
+
 export async function getGravatarSrc(emailAddress: string) {
     const hash = await getGravatarEmailHash(emailAddress);
     return `//www.gravatar.com/avatar/${hash}?default=mm&size=100&d=mp&r=g`;

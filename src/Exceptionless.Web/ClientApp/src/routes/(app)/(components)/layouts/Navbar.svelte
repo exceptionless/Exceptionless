@@ -12,13 +12,14 @@
     import Loading from '$comp/Loading.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import { Button } from '$comp/ui/button';
-    import { getGravatarFromCurrentUserSrc } from '$api/gravatar';
+    import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar';
 
     function onHamburgerClick(): void {
         isSidebarOpen.set(!$isSidebarOpen);
     }
 
     const gravatarSrc = getGravatarFromCurrentUserSrc();
+    const userInitials = getUserInitialsFromCurrentUserSrc();
 </script>
 
 <nav class="fixed z-30 w-full border-b bg-background text-foreground">
@@ -61,9 +62,8 @@
                                     <Avatar.Fallback><Loading /></Avatar.Fallback>
                                 {:then src}
                                     <Avatar.Image {src} alt="gravatar" />
-                                {:catch}
-                                    <Avatar.Fallback>Error</Avatar.Fallback>
                                 {/await}
+                                <Avatar.Fallback>{$userInitials}</Avatar.Fallback>
                             </Avatar.Root>
                         </Button>
                     </DropdownMenu.Trigger>
