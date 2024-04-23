@@ -14,6 +14,7 @@
     import { onMount } from 'svelte';
 
     import { useQueryClient } from '@tanstack/svelte-query';
+    import NavigationBreadcrumb from './(components)/NavigationBreadcrumb.svelte';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
     import { derived } from 'svelte/store';
     import { getMeQuery } from '$api/usersApi';
@@ -117,6 +118,7 @@
             <main>
                 <div class="px-4 pt-4">
                     <NavigationCommand bind:open={$isCommandOpen} routes={$filteredRoutes} />
+                    <NavigationBreadcrumb />
                     <slot />
                 </div>
             </main>

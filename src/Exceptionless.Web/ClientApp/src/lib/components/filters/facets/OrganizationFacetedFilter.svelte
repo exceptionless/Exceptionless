@@ -5,6 +5,7 @@
     import { getOrganizationQuery } from '$api/organizationsApi';
     import { OrganizationFilter } from '$comp/filters/filters';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+    import type { ViewOrganization } from '$lib/models/api';
 
     const dispatch = createEventDispatcher();
     export let filter: OrganizationFilter;
@@ -14,7 +15,7 @@
     const response = getOrganizationQuery();
     const options = derived(response, ($response) => {
         return (
-            $response.data?.map((organization) => ({
+            $response.data?.map((organization: ViewOrganization) => ({
                 value: organization.id!,
                 label: organization.name!
             })) ?? []
@@ -26,7 +27,7 @@
             return;
         }
 
-        const organization = $response.data.find((organization) => organization.id === filter.value);
+        const organization = $response.data.find((o: ViewOrganization) => o.id === filter.value);
         if (!organization) {
             filter.value = '';
             dispatch('changed', filter);
