@@ -10,19 +10,19 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
     public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
     {
         var childTerms = new List<string>();
-        if (node.Left is TermNode leftTermNode && leftTermNode.Field is null)
+        if (node.Left is TermNode { Field: null } leftTermNode)
             childTerms.Add(leftTermNode.Term);
 
-        if (node.Left is TermRangeNode leftTermRangeNode && leftTermRangeNode.Field is null)
+        if (node.Left is TermRangeNode { Field: null } leftTermRangeNode)
         {
             childTerms.Add(leftTermRangeNode.Min);
             childTerms.Add(leftTermRangeNode.Max);
         }
 
-        if (node.Right is TermNode rightTermNode && rightTermNode.Field is null)
+        if (node.Right is TermNode { Field: null } rightTermNode)
             childTerms.Add(rightTermNode.Term);
 
-        if (node.Right is TermRangeNode rightTermRangeNode && rightTermRangeNode.Field is null)
+        if (node.Right is TermRangeNode { Field: null } rightTermRangeNode)
         {
             childTerms.Add(rightTermRangeNode.Min);
             childTerms.Add(rightTermRangeNode.Max);
@@ -53,13 +53,13 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
 
     public override Task VisitAsync(ExistsNode node, IQueryVisitorContext context)
     {
-        node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
+        node.Field = GetCustomFieldName(node.Field, []);
         return Task.CompletedTask;
     }
 
     public override Task VisitAsync(MissingNode node, IQueryVisitorContext context)
     {
-        node.Field = GetCustomFieldName(node.Field, Array.Empty<string>());
+        node.Field = GetCustomFieldName(node.Field, []);
         return Task.CompletedTask;
     }
 

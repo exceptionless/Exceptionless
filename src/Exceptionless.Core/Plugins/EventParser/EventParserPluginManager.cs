@@ -13,7 +13,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
     /// </summary>
     public List<PersistentEvent> ParseEvents(string input, int apiVersion, string? userAgent)
     {
-        string metricPrefix = String.Concat("events.parse.");
+        string metricPrefix = "events.parse.";
         foreach (var plugin in Plugins.Values.ToList())
         {
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());

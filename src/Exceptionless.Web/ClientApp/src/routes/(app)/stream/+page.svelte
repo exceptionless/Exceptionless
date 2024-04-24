@@ -29,6 +29,11 @@
     const filter = derived(filters, ($filters) => toFilter($filters));
     const facets = derived(filters, ($filters) => toFacetedFilters($filters));
 
+    function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
+        filterChanged(filters, detail);
+        selectedEventId = null;
+    }
+
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
         if (detail.key !== 'date:date') {
             filterChanged(filters, detail);
@@ -40,7 +45,7 @@
     }
 </script>
 
-<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
+<CustomEventMessage type="filter" on:message={onDrawerFilterChanged}></CustomEventMessage>
 
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>

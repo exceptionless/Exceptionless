@@ -29,7 +29,7 @@ public class DelimitedQueryStringValueProvider : QueryStringValueProvider
         if (!values.Any(x => x != null && _delimiters.Any(x.Contains)))
             return new ValueProviderResult(values, _culture);
 
-        var stringValues = new StringValues(values.SelectMany(x => x?.Split(_delimiters, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>()).ToArray());
+        var stringValues = new StringValues(values.SelectMany(x => x?.Split(_delimiters, StringSplitOptions.RemoveEmptyEntries) ?? []).ToArray());
         return new ValueProviderResult(stringValues, _culture);
     }
 }

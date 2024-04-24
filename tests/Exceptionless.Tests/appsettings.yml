@@ -10,8 +10,8 @@ ConnectionStrings:
 # Base url for the ui used to build links in emails and other places.
 BaseURL: "http://localhost:5200"
 
-Scope: dev
 AppMode: Development
+AppScope: test
 EnableSampleData: false
 MaximumRetentionDays: 3650
 

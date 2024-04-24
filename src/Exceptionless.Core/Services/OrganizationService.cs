@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
@@ -65,9 +64,9 @@ public class OrganizationService : IStartupAction
         var subscriptions = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
         foreach (var subscription in subscriptions.Where(s => !s.CanceledAt.HasValue))
         {
-            _logger.LogInformation("Canceling stripe subscription ({SubscriptionId}) for {OrganizationName} ({organization})", subscription.Id, organization.Name, organization.Id);
+            _logger.LogInformation("Canceling stripe subscription ({SubscriptionId}) for {OrganizationName} ({Organization})", subscription.Id, organization.Name, organization.Id);
             await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions());
-            _logger.LogInformation("Canceled stripe subscription ({SubscriptionId}) for {OrganizationName} ({organization})", subscription.Id, organization.Name, organization.Id);
+            _logger.LogInformation("Canceled stripe subscription ({SubscriptionId}) for {OrganizationName} ({Organization})", subscription.Id, organization.Name, organization.Id);
         }
     }
 
@@ -86,10 +85,6 @@ public class OrganizationService : IStartupAction
             {
                 _logger.LogInformation("Removing user {User} from organization: {OrganizationName} ({OrganizationId})", user.Id, organization.Name, organization.Id);
                 user.OrganizationIds.Remove(organization.Id);
-
-                // Temp fix for old user records :\.
-                if (!user.IsEmailAddressVerified && String.IsNullOrEmpty(user.VerifyEmailAddressToken))
-                    user.CreateVerifyEmailAddressToken();
 
                 await _userRepository.SaveAsync(user, o => o.Cache());
             }

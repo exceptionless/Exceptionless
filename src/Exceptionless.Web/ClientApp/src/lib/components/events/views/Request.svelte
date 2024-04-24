@@ -41,81 +41,85 @@
     <Table.Body>
         {#if request.http_method}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">HTTP Method</Table.Head>
+                <Table.Head class="w-40 whitespace-nowrap">HTTP Method</Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>{request.http_method}</Table.Cell>
             </Table.Row>
         {/if}
         {#if requestUrl}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">URL</Table.Head>
-                <Table.Cell class="flex items-center gap-x-1">
-                    {requestUrl}<ClickableStringFilter term="path" value={requestUrlPath} />
-
-                    <Button href={requestUrl} target="_blank" variant="ghost" size="sm" rel="noopener noreferrer" title="Open in new window"
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="path" value={requestUrlPath} /></Table.Cell>
+                <Table.Cell class="flex items-center gap-x-1"
+                    >{requestUrl}<Button href={requestUrl} target="_blank" variant="ghost" size="sm" rel="noopener noreferrer" title="Open in new window"
                         ><IconOpenInNew /></Button
                     ></Table.Cell
                 >
             </Table.Row>
         {:else if requestUrlPath}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">URL</Table.Head>
-                <Table.Cell class="flex items-center">
-                    {requestUrlPath}<ClickableStringFilter term="path" value={requestUrlPath} /></Table.Cell
-                >
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="path" value={requestUrlPath} /></Table.Cell>
+                <Table.Cell>{requestUrlPath}</Table.Cell>
             </Table.Row>
         {/if}
         {#if request.referrer}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Referrer</Table.Head>
+                <Table.Head class="w-40 whitespace-nowrap">Referrer</Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center gap-x-1"
-                    >{request.referrer}
-                    <a href={request.referrer} target="_blank" class="link" rel="noopener noreferrer" title="Open in new window"><IconOpenInNew /></a
+                    >{request.referrer}<a href={request.referrer} target="_blank" class="link" rel="noopener noreferrer" title="Open in new window"
+                        ><IconOpenInNew /></a
                     ></Table.Cell
                 >
             </Table.Row>
         {/if}
         {#if request.client_ip_address}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">Client IP Address</Table.Head>
-                <Table.Cell class="flex items-center"
-                    >{request.client_ip_address}<ClickableStringFilter term="ip" value={request.client_ip_address} /></Table.Cell
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">Client IP Address</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="ip" value={request.client_ip_address} /></Table.Cell
                 >
+                <Table.Cell class="flex items-center">{request.client_ip_address}</Table.Cell>
             </Table.Row>
         {/if}
         {#if request.user_agent}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">User Agent</Table.Head>
-                <Table.Cell class="flex items-center">{request.user_agent}<ClickableStringFilter term="useragent" value={request.user_agent} /></Table.Cell>
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">User Agent</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="useragent" value={request.user_agent} /></Table.Cell
+                >
+                <Table.Cell>{request.user_agent}</Table.Cell>
             </Table.Row>
         {/if}
         {#if device}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">Device</Table.Head>
-                <Table.Cell class="flex items-center">{device}<ClickableStringFilter term="device" value={device} /></Table.Cell>
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">Device</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="device" value={device} /></Table.Cell>
+                <Table.Cell>{device}</Table.Cell>
             </Table.Row>
         {/if}
         {#if browser}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">Browser</Table.Head>
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">Browser</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="browser" value={browser} /></Table.Cell>
                 <Table.Cell class="flex items-center"
-                    >{browser}<ClickableStringFilter term="browser" value={browser} />
+                    >{browser}
                     {#if browserMajorVersion}
                         <abbr title={browserVersion}>
-                            {browserMajorVersion}
-                            <ClickableStringFilter term="browser.major" value={browserMajorVersion} />
+                            <ClickableStringFilter term="browser.major" value={browserMajorVersion} />{browserMajorVersion}
                         </abbr>
                     {/if}</Table.Cell
                 >
             </Table.Row>
         {/if}
         {#if os}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">Browser OS</Table.Head>
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">Browser OS</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="os" value={os} /></Table.Cell>
                 <Table.Cell class="flex items-center"
-                    >{os}<ClickableStringFilter term="os" value={os} />
+                    >{os}
                     {#if osMajorVersion}
                         <abbr title={osVersion}>
-                            {osMajorVersion}<ClickableStringFilter term="os.major" value={osMajorVersion} />
+                            <ClickableStringFilter term="os.major" value={osMajorVersion} />{osMajorVersion}
                         </abbr>
                     {/if}</Table.Cell
                 >

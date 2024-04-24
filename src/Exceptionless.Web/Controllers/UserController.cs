@@ -130,7 +130,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : Array.Empty<string>();
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : [];
         return DeleteImplAsync(userIds);
     }
 
@@ -164,6 +164,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
             return NotFound();
 
+        using var _ = _logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext));
+
         email = email.Trim().ToLowerInvariant();
         if (String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
@@ -180,10 +182,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
         user.IsEmailAddressVerified = user.OAuthAccounts.Any(oa => String.Equals(oa.EmailAddress(), email, StringComparison.InvariantCultureIgnoreCase));
-        if (!user.IsEmailAddressVerified)
-            user.CreateVerifyEmailAddressToken();
+        if (user.IsEmailAddressVerified)
+            user.MarkEmailAddressVerified();
         else
-            user.ResetVerifyEmailAddressToken();
+            user.ResetVerifyEmailAddressTokenAndExpiration();
 
         try
         {
@@ -195,8 +197,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, ex.Message);
+            _logger.LogError(ex, "Error updating user Email Address: {Message}", ex.Message);
             return BadRequest("An error occurred.");
         }
 
@@ -204,7 +205,6 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             await ResendVerificationEmailAsync(id);
 
         // TODO: We may want to send an email to old email addresses as well.
-
         return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
     }
 
@@ -250,7 +250,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         if (!user.IsEmailAddressVerified)
         {
-            user.CreateVerifyEmailAddressToken();
+            user.ResetVerifyEmailAddressTokenAndExpiration();
             await _repository.SaveAsync(user, o => o.Cache());
             await _mailer.SendUserEmailVerifyAsync(user);
         }
@@ -276,9 +276,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
                 continue;
             }
 
-            user.IsEmailAddressVerified = false;
-            user.CreateVerifyEmailAddressToken();
-            await _repository.SaveAsync(user);
+            user.ResetVerifyEmailAddressTokenAndExpiration();
+            await _repository.SaveAsync(user, o => o.Cache());
             _logger.LogInformation("User {UserId} with email address {EmailAddress} is now unverified", user.Id, emailAddress);
         }
 
@@ -346,7 +345,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
     {
         if (CurrentUser is null)
-            return base.GetModelsAsync(Array.Empty<string>());
+            return base.GetModelsAsync([]);
 
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);

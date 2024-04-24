@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   elasticsearch:
     image: exceptionless/elasticsearch:8.13.1

@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
@@ -14,6 +14,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
     public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
+        DefaultConsistency = Consistency.Immediate;
         AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
@@ -88,5 +89,5 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return Task.WhenAll(Cache.RemoveAllAsync(keysToRemove), base.InvalidateCacheAsync(documents, changeType));
     }
 
-    private string EmailCacheKey(string emailAddress) => String.Concat("Email:", emailAddress.Trim().ToLowerInvariant());
+    private static string EmailCacheKey(string emailAddress) => String.Concat("Email:", emailAddress.Trim().ToLowerInvariant());
 }

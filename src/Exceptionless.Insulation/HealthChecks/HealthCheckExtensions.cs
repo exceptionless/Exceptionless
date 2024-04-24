@@ -9,7 +9,7 @@ public static class HealthCheckExtensions
     {
         var checkType = typeof(T);
         string name = checkType.Name;
-        if (checkType.IsConstructedGenericType && checkType.GenericTypeArguments.Length == 1)
+        if (checkType is { IsConstructedGenericType: true, GenericTypeArguments.Length: 1 })
             name = checkType.GenericTypeArguments[0].Name;
 
         if (name.EndsWith("HealthCheck", StringComparison.OrdinalIgnoreCase))

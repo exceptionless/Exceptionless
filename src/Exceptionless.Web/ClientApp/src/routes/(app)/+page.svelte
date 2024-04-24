@@ -30,6 +30,11 @@
     const facets = derived(filters, ($filters) => toFacetedFilters($filters));
     const time = derived(filters, ($filters) => ($filters.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
+    function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
+        filterChanged(filters, detail);
+        selectedEventId = null;
+    }
+
     function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
         filterChanged(filters, detail);
     }
@@ -39,7 +44,7 @@
     }
 </script>
 
-<CustomEventMessage type="filter" on:message={onFilterChanged}></CustomEventMessage>
+<CustomEventMessage type="filter" on:message={onDrawerFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">
     <Card.Root>

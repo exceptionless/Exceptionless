@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -140,7 +140,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null)
         {
-            _logger.LogInformation("The organization {organization} for project {ProjectName} may have been deleted. No summaries will be sent", project.OrganizationId, project.Name);
+            _logger.LogInformation("The organization {Organization} for project {ProjectName} may have been deleted. No summaries will be sent", project.OrganizationId, project.Name);
             return false;
         }
 

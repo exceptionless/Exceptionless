@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -52,7 +52,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         bool shouldLog = ev.ProjectId != _appOptions.InternalProjectId;
         int sent = 0;
-        if (shouldLog) _logger.LogTrace("Process notification: project={ProjectId} event={id} stack={stack}", ev.ProjectId, ev.Id, ev.StackId);
+        if (shouldLog) _logger.LogTrace("Process notification: project={ProjectId} event={Id} stack={Stack}", ev.ProjectId, ev.Id, ev.StackId);
 
         var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache());
         if (project is null)
@@ -64,7 +64,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
             var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
-            if (wi.TotalOccurrences > 2 && !wi.IsRegression && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
+            if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
                 return JobResult.Success;
@@ -122,7 +122,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                 {
                     Project.NotificationIntegrations.Slack => await _slackService
                         .SendEventNoticeAsync(ev, project, wi.IsNew, wi.IsRegression)
-                        ,
+                    ,
                     _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog)
                 };
 
@@ -135,7 +135,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             if (sent > 0)
             {
                 await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15));
-                if (shouldLog) _logger.LogInformation("Notifications sent: event={id} stack={stack} count={SentCount}", ev.Id, ev.StackId, sent);
+                if (shouldLog) _logger.LogInformation("Notifications sent: event={Id} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }
         }
         return JobResult.Success;
@@ -164,7 +164,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         if (!user.OrganizationIds.Contains(project.OrganizationId))
         {
-            if (shouldLog) _logger.LogError("Unauthorized user: project={ProjectId} user={UserId} organization={organization} event={id}", project.Id, userId, project.OrganizationId, ev.Id);
+            if (shouldLog) _logger.LogError("Unauthorized user: project={ProjectId} user={UserId} organization={Organization} event={Id}", project.Id, userId, project.OrganizationId, ev.Id);
             return false;
         }
 

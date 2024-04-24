@@ -86,7 +86,7 @@ ctx._source.total_occurrences += params.count;";
         var result = await _client.UpdateAsync(request);
         if (!result.IsValid)
         {
-            _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {stack}. Error: {Message}", stackId, result.ServerError?.Error);
+            _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {Stack}. Error: {Message}", stackId, result.ServerError?.Error);
             return result.ServerError?.Status == 404;
         }
 
@@ -146,6 +146,6 @@ ctx._source.total_occurrences += params.count;";
         await base.InvalidateCacheAsync(documents, changeType);
     }
 
-    private string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
+    private static string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
     private static string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);
 }

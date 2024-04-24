@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -16,7 +17,8 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
     private readonly IUserRepository _userRepository;
     private readonly ILockProvider _lockProvider;
 
-    public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient,
+        IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _userRepository = userRepository;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
@@ -32,19 +34,22 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         const int LIMIT = 100;
 
         var workItem = context.GetData<UserMaintenanceWorkItem>();
-        Log.LogInformation("Received user maintenance work item. Normalize: {Normalize}", workItem.Normalize);
+        Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResetVerifyEmailAddressToken={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResetVerifyEmailAddressToken);
 
         var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
-            foreach (var user in results.Documents)
+            if (workItem.Normalize)
             {
-                if (workItem.Normalize)
-                    NormalizeUser(user);
+                await NormalizeUsersAsync(results.Documents);
+                continue;
             }
 
-            if (workItem.Normalize)
-                await _userRepository.SaveAsync(results.Documents);
+            if (workItem.ResetVerifyEmailAddressToken)
+            {
+                await ResetVerifyEmailAddressTokenAndExpirationAsync(results.Documents);
+                continue;
+            }
 
             // Sleep so we are not hammering the backend.
             await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
@@ -57,15 +62,38 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         }
     }
 
-    private void NormalizeUser(User user)
+    private async Task NormalizeUsersAsync(IReadOnlyCollection<User> users)
     {
-        user.FullName = user.FullName.Trim();
-
-        string email = user.EmailAddress.Trim().ToLowerInvariant();
-        if (!String.Equals(user.EmailAddress, email))
+        var usersToSave = new List<User>(users.Count);
+        foreach (var user in users)
         {
+            string fullName = user.FullName.Trim();
+            string email = user.EmailAddress.Trim().ToLowerInvariant();
+            if (String.Equals(user.FullName, fullName) && String.Equals(user.EmailAddress, email))
+                continue;
+
             Log.LogInformation("Normalizing user email address {EmailAddress} to {NewEmailAddress}", user.EmailAddress, email);
+            user.FullName = fullName;
             user.EmailAddress = email;
+            usersToSave.Add(user);
         }
+
+        if (usersToSave.Count > 0)
+            await _userRepository.SaveAsync(usersToSave);
+    }
+
+    private async Task ResetVerifyEmailAddressTokenAndExpirationAsync(IEnumerable<User> users)
+    {
+        var unverifiedUsers = users.Where(u => !u.IsEmailAddressVerified).ToList();
+        if (unverifiedUsers.Count is 0)
+            return;
+
+        foreach (var user in unverifiedUsers)
+        {
+            user.ResetVerifyEmailAddressTokenAndExpiration();
+            Log.LogInformation("Reset verify email address token and expiration for {EmailAddress}", user.EmailAddress);
+        }
+
+        await _userRepository.SaveAsync(unverifiedUsers);
     }
 }

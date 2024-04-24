@@ -7,7 +7,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
     public WebHookDataPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
-    /// Runs all of the event plugins create method.
+    /// Runs all the event plugins create method.
     /// </summary>
     public async Task<object?> CreateFromEventAsync(WebHookDataContext context)
     {
@@ -37,7 +37,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
     }
 
     /// <summary>
-    /// Runs all of the event plugins create method.
+    /// Runs all the event plugins create method.
     /// </summary>
     public async Task<object?> CreateFromStackAsync(WebHookDataContext context)
     {

@@ -7,7 +7,7 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     public EventPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
     /// <summary>
-    /// Runs all of the event plugins startup method.
+    /// Runs all the event plugins startup method.
     /// </summary>
     public async Task StartupAsync()
     {
@@ -26,13 +26,13 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     }
 
     /// <summary>
-    /// Runs all of the event plugins event processing method.
+    /// Runs all the event plugins event processing method.
     /// </summary>
     public async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
         foreach (var plugin in Plugins.Values)
         {
-            var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+            var contextsToProcess = contexts.Where(c => c is { IsCancelled: false, HasError: false }).ToList();
             if (contextsToProcess.Count == 0)
                 break;
 
@@ -51,13 +51,13 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
     }
 
     /// <summary>
-    /// Runs all of the event plugins event processed method.
+    /// Runs all the event plugins event processed method.
     /// </summary>
     public async Task EventBatchProcessedAsync(ICollection<EventContext> contexts)
     {
         foreach (var plugin in Plugins.Values)
         {
-            var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
+            var contextsToProcess = contexts.Where(c => c is { IsCancelled: false, HasError: false }).ToList();
             if (contextsToProcess.Count == 0)
                 break;
 

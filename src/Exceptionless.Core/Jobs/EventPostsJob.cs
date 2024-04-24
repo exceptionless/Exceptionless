@@ -190,7 +190,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 if (!isInternalProject && isDebugLogLevelEnabled)
                 {
                     using (_logger.BeginScope(new ExceptionlessState().Value(contexts.Count)))
-                        _logger.LogDebug("Ran {@value} events through the pipeline: id={QueueEntryId} success={SuccessCount} error={ErrorCount}", contexts.Count, entry.Id, contexts.Count(r => r.IsProcessed), contexts.Count(r => r.HasError));
+                        _logger.LogDebug("Ran {@Value} events through the pipeline: id={QueueEntryId} success={SuccessCount} error={ErrorCount}", contexts.Count, entry.Id, contexts.Count(r => r.IsProcessed), contexts.Count(r => r.HasError));
                 }
 
                 // increment the plan usage counters (note: OverageHandler already incremented usage by 1)

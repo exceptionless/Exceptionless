@@ -74,7 +74,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
         var plan = _billingManager.GetBillingPlan(organization.PlanId);
         if (plan is null)
         {
-            Log.LogError("Unable to find a valid plan for organization: {organization}", organization.Id);
+            Log.LogError("Unable to find a valid plan for organization: {Organization}", organization.Id);
             return;
         }
 

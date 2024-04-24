@@ -24,25 +24,29 @@
 
 <Table.Root>
     <Table.Body>
-        <Table.Row>
-            <Table.Head class="whitespace-nowrap">Error Type</Table.Head>
-            <Table.Cell class="flex items-center">{errorType}<ClickableStringFilter term="error.type" value={errorType} /></Table.Cell>
+        <Table.Row class="group">
+            <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
+            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.type" value={errorType} /></Table.Cell>
+            <Table.Cell>{errorType}</Table.Cell>
         </Table.Row>
         {#if message}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="flex items-center">{message}<ClickableStringFilter term="error.message" value={message} /></Table.Cell>
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.message" value={message} /></Table.Cell>
+                <Table.Cell>{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if code}
-            <Table.Row>
-                <Table.Head class="whitespace-nowrap">Code</Table.Head>
-                <Table.Cell class="flex items-center">{code}<ClickableVersionFilter term="error.code" value={code} /></Table.Cell>
+            <Table.Row class="group">
+                <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="error.code" value={code} /></Table.Cell>
+                <Table.Cell>{code}</Table.Cell>
             </Table.Row>
         {/if}
         {#if submissionMethod}
             <Table.Row>
-                <Table.Head class="whitespace-nowrap">Submission Method</Table.Head>
+                <Table.Head class="w-40 whitespace-nowrap">Submission Method</Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>{submissionMethod}</Table.Cell>
             </Table.Row>
         {/if}</Table.Body

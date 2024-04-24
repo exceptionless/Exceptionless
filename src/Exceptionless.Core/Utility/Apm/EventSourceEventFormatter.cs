@@ -5,7 +5,7 @@ namespace OpenTelemetry.Internal;
 
 internal static class EventSourceEventFormatter
 {
-    private static readonly object[] EmptyPayload = Array.Empty<object>();
+    private static readonly object[] EmptyPayload = [];
 
     public static string Format(EventWrittenEventArgs eventData)
     {

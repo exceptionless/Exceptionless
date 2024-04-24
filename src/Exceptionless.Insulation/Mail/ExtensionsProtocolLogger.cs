@@ -20,7 +20,7 @@ public class ExtensionsProtocolLogger : IProtocolLogger
 
     public void LogConnect(Uri uri)
     {
-        _logger.LogTrace("Connected to {URI}", uri);
+        _logger.LogTrace("Connected to {Uri}", uri);
     }
 
     public void LogClient(byte[] buffer, int offset, int count)

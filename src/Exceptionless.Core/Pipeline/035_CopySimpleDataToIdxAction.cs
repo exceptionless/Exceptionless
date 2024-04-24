@@ -14,7 +14,7 @@ public class CopySimpleDataToIdxAction : EventPipelineActionBase
             return Task.CompletedTask;
 
         // TODO: Do we need a pipeline action to trim keys and remove null values that may be sent by other native clients.
-        ctx.Event.CopyDataToIndex(Array.Empty<string>());
+        ctx.Event.CopyDataToIndex([]);
         int fieldCount = ctx.Event.Idx.Count;
         AppDiagnostics.EventsFieldCount.Record(fieldCount);
         if (fieldCount > 20 && _logger.IsEnabled(LogLevel.Warning))

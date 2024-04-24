@@ -41,7 +41,7 @@ public static class DelegateFactory
 
         generator.MarkLabel(argsOk);
 
-        if (!method.IsConstructor && !method.IsStatic)
+        if (method is { IsConstructor: false, IsStatic: false })
             generator.PushInstance(method.DeclaringType);
 
         for (int i = 0; i < args.Length; i++)
