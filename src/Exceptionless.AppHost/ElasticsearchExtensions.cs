@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Aspire.Hosting.Lifecycle;
-using Microsoft.Extensions.Configuration;
 
 namespace Aspire.Hosting;
 
@@ -20,8 +19,9 @@ public static class ElasticsearchBuilderExtensions
     {
         var elasticsearch = new ElasticsearchResource(name);
         return builder.AddResource(elasticsearch)
-            .WithHttpEndpoint(port: 9200, targetPort: port, name: "http")
-            .WithAnnotation(new ContainerImageAnnotation { Image = "docker.elastic.co/elasticsearch/elasticsearch", Tag = "8.12.2" })
+            .WithHttpEndpoint(port: port, targetPort: 9200, name: ElasticsearchResource.PrimaryEndpointName)
+            .WithImage("elasticsearch/elasticsearch", "8.12.2")
+            .WithImageRegistry("docker.elastic.co")
             .WithEnvironment("discovery.type", "single-node")
             .WithEnvironment("xpack.security.enabled", "false")
             .WithEnvironment("action.destructive_requires_name", "false")
@@ -64,10 +64,22 @@ public static class ElasticsearchBuilderExtensions
 /// <param name="name">The name of the resource.</param>
 public class ElasticsearchResource(string name) : ContainerResource(name), IResourceWithConnectionString
 {
+    internal const string PrimaryEndpointName = "http";
+
+    private EndpointReference? _primaryEndpoint;
+
+    /// <summary>
+    /// Gets the primary endpoint for the Elasticsearch server.
+    /// </summary>
+    public EndpointReference PrimaryEndpoint => _primaryEndpoint ??= new(this, PrimaryEndpointName);
+
+    private ReferenceExpression ConnectionString =>
+        ReferenceExpression.Create($"http://{PrimaryEndpoint.Property(EndpointProperty.Host)}:{PrimaryEndpoint.Property(EndpointProperty.Port)}");
+
     /// <summary>
     /// Gets the connection string expression for the Elasticsearch server for the manifest.
     /// </summary>
-    public string? ConnectionStringExpression
+    public ReferenceExpression ConnectionStringExpression
     {
         get
         {
@@ -76,31 +88,23 @@ public class ElasticsearchResource(string name) : ContainerResource(name), IReso
                 return connectionStringAnnotation.Resource.ConnectionStringExpression;
             }
 
-            return $"http://{{{Name}.bindings.tcp.host}}:{{{Name}.bindings.tcp.port}}";
+            return ConnectionString;
         }
     }
-
-    ReferenceExpression IResourceWithConnectionString.ConnectionStringExpression => throw new NotImplementedException();
 
     /// <summary>
     /// Gets the connection string for the Elasticsearch server.
     /// </summary>
-    /// <returns>A connection string for the Elasticsearch server in the form "host:port".</returns>
-    public string? GetConnectionString()
+    /// <param name="cancellationToken"> A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A connection string for the Elasticsearch server in the form "http://host:port".</returns>
+    public ValueTask<string?> GetConnectionStringAsync(CancellationToken cancellationToken = default)
     {
         if (this.TryGetLastAnnotation<ConnectionStringRedirectAnnotation>(out var connectionStringAnnotation))
         {
-            return connectionStringAnnotation.Resource.GetConnectionString();
+            return connectionStringAnnotation.Resource.GetConnectionStringAsync(cancellationToken);
         }
 
-        if (!this.TryGetAnnotationsOfType<AllocatedEndpointAnnotation>(out var allocatedEndpoints))
-        {
-            throw new DistributedApplicationException("Elasticsearch resource does not have endpoint annotation.");
-        }
-
-        // We should only have one endpoint for Elasticsearch for local scenarios.
-        var endpoint = allocatedEndpoints.Single();
-        return $"http://{endpoint.EndPointString}";
+        return ConnectionString.GetValueAsync(cancellationToken);
     }
 }
 
@@ -112,13 +116,13 @@ public class KibanaResource(string name) : ContainerResource(name)
 {
 }
 
-internal class KibanaConfigWriterHook(IConfiguration configuration) : IDistributedApplicationLifecycleHook
+internal class KibanaConfigWriterHook : IDistributedApplicationLifecycleHook
 {
     public Task AfterEndpointsAllocatedAsync(DistributedApplicationModel appModel, CancellationToken cancellationToken)
     {
         if (appModel.Resources.OfType<KibanaResource>().SingleOrDefault() is not { } kibanaResource)
         {
-            // No-op if there is no commander resource (removed after hook added).
+            // No-op if there is no kibana resource (removed after hook added).
             return Task.CompletedTask;
         }
 
@@ -130,22 +134,18 @@ internal class KibanaConfigWriterHook(IConfiguration configuration) : IDistribut
             return Task.CompletedTask;
         }
 
-        var containerHostName = HostNameResolver.ReplaceLocalhostWithContainerHost("localhost", configuration);
-
         var hostsVariableBuilder = new StringBuilder();
 
         foreach (var elasticsearchInstance in elasticsearchInstances)
         {
-            if (elasticsearchInstance.TryGetAllocatedEndPoints(out var allocatedEndpoints))
+            if (elasticsearchInstance.PrimaryEndpoint.IsAllocated)
             {
-                var endpoint = allocatedEndpoints.Where(ae => ae.Name == "http").Single();
-
-                var hostString = $"{(hostsVariableBuilder.Length > 0 ? "," : string.Empty)}http://{containerHostName}:{endpoint.Port}";
+                var hostString = $"{(hostsVariableBuilder.Length > 0 ? "," : string.Empty)}http://{elasticsearchInstance.PrimaryEndpoint.ContainerHost}:{elasticsearchInstance.PrimaryEndpoint.Port}";
                 hostsVariableBuilder.Append(hostString);
             }
         }
-        
-        kibanaResource.Annotations.Add(new EnvironmentCallbackAnnotation((EnvironmentCallbackContext context) =>
+
+        kibanaResource.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
         {
             context.EnvironmentVariables.Add("ELASTICSEARCH_HOSTS", hostsVariableBuilder.ToString());
         }));
