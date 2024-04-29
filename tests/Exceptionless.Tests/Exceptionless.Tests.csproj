@@ -10,7 +10,7 @@
 
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="9.9.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-    <PackageReference Include="xunit" Version="2.7.1" />
+    <PackageReference Include="xunit" Version="2.8.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" PrivateAssets="All" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.8" PrivateAssets="All" />
     <PackageReference Include="coverlet.collector" Version="6.0.2">
