@@ -1,12 +1,11 @@
 <script lang="ts">
     import type { Table } from '@tanstack/svelte-table';
     import type { Selected } from 'bits-ui';
-    import type { Readable } from 'svelte/store';
 
     import * as Select from '$comp/ui/select';
 
     type TData = $$Generic;
-    export let table: Readable<Table<TData>>;
+    export let table: Table<TData>;
 
     export let value: number;
     export let defaultValue: number = 10;
@@ -28,7 +27,7 @@
         }
 
         value = newValue;
-        $table.setPageSize(newValue);
+        table.setPageSize(newValue);
     }
 </script>
 

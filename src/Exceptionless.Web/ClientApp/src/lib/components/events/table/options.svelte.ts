@@ -8,9 +8,9 @@ import {
     type VisibilityState,
     renderComponent,
     type RowSelectionState
-} from '@tanstack/svelte-table';
+} from '$comp/tanstack-table-svelte5';
 import { persisted } from 'svelte-persisted-store';
-import { get, writable, type Writable } from 'svelte/store';
+import { get } from 'svelte/store';
 
 import type { EventSummaryModel, GetEventsMode, IGetEventsParams, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 import Summary from '$comp/events/summary/Summary.svelte';
@@ -133,144 +133,152 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     return columns;
 }
 
-export function getOptions<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
-    parameters: Writable<IGetEventsParams>,
+export function getTableContext<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
+    parameters: IGetEventsParams,
     configureOptions: (options: TableOptions<TSummaryModel>) => TableOptions<TSummaryModel> = (options) => options
 ) {
-    const columns = getColumns<TSummaryModel>(get(parameters).mode);
-    const columnVisibility = persisted('events-column-visibility', <VisibilityState>{});
+    let pageCount = $state(0);
+    let data = $state([] as TSummaryModel[]);
+    let loading = $state(false);
+    let meta = $state.frozen({} as FetchClientResponse<unknown>['meta']);
 
-    const onColumnVisibilityChange = (updaterOrValue: Updater<VisibilityState>) => {
-        if (updaterOrValue instanceof Function) {
-            columnVisibility.update(() => updaterOrValue(get(columnVisibility)));
-        } else {
-            columnVisibility.update(() => updaterOrValue);
-        }
-
-        options.update((old) => ({
-            ...old,
-            state: {
-                ...old.state,
-                ...{ columnVisibility: get(columnVisibility) }
-            }
-        }));
-    };
-
-    let pagination: PaginationState = {
+    const columns = getColumns<TSummaryModel>(parameters.mode);
+    const [columnVisibility, setColumnVisibility] = createPersistedTableState('events-column-visibility', <VisibilityState>{});
+    const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: 0,
-        pageSize: get(parameters).limit ?? DEFAULT_LIMIT
-    };
-
-    const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
-        const { loading = false } = (get(options).meta as { loading: boolean }) ?? {
-            loading: false
-        };
-        if (loading) {
-            return;
-        }
-
-        const previousPageIndex = pagination.pageIndex;
-        if (updaterOrValue instanceof Function) {
-            pagination = updaterOrValue(pagination);
-        } else {
-            pagination = updaterOrValue;
-        }
-
-        // Force a reset of the row selection state until we get smarter about it.
-        rowSelection = {};
-
-        options.update((old) => ({
-            ...old,
-            state: {
-                ...old.state,
-                pagination,
-                rowSelection
-            },
-            meta: {
-                ...old.meta,
-                loading: true
-            }
-        }));
-
-        const meta = get(options).meta as FetchClientResponse<unknown>['meta'];
-        parameters.update((params) => ({
-            ...params,
-            before: pagination.pageIndex < previousPageIndex && pagination.pageIndex > 0 ? (meta?.links.previous?.before as string) : undefined,
-            after: pagination.pageIndex > previousPageIndex ? (meta?.links.next?.after as string) : undefined,
-            limit: pagination.pageSize
-        }));
-    };
-
-    let rowSelection: RowSelectionState = {};
-
-    const onRowSelectionChange = (updaterOrValue: Updater<RowSelectionState>) => {
-        if (updaterOrValue instanceof Function) {
-            rowSelection = updaterOrValue(rowSelection);
-        } else {
-            rowSelection = updaterOrValue;
-        }
-
-        options.update((old) => ({
-            ...old,
-            state: {
-                ...old.state,
-                rowSelection: rowSelection
-            }
-        }));
-    };
-
-    let sorting: ColumnSort[] = [
+        pageSize: parameters.limit ?? DEFAULT_LIMIT
+    });
+    const [sorting, setSorting] = createTableState<ColumnSort[]>([
         {
             id: 'date',
             desc: true
         }
-    ];
-
-    const onSortingChange = (updaterOrValue: Updater<ColumnSort[]>) => {
-        if (updaterOrValue instanceof Function) {
-            sorting = updaterOrValue(sorting);
-        } else {
-            sorting = updaterOrValue;
+    ]);
+    const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
+    const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
+        if (loading) {
+            return;
         }
 
-        options.update((old) => ({
-            ...old,
-            state: {
-                ...old.state,
-                sorting
-            }
-        }));
+        loading = true;
+        const previousPageIndex = pagination().pageIndex;
+        setPagination(updaterOrValue);
 
-        parameters.update((params) => ({
-            ...params,
-            before: undefined,
-            after: undefined,
-            sort: sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined
-        }));
+        // Force a reset of the row selection state until we get smarter about it.
+        setRowSelection({});
+
+        const currentPageInfo = pagination();
+        parameters = {
+            ...parameters,
+            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? (meta.links.previous?.before as string) : undefined,
+            after: currentPageInfo.pageIndex > previousPageIndex ? (meta.links.next?.after as string) : undefined,
+            limit: currentPageInfo.pageSize
+        };
     };
 
-    const options = writable<TableOptions<TSummaryModel>>(
-        configureOptions({
-            columns,
-            data: [],
-            enableRowSelection: true,
-            enableMultiRowSelection: true,
-            enableSortingRemoval: false,
-            manualSorting: true,
-            manualPagination: true,
-            state: {
-                columnVisibility: get(columnVisibility),
-                rowSelection,
-                sorting
-            },
-            getCoreRowModel: getCoreRowModel(),
-            getRowId: (originalRow) => originalRow.id,
-            onColumnVisibilityChange,
-            onPaginationChange,
-            onRowSelectionChange,
-            onSortingChange
-        })
-    );
+    const onSortingChange = (updaterOrValue: Updater<ColumnSort[]>) => {
+        setSorting(updaterOrValue);
 
-    return options;
+        parameters = {
+            ...parameters,
+            before: undefined,
+            after: undefined,
+            sort:
+                sorting().length > 0
+                    ? sorting()
+                          .map((sort) => `${sort.desc ? '-' : ''}${sort.id}`)
+                          .join(',')
+                    : undefined
+        };
+    };
+
+    const options = configureOptions({
+        columns,
+        get data() {
+            return data;
+        },
+        enableRowSelection: true,
+        enableMultiRowSelection: true,
+        enableSortingRemoval: false,
+        manualSorting: true,
+        manualPagination: true,
+        get pageCount() {
+            return pageCount;
+        },
+        state: {
+            get columnVisibility() {
+                return columnVisibility();
+            },
+            get rowSelection() {
+                return rowSelection();
+            },
+            get sorting() {
+                return sorting();
+            }
+        },
+        getCoreRowModel: getCoreRowModel(),
+        getRowId: (originalRow) => originalRow.id,
+        onColumnVisibilityChange: setColumnVisibility,
+        onPaginationChange,
+        onRowSelectionChange: setRowSelection,
+        onSortingChange
+    });
+
+    return {
+        get data() {
+            return data;
+        },
+        set data(value) {
+            data = value;
+        },
+        get loading() {
+            return loading;
+        },
+        set loading(value) {
+            loading = value;
+        },
+        get meta() {
+            return meta;
+        },
+        set meta(value) {
+            meta = value;
+        },
+        options,
+        get pageCount() {
+            return pageCount;
+        },
+        set pageCount(value) {
+            pageCount = value;
+        }
+    };
+}
+
+function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) => void] {
+    let value = $state(initialValue);
+
+    return [
+        () => value,
+        (updater: Updater<T>) => {
+            if (updater instanceof Function) {
+                value = updater(value);
+            } else {
+                value = updater;
+            }
+        }
+    ];
+}
+
+function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
+    const value = persisted<T>(key, initialValue);
+
+    return [
+        () => get(value),
+        (updater: Updater<T>) => {
+            if (updater instanceof Function) {
+                value.update(updater);
+            } else {
+                value.update(() => updater);
+            }
+        }
+    ];
 }

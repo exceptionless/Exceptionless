@@ -1,11 +1,10 @@
 <script lang="ts">
     import type { Table } from '@tanstack/svelte-table';
-    import { type Readable } from 'svelte/store';
 
     import DataTableViewOptions from './data-table-view-options.svelte';
 
     type TData = $$Generic;
-    export let table: Readable<Table<TData>>;
+    export let table: Table<TData>;
 </script>
 
 <div class="flex items-center justify-between gap-x-2">

@@ -50,7 +50,7 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} {limit} {time} on:rowclick={onRowClick}>
+            <EventsDataTable filter={$filter} limit={$limit} time={$time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
                     <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
                 </svelte:fragment>

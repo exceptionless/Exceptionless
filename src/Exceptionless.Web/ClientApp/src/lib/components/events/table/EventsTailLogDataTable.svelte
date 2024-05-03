@@ -1,36 +1,35 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import { writable, type Readable } from 'svelte/store';
-    import { createSvelteTable } from '@tanstack/svelte-table';
+    import { type Readable } from 'svelte/store';
+    import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import * as DataTable from '$comp/data-table';
-    import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import { type FetchClientResponse, FetchClient } from '$api/FetchClient';
     import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import Muted from '$comp/typography/Muted.svelte';
-    import { getOptions } from './options';
+    import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
 
     export let filter: Readable<string>;
     export let limit: Readable<number>;
 
-    const parameters = writable<IGetEventsParams>({ mode: 'summary', limit: $limit });
-    const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ mode: 'summary', limit: $limit }, (options) => ({
         ...options,
         columns: options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false })),
         enableRowSelection: false,
         enableMultiRowSelection: false,
         manualSorting: false
     }));
-    const table = createSvelteTable(options);
+    const table = createSvelteTable(context.options);
 
     const { getJSON, loading } = new FetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
     let before: string | undefined;
 
-    parameters.subscribe(async () => await loadData(true));
+    context.parameters.subscribe(async () => await loadData(true));
     filter.subscribe(async () => await loadData(true));
 
     async function loadData(filterChanged: boolean = false) {
@@ -44,7 +43,7 @@
 
         response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
-                ...$parameters,
+                ...context.parameters,
                 filter: $filter,
                 before
             }
@@ -53,20 +52,17 @@
         if (response.ok) {
             before = response.meta.links.previous?.before;
 
-            const data = filterChanged ? [] : [...$options.data];
+            const data = filterChanged ? [] : [...context.data];
             for (const summary of response.data?.reverse() || []) {
                 data.push(summary);
             }
 
-            const limit = $parameters.limit ?? DEFAULT_LIMIT;
+            const limit = context.parameters.limit ?? DEFAULT_LIMIT;
             const total = (response.meta?.total as number) ?? 0;
-            options.update((options) => ({
-                ...options,
-                data: data.slice(-limit),
-                page: $parameters.page ?? 0,
-                pageCount: Math.ceil(total / limit),
-                meta: response.meta
-            }));
+            context.data = data.slice(-limit);
+            context.pageCount = Math.ceil(total / limit);
+            context.meta = response.meta;
+            context.loading = false;
         }
     }
 
@@ -76,10 +72,7 @@
             case ChangeType.Saved:
                 return await loadData();
             case ChangeType.Removed:
-                options.update((options) => ({
-                    ...options,
-                    data: options.data.filter((doc) => doc.id !== detail.id)
-                }));
+                table.options.data = table.options.data.filter((doc) => doc.id !== detail.id);
                 break;
         }
     }
