@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { VariantProps } from 'tailwind-variants';
     import IconContentCopy from '~icons/mdi/content-copy';
-    import { clickToCopyAction } from 'svelte-legos';
     import { toast } from 'svelte-sonner';
     import { Button, buttonVariants } from '$comp/ui/button';
 
@@ -18,7 +17,7 @@
     }
 </script>
 
-<div use:clickToCopyAction={() => value || ''} on:copy-done={handleCopyDone} on:copy-error={handleCopyError}>
+<div>
     <Button {title} {size}>
         <slot><IconContentCopy class="h-4 w-4" /></slot>
     </Button>
