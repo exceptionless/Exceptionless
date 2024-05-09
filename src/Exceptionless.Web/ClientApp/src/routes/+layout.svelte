@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
@@ -11,20 +10,6 @@
 
     import '../app.css';
     import { routes } from './routes';
-    import { isCommandOpen } from '$lib/stores/app';
-
-    onMount(() => {
-        function handleKeydown(e: KeyboardEvent) {
-            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                $isCommandOpen = !$isCommandOpen;
-            }
-        }
-        document.addEventListener('keydown', handleKeydown);
-        return () => {
-            document.removeEventListener('keydown', handleKeydown);
-        };
-    });
 
     setDefaultBaseUrl('api/v2');
     setAccessTokenStore(accessToken);

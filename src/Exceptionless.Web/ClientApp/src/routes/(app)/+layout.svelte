@@ -4,7 +4,6 @@
     import NavbarLayout from './(components)/layouts/Navbar.svelte';
     import SidebarLayout from './(components)/layouts/Sidebar.svelte';
     import FooterLayout from './(components)/layouts/Footer.svelte';
-    import { isCommandOpen, isSidebarOpen, isSmallScreen } from '$lib/stores/app';
 
     import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
     import { WebSocketClient } from '$api/WebSocketClient';
@@ -18,6 +17,14 @@
     import { derived } from 'svelte/store';
     import { getMeQuery } from '$api/usersApi';
     import { routes, type NavigationItemContext } from '../routes';
+    import { persisted } from "$lib/helpers/persisted.svelte";
+    import { mediaQuery } from "$lib/helpers/mediaQuery.svelte";
+
+    let isSidebarOpen = persisted('sidebar-open', false)
+    let isCommandOpen = $state(false);
+    const isSmallScreen = mediaQuery('(min-width: 640px)');
+    const isMediumScreen = mediaQuery('(min-width: 768px)');
+    const isLargeScreen = mediaQuery('(min-width: 1024px)');
 
     isAuthenticated.subscribe(async (authenticated) => {
         if (!authenticated) {
@@ -73,15 +80,24 @@
 
     // Close Sidebar on page change on mobile
     page.subscribe(() => {
-        if ($isSmallScreen === true) {
-            isSidebarOpen.set(false);
+        if (isSmallScreen === true) {
+            isSidebarOpen.value = false;
         }
     });
 
-    onMount(() => {
+    $effect(() => {
+        function handleKeydown(e: KeyboardEvent) {
+            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                isCommandOpen = !isCommandOpen;
+            }
+        }
+
         if (!$isAuthenticated) {
             return;
         }
+
+        document.addEventListener('keydown', handleKeydown);
 
         const ws = new WebSocketClient();
         ws.onMessage = onMessage;
@@ -97,12 +113,13 @@
         };
 
         return () => {
+            document.removeEventListener('keydown', handleKeydown);
             ws?.close();
         };
     });
 
     const userQuery = getMeQuery();
-    const filteredRoutes = derived(userQuery, ($userResponse) => {
+    const filteredRoutes = $derived(userQuery, ($userResponse) => {
         const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
@@ -113,10 +130,10 @@
     <div class="flex overflow-hidden pt-16">
         <SidebarLayout routes={$filteredRoutes} />
 
-        <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {$isSidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}">
+        <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {isSidebarOpen.value ? 'lg:ml-64' : 'lg:ml-16'}">
             <main>
                 <div class="px-4 pt-4">
-                    <NavigationCommand bind:open={$isCommandOpen} routes={$filteredRoutes} />
+                    <NavigationCommand bind:open={isCommandOpen} routes={$filteredRoutes} />
                     <slot />
                 </div>
             </main>

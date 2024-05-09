@@ -8,7 +8,7 @@ function is_primitive(value: unknown): value is Primitive {
 // https://twitter.com/puruvjdev/status/1787037268143689894/photo/1
 // https://github.com/joshnuss/svelte-persisted-store/discussions/251
 // TODO: Have this support serialization.
-export function persisted<T>(key: string, initial: T) {
+export function persisted<T>(key: string, initial: T): T extends Primitive ? { value: T } : T {
     const existing = localStorage.getItem(key);
 
     const primitive = is_primitive(initial);
