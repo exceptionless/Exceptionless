@@ -10,17 +10,15 @@
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
     import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
     import { validate } from '$lib/validation/validation';
-    import { onMount } from 'svelte';
 
     import { useQueryClient } from '@tanstack/svelte-query';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
-    import { derived } from 'svelte/store';
     import { getMeQuery } from '$api/usersApi';
     import { routes, type NavigationItemContext } from '../routes';
-    import { persisted } from "$lib/helpers/persisted.svelte";
-    import { mediaQuery } from "$lib/helpers/mediaQuery.svelte";
+    import { persisted } from '$lib/helpers/persisted.svelte';
+    import { mediaQuery } from '$lib/helpers/mediaQuery.svelte';
 
-    let isSidebarOpen = persisted('sidebar-open', false)
+    let isSidebarOpen = persisted('sidebar-open', false);
     let isCommandOpen = $state(false);
     const isSmallScreen = mediaQuery('(min-width: 640px)');
     const isMediumScreen = mediaQuery('(min-width: 768px)');
@@ -119,21 +117,21 @@
     });
 
     const userQuery = getMeQuery();
-    const filteredRoutes = $derived(userQuery, ($userResponse) => {
-        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
+    const filteredRoutes = $derived.by(() => {
+        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userQuery.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 
 {#if $isAuthenticated}
-    <NavbarLayout></NavbarLayout>
+    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} {isMediumScreen}></NavbarLayout>
     <div class="flex overflow-hidden pt-16">
-        <SidebarLayout routes={$filteredRoutes} />
+        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} {isLargeScreen} routes={filteredRoutes} />
 
         <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {isSidebarOpen.value ? 'lg:ml-64' : 'lg:ml-16'}">
             <main>
                 <div class="px-4 pt-4">
-                    <NavigationCommand bind:open={isCommandOpen} routes={$filteredRoutes} />
+                    <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
                     <slot />
                 </div>
             </main>

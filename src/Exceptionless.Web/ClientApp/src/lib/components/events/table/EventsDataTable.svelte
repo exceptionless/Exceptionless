@@ -7,11 +7,17 @@
     import * as DataTable from '$comp/data-table';
     import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
-    import type { EventSummaryModel, GetEventsMode, IGetEventsParams, SummaryTemplateKeys } from "$lib/models/api";
+    import type { EventSummaryModel, GetEventsMode, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
 
-    let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = "summary" }: { filter: string, pageFilter: string | undefined, limit: number, time: string, mode: GetEventsMode } = $props();
+    let {
+        filter,
+        pageFilter = undefined,
+        limit = DEFAULT_LIMIT,
+        time,
+        mode = 'summary'
+    }: { filter: string; pageFilter: string | undefined; limit: number; time: string; mode: GetEventsMode } = $props();
 
-    const parameters = $state.frozen({ mode, limit } as IGetEventsParams)
+    const parameters = $state.frozen({ mode, limit } as IGetEventsParams);
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
     const table = createSvelteTable(context.options);
 
@@ -28,10 +34,10 @@
         }
 
         console.log({
-                ...parameters,
-                filter: [pageFilter, filter].filter(Boolean).join(' '),
-                time
-            });
+            ...parameters,
+            filter: [pageFilter, filter].filter(Boolean).join(' '),
+            time
+        });
         response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...parameters,

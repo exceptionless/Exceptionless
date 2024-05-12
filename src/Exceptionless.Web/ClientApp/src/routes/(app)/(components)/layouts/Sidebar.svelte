@@ -1,19 +1,19 @@
 <script lang="ts">
-    import { isSidebarOpen, isLargeScreen } from '$lib/stores/app';
     import SidebarMenuItem from './SidebarMenuItem.svelte';
     import type { NavigationItem } from '../../../routes';
 
-    export let routes: NavigationItem[];
+    let { isLargeScreen, isSidebarOpen = $bindable(), routes }: { isLargeScreen: boolean; isSidebarOpen: boolean; routes: NavigationItem[] } = $props();
+
     const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
 
     function onBackdropClick() {
-        isSidebarOpen.set(false);
+        isSidebarOpen = false;
     }
 </script>
 
 <aside
     id="sidebar"
-    class="transition-width fixed left-0 top-0 z-20 flex h-full w-64 flex-shrink-0 flex-col bg-background pt-16 text-foreground duration-75 lg:flex {$isSidebarOpen
+    class="transition-width fixed left-0 top-0 z-20 flex h-full w-64 flex-shrink-0 flex-col bg-background pt-16 text-foreground duration-75 lg:flex {isSidebarOpen
         ? 'lg:w-64'
         : 'hidden lg:w-16'}"
     aria-label="Sidebar"
@@ -38,8 +38,8 @@
 </aside>
 
 <button
-    class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!$isLargeScreen && $isSidebarOpen ? '' : 'hidden'}"
+    class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!isLargeScreen && isSidebarOpen ? '' : 'hidden'}"
     title="Close sidebar"
     aria-label="Close sidebar"
-    on:click={onBackdropClick}
+    onclick={onBackdropClick}
 ></button>

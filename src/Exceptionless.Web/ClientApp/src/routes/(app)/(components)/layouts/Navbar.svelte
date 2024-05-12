@@ -6,7 +6,6 @@
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import { isCommandOpen, isMediumScreen, isSidebarOpen } from '$lib/stores/app';
     import * as Avatar from '$comp/ui/avatar';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import Loading from '$comp/Loading.svelte';
@@ -14,8 +13,18 @@
     import { Button } from '$comp/ui/button';
     import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar';
 
+    let {
+        isCommandOpen = $bindable(),
+        isSidebarOpen = $bindable(),
+        isMediumScreen
+    }: { isCommandOpen: boolean; isSidebarOpen: boolean; isMediumScreen: boolean } = $props();
+
     function onHamburgerClick(): void {
-        isSidebarOpen.set(!$isSidebarOpen);
+        isSidebarOpen = !isSidebarOpen;
+    }
+
+    function onSearchClick(): void {
+        isCommandOpen = true;
     }
 
     const gravatarSrc = getGravatarFromCurrentUserSrc();
@@ -30,14 +39,14 @@
                     <IconMenu class="h-6 w-6" />
                 </Button>
                 <Button on:click={onHamburgerClick} variant="outline" size="icon" class="mr-2 lg:hidden" aria-controls="sidebar">
-                    {#if $isSidebarOpen}
+                    {#if isSidebarOpen}
                         <IconClose class="h-6 w-6" />
                     {:else}
                         <IconMenu class="h-6 w-6" />
                     {/if}
                 </Button>
                 <a href="./" class="mr-14 flex min-w-[250px] dark:text-white">
-                    {#if $isMediumScreen}
+                    {#if isMediumScreen}
                         <img src={logo} class="absolute top-[0px] mr-3 h-[65px] dark:hidden" alt="Exceptionless Logo" />
                         <img src={logoDark} class="absolute top-[0px] mr-3 hidden h-[65px] dark:block" alt="Exceptionless Logo" />
                     {:else}
@@ -46,7 +55,7 @@
                 </a>
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button variant="outline" size="default" on:click={() => isCommandOpen.set(true)}>
+                <Button variant="outline" size="default" on:click={onSearchClick}>
                     <IconSearch class="h-6 w-6" />
                     Search
                     <DropdownMenu.Shortcut class="ml-12">⌘K</DropdownMenu.Shortcut>
