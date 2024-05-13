@@ -14,6 +14,7 @@
     import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar';
 
     let {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         isCommandOpen = $bindable(),
         isSidebarOpen = $bindable(),
         isMediumScreen

@@ -14,7 +14,7 @@
         facebookClientId,
         gitHubClientId,
         microsoftClientId
-    } from '$api/auth';
+    } from '$api/auth.svelte';
 
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Separator } from '$comp/ui/separator';

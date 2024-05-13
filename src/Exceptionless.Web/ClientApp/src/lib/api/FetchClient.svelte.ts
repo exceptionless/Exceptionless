@@ -1,23 +1,24 @@
-import { derived, get, type Readable, readable, writable } from 'svelte/store';
 import { type Link, type Links, parseLinkHeader } from '@web3-storage/parse-link-header';
 
 function createCount() {
-    const { subscribe, set, update } = writable(0);
+    let count = $state(0);
 
     return {
-        subscribe,
-        increment: () => update((n) => n + 1),
-        decrement: () => update((n) => n - 1),
-        reset: () => set(0)
+        get value() {
+            return count;
+        },
+        increment: () => count += 1,
+        decrement: () => count -= 1,
+        reset: () => count = 0
     };
 }
 
 const globalRequestCount = createCount();
-export const globalLoading = derived(globalRequestCount, ($globalRequestCount) => $globalRequestCount > 0);
+export const globalLoading = $derived(globalRequestCount.value > 0);
 
-let accessTokenStore = readable<string | null>(null);
-export function setAccessTokenStore(accessToken: Readable<string | null>) {
-    accessTokenStore = accessToken;
+let accessToken = $state<string | null>(null);
+export function setAccessTokenStore(token: string | null) {
+    accessToken = token;
 }
 
 type Fetch = typeof globalThis.fetch;
@@ -101,7 +102,7 @@ export class FetchClient {
     }
 
     requestCount = createCount();
-    loading = derived(this.requestCount, ($requestCount) => $requestCount > 0);
+    loading = $derived(this.requestCount.value > 0);
 
     public use(...mw: FetchClientMiddleware[]): void {
         this.middleware.push(...mw);
@@ -222,7 +223,6 @@ export class FetchClient {
     private fetchInternal = async <T>(url: string, init?: RequestInit, options?: RequestOptions): Promise<FetchClientResponse<T>> => {
         url = this.buildUrl(url, options);
 
-        const accessToken = get(accessTokenStore);
         if (accessToken !== null) {
             init = {
                 ...init,

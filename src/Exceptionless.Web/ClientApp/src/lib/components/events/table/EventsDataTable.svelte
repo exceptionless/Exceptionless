@@ -1,7 +1,7 @@
 <script lang="ts">
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import { createEventDispatcher } from 'svelte';
-    import { FetchClient, type FetchClientResponse } from '$api/FetchClient';
+    import { FetchClient, type FetchClientResponse } from '$api/FetchClient.svelte';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
     import * as DataTable from '$comp/data-table';

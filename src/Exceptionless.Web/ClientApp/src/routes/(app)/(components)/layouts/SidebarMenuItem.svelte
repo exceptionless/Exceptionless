@@ -9,6 +9,7 @@
         title
     }: { href: HTMLAnchorAttributes['href']; isLargeScreen: boolean; isSidebarOpen: boolean; title: string } = $props();
 
+    // eslint-disable-next-line svelte/valid-compile
     const active = $derived($page.url.pathname === href);
 </script>
 

@@ -21,7 +21,7 @@
         facebookClientId,
         gitHubClientId,
         microsoftClientId
-    } from '$api/auth';
+    } from '$api/auth.svelte';
     import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
     import { Login } from '$lib/models/api';
     import Loading from '$comp/Loading.svelte';
@@ -33,6 +33,8 @@
     import Muted from '$comp/typography/Muted.svelte';
 
     const data = new Login();
+
+    // eslint-disable-next-line svelte/valid-compile
     data.invite_token = $page.url.searchParams.get('token');
 
     let problem = new ProblemDetails();

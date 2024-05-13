@@ -5,10 +5,10 @@
     import SidebarLayout from './(components)/layouts/Sidebar.svelte';
     import FooterLayout from './(components)/layouts/Footer.svelte';
 
-    import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
+    import { accessToken, gotoLogin, isAuthenticated } from '$api/auth.svelte';
     import { WebSocketClient } from '$api/WebSocketClient';
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
-    import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
+    import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient.svelte';
     import { validate } from '$lib/validation/validation';
 
     import { useQueryClient } from '@tanstack/svelte-query';

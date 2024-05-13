@@ -4,8 +4,8 @@
     import { ModeWatcher } from 'mode-watcher';
 
     import { page } from '$app/stores';
-    import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient';
-    import { accessToken } from '$api/auth';
+    import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient.svelte';
+    import { accessToken } from '$api/auth.svelte';
     import { Toaster } from '$comp/ui/sonner';
 
     import '../app.css';
@@ -14,7 +14,8 @@
     setDefaultBaseUrl('api/v2');
     setAccessTokenStore(accessToken);
 
-    page.subscribe(($page) => {
+    $effect(() => {
+        // eslint-disable-next-line svelte/valid-compile
         const currentRoute = routes.find((route) => $page.url.pathname === route.href);
         if (currentRoute) {
             document.title = `${currentRoute.title} - Exceptionless`;

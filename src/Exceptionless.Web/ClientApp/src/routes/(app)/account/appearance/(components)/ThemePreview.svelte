@@ -2,6 +2,7 @@
     export let mode: 'dark' | 'light' | 'system';
 
     import { systemPrefersMode } from 'mode-watcher';
+    // eslint-disable-next-line svelte/valid-compile
     let resolvedMode = mode !== 'system' ? mode : $systemPrefersMode ?? 'dark';
 </script>
 

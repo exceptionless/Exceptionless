@@ -7,7 +7,10 @@
 readable / subscribes
 slots
 on:
-import { page } from '$app/stores';
+import { page } from '$app/stores'; // eslint-disable-next-line svelte/valid-compile
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+page.subscribe
+get(
 
 -   <https://svelte-5-preview.vercel.app/#H4sIAAAAAAAACm1STY_UMAz9K1Z2xLRS1SxIXLptERJHDtwp0mYTzzSQJiVxBpaq_x017XwJDlUdv2c_PycTO2iDgVVfJ2bFgKxiH8eRFYxex-UQTmgIWcGCi14umTpIr0dqO9uRHkbnCSaIlryQP2CGg3cDdFtdx57uaQE_4YuLVuKV6qNFtTGXzyBBQOFlDw3sAgnCbL_Pn86Y0YOmK_T28RYKCVHo9QlVZpxQX7xTUVLI1p7FWp_nnV2qOAcxahiQeqeWhAivVsIhWknaWTgi_dMg6D-Yw5TmJelscAZL447Z_oAk-31-RQg8BmhA_BKaIMHZc080hopzFYfh9XtwtpRu4OMmw1eZDz-b3bSG85s0crOb0n9-vhNQgsRFwWMol47ZRvFI0dvEKc8CaVvzaj8t7WZJ0NzeUZaFAn7n0LT3e1iSBbx7_5h3tubX92BrbcdI8KKtqk7CRGzOFoC3_4VXRwntbB1NelbTw-pmuc5lUKrH9rMTSttjWZY1H1dWRT1aONuaV8fTAwrZX7IgwjneCB3VRrfnuKNpg0vSZPBK4hfWxJeWCZl4mmxefEfTsoINTumDRsUq8hHnb_NfRrErmVIDAAA=>
 -   <https://component-party.dev/compare/svelte4-vs-svelte5>

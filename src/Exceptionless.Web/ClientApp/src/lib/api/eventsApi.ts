@@ -1,8 +1,8 @@
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { PersistentEvent } from '$lib/models/api';
-import { FetchClient, type ProblemDetails } from '$api/FetchClient';
+import { FetchClient, type ProblemDetails } from '$api/FetchClient.svelte';
 import { derived, readable, type Readable } from 'svelte/store';
-import { accessToken } from '$api/auth';
+import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {
     all: ['PersistentEvent'] as const,

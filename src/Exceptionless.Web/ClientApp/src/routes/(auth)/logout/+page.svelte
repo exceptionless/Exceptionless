@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { FetchClient, ProblemDetails } from '$api/FetchClient';
+    import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
     import { goto } from '$app/navigation';
-    import { isAuthenticated, logout } from '$api/auth';
+    import { isAuthenticated, logout } from '$api/auth.svelte';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Button } from '$comp/ui/button';
