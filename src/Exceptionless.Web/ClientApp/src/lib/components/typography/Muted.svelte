@@ -1,10 +1,15 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+    import type { HTMLAttributes } from 'svelte/elements';
     import { cn } from '$lib/utils';
 
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    type Props = HTMLAttributes<Element> & {
+        children: Snippet;
+    };
+
+    let { children, class: className, ...props }: Props = $props();
 </script>
 
-<p class={cn('text-sm text-muted-foreground', className)} {...$$restProps}>
-    <slot />
+<p class={cn('text-sm text-muted-foreground', className)} {...props}>
+    {@render children()}
 </p>
