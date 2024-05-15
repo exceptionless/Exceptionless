@@ -8,7 +8,7 @@
     import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
-    import H4 from '$comp/typography/H4.svelte';
+    import { H4 } from '$comp/typography';
 
     export let event: PersistentEvent;
 

@@ -5,7 +5,7 @@
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Button } from '$comp/ui/button';
-    import H2 from '$comp/typography/H2.svelte';
+    import { H2 } from '$comp/typography';
 
     if (!isAuthenticated) {
         goto('/next/login', { replaceState: true });
@@ -15,7 +15,7 @@
 
     const { get, loading } = new FetchClient();
     async function onLogout() {
-        if ($loading) {
+        if (loading) {
             return;
         }
 
@@ -34,7 +34,7 @@
     <ErrorMessage message={problem.errors.general}></ErrorMessage>
     <div class="pt-2">
         <Button type="submit">
-            {#if $loading}
+            {#if loading}
                 <Loading></Loading> Logging out...
             {:else}
                 Logout

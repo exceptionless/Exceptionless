@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import { Badge } from '$comp/ui/badge';
-    import A from '$comp/typography/A.svelte';
+    import { A } from '$comp/typography';
 
     export let badgeClass: string;
     export let showBadge: boolean;

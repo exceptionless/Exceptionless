@@ -9,7 +9,7 @@
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { Muted } from '$comp/typography';
     import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
 

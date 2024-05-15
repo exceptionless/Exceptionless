@@ -1,13 +1,11 @@
 <script lang="ts">
-    import type { HTMLAnchorAttributes } from 'svelte/elements';
-
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
+    import { A, type AProps } from '$comp/typography';
     import { BooleanFilter } from './filters';
 
-    type Props = HTMLAnchorAttributes & { term: string; value?: boolean };
-
+    type Props = AProps & { term: string; value?: boolean };
     let { term, value, ...props }: Props = $props();
+
     const title = `Search ${term}:${value}`;
 
     function onSearchClick(e: Event) {
@@ -21,5 +19,7 @@
 </script>
 
 <A on:click={onSearchClick} {title} {...props}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

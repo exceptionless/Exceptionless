@@ -2,7 +2,7 @@
     import type { SimpleErrorInfo } from '$lib/models/client-data';
     import { getErrors } from '$lib/helpers/persistent-event';
     import StackTraceHeader from './StackTraceHeader.svelte';
-    import Code from '$comp/typography/Code.svelte';
+    import { Code } from '$comp/typography';
 
     export let error: SimpleErrorInfo | undefined;
 

@@ -1,10 +1,12 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
-    import type { StackStatus } from '$lib/models/api.generated';
+    import { A, type AProps } from '$comp/typography';
+    import type { StackStatus } from '$lib/models/api';
     import { StatusFilter } from './filters';
 
-    let { value, ...props }: { value: StackStatus[] } = $props();
+    type Props = AProps & { value: StackStatus[] };
+    let { value, ...props }: Props = $props();
+
     const title = `Search status:${value}`;
 
     function onSearchClick(e: Event) {
@@ -18,5 +20,7 @@
 </script>
 
 <A on:click={onSearchClick} {title} {...props}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import List from '$comp/typography/List.svelte';
+    import { List } from '$comp/typography';
 
     export let logs: string[] | undefined;
 </script>

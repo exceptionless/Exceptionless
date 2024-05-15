@@ -26,8 +26,7 @@
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
-    import H4 from '$comp/typography/H4.svelte';
-    import A from '$comp/typography/A.svelte';
+    import { A, H4 } from '$comp/typography';
     import ClickableTypeFilter from '$comp/filters/ClickableTypeFilter.svelte';
 
     export let event: PersistentEvent;

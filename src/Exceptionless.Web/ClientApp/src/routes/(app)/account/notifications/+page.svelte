@@ -4,9 +4,7 @@
     import { Button } from '$comp/ui/button';
     import Loading from '$comp/Loading.svelte';
 
-    import H3 from '$comp/typography/H3.svelte';
-    import H4 from '$comp/typography/H4.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { H3, H4, Muted } from '$comp/typography';
     import { User } from '$lib/models/api';
     import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
     import Switch from '$comp/primitives/Switch.svelte';

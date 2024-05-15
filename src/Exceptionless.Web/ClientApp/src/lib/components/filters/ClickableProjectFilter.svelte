@@ -1,9 +1,11 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
+    import { A, type AProps } from '$comp/typography';
     import { ProjectFilter } from './filters';
 
-    let { organization, value, ...props }: { organization: string; value: string[] } = $props();
+    type Props = AProps & { organization: string; value: string[] };
+    let { organization, value, ...props }: Props = $props();
+
     const title = `Search project:${value}`;
 
     function onSearchClick(e: Event) {
@@ -17,5 +19,7 @@
 </script>
 
 <A on:click={onSearchClick} {title} {...props}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

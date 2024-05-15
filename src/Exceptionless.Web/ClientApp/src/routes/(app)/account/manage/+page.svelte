@@ -9,8 +9,7 @@
     import { Separator } from '$comp/ui/separator';
     import { Button } from '$comp/ui/button';
     import Loading from '$comp/Loading.svelte';
-    import H3 from '$comp/typography/H3.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { H3, Muted } from '$comp/typography';
 
     const userResponse = getMeQuery();
     const gravatarSrc = getGravatarFromCurrentUserSrc(userResponse);

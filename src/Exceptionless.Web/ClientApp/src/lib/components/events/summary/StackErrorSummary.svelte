@@ -2,8 +2,7 @@
     import { Badge } from '$comp/ui/badge';
     import IconChevronRight from '~icons/mdi/chevron-right';
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import Muted from '$comp/typography/Muted.svelte';
-    import A from '$comp/typography/A.svelte';
+    import { A, Muted } from '$comp/typography';
 
     export let badgeClass: string;
     export let showBadge: boolean;

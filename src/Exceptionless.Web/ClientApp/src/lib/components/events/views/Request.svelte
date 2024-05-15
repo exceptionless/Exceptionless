@@ -6,7 +6,7 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
     import { Button } from '$comp/ui/button';
-    import H4 from '$comp/typography/H4.svelte';
+    import { H4 } from '$comp/typography';
 
     export let event: PersistentEvent;
 

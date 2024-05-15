@@ -5,8 +5,7 @@
     import ObjectDump from '$comp/ObjectDump.svelte';
     import { createEventDispatcher } from 'svelte';
     import { Button } from '$comp/ui/button';
-    import H4 from '$comp/typography/H4.svelte';
-    import Code from '$comp/typography/Code.svelte';
+    import { Code, H4 } from '$comp/typography';
 
     export let title: string;
     export let data: unknown;

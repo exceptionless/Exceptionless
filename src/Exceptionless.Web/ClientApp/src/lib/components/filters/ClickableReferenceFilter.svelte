@@ -1,9 +1,11 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
+    import { A, type AProps } from '$comp/typography';
     import { ReferenceFilter } from './filters';
 
-    let { value, ...props }: { value: string } = $props();
+    type Props = AProps & { value: string };
+    let { value, ...props }: Props = $props();
+
     const title = `Search reference:${value}`;
 
     function onSearchClick(e: Event) {
@@ -17,5 +19,7 @@
 </script>
 
 <A on:click={onSearchClick} {title} {...props}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

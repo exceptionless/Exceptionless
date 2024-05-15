@@ -27,10 +27,7 @@
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Button } from '$comp/ui/button';
-    import A from '$comp/typography/A.svelte';
-    import H2 from '$comp/typography/H2.svelte';
-    import P from '$comp/typography/P.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { A, H2, Muted, P } from '$comp/typography';
 
     const data = new Login();
 

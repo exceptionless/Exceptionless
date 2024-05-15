@@ -24,8 +24,7 @@
     import { User } from '$lib/models/api';
     import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
     import PasswordInput from '$comp/form/PasswordInput.svelte';
-    import H3 from '$comp/typography/H3.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { H3, Muted } from '$comp/typography';
 
     const data = new User();
     let problem = new ProblemDetails();

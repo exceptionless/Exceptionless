@@ -19,7 +19,7 @@
     import PromotedExtendedData from './views/PromotedExtendedData.svelte';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
-    import P from '$comp/typography/P.svelte';
+    import { P } from '$comp/typography';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
 
     export let id: string;
