@@ -7,9 +7,9 @@ function createCount() {
         get value() {
             return count;
         },
-        increment: () => count += 1,
-        decrement: () => count -= 1,
-        reset: () => count = 0
+        increment: () => (count += 1),
+        decrement: () => (count -= 1),
+        reset: () => (count = 0)
     };
 }
 

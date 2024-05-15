@@ -1,4 +1,4 @@
-import { accessToken } from './auth';
+import { accessToken } from './auth.svelte';
 
 export class WebSocketClient {
     private accessToken: string | null = null;
@@ -23,8 +23,8 @@ export class WebSocketClient {
         const wsProtocol = protocol === 'https:' ? 'wss://' : 'ws://';
         this.url = `${wsProtocol}${host}${path}`;
 
-        accessToken.subscribe((token) => {
-            this.accessToken = token;
+        $effect(() => {
+            this.accessToken = accessToken.value;
             this.close();
 
             if (this.accessToken) {
@@ -32,6 +32,7 @@ export class WebSocketClient {
             }
         });
 
+        // UPGRADE
         // const visibility = documentVisibilityStore();
         // visibility.subscribe((visible) => {
         //     if (visible === 'visible' && (this.readyState === WebSocket.CLOSING || this.readyState === WebSocket.CLOSED)) {

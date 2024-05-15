@@ -1,6 +1,7 @@
 import { derived } from 'svelte/store';
 import { getMeQuery } from './usersApi';
 
+// UPGRADE
 export function getGravatarFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
     return derived(query ?? getMeQuery(), async ($userResponse) => {
         return $userResponse.data?.email_address ? await getGravatarSrc($userResponse.data?.email_address) : null;

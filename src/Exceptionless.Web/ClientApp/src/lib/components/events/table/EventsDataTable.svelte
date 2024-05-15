@@ -9,13 +9,15 @@
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
     import type { EventSummaryModel, GetEventsMode, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
 
-    let {
-        filter,
-        pageFilter = undefined,
-        limit = DEFAULT_LIMIT,
-        time,
-        mode = 'summary'
-    }: { filter: string; pageFilter: string | undefined; limit: number; time: string; mode: GetEventsMode } = $props();
+    interface Props {
+        filter: string;
+        pageFilter: string | undefined;
+        limit: number;
+        time: string;
+        mode: GetEventsMode;
+    }
+
+    let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary' }: Props = $props();
 
     const parameters = $state.frozen({ mode, limit } as IGetEventsParams);
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);

@@ -91,7 +91,7 @@
             }
         }
 
-        if (!$isAuthenticated) {
+        if (!isAuthenticated) {
             return;
         }
 
@@ -118,12 +118,12 @@
 
     const userQuery = getMeQuery();
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userQuery.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: $userQuery.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 
-{#if $isAuthenticated}
+{#if isAuthenticated}
     <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} {isMediumScreen}></NavbarLayout>
     <div class="flex overflow-hidden pt-16">
         <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} {isLargeScreen} routes={filteredRoutes} />

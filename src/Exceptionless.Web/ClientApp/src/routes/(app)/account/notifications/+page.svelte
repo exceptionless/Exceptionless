@@ -8,7 +8,7 @@
     import H4 from '$comp/typography/H4.svelte';
     import Muted from '$comp/typography/Muted.svelte';
     import { User } from '$lib/models/api';
-    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+    import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
     import Switch from '$comp/primitives/Switch.svelte';
 
     const data = new User();
@@ -18,7 +18,7 @@
 
     const { loading } = new FetchClient();
     async function onSave() {
-        if ($loading) {
+        if (loading) {
             return;
         }
 
@@ -52,7 +52,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if $loading}
+                {#if loading}
                     <Loading class="mr-2" variant="secondary"></Loading> Saving...
                 {:else}
                     Save

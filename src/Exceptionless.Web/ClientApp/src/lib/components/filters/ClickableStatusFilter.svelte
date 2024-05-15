@@ -4,11 +4,7 @@
     import type { StackStatus } from '$lib/models/api.generated';
     import { StatusFilter } from './filters';
 
-    export let value: StackStatus[];
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
-
+    let { value, ...props }: { value: StackStatus[] } = $props();
     const title = `Search status:${value}`;
 
     function onSearchClick(e: Event) {
@@ -21,6 +17,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
+<A on:click={onSearchClick} {title} {...props}>
     <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>

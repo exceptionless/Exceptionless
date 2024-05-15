@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { FetchClient, ProblemDetails, setDefaultModelValidator, useGlobalMiddleware } from './FetchClient';
+import { FetchClient, ProblemDetails, setDefaultModelValidator, useGlobalMiddleware } from './FetchClient.svelte';
 
 test('can getJSON with middleware', async () => {
     const fakeFetch = (): Promise<Response> =>
@@ -124,7 +124,7 @@ test('can delete with middleware', async () => {
     });
     expect(client).not.toBeNull();
 
-    const r = await client.delete('https://jsonplaceholder.typicode.com/todos/1');
+    const r = await client.remove('https://jsonplaceholder.typicode.com/todos/1');
     expect(r.ok).toBe(true);
     expect(r.status).toBe(200);
     expect(called).toBe(true);

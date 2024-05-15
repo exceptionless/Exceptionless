@@ -12,10 +12,11 @@ export const queryKeys = {
     id: (id: string | null) => [...queryKeys.all, id] as const
 };
 
+// UPGRADE
 export function getEventByIdQuery(id: string | Readable<string | null>) {
     const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<PersistentEvent, ProblemDetails>(
-        derived([accessToken, readableId], ([$accessToken, $id]) => ({
+        derived([accessToken.value, readableId], ([$accessToken, $id]) => ({
             enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {

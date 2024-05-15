@@ -3,12 +3,7 @@
     import A from '$comp/typography/A.svelte';
     import { VersionFilter } from './filters';
 
-    export let term: string;
-    export let value: string | undefined;
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
-
+    let { term, value, ...props }: { term: string; value: string | undefined } = $props();
     const title = `Search ${term}:${value}`;
 
     function onSearchClick(e: Event) {
@@ -21,6 +16,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
+<A on:click={onSearchClick} {title} {...props}>
     <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>

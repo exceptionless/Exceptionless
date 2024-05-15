@@ -2,13 +2,13 @@ import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { env } from '$env/dynamic/public';
 
-import { globalFetchClient } from './FetchClient';
+import { globalFetchClient } from './FetchClient.svelte';
 
 import type { Login, TokenResult } from '$lib/models/api';
-import { persisted } from "$lib/helpers/persisted.svelte";
-import { get } from "svelte/store";
+import { persisted } from '$lib/helpers/persisted.svelte';
+import { get } from 'svelte/store';
 
-export let accessToken = persisted<string | null>('satellizer_token', null); //, {
+export const accessToken = persisted<string | null>('satellizer_token', null); //, {
 //     serializer: {
 //         parse: (s) => (s === 'null' ? null : s),
 //         stringify: (s) => s as string

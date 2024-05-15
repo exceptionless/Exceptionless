@@ -7,7 +7,7 @@
     import { Button } from '$comp/ui/button';
     import H2 from '$comp/typography/H2.svelte';
 
-    $: if (!$isAuthenticated) {
+    if (!isAuthenticated) {
         goto('/next/login', { replaceState: true });
     }
 

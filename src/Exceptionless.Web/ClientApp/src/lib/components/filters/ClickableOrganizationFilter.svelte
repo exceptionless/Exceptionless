@@ -3,11 +3,7 @@
     import A from '$comp/typography/A.svelte';
     import { OrganizationFilter } from './filters';
 
-    export let value: string;
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
-
+    let { value, ...props }: { value: string } = $props();
     const title = `Search organization:${value}`;
 
     function onSearchClick(e: Event) {
@@ -20,6 +16,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
+<A on:click={onSearchClick} {title} {...props}>
     <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>

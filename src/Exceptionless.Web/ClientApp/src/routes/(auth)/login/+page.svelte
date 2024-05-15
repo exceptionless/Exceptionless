@@ -22,7 +22,7 @@
         gitHubClientId,
         microsoftClientId
     } from '$api/auth.svelte';
-    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+    import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
     import { Login } from '$lib/models/api';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
@@ -42,7 +42,7 @@
 
     const { loading } = new FetchClient();
     async function onLogin() {
-        if ($loading) {
+        if (loading) {
             return;
         }
 
@@ -79,7 +79,7 @@
 
     <div class="pt-2">
         <Button type="submit">
-            {#if $loading}
+            {#if loading}
                 <Loading class="mr-2" variant="secondary"></Loading> Logging in...
             {:else}
                 Login

@@ -3,13 +3,8 @@
     import A from '$comp/typography/A.svelte';
     import { StringFilter } from './filters';
 
-    export let term: string;
-    export let value: string | null | undefined;
-
+    let { term, value, ...props }: { term: string; value: string | null | undefined } = $props();
     const title = `Search ${term}:${value}`;
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
 
     function onSearchClick(e: Event) {
         e.preventDefault();
@@ -21,6 +16,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
+<A on:click={onSearchClick} {title} {...props}>
     <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>

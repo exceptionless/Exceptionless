@@ -1,7 +1,6 @@
 import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
 import type { Serializer } from 'svelte-persisted-store';
-import { get, type Writable } from 'svelte/store';
 
 export interface IFilter {
     readonly type: string;
@@ -484,22 +483,20 @@ export function getDefaultFilters(includeDateFilter = true): IFilter[] {
     ].filter((f) => includeDateFilter || f.type !== 'date');
 }
 
-export function filterChanged(filters: Writable<IFilter[]>, updated: IFilter): void {
-    filters.set(processFilterRules(setFilter(get(filters), updated), updated));
+export function filterChanged(filters: IFilter[], updated: IFilter): void {
+    filters = processFilterRules(setFilter(filters, updated), updated);
 }
 
-export function filterRemoved(filters: Writable<IFilter[]>, defaultFilters: IFilter[], removed?: IFilter): void {
+export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): void {
     // If detail is undefined, remove all filters.
     if (!removed) {
-        filters.set(defaultFilters);
+        filters = defaultFilters;
     } else if (defaultFilters.find((f) => f.key === removed.key)) {
-        filters.set(processFilterRules(setFilter(get(filters), removed), removed));
+        filters = processFilterRules(setFilter(filters, removed), removed);
     } else {
-        filters.set(
-            processFilterRules(
-                get(filters).filter((f) => f.key !== removed.key),
-                removed
-            )
+        filters = processFilterRules(
+            filters.filter((f) => f.key !== removed.key),
+            removed
         );
     }
 }

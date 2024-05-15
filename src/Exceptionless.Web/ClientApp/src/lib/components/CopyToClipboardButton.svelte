@@ -2,12 +2,16 @@
     import type { VariantProps } from 'tailwind-variants';
     import IconContentCopy from '~icons/mdi/content-copy';
     import { toast } from 'svelte-sonner';
-    import { Button, buttonVariants } from '$comp/ui/button';
+    import { Button, type ButtonProps, buttonVariants } from '$comp/ui/button';
 
-    export let title: string = 'Copy to Clipboard';
-    export let value: string | null | undefined;
-    export let size: VariantProps<typeof buttonVariants>['size'] = 'icon';
+    type Props = ButtonProps & {
+        value?: string | null;
+        size: VariantProps<typeof buttonVariants>['size'];
+    };
 
+    let { title = 'Copy to Clipboard', value, size = 'icon' }: Props = $props();
+
+    // UPGRADE
     function handleCopyDone() {
         toast.success('Copy to clipboard succeeded');
     }

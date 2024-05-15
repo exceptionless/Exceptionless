@@ -1,5 +1,7 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
+    import type { HtmlTag } from 'svelte/compiler';
+    import type { HTMLAttributes } from 'svelte/elements';
     import { tv, type VariantProps } from 'tailwind-variants';
 
     const variants = tv({
@@ -15,11 +17,11 @@
         }
     });
 
-    type Variant = VariantProps<typeof variants>['variant'];
-    export let variant: Variant = 'default';
+    type Props = HTMLAttributes<SVGSVGElement> & {
+        variant: VariantProps<typeof variants>['variant'];
+    };
 
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    let { variant = 'default', class: className }: Props = $props();
 </script>
 
 <div role="status">

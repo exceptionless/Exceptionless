@@ -3,12 +3,7 @@
     import A from '$comp/typography/A.svelte';
     import { ProjectFilter } from './filters';
 
-    export let organization: string;
-    export let value: string[];
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
-
+    let { organization, value, ...props }: { organization: string; value: string[] } = $props();
     const title = `Search project:${value}`;
 
     function onSearchClick(e: Event) {
@@ -21,6 +16,6 @@
     }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
+<A on:click={onSearchClick} {title} {...props}>
     <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
 </A>

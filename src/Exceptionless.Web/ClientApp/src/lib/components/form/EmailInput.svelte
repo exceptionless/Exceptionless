@@ -1,7 +1,7 @@
 <script lang="ts">
     import Input from '$comp/ui/input/input.svelte';
     import Label from '$comp/ui/label/label.svelte';
-    import type { ProblemDetails } from '$lib/api/FetchClient';
+    import type { ProblemDetails } from '$api/FetchClient.svelte';
 
     export let name: string;
     export let value: unknown;
