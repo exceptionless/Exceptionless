@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import { derived, writable, type Writable } from 'svelte/store';
     import IconCheck from '~icons/mdi/check';
 
     import { Button } from '$comp/ui/button';
@@ -17,45 +15,46 @@
         label: string;
     };
 
-    export let loading: boolean = false;
-    export let title: string;
-    export let values: string[];
-    export let options: Option[];
-    export let noOptionsText: string = 'No results found.';
-    export let open: Writable<boolean>;
+    interface Props {
+        title: string;
+        values: string[];
+        options: Option[];
+        noOptionsText?: string;
+        loading?: boolean;
+        open: boolean;
+        changed: () => void;
+        remove: () => void;
+    }
 
-    const updatedValues = writable<string[]>(values);
-    const hasChanged = derived(updatedValues, ($updatedValues) => {
-        return $updatedValues.length !== values.length || $updatedValues.some((value) => !values.includes(value));
+    let { title, values = $bindable(), options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
+    let updatedValues = $state(values);
+
+    $effect(() => {
+        updatedValues = values;
     });
 
-    // bind:open doesn't trigger subscriptions when the variable changes. It only updates the value of the variable.
-    open.subscribe(() => updatedValues.set(values));
-    $: updatedValues.set(values);
+    const hasChanged = $derived(updatedValues.length !== values.length || updatedValues.some((value) => !values.includes(value)));
 
-    const dispatch = createEventDispatcher();
     function onApplyFilter() {
-        if ($hasChanged) {
-            values = $updatedValues;
-            dispatch('changed', values);
+        if (hasChanged) {
+            values = updatedValues;
+            changed();
         }
 
-        open.set(false);
+        open = false;
     }
 
     export function onValueSelected(currentValue: string) {
-        updatedValues.update(($updatedValues) =>
-            $updatedValues.includes(currentValue) ? $updatedValues.filter((v) => v !== currentValue) : [...$updatedValues, currentValue]
-        );
+        updatedValues = updatedValues.includes(currentValue) ? updatedValues.filter((v) => v !== currentValue) : [...updatedValues, currentValue];
     }
 
     export function onClearFilter() {
-        updatedValues.set([]);
+        updatedValues = [];
     }
 
     function onRemoveFilter(): void {
         values = [];
-        dispatch('remove');
+        remove();
     }
 
     function filter(value: string, search: string) {
@@ -78,7 +77,7 @@
     }
 </script>
 
-<Popover.Root bind:open={$open}>
+<Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8">
             {title}
@@ -111,7 +110,7 @@
                                 <div
                                     class={cn(
                                         'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                        $updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                        updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
                                     <IconCheck className={cn('h-4 w-4')} />
@@ -126,12 +125,12 @@
             </Command.List>
         </Command.Root>
         <FacetedFilter.Actions
-            showApply={$hasChanged}
+            showApply={hasChanged}
             on:apply={onApplyFilter}
-            showClear={$updatedValues.length > 0}
+            showClear={updatedValues.length > 0}
             on:clear={onClearFilter}
             on:remove={onRemoveFilter}
-            on:close={() => open.set(false)}
+            on:close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

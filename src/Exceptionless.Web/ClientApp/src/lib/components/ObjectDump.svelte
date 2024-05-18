@@ -34,8 +34,10 @@
 {#if isEmptyValue}
     (Empty)
 {:else if Array.isArray(value)}
-    <List items={value} let:item>
-        <svelte:self value={item} />
+    <List items={value}>
+        {#snippet children(item)}
+            <svelte:self value={item} />
+        {/snippet}
     </List>
 {:else if isObject}
     <Table.Root>

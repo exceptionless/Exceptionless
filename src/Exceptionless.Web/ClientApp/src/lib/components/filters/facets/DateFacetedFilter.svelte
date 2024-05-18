@@ -1,14 +1,16 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
-    import { DateFilter } from '$comp/filters/filters';
+    import { DateFilter, type IFilter } from '$comp/filters/filters';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
 
-    const dispatch = createEventDispatcher();
-    export let filter: DateFilter;
-    export let title: string = 'Date Range';
-    export let open: Writable<boolean>;
+    interface Props {
+        title: string;
+        open: boolean;
+        filter: DateFilter;
+        filterChanged: (filter: IFilter) => void;
+        filterRemoved: (filter: IFilter) => void;
+    }
+
+    let { filter, title = 'Date Range', filterChanged, filterRemoved, ...props }: Props = $props();
 
     const options = [
         { value: 'last hour', label: 'Last Hour' },
@@ -20,17 +22,6 @@
 
     if (isCustomDate(filter)) {
         options.push({ value: filter.value as string, label: filter.value as string });
-    }
-
-    let value = filter.value as string;
-    function onChanged() {
-        filter.value = value;
-        dispatch('changed', filter);
-    }
-
-    function onRemove() {
-        filter.value = value;
-        dispatch('remove', filter);
     }
 
     function isCustomDate(filter: DateFilter) {
@@ -46,4 +37,11 @@
     }
 </script>
 
-<DropDownFacetedFilter {open} {title} bind:value {options} on:changed={onChanged} on:remove={onRemove}></DropDownFacetedFilter>
+<DropDownFacetedFilter
+    {title}
+    bind:value={filter.value as string}
+    {options}
+    changed={() => filterChanged(filter)}
+    remove={() => filterRemoved(filter)}
+    {...props}
+></DropDownFacetedFilter>

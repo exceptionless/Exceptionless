@@ -1,22 +1,17 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
-    import { ReferenceFilter } from '$comp/filters/filters';
+    import { ReferenceFilter, type IFilter } from '$comp/filters/filters';
     import StringFacetedFilter from './base/StringFacetedFilter.svelte';
 
-    const dispatch = createEventDispatcher();
-    export let filter: ReferenceFilter;
-    export let title: string = 'Reference';
-    export let open: Writable<boolean>;
-
-    function onChanged() {
-        dispatch('changed', filter);
+    interface Props {
+        title: string;
+        open: boolean;
+        filter: ReferenceFilter;
+        filterChanged: (filter: IFilter) => void;
+        filterRemoved: (filter: IFilter) => void;
     }
 
-    function onRemove() {
-        dispatch('remove', filter);
-    }
+    let { title = 'Reference', filter, filterChanged, filterRemoved, ...props }: Props = $props();
 </script>
 
-<StringFacetedFilter {open} {title} bind:value={filter.value} on:changed={onChanged} on:remove={onRemove}></StringFacetedFilter>
+<StringFacetedFilter {title} bind:value={filter.value} changed={() => filterChanged(filter)} remove={() => filterRemoved(filter)} {...props}
+></StringFacetedFilter>

@@ -1,6 +1,5 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
-    import type { HtmlTag } from 'svelte/compiler';
     import type { HTMLAttributes } from 'svelte/elements';
     import { tv, type VariantProps } from 'tailwind-variants';
 
@@ -18,7 +17,7 @@
     });
 
     type Props = HTMLAttributes<SVGSVGElement> & {
-        variant: VariantProps<typeof variants>['variant'];
+        variant?: VariantProps<typeof variants>['variant'];
     };
 
     let { variant = 'default', class: className }: Props = $props();

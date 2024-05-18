@@ -1,22 +1,17 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
-    import { KeywordFilter } from '$comp/filters/filters';
+    import { KeywordFilter, type IFilter } from '$comp/filters/filters';
     import KeywordFacetedFilter from './base/KeywordFacetedFilter.svelte';
 
-    const dispatch = createEventDispatcher();
-    export let filter: KeywordFilter;
-    export let title: string = 'Keyword';
-    export let open: Writable<boolean>;
-
-    function onChanged() {
-        dispatch('changed', filter);
+    interface Props {
+        title: string;
+        open: boolean;
+        filter: KeywordFilter;
+        filterChanged: (filter: IFilter) => void;
+        filterRemoved: (filter: IFilter) => void;
     }
 
-    function onRemove() {
-        dispatch('remove', filter);
-    }
+    let { filter, title = 'Keyword', filterChanged, filterRemoved, ...props }: Props = $props();
 </script>
 
-<KeywordFacetedFilter {open} {title} bind:value={filter.value} on:changed={onChanged} on:remove={onRemove}></KeywordFacetedFilter>
+<KeywordFacetedFilter {title} bind:value={filter.value} changed={() => filterChanged(filter)} remove={() => filterRemoved(filter)} {...props}
+></KeywordFacetedFilter>

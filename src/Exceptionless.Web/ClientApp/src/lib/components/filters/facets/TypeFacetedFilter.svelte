@@ -1,23 +1,24 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
     import { eventTypes } from '$comp/events/options';
-    import { TypeFilter } from '$comp/filters/filters';
+    import { TypeFilter, type IFilter } from '$comp/filters/filters';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
 
-    const dispatch = createEventDispatcher();
-    export let filter: TypeFilter;
-    export let title: string = 'Type';
-    export let open: Writable<boolean>;
-
-    function onChanged() {
-        dispatch('changed', filter);
+    interface Props {
+        title: string;
+        open: boolean;
+        filter: TypeFilter;
+        filterChanged: (filter: IFilter) => void;
+        filterRemoved: (filter: IFilter) => void;
     }
 
-    function onRemove() {
-        dispatch('remove', filter);
-    }
+    let { title = 'Type', filter, filterChanged, filterRemoved, ...props }: Props = $props();
 </script>
 
-<MultiselectFacetedFilter {open} {title} bind:values={filter.value} options={eventTypes} on:changed={onChanged} on:remove={onRemove}></MultiselectFacetedFilter>
+<MultiselectFacetedFilter
+    {title}
+    bind:values={filter.value}
+    options={eventTypes}
+    changed={() => filterChanged(filter)}
+    remove={() => filterRemoved(filter)}
+    {...props}
+></MultiselectFacetedFilter>

@@ -1,22 +1,16 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
-    import { BooleanFilter } from '$comp/filters/filters';
+    import { BooleanFilter, type IFilter } from '$comp/filters/filters';
     import BooleanFacetedFilter from './base/BooleanFacetedFilter.svelte';
 
-    const dispatch = createEventDispatcher();
-    export let filter: BooleanFilter;
-    export let title: string;
-    export let open: Writable<boolean>;
-
-    function onChanged() {
-        dispatch('changed', filter);
+    interface Props {
+        title: string;
+        open: boolean;
+        filter: BooleanFilter;
+        filterChanged: (filter: IFilter) => void;
+        filterRemoved: (filter: IFilter) => void;
     }
 
-    function onRemove() {
-        dispatch('remove', filter);
-    }
+    let { filter, filterChanged, filterRemoved, ...props }: Props = $props();
 </script>
 
-<BooleanFacetedFilter {open} {title} bind:value={filter.value} on:changed={onChanged} on:remove={onRemove}></BooleanFacetedFilter>
+<BooleanFacetedFilter bind:value={filter.value} changed={() => filterChanged(filter)} remove={() => filterRemoved(filter)} {...props}></BooleanFacetedFilter>

@@ -1,28 +1,30 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import { derived, writable, type Writable } from 'svelte/store';
-
     import { getProjectsByOrganizationIdQuery } from '$api/projectsApi';
-    import { ProjectFilter } from '$comp/filters/filters';
+    import { ProjectFilter, type IFilter } from '$comp/filters/filters';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
 
-    const dispatch = createEventDispatcher();
-    export let filter: ProjectFilter;
-    export let title: string = 'Status';
-    export let open: Writable<boolean>;
+    interface Props {
+        title: string;
+        open: boolean;
+        filter: ProjectFilter;
+        filterChanged: (filter: IFilter) => void;
+        filterRemoved: (filter: IFilter) => void;
+    }
 
-    const organizationId = writable<string | null>(filter.organization ?? null);
-    $: organizationId.set(filter.organization ?? null);
+    let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: Props = $props();
+
+    let organizationId = $state<string | null>(filter.organization ?? null);
+    $effect(() => {
+        organizationId = filter.organization ?? null;
+    });
 
     const response = getProjectsByOrganizationIdQuery(organizationId);
-    const options = derived(response, ($response) => {
-        return (
-            $response.data?.map((project) => ({
-                value: project.id!,
-                label: project.name!
-            })) ?? []
-        );
-    });
+    const options = $derived(
+        $response.data?.map((project) => ({
+            value: project.id!,
+            label: project.name!
+        })) ?? []
+    );
 
     response.subscribe(($response) => {
         if (!$response.isSuccess || filter.value.length === 0) {
@@ -32,26 +34,18 @@
         const projects = $response.data.filter((project) => filter.value.includes(project.id!));
         if (filter.value.length !== projects.length) {
             filter.value = projects.map((project) => project.id!);
-            dispatch('changed', filter);
+            filterChanged(filter);
         }
     });
-
-    function onChanged() {
-        dispatch('changed', filter);
-    }
-
-    function onRemove() {
-        dispatch('remove', filter);
-    }
 </script>
 
 <MultiselectFacetedFilter
-    {open}
     {title}
     bind:values={filter.value}
-    options={$options}
+    {options}
     loading={$response.isLoading}
     noOptionsText="No projects found."
-    on:changed={onChanged}
-    on:remove={onRemove}
+    changed={() => filterChanged(filter)}
+    remove={() => filterRemoved(filter)}
+    {...props}
 ></MultiselectFacetedFilter>
