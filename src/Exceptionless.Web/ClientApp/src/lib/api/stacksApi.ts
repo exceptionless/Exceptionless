@@ -1,7 +1,7 @@
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import { derived, get, readable, type Readable } from 'svelte/store';
 import type { Stack } from '$lib/models/api';
-import { FetchClient, type ProblemDetails } from '$api/FetchClient.svelte';
+import { FetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {

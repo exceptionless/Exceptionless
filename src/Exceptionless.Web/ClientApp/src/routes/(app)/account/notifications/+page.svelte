@@ -6,7 +6,7 @@
 
     import { H3, H4, Muted } from '$comp/typography';
     import { User } from '$lib/models/api';
-    import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
+    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import Switch from '$comp/primitives/Switch.svelte';
 
     const data = new User();

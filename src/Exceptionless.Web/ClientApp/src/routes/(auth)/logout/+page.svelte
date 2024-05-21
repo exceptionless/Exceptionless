@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
+    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import { goto } from '$app/navigation';
     import { isAuthenticated, logout } from '$api/auth.svelte';
     import Loading from '$comp/Loading.svelte';

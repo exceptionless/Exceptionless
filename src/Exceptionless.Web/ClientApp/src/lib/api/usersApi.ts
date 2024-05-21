@@ -1,7 +1,7 @@
 import { derived } from 'svelte/store';
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import { FetchClient, type ProblemDetails } from '$api/FetchClient.svelte';
+import { FetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import type { User } from '$lib/models/api';
 import { accessToken } from '$api/auth.svelte';
 

@@ -22,7 +22,7 @@
         gitHubClientId,
         microsoftClientId
     } from '$api/auth.svelte';
-    import { FetchClient, ProblemDetails } from '$api/FetchClient.svelte';
+    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import { Login } from '$lib/models/api';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';

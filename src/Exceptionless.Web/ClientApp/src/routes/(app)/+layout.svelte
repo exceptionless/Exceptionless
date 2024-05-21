@@ -8,7 +8,7 @@
     import { accessToken, gotoLogin, isAuthenticated } from '$api/auth.svelte';
     import { WebSocketClient } from '$api/WebSocketClient';
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
-    import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient.svelte';
+    import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { validate } from '$lib/validation/validation';
 
     import { useQueryClient } from '@tanstack/svelte-query';
@@ -30,12 +30,12 @@
         }
     });
 
-    setDefaultModelValidator(validate);
-    useGlobalMiddleware(async (ctx, next) => {
+    setModelValidator(validate);
+    useMiddleware(async (ctx, next) => {
         await next();
 
         if (ctx.response && ctx.response.status === 401) {
-            accessToken.set(null);
+            accessToken.value = null;
             return;
         }
 

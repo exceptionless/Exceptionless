@@ -2,7 +2,7 @@ import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { env } from '$env/dynamic/public';
 
-import { globalFetchClient } from './FetchClient.svelte';
+import { FetchClient } from '@exceptionless/fetchclient';
 
 import type { Login, TokenResult } from '$lib/models/api';
 import { persisted } from '$lib/helpers/persisted.svelte';
@@ -25,7 +25,8 @@ export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClie
 
 export async function login(email: string, password: string) {
     const data: Login = { email, password };
-    const response = await globalFetchClient.postJSON<TokenResult>('auth/login', data, {
+    const client = new FetchClient();
+    const response = await client.postJSON<TokenResult>('auth/login', data, {
         expectedStatusCodes: [401]
     });
 
@@ -46,7 +47,8 @@ export async function gotoLogin() {
 }
 
 export async function logout() {
-    await globalFetchClient.get('auth/logout', { expectedStatusCodes: [200, 401] });
+    const client = new FetchClient();
+    await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
     accessToken.value = null;
 }
 
@@ -154,7 +156,8 @@ async function oauthLogin(options: {
     const data = await waitForUrl(popup!, redirectUrl);
     if (options.extraParams?.state && data.state !== options.extraParams.state) throw new Error('Invalid state');
 
-    const response = await globalFetchClient.postJSON<TokenResult>(`auth/${options.provider}`, {
+    const client = new FetchClient();
+    const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
         state: data.state,
         code: data.code,
         clientId: options.clientId,

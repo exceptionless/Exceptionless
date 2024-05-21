@@ -1,18 +1,28 @@
 <script lang="ts">
+    import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext, type Next } from '@exceptionless/fetchclient';
+    import { error } from '@sveltejs/kit';
+
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
 
     import { page } from '$app/stores';
-    import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient.svelte';
     import { accessToken } from '$api/auth.svelte';
     import { Toaster } from '$comp/ui/sonner';
 
     import '../app.css';
     import { routes } from './routes';
 
-    setDefaultBaseUrl('api/v2');
-    setAccessTokenStore(accessToken);
+    setBaseUrl('api/v2');
+    setAccessTokenFunc(() => accessToken.value);
+
+    useMiddleware(async (ctx: FetchClientContext, next: Next) => {
+        await next();
+
+        if (ctx.response?.status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
+            throw error(404, 'Not found');
+        }
+    });
 
     $effect(() => {
         // eslint-disable-next-line svelte/valid-compile

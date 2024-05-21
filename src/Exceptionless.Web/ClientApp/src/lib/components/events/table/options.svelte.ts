@@ -20,7 +20,7 @@ import EventsUserIdentitySummaryCell from './EventsUserIdentitySummaryCell.svelt
 import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 import StackUsersSummaryCell from './StackUsersSummaryCell.svelte';
 import { DEFAULT_LIMIT } from '$lib/helpers/api';
-import type { FetchClientResponse } from '$api/FetchClient.svelte';
+import type { FetchClientResponse } from '@exceptionless/fetchclient';
 import { Checkbox } from '$comp/ui/checkbox';
 import StackStatusCell from './StackStatusCell.svelte';
 

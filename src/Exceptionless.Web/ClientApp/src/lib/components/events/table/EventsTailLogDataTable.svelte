@@ -4,7 +4,7 @@
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import { type FetchClientResponse, FetchClient } from '$api/FetchClient.svelte';
+    import { type FetchClientResponse, FetchClient } from '@exceptionless/fetchclient';
     import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
