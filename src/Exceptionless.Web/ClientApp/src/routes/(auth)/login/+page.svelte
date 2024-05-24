@@ -22,7 +22,7 @@
         gitHubClientId,
         microsoftClientId
     } from '$api/auth.svelte';
-    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import { Login } from '$lib/models/api';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
@@ -37,7 +37,7 @@
     let problem = new ProblemDetails();
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
-    const { loading } = new FetchClient();
+    const { loading } = useFetchClient();
     async function onLogin() {
         if (loading) {
             return;

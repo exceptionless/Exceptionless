@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import { goto } from '$app/navigation';
     import { isAuthenticated, logout } from '$api/auth.svelte';
     import Loading from '$comp/Loading.svelte';
@@ -13,7 +13,7 @@
 
     let problem = new ProblemDetails();
 
-    const { get, loading } = new FetchClient();
+    const { get, loading } = useFetchClient();
     async function onLogout() {
         if (loading) {
             return;

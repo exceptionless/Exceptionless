@@ -1,7 +1,7 @@
 <script lang="ts">
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import { createEventDispatcher } from 'svelte';
-    import { FetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
+    import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
     import * as DataTable from '$comp/data-table';
@@ -23,7 +23,7 @@
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
     const table = createSvelteTable(context.options);
 
-    const { getJSON, loading } = new FetchClient();
+    const { getJSON, loading } = useFetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 
     $effect(() => {

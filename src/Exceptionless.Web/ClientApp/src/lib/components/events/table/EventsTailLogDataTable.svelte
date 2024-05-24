@@ -4,7 +4,7 @@
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import { type FetchClientResponse, FetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
@@ -25,7 +25,7 @@
     }));
     const table = createSvelteTable(context.options);
 
-    const { getJSON, loading } = new FetchClient();
+    const { getJSON, loading } = useFetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
     let before: string | undefined;
 

@@ -1,7 +1,7 @@
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import { derived, get, readable, type Readable } from 'svelte/store';
 import type { Stack } from '$lib/models/api';
-import { FetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
+import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {
@@ -19,7 +19,7 @@ export async function prefetchStack(id: string) {
     await queryClient.prefetchQuery<Stack, ProblemDetails>({
         queryKey: queryKeys.id(id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const { getJSON } = new FetchClient();
+            const { getJSON } = useFetchClient();
             const response = await getJSON<Stack>(`stacks/${id}`, {
                 signal
             });
@@ -40,7 +40,7 @@ export function getStackByIdQuery(id: string | Readable<string | null>) {
             enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = new FetchClient();
+                const { getJSON } = useFetchClient();
                 const response = await getJSON<Stack>(`stacks/${$id}`, {
                     signal
                 });

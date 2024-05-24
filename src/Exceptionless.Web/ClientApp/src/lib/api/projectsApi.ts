@@ -1,7 +1,7 @@
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 import { derived, readable, type Readable } from 'svelte/store';
 import type { ViewProject } from '$lib/models/api';
-import { FetchClient, type FetchClientResponse, type ProblemDetails } from '@exceptionless/fetchclient';
+import { useFetchClient, type FetchClientResponse, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {
@@ -19,7 +19,7 @@ export function getProjectByIdQuery(id: string | Readable<string | null>) {
             enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = new FetchClient();
+                const { getJSON } = useFetchClient();
                 const response = await getJSON<ViewProject>(`projects/${$id}`, {
                     signal
                 });
@@ -43,7 +43,7 @@ export function getProjectsByOrganizationIdQuery(organizationId: string | Readab
             queryClient,
             queryKey: queryKeys.organization($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = new FetchClient();
+                const { getJSON } = useFetchClient();
                 const response = await getJSON<ViewProject[]>(`organizations/${$id}/projects`, {
                     signal,
                     params: {
@@ -70,7 +70,7 @@ export function mutatePromoteTab(id: string) {
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: queryKeys.id(id),
         mutationFn: async (params: { name: string }) => {
-            const { post } = new FetchClient();
+            const { post } = useFetchClient();
             const response = await post(`projects/${id}/promotedtabs`, undefined, {
                 params
             });
@@ -92,7 +92,7 @@ export function mutateDemoteTab(id: string) {
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: queryKeys.id(id),
         mutationFn: async ({ name }) => {
-            const { remove } = new FetchClient();
+            const { remove } = useFetchClient();
             const response = await remove(`projects/${id}/promotedtabs`, {
                 params: { name }
             });

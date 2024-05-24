@@ -6,7 +6,7 @@
 
     import { H3, H4, Muted } from '$comp/typography';
     import { User } from '$lib/models/api';
-    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import Switch from '$comp/primitives/Switch.svelte';
 
     const data = new User();
@@ -14,7 +14,7 @@
 
     let problem = new ProblemDetails();
 
-    const { loading } = new FetchClient();
+    const { loading } = useFetchClient();
     async function onSave() {
         if (loading) {
             return;

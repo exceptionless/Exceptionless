@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext, type Next } from '@exceptionless/fetchclient';
+    import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
 
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -16,7 +16,7 @@
     setBaseUrl('api/v2');
     setAccessTokenFunc(() => accessToken.value);
 
-    useMiddleware(async (ctx: FetchClientContext, next: Next) => {
+    useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {
         await next();
 
         if (ctx.response?.status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {

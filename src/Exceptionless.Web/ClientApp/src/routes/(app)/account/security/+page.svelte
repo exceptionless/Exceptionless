@@ -22,14 +22,14 @@
     import Loading from '$comp/Loading.svelte';
 
     import { User } from '$lib/models/api';
-    import { FetchClient, ProblemDetails } from '@exceptionless/fetchclient';
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import PasswordInput from '$comp/form/PasswordInput.svelte';
     import { H3, Muted } from '$comp/typography';
 
     const data = new User();
     let problem = new ProblemDetails();
 
-    const { loading } = new FetchClient();
+    const { loading } = useFetchClient();
     async function onSave() {
         if (loading) {
             return;
