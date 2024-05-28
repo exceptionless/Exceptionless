@@ -1,15 +1,15 @@
 # install kubernetes cli
-choco install kubernetes-cli
+winget install Kubernetes.kubectl
 
-# kubernetes helper tool
-# https://github.com/ahmetb/kubectx/releases
-# NOTE: not available on choco yet - choco install kubectx
+# kubernetes helper tools
+winget install Derailed.k9s
+winget install ahmetb.kubectx
 
 # azure cli
-choco install azure-cli
+winget install Microsoft.AzureCLI
 
 # install helm
-choco install kubernetes-helm
+winget install Helm.Helm
 helm repo add "stable" "https://charts.helm.sh/stable" --force-update
 helm repo add jetstack https://charts.jetstack.io
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts                                                                                                                     ❮  3s 868ms   
