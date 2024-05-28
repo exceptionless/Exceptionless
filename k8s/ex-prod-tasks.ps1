@@ -15,6 +15,7 @@ $ELASTIC_JOB = kubectl port-forward --namespace elastic-system service/elastic-m
 Remove-Job $ELASTIC_JOB
 
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
+curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/allocation?v
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/allocation/explain?pretty
 curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*traces*?v=true&s=index"
 curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "transient": { "action.destructive_requires_name": false } }' https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/settings
