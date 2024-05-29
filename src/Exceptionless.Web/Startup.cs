@@ -181,7 +181,6 @@ public class Startup
         app.UseExceptionHandler();
         app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
-
         app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         app.UseHealthChecks("/health", new HealthCheckOptions
