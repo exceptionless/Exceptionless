@@ -6,7 +6,7 @@
     import FooterLayout from './(components)/layouts/Footer.svelte';
 
     import { accessToken, gotoLogin, isAuthenticated } from '$api/auth.svelte';
-    import { WebSocketClient } from '$api/WebSocketClient';
+    import { WebSocketClient } from '$api/WebSocketClient.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { validate } from '$lib/validation/validation';
