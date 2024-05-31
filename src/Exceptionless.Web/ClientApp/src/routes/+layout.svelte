@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
 
@@ -12,6 +13,12 @@
 
     import '../app.css';
     import { routes } from './routes';
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
 
     setBaseUrl('api/v2');
     setAccessTokenFunc(() => accessToken.value);
@@ -47,7 +54,7 @@
     <ModeWatcher defaultMode={'dark'} />
 
     <QueryClientProvider client={queryClient}>
-        <slot />
+        {@render children()}
 
         <SvelteQueryDevtools />
     </QueryClientProvider>

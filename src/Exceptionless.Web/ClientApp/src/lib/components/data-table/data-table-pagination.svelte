@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import type { Table } from '@tanstack/svelte-table';
 
     import { Button } from '$comp/ui/button';
@@ -8,7 +9,12 @@
     import Number from '$comp/formatters/Number.svelte';
 
     type TData = $$Generic;
-    export let table: Table<TData>;
+    interface Props {
+        children: Snippet;
+        table: Table<TData>;
+    }
+
+    let { children, table }: Props = $props();
 </script>
 
 <div class="flex items-center justify-between px-2">
@@ -19,7 +25,7 @@
         {/if}
     </div>
     <div class="flex items-center space-x-6 lg:space-x-8">
-        <slot />
+        {@render children()}
 
         <div class="flex w-[100px] items-center justify-center text-sm font-medium">
             Page <Number value={table.getState().pagination.pageIndex + 1} /> of <Number value={table.getPageCount()} />

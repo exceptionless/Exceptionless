@@ -1,4 +1,7 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+    import type { HTMLAttributes } from 'svelte/elements';
+
     import type { Column } from '@tanstack/svelte-table';
     import IconArrowDownward from '~icons/mdi/arrow-downward';
     import IconArrowUpward from '~icons/mdi/arrow-upward';
@@ -8,10 +11,12 @@
     import { cn } from '$lib/utils';
 
     type TData = $$Generic;
-    export let column: Column<TData, unknown>;
+    type Props = HTMLAttributes<Element> & {
+        children: Snippet;
+        column: Column<TData, unknown>;
+    };
 
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    let { children, class: className, column }: Props = $props();
 
     function handleAscSort(e: Event) {
         if (column.getIsSorted() === 'asc') {
@@ -35,7 +40,7 @@
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
                 <Button variant="ghost" builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent">
-                    <slot />
+                    {@render children()}
                     {#if column.getIsSorted() === 'desc'}
                         <IconArrowDownward class="ml-2 h-4 w-4" />
                     {:else if column.getIsSorted() === 'asc'}
@@ -52,5 +57,5 @@
         </DropdownMenu.Root>
     </div>
 {:else}
-    <slot />
+    {@render children()}
 {/if}

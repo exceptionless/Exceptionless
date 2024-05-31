@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import { page } from '$app/stores';
 
     import NavbarLayout from './(components)/layouts/Navbar.svelte';
@@ -17,6 +18,12 @@
     import { routes, type NavigationItemContext } from '../routes';
     import { persisted } from '$lib/helpers/persisted.svelte';
     import { mediaQuery } from '$lib/helpers/mediaQuery.svelte';
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
 
     let isSidebarOpen = persisted('sidebar-open', false);
     let isCommandOpen = $state(false);
@@ -132,7 +139,7 @@
             <main>
                 <div class="px-4 pt-4">
                     <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                    <slot />
+                    {@render children()}
                 </div>
             </main>
 
