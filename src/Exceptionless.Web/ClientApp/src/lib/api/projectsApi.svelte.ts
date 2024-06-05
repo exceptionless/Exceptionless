@@ -15,7 +15,7 @@ export const queryKeys = {
 export function getProjectByIdQuery(id: string | Readable<string | null>) {
     const readableId = typeof id === 'string' || id === null ? readable(id) : id;
     return createQuery<ViewProject, ProblemDetails>(
-        derived([accessToken, readableId], ([$accessToken, $id]) => ({
+        derived([accessToken.value, readableId], ([$accessToken, $id]) => ({
             enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -38,7 +38,7 @@ export function getProjectsByOrganizationIdQuery(organizationId: string | Readab
     const queryClient = useQueryClient();
     const readableOrganizationId = typeof organizationId === 'string' || organizationId === null ? readable(organizationId) : organizationId;
     return createQuery<ViewProject[], ProblemDetails>(
-        derived([accessToken, readableOrganizationId], ([$accessToken, $id]) => ({
+        derived([accessToken.value, readableOrganizationId], ([$accessToken, $id]) => ({
             enabled: !!$accessToken && !!$id,
             queryClient,
             queryKey: queryKeys.organization($id),

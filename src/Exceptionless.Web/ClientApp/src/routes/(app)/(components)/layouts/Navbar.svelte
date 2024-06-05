@@ -11,14 +11,20 @@
     import Loading from '$comp/Loading.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import { Button } from '$comp/ui/button';
-    import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar';
+    import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar.svelte';
+
+    interface Props {
+        isCommandOpen: boolean;
+        isSidebarOpen: boolean;
+        isMediumScreen: boolean;
+    }
 
     let {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         isCommandOpen = $bindable(),
         isSidebarOpen = $bindable(),
         isMediumScreen
-    }: { isCommandOpen: boolean; isSidebarOpen: boolean; isMediumScreen: boolean } = $props();
+    }: Props = $props();
 
     function onHamburgerClick(): void {
         isSidebarOpen = !isSidebarOpen;

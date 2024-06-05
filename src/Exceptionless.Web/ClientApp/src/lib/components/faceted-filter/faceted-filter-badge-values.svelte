@@ -1,7 +1,13 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import Badge from '$comp/ui/badge/badge.svelte';
 
-    export let values: unknown[];
+    interface Props {
+        values: unknown[];
+        displayValue: Snippet<[unknown]>;
+    }
+
+    let { values, displayValue }: Props = $props();
 </script>
 
 {#if values.length > 0}
@@ -16,7 +22,7 @@
         {:else}
             {#each values as value (value)}
                 <Badge variant="secondary" class="rounded-sm px-1 font-normal">
-                    <span class="max-w-14 truncate"><slot {value} /></span>
+                    <span class="max-w-14 truncate">{@render displayValue(value)}</span>
                 </Badge>
             {/each}
         {/if}

@@ -29,12 +29,12 @@
     import { Button } from '$comp/ui/button';
     import { A, H2, Muted, P } from '$comp/typography';
 
-    const data = new Login();
+    const data = $state(new Login());
 
     // eslint-disable-next-line svelte/valid-compile
     data.invite_token = $page.url.searchParams.get('token');
 
-    let problem = new ProblemDetails();
+    let problem = $state(new ProblemDetails());
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
     const { loading } = useFetchClient();

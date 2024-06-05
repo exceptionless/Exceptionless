@@ -13,7 +13,7 @@ export const queryKeys = {
 export function getOrganizationQuery(mode: 'stats' | null = null) {
     const queryClient = useQueryClient();
     return createQuery<ViewOrganization[], ProblemDetails>(
-        derived(accessToken, ($accessToken) => ({
+        derived(accessToken.value, ($accessToken) => ({
             enabled: !!$accessToken,
             queryClient,
             queryKey: mode ? queryKeys.allWithMode(mode) : queryKeys.all,

@@ -9,7 +9,6 @@ import {
     renderComponent,
     type RowSelectionState
 } from '$comp/tanstack-table-svelte5';
-import { persisted } from 'svelte-persisted-store';
 import { get } from 'svelte/store';
 
 import type { EventSummaryModel, GetEventsMode, IGetEventsParams, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
@@ -23,6 +22,7 @@ import { DEFAULT_LIMIT } from '$lib/helpers/api';
 import type { FetchClientResponse } from '@exceptionless/fetchclient';
 import { Checkbox } from '$comp/ui/checkbox';
 import StackStatusCell from './StackStatusCell.svelte';
+import { persisted } from '$lib/helpers/persisted.svelte';
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(mode: GetEventsMode = 'summary'): ColumnDef<TSummaryModel>[] {
     const columns: ColumnDef<TSummaryModel>[] = [
@@ -269,15 +269,15 @@ function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) =
 }
 
 function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
-    const value = persisted<T>(key, initialValue);
+    const persistedValue = persisted<T>(key, initialValue);
 
     return [
-        () => get(value),
+        () => persistedValue.value,
         (updater: Updater<T>) => {
             if (updater instanceof Function) {
-                value.update(updater);
+                persistedValue.value = updater(persistedValue.value);
             } else {
-                value.update(() => updater);
+                persistedValue.value = updater;
             }
         }
     ];

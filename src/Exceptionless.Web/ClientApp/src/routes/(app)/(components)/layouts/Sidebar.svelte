@@ -2,7 +2,13 @@
     import SidebarMenuItem from './SidebarMenuItem.svelte';
     import type { NavigationItem } from '../../../routes';
 
-    let { isLargeScreen, isSidebarOpen = $bindable(), routes }: { isLargeScreen: boolean; isSidebarOpen: boolean; routes: NavigationItem[] } = $props();
+    interface Props {
+        isLargeScreen: boolean;
+        isSidebarOpen?: boolean;
+        routes: NavigationItem[];
+    }
+
+    let { isLargeScreen, isSidebarOpen = $bindable(), routes }: Props = $props();
 
     const showSidebar = $derived(!isLargeScreen && isSidebarOpen);
     const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
@@ -25,11 +31,7 @@
                 <ul class="space-y-2 pb-2">
                     {#each dashboardRoutes as route (route.href)}
                         <li>
-                            <SidebarMenuItem title={route.title} href={route.href}>
-                                <span slot="icon" let:iconClass>
-                                    <svelte:component this={route.icon} class={iconClass} />
-                                </span>
-                            </SidebarMenuItem>
+                            <SidebarMenuItem title={route.title} href={route.href} icon={route.icon} {isLargeScreen} {isSidebarOpen}></SidebarMenuItem>
                         </li>
                     {/each}
                 </ul>

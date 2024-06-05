@@ -26,8 +26,8 @@
     import PasswordInput from '$comp/form/PasswordInput.svelte';
     import { H3, Muted } from '$comp/typography';
 
-    const data = new User();
-    let problem = new ProblemDetails();
+    const data = $state(new User());
+    let problem = $state(new ProblemDetails());
 
     const { loading } = useFetchClient();
     async function onSave() {

@@ -11,15 +11,15 @@
 
     interface Props {
         filter: string;
-        pageFilter: string | undefined;
+        pageFilter?: string;
         limit: number;
         time: string;
-        mode: GetEventsMode;
+        mode?: GetEventsMode;
     }
 
     let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary' }: Props = $props();
 
-    const parameters = $state.frozen({ mode, limit } as IGetEventsParams);
+    const parameters = $state({ mode, limit } as IGetEventsParams);
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
     const table = createSvelteTable(context.options);
 
@@ -31,15 +31,10 @@
     });
 
     async function loadData() {
-        if ($loading) {
+        if (loading) {
             return;
         }
 
-        console.log({
-            ...parameters,
-            filter: [pageFilter, filter].filter(Boolean).join(' '),
-            time
-        });
         response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...parameters,

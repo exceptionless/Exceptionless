@@ -1,6 +1,6 @@
+import type { Serializer } from '$lib/helpers/persisted.svelte';
 import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
-import type { Serializer } from 'svelte-persisted-store';
 
 export interface IFilter {
     readonly type: string;
@@ -448,7 +448,7 @@ export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
 }
 
 export class FilterSerializer implements Serializer<IFilter[]> {
-    public parse(text: string): IFilter[] {
+    public deserialize(text: string): IFilter[] {
         if (!text) {
             return [];
         }
@@ -465,7 +465,7 @@ export class FilterSerializer implements Serializer<IFilter[]> {
         return filters;
     }
 
-    public stringify(object: IFilter[]): string {
+    public serialize(object: IFilter[]): string {
         return JSON.stringify(object);
     }
 }

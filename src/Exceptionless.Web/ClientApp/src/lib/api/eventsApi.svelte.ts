@@ -35,11 +35,11 @@ export function getEventByIdQuery(id: string | Readable<string | null>) {
     );
 }
 
-export function getEventsByStackIdQuery(stackId: string | Readable<string | null>, limit: number = 10) {
+export function getEventsByStackIdQuery(stackId: string | null | Readable<string | null>, limit: number = 10) {
     const queryClient = useQueryClient();
     const readableStackId = typeof stackId === 'string' || stackId === null ? readable(stackId) : stackId;
     return createQuery<PersistentEvent[], ProblemDetails>(
-        derived([accessToken, readableStackId], ([$accessToken, $id]) => ({
+        derived([accessToken.value, readableStackId], ([$accessToken, $id]) => ({
             enabled: !!$accessToken && !!$id,
             queryClient,
             queryKey: queryKeys.stacks($id),

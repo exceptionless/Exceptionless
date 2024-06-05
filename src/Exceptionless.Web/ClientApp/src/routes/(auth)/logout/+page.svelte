@@ -1,17 +1,20 @@
 <script lang="ts">
     import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import { goto } from '$app/navigation';
-    import { isAuthenticated, logout } from '$api/auth.svelte';
+    import { accessToken, logout } from '$api/auth.svelte';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Button } from '$comp/ui/button';
     import { H2 } from '$comp/typography';
 
-    if (!isAuthenticated) {
-        goto('/next/login', { replaceState: true });
-    }
+    let isAuthenticated = $derived(accessToken.value !== null);
+    $effect(async () => {
+        if (!isAuthenticated) {
+            await goto('/next/login', { replaceState: true });
+        }
+    });
 
-    let problem = new ProblemDetails();
+    let problem = $state(new ProblemDetails());
 
     const { get, loading } = useFetchClient();
     async function onLogout() {

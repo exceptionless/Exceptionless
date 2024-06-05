@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getOrganizationQuery } from '$api/organizationsApi';
+    import { getOrganizationQuery } from '$api/organizationsApi.svelte';
     import { OrganizationFilter, type IFilter } from '$comp/filters/filters';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
 

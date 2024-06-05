@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getProjectsByOrganizationIdQuery } from '$api/projectsApi';
+    import { getProjectsByOrganizationIdQuery } from '$api/projectsApi.svelte';
     import { ProjectFilter, type IFilter } from '$comp/filters/filters';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
 

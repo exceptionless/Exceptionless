@@ -6,7 +6,7 @@
     import SidebarLayout from './(components)/layouts/Sidebar.svelte';
     import FooterLayout from './(components)/layouts/Footer.svelte';
 
-    import { accessToken, gotoLogin, isAuthenticated } from '$api/auth.svelte';
+    import { accessToken, gotoLogin } from '$api/auth.svelte';
     import { WebSocketClient } from '$api/WebSocketClient.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
@@ -14,7 +14,7 @@
 
     import { useQueryClient } from '@tanstack/svelte-query';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
-    import { getMeQuery } from '$api/usersApi';
+    import { getMeQuery } from '$api/usersApi.svelte';
     import { routes, type NavigationItemContext } from '../routes';
     import { persisted } from '$lib/helpers/persisted.svelte';
     import { mediaQuery } from '$lib/helpers/mediaQuery.svelte';
@@ -24,18 +24,13 @@
     }
 
     let { children }: Props = $props();
+    let isAuthenticated = $derived(accessToken.value !== null);
 
     let isSidebarOpen = persisted('sidebar-open', false);
     let isCommandOpen = $state(false);
     const isSmallScreen = mediaQuery('(min-width: 640px)');
     const isMediumScreen = mediaQuery('(min-width: 768px)');
     const isLargeScreen = mediaQuery('(min-width: 1024px)');
-
-    isAuthenticated.subscribe(async (authenticated) => {
-        if (!authenticated) {
-            await gotoLogin();
-        }
-    });
 
     setModelValidator(validate);
     useMiddleware(async (ctx, next) => {
@@ -90,7 +85,7 @@
         }
     });
 
-    $effect(() => {
+    $effect(async () => {
         function handleKeydown(e: KeyboardEvent) {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -99,6 +94,7 @@
         }
 
         if (!isAuthenticated) {
+            await gotoLogin();
             return;
         }
 

@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { derived } from 'svelte/store';
-    import { persisted } from 'svelte-persisted-store';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
     import { Button } from '$comp/ui/button';
@@ -15,32 +13,33 @@
     import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
+    import { persisted } from '$lib/helpers/persisted.svelte';
 
-    let selectedEventId: string | null = null;
+    let selectedEventId: string | null = $state(null);
     function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
         selectedEventId = detail.id;
     }
 
     const limit = persisted<number>('events.limit', 10);
     const defaultFilters = getDefaultFilters();
-    const filters = persisted<IFilter[]>('events.filters', defaultFilters, { serializer: new FilterSerializer() });
-    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
+    const persistedFilters = persisted<IFilter[]>('events.filters', defaultFilters, new FilterSerializer());
+    persistedFilters.value.push(...defaultFilters.filter((df) => !persistedFilters.value.some((f) => f.key === df.key)));
 
-    const filter = derived(filters, ($filters) => toFilter($filters.filter((f) => f.key !== 'date:date')));
-    const facets = derived(filters, ($filters) => toFacetedFilters($filters));
-    const time = derived(filters, ($filters) => ($filters.find((f) => f.key === 'date:date') as DateFilter).value as string);
+    const filter = $derived(toFilter(persistedFilters.value.filter((f) => f.key !== 'date:date')));
+    const facets = $derived(toFacetedFilters(persistedFilters.value));
+    const time = $derived<string>((persistedFilters.value.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
     function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        filterChanged(filters, detail);
+        filterChanged(persistedFilters.value, detail);
         selectedEventId = null;
     }
 
-    function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        filterChanged(filters, detail);
+    function onFilterChanged(filter: IFilter): void {
+        filterChanged(persistedFilters.value, filter);
     }
 
-    function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
-        filterRemoved(filters, defaultFilters, detail);
+    function onFilterRemoved(filter?: IFilter): void {
+        filterRemoved(persistedFilters.value, defaultFilters, filter);
     }
 </script>
 
@@ -50,9 +49,9 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable filter={$filter} limit={$limit} time={$time} on:rowclick={onRowClick}>
+            <EventsDataTable {filter} limit={limit.value} {time} on:rowclick={onRowClick}>
                 <svelte:fragment slot="toolbar">
-                    <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
+                    <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
                 </svelte:fragment>
             </EventsDataTable>
         </Card.Content>

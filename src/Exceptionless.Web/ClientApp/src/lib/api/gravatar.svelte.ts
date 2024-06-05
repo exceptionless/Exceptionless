@@ -1,5 +1,5 @@
 import { derived } from 'svelte/store';
-import { getMeQuery } from './usersApi';
+import { getMeQuery } from './usersApi.svelte';
 
 // UPGRADE
 export function getGravatarFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {

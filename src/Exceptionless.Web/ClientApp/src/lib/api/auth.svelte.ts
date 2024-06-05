@@ -15,7 +15,6 @@ export const accessToken = persisted<string | null>('satellizer_token', null); /
 //     }
 // });
 
-export const isAuthenticated = $derived(accessToken.value !== null);
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
 export const gitHubClientId = env.PUBLIC_GITHUB_APPID;

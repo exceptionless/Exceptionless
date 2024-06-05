@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
     import type { Readable } from 'svelte/store';
     import { toast } from 'svelte-sonner';
 
@@ -11,19 +10,24 @@
     import type { IFilter } from '$comp/filters/filters';
     import type { FacetedFilter } from '.';
 
-    const dispatch = createEventDispatcher();
+    interface Props {
+        facets: FacetedFilter[];
+        changed: (filter: IFilter) => void;
+        remove: (filter?: IFilter) => void;
+    }
 
-    export let facets: Readable<FacetedFilter[]>;
+    let { facets, changed, remove }: Props = $props();
 
-    let open = false;
-    let visible: string[] = [];
-    facets.subscribe(($facets) => {
+    let open = $state(false);
+    let visible = $state<string[]>([]);
+
+    $effect(() => {
         // Add any new facets that have been synced from storage.
-        visible = [...visible, ...$facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
+        visible = [...visible, ...facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
     });
 
     function onFacetSelected(facet: FacetedFilter) {
-        $facets.forEach((f) => f.open.set(false));
+        facets.forEach((f) => f.open.set(false));
 
         if (visible.includes(facet.filter.key)) {
             toast.error(`Only one ${facet.title} filter can be applied at a time.`);
@@ -36,11 +40,7 @@
     }
 
     function onChanged({ detail }: CustomEvent<IFilter>) {
-        onFilterChanged(detail);
-    }
-
-    function onFilterChanged(filter?: IFilter) {
-        dispatch('changed', filter);
+        changed(detail);
     }
 
     function onRemove({ detail }: CustomEvent<IFilter>) {
@@ -50,13 +50,13 @@
             detail.reset();
         }
 
-        dispatch('remove', detail);
+        remove(detail);
     }
 
     function onRemoveAll() {
         visible = [];
-        $facets.forEach((facet) => facet.filter.reset());
-        dispatch('remove');
+        facets.forEach((facet) => facet.filter.reset());
+        remove();
     }
 
     function onClose() {
@@ -76,7 +76,7 @@
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
-                    {#each $facets as facet (facet.filter.key)}
+                    {#each facets as facet (facet.filter.key)}
                         <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>{facet.title}</Command.Item>
                     {/each}
                 </Command.Group>
@@ -94,7 +94,7 @@
     </Popover.Content>
 </Popover.Root>
 
-{#each $facets as facet (facet.filter.key)}
+{#each facets as facet (facet.filter.key)}
     {#if visible.includes(facet.filter.key)}
         <svelte:component this={facet.component} filter={facet.filter} title={facet.title} open={facet.open} on:changed={onChanged} on:remove={onRemove} />
     {/if}

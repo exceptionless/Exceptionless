@@ -1,7 +1,7 @@
 <script lang="ts">
     import { toast } from 'svelte-sonner';
 
-    import { mutateDemoteTab } from '$api/projectsApi';
+    import { mutateDemoteTab } from '$api/projectsApi.svelte';
     import type { PersistentEvent } from '$lib/models/api';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { createEventDispatcher } from 'svelte';

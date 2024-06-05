@@ -9,10 +9,10 @@
     import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import Switch from '$comp/primitives/Switch.svelte';
 
-    const data = new User();
+    const data = $state(new User());
     data.email_notifications_enabled = true;
 
-    let problem = new ProblemDetails();
+    let problem = $state(new ProblemDetails());
 
     const { loading } = useFetchClient();
     async function onSave() {
