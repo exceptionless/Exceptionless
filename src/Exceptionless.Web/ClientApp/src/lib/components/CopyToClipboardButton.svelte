@@ -1,28 +1,35 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+    import { toast } from 'svelte-sonner';
     import type { VariantProps } from 'tailwind-variants';
     import IconContentCopy from '~icons/mdi/content-copy';
-    import { toast } from 'svelte-sonner';
+
     import { Button, type ButtonProps, buttonVariants } from '$comp/ui/button';
 
     type Props = ButtonProps & {
+        children?: Snippet;
         value?: string | null;
         size: VariantProps<typeof buttonVariants>['size'];
     };
 
-    let { title = 'Copy to Clipboard', value, size = 'icon' }: Props = $props();
+    let { children, title = 'Copy to Clipboard', value, size = 'icon' }: Props = $props();
 
-    // UPGRADE
-    function handleCopyDone() {
-        toast.success('Copy to clipboard succeeded');
-    }
-
-    function handleCopyError() {
-        toast.error('Copy to clipboard failed');
+    async function copyToClipboard() {
+        try {
+            await navigator.clipboard.writeText(value ?? '');
+            toast.success('Copy to clipboard succeeded');
+        } catch {
+            toast.error('Copy to clipboard failed');
+        }
     }
 </script>
 
 <div>
-    <Button {title} {size}>
-        <slot><IconContentCopy class="h-4 w-4" /></slot>
+    <Button {title} {size} on:click={copyToClipboard}>
+        {#if children}
+            {@render children()}
+        {:else}
+            <IconContentCopy class="h-4 w-4" />
+        {/if}
     </Button>
 </div>
