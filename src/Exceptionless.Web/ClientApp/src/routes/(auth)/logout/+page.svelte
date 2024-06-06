@@ -8,9 +8,9 @@
     import { H2 } from '$comp/typography';
 
     let isAuthenticated = $derived(accessToken.value !== null);
-    $effect(async () => {
+    $effect(() => {
         if (!isAuthenticated) {
-            await goto('/next/login', { replaceState: true });
+            goto('/next/login', { replaceState: true });
         }
     });
 

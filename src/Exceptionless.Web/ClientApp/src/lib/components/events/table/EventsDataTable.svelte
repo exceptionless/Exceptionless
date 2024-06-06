@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, type Snippet } from 'svelte';
     import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
@@ -15,9 +15,10 @@
         limit: number;
         time: string;
         mode?: GetEventsMode;
+        toolbarChildren?: Snippet;
     }
 
-    let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary' }: Props = $props();
+    let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary', toolbarChildren }: Props = $props();
 
     const parameters = $state({ mode, limit } as IGetEventsParams);
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
@@ -62,7 +63,9 @@
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>
-        <slot name="toolbar" />
+        {#if toolbarChildren}
+            {@render toolbarChildren()}
+        {/if}
     </DataTable.Toolbar>
     <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
     <DataTable.Pagination {table}>

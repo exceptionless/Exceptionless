@@ -1,19 +1,32 @@
 <script lang="ts">
-    import Input from '$comp/ui/input/input.svelte';
-    import Label from '$comp/ui/label/label.svelte';
+    import type { Snippet } from 'svelte';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
-    export let name: string;
-    export let value: unknown;
-    export let problem: ProblemDetails | null = null;
-    export let required: boolean = false;
+    import Input from '$comp/ui/input/input.svelte';
+    import Label from '$comp/ui/label/label.svelte';
 
-    export let autocomplete: string | null = null;
-    export let label: string | null = null;
-    export let placeholder: string | null = 'Enter email address';
+    interface Props {
+        name: string;
+        value: unknown;
+        problem?: ProblemDetails | null;
+        required?: boolean;
+        autocomplete?: string | null;
+        label?: string | null;
+        labelChildren?: Snippet;
+        placeholder?: string | null;
+    }
 
-    $: error = problem?.errors?.[name];
-    $: label = label ?? name.charAt(0).toUpperCase() + name.slice(1);
+    let {
+        name,
+        value,
+        problem = null,
+        required = false,
+        autocomplete = null,
+        label = null,
+        labelChildren,
+        placeholder = 'Enter email address'
+    }: Props = $props();
+    let error = $derived(problem?.errors?.[name]);
 
     function clearError() {
         problem = problem?.clear(name) || null;
@@ -22,8 +35,10 @@
 
 <div class="space-y-2">
     <Label for={name} class={error ? 'text-destructive' : ''}>
-        {label}
-        <slot name="label" />
+        {label ?? name.charAt(0).toUpperCase() + name.slice(1)}
+        {#if labelChildren}
+            {@render labelChildren()}
+        {/if}
     </Label>
     <Input id={name} type="email" {autocomplete} {placeholder} class="w-full" on:change={clearError} bind:value {required} />
     {#if error}

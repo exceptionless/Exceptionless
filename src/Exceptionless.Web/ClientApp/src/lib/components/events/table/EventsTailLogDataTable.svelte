@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, type Snippet } from 'svelte';
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
@@ -15,9 +15,10 @@
     interface Props {
         filter: string;
         limit: number;
+        toolbarChildren?: Snippet;
     }
 
-    let { filter, limit = DEFAULT_LIMIT }: Props = $props();
+    let { filter, limit = DEFAULT_LIMIT, toolbarChildren }: Props = $props();
     let parameters = $state<IGetEventsParams>({ mode: 'summary', limit });
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
         ...options,
@@ -32,8 +33,8 @@
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
     let before: string | undefined;
 
-    $effect(async () => {
-        await loadData(true);
+    $effect(() => {
+        loadData(true);
     });
 
     async function loadData(filterChanged: boolean = false) {
@@ -89,7 +90,9 @@
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>
-        <slot name="toolbar" />
+        {#if toolbarChildren}
+            {@render toolbarChildren()}
+        {/if}
     </DataTable.Toolbar>
     <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
     <Muted class="flex flex-1 items-center justify-between">

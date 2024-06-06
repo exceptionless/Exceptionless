@@ -85,7 +85,7 @@
         }
     });
 
-    $effect(async () => {
+    $effect(() => {
         function handleKeydown(e: KeyboardEvent) {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -94,7 +94,7 @@
         }
 
         if (!isAuthenticated) {
-            await gotoLogin();
+            gotoLogin();
             return;
         }
 
