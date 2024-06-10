@@ -30,7 +30,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.6" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="Stripe.net" Version="44.9.0" />
+    <PackageReference Include="Stripe.net" Version="44.11.0" />
     <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
     <PackageReference Include="UAParser" Version="3.1.47" />
 
