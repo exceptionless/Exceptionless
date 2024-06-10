@@ -48,7 +48,7 @@
     "dependencies": {
         "@exceptionless/browser": "^3.1.0",
         "@iconify-json/mdi": "^1.1.66",
-        "@tanstack/svelte-query": "^5.35.6",
+        "@tanstack/svelte-query": "^5.40.3",
         "@tanstack/svelte-query-devtools": "^5.35.6",
         "@tanstack/svelte-table": "^8.16.0",
         "@web3-storage/parse-link-header": "^3.1.0",
