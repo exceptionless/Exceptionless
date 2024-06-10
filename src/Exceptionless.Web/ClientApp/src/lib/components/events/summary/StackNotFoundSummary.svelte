@@ -3,11 +3,15 @@
     import { Badge } from '$comp/ui/badge';
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    export let badgeClass: string;
-    export let showBadge: boolean;
-    export let showType: boolean;
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as StackSummaryModel<'stack-notfound-summary'>;
+    interface Props {
+        badgeClass: string;
+        showBadge: boolean;
+        showType: boolean;
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
+
+    let { badgeClass, showBadge, showType, summary }: Props = $props();
+    let source = $derived(summary as StackSummaryModel<'stack-notfound-summary'>);
 </script>
 
 <div class="line-clamp-2">

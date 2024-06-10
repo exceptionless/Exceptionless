@@ -1,4 +1,8 @@
-<script lang="ts">
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
+<script lang="ts" generics="TData">
     import type { Snippet } from 'svelte';
     import type { Table } from '@tanstack/svelte-table';
 
@@ -8,7 +12,6 @@
     import IconChevronDoubleLeft from '~icons/mdi/chevron-double-left';
     import Number from '$comp/formatters/Number.svelte';
 
-    type TData = $$Generic;
     interface Props {
         children: Snippet;
         table: Table<TData>;

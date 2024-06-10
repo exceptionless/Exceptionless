@@ -1,11 +1,11 @@
-<script lang="ts" generics="T">
+<script lang="ts" generics="TData">
     import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';
     import { cn } from '$lib/utils';
 
     type Props = HTMLAttributes<Element> & {
-        children?: Snippet<[T]>;
-        items: T[];
+        children?: Snippet<[TData]>;
+        items: TData[];
     };
 
     let { children, class: className, items = [], ...props }: Props = $props();

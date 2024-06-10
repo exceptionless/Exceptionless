@@ -1,14 +1,19 @@
-<script lang="ts">
-    import { createEventDispatcher } from 'svelte';
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
+<script lang="ts" generics="TData">
     import { FlexRender, type Cell, type Header, type Table as SvelteTable } from '$comp/tanstack-table-svelte5';
 
     import DataTableColumnHeader from './data-table-column-header.svelte';
     import * as Table from '$comp/ui/table';
 
-    type TData = $$Generic;
-    export let table: SvelteTable<TData>;
+    interface Props {
+        table: SvelteTable<TData>;
+        rowclick?: (row: TData) => void;
+    }
 
-    const dispatch = createEventDispatcher();
+    let { table, rowclick }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
         const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
@@ -28,7 +33,9 @@
             return;
         }
 
-        dispatch('rowclick', cell.row.original);
+        if (rowclick) {
+            rowclick(cell.row.original);
+        }
     }
 </script>
 

@@ -1,12 +1,19 @@
-<script lang="ts">
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
+<script lang="ts" generics="TData">
     import IconViewColumn from '~icons/mdi/view-column';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
 
     import type { Table } from '@tanstack/svelte-table';
 
-    type TData = $$Generic;
-    export let table: Table<TData>;
+    interface Props {
+        table: Table<TData>;
+    }
+
+    let { table }: Props = $props();
 </script>
 
 <DropdownMenu.Root>

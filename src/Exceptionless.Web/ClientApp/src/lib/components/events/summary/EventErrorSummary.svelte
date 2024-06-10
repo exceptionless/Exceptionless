@@ -3,8 +3,12 @@
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import { A, Muted } from '$comp/typography';
 
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as EventSummaryModel<'event-error-summary'>;
+    interface Props {
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
+
+    let { summary }: Props = $props();
+    let source = $derived(summary as EventSummaryModel<'event-error-summary'>);
 </script>
 
 <div class="line-clamp-2">

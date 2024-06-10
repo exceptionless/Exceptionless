@@ -4,10 +4,14 @@
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import { A, Muted } from '$comp/typography';
 
-    export let badgeClass: string;
-    export let showBadge: boolean;
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as StackSummaryModel<'stack-error-summary'>;
+    interface Props {
+        badgeClass: string;
+        showBadge: boolean;
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
+
+    let { badgeClass, showBadge, summary }: Props = $props();
+    let source = $derived(summary as StackSummaryModel<'stack-error-summary'>);
 </script>
 
 <div class="line-clamp-2">

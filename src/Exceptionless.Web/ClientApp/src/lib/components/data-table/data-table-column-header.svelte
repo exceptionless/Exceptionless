@@ -1,4 +1,8 @@
-<script lang="ts">
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
+<script lang="ts" generics="TData">
     import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';
 
@@ -10,7 +14,6 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { cn } from '$lib/utils';
 
-    type TData = $$Generic;
     type Props = HTMLAttributes<Element> & {
         children: Snippet;
         column: Column<TData, unknown>;
