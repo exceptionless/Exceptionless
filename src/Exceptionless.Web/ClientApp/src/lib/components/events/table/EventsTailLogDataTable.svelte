@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher, type Snippet } from 'svelte';
+    import type { Snippet } from 'svelte';
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
@@ -16,6 +16,7 @@
         filter: string;
         limit: number;
         toolbarChildren?: Snippet;
+        rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
     }
 
     let { filter, limit = DEFAULT_LIMIT, toolbarChildren }: Props = $props();
@@ -81,8 +82,6 @@
                 break;
         }
     }
-
-    const dispatch = createEventDispatcher();
 </script>
 
 <CustomEventMessage type="refresh" on:message={() => loadData()}></CustomEventMessage>
@@ -94,7 +93,7 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
+    <DataTable.Body {table} {rowclick}></DataTable.Body>
     <Muted class="flex flex-1 items-center justify-between">
         <DataTable.PageSize {table} bind:value={limit}></DataTable.PageSize>
         <Muted class="py-2 text-center">

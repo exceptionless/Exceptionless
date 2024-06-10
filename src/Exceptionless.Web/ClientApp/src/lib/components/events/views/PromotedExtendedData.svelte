@@ -6,8 +6,12 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { createEventDispatcher } from 'svelte';
 
-    export let event: PersistentEvent;
-    export let title: string;
+    interface Props {
+        event: PersistentEvent;
+        title: string;
+    }
+
+    let { event, title }: Props = $props();
 
     const dispatch = createEventDispatcher();
 

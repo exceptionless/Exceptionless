@@ -1,10 +1,13 @@
 <script lang="ts">
     import type { SummaryModel, SummaryTemplateKeys, StackSummaryModel } from '$lib/models/api';
 
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as StackSummaryModel<SummaryTemplateKeys>;
+    interface Props {
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
 
-    const percentage = source.total_users > 0 ? (source.users / source.total_users) * 100.0 : 0;
+    let { summary }: Props = $props();
+    let source = $derived(summary as StackSummaryModel<SummaryTemplateKeys>);
+    let percentage = $derived(source.total_users > 0 ? (source.users / source.total_users) * 100.0 : 0);
 </script>
 
 <abbr title={`${source.users} of ${source.total_users} users`}>

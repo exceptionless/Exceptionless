@@ -10,16 +10,20 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { H4 } from '$comp/typography';
 
-    export let event: PersistentEvent;
+    interface Props {
+        event: PersistentEvent;
+    }
 
-    const errorData = getErrorData(event);
-    const errorType = getErrorType(event);
-    const stackTrace = getStackTrace(event);
+    let { event }: Props = $props();
 
-    const code = event.data?.['@error']?.code;
-    const message = getMessage(event);
-    const modules = event.data?.['@error']?.modules || [];
-    const submissionMethod = event.data?.['@submission_method'];
+    let errorData = $derived(getErrorData(event));
+    let errorType = $derived(getErrorType(event));
+    let stackTrace = $derived(getStackTrace(event));
+
+    let code = $derived(event.data?.['@error']?.code);
+    let message = $derived(getMessage(event));
+    let modules = $derived(event.data?.['@error']?.modules || []);
+    let submissionMethod = $derived(event.data?.['@submission_method']);
 </script>
 
 <Table.Root>

@@ -7,12 +7,15 @@
     import { mutatePromoteTab } from '$api/projectsApi.svelte';
     import { createEventDispatcher } from 'svelte';
 
-    export let event: PersistentEvent;
-    export let project: ViewProject | undefined;
+    interface Props {
+        event: PersistentEvent;
+        project?: ViewProject;
+    }
+
+    let { event, project }: Props = $props();
+    let items = $derived(getExtendedDataItems(event, project));
 
     const dispatch = createEventDispatcher();
-    $: items = getExtendedDataItems(event, project);
-
     const promoteTab = mutatePromoteTab(event.project_id ?? '');
     promoteTab.subscribe((response) => {
         if (response.isError) {

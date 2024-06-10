@@ -6,9 +6,12 @@
     import Bytes from '$comp/formatters/Bytes.svelte';
     import Number from '$comp/formatters/Number.svelte';
 
-    export let event: PersistentEvent;
+    interface Props {
+        event: PersistentEvent;
+    }
 
-    const environment = event.data?.['@environment'] ?? {};
+    let { event }: Props = $props();
+    let environment = $derived(event.data?.['@environment'] ?? {});
 </script>
 
 <Table.Root>

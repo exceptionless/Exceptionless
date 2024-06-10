@@ -8,33 +8,38 @@
     import { Button } from '$comp/ui/button';
     import { H4 } from '$comp/typography';
 
-    export let event: PersistentEvent;
+    interface Props {
+        event: PersistentEvent;
+    }
 
-    const request = event.data?.['@request'] ?? {};
-    const requestUrl = getRequestInfoUrl(event);
-    const requestUrlPath = getRequestInfoPath(event);
+    let { event }: Props = $props();
+    let request = $derived(event.data?.['@request'] ?? {});
+    let requestUrl = $derived(getRequestInfoUrl(event));
+    let requestUrlPath = $derived(getRequestInfoPath(event));
 
-    const device = request.data?.['@device'];
-    const browser = request.data?.['@browser'];
-    const browserMajorVersion = request.data?.['@browser_major_version'];
-    const browserVersion = request.data?.['@browser_version'];
-    const os = request.data?.['@os'];
-    const osMajorVersion = request.data?.['@os_major_version'];
-    const osVersion = request.data?.['@os_version'];
+    let device = $derived(request.data?.['@device']);
+    let browser = $derived(request.data?.['@browser']);
+    let browserMajorVersion = $derived(request.data?.['@browser_major_version']);
+    let browserVersion = $derived(request.data?.['@browser_version']);
+    let os = $derived(request.data?.['@os']);
+    let osMajorVersion = $derived(request.data?.['@os_major_version']);
+    let osVersion = $derived(request.data?.['@os_version']);
 
     const excludedAdditionalData = ['@browser', '@browser_version', '@browser_major_version', '@device', '@os', '@os_version', '@os_major_version', '@is_bot'];
 
-    const hasCookies = Object.keys(request.cookies ?? {}).length > 0;
-    const hasHeaders = Object.keys(request.headers ?? {}).length > 0;
-    const sortedHeaders = Object.keys(request.headers || {})
-        .sort()
-        .reduce(
-            (acc, key) => {
-                acc[key] = request.headers?.[key].join(',') ?? '';
-                return acc;
-            },
-            <Record<string, string>>{}
-        );
+    let hasCookies = $derived(Object.keys(request.cookies ?? {}).length > 0);
+    let hasHeaders = $derived(Object.keys(request.headers ?? {}).length > 0);
+    let sortedHeaders = $derived(
+        Object.keys(request.headers || {})
+            .sort()
+            .reduce(
+                (acc, key) => {
+                    acc[key] = request.headers?.[key].join(',') ?? '';
+                    return acc;
+                },
+                <Record<string, string>>{}
+            )
+    );
 </script>
 
 <Table.Root>

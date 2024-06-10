@@ -29,38 +29,45 @@
     import { A, H4 } from '$comp/typography';
     import ClickableTypeFilter from '$comp/filters/ClickableTypeFilter.svelte';
 
-    export let event: PersistentEvent;
+    interface Props {
+        event: PersistentEvent;
+    }
 
-    const hasError = hasErrorOrSimpleError(event);
-    const errorType = hasError ? getErrorType(event) : null;
-    const stackTrace = hasError ? getStackTrace(event) : null;
+    let { event }: Props = $props();
 
-    const isSessionStart = event.type === 'session';
+    let hasError = $derived(hasErrorOrSimpleError(event));
+    let errorType = $derived(hasError ? getErrorType(event) : null);
+    let stackTrace = $derived(hasError ? getStackTrace(event) : null);
 
-    const message = getMessage(event);
-    let references: { id: string; name: string }[] = [];
+    let isSessionStart = $derived(event.type === 'session');
+    let message = $derived(getMessage(event));
+
     const referencePrefix = '@ref:';
-    Object.entries(event.data || {}).forEach(([key, value]) => {
-        if (key.startsWith(referencePrefix)) {
-            references.push({ id: value as string, name: key.slice(5) });
-        }
+    let references: { id: string; name: string }[] = $derived.by(() => {
+        let refs = [];
+        Object.entries(event.data || {}).forEach(([key, value]) => {
+            if (key.startsWith(referencePrefix)) {
+                references.push({ id: value as string, name: key.slice(5) });
+            }
+        });
+        return refs;
     });
 
-    const level = event.data?.['@level']?.toLowerCase();
-    const location = getLocation(event);
+    let level = $derived(event.data?.['@level']?.toLowerCase());
+    let location = $derived(getLocation(event));
 
-    const userInfo = event.data?.['@user'];
-    const userIdentity = userInfo?.identity;
-    const userName = userInfo?.name;
-    const userDescriptionInfo = event.data?.['@user_description'];
-    const userEmail = userDescriptionInfo?.email_address;
-    const userDescription = userDescriptionInfo?.description;
+    let userInfo = $derived(event.data?.['@user']);
+    let userIdentity = $derived(userInfo?.identity);
+    let userName = $derived(userInfo?.name);
+    let userDescriptionInfo = $derived(event.data?.['@user_description']);
+    let userEmail = $derived(userDescriptionInfo?.email_address);
+    let userDescription = $derived(userDescriptionInfo?.description);
 
-    const requestUrl = getRequestInfoUrl(event);
-    const requestUrlPath = getRequestInfoPath(event);
-    const version = event.data?.['@version'];
+    let requestUrl = $derived(getRequestInfoUrl(event));
+    let requestUrlPath = $derived(getRequestInfoPath(event));
+    let version = $derived(event.data?.['@version']);
 
-    function getSessionStartDuration(): Date | number | string | undefined {
+    function getSessionStartDuration(event: PersistentEvent): Date | number | string | undefined {
         if (event.data?.sessionend) {
             if (event.value) {
                 return event.value * 1000;
@@ -87,7 +94,7 @@
                     {#if !event.data?.sessionend}
                         <span class="inline-flex h-2 w-2 animate-pulse items-center rounded-full bg-green-500" title="Online"></span>
                     {/if}
-                    <Duration value={getSessionStartDuration()}></Duration>
+                    <Duration value={getSessionStartDuration(event)}></Duration>
                     {#if event.data?.sessionend}
                         (ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
                     {/if}

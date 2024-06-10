@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createSvelteTable } from '$comp/tanstack-table-svelte5';
-    import { createEventDispatcher, type Snippet } from 'svelte';
+    import type { Snippet } from 'svelte';
     import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
 
@@ -16,6 +16,7 @@
         time: string;
         mode?: GetEventsMode;
         toolbarChildren?: Snippet;
+        rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
     }
 
     let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary', toolbarChildren }: Props = $props();
@@ -55,8 +56,6 @@
             table.resetRowSelection();
         }
     }
-
-    const dispatch = createEventDispatcher();
 </script>
 
 <CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
@@ -67,7 +66,7 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
+    <DataTable.Body {table} {rowclick}></DataTable.Body>
     <DataTable.Pagination {table}>
         <DataTable.PageSize {table} bind:value={parameters.limit}></DataTable.PageSize>
     </DataTable.Pagination>

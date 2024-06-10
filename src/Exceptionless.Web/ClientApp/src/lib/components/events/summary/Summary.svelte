@@ -17,8 +17,8 @@
 
     interface Props {
         summary: SummaryModel<SummaryTemplateKeys>;
-        showStatus: boolean;
-        showType: boolean;
+        showStatus?: boolean;
+        showType?: boolean;
     }
 
     let { summary, showStatus = true, showType = true }: Props = $props();
