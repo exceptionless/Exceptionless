@@ -1,9 +1,14 @@
 <script lang="ts">
-    export let mode: 'dark' | 'light' | 'system';
-
     import { systemPrefersMode } from 'mode-watcher';
+
+    interface Props {
+        mode: 'dark' | 'light' | 'system';
+    }
+
+    let { mode }: Props = $props();
+
     // eslint-disable-next-line svelte/valid-compile
-    let resolvedMode = mode !== 'system' ? mode : $systemPrefersMode ?? 'dark';
+    let resolvedMode = $state(mode !== 'system' ? mode : $systemPrefersMode ?? 'dark');
 </script>
 
 {#if resolvedMode === 'light'}

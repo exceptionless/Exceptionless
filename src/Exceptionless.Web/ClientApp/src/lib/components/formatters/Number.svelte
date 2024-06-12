@@ -1,5 +1,9 @@
 <script lang="ts">
-    export let value: number | null = null;
+    interface Props {
+        value: number | null;
+    }
+
+    let { value }: Props = $props();
 </script>
 
 {#if value !== null && !isNaN(value) && isFinite(value)}

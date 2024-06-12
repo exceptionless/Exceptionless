@@ -5,14 +5,9 @@
     import { Input } from '$comp/ui/input';
     import { cn } from '$lib/utils';
 
-    type $$Props = HTMLInputAttributes;
+    type Props = HTMLInputAttributes;
 
-    let className: $$Props['class'] = undefined;
-    export { className as class };
-    export let value: $$Props['value'] = undefined;
-
-    export let id: string | null | undefined = 'search';
-    export let placeholder: string | null | undefined = 'Search...';
+    let { class: className, id = 'search', placeholder = 'Search...', value, ...props }: Props = $props();
 </script>
 
 <div class="relative">
@@ -26,6 +21,7 @@
         {id}
         class={cn('pl-10', className)}
         bind:value
+        {placeholder}
         on:blur
         on:change
         on:click
@@ -40,7 +36,6 @@
         on:mouseleave
         on:paste
         on:input
-        {placeholder}
-        {...$$restProps}
+        {...props}
     />
 </div>

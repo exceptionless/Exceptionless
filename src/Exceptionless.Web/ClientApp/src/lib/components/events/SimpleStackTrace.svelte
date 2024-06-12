@@ -4,7 +4,11 @@
     import StackTraceHeader from './StackTraceHeader.svelte';
     import { Code } from '$comp/typography';
 
-    export let error: SimpleErrorInfo | undefined;
+    interface Props {
+        error: SimpleErrorInfo;
+    }
+
+    let { error }: Props = $props();
 
     function cleanStackTrace(stackTrace: string) {
         return stackTrace.replace(' ', '');

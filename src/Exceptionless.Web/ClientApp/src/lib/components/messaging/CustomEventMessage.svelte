@@ -1,13 +1,17 @@
 <script lang="ts">
-    import { createEventDispatcher, onMount } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
 
-    export let type: 'Refresh' | string;
+    interface Props {
+        type: 'Refresh' | string;
+    }
+
+    let { type }: Props = $props();
 
     function onMessage({ detail }: CustomEvent<unknown>) {
         dispatch('message', detail);
     }
 
-    onMount(() => {
+    $effect(() => {
         document.addEventListener(type, onMessage);
 
         return () => {

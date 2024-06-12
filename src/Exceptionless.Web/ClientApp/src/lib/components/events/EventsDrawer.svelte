@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { writable, type Writable } from 'svelte/store';
-
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
     import type { PersistentEvent, ViewProject } from '$lib/models/api';
@@ -22,19 +20,24 @@
     import { P } from '$comp/typography';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
 
-    export let id: string;
+    interface Props {
+        id: string;
+    }
+
+    let { id }: Props = $props();
 
     type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | 'Trace Log' | 'Extended Data' | string;
 
-    let activeTab: TabType = 'Overview';
-    const tabs: Writable<TabType[]> = writable([]);
-    tabs.subscribe((items) => {
-        if (!items) {
+    let activeTab = $state<TabType>('Overview');
+    let tabs = $state<TabType[]>([]);
+
+    $effect(() => {
+        if (!tabs.length) {
             activeTab = 'Overview';
         }
 
-        if (!items.includes(activeTab)) {
-            activeTab = items[0];
+        if (!tabs.includes(activeTab)) {
+            activeTab = tabs[0];
         }
     });
 
@@ -80,41 +83,35 @@
         return tabs;
     }
 
-    const projectId = writable<string | null>(null);
+    let projectId = $state<string | null>(null);
     const projectResponse = getProjectByIdQuery(projectId);
 
-    const stackId = writable<string | null>(null);
+    let stackId = $state<string | null>(null);
     const stackResponse = getStackByIdQuery(stackId);
 
     const eventResponse = getEventByIdQuery(id);
     eventResponse.subscribe((response) => {
-        projectId.set(response.data?.project_id ?? null);
-        stackId.set(response.data?.stack_id ?? null);
-        tabs.set(getTabs(response.data, $projectResponse.data));
+        projectId = response.data?.project_id ?? null;
+        stackId = response.data?.stack_id ?? null;
+        tabs = getTabs(response.data, $projectResponse.data);
     });
 
     projectResponse.subscribe((response) => {
-        tabs.set(getTabs($eventResponse.data, response.data));
+        tabs = getTabs($eventResponse.data, response.data);
     });
 
     function onPromoted({ detail }: CustomEvent<string>): void {
-        tabs.update((items) => {
-            items.splice(items.length - 1, 0, detail);
-            return items;
-        });
+        tabs = tabs.toSpliced(tabs.length - 1, 0, detail);
         activeTab = detail;
     }
 
     function onDemoted({ detail }: CustomEvent<string>): void {
-        tabs.update((items) => {
-            items.splice(items.indexOf(detail), 1);
+        let updatedTabs = tabs.toSpliced(tabs.indexOf(detail), 1);
+        if (!updatedTabs.includes('Extended Data')) {
+            updatedTabs.push('Extended Data');
+        }
 
-            if (!items.includes('Extended Data')) {
-                items.push('Extended Data');
-            }
-
-            return items;
-        });
+        tabs = updatedTabs;
         activeTab = 'Extended Data';
     }
 </script>

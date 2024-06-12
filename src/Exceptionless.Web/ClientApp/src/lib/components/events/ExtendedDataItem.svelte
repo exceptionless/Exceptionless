@@ -7,11 +7,15 @@
     import { Button } from '$comp/ui/button';
     import { Code, H4 } from '$comp/typography';
 
-    export let title: string;
-    export let data: unknown;
-    export let canPromote: boolean = true;
-    export let isPromoted: boolean = false;
-    export let excludedKeys: string[] = [];
+    interface Props {
+        title: string;
+        data: unknown;
+        canPromote?: boolean;
+        isPromoted?: boolean;
+        excludedKeys?: string[];
+    }
+
+    let { title, data, canPromote = true, isPromoted = false, excludedKeys = [] }: Props = $props();
 
     function getData(data: unknown, exclusions: string[]): unknown {
         if (typeof data !== 'object' || !(data instanceof Object)) {
@@ -58,7 +62,7 @@
         showRaw = !showRaw;
     }
 
-    let showRaw = false;
+    let showRaw = $state(false);
     let filteredData = getData(data, excludedKeys);
     let hasData = hasFilteredData(filteredData);
     let json = data ? JSON.stringify(data, null, 2) : null;

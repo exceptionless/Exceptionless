@@ -4,7 +4,11 @@
     import StackTraceHeader from './StackTraceHeader.svelte';
     import { Code } from '$comp/typography';
 
-    export let error: ErrorInfo | undefined;
+    interface Props {
+        error: ErrorInfo;
+    }
+
+    let { error }: Props = $props();
 
     const errors = getErrors(error);
 </script>
