@@ -9,7 +9,7 @@
     type Props = ButtonProps & {
         children?: Snippet;
         value?: string | null;
-        size: VariantProps<typeof buttonVariants>['size'];
+        size?: VariantProps<typeof buttonVariants>['size'];
     };
 
     let { children, title = 'Copy to Clipboard', value, size = 'icon' }: Props = $props();

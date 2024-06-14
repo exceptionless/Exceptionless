@@ -3,7 +3,6 @@
     import ArrowUpIcon from '~icons/mdi/arrow-up';
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ObjectDump from '$comp/ObjectDump.svelte';
-    import { createEventDispatcher } from 'svelte';
     import { Button } from '$comp/ui/button';
     import { Code, H4 } from '$comp/typography';
 
@@ -13,9 +12,11 @@
         canPromote?: boolean;
         isPromoted?: boolean;
         excludedKeys?: string[];
+        promote?: (title: string) => void;
+        demote?: (title: string) => void;
     }
 
-    let { title, data, canPromote = true, isPromoted = false, excludedKeys = [] }: Props = $props();
+    let { title, data, canPromote = true, isPromoted = false, excludedKeys = [], promote = () => {}, demote = () => {} }: Props = $props();
 
     function getData(data: unknown, exclusions: string[]): unknown {
         if (typeof data !== 'object' || !(data instanceof Object)) {
@@ -49,12 +50,12 @@
 
     function onPromote(e: Event) {
         e.preventDefault();
-        dispatch('promote', title);
+        promote(title);
     }
 
     function onDemote(e: Event) {
         e.preventDefault();
-        dispatch('demote', title);
+        demote(title);
     }
 
     function onToggleView(e: Event) {
@@ -66,7 +67,6 @@
     let filteredData = getData(data, excludedKeys);
     let hasData = hasFilteredData(filteredData);
     let json = data ? JSON.stringify(data, null, 2) : null;
-    const dispatch = createEventDispatcher();
 </script>
 
 {#if hasData}
@@ -79,9 +79,9 @@
 
             {#if canPromote}
                 {#if !isPromoted}
-                    <Button size="icon" on:click={onPromote} title="Promote to Tab"><ArrowUpIcon /></Button>
+                    <Button size="icon" on:click={() => promote(title)} title="Promote to Tab"><ArrowUpIcon /></Button>
                 {:else}
-                    <Button size="icon" on:click={onDemote} title="Demote Tab"><ArrowDownIcon /></Button>
+                    <Button size="icon" on:click={() => demote(title)} title="Demote Tab"><ArrowDownIcon /></Button>
                 {/if}
             {/if}
         </div>
