@@ -44,7 +44,7 @@
     }
 </script>
 
-<CustomEventMessage type="filter" on:message={onDrawerFilterChanged}></CustomEventMessage>
+<CustomEventMessage type="filter" message={onDrawerFilterChanged}></CustomEventMessage>
 
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>

@@ -1,23 +1,20 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-
     interface Props {
         type: 'Refresh' | string;
+        message: (message: unknown) => void;
     }
 
-    let { type }: Props = $props();
+    let { message: message, type }: Props = $props();
 
-    function onMessage({ detail }: CustomEvent<unknown>) {
-        dispatch('message', detail);
+    function handleMessageEvent({ detail }: CustomEvent<unknown>) {
+        message(detail);
     }
 
     $effect(() => {
-        document.addEventListener(type, onMessage);
+        document.addEventListener(type, handleMessageEvent);
 
         return () => {
-            document.removeEventListener(type, onMessage);
+            document.removeEventListener(type, handleMessageEvent);
         };
     });
-
-    const dispatch = createEventDispatcher();
 </script>

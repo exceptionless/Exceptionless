@@ -4,22 +4,16 @@
     import type { StackStatus } from '$lib/models/api';
     import { StatusFilter } from './filters';
 
-    type Props = AProps & { value: StackStatus[] };
-    let { value, ...props }: Props = $props();
+    type Props = AProps & {
+        changed: (filter: StatusFilter) => void;
+        value: StackStatus[];
+    };
+    let { changed, value, ...props }: Props = $props();
 
     const title = `Search status:${value}`;
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new StatusFilter(value)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} {...props}>
+<A on:click={() => changed(new StatusFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

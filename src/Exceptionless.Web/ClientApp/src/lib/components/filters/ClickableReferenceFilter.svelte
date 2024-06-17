@@ -3,22 +3,16 @@
     import { A, type AProps } from '$comp/typography';
     import { ReferenceFilter } from './filters';
 
-    type Props = AProps & { value: string };
-    let { value, ...props }: Props = $props();
+    type Props = AProps & {
+        changed: (filter: ReferenceFilter) => void;
+        value: string;
+    };
+    let { changed, value, ...props }: Props = $props();
 
     const title = `Search reference:${value}`;
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new ReferenceFilter(value)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} {...props}>
+<A on:click={() => changed(new ReferenceFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

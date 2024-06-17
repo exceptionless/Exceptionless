@@ -4,23 +4,21 @@
     import { mutateDemoteTab } from '$api/projectsApi.svelte';
     import type { PersistentEvent } from '$lib/models/api';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
-    import { createEventDispatcher } from 'svelte';
 
     interface Props {
         event: PersistentEvent;
         title: string;
+        demoted: (name: string) => void;
     }
 
-    let { event, title }: Props = $props();
-
-    const dispatch = createEventDispatcher();
+    let { event, title, demoted }: Props = $props();
 
     const demoteTab = mutateDemoteTab(event.project_id ?? '');
     demoteTab.subscribe((response) => {
         if (response.isError) {
             toast.error(`An error occurred demoting tab ${response.variables.name}`);
         } else if (response.isSuccess) {
-            dispatch('demoted', response.variables.name);
+            demoted(response.variables.name);
         }
     });
 

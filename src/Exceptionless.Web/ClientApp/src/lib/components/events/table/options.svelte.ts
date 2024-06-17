@@ -8,8 +8,7 @@ import {
     type VisibilityState,
     renderComponent,
     type RowSelectionState
-} from '$comp/tanstack-table-svelte5';
-import { get } from 'svelte/store';
+} from '@tanstack/svelte-table';
 
 import type { EventSummaryModel, GetEventsMode, IGetEventsParams, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 import Summary from '$comp/events/summary/Summary.svelte';

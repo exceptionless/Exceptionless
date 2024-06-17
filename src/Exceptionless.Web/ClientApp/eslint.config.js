@@ -28,6 +28,6 @@ export default [
         }
     },
     {
-        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/components/tanstack-table-svelte5', 'src/lib/components/ui/']
+        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/components/ui/']
     }
 ];

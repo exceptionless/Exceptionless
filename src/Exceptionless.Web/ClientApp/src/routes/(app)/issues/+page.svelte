@@ -53,7 +53,7 @@
     }
 </script>
 
-<CustomEventMessage type="filter" on:message={onDrawerFilterChanged}></CustomEventMessage>
+<CustomEventMessage type="filter" message={onDrawerFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">
     <Card.Root>

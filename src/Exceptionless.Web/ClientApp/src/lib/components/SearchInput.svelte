@@ -15,27 +15,5 @@
     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
         <IconSearch class="h-5 w-5" />
     </div>
-    <Input
-        type="text"
-        name="search"
-        {id}
-        class={cn('pl-10', className)}
-        bind:value
-        {placeholder}
-        on:blur
-        on:change
-        on:click
-        on:focus
-        on:focusin
-        on:focusout
-        on:keydown
-        on:keypress
-        on:keyup
-        on:mouseover
-        on:mouseenter
-        on:mouseleave
-        on:paste
-        on:input
-        {...props}
-    />
+    <Input type="text" name="search" {id} class={cn('pl-10', className)} bind:value {placeholder} {...props} />
 </div>

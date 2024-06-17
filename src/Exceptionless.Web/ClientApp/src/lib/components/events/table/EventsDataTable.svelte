@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createSvelteTable } from '$comp/tanstack-table-svelte5';
+    import { createSvelteTable } from '@tanstack/svelte-table';
     import type { Snippet } from 'svelte';
     import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
     import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
@@ -19,7 +19,7 @@
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
     }
 
-    let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary', toolbarChildren }: Props = $props();
+    let { filter, pageFilter = undefined, limit = DEFAULT_LIMIT, time, mode = 'summary', rowclick, toolbarChildren }: Props = $props();
 
     const parameters = $state({ mode, limit } as IGetEventsParams);
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
@@ -58,7 +58,7 @@
     }
 </script>
 
-<CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
+<CustomEventMessage type="refresh" message={loadData}></CustomEventMessage>
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>

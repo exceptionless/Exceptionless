@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { createSvelteTable } from '$comp/tanstack-table-svelte5';
+    import { createSvelteTable } from '@tanstack/svelte-table';
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
@@ -19,7 +19,7 @@
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
     }
 
-    let { filter, limit = DEFAULT_LIMIT, toolbarChildren }: Props = $props();
+    let { filter, limit = DEFAULT_LIMIT, rowclick, toolbarChildren }: Props = $props();
     let parameters = $state<IGetEventsParams>({ mode: 'summary', limit });
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
         ...options,
@@ -72,20 +72,20 @@
         }
     }
 
-    async function onPersistentEvent({ detail }: CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>) {
-        switch (detail.change_type) {
+    async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+        switch (message.change_type) {
             case ChangeType.Added:
             case ChangeType.Saved:
                 return await loadData();
             case ChangeType.Removed:
-                table.options.data = table.options.data.filter((doc) => doc.id !== detail.id);
+                table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
                 break;
         }
     }
 </script>
 
-<CustomEventMessage type="refresh" on:message={() => loadData()}></CustomEventMessage>
-<WebSocketMessage type="PersistentEventChanged" on:message={onPersistentEvent}></WebSocketMessage>
+<CustomEventMessage type="refresh" message={() => loadData()}></CustomEventMessage>
+<WebSocketMessage type="PersistentEventChanged" message={onPersistentEvent}></WebSocketMessage>
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>

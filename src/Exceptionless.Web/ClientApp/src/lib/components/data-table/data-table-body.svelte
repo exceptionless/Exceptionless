@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts" generics="TData">
-    import { FlexRender, type Cell, type Header, type Table as SvelteTable } from '$comp/tanstack-table-svelte5';
+    import { FlexRender, type Cell, type Header, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     import DataTableColumnHeader from './data-table-column-header.svelte';
     import * as Table from '$comp/ui/table';

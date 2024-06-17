@@ -3,22 +3,17 @@
     import { A, type AProps } from '$comp/typography';
     import { ProjectFilter } from './filters';
 
-    type Props = AProps & { organization: string; value: string[] };
-    let { organization, value, ...props }: Props = $props();
+    type Props = AProps & {
+        changed: (filter: ProjectFilter) => void;
+        organization: string;
+        value: string[];
+    };
+    let { changed, organization, value, ...props }: Props = $props();
 
     const title = `Search project:${value}`;
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new ProjectFilter(organization, value)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} {...props}>
+<A on:click={() => changed(new ProjectFilter(organization, value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

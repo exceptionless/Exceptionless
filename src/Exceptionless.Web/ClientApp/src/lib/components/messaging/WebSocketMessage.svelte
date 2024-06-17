@@ -3,9 +3,10 @@
     import CustomEventMessage from './CustomEventMessage.svelte';
     interface Props {
         type: WebSocketMessageType;
+        message: (message: unknown) => void;
     }
 
-    let { type }: Props = $props();
+    let { ...props }: Props = $props();
 </script>
 
-<CustomEventMessage {type} on:message></CustomEventMessage>
+<CustomEventMessage {...props}></CustomEventMessage>
