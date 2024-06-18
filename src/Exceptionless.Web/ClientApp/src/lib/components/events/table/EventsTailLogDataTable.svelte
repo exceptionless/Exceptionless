@@ -1,13 +1,13 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
+    import { useEventListener } from 'runed';
     import { createSvelteTable } from '@tanstack/svelte-table';
+
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
-    import WebSocketMessage from '$comp/messaging/WebSocketMessage.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { Muted } from '$comp/typography';
     import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
@@ -82,10 +82,11 @@
                 break;
         }
     }
-</script>
 
-<CustomEventMessage type="refresh" message={() => loadData()}></CustomEventMessage>
-<WebSocketMessage type="PersistentEventChanged" message={onPersistentEvent}></WebSocketMessage>
+    useEventListener(document, 'refresh', async () => await loadData());
+    // UPGRADE
+    //useCustomEventListener(document, "PersistentEventChanged", ({ detail }) => onPersistentEvent(event as WebSocketMessageValue<'PersistentEventChanged'>));
+</script>
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>

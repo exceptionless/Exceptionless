@@ -30,8 +30,6 @@
     import { A, H2, Muted, P } from '$comp/typography';
 
     const data = $state(new Login());
-
-    // eslint-disable-next-line svelte/valid-compile
     data.invite_token = $page.url.searchParams.get('token');
 
     let problem = $state(new ProblemDetails());

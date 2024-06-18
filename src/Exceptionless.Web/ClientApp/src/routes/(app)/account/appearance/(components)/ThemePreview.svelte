@@ -7,7 +7,6 @@
 
     let { mode }: Props = $props();
 
-    // eslint-disable-next-line svelte/valid-compile
     let resolvedMode = $state(mode !== 'system' ? mode : $systemPrefersMode ?? 'dark');
 </script>
 

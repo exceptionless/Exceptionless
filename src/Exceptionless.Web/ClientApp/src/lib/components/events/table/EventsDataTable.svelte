@@ -1,8 +1,8 @@
 <script lang="ts">
+    import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
     import { createSvelteTable } from '@tanstack/svelte-table';
     import type { Snippet } from 'svelte';
-    import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
+    import { useEventListener } from 'runed';
 
     import * as DataTable from '$comp/data-table';
     import { getTableContext } from './options.svelte';
@@ -56,9 +56,9 @@
             table.resetRowSelection();
         }
     }
-</script>
 
-<CustomEventMessage type="refresh" message={loadData}></CustomEventMessage>
+    useEventListener(document, 'refresh', async () => await loadData());
+</script>
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>

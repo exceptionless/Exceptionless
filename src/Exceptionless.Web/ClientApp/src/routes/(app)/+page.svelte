@@ -11,7 +11,6 @@
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
 
@@ -42,8 +41,6 @@
         filterRemoved(persistedFilters.value, defaultFilters, filter);
     }
 </script>
-
-<CustomEventMessage type="filter" message={onDrawerFilterChanged}></CustomEventMessage>
 
 <div class="flex flex-col space-y-4">
     <Card.Root>

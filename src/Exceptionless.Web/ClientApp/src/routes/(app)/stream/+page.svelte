@@ -8,7 +8,6 @@
 
     import EventsTailLogDataTable from '$comp/events/table/EventsTailLogDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
     import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     import { type IFilter, FilterSerializer, toFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters';
@@ -43,8 +42,6 @@
         filterRemoved(persistedFilters.value, defaultFilters, filter);
     }
 </script>
-
-<CustomEventMessage type="filter" message={onDrawerFilterChanged}></CustomEventMessage>
 
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>

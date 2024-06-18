@@ -12,7 +12,6 @@
 
     let { href, icon, isLargeScreen, isSidebarOpen = $bindable(), title, ...props }: Props = $props();
 
-    // eslint-disable-next-line svelte/valid-compile
     const active = $derived($page.url.pathname === href);
 </script>
 

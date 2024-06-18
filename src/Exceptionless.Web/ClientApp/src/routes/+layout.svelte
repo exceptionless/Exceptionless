@@ -32,7 +32,6 @@
     });
 
     $effect(() => {
-        // eslint-disable-next-line svelte/valid-compile
         const currentRoute = routes.find((route) => $page.url.pathname === route.href);
         if (currentRoute) {
             document.title = `${currentRoute.title} - Exceptionless`;
