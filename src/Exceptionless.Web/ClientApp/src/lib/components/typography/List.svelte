@@ -1,3 +1,7 @@
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
 <script lang="ts" generics="TData">
     import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';

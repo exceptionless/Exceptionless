@@ -36,7 +36,7 @@
     </div>
     <Separator />
 
-    <form on:submit|preventDefault={onSave} class="space-y-2">
+    <form onsubmit={onSave} class="space-y-2">
         <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
         <H4 class="mb-4">Email Notifications</H4>

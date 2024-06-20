@@ -18,7 +18,7 @@
     </div>
     <Separator />
 
-    <form on:submit|preventDefault={onSave}>
+    <form onsubmit={onSave}>
         <RadioGroup.Root value="light" class="grid max-w-xl grid-cols-3 gap-8 pt-2" orientation="horizontal">
             <Label for="light" class="[&:has([data-state=checked])>div]:border-primary">
                 <RadioGroup.Item id="light" value="light" class="sr-only" />
