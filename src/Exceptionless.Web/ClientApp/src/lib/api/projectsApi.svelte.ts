@@ -19,8 +19,8 @@ export function getProjectByIdQuery(id: string | Readable<string | null>) {
             enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = useFetchClient();
-                const response = await getJSON<ViewProject>(`projects/${$id}`, {
+                const client = useFetchClient();
+                const response = await client.getJSON<ViewProject>(`projects/${$id}`, {
                     signal
                 });
 
@@ -43,8 +43,8 @@ export function getProjectsByOrganizationIdQuery(organizationId: string | Readab
             queryClient,
             queryKey: queryKeys.organization($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = useFetchClient();
-                const response = await getJSON<ViewProject[]>(`organizations/${$id}/projects`, {
+                const client = useFetchClient();
+                const response = await client.getJSON<ViewProject[]>(`organizations/${$id}/projects`, {
                     signal,
                     params: {
                         limit
@@ -70,8 +70,8 @@ export function mutatePromoteTab(id: string) {
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: queryKeys.id(id),
         mutationFn: async (params: { name: string }) => {
-            const { post } = useFetchClient();
-            const response = await post(`projects/${id}/promotedtabs`, undefined, {
+            const client = useFetchClient();
+            const response = await client.post(`projects/${id}/promotedtabs`, undefined, {
                 params
             });
 
@@ -92,8 +92,8 @@ export function mutateDemoteTab(id: string) {
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: queryKeys.id(id),
         mutationFn: async ({ name }) => {
-            const { remove } = useFetchClient();
-            const response = await remove(`projects/${id}/promotedtabs`, {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${id}/promotedtabs`, {
                 params: { name }
             });
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
     import IconGoogle from '~icons/mdi/google';
@@ -22,16 +23,16 @@
     import Loading from '$comp/Loading.svelte';
 
     import { User } from '$lib/models/api';
-    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import PasswordInput from '$comp/form/PasswordInput.svelte';
     import { H3, Muted } from '$comp/typography';
 
     const data = $state(new User());
+
+    const client = useFetchClient();
     let problem = $state(new ProblemDetails());
 
-    const { loading } = useFetchClient();
     async function onSave() {
-        if (loading) {
+        if (client.loading) {
             return;
         }
 
@@ -94,7 +95,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if loading}
+                {#if client.loading}
                     <Loading class="mr-2" variant="secondary"></Loading> Updating password...
                 {:else}
                     Update password

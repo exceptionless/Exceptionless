@@ -17,8 +17,8 @@ export function getMeQuery() {
         queryClient,
         queryKey: queryKeys.me(),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const { getJSON } = useFetchClient();
-            const response = await getJSON<User>('users/me', {
+            const client = useFetchClient();
+            const response = await client.getJSON<User>('users/me', {
                 signal
             });
 

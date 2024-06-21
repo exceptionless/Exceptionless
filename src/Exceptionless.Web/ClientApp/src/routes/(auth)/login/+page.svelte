@@ -32,12 +32,12 @@
     const data = $state(new Login());
     data.invite_token = $page.url.searchParams.get('token');
 
+    const client = useFetchClient();
     let problem = $state(new ProblemDetails());
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
-    const { loading } = useFetchClient();
     async function onLogin() {
-        if (loading) {
+        if (client.loading) {
             return;
         }
 

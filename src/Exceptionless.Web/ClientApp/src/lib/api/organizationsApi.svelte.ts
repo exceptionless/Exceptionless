@@ -18,8 +18,8 @@ export function getOrganizationQuery(mode: 'stats' | null = null) {
             queryClient,
             queryKey: mode ? queryKeys.allWithMode(mode) : queryKeys.all,
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = useFetchClient();
-                const response = await getJSON<ViewOrganization[]>('organizations', {
+                const client = useFetchClient();
+                const response = await client.getJSON<ViewOrganization[]>('organizations', {
                     signal,
                     params: {
                         mode

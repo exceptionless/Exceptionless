@@ -25,7 +25,7 @@
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
     const table = createSvelteTable(context.options);
 
-    const { getJSON, loading } = useFetchClient();
+    const client = useFetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 
     $effect(() => {
@@ -33,11 +33,11 @@
     });
 
     async function loadData() {
-        if (loading) {
+        if (client.loading) {
             return;
         }
 
-        response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...parameters,
                 filter: [pageFilter, filter].filter(Boolean).join(' '),

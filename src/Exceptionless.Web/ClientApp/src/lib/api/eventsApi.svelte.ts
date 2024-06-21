@@ -20,8 +20,8 @@ export function getEventByIdQuery(id: string | Readable<string | null>) {
             enabled: !!$accessToken && !!$id,
             queryKey: queryKeys.id($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = useFetchClient();
-                const response = await getJSON<PersistentEvent>(`events/${$id}`, {
+                const client = useFetchClient();
+                const response = await client.getJSON<PersistentEvent>(`events/${$id}`, {
                     signal
                 });
 
@@ -44,8 +44,8 @@ export function getEventsByStackIdQuery(stackId: string | null | Readable<string
             queryClient,
             queryKey: queryKeys.stacks($id),
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const { getJSON } = useFetchClient();
-                const response = await getJSON<PersistentEvent[]>(`stacks/${$id}/events`, {
+                const client = useFetchClient();
+                const response = await client.getJSON<PersistentEvent[]>(`stacks/${$id}/events`, {
                     signal,
                     params: {
                         limit

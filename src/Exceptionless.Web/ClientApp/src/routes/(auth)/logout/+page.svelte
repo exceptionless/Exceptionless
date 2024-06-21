@@ -14,15 +14,14 @@
         }
     });
 
+    const client = useFetchClient();
     let problem = $state(new ProblemDetails());
-
-    const { get, loading } = useFetchClient();
     async function onLogout() {
-        if (loading) {
+        if (client.loading) {
             return;
         }
 
-        const response = await get('auth/logout');
+        const response = await client.get('auth/logout');
         if (response.ok) {
             await logout();
             await goto('/next/login');
@@ -37,7 +36,7 @@
     <ErrorMessage message={problem.errors.general}></ErrorMessage>
     <div class="pt-2">
         <Button type="submit">
-            {#if loading}
+            {#if client.loading}
                 <Loading></Loading> Logging out...
             {:else}
                 Logout

@@ -19,8 +19,8 @@ export async function prefetchStack(id: string) {
     await queryClient.prefetchQuery<Stack, ProblemDetails>({
         queryKey: queryKeys.id(id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const { getJSON } = useFetchClient();
-            const response = await getJSON<Stack>(`stacks/${id}`, {
+            const client = useFetchClient();
+            const response = await client.getJSON<Stack>(`stacks/${id}`, {
                 signal
             });
 
