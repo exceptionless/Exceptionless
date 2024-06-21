@@ -18,7 +18,7 @@
 
     let {
         name,
-        value,
+        value = $bindable(),
         problem = null,
         required = false,
         autocomplete = null,

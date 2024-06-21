@@ -14,7 +14,7 @@
         defaultValue: number;
     }
 
-    let { table, value, defaultValue = 10 }: Props = $props();
+    let { table, value = $bindable(), defaultValue = 10 }: Props = $props();
 
     const items = [
         { value: 5, label: '5' },
