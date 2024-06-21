@@ -21,7 +21,9 @@
                 {#each items as route (route.href)}
                     <Command.Item>
                         <A href={route.href} class="flex gap-x-2" on:click={closeCommandWindow}>
-                            <svelte:component this={route.icon} />
+                            {#if route.icon}
+                                <svelte:component this={route.icon} />
+                            {/if}
                             <div>{route.title}</div>
                         </A>
                     </Command.Item>
