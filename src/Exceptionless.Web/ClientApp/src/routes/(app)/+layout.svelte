@@ -12,7 +12,7 @@
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { validate } from '$lib/validation/validation';
 
-    import { useQueryClient } from '@tanstack/svelte-query';
+    import { useQueryClient } from '@tanstack/svelte-query-runes';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
     import { getMeQuery } from '$api/usersApi.svelte';
     import { routes, type NavigationItemContext } from '../routes';
@@ -121,7 +121,7 @@
 
     const userQuery = getMeQuery();
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: $userQuery.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userQuery.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
 </script>

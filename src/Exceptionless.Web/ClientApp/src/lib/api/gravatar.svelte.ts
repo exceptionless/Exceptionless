@@ -1,16 +1,18 @@
-import { derived } from 'svelte/store';
 import { getMeQuery } from './usersApi.svelte';
 
-// UPGRADE
 export function getGravatarFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
-    return derived(query ?? getMeQuery(), async ($userResponse) => {
-        return $userResponse.data?.email_address ? await getGravatarSrc($userResponse.data?.email_address) : null;
+    const meQuery = query ?? getMeQuery();
+    const userSrc = $derived.by(async () => {
+        return meQuery.data?.email_address ? await getGravatarSrc(meQuery.data?.email_address) : null;
     });
+
+    return userSrc;
 }
 
 export function getUserInitialsFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
-    return derived(query ?? getMeQuery(), async ($userResponse) => {
-        const fullName = $userResponse.data?.full_name;
+    const meQuery = query ?? getMeQuery();
+    const initials = $derived.by(() => {
+        const fullName = meQuery.data?.full_name;
         if (!fullName) {
             return 'NA';
         }
@@ -24,6 +26,8 @@ export function getUserInitialsFromCurrentUserSrc(query?: ReturnType<typeof getM
 
         return initials.length > 2 ? initials.substring(0, 2) : initials;
     });
+
+    return initials;
 }
 
 export async function getGravatarSrc(emailAddress: string) {

@@ -1,4 +1,4 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
 
 import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import type { User } from '$lib/models/api';
@@ -12,7 +12,7 @@ export const queryKeys = {
 
 export function getMeQuery() {
     const queryClient = useQueryClient();
-    let queryOptions = $derived({
+    const queryOptions = $derived({
         enabled: !!accessToken.value,
         queryClient,
         queryKey: queryKeys.me(),

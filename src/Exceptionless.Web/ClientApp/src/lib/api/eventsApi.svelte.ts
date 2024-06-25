@@ -1,7 +1,6 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
 import type { PersistentEvent } from '$lib/models/api';
 import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
-import { derived, readable, type Readable } from 'svelte/store';
 import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {
@@ -12,56 +11,53 @@ export const queryKeys = {
     id: (id: string | null) => [...queryKeys.all, id] as const
 };
 
-// UPGRADE
-export function getEventByIdQuery(id: string | Readable<string | null>) {
-    const readableId = typeof id === 'string' || id === null ? readable(id) : id;
-    return createQuery<PersistentEvent, ProblemDetails>(
-        derived([accessToken.value, readableId], ([$accessToken, $id]) => ({
-            enabled: !!$accessToken && !!$id,
-            queryKey: queryKeys.id($id),
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<PersistentEvent>(`events/${$id}`, {
-                    signal
-                });
+export function getEventByIdQuery(id: string) {
+    const queryOptions = $derived({
+        enabled: !!accessToken.value && !!id,
+        queryKey: queryKeys.id(id),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent>(`events/${id}`, {
+                signal
+            });
 
-                if (response.ok) {
-                    return response.data!;
-                }
-
-                throw response.problem;
+            if (response.ok) {
+                return response.data!;
             }
-        }))
-    );
+
+            throw response.problem;
+        }
+    });
+
+    return createQuery<PersistentEvent, ProblemDetails>(queryOptions);
 }
 
-export function getEventsByStackIdQuery(stackId: string | null | Readable<string | null>, limit: number = 10) {
+export function getEventsByStackIdQuery(stackId: string | null, limit: number = 10) {
     const queryClient = useQueryClient();
-    const readableStackId = typeof stackId === 'string' || stackId === null ? readable(stackId) : stackId;
-    return createQuery<PersistentEvent[], ProblemDetails>(
-        derived([accessToken.value, readableStackId], ([$accessToken, $id]) => ({
-            enabled: !!$accessToken && !!$id,
-            queryClient,
-            queryKey: queryKeys.stacks($id),
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<PersistentEvent[]>(`stacks/${$id}/events`, {
-                    signal,
-                    params: {
-                        limit
-                    }
+    const queryOptions = $derived({
+        enabled: !!accessToken.value && !!stackId,
+        queryClient,
+        queryKey: queryKeys.stacks(stackId),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent[]>(`stacks/${stackId}/events`, {
+                signal,
+                params: {
+                    limit
+                }
+            });
+
+            if (response.ok) {
+                response.data?.forEach((event) => {
+                    queryClient.setQueryData(queryKeys.id(event.id!), event);
                 });
 
-                if (response.ok) {
-                    response.data?.forEach((event) => {
-                        queryClient.setQueryData(queryKeys.id(event.id!), event);
-                    });
-
-                    return response.data!;
-                }
-
-                throw response.problem;
+                return response.data!;
             }
-        }))
-    );
+
+            throw response.problem;
+        }
+    });
+
+    return createQuery<PersistentEvent[], ProblemDetails>(queryOptions);
 }

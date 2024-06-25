@@ -1,5 +1,4 @@
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
-import { derived, readable, type Readable } from 'svelte/store';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
 import type { ViewProject } from '$lib/models/api';
 import { useFetchClient, type FetchClientResponse, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';
@@ -12,61 +11,59 @@ export const queryKeys = {
     id: (id: string | null) => [...queryKeys.all, id] as const
 };
 
-export function getProjectByIdQuery(id: string | Readable<string | null>) {
-    const readableId = typeof id === 'string' || id === null ? readable(id) : id;
-    return createQuery<ViewProject, ProblemDetails>(
-        derived([accessToken.value, readableId], ([$accessToken, $id]) => ({
-            enabled: !!$accessToken && !!$id,
-            queryKey: queryKeys.id($id),
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<ViewProject>(`projects/${$id}`, {
-                    signal
-                });
+export function getProjectByIdQuery(id: string) {
+    const queryOptions = $derived({
+        enabled: !!accessToken.value && !!id,
+        queryKey: queryKeys.id(id),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewProject>(`projects/${id}`, {
+                signal
+            });
 
-                if (response.ok) {
-                    return response.data!;
-                }
-
-                throw response.problem;
+            if (response.ok) {
+                return response.data!;
             }
-        }))
-    );
+
+            throw response.problem;
+        }
+    });
+
+    return createQuery<ViewProject, ProblemDetails>(queryOptions);
 }
 
-export function getProjectsByOrganizationIdQuery(organizationId: string | Readable<string | null>, limit: number = 1000) {
+export function getProjectsByOrganizationIdQuery(organizationId: string, limit: number = 1000) {
     const queryClient = useQueryClient();
-    const readableOrganizationId = typeof organizationId === 'string' || organizationId === null ? readable(organizationId) : organizationId;
-    return createQuery<ViewProject[], ProblemDetails>(
-        derived([accessToken.value, readableOrganizationId], ([$accessToken, $id]) => ({
-            enabled: !!$accessToken && !!$id,
-            queryClient,
-            queryKey: queryKeys.organization($id),
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<ViewProject[]>(`organizations/${$id}/projects`, {
-                    signal,
-                    params: {
-                        limit
-                    }
+    const queryOptions = $derived({
+        enabled: !!accessToken.value && !!organizationId,
+        queryClient,
+        queryKey: queryKeys.organization(organizationId),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewProject[]>(`organizations/${organizationId}/projects`, {
+                signal,
+                params: {
+                    limit
+                }
+            });
+
+            if (response.ok) {
+                response.data?.forEach((project) => {
+                    queryClient.setQueryData(queryKeys.id(project.id!), project);
                 });
 
-                if (response.ok) {
-                    response.data?.forEach((project) => {
-                        queryClient.setQueryData(queryKeys.id(project.id!), project);
-                    });
-
-                    return response.data!;
-                }
-
-                throw response.problem;
+                return response.data!;
             }
-        }))
-    );
+
+            throw response.problem;
+        }
+    });
+
+    return createQuery<ViewProject[], ProblemDetails>(queryOptions);
 }
 
 export function mutatePromoteTab(id: string) {
-    const client = useQueryClient();
+    const queryClient = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
         mutationKey: queryKeys.id(id),
         mutationFn: async (params: { name: string }) => {
@@ -82,7 +79,7 @@ export function mutatePromoteTab(id: string) {
             throw response.problem;
         },
         onSettled: () => {
-            client.invalidateQueries({ queryKey: queryKeys.id(id) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
         }
     });
 }

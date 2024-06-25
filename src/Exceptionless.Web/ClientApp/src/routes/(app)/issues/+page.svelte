@@ -22,7 +22,7 @@
 
     // Load the latest event for the stack and display it in the sidebar.
     const eventsResponse = getEventsByStackIdQuery(selectedStackId, 1);
-    const eventId = $derived($eventsResponse?.data?.[0]?.id);
+    const eventId = $derived(eventsResponse?.data?.[0]?.id);
 
     const limit = persisted<number>('events.issues.limit', 10);
     const defaultFilters = getDefaultFilters().filter((f) => f.key !== 'type');
@@ -65,7 +65,7 @@
     </Card.Root>
 </div>
 
-<Sheet.Root open={$eventsResponse.isSuccess} onOpenChange={() => (selectedStackId = null)}>
+<Sheet.Root open={eventsResponse.isSuccess} onOpenChange={() => (selectedStackId = null)}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title

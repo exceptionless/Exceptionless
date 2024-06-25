@@ -74,12 +74,12 @@
                     <DropdownMenu.Trigger asChild let:builder>
                         <Button builders={[builder]} size="icon" variant="ghost" class="rounded-full">
                             <Avatar.Root title="Profile Image" class="h-7 w-7">
-                                {#await $gravatarSrc}
+                                {#await gravatarSrc}
                                     <Avatar.Fallback><Loading /></Avatar.Fallback>
                                 {:then src}
                                     <Avatar.Image {src} alt="gravatar" />
                                 {/await}
-                                <Avatar.Fallback>{$userInitials}</Avatar.Fallback>
+                                <Avatar.Fallback>{userInitials}</Avatar.Fallback>
                             </Avatar.Root>
                         </Button>
                     </DropdownMenu.Trigger>

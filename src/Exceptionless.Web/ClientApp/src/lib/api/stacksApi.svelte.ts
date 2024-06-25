@@ -1,5 +1,4 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-import { derived, readable, type Readable } from 'svelte/store';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
 import type { Stack } from '$lib/models/api';
 import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';
@@ -33,24 +32,23 @@ export async function prefetchStack(id: string) {
     });
 }
 
-export function getStackByIdQuery(id: string | Readable<string | null>) {
-    const readableId = typeof id === 'string' || id === null ? readable(id) : id;
-    return createQuery<Stack, ProblemDetails>(
-        derived([accessToken.value, readableId], ([$accessToken, $id]) => ({
-            enabled: !!$accessToken && !!$id,
-            queryKey: queryKeys.id($id),
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<Stack>(`stacks/${$id}`, {
-                    signal
-                });
+export function getStackByIdQuery(id: string) {
+    const queryOptions = $derived({
+        enabled: !!accessToken.value && !!id,
+        queryKey: queryKeys.id(id),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<Stack>(`stacks/${id}`, {
+                signal
+            });
 
-                if (response.ok) {
-                    return response.data!;
-                }
-
-                throw response.problem;
+            if (response.ok) {
+                return response.data!;
             }
-        }))
-    );
+
+            throw response.problem;
+        }
+    });
+
+    return createQuery<Stack, ProblemDetails>(queryOptions);
 }
