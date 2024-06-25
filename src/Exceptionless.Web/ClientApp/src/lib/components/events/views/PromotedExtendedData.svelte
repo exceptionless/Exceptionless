@@ -4,14 +4,16 @@
     import { mutateDemoteTab } from '$api/projectsApi.svelte';
     import type { PersistentEvent } from '$lib/models/api';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
+    import type { IFilter } from '$comp/filters/filters';
 
     interface Props {
         event: PersistentEvent;
         title: string;
+        changed: (filter: IFilter) => void;
         demoted: (name: string) => void;
     }
 
-    let { event, title, demoted }: Props = $props();
+    let { event, title, changed, demoted }: Props = $props();
 
     const demoteTab = mutateDemoteTab(event.project_id ?? '');
     demoteTab.subscribe((response) => {

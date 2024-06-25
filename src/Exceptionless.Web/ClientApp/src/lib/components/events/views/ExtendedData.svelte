@@ -5,14 +5,16 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { getExtendedDataItems } from '$lib/helpers/persistent-event';
     import { mutatePromoteTab } from '$api/projectsApi.svelte';
+    import type { IFilter } from '$comp/filters/filters';
 
     interface Props {
         event: PersistentEvent;
         project?: ViewProject;
+        changed: (filter: IFilter) => void;
         promoted: (name: string) => void;
     }
 
-    let { event, project, promoted }: Props = $props();
+    let { event, project, changed, promoted }: Props = $props();
     let items = $derived(getExtendedDataItems(event, project));
 
     const promoteTab = mutatePromoteTab(event.project_id ?? '');

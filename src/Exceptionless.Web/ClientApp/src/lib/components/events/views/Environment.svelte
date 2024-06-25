@@ -5,12 +5,14 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import Bytes from '$comp/formatters/Bytes.svelte';
     import Number from '$comp/formatters/Number.svelte';
+    import type { IFilter } from '$comp/filters/filters';
 
     interface Props {
         event: PersistentEvent;
+        changed: (filter: IFilter) => void;
     }
 
-    let { event }: Props = $props();
+    let { event, changed }: Props = $props();
     let environment = $derived(event.data?.['@environment'] ?? {});
 </script>
 
@@ -20,7 +22,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Machine Name</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="machine" value={environment.machine_name} /></Table.Cell
+                    ><ClickableStringFilter term="machine" value={environment.machine_name} {changed} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.machine_name}</Table.Cell>
             </Table.Row>
@@ -28,7 +30,9 @@
         {#if environment.ip_address}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">IP Address</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="ip" value={environment.ip_address} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><ClickableStringFilter term="ip" value={environment.ip_address} {changed} /></Table.Cell
+                >
                 <Table.Cell>{environment.ip_address}</Table.Cell>
             </Table.Row>
         {/if}
@@ -63,7 +67,9 @@
         {#if environment.o_s_name}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">OS Name</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="os" value={environment.o_s_name} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><ClickableStringFilter term="os" value={environment.o_s_name} {changed} /></Table.Cell
+                >
                 <Table.Cell>{environment.o_s_name}</Table.Cell>
             </Table.Row>
         {/if}
@@ -71,7 +77,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">OS Version</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="os.version" value={environment.o_s_version} /></Table.Cell
+                    ><ClickableStringFilter term="os.version" value={environment.o_s_version} {changed} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.o_s_version}</Table.Cell>
             </Table.Row>
@@ -80,7 +86,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Architecture</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="architecture" value={environment.architecture} /></Table.Cell
+                    ><ClickableStringFilter term="architecture" value={environment.architecture} {changed} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.architecture}</Table.Cell>
             </Table.Row>

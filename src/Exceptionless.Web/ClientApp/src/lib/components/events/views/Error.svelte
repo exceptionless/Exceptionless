@@ -9,12 +9,14 @@
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { H4 } from '$comp/typography';
+    import type { IFilter } from '$comp/filters/filters';
 
     interface Props {
         event: PersistentEvent;
+        changed: (filter: IFilter) => void;
     }
 
-    let { event }: Props = $props();
+    let { event, changed }: Props = $props();
 
     let errorData = $derived(getErrorData(event));
     let errorType = $derived(getErrorType(event));
@@ -30,20 +32,22 @@
     <Table.Body>
         <Table.Row class="group">
             <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
-            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.type" value={errorType} /></Table.Cell>
+            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.type" value={errorType} {changed} /></Table.Cell>
             <Table.Cell>{errorType}</Table.Cell>
         </Table.Row>
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.message" value={message} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><ClickableStringFilter term="error.message" value={message} {changed} /></Table.Cell
+                >
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if code}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="error.code" value={code} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="error.code" value={code} {changed} /></Table.Cell>
                 <Table.Cell>{code}</Table.Cell>
             </Table.Row>
         {/if}

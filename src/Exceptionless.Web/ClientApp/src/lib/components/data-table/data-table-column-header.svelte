@@ -3,7 +3,6 @@
 </script>
 
 <script lang="ts" generics="TData">
-    import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';
 
     import type { Column } from '@tanstack/svelte-table';
@@ -15,7 +14,6 @@
     import { cn } from '$lib/utils';
 
     type Props = HTMLAttributes<Element> & {
-        children: Snippet;
         column: Column<TData, unknown>;
     };
 

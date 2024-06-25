@@ -8,15 +8,15 @@
 
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
 
     let selectedEventId: string | null = $state(null);
-    function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
-        selectedEventId = detail.id;
+    function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
+        selectedEventId = row.id;
     }
 
     const limit = persisted<number>('events.limit', 10);
@@ -46,10 +46,10 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} limit={limit.value} {time} on:rowclick={onRowClick}>
-                <svelte:fragment slot="toolbar">
-                    <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
-                </svelte:fragment>
+            <EventsDataTable {filter} limit={limit.value} {time} {rowclick}>
+                {#snippet toolbarChildren()}
+                    <!-- <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root> -->
+                {/snippet}
             </EventsDataTable>
         </Card.Content>
     </Card.Root>

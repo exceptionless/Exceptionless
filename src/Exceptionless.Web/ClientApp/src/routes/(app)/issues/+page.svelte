@@ -9,15 +9,15 @@
     import { getEventsByStackIdQuery } from '$api/eventsApi.svelte';
     import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     import { type IFilter, FilterSerializer, toFilter, DateFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
 
     let selectedStackId = $state<string | null>(null);
-    function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
-        selectedStackId = detail.id;
+    function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
+        selectedStackId = row.id;
     }
 
     // Load the latest event for the stack and display it in the sidebar.
@@ -56,10 +56,10 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Issues</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} limit={limit.value} {time} on:rowclick={onRowClick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
-                <svelte:fragment slot="toolbar">
+            <EventsDataTable {filter} limit={limit.value} {time} {rowclick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
+                {#snippet toolbarChildren()}
                     <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
-                </svelte:fragment>
+                {/snippet}
             </EventsDataTable>
         </Card.Content>
     </Card.Root>

@@ -20,6 +20,5 @@ export const variants = tv({
 
 export type Variant = VariantProps<typeof variants>['variant'];
 export type Props = HTMLAnchorAttributes & {
-    children: Snippet;
     variant?: Variant;
 };

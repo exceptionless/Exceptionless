@@ -8,15 +8,15 @@
 
     import EventsTailLogDataTable from '$comp/events/table/EventsTailLogDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     import { type IFilter, FilterSerializer, toFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
 
     let selectedEventId: string | null = $state(null);
-    function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
-        selectedEventId = detail.id;
+    function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
+        selectedEventId = row.id;
     }
 
     const limit = persisted<number>('events.stream.limit', 10);
@@ -46,10 +46,10 @@
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>
     <Card.Content>
-        <EventsTailLogDataTable {filter} limit={limit.value} on:rowclick={onRowClick}>
-            <svelte:fragment slot="toolbar">
+        <EventsTailLogDataTable {filter} limit={limit.value} {rowclick}>
+            {#snippet toolbarChildren()}
                 <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
-            </svelte:fragment>
+            {/snippet}
         </EventsTailLogDataTable>
     </Card.Content></Card.Root
 >
