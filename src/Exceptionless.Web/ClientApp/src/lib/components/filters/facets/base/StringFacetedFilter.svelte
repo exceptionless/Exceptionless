@@ -57,11 +57,11 @@
         </div>
         <FacetedFilter.Actions
             showApply={updatedValue !== value}
-            on:apply={onApplyFilter}
+            apply={onApplyFilter}
             showClear={!!updatedValue?.trim()}
-            on:clear={onClearFilter}
-            on:remove={onRemoveFilter}
-            on:close={() => (open = false)}
+            clear={onClearFilter}
+            remove={onRemoveFilter}
+            close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

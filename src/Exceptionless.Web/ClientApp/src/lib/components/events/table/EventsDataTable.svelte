@@ -68,6 +68,6 @@
     </DataTable.Toolbar>
     <DataTable.Body {table} {rowclick}></DataTable.Body>
     <DataTable.Pagination {table}>
-        <DataTable.PageSize {table} bind:value={parameters.limit}></DataTable.PageSize>
+        <DataTable.PageSize {table} bind:value={parameters.limit!}></DataTable.PageSize>
     </DataTable.Pagination>
 </DataTable.Root>

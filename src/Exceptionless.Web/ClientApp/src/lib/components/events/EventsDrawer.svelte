@@ -28,12 +28,7 @@
 
     let { id, changed }: Props = $props();
 
-    type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | 'Trace Log' | 'Extended Data' | string;
-
-    let activeTab = $state<TabType>('Overview');
-    let tabs = $state<TabType[]>([]);
-
-    function getTabs(event?: PersistentEvent | null, project?: ViewProject): TabType[] {
+    function getTabs(event?: PersistentEvent | null, project?: ViewProject, activeTab?: string): TabType[] {
         if (!event) {
             return [];
         }
@@ -75,15 +70,22 @@
         return tabs;
     }
 
-    let projectId = $state<string | null>(null);
-    const projectResponse = getProjectByIdQuery(projectId);
+    let eventResponse = getEventByIdQuery(id);
 
-    let stackId = $state<string | null>(null);
-    const stackResponse = getStackByIdQuery(stackId);
-    const eventResponse = getEventByIdQuery(id);
+    let projectId = $derived<string | null>(eventResponse.data?.project_id ?? null);
+    let projectResponse = getProjectByIdQuery(projectId);
+
+    let stackId = $state<string | null>(eventResponse.data?.stack_id ?? null);
+    let stackResponse = getStackByIdQuery(stackId);
+
+    type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | 'Trace Log' | 'Extended Data' | string;
+
+    let activeTab = $state<TabType>('Overview');
+    let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data, activeTab));
 
     function onPromoted({ detail }: CustomEvent<string>): void {
-        tabs = tabs.toSpliced(tabs.length - 1, 0, detail);
+        // UPGRADE
+        //tabs = tabs.toSpliced(tabs.length - 1, 0, detail);
         activeTab = detail;
     }
 
@@ -93,23 +95,21 @@
             updatedTabs.push('Extended Data');
         }
 
-        tabs = updatedTabs;
+        //tabs = updatedTabs;
         activeTab = 'Extended Data';
     }
 
-    $effect(() => {
-        projectId = eventResponse.data?.project_id ?? null;
-        stackId = eventResponse.data?.stack_id ?? null;
-        tabs = getTabs(eventResponse.data, projectResponse.data);
-
-        if (!tabs.length) {
-            activeTab = 'Overview';
-        }
-
-        if (!tabs.includes(activeTab)) {
-            activeTab = tabs[0];
-        }
-    });
+    //     $effect(() => {
+    //         //tabs = getTabs(eventResponse.data, projectResponse.data);
+    //
+    //         if (!tabs.length) {
+    //             activeTab = 'Overview';
+    //         }
+    //
+    //         if (!tabs.includes(activeTab)) {
+    //             activeTab = tabs[0];
+    //         }
+    //     });
 </script>
 
 {#if eventResponse.isLoading}

@@ -32,6 +32,7 @@ export function getProjectByIdQuery(id: string) {
     return createQuery<ViewProject, ProblemDetails>(queryOptions);
 }
 
+// UPGRADE
 export function getProjectsByOrganizationIdQuery(organizationId: string, limit: number = 1000) {
     const queryClient = useQueryClient();
     const queryOptions = $derived({

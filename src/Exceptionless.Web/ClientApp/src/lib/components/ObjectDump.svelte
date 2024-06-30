@@ -41,7 +41,7 @@
     (Empty)
 {:else if Array.isArray(value)}
     <List items={value}>
-        {#snippet children(item)}
+        {#snippet displayValue(item)}
             <svelte:self value={item} />
         {/snippet}
     </List>

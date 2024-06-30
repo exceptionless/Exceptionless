@@ -1,7 +1,5 @@
 <script lang="ts">
-    import type { Readable } from 'svelte/store';
     import { toast } from 'svelte-sonner';
-
     import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
 
     import * as Command from '$comp/ui/command';
@@ -20,11 +18,6 @@
 
     let open = $state(false);
     let visible = $state<string[]>([]);
-
-    $effect(() => {
-        // Add any new facets that have been synced from storage.
-        visible = [...visible, ...facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
-    });
 
     function onFacetSelected(facet: FacetedFilter) {
         facets.forEach((f) => f.open.set(false));
@@ -62,6 +55,12 @@
     function onClose() {
         open = false;
     }
+
+    function isVisible(facet: FacetedFilter): boolean {
+        // Add any new facets that have been synced from storage.
+        const visibleFacets = [...visible, ...facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
+        return visibleFacets.includes(facet.filter.key);
+    }
 </script>
 
 <Popover.Root bind:open>
@@ -95,7 +94,7 @@
 </Popover.Root>
 
 {#each facets as facet (facet.filter.key)}
-    {#if visible.includes(facet.filter.key)}
+    {#if isVisible(facet)}
         <svelte:component this={facet.component} filter={facet.filter} title={facet.title} open={facet.open} on:changed={onChanged} on:remove={onRemove} />
     {/if}
 {/each}

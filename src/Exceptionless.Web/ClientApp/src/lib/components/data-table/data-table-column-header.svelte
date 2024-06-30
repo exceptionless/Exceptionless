@@ -41,7 +41,9 @@
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
                 <Button variant="ghost" builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent">
-                    {@render children()}
+                    {#if children}
+                        {@render children()}
+                    {/if}
                     {#if column.getIsSorted() === 'desc'}
                         <IconArrowDownward class="ml-2 h-4 w-4" />
                     {:else if column.getIsSorted() === 'asc'}
@@ -57,6 +59,6 @@
             </DropdownMenu.Content>
         </DropdownMenu.Root>
     </div>
-{:else}
+{:else if children}
     {@render children()}
 {/if}

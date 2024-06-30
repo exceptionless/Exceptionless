@@ -15,19 +15,18 @@
 
     const response = getOrganizationQuery();
     const options = $derived(
-        $response.data?.map((organization) => ({
+        response.data?.map((organization) => ({
             value: organization.id!,
             label: organization.name!
         })) ?? []
     );
 
-    // UPGRADE
-    response.subscribe(($response) => {
-        if (!$response.isSuccess || !filter.value) {
+    $effect(() => {
+        if (!response.isSuccess || !filter.value) {
             return;
         }
 
-        const organization = $response.data.find((organization) => organization.id === filter.value);
+        const organization = response.data.find((organization) => organization.id === filter.value);
         if (!organization) {
             filter.value = '';
             filterChanged(filter);
@@ -39,7 +38,7 @@
     {title}
     bind:value={filter.value}
     {options}
-    loading={$response.isLoading}
+    loading={response.isLoading}
     noOptionsText="No organizations found."
     changed={() => filterChanged(filter)}
     remove={() => filterRemoved(filter)}

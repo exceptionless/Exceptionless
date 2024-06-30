@@ -11,7 +11,7 @@
     interface Props {
         table: Table<TData>;
         value: number;
-        defaultValue: number;
+        defaultValue?: number;
     }
 
     let { table, value = $bindable(), defaultValue = 10 }: Props = $props();

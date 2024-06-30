@@ -28,6 +28,11 @@
 
     let { title, values = $bindable(), options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
     let updatedValues = $state(values);
+    let displayValues = $derived.by(() => {
+        const labelsInOptions = options.filter((o) => values.includes(o.value)).map((o) => o.label);
+        const valuesNotInOptions = values.filter((value) => !options.some((o) => o.value === value));
+        return [...labelsInOptions, ...valuesNotInOptions];
+    });
 
     $effect(() => {
         updatedValues = values;
@@ -69,12 +74,6 @@
 
         return 0;
     }
-
-    function getDisplayValues(values: string[]): string[] {
-        const labelsInOptions = options.filter((o) => values.includes(o.value)).map((o) => o.label);
-        const valuesNotInOptions = values.filter((value) => !options.some((o) => o.value === value));
-        return [...labelsInOptions, ...valuesNotInOptions];
-    }
 </script>
 
 <Popover.Root bind:open>
@@ -85,8 +84,10 @@
             {#if loading}
                 <FacetedFilter.BadgeLoading />
             {:else if values.length > 0}
-                <FacetedFilter.BadgeValues values={getDisplayValues(values)} let:value>
-                    {value}
+                <FacetedFilter.BadgeValues values={displayValues}>
+                    {#snippet displayValue(value)}
+                        {value}
+                    {/snippet}
                 </FacetedFilter.BadgeValues>
             {:else}
                 <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
@@ -126,11 +127,11 @@
         </Command.Root>
         <FacetedFilter.Actions
             showApply={hasChanged}
-            on:apply={onApplyFilter}
+            apply={onApplyFilter}
             showClear={updatedValues.length > 0}
-            on:clear={onClearFilter}
-            on:remove={onRemoveFilter}
-            on:close={() => (open = false)}
+            clear={onClearFilter}
+            remove={onRemoveFilter}
+            close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

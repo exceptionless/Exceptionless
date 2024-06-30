@@ -12,26 +12,24 @@
     }
 
     let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: Props = $props();
-
-    let organizationId = $state<string | null>(filter.organization ?? null);
-    $effect(() => {
-        organizationId = filter.organization ?? null;
-    });
+    let organizationId = $state<string | undefined>(filter.organization);
 
     const response = getProjectsByOrganizationIdQuery(organizationId);
     const options = $derived(
-        $response.data?.map((project) => ({
+        response.data?.map((project) => ({
             value: project.id!,
             label: project.name!
         })) ?? []
     );
 
-    response.subscribe(($response) => {
-        if (!$response.isSuccess || filter.value.length === 0) {
+    $effect(() => {
+        organizationId = filter.organization;
+
+        if (!response.isSuccess || filter.value.length === 0) {
             return;
         }
 
-        const projects = $response.data.filter((project) => filter.value.includes(project.id!));
+        const projects = response.data.filter((project) => filter.value.includes(project.id!));
         if (filter.value.length !== projects.length) {
             filter.value = projects.map((project) => project.id!);
             filterChanged(filter);
@@ -43,7 +41,7 @@
     {title}
     bind:values={filter.value}
     {options}
-    loading={$response.isLoading}
+    loading={response.isLoading}
     noOptionsText="No projects found."
     changed={() => filterChanged(filter)}
     remove={() => filterRemoved(filter)}
