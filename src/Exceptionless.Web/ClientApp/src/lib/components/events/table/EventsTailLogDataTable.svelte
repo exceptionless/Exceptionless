@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
     import { useEventListener } from 'runed';
-    import { createSvelteTable } from '@tanstack/svelte-table';
+    import { createTable } from '@tanstack/svelte-table';
 
     import * as DataTable from '$comp/data-table';
     import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
@@ -28,7 +28,7 @@
         enableMultiRowSelection: false,
         manualSorting: false
     }));
-    const table = createSvelteTable(context.options);
+    const table = createTable(context.options);
 
     const client = useFetchClient();
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();

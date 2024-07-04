@@ -51,7 +51,7 @@
         "@iconify-json/mdi": "^1.1.67",
         "@tanstack/svelte-query": "^5.49.1",
         "@tanstack/svelte-query-devtools": "^5.49.1",
-        "@tanstack/svelte-query-runes": "https://pkg.csb.dev/TanStack/query/commit/4f91fd4d/@tanstack/svelte-query-runes",
+        "@tanstack/svelte-query-runes": "https://pkg.csb.dev/TanStack/query/commit/6548f1da/@tanstack/svelte-query-runes",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
         "bits-ui": "^0.21.11",
         "class-validator": "^0.14.1",

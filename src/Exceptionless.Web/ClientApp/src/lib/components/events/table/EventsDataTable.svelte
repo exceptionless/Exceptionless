@@ -1,6 +1,6 @@
 <script lang="ts">
     import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
-    import { createSvelteTable } from '@tanstack/svelte-table';
+    import { createTable } from '@tanstack/svelte-table';
     import type { Snippet } from 'svelte';
     import { useEventListener } from 'runed';
 
@@ -23,7 +23,7 @@
 
     const parameters = $state({ mode, limit } as IGetEventsParams);
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters);
-    const table = createSvelteTable(context.options);
+    const table = createTable(context.options);
 
     const client = useFetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;

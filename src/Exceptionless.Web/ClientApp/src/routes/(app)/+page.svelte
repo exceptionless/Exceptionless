@@ -48,7 +48,7 @@
         <Card.Content>
             <EventsDataTable {filter} limit={limit.value} {time} {rowclick}>
                 {#snippet toolbarChildren()}
-                    <!-- <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root> -->
+                    <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}
             </EventsDataTable>
         </Card.Content>
