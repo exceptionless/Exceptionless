@@ -1,6 +1,19 @@
-import type { FacetedFilter } from '$comp/faceted-filter';
-import { writable } from 'svelte/store';
-import { type BooleanFilter, type DateFilter, type IFilter, type NumberFilter, type StringFilter, type VersionFilter } from '../filters';
+import type { Component } from 'svelte';
+import {
+    KeywordFilter,
+    OrganizationFilter,
+    ProjectFilter,
+    ReferenceFilter,
+    SessionFilter,
+    StatusFilter,
+    TypeFilter,
+    type BooleanFilter,
+    type DateFilter,
+    type IFilter,
+    type NumberFilter,
+    type StringFilter,
+    type VersionFilter
+} from '../filters';
 
 import BooleanFacetedFilter from './BooleanFacetedFilter.svelte';
 import DateFacetedFilter from './DateFacetedFilter.svelte';
@@ -15,54 +28,71 @@ import StringFacetedFilter from './StringFacetedFilter.svelte';
 import TypeFacetedFilter from './TypeFacetedFilter.svelte';
 import VersionFacetedFilter from './VersionFacetedFilter.svelte';
 
-export function toFacetedFilters(filters: IFilter[]): FacetedFilter[] {
+export type FacetedFilterProps<TFilter extends IFilter> = {
+    title: string;
+    open: boolean;
+    filter: TFilter;
+    filterChanged: (filter: TFilter) => void;
+    filterRemoved: (filter: TFilter) => void;
+};
+
+export class FacetedFilter<TFilter extends IFilter> {
+    constructor(
+        public title: string,
+        public component: Component<FacetedFilterProps<TFilter>>,
+        public filter: TFilter,
+        public open: boolean = false
+    ) {}
+}
+
+export function toFacetedFilters(filters: IFilter[]): FacetedFilter<IFilter>[] {
     return filters.map((filter) => {
         switch (filter.type) {
             case 'boolean': {
                 const booleanFilter = filter as BooleanFilter;
-                return { title: (booleanFilter.term as string) ?? 'Boolean', component: BooleanFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter((booleanFilter.term as string) ?? 'Boolean', BooleanFacetedFilter, booleanFilter);
             }
             case 'date': {
                 const dateFilter = filter as DateFilter;
                 const title = dateFilter.term === 'date' ? 'Date Range' : dateFilter.term ?? 'Date';
-                return { title, component: DateFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter(title, DateFacetedFilter, dateFilter);
             }
             case 'keyword': {
-                return { title: 'Keyword', component: KeywordFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Keyword', KeywordFacetedFilter, filter as KeywordFilter);
             }
             case 'number': {
                 const numberFilter = filter as NumberFilter;
-                return { title: (numberFilter.term as string) ?? 'Number', component: NumberFacetedFilter, filter: numberFilter, open: writable(false) };
+                return new FacetedFilter((numberFilter.term as string) ?? 'Number', NumberFacetedFilter, numberFilter);
             }
             case 'organization': {
-                return { title: 'Organization', component: OrganizationFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Organization', OrganizationFacetedFilter, filter as OrganizationFilter);
             }
             case 'project': {
-                return { title: 'Project', component: ProjectFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Project', ProjectFacetedFilter, filter as ProjectFilter);
             }
             case 'reference': {
-                return { title: 'Reference', component: ReferenceFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Reference', ReferenceFacetedFilter, filter as ReferenceFilter);
             }
             case 'session': {
-                return { title: 'Session', component: SessionFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Session', SessionFacetedFilter, filter as SessionFilter);
             }
             case 'status': {
-                return { title: 'Status', component: StatusFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Status', StatusFacetedFilter, filter as StatusFilter);
             }
             case 'string': {
                 const stringFilter = filter as StringFilter;
-                return { title: (stringFilter.term as string) ?? 'String', component: StringFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter((stringFilter.term as string) ?? 'String', StringFacetedFilter, stringFilter);
             }
             case 'type': {
-                return { title: 'Type', component: TypeFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter('Type', TypeFacetedFilter, filter as TypeFilter);
             }
             case 'version': {
                 const versionFilter = filter as VersionFilter;
-                return { title: (versionFilter.term as string) ?? 'Version', component: VersionFacetedFilter, filter, open: writable(false) };
+                return new FacetedFilter((versionFilter.term as string) ?? 'Version', VersionFacetedFilter, versionFilter);
             }
             default: {
                 throw new Error(`Unknown filter type: ${filter.type}`);
             }
         }
-    });
+    }) as FacetedFilter<IFilter>[];
 }

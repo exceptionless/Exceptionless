@@ -1,17 +1,10 @@
 <script lang="ts">
     import { eventTypes } from '$comp/events/options';
-    import { TypeFilter, type IFilter } from '$comp/filters/filters';
+    import { TypeFilter } from '$comp/filters/filters';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
 
-    interface Props {
-        title: string;
-        open: boolean;
-        filter: TypeFilter;
-        filterChanged: (filter: IFilter) => void;
-        filterRemoved: (filter: IFilter) => void;
-    }
-
-    let { title = 'Type', filter, filterChanged, filterRemoved, ...props }: Props = $props();
+    let { title = 'Type', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<TypeFilter> = $props();
 </script>
 
 <MultiselectFacetedFilter

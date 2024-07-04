@@ -74,7 +74,7 @@
 
     <div class="pt-2">
         <Button type="submit">
-            {#if loading}
+            {#if client.loading}
                 <Loading class="mr-2" variant="secondary"></Loading> Logging in...
             {:else}
                 Login

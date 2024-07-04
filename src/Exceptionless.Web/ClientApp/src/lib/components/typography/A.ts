@@ -1,4 +1,3 @@
-import type { Snippet } from 'svelte';
 import type { HTMLAnchorAttributes } from 'svelte/elements';
 import { tv, type VariantProps } from 'tailwind-variants';
 

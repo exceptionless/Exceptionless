@@ -1,17 +1,10 @@
 <script lang="ts">
     import { stackStatuses } from '$comp/events/options';
-    import { StatusFilter, type IFilter } from '$comp/filters/filters';
+    import { StatusFilter } from '$comp/filters/filters';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
 
-    interface Props {
-        title: string;
-        open: boolean;
-        filter: StatusFilter;
-        filterChanged: (filter: IFilter) => void;
-        filterRemoved: (filter: IFilter) => void;
-    }
-
-    let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: Props = $props();
+    let { title = 'Status', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<StatusFilter> = $props();
 </script>
 
 <MultiselectFacetedFilter

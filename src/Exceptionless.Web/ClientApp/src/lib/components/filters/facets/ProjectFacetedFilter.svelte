@@ -1,17 +1,10 @@
 <script lang="ts">
     import { getProjectsByOrganizationIdQuery } from '$api/projectsApi.svelte';
-    import { ProjectFilter, type IFilter } from '$comp/filters/filters';
+    import { ProjectFilter } from '$comp/filters/filters';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
 
-    interface Props {
-        title: string;
-        open: boolean;
-        filter: ProjectFilter;
-        filterChanged: (filter: IFilter) => void;
-        filterRemoved: (filter: IFilter) => void;
-    }
-
-    let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: Props = $props();
+    let { title = 'Status', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<ProjectFilter> = $props();
     let organizationId = $state<string | undefined>(filter.organization);
 
     const response = getProjectsByOrganizationIdQuery(organizationId);

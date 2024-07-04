@@ -164,8 +164,8 @@ export class OrganizationFilter implements IFilter {
 
 export class ProjectFilter implements IFilter {
     constructor(
-        public organization: string | undefined,
-        public value: string[]
+        public organization: string,
+        public value: string[] = []
     ) {}
 
     public type: string = 'project';
@@ -249,7 +249,7 @@ export class SessionFilter implements IFilter {
 }
 
 export class StatusFilter implements IFilter {
-    constructor(public value: StackStatus[]) {}
+    constructor(public value: StackStatus[] = []) {}
 
     public type: string = 'status';
 
@@ -312,7 +312,7 @@ export class StringFilter implements IFilter {
 }
 
 export class TypeFilter implements IFilter {
-    constructor(public value: PersistentEventKnownTypes[]) {}
+    constructor(public value: PersistentEventKnownTypes[] = []) {}
 
     public type: string = 'type';
 

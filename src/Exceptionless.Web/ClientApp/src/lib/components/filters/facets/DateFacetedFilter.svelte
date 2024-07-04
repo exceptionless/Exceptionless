@@ -1,16 +1,9 @@
 <script lang="ts">
-    import { DateFilter, type IFilter } from '$comp/filters/filters';
+    import { DateFilter } from '$comp/filters/filters';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
 
-    interface Props {
-        title: string;
-        open: boolean;
-        filter: DateFilter;
-        filterChanged: (filter: IFilter) => void;
-        filterRemoved: (filter: IFilter) => void;
-    }
-
-    let { filter, title = 'Date Range', filterChanged, filterRemoved, ...props }: Props = $props();
+    let { filter, title = 'Date Range', filterChanged, filterRemoved, ...props }: FacetedFilterProps<DateFilter> = $props();
 
     const options = [
         { value: 'last hour', label: 'Last Hour' },

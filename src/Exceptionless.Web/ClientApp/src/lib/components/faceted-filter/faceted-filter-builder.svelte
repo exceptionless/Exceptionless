@@ -6,10 +6,10 @@
     import * as Popover from '$comp/ui/popover';
     import { Button } from '$comp/ui/button';
     import type { IFilter } from '$comp/filters/filters';
-    import type { FacetedFilter } from '.';
+    import type { FacetedFilter } from '$comp/filters/facets';
 
     interface Props {
-        facets: FacetedFilter[];
+        facets: FacetedFilter<IFilter>[];
         changed: (filter: IFilter) => void;
         remove: (filter?: IFilter) => void;
     }
@@ -19,8 +19,8 @@
     let open = $state(false);
     let visible = $state<string[]>([]);
 
-    function onFacetSelected(facet: FacetedFilter) {
-        facets.forEach((f) => f.open.set(false));
+    function onFacetSelected(facet: FacetedFilter<IFilter>) {
+        facets.forEach((f) => (f.open = false));
 
         if (visible.includes(facet.filter.key)) {
             toast.error(`Only one ${facet.title} filter can be applied at a time.`);
@@ -29,21 +29,21 @@
         }
 
         open = false;
-        facet.open.set(true);
+        facet.open = true;
     }
 
-    function onChanged({ detail }: CustomEvent<IFilter>) {
-        changed(detail);
+    function filterChanged(filter: IFilter) {
+        changed(filter);
     }
 
-    function onRemove({ detail }: CustomEvent<IFilter>) {
-        visible = visible.filter((key) => key !== detail.key);
+    function filterRemoved(filter: IFilter) {
+        visible = visible.filter((key) => key !== filter.key);
 
-        if (!detail.isEmpty()) {
-            detail.reset();
+        if (!filter.isEmpty()) {
+            filter.reset();
         }
 
-        remove(detail);
+        remove(filter);
     }
 
     function onRemoveAll() {
@@ -56,7 +56,7 @@
         open = false;
     }
 
-    function isVisible(facet: FacetedFilter): boolean {
+    function isVisible(facet: FacetedFilter<IFilter>): boolean {
         // Add any new facets that have been synced from storage.
         const visibleFacets = [...visible, ...facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
         return visibleFacets.includes(facet.filter.key);
@@ -95,6 +95,6 @@
 
 {#each facets as facet (facet.filter.key)}
     {#if isVisible(facet)}
-        <svelte:component this={facet.component} filter={facet.filter} title={facet.title} open={facet.open} on:changed={onChanged} on:remove={onRemove} />
+        <svelte:component this={facet.component} title={facet.title} open={facet.open} filter={facet.filter} {filterChanged} {filterRemoved} />
     {/if}
 {/each}
