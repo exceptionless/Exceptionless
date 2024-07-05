@@ -2,7 +2,7 @@
     import P from './typography/P.svelte';
 
     interface Props {
-        message: string[] | string;
+        message?: string[] | string;
     }
 
     let { message }: Props = $props();

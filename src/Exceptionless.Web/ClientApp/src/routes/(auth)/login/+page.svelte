@@ -67,9 +67,11 @@
         {problem}
         placeholder="Enter password"
     >
-        <Muted slot="label" class="float-right">
-            <A href="/forgot-password">Forgot password?</A>
-        </Muted>
+        {#snippet labelChildren()}
+            <Muted class="float-right">
+                <A href="/forgot-password">Forgot password?</A>
+            </Muted>
+        {/snippet}
     </PasswordInput>
 
     <div class="pt-2">

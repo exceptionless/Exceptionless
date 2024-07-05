@@ -4,7 +4,7 @@
     import type { VariantProps } from 'tailwind-variants';
     import IconContentCopy from '~icons/mdi/content-copy';
 
-    import { Button, type ButtonProps, buttonVariants } from '$comp/ui/button';
+    import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
 
     type Props = ButtonProps & {
         children?: Snippet;

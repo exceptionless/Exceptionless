@@ -19,12 +19,7 @@
         isMediumScreen: boolean;
     }
 
-    let {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        isCommandOpen = $bindable(),
-        isSidebarOpen = $bindable(),
-        isMediumScreen
-    }: Props = $props();
+    let { isCommandOpen = $bindable(), isSidebarOpen = $bindable(), isMediumScreen }: Props = $props();
 
     function onHamburgerClick(): void {
         isSidebarOpen = !isSidebarOpen;
