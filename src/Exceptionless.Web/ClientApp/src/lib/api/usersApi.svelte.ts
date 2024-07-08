@@ -1,4 +1,4 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import type { User } from '$lib/models/api';

@@ -1,4 +1,4 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { Stack } from '$lib/models/api';
 import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';

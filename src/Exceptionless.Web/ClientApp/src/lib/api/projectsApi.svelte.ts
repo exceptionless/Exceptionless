@@ -1,4 +1,4 @@
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query-runes';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { ViewProject } from '$lib/models/api';
 import { useFetchClient, type FetchClientResponse, type ProblemDetails } from '@exceptionless/fetchclient';
 import { accessToken } from '$api/auth.svelte';
