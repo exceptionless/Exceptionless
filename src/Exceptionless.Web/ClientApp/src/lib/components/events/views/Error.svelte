@@ -70,7 +70,7 @@
 <div class="mt-2 overflow-auto p-2 text-xs">
     {#if event.data?.['@error']}
         <StackTrace error={event.data['@error']} />
-    {:else}
+    {:else if event.data?.['@simple_error']}
         <SimpleStackTrace error={event.data?.['@simple_error']} />
     {/if}
 </div>

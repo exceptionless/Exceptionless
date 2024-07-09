@@ -5,30 +5,33 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { getExtendedDataItems } from '$lib/helpers/persistent-event';
     import { mutatePromoteTab } from '$api/projectsApi.svelte';
-    import type { IFilter } from '$comp/filters/filters';
 
     interface Props {
         event: PersistentEvent;
         project?: ViewProject;
-        changed: (filter: IFilter) => void;
         promoted: (name: string) => void;
     }
 
-    let { event, project, changed, promoted }: Props = $props();
+    let { event, project, promoted }: Props = $props();
     let items = $derived(getExtendedDataItems(event, project));
 
-    const promoteTab = mutatePromoteTab(event.project_id ?? '');
-    promoteTab.subscribe((response) => {
-        if (response.isError) {
-            toast.error(`An error occurred promoting tab ${response.variables.name}`);
-        } else if (response.isSuccess) {
-            promoted(response.variables.name);
+    const promoteTab = mutatePromoteTab({
+        get id() {
+            return event.project_id!;
         }
     });
 
-    function onPromote(name: string): void {
-        $promoteTab.mutate({ name });
+    function onPromote(title: string): void {
+        promoteTab.mutate({ name: title });
     }
+
+    $effect(() => {
+        if (promoteTab.isError) {
+            toast.error(`An error occurred promoting tab ${promoteTab.variables.name}`);
+        } else if (promoteTab.isSuccess) {
+            promoted(promoteTab.variables.name);
+        }
+    });
 </script>
 
 <div class="space-y-4">

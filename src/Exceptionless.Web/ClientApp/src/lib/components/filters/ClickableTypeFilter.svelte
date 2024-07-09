@@ -12,7 +12,7 @@
     const title = `Search type:${value}`;
 </script>
 
-<A on:click={() => changed(new TypeFilter(value))} {title} {...props}>
+<A onclick={() => changed(new TypeFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

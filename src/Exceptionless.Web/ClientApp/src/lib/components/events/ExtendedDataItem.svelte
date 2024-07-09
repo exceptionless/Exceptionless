@@ -48,16 +48,6 @@
         return true;
     }
 
-    function onPromote(e: Event) {
-        e.preventDefault();
-        promote(title);
-    }
-
-    function onDemote(e: Event) {
-        e.preventDefault();
-        demote(title);
-    }
-
     function onToggleView(e: Event) {
         e.preventDefault();
         showRaw = !showRaw;

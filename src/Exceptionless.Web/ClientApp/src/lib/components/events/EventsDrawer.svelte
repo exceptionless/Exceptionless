@@ -67,30 +67,42 @@
             }
         }
 
+        if (activeTab && !tabs.includes(activeTab)) {
+            throw new globalThis.Error(`Active tab "${activeTab}" not found in tabs: ${tabs.join(', ')}`);
+        }
+
         return tabs;
     }
 
-    let eventResponse = getEventByIdQuery(id);
-
-    let projectId = $derived<string | null>(eventResponse.data?.project_id ?? null);
-    let projectResponse = getProjectByIdQuery(projectId);
-
-    let stackId = $state<string | null>(eventResponse.data?.stack_id ?? null);
-    let stackResponse = getStackByIdQuery(stackId);
+    let eventResponse = getEventByIdQuery({
+        get id() {
+            return id;
+        }
+    });
+    let projectResponse = getProjectByIdQuery({
+        get id() {
+            return eventResponse.data?.project_id;
+        }
+    });
+    let stackResponse = getStackByIdQuery({
+        get id() {
+            return eventResponse.data?.stack_id;
+        }
+    });
 
     type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | 'Trace Log' | 'Extended Data' | string;
 
     let activeTab = $state<TabType>('Overview');
     let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data, activeTab));
 
-    function onPromoted({ detail }: CustomEvent<string>): void {
+    function onPromoted(title: string): void {
         // UPGRADE
         //tabs = tabs.toSpliced(tabs.length - 1, 0, detail);
-        activeTab = detail;
+        activeTab = title;
     }
 
-    function onDemoted({ detail }: CustomEvent<string>): void {
-        let updatedTabs = tabs.toSpliced(tabs.indexOf(detail), 1);
+    function onDemoted(title: string): void {
+        let updatedTabs = tabs.toSpliced(tabs.indexOf(title), 1);
         if (!updatedTabs.includes('Extended Data')) {
             updatedTabs.push('Extended Data');
         }
@@ -129,8 +141,8 @@
                     <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                         ><ClickableProjectFilter
-                            organization={projectResponse.data.organization_id}
-                            value={[projectResponse.data.id]}
+                            organization={projectResponse.data.organization_id!}
+                            value={[projectResponse.data.id!]}
                             {changed}
                             class="mr-0"
                         /></Table.Cell
@@ -160,19 +172,19 @@
         {#each tabs as tab (tab)}
             <Tabs.Content value={tab}>
                 {#if tab === 'Overview'}
-                    <Overview event={eventResponse.data}></Overview>
+                    <Overview event={eventResponse.data} {changed}></Overview>
                 {:else if tab === 'Exception'}
-                    <Error event={eventResponse.data}></Error>
+                    <Error event={eventResponse.data} {changed}></Error>
                 {:else if tab === 'Environment'}
-                    <Environment event={eventResponse.data}></Environment>
+                    <Environment event={eventResponse.data} {changed}></Environment>
                 {:else if tab === 'Request'}
-                    <Request event={eventResponse.data}></Request>
+                    <Request event={eventResponse.data} {changed}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventResponse.data.data?.['@trace']}></TraceLog>
                 {:else if tab === 'Extended Data'}
-                    <ExtendedData event={eventResponse.data} project={projectResponse.data} on:promoted={onPromoted}></ExtendedData>
+                    <ExtendedData event={eventResponse.data} project={projectResponse.data} promoted={onPromoted}></ExtendedData>
                 {:else}
-                    <PromotedExtendedData title={tab + ''} event={eventResponse.data} on:demoted={onDemoted}></PromotedExtendedData>
+                    <PromotedExtendedData title={tab + ''} event={eventResponse.data} demoted={onDemoted}></PromotedExtendedData>
                 {/if}
             </Tabs.Content>
         {/each}

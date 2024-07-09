@@ -15,13 +15,18 @@
     import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
 
-    let selectedStackId = $state<string | null>(null);
+    let selectedStackId = $state<string>();
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedStackId = row.id;
     }
 
     // Load the latest event for the stack and display it in the sidebar.
-    const eventsResponse = getEventsByStackIdQuery(selectedStackId, 1);
+    const eventsResponse = getEventsByStackIdQuery({
+        get stackId() {
+            return selectedStackId;
+        },
+        limit: 1
+    });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);
 
     const limit = persisted<number>('events.issues.limit', 10);
@@ -33,12 +38,12 @@
     const facets = $derived(toFacetedFilters(persistedFilters.value));
     const time = $derived<string>((persistedFilters.value.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
-    function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        if (detail.key !== 'type') {
-            filterChanged(persistedFilters.value, detail);
+    function onDrawerFilterChanged(filter: IFilter): void {
+        if (filter.key !== 'type') {
+            filterChanged(persistedFilters.value, filter);
         }
 
-        selectedStackId = null;
+        selectedStackId = undefined;
     }
 
     function onFilterChanged(filter: IFilter): void {
@@ -65,13 +70,13 @@
     </Card.Root>
 </div>
 
-<Sheet.Root open={eventsResponse.isSuccess} onOpenChange={() => (selectedStackId = null)}>
+<Sheet.Root open={eventsResponse.isSuccess} onOpenChange={() => (selectedStackId = undefined)}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
                 >Event Details <Button href="/event/{eventId}" variant="ghost" size="sm" title="Open in new window"><IconOpenInNew /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer id={eventId || ''}></EventsDrawer>
+        <EventsDrawer id={eventId || ''} changed={onDrawerFilterChanged}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

@@ -6,18 +6,22 @@ import { accessToken } from '$api/auth.svelte';
 export const queryKeys = {
     all: ['PersistentEvent'] as const,
     allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    stacks: (id: string | null) => [...queryKeys.all, 'stacks', id] as const,
-    stackWithFilters: (id: string | null, filters: string) => [...queryKeys.stacks(id), { filters }] as const,
-    id: (id: string | null) => [...queryKeys.all, id] as const
+    stacks: (id: string | undefined) => [...queryKeys.all, 'stacks', id] as const,
+    stackWithFilters: (id: string | undefined, filters: string) => [...queryKeys.stacks(id), { filters }] as const,
+    id: (id: string | undefined) => [...queryKeys.all, id] as const
 };
 
-export function getEventByIdQuery(id: string) {
+export interface GetEventByIdProps {
+    id: string | undefined;
+}
+
+export function getEventByIdQuery(props: GetEventByIdProps) {
     const queryOptions = $derived({
-        enabled: !!accessToken.value && !!id,
-        queryKey: queryKeys.id(id),
+        enabled: !!accessToken.value && !!props.id,
+        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent>(`events/${id}`, {
+            const response = await client.getJSON<PersistentEvent>(`events/${props.id}`, {
                 signal
             });
 
@@ -32,18 +36,23 @@ export function getEventByIdQuery(id: string) {
     return createQuery<PersistentEvent, ProblemDetails>(queryOptions);
 }
 
-export function getEventsByStackIdQuery(stackId: string | null, limit: number = 10) {
+export interface GetEventsByStackIdProps {
+    stackId: string | undefined;
+    limit?: number;
+}
+
+export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
     const queryClient = useQueryClient();
     const queryOptions = $derived({
-        enabled: !!accessToken.value && !!stackId,
+        enabled: !!accessToken.value && !!props.stackId,
         queryClient,
-        queryKey: queryKeys.stacks(stackId),
+        queryKey: queryKeys.stacks(props.stackId),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent[]>(`stacks/${stackId}/events`, {
+            const response = await client.getJSON<PersistentEvent[]>(`stacks/${props.stackId}/events`, {
                 signal,
                 params: {
-                    limit
+                    limit: props.limit ?? 10
                 }
             });
 

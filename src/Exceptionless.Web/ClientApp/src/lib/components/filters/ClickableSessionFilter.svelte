@@ -12,7 +12,7 @@
     const title = `Search ref.session:${value}`;
 </script>
 
-<A on:click={() => changed(new SessionFilter(value))} {title} {...props}>
+<A onclick={() => changed(new SessionFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

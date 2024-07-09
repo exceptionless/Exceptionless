@@ -5,22 +5,26 @@ import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {
     all: ['Organization'] as const,
-    allWithMode: (mode: 'stats' | null) => [...queryKeys.all, { mode }] as const,
-    id: (id: string | null) => [...queryKeys.all, id] as const
+    allWithMode: (mode: 'stats' | undefined) => [...queryKeys.all, { mode }] as const,
+    id: (id: string | undefined) => [...queryKeys.all, id] as const
 };
 
-export function getOrganizationQuery(mode: 'stats' | null = null) {
+export interface GetOrganizationsProps {
+    mode: 'stats' | null;
+}
+
+export function getOrganizationQuery(props: GetOrganizationsProps) {
     const queryClient = useQueryClient();
     const queryOptions = $derived({
         enabled: !!accessToken.value,
         queryClient,
-        queryKey: mode ? queryKeys.allWithMode(mode) : queryKeys.all,
+        queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewOrganization[]>('organizations', {
                 signal,
                 params: {
-                    mode
+                    mode: props.mode
                 }
             });
 

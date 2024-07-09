@@ -27,8 +27,8 @@
     const filter = $derived(toFilter(persistedFilters.value));
     const facets = $derived(toFacetedFilters(persistedFilters.value));
 
-    function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        filterChanged(persistedFilters.value, detail);
+    function onDrawerFilterChanged(filter: IFilter): void {
+        filterChanged(persistedFilters.value, filter);
         selectedEventId = null;
     }
 
@@ -62,6 +62,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer id={selectedEventId || ''}></EventsDrawer>
+        <EventsDrawer id={selectedEventId || ''} changed={onDrawerFilterChanged}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

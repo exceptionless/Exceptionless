@@ -13,7 +13,7 @@
     const title = `Search ${term}:${value}`;
 </script>
 
-<A on:click={() => changed(new BooleanFilter(term, value))} {title} {...props}>
+<A onclick={() => changed(new BooleanFilter(term, value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

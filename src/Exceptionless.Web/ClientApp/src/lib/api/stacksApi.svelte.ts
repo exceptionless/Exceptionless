@@ -6,20 +6,24 @@ import { accessToken } from '$api/auth.svelte';
 export const queryKeys = {
     all: ['Stack'] as const,
     allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    id: (id: string | null) => [...queryKeys.all, id] as const
+    id: (id: string | undefined) => [...queryKeys.all, id] as const
 };
 
-export async function prefetchStack(id: string) {
+export interface GetStackByIdProps {
+    id: string | undefined;
+}
+
+export async function prefetchStack(props: GetStackByIdProps) {
     if (!accessToken.value) {
         return;
     }
 
     const queryClient = useQueryClient();
     await queryClient.prefetchQuery<Stack, ProblemDetails>({
-        queryKey: queryKeys.id(id),
+        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${id}`, {
+            const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
                 signal
             });
 
@@ -32,13 +36,13 @@ export async function prefetchStack(id: string) {
     });
 }
 
-export function getStackByIdQuery(id: string) {
+export function getStackByIdQuery(props: GetStackByIdProps) {
     const queryOptions = $derived({
-        enabled: !!accessToken.value && !!id,
-        queryKey: queryKeys.id(id),
+        enabled: !!accessToken.value && !!props.id,
+        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${id}`, {
+            const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
                 signal
             });
 

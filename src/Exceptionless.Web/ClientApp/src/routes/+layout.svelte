@@ -3,7 +3,7 @@
     import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
 
-    import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query-runes';
+    import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
 

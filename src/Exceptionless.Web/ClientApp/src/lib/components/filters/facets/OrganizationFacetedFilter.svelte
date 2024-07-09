@@ -6,7 +6,7 @@
 
     let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: FacetedFilterProps<OrganizationFilter> = $props();
 
-    const response = getOrganizationQuery();
+    const response = getOrganizationQuery({ mode: 'stats' });
     const options = $derived(
         response.data?.map((organization) => ({
             value: organization.id!,

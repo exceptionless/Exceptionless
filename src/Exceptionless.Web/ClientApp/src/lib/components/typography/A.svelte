@@ -6,5 +6,7 @@
 </script>
 
 <a class={cn(variants({ variant, className }))} {...props}>
-    {@render children()}
+    {#if children}
+        {@render children()}
+    {/if}
 </a>

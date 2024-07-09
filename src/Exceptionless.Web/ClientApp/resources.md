@@ -64,7 +64,8 @@ useEventListener(result, “change”, () => {
 });
 });
 class AuthState {
-#user = $state(null);
+
+# user = $state(null);
 
 get user() {
 return this.#user;

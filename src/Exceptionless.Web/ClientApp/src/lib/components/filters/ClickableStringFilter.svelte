@@ -13,7 +13,7 @@
     const title = `Search ${term}:${value}`;
 </script>
 
-<A on:click={() => changed(new StringFilter(term, value ?? undefined))} {title} {...props}>
+<A onclick={() => changed(new StringFilter(term, value ?? undefined))} {title} {...props}>
     {#if children}
         {@render children()}
     {:else}

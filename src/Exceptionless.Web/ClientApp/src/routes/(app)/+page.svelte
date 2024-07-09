@@ -28,8 +28,8 @@
     const facets = $derived(toFacetedFilters(persistedFilters.value));
     const time = $derived<string>((persistedFilters.value.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
-    function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        filterChanged(persistedFilters.value, detail);
+    function onDrawerFilterChanged(filter: IFilter): void {
+        filterChanged(persistedFilters.value, filter);
         selectedEventId = null;
     }
 
@@ -63,6 +63,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer id={selectedEventId || ''}></EventsDrawer>
+        <EventsDrawer id={selectedEventId || ''} changed={onDrawerFilterChanged}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

@@ -6,7 +6,7 @@ import { accessToken } from '$api/auth.svelte';
 
 export const queryKeys = {
     all: ['User'] as const,
-    id: (id: string | null) => [...queryKeys.all, id] as const,
+    id: (id: string | undefined) => [...queryKeys.all, id] as const,
     me: () => [...queryKeys.all, 'me'] as const
 };
 

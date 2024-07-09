@@ -12,7 +12,7 @@
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { validate } from '$lib/validation/validation';
 
-    import { useQueryClient } from '@tanstack/svelte-query-runes';
+    import { useQueryClient } from '@tanstack/svelte-query';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
     import { getMeQuery } from '$api/usersApi.svelte';
     import { routes, type NavigationItemContext } from '../routes';
