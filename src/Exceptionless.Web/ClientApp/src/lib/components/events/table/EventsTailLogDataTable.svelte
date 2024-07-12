@@ -2,15 +2,15 @@
     import type { Snippet } from 'svelte';
     import { useEventListener } from 'runed';
     import { createTable } from '@tanstack/svelte-table';
+    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
 
     import * as DataTable from '$comp/data-table';
-    import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
-    //import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
     import { Muted } from '$comp/typography';
     import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
+    import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
+    import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
 
     interface Props {
         filter: string;
@@ -72,20 +72,19 @@
         }
     }
 
-    // async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-    //     switch (message.change_type) {
-    //         case ChangeType.Added:
-    //         case ChangeType.Saved:
-    //             return await loadData();
-    //         case ChangeType.Removed:
-    //             table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
-    //             break;
-    //     }
-    // }
+    async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+        switch (message.change_type) {
+            case ChangeType.Added:
+            case ChangeType.Saved:
+                return await loadData();
+            case ChangeType.Removed:
+                table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
+                break;
+        }
+    }
 
     useEventListener(document, 'refresh', async () => await loadData());
-    // UPGRADE
-    //useCustomEventListener(document, "PersistentEventChanged", ({ detail }) => onPersistentEvent(event as WebSocketMessageValue<'PersistentEventChanged'>));
+    useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEvent((event as CustomEvent).detail));
 </script>
 
 <DataTable.Root>
