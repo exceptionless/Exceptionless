@@ -31,7 +31,6 @@ export class LocalStore<T> {
 
         $effect.root(() => {
             $effect(() => {
-                if (this.value === undefined || this.value === null) {
                 if (this._value === undefined || this._value === null) {
                     localStorage.removeItem(this.key);
                 } else {
