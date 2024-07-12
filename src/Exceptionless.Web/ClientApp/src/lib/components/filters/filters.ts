@@ -428,6 +428,14 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
     }
 }
 
+/**
+ * Mutates the given array of filters by adding or updating the specified filter.
+ * If a filter with the same key and term already exists, it will be updated with the new filter's value.
+ * If the filter does not exist, it will be added to the array.
+ * @param filters - The array of filters to be mutated.
+ * @param filter - The filter to be added or updated.
+ * @returns The mutated array of filters.
+ */
 export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
     const existingFilter = filters.find((f) => f.key === filter.key && ('term' in f && 'term' in filter ? f.term === filter.term : true));
     if (existingFilter) {
@@ -483,18 +491,18 @@ export function getDefaultFilters(includeDateFilter = true): IFilter[] {
     ].filter((f) => includeDateFilter || f.type !== 'date');
 }
 
-export function filterChanged(filters: IFilter[], updated: IFilter): void {
-    filters = processFilterRules(setFilter(filters, updated), updated);
+export function filterChanged(filters: IFilter[], updated: IFilter): IFilter[] {
+    return processFilterRules(setFilter(filters, updated), updated);
 }
 
-export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): void {
+export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): IFilter[] {
     // If detail is undefined, remove all filters.
     if (!removed) {
-        filters = defaultFilters;
+        return defaultFilters;
     } else if (defaultFilters.find((f) => f.key === removed.key)) {
-        filters = processFilterRules(setFilter(filters, removed), removed);
+        return processFilterRules(setFilter(filters, removed), removed);
     } else {
-        filters = processFilterRules(
+        return processFilterRules(
             filters.filter((f) => f.key !== removed.key),
             removed
         );

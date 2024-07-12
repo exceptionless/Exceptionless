@@ -29,16 +29,16 @@
     const time = $derived<string>((persistedFilters.value.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
     function onDrawerFilterChanged(filter: IFilter): void {
-        filterChanged(persistedFilters.value, filter);
+        persistedFilters.value = filterChanged(persistedFilters.value, filter);
         selectedEventId = null;
     }
 
     function onFilterChanged(filter: IFilter): void {
-        filterChanged(persistedFilters.value, filter);
+        persistedFilters.value = filterChanged(persistedFilters.value, filter);
     }
 
     function onFilterRemoved(filter?: IFilter): void {
-        filterRemoved(persistedFilters.value, defaultFilters, filter);
+        persistedFilters.value = filterRemoved(persistedFilters.value, defaultFilters, filter);
     }
 </script>
 

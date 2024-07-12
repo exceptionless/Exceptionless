@@ -40,7 +40,7 @@
 
     function onDrawerFilterChanged(filter: IFilter): void {
         if (filter.key !== 'type') {
-            filterChanged(persistedFilters.value, filter);
+            persistedFilters.value = filterChanged(persistedFilters.value, filter);
         }
 
         selectedStackId = undefined;
@@ -48,12 +48,12 @@
 
     function onFilterChanged(filter: IFilter): void {
         if (filter.key !== 'type') {
-            filterChanged(persistedFilters.value, filter);
+            persistedFilters.value = filterChanged(persistedFilters.value, filter);
         }
     }
 
     function onFilterRemoved(filter?: IFilter): void {
-        filterRemoved(persistedFilters.value, defaultFilters, filter);
+        persistedFilters.value = filterRemoved(persistedFilters.value, defaultFilters, filter);
     }
 </script>
 

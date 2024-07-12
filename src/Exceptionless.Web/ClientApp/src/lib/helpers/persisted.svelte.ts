@@ -13,31 +13,40 @@ export class JSONSerializer<T> extends Serializer<T> {
 }
 
 export class LocalStore<T> {
-    value = $state<T>() as T;
-    key = '';
-    serializer: Serializer<T>;
+    private _value = $state<T>() as T;
 
-    constructor(key: string, defaultValue: T, serializer: Serializer<T>) {
-        this.key = key;
-        this.value = defaultValue;
-        this.serializer = serializer;
+    constructor(
+        public key: string,
+        defaultValue: T,
+        public serializer: Serializer<T>
+    ) {
+        this._value = defaultValue;
 
         const item = localStorage.getItem(key);
         if (item !== null) {
-            this.value = this.serializer.deserialize(item);
+            this._value = this.serializer.deserialize(item);
         } else {
-            this.value = defaultValue;
+            this._value = defaultValue;
         }
 
         $effect.root(() => {
             $effect(() => {
                 if (this.value === undefined || this.value === null) {
+                if (this._value === undefined || this._value === null) {
                     localStorage.removeItem(this.key);
                 } else {
-                    localStorage.setItem(this.key, this.serializer.serialize(this.value));
+                    localStorage.setItem(this.key, this.serializer.serialize(this._value));
                 }
             });
         });
+    }
+
+    public get value(): T {
+        return this._value;
+    }
+
+    public set value(value: T) {
+        this._value = value;
     }
 }
 
