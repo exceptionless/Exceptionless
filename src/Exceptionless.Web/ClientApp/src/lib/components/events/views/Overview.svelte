@@ -28,7 +28,7 @@
     import { Button } from '$comp/ui/button';
     import { A, H4 } from '$comp/typography';
     import ClickableTypeFilter from '$comp/filters/ClickableTypeFilter.svelte';
-    import type { IFilter } from '$comp/filters/filters';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
     interface Props {
         event: PersistentEvent;

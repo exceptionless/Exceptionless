@@ -7,7 +7,7 @@
     import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
     import { Button } from '$comp/ui/button';
     import { H4 } from '$comp/typography';
-    import type { IFilter } from '$comp/filters/filters';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
     interface Props {
         event: PersistentEvent;

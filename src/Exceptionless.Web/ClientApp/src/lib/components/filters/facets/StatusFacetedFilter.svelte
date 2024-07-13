@@ -1,6 +1,6 @@
 <script lang="ts">
     import { stackStatuses } from '$comp/events/options';
-    import { StatusFilter } from '$comp/filters/filters';
+    import { StatusFilter } from '$comp/filters/filters.svelte';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 

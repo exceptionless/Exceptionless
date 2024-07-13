@@ -11,10 +11,13 @@ export interface IFilter {
 }
 
 export class BooleanFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: boolean
-    ) {}
+    public term = $state<string>();
+    public value = $state<boolean>();
+
+    constructor(term?: string, value?: boolean) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'boolean';
 
@@ -44,10 +47,13 @@ export class BooleanFilter implements IFilter {
 }
 
 export class DateFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: Date | string
-    ) {}
+    public term = $state<string>();
+    public value = $state<Date | string>();
+
+    constructor(term?: string, value?: Date | string) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'date';
 
@@ -78,7 +84,11 @@ export class DateFilter implements IFilter {
 }
 
 export class KeywordFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'keyword';
 
@@ -104,10 +114,13 @@ export class KeywordFilter implements IFilter {
 }
 
 export class NumberFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: number
-    ) {}
+    public term = $state<string>();
+    public value = $state<number>();
+
+    constructor(term?: string, value?: number) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'number';
 
@@ -137,7 +150,10 @@ export class NumberFilter implements IFilter {
 }
 
 export class OrganizationFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'organization';
 
@@ -163,10 +179,13 @@ export class OrganizationFilter implements IFilter {
 }
 
 export class ProjectFilter implements IFilter {
-    constructor(
-        public organization: string | undefined,
-        public value: string[] = []
-    ) {}
+    public organization = $state<string | undefined>();
+    public value = $state<string[]>([]);
+
+    constructor(organization: string | undefined, value: string[] = []) {
+        this.organization = organization;
+        this.value = value;
+    }
 
     public type: string = 'project';
 
@@ -196,7 +215,11 @@ export class ProjectFilter implements IFilter {
 }
 
 export class ReferenceFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'reference';
 
@@ -222,7 +245,11 @@ export class ReferenceFilter implements IFilter {
 }
 
 export class SessionFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'session';
 
@@ -249,7 +276,11 @@ export class SessionFilter implements IFilter {
 }
 
 export class StatusFilter implements IFilter {
-    constructor(public value: StackStatus[] = []) {}
+    public value = $state<StackStatus[]>([]);
+
+    constructor(value: StackStatus[] = []) {
+        this.value = value;
+    }
 
     public type: string = 'status';
 
@@ -279,10 +310,13 @@ export class StatusFilter implements IFilter {
 }
 
 export class StringFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: string
-    ) {}
+    public term = $state<string>();
+    public value = $state<string>();
+
+    constructor(term?: string, value?: string) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'string';
 
@@ -312,7 +346,11 @@ export class StringFilter implements IFilter {
 }
 
 export class TypeFilter implements IFilter {
-    constructor(public value: PersistentEventKnownTypes[] = []) {}
+    public value = $state<PersistentEventKnownTypes[]>([]);
+
+    constructor(value: PersistentEventKnownTypes[] = []) {
+        this.value = value;
+    }
 
     public type: string = 'type';
 
@@ -342,10 +380,13 @@ export class TypeFilter implements IFilter {
 }
 
 export class VersionFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: string
-    ) {}
+    public term = $state<string>();
+    public value = $state<string>();
+
+    constructor(term?: string, value?: string) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'version';
 

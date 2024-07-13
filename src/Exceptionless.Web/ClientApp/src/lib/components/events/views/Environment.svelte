@@ -5,7 +5,7 @@
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import Bytes from '$comp/formatters/Bytes.svelte';
     import Number from '$comp/formatters/Number.svelte';
-    import type { IFilter } from '$comp/filters/filters';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
     interface Props {
         event: PersistentEvent;

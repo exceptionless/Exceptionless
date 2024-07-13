@@ -1,7 +1,7 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
     import { A, type AProps } from '$comp/typography';
-    import { SessionFilter } from './filters';
+    import { SessionFilter } from './filters.svelte';
 
     type Props = AProps & {
         changed: (filter: SessionFilter) => void;

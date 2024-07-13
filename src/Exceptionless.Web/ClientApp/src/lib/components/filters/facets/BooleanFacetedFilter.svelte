@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { BooleanFilter } from '$comp/filters/filters';
+    import { BooleanFilter } from '$comp/filters/filters.svelte';
     import BooleanFacetedFilter from './base/BooleanFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 

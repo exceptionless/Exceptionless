@@ -2,7 +2,7 @@
     import IconFilter from '~icons/mdi/filter';
     import { A, type AProps } from '$comp/typography';
     import type { StackStatus } from '$lib/models/api';
-    import { StatusFilter } from './filters';
+    import { StatusFilter } from './filters.svelte';
 
     type Props = AProps & {
         changed: (filter: StatusFilter) => void;

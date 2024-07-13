@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { KeywordFilter } from '$comp/filters/filters';
+    import { KeywordFilter } from '$comp/filters/filters.svelte';
     import KeywordFacetedFilter from './base/KeywordFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 

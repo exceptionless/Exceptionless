@@ -10,7 +10,7 @@
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters';
+    import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
 

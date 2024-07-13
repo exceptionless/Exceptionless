@@ -13,7 +13,7 @@ import {
     type NumberFilter,
     type StringFilter,
     type VersionFilter
-} from '../filters';
+} from '../filters.svelte';
 
 import BooleanFacetedFilter from './BooleanFacetedFilter.svelte';
 import DateFacetedFilter from './DateFacetedFilter.svelte';
@@ -54,7 +54,7 @@ export function toFacetedFilters(filters: IFilter[]): FacetedFilter<IFilter>[] {
             }
             case 'date': {
                 const dateFilter = filter as DateFilter;
-                const title = dateFilter.term === 'date' ? 'Date Range' : dateFilter.term ?? 'Date';
+                const title = dateFilter.term === 'date' ? 'Date Range' : (dateFilter.term ?? 'Date');
                 return new FacetedFilter(title, DateFacetedFilter, dateFilter);
             }
             case 'keyword': {

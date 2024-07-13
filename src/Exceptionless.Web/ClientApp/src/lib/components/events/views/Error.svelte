@@ -9,7 +9,7 @@
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { H4 } from '$comp/typography';
-    import type { IFilter } from '$comp/filters/filters';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
     interface Props {
         event: PersistentEvent;

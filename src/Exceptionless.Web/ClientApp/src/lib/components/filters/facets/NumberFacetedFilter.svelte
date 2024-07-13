@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { NumberFilter } from '$comp/filters/filters';
+    import { NumberFilter } from '$comp/filters/filters.svelte';
     import NumberFacetedFilter from './base/NumberFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 

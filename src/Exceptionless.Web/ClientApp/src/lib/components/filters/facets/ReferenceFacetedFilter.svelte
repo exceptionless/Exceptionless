@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ReferenceFilter } from '$comp/filters/filters';
+    import { ReferenceFilter } from '$comp/filters/filters.svelte';
     import StringFacetedFilter from './base/StringFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 

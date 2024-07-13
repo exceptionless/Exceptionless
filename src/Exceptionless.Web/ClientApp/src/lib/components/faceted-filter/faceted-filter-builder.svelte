@@ -5,7 +5,7 @@
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import { Button } from '$comp/ui/button';
-    import type { IFilter } from '$comp/filters/filters';
+    import type { IFilter } from '$comp/filters/filters.svelte';
     import type { FacetedFilter } from '$comp/filters/facets';
 
     interface Props {

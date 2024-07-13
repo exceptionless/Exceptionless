@@ -19,7 +19,7 @@
     import * as Tabs from '$comp/ui/tabs';
     import { P } from '$comp/typography';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
-    import type { IFilter } from '$comp/filters/filters';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
     interface Props {
         id: string;

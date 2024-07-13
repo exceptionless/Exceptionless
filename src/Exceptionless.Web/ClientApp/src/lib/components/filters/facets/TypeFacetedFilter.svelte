@@ -1,6 +1,6 @@
 <script lang="ts">
     import { eventTypes } from '$comp/events/options';
-    import { TypeFilter } from '$comp/filters/filters';
+    import { TypeFilter } from '$comp/filters/filters.svelte';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 

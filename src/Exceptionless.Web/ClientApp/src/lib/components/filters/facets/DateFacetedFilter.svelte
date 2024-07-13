@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { DateFilter } from '$comp/filters/filters';
+    import { DateFilter } from '$comp/filters/filters.svelte';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
 
