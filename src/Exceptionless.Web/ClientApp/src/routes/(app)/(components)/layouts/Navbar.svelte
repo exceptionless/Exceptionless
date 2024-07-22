@@ -11,7 +11,7 @@
     import Loading from '$comp/Loading.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import { Button } from '$comp/ui/button';
-    import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar.svelte';
+    import { getGravatarFromCurrentUser } from '$api/gravatar.svelte';
 
     interface Props {
         isCommandOpen: boolean;
@@ -29,8 +29,7 @@
         isCommandOpen = true;
     }
 
-    const gravatarSrc = getGravatarFromCurrentUserSrc();
-    const userInitials = getUserInitialsFromCurrentUserSrc();
+    const gravatar = getGravatarFromCurrentUser();
 </script>
 
 <nav class="fixed z-30 w-full border-b bg-background text-foreground">
@@ -69,12 +68,12 @@
                     <DropdownMenu.Trigger asChild let:builder>
                         <Button builders={[builder]} size="icon" variant="ghost" class="rounded-full">
                             <Avatar.Root title="Profile Image" class="h-7 w-7">
-                                {#await gravatarSrc}
+                                {#await gravatar.src}
                                     <Avatar.Fallback><Loading /></Avatar.Fallback>
                                 {:then src}
                                     <Avatar.Image {src} alt="gravatar" />
                                 {/await}
-                                <Avatar.Fallback>{userInitials}</Avatar.Fallback>
+                                <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
                         </Button>
                     </DropdownMenu.Trigger>

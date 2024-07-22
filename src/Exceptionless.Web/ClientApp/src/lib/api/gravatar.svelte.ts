@@ -1,33 +1,29 @@
 import { getMeQuery } from './usersApi.svelte';
 
-export function getGravatarFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
+export function getGravatarFromCurrentUser(query?: ReturnType<typeof getMeQuery>) {
     const meQuery = query ?? getMeQuery();
-    const userSrc = $derived.by(async () => {
-        return meQuery.data?.email_address ? await getGravatarSrc(meQuery.data?.email_address) : null;
-    });
+    const fullName = $derived(meQuery.data?.full_name);
+    const emailAddress = $derived(meQuery.data?.email_address);
 
-    return userSrc;
-}
+    return {
+        get initials() {
+            if (!fullName) {
+                return 'NA';
+            }
 
-export function getUserInitialsFromCurrentUserSrc(query?: ReturnType<typeof getMeQuery>) {
-    const meQuery = query ?? getMeQuery();
-    const initials = $derived.by(() => {
-        const fullName = meQuery.data?.full_name;
-        if (!fullName) {
-            return 'NA';
+            const initials = fullName
+                .split(' ')
+                .map((name) => name.trim())
+                .filter((name) => name.length > 0)
+                .map((name) => name[0])
+                .join('');
+
+            return initials.length > 2 ? initials.substring(0, 2) : initials;
+        },
+        get src() {
+            return emailAddress ? getGravatarSrc(emailAddress) : Promise.resolve(null);
         }
-
-        const initials = fullName
-            .split(' ')
-            .map((name) => name.trim())
-            .filter((name) => name.length > 0)
-            .map((name) => name[0])
-            .join('');
-
-        return initials.length > 2 ? initials.substring(0, 2) : initials;
-    });
-
-    return initials;
+    };
 }
 
 export async function getGravatarSrc(emailAddress: string) {
