@@ -1,5 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
+    import { MediaQuery } from 'runed';
+
     import { page } from '$app/stores';
 
     import NavbarLayout from './(components)/layouts/Navbar.svelte';
@@ -17,7 +19,6 @@
     import { getMeQuery } from '$api/usersApi.svelte';
     import { routes, type NavigationItemContext } from '../routes';
     import { persisted } from '$lib/helpers/persisted.svelte';
-    import { mediaQuery } from '$lib/helpers/mediaQuery.svelte';
 
     interface Props {
         children: Snippet;
@@ -28,9 +29,9 @@
 
     let isSidebarOpen = persisted('sidebar-open', false);
     let isCommandOpen = $state(false);
-    const isSmallScreen = mediaQuery('(min-width: 640px)');
-    const isMediumScreen = mediaQuery('(min-width: 768px)');
-    const isLargeScreen = mediaQuery('(min-width: 1024px)');
+    const isSmallScreen = new MediaQuery('(min-width: 640px)');
+    const isMediumScreen = new MediaQuery('(min-width: 768px)');
+    const isLargeScreen = new MediaQuery('(min-width: 1024px)');
 
     setModelValidator(validate);
     useMiddleware(async (ctx, next) => {
@@ -79,8 +80,9 @@
     }
 
     // Close Sidebar on page change on mobile
+    // UPGRADE
     page.subscribe(() => {
-        if (isSmallScreen === true) {
+        if (isSmallScreen.matches) {
             isSidebarOpen.value = false;
         }
     });
@@ -127,9 +129,9 @@
 </script>
 
 {#if isAuthenticated}
-    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} {isMediumScreen}></NavbarLayout>
+    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} isMediumScreen={isMediumScreen.matches || false}></NavbarLayout>
     <div class="flex overflow-hidden pt-16">
-        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} {isLargeScreen} routes={filteredRoutes} />
+        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} isLargeScreen={isLargeScreen.matches || false} routes={filteredRoutes} />
 
         <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {isSidebarOpen.value ? 'lg:ml-64' : 'lg:ml-16'}">
             <main>

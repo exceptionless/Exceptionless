@@ -4,155 +4,17 @@
 
 ### TODO
 
-readable / subscribes
-slots
-on:
-import { page } from '$app/stores'; // eslint-disable-next-line svelte/valid-compile
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-page.subscribe
-get(
-remove = undefined;
+-   Investigate loading data in - export function load({ url, fetch }) {}
 
-<script lang="ts">
-    let {
-        variant = 'default',
-        class = undefined,
-    }: { variant: VariantProps<typeof variants>['variant'], class: string | undefined | null } = $props();
-</script>
+#### shadcn svelte upgrade
 
-vs
+-   on:
+-   slots
 
-<script lang="ts">
-    interface Props {
-        variant: VariantProps<typeof variants>['variant'];
-        class: string | undefined | null;
-    }
+#### sveltekit
 
-    let {
-        variant = 'default',
-        class = undefined,
-    }: Props = $props();
-</script>
-
-export function load({ url, fetch }) {
-url.href; // Add dependency
-const session = fetch(...);
-
-return { session };
-}
-
-<!-- +layout.svelte -->
-<script>
-  let { data } = $props();
-
-  const session = $state(data.session);
-
-  $effect(() => {
-    const ws = new WebSocket(url);
-    ws.onmessage = ({ data }) => (session = data);
-    return () => ws.close();
-  });
-</script>
-
-interface Props extends HTMLButtonAttributes {
-interface Props extends HTMLButtonAttributes {
-disabled: number; // wtf?
-}
-$effect(() => {
-useEventListener(result, “change”, () => {
-// this is automatically cleaned up
-});
-});
-class AuthState {
-
-# user = $state(null);
-
-get user() {
-return this.#user;
-}
-
-authenticated = $derived(this.user !== null);
-
-constructor() {
-// do your auth logic here
-}
-}
-
-export const auth = new AuthState();
-
-function createAuthState() {
-let user = $state(null);
-let authenticated = $derived(user !== null);
-return {
-get user() { return user },
-get authenticated() { return authenticated }
-}
-}
-export const auth = createAuthState();
-
-export class MediaQuery {
-match = $state<boolean | undefined>(undefined);
-
-    constructor(query: string | (() => string)) {
-        $effect(() => {
-            const result = window.matchMedia(typeof query === "function" ? query() : query);
-
-            this.match = result.matches;
-
-            function listener(changed: MediaQueryListEvent){
-                this.match = changed.matches;
-            };
-
-            result.addEventListener("change", listener);
-            return () => {
-                result.removeEventListener("change", listener);
-            };
-        });
-    }
-
-
-    // rune.svelte.ts
-
-export const rune = <T>(initialValue: T) => {
-
-    let _rune = $state(initialValue);
-
-    return {
-        get value() {
-            return _rune;
-        },
-        set value(v: T) {
-            _rune = v;
-        }
-    };
-
-};
-
-export function createModifier(modifier: (event: Event) => void) {
-return <E extends Event>(callback: (event: E) => void) => {
-return (event: E) => {
-modifier(event)
-callback(event)
-}
-}
-}
-
-export const stopPropagation = createModifier((e) => e.stopPropagation())
-export const preventDefault = createModifier((e) => e.preventDefault())
-
-export function preventDefault(fn) {
-return (e) => {
-e.preventDefault();
-fn(e);
-}
-}
-
--   <https://svelte-5-preview.vercel.app/#H4sIAAAAAAAACm1STY_UMAz9K1Z2xLRS1SxIXLptERJHDtwp0mYTzzSQJiVxBpaq_x017XwJDlUdv2c_PycTO2iDgVVfJ2bFgKxiH8eRFYxex-UQTmgIWcGCi14umTpIr0dqO9uRHkbnCSaIlryQP2CGg3cDdFtdx57uaQE_4YuLVuKV6qNFtTGXzyBBQOFlDw3sAgnCbL_Pn86Y0YOmK_T28RYKCVHo9QlVZpxQX7xTUVLI1p7FWp_nnV2qOAcxahiQeqeWhAivVsIhWknaWTgi_dMg6D-Yw5TmJelscAZL447Z_oAk-31-RQg8BmhA_BKaIMHZc080hopzFYfh9XtwtpRu4OMmw1eZDz-b3bSG85s0crOb0n9-vhNQgsRFwWMol47ZRvFI0dvEKc8CaVvzaj8t7WZJ0NzeUZaFAn7n0LT3e1iSBbx7_5h3tubX92BrbcdI8KKtqk7CRGzOFoC3_4VXRwntbB1NelbTw-pmuc5lUKrH9rMTSttjWZY1H1dWRT1aONuaV8fTAwrZX7IgwjneCB3VRrfnuKNpg0vSZPBK4hfWxJeWCZl4mmxefEfTsoINTumDRsUq8hHnb_NfRrErmVIDAAA=>
--   <https://component-party.dev/compare/svelte4-vs-svelte5>
--   <https://svelte-5-preview.vercel.app/docs/runes#$derived>
--   <https://runed.dev/docs/functions/box>
--   <https://github.com/sveltejs/svelte/issues/9520>
--   <https://svelte.dev/repl/8ab0d78cc9c84582a693ef9d520f461f?version=4.2.15>
+-   page.subscribe
+-   get(
 
 ## General
 

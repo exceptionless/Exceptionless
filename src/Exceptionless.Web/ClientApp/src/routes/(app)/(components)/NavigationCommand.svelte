@@ -20,7 +20,7 @@
             <Command.Group heading={group}>
                 {#each items as route (route.href)}
                     <Command.Item>
-                        <A href={route.href} class="flex gap-x-2" on:click={closeCommandWindow}>
+                        <A href={route.href} class="flex gap-x-2" onclick={closeCommandWindow}>
                             {#if route.icon}
                                 <svelte:component this={route.icon} />
                             {/if}
