@@ -3,7 +3,7 @@
     import type { NavigationItem } from '../../../routes';
 
     interface Props {
-        isLargeScreen: boolean;
+        isLargeScreen?: boolean;
         isSidebarOpen?: boolean;
         routes: NavigationItem[];
     }

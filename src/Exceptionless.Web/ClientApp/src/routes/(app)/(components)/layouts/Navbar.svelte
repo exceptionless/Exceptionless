@@ -16,7 +16,7 @@
     interface Props {
         isCommandOpen: boolean;
         isSidebarOpen: boolean;
-        isMediumScreen: boolean;
+        isMediumScreen?: boolean;
     }
 
     let { isCommandOpen = $bindable(), isSidebarOpen = $bindable(), isMediumScreen }: Props = $props();

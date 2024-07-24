@@ -29,9 +29,9 @@
 
     let isSidebarOpen = persisted('sidebar-open', false);
     let isCommandOpen = $state(false);
-    const isSmallScreen = new MediaQuery('(min-width: 640px)');
-    const isMediumScreen = new MediaQuery('(min-width: 768px)');
-    const isLargeScreen = new MediaQuery('(min-width: 1024px)');
+    const isSmallScreenQuery = new MediaQuery('(min-width: 640px)');
+    const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
+    const isLargeScreenQuery = new MediaQuery('(min-width: 1024px)');
 
     setModelValidator(validate);
     useMiddleware(async (ctx, next) => {
@@ -82,7 +82,7 @@
     // Close Sidebar on page change on mobile
     // UPGRADE
     page.subscribe(() => {
-        if (isSmallScreen.matches) {
+        if (isSmallScreenQuery.matches) {
             isSidebarOpen.value = false;
         }
     });
@@ -129,9 +129,9 @@
 </script>
 
 {#if isAuthenticated}
-    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} isMediumScreen={isMediumScreen.matches || false}></NavbarLayout>
+    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} isMediumScreen={isMediumScreenQuery.matches}></NavbarLayout>
     <div class="flex overflow-hidden pt-16">
-        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} isLargeScreen={isLargeScreen.matches || false} routes={filteredRoutes} />
+        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} isLargeScreen={isLargeScreenQuery.matches} routes={filteredRoutes} />
 
         <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {isSidebarOpen.value ? 'lg:ml-64' : 'lg:ml-16'}">
             <main>

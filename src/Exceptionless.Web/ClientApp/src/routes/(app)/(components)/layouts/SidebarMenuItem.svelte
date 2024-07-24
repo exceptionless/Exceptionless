@@ -5,8 +5,8 @@
 
     type Props = HTMLAnchorAttributes & {
         icon: Component;
-        isLargeScreen: boolean;
-        isSidebarOpen: boolean;
+        isLargeScreen?: boolean;
+        isSidebarOpen?: boolean;
         title: string;
     };
 
