@@ -44,6 +44,14 @@ export class BooleanFilter implements IFilter {
 
         return `${this.term}:${this.value}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class DateFilter implements IFilter {
@@ -81,6 +89,14 @@ export class DateFilter implements IFilter {
         const date = this.value instanceof Date ? this.value.toISOString() : this.value;
         return `${this.term}:${quoteIfSpecialCharacters(date)}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class KeywordFilter implements IFilter {
@@ -110,6 +126,13 @@ export class KeywordFilter implements IFilter {
         }
 
         return this.value!.trim();
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
     }
 }
 
@@ -147,6 +170,14 @@ export class NumberFilter implements IFilter {
 
         return `${this.term}:${this.value}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class OrganizationFilter implements IFilter {
@@ -175,6 +206,13 @@ export class OrganizationFilter implements IFilter {
         }
 
         return `organization:${this.value}`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
     }
 }
 
@@ -212,6 +250,14 @@ export class ProjectFilter implements IFilter {
 
         return `(${this.value.map((val) => `project:${val}`).join(' OR ')})`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            organization: this.organization,
+            value: this.value
+        };
+    }
 }
 
 export class ReferenceFilter implements IFilter {
@@ -241,6 +287,13 @@ export class ReferenceFilter implements IFilter {
         }
 
         return `reference:${quoteIfSpecialCharacters(this.value)}`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
     }
 }
 
@@ -272,6 +325,13 @@ export class SessionFilter implements IFilter {
 
         const session = quoteIfSpecialCharacters(this.value);
         return `(reference:${session} OR ref.session:${session})`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
     }
 }
 
@@ -306,6 +366,13 @@ export class StatusFilter implements IFilter {
         }
 
         return `(${this.value.map((val) => `status:${val}`).join(' OR ')})`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
     }
 }
 
@@ -343,6 +410,14 @@ export class StringFilter implements IFilter {
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class TypeFilter implements IFilter {
@@ -376,6 +451,13 @@ export class TypeFilter implements IFilter {
         }
 
         return `(${this.value.map((val) => `type:${val}`).join(' OR ')})`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
     }
 }
 
@@ -412,6 +494,14 @@ export class VersionFilter implements IFilter {
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
     }
 }
 
