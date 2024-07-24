@@ -1,3 +1,4 @@
+import { DocumentVisibility } from '$lib/helpers/document-visibility.svelte';
 import { accessToken } from './auth.svelte';
 
 export class WebSocketClient {
@@ -23,24 +24,20 @@ export class WebSocketClient {
         const wsProtocol = protocol === 'https:' ? 'wss://' : 'ws://';
         this.url = `${wsProtocol}${host}${path}`;
 
-        $effect(() => {
-            this.accessToken = accessToken.value;
-            this.close();
+        const visibility = new DocumentVisibility();
 
-            if (this.accessToken) {
+        $effect(() => {
+            if (this.accessToken !== accessToken.value) {
+                this.accessToken = accessToken.value;
+                this.close();
+            } else if (!visibility.visible) {
+                this.close();
+            }
+
+            if (this.accessToken && visibility.visible && (this.readyState === WebSocket.CLOSING || this.readyState === WebSocket.CLOSED)) {
                 this.connect();
             }
         });
-
-        // UPGRADE
-        // const visibility = documentVisibilityStore();
-        // visibility.subscribe((visible) => {
-        //     if (visible === 'visible' && (this.readyState === WebSocket.CLOSING || this.readyState === WebSocket.CLOSED)) {
-        //         this.connect();
-        //     } else if (visible === 'hidden') {
-        //         this.close();
-        //     }
-        // });
     }
 
     public connect(reconnectAttempt: boolean = true) {

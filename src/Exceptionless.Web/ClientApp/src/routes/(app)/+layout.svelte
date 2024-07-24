@@ -80,7 +80,6 @@
     }
 
     // Close Sidebar on page change on mobile
-    // UPGRADE
     page.subscribe(() => {
         if (isSmallScreenQuery.matches) {
             isSidebarOpen.value = false;

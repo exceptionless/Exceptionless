@@ -6,8 +6,7 @@
 
     let { title = 'Status', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<ProjectFilter> = $props();
 
-    // UPGRADE: Can this be $derived?
-    let organizationId = $state<string | undefined>(filter.organization);
+    let organizationId = $derived<string | undefined>(filter.organization);
 
     const response = getProjectsByOrganizationIdQuery({
         get organizationId() {
@@ -22,8 +21,6 @@
     );
 
     $effect(() => {
-        organizationId = filter.organization;
-
         if (!response.isSuccess || filter.value.length === 0) {
             return;
         }
