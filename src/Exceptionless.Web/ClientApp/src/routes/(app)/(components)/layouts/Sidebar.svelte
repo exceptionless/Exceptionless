@@ -9,8 +9,6 @@
     }
 
     let { isLargeScreen, isSidebarOpen = $bindable(), routes }: Props = $props();
-
-    const showSidebar = $derived(!isLargeScreen && isSidebarOpen);
     const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
 
     function onBackdropClick() {
@@ -41,7 +39,7 @@
 </aside>
 
 <button
-    class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {showSidebar ? '' : 'hidden'}"
+    class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!isLargeScreen && !!isSidebarOpen ? '' : 'hidden'}"
     title="Close sidebar"
     aria-label="Close sidebar"
     onclick={onBackdropClick}
