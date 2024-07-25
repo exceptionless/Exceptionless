@@ -54,5 +54,5 @@ export function getStackByIdQuery(props: GetStackByIdProps) {
         }
     });
 
-    return createQuery<Stack, ProblemDetails>(queryOptions);
+    return createQuery<Stack, ProblemDetails>(() => queryOptions);
 }

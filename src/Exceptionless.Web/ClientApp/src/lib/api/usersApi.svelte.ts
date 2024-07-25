@@ -31,5 +31,5 @@ export function getMeQuery() {
         }
     });
 
-    return createQuery<User, ProblemDetails>(queryOptions);
+    return createQuery<User, ProblemDetails>(() => queryOptions);
 }

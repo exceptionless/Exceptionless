@@ -33,7 +33,7 @@ export function getEventByIdQuery(props: GetEventByIdProps) {
         }
     });
 
-    return createQuery<PersistentEvent, ProblemDetails>(queryOptions);
+    return createQuery<PersistentEvent, ProblemDetails>(() => queryOptions);
 }
 
 export interface GetEventsByStackIdProps {
@@ -68,5 +68,5 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
         }
     });
 
-    return createQuery<PersistentEvent[], ProblemDetails>(queryOptions);
+    return createQuery<PersistentEvent[], ProblemDetails>(() => queryOptions);
 }

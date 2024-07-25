@@ -40,5 +40,5 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
         }
     });
 
-    return createQuery<ViewOrganization[], ProblemDetails>(queryOptions);
+    return createQuery<ViewOrganization[], ProblemDetails>(() => queryOptions);
 }
