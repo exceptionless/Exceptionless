@@ -86,6 +86,15 @@ export function mutatePromoteTab(props: PromoteProjectTabProps) {
             });
 
             if (response.ok) {
+                // Update the project to reflect the new promoted tab until it's updated from the server
+                const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
+                if (previousProject) {
+                    queryClient.setQueryData(queryKeys.id(props.id), {
+                        ...previousProject,
+                        promoted_tabs: [...(previousProject?.promoted_tabs ?? []), params.name]
+                    });
+                }
+
                 return response;
             }
 
@@ -112,6 +121,15 @@ export function mutateDemoteTab(props: DemoteProjectTabProps) {
             });
 
             if (response.ok) {
+                // Update the project to reflect the demoted tab until it's updated from the server
+                const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
+                if (previousProject) {
+                    queryClient.setQueryData(queryKeys.id(props.id), {
+                        ...previousProject,
+                        promoted_tabs: (previousProject?.promoted_tabs ?? []).filter((tab) => tab !== name)
+                    });
+                }
+
                 return response;
             }
 

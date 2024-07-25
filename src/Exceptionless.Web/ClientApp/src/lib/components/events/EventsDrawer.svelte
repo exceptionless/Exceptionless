@@ -13,11 +13,11 @@
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import { getProjectByIdQuery } from '$api/projectsApi.svelte';
     import { getStackByIdQuery } from '$api/stacksApi.svelte';
-    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import PromotedExtendedData from './views/PromotedExtendedData.svelte';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
     import { P } from '$comp/typography';
+    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
     import type { IFilter } from '$comp/filters/filters.svelte';
 
@@ -50,21 +50,23 @@
             tabs.push('Trace Log');
         }
 
-        if (project) {
-            const extendedDataItems = getExtendedDataItems(event, project);
-            let hasExtendedData = false;
+        if (!project) {
+            return tabs;
+        }
 
-            for (const item of extendedDataItems) {
-                if (item.promoted) {
-                    tabs.push(item.title);
-                } else {
-                    hasExtendedData = true;
-                }
-            }
+        const extendedDataItems = getExtendedDataItems(event, project);
+        let hasExtendedData = false;
 
-            if (hasExtendedData) {
-                tabs.push('Extended Data');
+        for (const item of extendedDataItems) {
+            if (item.promoted) {
+                tabs.push(item.title);
+            } else {
+                hasExtendedData = true;
             }
+        }
+
+        if (hasExtendedData) {
+            tabs.push('Extended Data');
         }
 
         if (activeTab && !tabs.includes(activeTab)) {
@@ -79,11 +81,13 @@
             return id;
         }
     });
+
     let projectResponse = getProjectByIdQuery({
         get id() {
             return eventResponse.data?.project_id;
         }
     });
+
     let stackResponse = getStackByIdQuery({
         get id() {
             return eventResponse.data?.stack_id;
@@ -96,32 +100,25 @@
     let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data, activeTab));
 
     function onPromoted(title: string): void {
-        // UPGRADE
-        //tabs = tabs.toSpliced(tabs.length - 1, 0, detail);
         activeTab = title;
     }
 
     function onDemoted(title: string): void {
-        let updatedTabs = tabs.toSpliced(tabs.indexOf(title), 1);
-        if (!updatedTabs.includes('Extended Data')) {
-            updatedTabs.push('Extended Data');
-        }
-
-        //tabs = updatedTabs;
         activeTab = 'Extended Data';
     }
 
-    //     $effect(() => {
-    //         //tabs = getTabs(eventResponse.data, projectResponse.data);
-    //
-    //         if (!tabs.length) {
-    //             activeTab = 'Overview';
-    //         }
-    //
-    //         if (!tabs.includes(activeTab)) {
-    //             activeTab = tabs[0];
-    //         }
-    //     });
+    $effect(() => {
+        //         //tabs = getTabs(eventResponse.data, projectResponse.data);
+        //
+        //         if (!tabs.length) {
+        //             activeTab = 'Overview';
+        //         }
+        //
+        //         if (!tabs.includes(activeTab)) {
+        //             activeTab = tabs[0];
+        //         }
+        console.log('Effect ran', eventResponse.data, projectResponse.data, activeTab);
+    });
 </script>
 
 {#if eventResponse.isLoading}
