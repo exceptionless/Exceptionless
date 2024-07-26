@@ -28,7 +28,7 @@
 
     let { id, changed }: Props = $props();
 
-    function getTabs(event?: PersistentEvent | null, project?: ViewProject, activeTab?: string): TabType[] {
+    function getTabs(event?: PersistentEvent | null, project?: ViewProject): TabType[] {
         if (!event) {
             return [];
         }
@@ -69,10 +69,6 @@
             tabs.push('Extended Data');
         }
 
-        if (activeTab && !tabs.includes(activeTab)) {
-            throw new globalThis.Error(`Active tab "${activeTab}" not found in tabs: ${tabs.join(', ')}`);
-        }
-
         return tabs;
     }
 
@@ -97,28 +93,15 @@
     type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | 'Trace Log' | 'Extended Data' | string;
 
     let activeTab = $state<TabType>('Overview');
-    let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data, activeTab));
+    let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data));
 
     function onPromoted(title: string): void {
         activeTab = title;
     }
 
-    function onDemoted(title: string): void {
+    function onDemoted(): void {
         activeTab = 'Extended Data';
     }
-
-    $effect(() => {
-        //         //tabs = getTabs(eventResponse.data, projectResponse.data);
-        //
-        //         if (!tabs.length) {
-        //             activeTab = 'Overview';
-        //         }
-        //
-        //         if (!tabs.includes(activeTab)) {
-        //             activeTab = tabs[0];
-        //         }
-        console.log('Effect ran', eventResponse.data, projectResponse.data, activeTab);
-    });
 </script>
 
 {#if eventResponse.isLoading}
