@@ -33,11 +33,17 @@
 
 <MultiselectFacetedFilter
     {title}
-    bind:values={filter.value}
+    values={filter.value}
     {options}
     loading={response.isLoading}
     noOptionsText="No projects found."
-    changed={() => filterChanged(filter)}
-    remove={() => filterRemoved(filter)}
+    changed={(values) => {
+        filter.value = values;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = [];
+        filterRemoved(filter);
+    }}
     {...props}
 ></MultiselectFacetedFilter>

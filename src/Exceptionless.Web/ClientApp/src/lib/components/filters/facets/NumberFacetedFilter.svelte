@@ -6,4 +6,15 @@
     let { filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<NumberFilter> = $props();
 </script>
 
-<NumberFacetedFilter bind:value={filter.value} changed={() => filterChanged(filter)} remove={() => filterRemoved(filter)} {...props}></NumberFacetedFilter>
+<NumberFacetedFilter
+    value={filter.value}
+    changed={(value) => {
+        filter.value = value;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = undefined;
+        filterRemoved(filter);
+    }}
+    {...props}
+></NumberFacetedFilter>

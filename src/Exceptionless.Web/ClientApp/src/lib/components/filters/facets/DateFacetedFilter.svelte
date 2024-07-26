@@ -32,9 +32,15 @@
 
 <DropDownFacetedFilter
     {title}
-    bind:value={filter.value as string}
+    value={filter.value as string}
     {options}
-    changed={() => filterChanged(filter)}
-    remove={() => filterRemoved(filter)}
+    changed={(value) => {
+        filter.value = value;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = undefined;
+        filterRemoved(filter);
+    }}
     {...props}
 ></DropDownFacetedFilter>

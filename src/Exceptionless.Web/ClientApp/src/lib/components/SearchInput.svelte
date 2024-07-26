@@ -7,7 +7,7 @@
 
     type Props = HTMLInputAttributes;
 
-    let { class: className, id = 'search', placeholder = 'Search...', value, ...props }: Props = $props();
+    let { class: className, id = 'search', placeholder = 'Search...', value = $bindable(), ...props }: Props = $props();
 </script>
 
 <div class="relative">

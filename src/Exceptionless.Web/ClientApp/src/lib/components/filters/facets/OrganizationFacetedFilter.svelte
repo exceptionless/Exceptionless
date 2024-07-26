@@ -21,7 +21,7 @@
 
         const organization = response.data.find((organization) => organization.id === filter.value);
         if (!organization) {
-            filter.value = '';
+            filter.value = undefined;
             filterChanged(filter);
         }
     });
@@ -29,11 +29,17 @@
 
 <DropDownFacetedFilter
     {title}
-    bind:value={filter.value}
+    value={filter.value}
     {options}
     loading={response.isLoading}
     noOptionsText="No organizations found."
-    changed={() => filterChanged(filter)}
-    remove={() => filterRemoved(filter)}
+    changed={(value) => {
+        filter.value = value;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = undefined;
+        filterRemoved(filter);
+    }}
     {...props}
 ></DropDownFacetedFilter>

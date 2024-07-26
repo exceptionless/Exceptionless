@@ -9,11 +9,11 @@
         title: string;
         value?: boolean;
         open: boolean;
-        changed: () => void;
+        changed: (value?: boolean) => void;
         remove: () => void;
     }
 
-    let { title, value = $bindable(), open = $bindable(), changed, remove }: Props = $props();
+    let { title, value, open = $bindable(), changed, remove }: Props = $props();
     let updatedValue = $state(value);
 
     $effect(() => {
@@ -22,8 +22,7 @@
 
     function onApplyFilter() {
         if (updatedValue !== value) {
-            value = updatedValue;
-            changed();
+            changed(updatedValue);
         }
 
         open = false;
@@ -31,11 +30,6 @@
 
     export function onClearFilter() {
         updatedValue = undefined;
-    }
-
-    function onRemoveFilter(): void {
-        value = undefined;
-        remove();
     }
 </script>
 
@@ -60,7 +54,7 @@
             apply={onApplyFilter}
             showClear={updatedValue !== undefined}
             clear={onClearFilter}
-            remove={onRemoveFilter}
+            {remove}
             close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>

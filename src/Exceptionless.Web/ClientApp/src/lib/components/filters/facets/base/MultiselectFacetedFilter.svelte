@@ -22,11 +22,11 @@
         noOptionsText?: string;
         loading?: boolean;
         open: boolean;
-        changed: () => void;
+        changed: (values: string[]) => void;
         remove: () => void;
     }
 
-    let { title, values = $bindable(), options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
+    let { title, values, options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
     let updatedValues = $state(values);
     let displayValues = $derived.by(() => {
         const labelsInOptions = options.filter((o) => values.includes(o.value)).map((o) => o.label);
@@ -42,8 +42,7 @@
 
     function onApplyFilter() {
         if (hasChanged) {
-            values = updatedValues;
-            changed();
+            changed(updatedValues);
         }
 
         open = false;
@@ -55,11 +54,6 @@
 
     export function onClearFilter() {
         updatedValues = [];
-    }
-
-    function onRemoveFilter(): void {
-        values = [];
-        remove();
     }
 
     function filter(value: string, search: string) {
@@ -130,7 +124,7 @@
             apply={onApplyFilter}
             showClear={updatedValues.length > 0}
             clear={onClearFilter}
-            remove={onRemoveFilter}
+            {remove}
             close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>

@@ -6,4 +6,15 @@
     let { filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<BooleanFilter> = $props();
 </script>
 
-<BooleanFacetedFilter bind:value={filter.value} changed={() => filterChanged(filter)} remove={() => filterRemoved(filter)} {...props}></BooleanFacetedFilter>
+<BooleanFacetedFilter
+    value={filter.value}
+    changed={(value) => {
+        filter.value = value;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = undefined;
+        filterRemoved(filter);
+    }}
+    {...props}
+></BooleanFacetedFilter>

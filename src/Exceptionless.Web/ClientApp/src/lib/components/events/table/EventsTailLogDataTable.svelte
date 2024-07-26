@@ -19,7 +19,7 @@
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
     }
 
-    let { filter, limit = DEFAULT_LIMIT, rowclick, toolbarChildren }: Props = $props();
+    let { filter, limit = $bindable(DEFAULT_LIMIT), rowclick, toolbarChildren }: Props = $props();
     let parameters = $state<IGetEventsParams>({ mode: 'summary', limit });
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
         ...options,

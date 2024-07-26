@@ -3,15 +3,22 @@
     import { StatusFilter } from '$comp/filters/filters.svelte';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
     import type { FacetedFilterProps } from '.';
+    import { StackStatus } from '$lib/models/api';
 
     let { title = 'Status', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<StatusFilter> = $props();
 </script>
 
 <MultiselectFacetedFilter
     {title}
-    bind:values={filter.value}
+    values={filter.value}
     options={stackStatuses}
-    changed={() => filterChanged(filter)}
-    remove={() => filterRemoved(filter)}
+    changed={(values) => {
+        filter.value = values as StackStatus[];
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = [];
+        filterRemoved(filter);
+    }}
     {...props}
 ></MultiselectFacetedFilter>
