@@ -28,7 +28,7 @@
         "@types/eslint": "^9.6.0",
         "autoprefixer": "^10.4.19",
         "cross-env": "^7.0.3",
-        "eslint": "^9.7.0",
+        "eslint": "^9.8.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-svelte": "^2.43.0",
         "npm-run-all": "^4.1.5",
@@ -36,12 +36,12 @@
         "prettier": "^3.3.3",
         "prettier-plugin-svelte": "^3.2.6",
         "prettier-plugin-tailwindcss": "^0.6.5",
-        "svelte": "^5.0.0-next.199",
+        "svelte": "^5.0.0-next.201",
         "svelte-check": "^3.8.4",
-        "swagger-typescript-api": "^13.0.13",
+        "swagger-typescript-api": "^13.0.14",
         "tslib": "^2.6.3",
         "typescript": "^5.5.4",
-        "typescript-eslint": "^8.0.0-alpha.54",
+        "typescript-eslint": "^8.0.0-alpha.57",
         "vite": "^5.3.5",
         "vitest": "^2.0.4"
     },
@@ -49,8 +49,8 @@
         "@exceptionless/browser": "^3.1.0",
         "@exceptionless/fetchclient": "^0.26.0",
         "@iconify-json/mdi": "^1.1.67",
-        "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@4e3325e",
-        "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@4e3325e",
+        "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@7bccb14",
+        "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@7bccb14",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
         "bits-ui": "^0.21.12",
         "class-validator": "^0.14.1",
@@ -58,7 +58,7 @@
         "cmdk-sv": "^0.0.18",
         "echarts": "^5.5.1",
         "formsnap": "^1.0.1",
-        "mode-watcher": "^0.4.0",
+        "mode-watcher": "^0.4.1",
         "oidc-client-ts": "^3.0.1",
         "pretty-ms": "^9.1.0",
         "runed": "^0.15.0",
@@ -70,7 +70,7 @@
         "tailwind-merge": "^2.4.0",
         "tailwind-variants": "^0.2.1",
         "tailwindcss": "^3.4.7",
-        "unplugin-icons": "^0.19.0"
+        "unplugin-icons": "^0.19.1"
     },
     "type": "module"
 }
