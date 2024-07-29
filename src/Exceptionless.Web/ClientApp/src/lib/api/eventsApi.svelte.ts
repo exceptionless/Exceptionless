@@ -16,7 +16,7 @@ export interface GetEventByIdProps {
 }
 
 export function getEventByIdQuery(props: GetEventByIdProps) {
-    const queryOptions = $derived({
+    return createQuery<PersistentEvent, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,
         queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -31,9 +31,7 @@ export function getEventByIdQuery(props: GetEventByIdProps) {
 
             throw response.problem;
         }
-    });
-
-    return createQuery<PersistentEvent, ProblemDetails>(() => queryOptions);
+    }));
 }
 
 export interface GetEventsByStackIdProps {
@@ -43,7 +41,8 @@ export interface GetEventsByStackIdProps {
 
 export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
     const queryClient = useQueryClient();
-    const queryOptions = $derived({
+
+    return createQuery<PersistentEvent[], ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.stackId,
         queryClient,
         queryKey: queryKeys.stacks(props.stackId),
@@ -66,7 +65,5 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
 
             throw response.problem;
         }
-    });
-
-    return createQuery<PersistentEvent[], ProblemDetails>(() => queryOptions);
+    }));
 }

@@ -15,7 +15,8 @@ export interface GetOrganizationsProps {
 
 export function getOrganizationQuery(props: GetOrganizationsProps) {
     const queryClient = useQueryClient();
-    const queryOptions = $derived({
+
+    return createQuery<ViewOrganization[], ProblemDetails>(() => ({
         enabled: !!accessToken.value,
         queryClient,
         queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all,
@@ -38,7 +39,5 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
 
             throw response.problem;
         }
-    });
-
-    return createQuery<ViewOrganization[], ProblemDetails>(() => queryOptions);
+    }));
 }

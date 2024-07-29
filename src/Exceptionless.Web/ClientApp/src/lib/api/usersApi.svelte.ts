@@ -12,7 +12,8 @@ export const queryKeys = {
 
 export function getMeQuery() {
     const queryClient = useQueryClient();
-    const queryOptions = $derived({
+
+    return createQuery<User, ProblemDetails>(() => ({
         enabled: !!accessToken.value,
         queryClient,
         queryKey: queryKeys.me(),
@@ -29,7 +30,5 @@ export function getMeQuery() {
 
             throw response.problem;
         }
-    });
-
-    return createQuery<User, ProblemDetails>(() => queryOptions);
+    }));
 }

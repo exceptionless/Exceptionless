@@ -37,7 +37,7 @@ export async function prefetchStack(props: GetStackByIdProps) {
 }
 
 export function getStackByIdQuery(props: GetStackByIdProps) {
-    const queryOptions = $derived({
+    return createQuery<Stack, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,
         queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -52,7 +52,5 @@ export function getStackByIdQuery(props: GetStackByIdProps) {
 
             throw response.problem;
         }
-    });
-
-    return createQuery<Stack, ProblemDetails>(() => queryOptions);
+    }));
 }

@@ -16,7 +16,7 @@ export interface GetProjectByIdProps {
 }
 
 export function getProjectByIdQuery(props: GetProjectByIdProps) {
-    const queryOptions = $derived({
+    return createQuery<ViewProject, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,
         queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -31,9 +31,7 @@ export function getProjectByIdQuery(props: GetProjectByIdProps) {
 
             throw response.problem;
         }
-    });
-
-    return createQuery<ViewProject, ProblemDetails>(() => queryOptions);
+    }));
 }
 
 export interface GetProjectsByOrganizationIdProps {
@@ -43,7 +41,8 @@ export interface GetProjectsByOrganizationIdProps {
 
 export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizationIdProps) {
     const queryClient = useQueryClient();
-    const queryOptions = $derived({
+
+    return createQuery<ViewProject[], ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.organizationId,
         queryClient,
         queryKey: queryKeys.organization(props.organizationId),
@@ -66,9 +65,7 @@ export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizatio
 
             throw response.problem;
         }
-    });
-
-    return createQuery<ViewProject[], ProblemDetails>(() => queryOptions);
+    }));
 }
 
 export interface PromoteProjectTabProps {
@@ -77,7 +74,7 @@ export interface PromoteProjectTabProps {
 
 export function mutatePromoteTab(props: PromoteProjectTabProps) {
     const queryClient = useQueryClient();
-    return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
+    return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>(() => ({
         mutationKey: queryKeys.id(props.id),
         mutationFn: async (params: { name: string }) => {
             const client = useFetchClient();
@@ -103,7 +100,7 @@ export function mutatePromoteTab(props: PromoteProjectTabProps) {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }
-    });
+    }));
 }
 
 export interface DemoteProjectTabProps {
@@ -112,7 +109,7 @@ export interface DemoteProjectTabProps {
 
 export function mutateDemoteTab(props: DemoteProjectTabProps) {
     const queryClient = useQueryClient();
-    return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>({
+    return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>(() => ({
         mutationKey: queryKeys.id(props.id),
         mutationFn: async ({ name }) => {
             const client = useFetchClient();
@@ -138,5 +135,5 @@ export function mutateDemoteTab(props: DemoteProjectTabProps) {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }
-    });
+    }));
 }
