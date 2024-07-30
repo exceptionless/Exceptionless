@@ -1,7 +1,11 @@
 <script lang="ts">
     import type { ErrorInfo, SimpleErrorInfo } from '$lib/models/client-data';
 
-    export let errors: (SimpleErrorInfo | ErrorInfo)[] = [];
+    interface Props {
+        errors: (SimpleErrorInfo | ErrorInfo)[];
+    }
+
+    let { errors }: Props = $props();
 </script>
 
 {#each errors as error, index}<div>

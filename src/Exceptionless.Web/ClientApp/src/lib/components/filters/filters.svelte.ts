@@ -1,7 +1,6 @@
+import type { Serializer } from '$lib/helpers/persisted.svelte';
 import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
-import type { Serializer } from 'svelte-persisted-store';
-import { get, type Writable } from 'svelte/store';
 
 export interface IFilter {
     readonly type: string;
@@ -12,10 +11,13 @@ export interface IFilter {
 }
 
 export class BooleanFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: boolean
-    ) {}
+    public term = $state<string>();
+    public value = $state<boolean>();
+
+    constructor(term?: string, value?: boolean) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'boolean';
 
@@ -42,13 +44,24 @@ export class BooleanFilter implements IFilter {
 
         return `${this.term}:${this.value}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class DateFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: Date | string
-    ) {}
+    public term = $state<string>();
+    public value = $state<Date | string>();
+
+    constructor(term?: string, value?: Date | string) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'date';
 
@@ -76,10 +89,22 @@ export class DateFilter implements IFilter {
         const date = this.value instanceof Date ? this.value.toISOString() : this.value;
         return `${this.term}:${quoteIfSpecialCharacters(date)}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class KeywordFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'keyword';
 
@@ -102,13 +127,23 @@ export class KeywordFilter implements IFilter {
 
         return this.value!.trim();
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
+    }
 }
 
 export class NumberFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: number
-    ) {}
+    public term = $state<string>();
+    public value = $state<number>();
+
+    constructor(term?: string, value?: number) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'number';
 
@@ -135,10 +170,21 @@ export class NumberFilter implements IFilter {
 
         return `${this.term}:${this.value}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class OrganizationFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'organization';
 
@@ -161,13 +207,23 @@ export class OrganizationFilter implements IFilter {
 
         return `organization:${this.value}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
+    }
 }
 
 export class ProjectFilter implements IFilter {
-    constructor(
-        public organization: string | undefined,
-        public value: string[]
-    ) {}
+    public organization = $state<string | undefined>();
+    public value = $state<string[]>([]);
+
+    constructor(organization: string | undefined, value: string[] = []) {
+        this.organization = organization;
+        this.value = value;
+    }
 
     public type: string = 'project';
 
@@ -194,10 +250,22 @@ export class ProjectFilter implements IFilter {
 
         return `(${this.value.map((val) => `project:${val}`).join(' OR ')})`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            organization: this.organization,
+            value: this.value
+        };
+    }
 }
 
 export class ReferenceFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'reference';
 
@@ -220,10 +288,21 @@ export class ReferenceFilter implements IFilter {
 
         return `reference:${quoteIfSpecialCharacters(this.value)}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
+    }
 }
 
 export class SessionFilter implements IFilter {
-    constructor(public value?: string) {}
+    public value = $state<string>();
+
+    constructor(value?: string) {
+        this.value = value;
+    }
 
     public type: string = 'session';
 
@@ -247,10 +326,21 @@ export class SessionFilter implements IFilter {
         const session = quoteIfSpecialCharacters(this.value);
         return `(reference:${session} OR ref.session:${session})`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
+    }
 }
 
 export class StatusFilter implements IFilter {
-    constructor(public value: StackStatus[]) {}
+    public value = $state<StackStatus[]>([]);
+
+    constructor(value: StackStatus[] = []) {
+        this.value = value;
+    }
 
     public type: string = 'status';
 
@@ -277,13 +367,23 @@ export class StatusFilter implements IFilter {
 
         return `(${this.value.map((val) => `status:${val}`).join(' OR ')})`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
+    }
 }
 
 export class StringFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: string
-    ) {}
+    public term = $state<string>();
+    public value = $state<string>();
+
+    constructor(term?: string, value?: string) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'string';
 
@@ -310,10 +410,22 @@ export class StringFilter implements IFilter {
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
+    }
 }
 
 export class TypeFilter implements IFilter {
-    constructor(public value: PersistentEventKnownTypes[]) {}
+    public value = $state<PersistentEventKnownTypes[]>([]);
+
+    constructor(value: PersistentEventKnownTypes[] = []) {
+        this.value = value;
+    }
 
     public type: string = 'type';
 
@@ -340,13 +452,23 @@ export class TypeFilter implements IFilter {
 
         return `(${this.value.map((val) => `type:${val}`).join(' OR ')})`;
     }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            value: this.value
+        };
+    }
 }
 
 export class VersionFilter implements IFilter {
-    constructor(
-        public term?: string,
-        public value?: string
-    ) {}
+    public term = $state<string>();
+    public value = $state<string>();
+
+    constructor(term?: string, value?: string) {
+        this.term = term;
+        this.value = value;
+    }
 
     public type: string = 'version';
 
@@ -372,6 +494,14 @@ export class VersionFilter implements IFilter {
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
+    }
+
+    public toJSON() {
+        return {
+            type: this.type,
+            term: this.term,
+            value: this.value
+        };
     }
 }
 
@@ -429,6 +559,14 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
     }
 }
 
+/**
+ * Mutates the given array of filters by adding or updating the specified filter.
+ * If a filter with the same key and term already exists, it will be updated with the new filter's value.
+ * If the filter does not exist, it will be added to the array.
+ * @param filters - The array of filters to be mutated.
+ * @param filter - The filter to be added or updated.
+ * @returns The mutated array of filters.
+ */
 export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
     const existingFilter = filters.find((f) => f.key === filter.key && ('term' in f && 'term' in filter ? f.term === filter.term : true));
     if (existingFilter) {
@@ -449,7 +587,7 @@ export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
 }
 
 export class FilterSerializer implements Serializer<IFilter[]> {
-    public parse(text: string): IFilter[] {
+    public deserialize(text: string): IFilter[] {
         if (!text) {
             return [];
         }
@@ -466,7 +604,7 @@ export class FilterSerializer implements Serializer<IFilter[]> {
         return filters;
     }
 
-    public stringify(object: IFilter[]): string {
+    public serialize(object: IFilter[]): string {
         return JSON.stringify(object);
     }
 }
@@ -484,22 +622,20 @@ export function getDefaultFilters(includeDateFilter = true): IFilter[] {
     ].filter((f) => includeDateFilter || f.type !== 'date');
 }
 
-export function filterChanged(filters: Writable<IFilter[]>, updated: IFilter): void {
-    filters.set(processFilterRules(setFilter(get(filters), updated), updated));
+export function filterChanged(filters: IFilter[], updated: IFilter): IFilter[] {
+    return processFilterRules(setFilter(filters, updated), updated);
 }
 
-export function filterRemoved(filters: Writable<IFilter[]>, defaultFilters: IFilter[], removed?: IFilter): void {
+export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): IFilter[] {
     // If detail is undefined, remove all filters.
     if (!removed) {
-        filters.set(defaultFilters);
+        return defaultFilters;
     } else if (defaultFilters.find((f) => f.key === removed.key)) {
-        filters.set(processFilterRules(setFilter(get(filters), removed), removed));
+        return processFilterRules(setFilter(filters, removed), removed);
     } else {
-        filters.set(
-            processFilterRules(
-                get(filters).filter((f) => f.key !== removed.key),
-                removed
-            )
+        return processFilterRules(
+            filters.filter((f) => f.key !== removed.key),
+            removed
         );
     }
 }

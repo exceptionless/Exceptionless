@@ -1,8 +1,12 @@
 <script lang="ts">
     import { stackStatuses } from '../options';
 
-    export let value: string;
-    const status = stackStatuses.find((status) => status.value === value);
+    interface Props {
+        value: string;
+    }
+
+    let { value }: Props = $props();
+    let status = $derived(stackStatuses.find((status) => status.value === value));
 </script>
 
 {#if status}

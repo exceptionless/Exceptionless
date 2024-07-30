@@ -1,22 +1,21 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
-    import { SessionFilter } from '$comp/filters/filters';
+    import { SessionFilter } from '$comp/filters/filters.svelte';
     import StringFacetedFilter from './base/StringFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
 
-    const dispatch = createEventDispatcher();
-    export let filter: SessionFilter;
-    export let title: string = 'Session';
-    export let open: Writable<boolean>;
-
-    function onChanged() {
-        dispatch('changed', filter);
-    }
-
-    function onRemove() {
-        dispatch('remove', filter);
-    }
+    let { filter, title = 'Session', filterChanged, filterRemoved, ...props }: FacetedFilterProps<SessionFilter> = $props();
 </script>
 
-<StringFacetedFilter {open} {title} bind:value={filter.value} on:changed={onChanged} on:remove={onRemove}></StringFacetedFilter>
+<StringFacetedFilter
+    {title}
+    value={filter.value}
+    changed={(value) => {
+        filter.value = value;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = undefined;
+        filterRemoved(filter);
+    }}
+    {...props}
+></StringFacetedFilter>

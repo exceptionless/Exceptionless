@@ -1,26 +1,20 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
-    import { DateFilter } from './filters';
+    import { A, type AProps } from '$comp/typography';
+    import { DateFilter } from './filters.svelte';
 
-    export let term: string;
-    export let value: Date | string | undefined;
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    type Props = AProps & {
+        changed: (filter: DateFilter) => void;
+        term: string;
+        value?: Date | string;
+    };
+    let { changed, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new DateFilter(term, value)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+<A onclick={() => changed(new DateFilter(term, value))} {title} {...props}>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

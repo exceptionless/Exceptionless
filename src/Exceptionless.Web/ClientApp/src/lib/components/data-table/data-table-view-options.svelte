@@ -1,13 +1,19 @@
-<script lang="ts">
-    import type { Readable } from 'svelte/store';
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
+<script lang="ts" generics="TData">
     import IconViewColumn from '~icons/mdi/view-column';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
 
     import type { Table } from '@tanstack/svelte-table';
 
-    type TData = $$Generic;
-    export let table: Readable<Table<TData>>;
+    interface Props {
+        table: Table<TData>;
+    }
+
+    let { table }: Props = $props();
 </script>
 
 <DropdownMenu.Root>
@@ -20,7 +26,7 @@
     <DropdownMenu.Content>
         <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
         <DropdownMenu.Separator />
-        {#each $table.getAllLeafColumns() as column (column.id)}
+        {#each table.getAllLeafColumns() as column (column.id)}
             {#if column.getCanHide()}
                 <DropdownMenu.CheckboxItem checked={column.getIsVisible()} on:click={() => column.toggleVisibility()}>
                     {column.columnDef.header}

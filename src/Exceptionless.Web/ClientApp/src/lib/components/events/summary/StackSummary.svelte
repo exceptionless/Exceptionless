@@ -1,13 +1,17 @@
 <script lang="ts">
-    import A from '$comp/typography/A.svelte';
+    import { A } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    export let badgeClass: string;
-    export let showBadge: boolean;
-    export let showType: boolean;
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as StackSummaryModel<'stack-summary'>;
+    interface Props {
+        badgeClass: string;
+        showBadge: boolean;
+        showType: boolean;
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
+
+    let { badgeClass, showBadge, showType, summary }: Props = $props();
+    let source = $derived(summary as StackSummaryModel<'stack-summary'>);
 </script>
 
 <div class="line-clamp-2">

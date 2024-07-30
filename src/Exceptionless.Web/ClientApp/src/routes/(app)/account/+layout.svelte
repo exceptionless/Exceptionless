@@ -3,6 +3,8 @@
     import { Separator } from '$comp/ui/separator';
     import { routes } from './routes';
     import SidebarNav from './(components)/sidebar-nav.svelte';
+
+    let { children } = $props();
 </script>
 
 <Card.Root>
@@ -17,7 +19,7 @@
                 <SidebarNav {routes} />
             </aside>
             <div class="flex-1">
-                <slot />
+                {@render children()}
             </div>
         </div>
     </Card.Content>

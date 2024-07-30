@@ -1,8 +1,13 @@
 <script lang="ts">
-    export let mode: 'dark' | 'light' | 'system';
-
     import { systemPrefersMode } from 'mode-watcher';
-    let resolvedMode = mode !== 'system' ? mode : $systemPrefersMode ?? 'dark';
+
+    interface Props {
+        mode: 'dark' | 'light' | 'system';
+    }
+
+    let { mode }: Props = $props();
+
+    let resolvedMode = $state(mode !== 'system' ? mode : ($systemPrefersMode ?? 'dark'));
 </script>
 
 {#if resolvedMode === 'light'}

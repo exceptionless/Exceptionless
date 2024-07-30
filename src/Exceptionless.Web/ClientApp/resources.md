@@ -1,5 +1,21 @@
 # Resources
 
+## Svelte 5
+
+### TODO
+
+-   Investigate loading data in - export function load({ url, fetch }) {}
+
+#### shadcn svelte upgrade
+
+-   on:
+-   slots
+
+#### sveltekit
+
+-   page.subscribe
+-   get(
+
 ## General
 
 -   <https://kit.svelte.dev/docs/project-structure>

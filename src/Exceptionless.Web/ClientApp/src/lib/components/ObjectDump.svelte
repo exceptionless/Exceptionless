@@ -1,8 +1,14 @@
 <script lang="ts">
     import * as Table from '$comp/ui/table';
+    import type { Snippet } from 'svelte';
     import List from './typography/List.svelte';
 
-    export let value: unknown;
+    interface Props {
+        value: unknown;
+        children?: Snippet<[unknown]>;
+    }
+
+    let { value }: Props = $props();
 
     let type = typeof value;
     let isBoolean = type === 'boolean' || value instanceof Boolean;
@@ -34,8 +40,10 @@
 {#if isEmptyValue}
     (Empty)
 {:else if Array.isArray(value)}
-    <List items={value} let:item>
-        <svelte:self value={item} />
+    <List items={value}>
+        {#snippet displayValue(item)}
+            <svelte:self value={item} />
+        {/snippet}
     </List>
 {:else if isObject}
     <Table.Root>

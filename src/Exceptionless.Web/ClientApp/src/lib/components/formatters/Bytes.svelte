@@ -1,5 +1,9 @@
 <script lang="ts">
-    export let value: number | string | null = null;
+    interface Props {
+        value: number | string | null;
+    }
+
+    let { value }: Props = $props();
 
     const parsedValue = typeof value === 'number' ? value : parseFloat(value ?? '');
     const byteValueNumberFormatter = new Intl.NumberFormat(navigator.language, {

@@ -1,24 +1,24 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Writable } from 'svelte/store';
-
     import { stackStatuses } from '$comp/events/options';
-    import { StatusFilter } from '$comp/filters/filters';
+    import { StatusFilter } from '$comp/filters/filters.svelte';
     import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
+    import { StackStatus } from '$lib/models/api';
 
-    const dispatch = createEventDispatcher();
-    export let filter: StatusFilter;
-    export let title: string = 'Status';
-    export let open: Writable<boolean>;
-
-    function onChanged() {
-        dispatch('changed', filter);
-    }
-
-    function onRemove() {
-        dispatch('remove', filter);
-    }
+    let { title = 'Status', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<StatusFilter> = $props();
 </script>
 
-<MultiselectFacetedFilter {open} {title} bind:values={filter.value} options={stackStatuses} on:changed={onChanged} on:remove={onRemove}
+<MultiselectFacetedFilter
+    {title}
+    values={filter.value}
+    options={stackStatuses}
+    changed={(values) => {
+        filter.value = values as StackStatus[];
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = [];
+        filterRemoved(filter);
+    }}
+    {...props}
 ></MultiselectFacetedFilter>

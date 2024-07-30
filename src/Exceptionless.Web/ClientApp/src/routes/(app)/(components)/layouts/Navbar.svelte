@@ -6,20 +6,30 @@
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import { isCommandOpen, isMediumScreen, isSidebarOpen } from '$lib/stores/app';
     import * as Avatar from '$comp/ui/avatar';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import Loading from '$comp/Loading.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import { Button } from '$comp/ui/button';
-    import { getGravatarFromCurrentUserSrc, getUserInitialsFromCurrentUserSrc } from '$api/gravatar';
+    import { getGravatarFromCurrentUser } from '$api/gravatar.svelte';
 
-    function onHamburgerClick(): void {
-        isSidebarOpen.set(!$isSidebarOpen);
+    interface Props {
+        isCommandOpen: boolean;
+        isSidebarOpen: boolean;
+        isMediumScreen?: boolean;
     }
 
-    const gravatarSrc = getGravatarFromCurrentUserSrc();
-    const userInitials = getUserInitialsFromCurrentUserSrc();
+    let { isCommandOpen = $bindable(), isSidebarOpen = $bindable(), isMediumScreen }: Props = $props();
+
+    function onHamburgerClick(): void {
+        isSidebarOpen = !isSidebarOpen;
+    }
+
+    function onSearchClick(): void {
+        isCommandOpen = true;
+    }
+
+    const gravatar = getGravatarFromCurrentUser();
 </script>
 
 <nav class="fixed z-30 w-full border-b bg-background text-foreground">
@@ -30,14 +40,14 @@
                     <IconMenu class="h-6 w-6" />
                 </Button>
                 <Button on:click={onHamburgerClick} variant="outline" size="icon" class="mr-2 lg:hidden" aria-controls="sidebar">
-                    {#if $isSidebarOpen}
+                    {#if isSidebarOpen}
                         <IconClose class="h-6 w-6" />
                     {:else}
                         <IconMenu class="h-6 w-6" />
                     {/if}
                 </Button>
                 <a href="./" class="mr-14 flex min-w-[250px] dark:text-white">
-                    {#if $isMediumScreen}
+                    {#if isMediumScreen}
                         <img src={logo} class="absolute top-[0px] mr-3 h-[65px] dark:hidden" alt="Exceptionless Logo" />
                         <img src={logoDark} class="absolute top-[0px] mr-3 hidden h-[65px] dark:block" alt="Exceptionless Logo" />
                     {:else}
@@ -46,7 +56,7 @@
                 </a>
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button variant="outline" size="default" on:click={() => isCommandOpen.set(true)}>
+                <Button variant="outline" size="default" on:click={onSearchClick}>
                     <IconSearch class="h-6 w-6" />
                     Search
                     <DropdownMenu.Shortcut class="ml-12">⌘K</DropdownMenu.Shortcut>
@@ -58,12 +68,12 @@
                     <DropdownMenu.Trigger asChild let:builder>
                         <Button builders={[builder]} size="icon" variant="ghost" class="rounded-full">
                             <Avatar.Root title="Profile Image" class="h-7 w-7">
-                                {#await $gravatarSrc}
+                                {#await gravatar.src}
                                     <Avatar.Fallback><Loading /></Avatar.Fallback>
                                 {:then src}
                                     <Avatar.Image {src} alt="gravatar" />
                                 {/await}
-                                <Avatar.Fallback>{$userInitials}</Avatar.Fallback>
+                                <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
                             </Avatar.Root>
                         </Button>
                     </DropdownMenu.Trigger>

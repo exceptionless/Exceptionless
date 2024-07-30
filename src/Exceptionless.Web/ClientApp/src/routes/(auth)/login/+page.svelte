@@ -21,26 +21,23 @@
         facebookClientId,
         gitHubClientId,
         microsoftClientId
-    } from '$api/auth';
-    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+    } from '$api/auth.svelte';
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import { Login } from '$lib/models/api';
     import Loading from '$comp/Loading.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Button } from '$comp/ui/button';
-    import A from '$comp/typography/A.svelte';
-    import H2 from '$comp/typography/H2.svelte';
-    import P from '$comp/typography/P.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { A, H2, Muted, P } from '$comp/typography';
 
-    const data = new Login();
+    const data = $state(new Login());
     data.invite_token = $page.url.searchParams.get('token');
 
-    let problem = new ProblemDetails();
+    const client = useFetchClient();
+    let problem = $state(new ProblemDetails());
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
-    const { loading } = new FetchClient();
     async function onLogin() {
-        if ($loading) {
+        if (client.loading) {
             return;
         }
 
@@ -55,7 +52,7 @@
 
 <H2 class="mb-2 mt-4 text-center leading-9">Log in to your account</H2>
 
-<form on:submit|preventDefault={onLogin} class="space-y-2">
+<form onsubmit={onLogin} class="space-y-2">
     <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
     <EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}></EmailInput>
@@ -70,14 +67,16 @@
         {problem}
         placeholder="Enter password"
     >
-        <Muted slot="label" class="float-right">
-            <A href="/forgot-password">Forgot password?</A>
-        </Muted>
+        {#snippet labelChildren()}
+            <Muted class="float-right">
+                <A href="/forgot-password">Forgot password?</A>
+            </Muted>
+        {/snippet}
     </PasswordInput>
 
     <div class="pt-2">
         <Button type="submit">
-            {#if $loading}
+            {#if client.loading}
                 <Loading class="mr-2" variant="secondary"></Loading> Logging in...
             {:else}
                 Login
