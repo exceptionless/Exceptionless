@@ -1,13 +1,26 @@
 export abstract class Serializer<T> {
     abstract deserialize(item: string): T;
-    abstract serialize(value: T): string;
+    abstract serialize(value: T): string | null;
+}
+
+export class AuthJSONSerializer extends Serializer<string | null> {
+    deserialize(item: string): string | null {
+        if (item === 'null') {
+            return null;
+        }
+
+        return item;
+    }
+    serialize(value: string | null): string | null {
+        return value;
+    }
 }
 
 export class JSONSerializer<T> extends Serializer<T> {
     deserialize(item: string): T {
         return JSON.parse(item);
     }
-    serialize(value: T): string {
+    serialize(value: T): string | null {
         return JSON.stringify(value);
     }
 }

@@ -5,15 +5,10 @@ import { env } from '$env/dynamic/public';
 import { useFetchClient } from '@exceptionless/fetchclient';
 
 import type { Login, TokenResult } from '$lib/models/api';
-import { persisted } from '$lib/helpers/persisted.svelte';
+import { AuthJSONSerializer, persisted } from '$lib/helpers/persisted.svelte';
 import { get } from 'svelte/store';
 
-export const accessToken = persisted<string | null>('satellizer_token', null); //, {
-//     serializer: {
-//         parse: (s) => (s === 'null' ? null : s),
-//         stringify: (s) => s as string
-//     }
-// });
+export const accessToken = persisted('satellizer_token', null, new AuthJSONSerializer());
 
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
