@@ -41,7 +41,7 @@
         "swagger-typescript-api": "^13.0.14",
         "tslib": "^2.6.3",
         "typescript": "^5.5.4",
-        "typescript-eslint": "^8.0.0-alpha.57",
+        "typescript-eslint": "^8.0.0-alpha.58",
         "vite": "^5.3.5",
         "vitest": "^2.0.4"
     },
@@ -52,7 +52,7 @@
         "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@7bccb14",
         "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@7bccb14",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
-        "bits-ui": "^0.21.12",
+        "bits-ui": "^0.21.13",
         "class-validator": "^0.14.1",
         "clsx": "^2.1.1",
         "cmdk-sv": "^0.0.18",
