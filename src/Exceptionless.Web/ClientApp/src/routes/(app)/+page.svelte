@@ -46,7 +46,7 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} limit={limit.value} {time} {rowclick}>
+            <EventsDataTable {filter} bind:limit={limit.value} {time} {rowclick}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}

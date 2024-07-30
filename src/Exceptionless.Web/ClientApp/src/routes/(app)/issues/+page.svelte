@@ -61,7 +61,7 @@
     <Card.Root>
         <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Issues</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} limit={limit.value} {time} {rowclick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
+            <EventsDataTable {filter} bind:limit={limit.value} {time} {rowclick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}

@@ -9,7 +9,7 @@
     import { Muted } from '$comp/typography';
     import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
-    import type { EventSummaryModel, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
 
     interface Props {
@@ -20,8 +20,7 @@
     }
 
     let { filter, limit = $bindable(DEFAULT_LIMIT), rowclick, toolbarChildren }: Props = $props();
-    let parameters = $state<IGetEventsParams>({ mode: 'summary', limit });
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>(parameters, (options) => ({
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ mode: 'summary', limit }, (options) => ({
         ...options,
         columns: options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false })),
         enableRowSelection: false,
@@ -35,6 +34,7 @@
     let before: string | undefined;
 
     $effect(() => {
+        limit = context.limit;
         loadData(true);
     });
 
@@ -49,7 +49,7 @@
 
         response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
-                ...parameters,
+                ...context.parameters,
                 filter,
                 before
             }
@@ -63,12 +63,8 @@
                 data.push(summary);
             }
 
-            const limit = parameters.limit ?? DEFAULT_LIMIT;
-            const total = (response.meta?.total as number) ?? 0;
-            context.data = data.slice(-limit);
-            context.pageCount = Math.ceil(total / limit);
+            context.data = data.slice(-context.limit);
             context.meta = response.meta;
-            context.loading = false;
         }
     }
 
@@ -95,7 +91,7 @@
     </DataTable.Toolbar>
     <DataTable.Body {table} {rowclick}></DataTable.Body>
     <Muted class="flex flex-1 items-center justify-between">
-        <DataTable.PageSize {table} bind:value={limit}></DataTable.PageSize>
+        <DataTable.PageSize {table} bind:value={context.limit}></DataTable.PageSize>
         <Muted class="py-2 text-center">
             {#if response?.problem?.errors.general}
                 <ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>

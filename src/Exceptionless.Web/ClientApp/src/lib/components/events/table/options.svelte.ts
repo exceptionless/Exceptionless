@@ -133,9 +133,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 }
 
 export function getTableContext<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
-    parameters: IGetEventsParams,
+    params: IGetEventsParams,
     configureOptions: (options: TableOptions<TSummaryModel>) => TableOptions<TSummaryModel> = (options) => options
 ) {
+    let parameters = $state(params);
     let pageCount = $state(0);
     let data = $state([] as TSummaryModel[]);
     let loading = $state(false);
@@ -208,6 +209,9 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
             get columnVisibility() {
                 return columnVisibility();
             },
+            get pagination() {
+                return pagination();
+            },
             get rowSelection() {
                 return rowSelection();
             },
@@ -233,21 +237,31 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         get loading() {
             return loading;
         },
-        set loading(value) {
-            loading = value;
+        get limit() {
+            return parameters.limit ?? DEFAULT_LIMIT;
+        },
+        set limit(value) {
+            parameters.limit = value;
+            setPagination({ pageIndex: 0, pageSize: value });
         },
         get meta() {
             return meta;
         },
         set meta(value) {
             meta = value;
+
+            const limit = parameters.limit ?? DEFAULT_LIMIT;
+            const total = (meta?.total as number) ?? 0;
+            pageCount = Math.ceil(total / limit);
+
+            loading = false;
         },
         options,
         get pageCount() {
             return pageCount;
         },
-        set pageCount(value) {
-            pageCount = value;
+        get parameters() {
+            return parameters;
         }
     };
 }
