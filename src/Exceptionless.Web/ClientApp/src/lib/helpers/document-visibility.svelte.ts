@@ -1,17 +1,15 @@
 import { useEventListener } from 'runed';
 
 export class DocumentVisibility {
-    #effectRegistered = false;
-    #visible: boolean = $state(!document.hidden);
+    #effectRegistered = 0;
+    #visible = $state<boolean | undefined>(!document.hidden);
 
-    get visible(): boolean | undefined {
-        if ($effect.tracking() && !this.#effectRegistered) {
-            this.#visible = !document.hidden;
-
+    get visible(): boolean {
+        if ($effect.tracking() && this.#effectRegistered === 0) {
             // If we are in an effect and this effect has not been registered yet
             // we match the current value, register the listener and return match
             $effect(() => {
-                this.#effectRegistered = true;
+                this.#effectRegistered++;
 
                 useEventListener(
                     () => document,
@@ -19,13 +17,15 @@ export class DocumentVisibility {
                     () => (this.#visible = !document.hidden)
                 );
 
-                return () => (this.#effectRegistered = false);
+                return () => {
+                    this.#effectRegistered--;
+                    // if we deregister the event it means it's not used in any component
+                    // and we want to go back to use the value from `this.#mediaQueryList.matches`
+                    this.#visible = undefined;
+                };
             });
-        } else if (!$effect.tracking()) {
-            // Otherwise, just match media to get the current value
-            this.#visible = !document.hidden;
         }
 
-        return this.#visible;
+        return this.#visible ?? !document.hidden;
     }
 }
