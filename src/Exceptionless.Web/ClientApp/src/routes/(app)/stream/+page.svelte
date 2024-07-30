@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { derived } from 'svelte/store';
-    import { persisted } from 'svelte-persisted-store';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
     import { Button } from '$comp/ui/button';
@@ -10,50 +8,48 @@
 
     import EventsTailLogDataTable from '$comp/events/table/EventsTailLogDataTable.svelte';
     import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
-    import type { SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
-    import { type IFilter, FilterSerializer, toFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters';
+    import { type IFilter, FilterSerializer, toFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters.svelte';
     import { toFacetedFilters } from '$comp/filters/facets';
+    import { persisted } from '$lib/helpers/persisted.svelte';
 
-    let selectedEventId: string | null = null;
-    function onRowClick({ detail }: CustomEvent<SummaryModel<SummaryTemplateKeys>>) {
-        selectedEventId = detail.id;
+    let selectedEventId: string | null = $state(null);
+    function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
+        selectedEventId = row.id;
     }
 
     const limit = persisted<number>('events.stream.limit', 10);
     const defaultFilters = getDefaultFilters(false);
-    const filters = persisted<IFilter[]>('events.stream.filters', defaultFilters, { serializer: new FilterSerializer() });
-    $filters.push(...defaultFilters.filter((df) => !$filters.some((f) => f.key === df.key)));
+    const persistedFilters = persisted<IFilter[]>('events.stream.filters', defaultFilters, new FilterSerializer());
+    persistedFilters.value.push(...defaultFilters.filter((df) => !persistedFilters.value.some((f) => f.key === df.key)));
 
-    const filter = derived(filters, ($filters) => toFilter($filters));
-    const facets = derived(filters, ($filters) => toFacetedFilters($filters));
+    const filter = $derived(toFilter(persistedFilters.value));
+    const facets = $derived(toFacetedFilters(persistedFilters.value));
 
-    function onDrawerFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        filterChanged(filters, detail);
+    function onDrawerFilterChanged(filter: IFilter): void {
+        persistedFilters.value = filterChanged(persistedFilters.value, filter);
         selectedEventId = null;
     }
 
-    function onFilterChanged({ detail }: CustomEvent<IFilter>): void {
-        if (detail.key !== 'date:date') {
-            filterChanged(filters, detail);
+    function onFilterChanged(filter: IFilter): void {
+        if (filter.key !== 'date:date') {
+            persistedFilters.value = filterChanged(persistedFilters.value, filter);
         }
     }
 
-    function onFilterRemoved({ detail }: CustomEvent<IFilter | undefined>): void {
-        filterRemoved(filters, defaultFilters, detail);
+    function onFilterRemoved(filter?: IFilter): void {
+        persistedFilters.value = filterRemoved(persistedFilters.value, defaultFilters, filter);
     }
 </script>
-
-<CustomEventMessage type="filter" on:message={onDrawerFilterChanged}></CustomEventMessage>
 
 <Card.Root>
     <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Event Stream</Card.Title>
     <Card.Content>
-        <EventsTailLogDataTable {filter} {limit} on:rowclick={onRowClick}>
-            <svelte:fragment slot="toolbar">
-                <FacetedFilter.Root {facets} on:changed={onFilterChanged} on:remove={onFilterRemoved}></FacetedFilter.Root>
-            </svelte:fragment>
+        <EventsTailLogDataTable {filter} bind:limit={limit.value} {rowclick}>
+            {#snippet toolbarChildren()}
+                <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
+            {/snippet}
         </EventsTailLogDataTable>
     </Card.Content></Card.Root
 >
@@ -66,6 +62,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer id={selectedEventId || ''}></EventsDrawer>
+        <EventsDrawer id={selectedEventId || ''} changed={onDrawerFilterChanged}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

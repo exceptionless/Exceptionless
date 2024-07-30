@@ -1,54 +1,45 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import { derived, type Writable } from 'svelte/store';
-
-    import { getOrganizationQuery } from '$api/organizationsApi';
-    import { OrganizationFilter } from '$comp/filters/filters';
+    import { getOrganizationQuery } from '$api/organizationsApi.svelte';
+    import { OrganizationFilter } from '$comp/filters/filters.svelte';
     import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+    import type { FacetedFilterProps } from '.';
 
-    const dispatch = createEventDispatcher();
-    export let filter: OrganizationFilter;
-    export let title: string = 'Status';
-    export let open: Writable<boolean>;
+    let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: FacetedFilterProps<OrganizationFilter> = $props();
 
-    const response = getOrganizationQuery();
-    const options = derived(response, ($response) => {
-        return (
-            $response.data?.map((organization) => ({
-                value: organization.id!,
-                label: organization.name!
-            })) ?? []
-        );
-    });
+    const response = getOrganizationQuery({ mode: 'stats' });
+    const options = $derived(
+        response.data?.map((organization) => ({
+            value: organization.id!,
+            label: organization.name!
+        })) ?? []
+    );
 
-    response.subscribe(($response) => {
-        if (!$response.isSuccess || !filter.value) {
+    $effect(() => {
+        if (!response.isSuccess || !filter.value) {
             return;
         }
 
-        const organization = $response.data.find((organization) => organization.id === filter.value);
+        const organization = response.data.find((organization) => organization.id === filter.value);
         if (!organization) {
-            filter.value = '';
-            dispatch('changed', filter);
+            filter.value = undefined;
+            filterChanged(filter);
         }
     });
-
-    function onChanged() {
-        dispatch('changed', filter);
-    }
-
-    function onRemove() {
-        dispatch('remove', filter);
-    }
 </script>
 
 <DropDownFacetedFilter
-    {open}
     {title}
-    bind:value={filter.value}
-    options={$options}
-    loading={$response.isLoading}
+    value={filter.value}
+    {options}
+    loading={response.isLoading}
     noOptionsText="No organizations found."
-    on:changed={onChanged}
-    on:remove={onRemove}
+    changed={(value) => {
+        filter.value = value;
+        filterChanged(filter);
+    }}
+    remove={() => {
+        filter.value = undefined;
+        filterRemoved(filter);
+    }}
+    {...props}
 ></DropDownFacetedFilter>

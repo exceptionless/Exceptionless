@@ -1,15 +1,20 @@
-<script lang="ts">
+<script lang="ts" context="module">
+    type TData = unknown;
+</script>
+
+<script lang="ts" generics="TData">
     import type { Table } from '@tanstack/svelte-table';
     import type { Selected } from 'bits-ui';
-    import type { Readable } from 'svelte/store';
 
     import * as Select from '$comp/ui/select';
 
-    type TData = $$Generic;
-    export let table: Readable<Table<TData>>;
+    interface Props {
+        table: Table<TData>;
+        value: number;
+        defaultValue?: number;
+    }
 
-    export let value: number;
-    export let defaultValue: number = 10;
+    let { table, value = $bindable(), defaultValue = 10 }: Props = $props();
 
     const items = [
         { value: 5, label: '5' },
@@ -20,7 +25,7 @@
         { value: 50, label: '50' }
     ];
 
-    let selected = items.find((item) => item.value === value) || items[0];
+    let selected = $state(items.find((item) => item.value === value) || items[0]);
     function onSelectedChange(selected: Selected<number> | undefined) {
         const newValue = selected?.value ?? defaultValue;
         if (newValue === value) {
@@ -28,7 +33,7 @@
         }
 
         value = newValue;
-        $table.setPageSize(newValue);
+        table.setPageSize(newValue);
     }
 </script>
 

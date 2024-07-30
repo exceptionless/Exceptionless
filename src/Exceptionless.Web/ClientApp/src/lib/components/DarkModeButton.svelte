@@ -20,7 +20,7 @@
         </Button>
     </ContextMenu.Trigger>
     <ContextMenu.Content>
-        <ContextMenu.RadioGroup bind:value={$userPrefersMode} onValueChange={onUserThemePreferenceChange}>
+        <ContextMenu.RadioGroup value={$userPrefersMode} onValueChange={onUserThemePreferenceChange}>
             <ContextMenu.RadioItem value="light">Light</ContextMenu.RadioItem>
             <ContextMenu.RadioItem value="dark">Dark</ContextMenu.RadioItem>
             <ContextMenu.RadioItem value="system">System</ContextMenu.RadioItem>

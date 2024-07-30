@@ -1,10 +1,14 @@
 <script lang="ts">
+    import type { HTMLAttributes } from 'svelte/elements';
     import { cn } from '$lib/utils';
 
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    type Props = HTMLAttributes<Element>;
+
+    let { children, class: className, ...props }: Props = $props();
 </script>
 
-<p class={cn('text-xl text-muted-foreground', className)} {...$$restProps}>
-    <slot />
+<p class={cn('text-xl text-muted-foreground', className)} {...props}>
+    {#if children}
+        {@render children()}
+    {/if}
 </p>

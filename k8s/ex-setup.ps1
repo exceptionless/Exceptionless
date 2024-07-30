@@ -1,15 +1,15 @@
 # install kubernetes cli
-choco install kubernetes-cli
+winget install Kubernetes.kubectl
 
-# kubernetes helper tool
-# https://github.com/ahmetb/kubectx/releases
-# NOTE: not available on choco yet - choco install kubectx
+# kubernetes helper tools
+winget install Derailed.k9s
+winget install ahmetb.kubectx
 
 # azure cli
-choco install azure-cli
+winget install Microsoft.AzureCLI
 
 # install helm
-choco install kubernetes-helm
+winget install Helm.Helm
 helm repo add "stable" "https://charts.helm.sh/stable" --force-update
 helm repo add jetstack https://charts.jetstack.io
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts                                                                                                                     ❮  3s 868ms   
@@ -60,8 +60,8 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl create -f https://download.elastic.co/downloads/eck/2.12.1/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.12.1/operator.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.13.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.13.0/operator.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator

@@ -5,8 +5,7 @@
     import { Separator } from '$comp/ui/separator';
     import { Button } from '$comp/ui/button';
 
-    import H3 from '$comp/typography/H3.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { H3, Muted } from '$comp/typography';
     import ThemePreview from './(components)/ThemePreview.svelte';
 
     async function onSave() {}
@@ -19,7 +18,7 @@
     </div>
     <Separator />
 
-    <form on:submit|preventDefault={onSave}>
+    <form onsubmit={onSave}>
         <RadioGroup.Root value="light" class="grid max-w-xl grid-cols-3 gap-8 pt-2" orientation="horizontal">
             <Label for="light" class="[&:has([data-state=checked])>div]:border-primary">
                 <RadioGroup.Item id="light" value="light" class="sr-only" />

@@ -1,6 +1,8 @@
 <script lang="ts">
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
+
+    let { children } = $props();
 </script>
 
 <div class="flex h-screen">
@@ -8,6 +10,6 @@
         <img src={logo} class="mx-auto h-[100px] dark:hidden" alt="Exceptionless Logo" />
         <img src={logoDark} class="mx-auto hidden h-[100px] dark:block" alt="Exceptionless Logo" />
 
-        <slot />
+        {@render children()}
     </div>
 </div>

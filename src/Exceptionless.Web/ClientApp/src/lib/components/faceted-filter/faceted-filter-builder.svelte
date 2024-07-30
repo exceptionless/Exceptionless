@@ -1,29 +1,26 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import type { Readable } from 'svelte/store';
     import { toast } from 'svelte-sonner';
-
     import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
 
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import { Button } from '$comp/ui/button';
-    import type { IFilter } from '$comp/filters/filters';
-    import type { FacetedFilter } from '.';
+    import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { FacetedFilter } from '$comp/filters/facets';
 
-    const dispatch = createEventDispatcher();
+    interface Props {
+        facets: FacetedFilter<IFilter>[];
+        changed: (filter: IFilter) => void;
+        remove: (filter?: IFilter) => void;
+    }
 
-    export let facets: Readable<FacetedFilter[]>;
+    let { facets, changed, remove }: Props = $props();
 
-    let open = false;
-    let visible: string[] = [];
-    facets.subscribe(($facets) => {
-        // Add any new facets that have been synced from storage.
-        visible = [...visible, ...$facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
-    });
+    let open = $state(false);
+    let visible = $state<string[]>([]);
 
-    function onFacetSelected(facet: FacetedFilter) {
-        $facets.forEach((f) => f.open.set(false));
+    function onFacetSelected(facet: FacetedFilter<IFilter>) {
+        facets.forEach((f) => (f.open = false));
 
         if (visible.includes(facet.filter.key)) {
             toast.error(`Only one ${facet.title} filter can be applied at a time.`);
@@ -32,35 +29,37 @@
         }
 
         open = false;
-        facet.open.set(true);
+        facet.open = true;
     }
 
-    function onChanged({ detail }: CustomEvent<IFilter>) {
-        onFilterChanged(detail);
+    function filterChanged(filter: IFilter) {
+        changed(filter);
     }
 
-    function onFilterChanged(filter?: IFilter) {
-        dispatch('changed', filter);
-    }
+    function filterRemoved(filter: IFilter) {
+        visible = visible.filter((key) => key !== filter.key);
 
-    function onRemove({ detail }: CustomEvent<IFilter>) {
-        visible = visible.filter((key) => key !== detail.key);
-
-        if (!detail.isEmpty()) {
-            detail.reset();
+        if (!filter.isEmpty()) {
+            filter.reset();
         }
 
-        dispatch('remove', detail);
+        remove(filter);
     }
 
     function onRemoveAll() {
         visible = [];
-        $facets.forEach((facet) => facet.filter.reset());
-        dispatch('remove');
+        facets.forEach((facet) => facet.filter.reset());
+        remove();
     }
 
     function onClose() {
         open = false;
+    }
+
+    function isVisible(facet: FacetedFilter<IFilter>): boolean {
+        // Add any new facets that have been synced from storage.
+        const visibleFacets = [...visible, ...facets.filter((f) => !f.filter.isEmpty() && !visible.includes(f.filter.key)).map((f) => f.filter.key)];
+        return visibleFacets.includes(facet.filter.key);
     }
 </script>
 
@@ -76,7 +75,7 @@
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
-                    {#each $facets as facet (facet.filter.key)}
+                    {#each facets as facet (facet.filter.key)}
                         <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>{facet.title}</Command.Item>
                     {/each}
                 </Command.Group>
@@ -94,8 +93,8 @@
     </Popover.Content>
 </Popover.Root>
 
-{#each $facets as facet (facet.filter.key)}
-    {#if visible.includes(facet.filter.key)}
-        <svelte:component this={facet.component} filter={facet.filter} title={facet.title} open={facet.open} on:changed={onChanged} on:remove={onRemove} />
+{#each facets as facet (facet.filter.key)}
+    {#if isVisible(facet)}
+        <svelte:component this={facet.component} title={facet.title} open={facet.open} filter={facet.filter} {filterChanged} {filterRemoved} />
     {/if}
 {/each}

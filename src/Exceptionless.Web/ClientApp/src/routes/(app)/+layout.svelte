@@ -1,36 +1,44 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+    import { MediaQuery } from 'runed';
+
     import { page } from '$app/stores';
 
     import NavbarLayout from './(components)/layouts/Navbar.svelte';
     import SidebarLayout from './(components)/layouts/Sidebar.svelte';
     import FooterLayout from './(components)/layouts/Footer.svelte';
-    import { isCommandOpen, isSidebarOpen, isSmallScreen } from '$lib/stores/app';
 
-    import { accessToken, gotoLogin, isAuthenticated } from '$api/auth';
-    import { WebSocketClient } from '$api/WebSocketClient';
+    import { accessToken, gotoLogin } from '$api/auth.svelte';
+    import { WebSocketClient } from '$api/WebSocketClient.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
-    import { setDefaultModelValidator, useGlobalMiddleware } from '$api/FetchClient';
+    import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { validate } from '$lib/validation/validation';
-    import { onMount } from 'svelte';
 
     import { useQueryClient } from '@tanstack/svelte-query';
     import NavigationCommand from './(components)/NavigationCommand.svelte';
-    import { derived } from 'svelte/store';
-    import { getMeQuery } from '$api/usersApi';
+    import { getMeQuery } from '$api/usersApi.svelte';
     import { routes, type NavigationItemContext } from '../routes';
+    import { persisted } from '$lib/helpers/persisted.svelte';
 
-    isAuthenticated.subscribe(async (authenticated) => {
-        if (!authenticated) {
-            await gotoLogin();
-        }
-    });
+    interface Props {
+        children: Snippet;
+    }
 
-    setDefaultModelValidator(validate);
-    useGlobalMiddleware(async (ctx, next) => {
+    let { children }: Props = $props();
+    let isAuthenticated = $derived(accessToken.value !== null);
+
+    let isSidebarOpen = persisted('sidebar-open', false);
+    let isCommandOpen = $state(false);
+    const isSmallScreenQuery = new MediaQuery('(min-width: 640px)');
+    const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
+    const isLargeScreenQuery = new MediaQuery('(min-width: 1024px)');
+
+    setModelValidator(validate);
+    useMiddleware(async (ctx, next) => {
         await next();
 
         if (ctx.response && ctx.response.status === 401) {
-            accessToken.set(null);
+            accessToken.value = null;
             return;
         }
 
@@ -73,15 +81,25 @@
 
     // Close Sidebar on page change on mobile
     page.subscribe(() => {
-        if ($isSmallScreen === true) {
-            isSidebarOpen.set(false);
+        if (isSmallScreenQuery.matches) {
+            isSidebarOpen.value = false;
         }
     });
 
-    onMount(() => {
-        if (!$isAuthenticated) {
+    $effect(() => {
+        function handleKeydown(e: KeyboardEvent) {
+            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                isCommandOpen = !isCommandOpen;
+            }
+        }
+
+        if (!isAuthenticated) {
+            gotoLogin();
             return;
         }
+
+        document.addEventListener('keydown', handleKeydown);
 
         const ws = new WebSocketClient();
         ws.onMessage = onMessage;
@@ -97,27 +115,28 @@
         };
 
         return () => {
+            document.removeEventListener('keydown', handleKeydown);
             ws?.close();
         };
     });
 
     const userQuery = getMeQuery();
-    const filteredRoutes = derived(userQuery, ($userResponse) => {
-        const context: NavigationItemContext = { authenticated: $isAuthenticated, user: $userResponse.data };
+    const filteredRoutes = $derived.by(() => {
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userQuery.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 
-{#if $isAuthenticated}
-    <NavbarLayout></NavbarLayout>
+{#if isAuthenticated}
+    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} isMediumScreen={isMediumScreenQuery.matches}></NavbarLayout>
     <div class="flex overflow-hidden pt-16">
-        <SidebarLayout routes={$filteredRoutes} />
+        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} isLargeScreen={isLargeScreenQuery.matches} routes={filteredRoutes} />
 
-        <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {$isSidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}">
+        <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {isSidebarOpen.value ? 'lg:ml-64' : 'lg:ml-16'}">
             <main>
                 <div class="px-4 pt-4">
-                    <NavigationCommand bind:open={$isCommandOpen} routes={$filteredRoutes} />
-                    <slot />
+                    <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+                    {@render children()}
                 </div>
             </main>
 

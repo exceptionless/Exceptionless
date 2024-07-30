@@ -1,12 +1,16 @@
 <script lang="ts">
-    import A from '$comp/typography/A.svelte';
+    import { A } from '$comp/typography';
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import LogLevel from '../LogLevel.svelte';
 
-    export let showType: boolean;
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as EventSummaryModel<'event-log-summary'>;
-    const level = source.data.Level?.toLowerCase();
+    interface EventFeatureSummaryProps {
+        showType: boolean;
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
+
+    let { showType, summary }: EventFeatureSummaryProps = $props();
+    let source = $derived(summary as EventSummaryModel<'event-log-summary'>);
+    let level = $derived(source.data.Level?.toLowerCase());
 </script>
 
 <div class="line-clamp-2">

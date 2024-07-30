@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import { derived, writable, type Writable } from 'svelte/store';
     import IconCheck from '~icons/mdi/check';
 
     import { Button } from '$comp/ui/button';
@@ -17,45 +15,45 @@
         label: string;
     };
 
-    export let loading: boolean = false;
-    export let title: string;
-    export let values: string[];
-    export let options: Option[];
-    export let noOptionsText: string = 'No results found.';
-    export let open: Writable<boolean>;
+    interface Props {
+        title: string;
+        values: string[];
+        options: Option[];
+        noOptionsText?: string;
+        loading?: boolean;
+        open: boolean;
+        changed: (values: string[]) => void;
+        remove: () => void;
+    }
 
-    const updatedValues = writable<string[]>(values);
-    const hasChanged = derived(updatedValues, ($updatedValues) => {
-        return $updatedValues.length !== values.length || $updatedValues.some((value) => !values.includes(value));
+    let { title, values, options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
+    let updatedValues = $state(values);
+    let displayValues = $derived.by(() => {
+        const labelsInOptions = options.filter((o) => values.includes(o.value)).map((o) => o.label);
+        const valuesNotInOptions = values.filter((value) => !options.some((o) => o.value === value));
+        return [...labelsInOptions, ...valuesNotInOptions];
     });
 
-    // bind:open doesn't trigger subscriptions when the variable changes. It only updates the value of the variable.
-    open.subscribe(() => updatedValues.set(values));
-    $: updatedValues.set(values);
+    $effect(() => {
+        updatedValues = values;
+    });
 
-    const dispatch = createEventDispatcher();
+    const hasChanged = $derived(updatedValues.length !== values.length || updatedValues.some((value) => !values.includes(value)));
+
     function onApplyFilter() {
-        if ($hasChanged) {
-            values = $updatedValues;
-            dispatch('changed', values);
+        if (hasChanged) {
+            changed(updatedValues);
         }
 
-        open.set(false);
+        open = false;
     }
 
     export function onValueSelected(currentValue: string) {
-        updatedValues.update(($updatedValues) =>
-            $updatedValues.includes(currentValue) ? $updatedValues.filter((v) => v !== currentValue) : [...$updatedValues, currentValue]
-        );
+        updatedValues = updatedValues.includes(currentValue) ? updatedValues.filter((v) => v !== currentValue) : [...updatedValues, currentValue];
     }
 
     export function onClearFilter() {
-        updatedValues.set([]);
-    }
-
-    function onRemoveFilter(): void {
-        values = [];
-        dispatch('remove');
+        updatedValues = [];
     }
 
     function filter(value: string, search: string) {
@@ -70,15 +68,9 @@
 
         return 0;
     }
-
-    function getDisplayValues(values: string[]): string[] {
-        const labelsInOptions = options.filter((o) => values.includes(o.value)).map((o) => o.label);
-        const valuesNotInOptions = values.filter((value) => !options.some((o) => o.value === value));
-        return [...labelsInOptions, ...valuesNotInOptions];
-    }
 </script>
 
-<Popover.Root bind:open={$open}>
+<Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8">
             {title}
@@ -86,8 +78,10 @@
             {#if loading}
                 <FacetedFilter.BadgeLoading />
             {:else if values.length > 0}
-                <FacetedFilter.BadgeValues values={getDisplayValues(values)} let:value>
-                    {value}
+                <FacetedFilter.BadgeValues values={displayValues}>
+                    {#snippet displayValue(value)}
+                        {value}
+                    {/snippet}
                 </FacetedFilter.BadgeValues>
             {:else}
                 <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
@@ -111,7 +105,7 @@
                                 <div
                                     class={cn(
                                         'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                        $updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                        updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
                                     <IconCheck className={cn('h-4 w-4')} />
@@ -126,12 +120,12 @@
             </Command.List>
         </Command.Root>
         <FacetedFilter.Actions
-            showApply={$hasChanged}
-            on:apply={onApplyFilter}
-            showClear={$updatedValues.length > 0}
-            on:clear={onClearFilter}
-            on:remove={onRemoveFilter}
-            on:close={() => open.set(false)}
+            showApply={hasChanged}
+            apply={onApplyFilter}
+            showClear={updatedValues.length > 0}
+            clear={onClearFilter}
+            {remove}
+            close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

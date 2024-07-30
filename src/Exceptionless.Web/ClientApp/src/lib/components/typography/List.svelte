@@ -1,13 +1,24 @@
-<script lang="ts">
-    import { cn } from '$lib/utils';
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
-    export let items: unknown[] = [];
+<script lang="ts" context="module">
+    type TData = unknown;
 </script>
 
-<ul class={cn('my-6 ml-6 list-disc [&>li]:mt-2', className)}>
+<script lang="ts" generics="TData">
+    import type { Snippet } from 'svelte';
+    import type { HTMLAttributes } from 'svelte/elements';
+    import { cn } from '$lib/utils';
+
+    type Props = HTMLAttributes<Element> & {
+        displayValue?: Snippet<[TData]>;
+        items: TData[];
+    };
+
+    let { displayValue, class: className, items = [], ...props }: Props = $props();
+</script>
+
+<ul class={cn('my-6 ml-6 list-disc [&>li]:mt-2', className)} {...props}>
     {#each items as item}
-        <li><slot {item}>{item}</slot></li>
+        <li>
+            {#if displayValue}{@render displayValue(item)}{:else}{item}{/if}
+        </li>
     {/each}
 </ul>

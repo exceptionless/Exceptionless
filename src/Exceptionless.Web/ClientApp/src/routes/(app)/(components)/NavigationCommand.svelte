@@ -1,15 +1,14 @@
 <script lang="ts">
-    import A from '$comp/typography/A.svelte';
+    import { A } from '$comp/typography';
     import * as Command from '$comp/ui/command';
-    import { isCommandOpen } from '$lib/stores/app';
     import type { NavigationItem } from '../../routes';
 
-    export let open: boolean;
-    export let routes: NavigationItem[];
+    let { open = $bindable(), routes }: { open: boolean; routes: NavigationItem[] } = $props();
+
     const groupedRoutes: Record<string, NavigationItem[]> = Object.groupBy(routes, (item: NavigationItem) => item.group);
 
     function closeCommandWindow() {
-        isCommandOpen.set(false);
+        open = false;
     }
 </script>
 
@@ -21,8 +20,10 @@
             <Command.Group heading={group}>
                 {#each items as route (route.href)}
                     <Command.Item>
-                        <A href={route.href} class="flex gap-x-2" on:click={closeCommandWindow}>
-                            <svelte:component this={route.icon} />
+                        <A href={route.href} class="flex gap-x-2" onclick={closeCommandWindow}>
+                            {#if route.icon}
+                                <svelte:component this={route.icon} />
+                            {/if}
                             <div>{route.title}</div>
                         </A>
                     </Command.Item>
