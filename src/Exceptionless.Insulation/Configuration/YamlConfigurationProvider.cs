@@ -3,13 +3,8 @@ using YamlDotNet.Core;
 
 namespace Exceptionless.Insulation.Configuration;
 
-public class YamlConfigurationProvider : FileConfigurationProvider
+public class YamlConfigurationProvider(YamlConfigurationSource source) : FileConfigurationProvider(source)
 {
-    public YamlConfigurationProvider(YamlConfigurationSource source)
-        : base(source)
-    {
-    }
-
     public override void Load(Stream stream)
     {
         var parser = new YamlConfigurationFileParser();
@@ -39,7 +34,7 @@ public class YamlConfigurationProvider : FileConfigurationProvider
 
     private static string RetrieveErrorContext(YamlException ex, IEnumerable<string?> fileContent)
     {
-        string? possibleLineContent = fileContent.Skip(ex.Start.Line - 1).FirstOrDefault();
+        string? possibleLineContent = fileContent.Skip((int)ex.Start.Line - 1).FirstOrDefault();
         return possibleLineContent ?? String.Empty;
     }
 
