@@ -1,16 +1,17 @@
 <script lang="ts">
-    import { cubicInOut } from 'svelte/easing';
-    import { crossfade } from 'svelte/transition';
+    import type { HTMLAttributes } from 'svelte/elements';
 
     import { page } from '$app/stores';
     import { Button } from '$comp/ui/button';
     import { cn } from '$lib/utils';
-    import type { NavigationItem } from '../../../routes';
-    import type { HTMLAttributes } from 'svelte/elements';
+    import { cubicInOut } from 'svelte/easing';
+    import { crossfade } from 'svelte/transition';
 
-    type Props = HTMLAttributes<HTMLElement> & {
+    import type { NavigationItem } from '../../../routes';
+
+    type Props = {
         routes: NavigationItem[];
-    };
+    } & HTMLAttributes<HTMLElement>;
 
     let { class: className, routes, ...props }: Props = $props();
 
@@ -25,10 +26,10 @@
         {@const isActive = $page.url.pathname === route.href}
 
         <Button
-            href={route.href}
-            variant="ghost"
             class={cn(!isActive && 'hover:underline', 'relative justify-start hover:bg-transparent')}
             data-sveltekit-noscroll
+            href={route.href}
+            variant="ghost"
         >
             {#if isActive}
                 <div class="absolute inset-0 rounded-md bg-muted" in:send={{ key: 'active-sidebar-tab' }} out:receive={{ key: 'active-sidebar-tab' }}></div>

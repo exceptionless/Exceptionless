@@ -1,13 +1,15 @@
 <script lang="ts">
-    import IconFilter from '~icons/mdi/filter';
-    import { A, type AProps } from '$comp/typography';
     import type { StackStatus } from '$lib/models/api';
+
+    import { A, type AProps } from '$comp/typography';
+    import IconFilter from '~icons/mdi/filter';
+
     import { StatusFilter } from './filters.svelte';
 
-    type Props = AProps & {
+    type Props = {
         changed: (filter: StatusFilter) => void;
         value: StackStatus[];
-    };
+    } & AProps;
     let { changed, value, ...props }: Props = $props();
 
     const title = `Search status:${value}`;

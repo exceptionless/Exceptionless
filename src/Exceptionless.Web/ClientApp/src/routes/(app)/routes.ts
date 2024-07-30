@@ -3,26 +3,27 @@ import IconStacks from '~icons/mdi/checkbox-multiple-marked-outline';
 import IconEventLog from '~icons/mdi/sort-clock-descending-outline';
 
 import type { NavigationItem } from '../routes';
+
 import { routes as accountRoutes } from './account/routes';
 
 export const routes: NavigationItem[] = [
     {
         group: 'Dashboards',
-        title: 'Events',
         href: '/next/',
-        icon: IconEvents
+        icon: IconEvents,
+        title: 'Events'
     },
     {
         group: 'Dashboards',
-        title: 'Issues',
         href: '/next/issues',
-        icon: IconStacks
+        icon: IconStacks,
+        title: 'Issues'
     },
     {
         group: 'Dashboards',
-        title: 'Event Stream',
         href: '/next/stream',
-        icon: IconEventLog
+        icon: IconEventLog,
+        title: 'Event Stream'
     },
     ...accountRoutes
 ];

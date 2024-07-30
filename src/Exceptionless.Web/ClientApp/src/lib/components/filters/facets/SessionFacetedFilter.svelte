@@ -1,14 +1,14 @@
 <script lang="ts">
     import { SessionFilter } from '$comp/filters/filters.svelte';
-    import StringFacetedFilter from './base/StringFacetedFilter.svelte';
+
     import type { FacetedFilterProps } from '.';
 
-    let { filter, title = 'Session', filterChanged, filterRemoved, ...props }: FacetedFilterProps<SessionFilter> = $props();
+    import StringFacetedFilter from './base/StringFacetedFilter.svelte';
+
+    let { filter, filterChanged, filterRemoved, title = 'Session', ...props }: FacetedFilterProps<SessionFilter> = $props();
 </script>
 
 <StringFacetedFilter
-    {title}
-    value={filter.value}
     changed={(value) => {
         filter.value = value;
         filterChanged(filter);
@@ -17,5 +17,7 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    {title}
+    value={filter.value}
     {...props}
 ></StringFacetedFilter>

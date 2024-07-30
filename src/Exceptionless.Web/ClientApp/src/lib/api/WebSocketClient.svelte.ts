@@ -1,23 +1,24 @@
 import { DocumentVisibility } from '$lib/helpers/document-visibility.svelte';
+
 import { accessToken } from './auth.svelte';
 
 export class WebSocketClient {
-    private accessToken: string | null = null;
-
-    public reconnectInterval: number = 1000;
-    public timeoutInterval: number = 2000;
-    public readyState: number = WebSocket.CLOSED;
-    public url: string;
+    private accessToken: null | string = null;
 
     private forcedClose: boolean = false;
     private timedOut: boolean = false;
-    private ws: WebSocket | null = null;
+    private ws: null | WebSocket = null;
+    public onClose: (ev: CloseEvent) => void = () => {};
 
     public onConnecting: (isReconnect: boolean) => void = () => {};
-    public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
-    public onMessage: (ev: MessageEvent) => void = () => {};
     public onError: (ev: Event) => void = () => {};
-    public onClose: (ev: CloseEvent) => void = () => {};
+    public onMessage: (ev: MessageEvent) => void = () => {};
+
+    public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
+    public readyState: number = WebSocket.CLOSED;
+    public reconnectInterval: number = 1000;
+    public timeoutInterval: number = 2000;
+    public url: string;
 
     constructor(path: string = '/api/v2/push') {
         const { host, protocol } = window.location;
@@ -38,6 +39,16 @@ export class WebSocketClient {
                 this.connect();
             }
         });
+    }
+
+    public close(): boolean {
+        if (this.ws) {
+            this.forcedClose = true;
+            this.ws.close();
+            return true;
+        }
+
+        return false;
     }
 
     public connect(reconnectAttempt: boolean = true) {
@@ -91,21 +102,11 @@ export class WebSocketClient {
         };
     }
 
-    public send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+    public send(data: ArrayBufferLike | ArrayBufferView | Blob | string) {
         if (this.ws) {
             return this.ws.send(data);
         } else {
             throw new Error('INVALID_STATE_ERR : Pausing to reconnect websocket');
         }
-    }
-
-    public close(): boolean {
-        if (this.ws) {
-            this.forcedClose = true;
-            this.ws.close();
-            return true;
-        }
-
-        return false;
     }
 }

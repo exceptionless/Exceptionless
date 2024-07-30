@@ -1,19 +1,19 @@
 <script lang="ts">
+    import * as FacetedFilter from '$comp/faceted-filter';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
-    import * as FacetedFilter from '$comp/faceted-filter';
     import Separator from '$comp/ui/separator/separator.svelte';
 
     interface Props {
+        changed: (value?: boolean) => void;
+        open: boolean;
+        remove: () => void;
         title: string;
         value?: boolean;
-        open: boolean;
-        changed: (value?: boolean) => void;
-        remove: () => void;
     }
 
-    let { title, value, open = $bindable(), changed, remove }: Props = $props();
+    let { changed, open = $bindable(), remove, title, value }: Props = $props();
     let updatedValue = $state(value);
 
     $effect(() => {
@@ -35,9 +35,9 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} variant="outline" size="sm" class="h-8">
+        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
             {title}
-            <Separator orientation="vertical" class="mx-2 h-4" />
+            <Separator class="mx-2 h-4" orientation="vertical" />
             {#if value}
                 <FacetedFilter.BadgeValue>{value}</FacetedFilter.BadgeValue>
             {:else}
@@ -45,17 +45,17 @@
             {/if}
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="p-0" align="start" side="bottom">
+    <Popover.Content align="start" class="p-0" side="bottom">
         <div class="flex items-center border-b">
-            <Input type="boolean" placeholder={title} bind:value={updatedValue} />
+            <Input bind:value={updatedValue} placeholder={title} type="boolean" />
         </div>
         <FacetedFilter.Actions
-            showApply={updatedValue !== value}
             apply={onApplyFilter}
-            showClear={updatedValue !== undefined}
             clear={onClearFilter}
-            {remove}
             close={() => (open = false)}
+            {remove}
+            showApply={updatedValue !== value}
+            showClear={updatedValue !== undefined}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

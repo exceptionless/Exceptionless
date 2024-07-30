@@ -1,15 +1,14 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext } from '@exceptionless/fetchclient';
-    import { error } from '@sveltejs/kit';
 
+    import { accessToken } from '$api/auth.svelte';
+    import { page } from '$app/stores';
+    import { Toaster } from '$comp/ui/sonner';
+    import { type FetchClientContext, setAccessTokenFunc, setBaseUrl, useMiddleware } from '@exceptionless/fetchclient';
+    import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
-
-    import { page } from '$app/stores';
-    import { accessToken } from '$api/auth.svelte';
-    import { Toaster } from '$comp/ui/sonner';
 
     import '../app.css';
     import { routes } from './routes';

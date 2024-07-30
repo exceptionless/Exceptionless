@@ -3,26 +3,22 @@ import type { PersistentEventKnownTypes } from '$lib/models/api';
 import type { StackStatus } from '$lib/models/api';
 
 export interface IFilter {
-    readonly type: string;
-    readonly key: string;
     isEmpty(): boolean;
+    readonly key: string;
     reset(): void;
     toFilter(): string;
+    readonly type: string;
 }
 
 export class BooleanFilter implements IFilter {
     public term = $state<string>();
+    public type: string = 'boolean';
+
     public value = $state<boolean>();
 
     constructor(term?: string, value?: boolean) {
         this.term = term;
         this.value = value;
-    }
-
-    public type: string = 'boolean';
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
     }
 
     public isEmpty(): boolean {
@@ -47,26 +43,26 @@ export class BooleanFilter implements IFilter {
 
     public toJSON() {
         return {
-            type: this.type,
             term: this.term,
+            type: this.type,
             value: this.value
         };
+    }
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
     }
 }
 
 export class DateFilter implements IFilter {
     public term = $state<string>();
+    public type: string = 'date';
+
     public value = $state<Date | string>();
 
     constructor(term?: string, value?: Date | string) {
         this.term = term;
         this.value = value;
-    }
-
-    public type: string = 'date';
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
     }
 
     public isEmpty(): boolean {
@@ -92,24 +88,24 @@ export class DateFilter implements IFilter {
 
     public toJSON() {
         return {
-            type: this.type,
             term: this.term,
+            type: this.type,
             value: this.value
         };
+    }
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
     }
 }
 
 export class KeywordFilter implements IFilter {
+    public type: string = 'keyword';
+
     public value = $state<string>();
 
     constructor(value?: string) {
         this.value = value;
-    }
-
-    public type: string = 'keyword';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -134,21 +130,21 @@ export class KeywordFilter implements IFilter {
             value: this.value
         };
     }
+
+    public get key(): string {
+        return this.type;
+    }
 }
 
 export class NumberFilter implements IFilter {
     public term = $state<string>();
+    public type: string = 'number';
+
     public value = $state<number>();
 
     constructor(term?: string, value?: number) {
         this.term = term;
         this.value = value;
-    }
-
-    public type: string = 'number';
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
     }
 
     public isEmpty(): boolean {
@@ -173,23 +169,23 @@ export class NumberFilter implements IFilter {
 
     public toJSON() {
         return {
-            type: this.type,
             term: this.term,
+            type: this.type,
             value: this.value
         };
+    }
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
     }
 }
 
 export class OrganizationFilter implements IFilter {
+    public type: string = 'organization';
     public value = $state<string>();
+
     constructor(value?: string) {
         this.value = value;
-    }
-
-    public type: string = 'organization';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -214,21 +210,21 @@ export class OrganizationFilter implements IFilter {
             value: this.value
         };
     }
+
+    public get key(): string {
+        return this.type;
+    }
 }
 
 export class ProjectFilter implements IFilter {
     public organization = $state<string | undefined>();
+    public type: string = 'project';
+
     public value = $state<string[]>([]);
 
     constructor(organization: string | undefined, value: string[] = []) {
         this.organization = organization;
         this.value = value;
-    }
-
-    public type: string = 'project';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -253,24 +249,24 @@ export class ProjectFilter implements IFilter {
 
     public toJSON() {
         return {
-            type: this.type,
             organization: this.organization,
+            type: this.type,
             value: this.value
         };
+    }
+
+    public get key(): string {
+        return this.type;
     }
 }
 
 export class ReferenceFilter implements IFilter {
+    public type: string = 'reference';
+
     public value = $state<string>();
 
     constructor(value?: string) {
         this.value = value;
-    }
-
-    public type: string = 'reference';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -295,19 +291,19 @@ export class ReferenceFilter implements IFilter {
             value: this.value
         };
     }
+
+    public get key(): string {
+        return this.type;
+    }
 }
 
 export class SessionFilter implements IFilter {
+    public type: string = 'session';
+
     public value = $state<string>();
 
     constructor(value?: string) {
         this.value = value;
-    }
-
-    public type: string = 'session';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -333,19 +329,19 @@ export class SessionFilter implements IFilter {
             value: this.value
         };
     }
+
+    public get key(): string {
+        return this.type;
+    }
 }
 
 export class StatusFilter implements IFilter {
+    public type: string = 'status';
+
     public value = $state<StackStatus[]>([]);
 
     constructor(value: StackStatus[] = []) {
         this.value = value;
-    }
-
-    public type: string = 'status';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -374,21 +370,21 @@ export class StatusFilter implements IFilter {
             value: this.value
         };
     }
+
+    public get key(): string {
+        return this.type;
+    }
 }
 
 export class StringFilter implements IFilter {
     public term = $state<string>();
+    public type: string = 'string';
+
     public value = $state<string>();
 
     constructor(term?: string, value?: string) {
         this.term = term;
         this.value = value;
-    }
-
-    public type: string = 'string';
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
     }
 
     public isEmpty(): boolean {
@@ -413,24 +409,24 @@ export class StringFilter implements IFilter {
 
     public toJSON() {
         return {
-            type: this.type,
             term: this.term,
+            type: this.type,
             value: this.value
         };
+    }
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
     }
 }
 
 export class TypeFilter implements IFilter {
+    public type: string = 'type';
+
     public value = $state<PersistentEventKnownTypes[]>([]);
 
     constructor(value: PersistentEventKnownTypes[] = []) {
         this.value = value;
-    }
-
-    public type: string = 'type';
-
-    public get key(): string {
-        return this.type;
     }
 
     public isEmpty(): boolean {
@@ -459,21 +455,21 @@ export class TypeFilter implements IFilter {
             value: this.value
         };
     }
+
+    public get key(): string {
+        return this.type;
+    }
 }
 
 export class VersionFilter implements IFilter {
     public term = $state<string>();
+    public type: string = 'version';
+
     public value = $state<string>();
 
     constructor(term?: string, value?: string) {
         this.term = term;
         this.value = value;
-    }
-
-    public type: string = 'version';
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
     }
 
     public isEmpty(): boolean {
@@ -498,14 +494,18 @@ export class VersionFilter implements IFilter {
 
     public toJSON() {
         return {
-            type: this.type,
             term: this.term,
+            type: this.type,
             value: this.value
         };
     }
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 }
 
-export function quoteIfSpecialCharacters(value?: string | null): string | null | undefined {
+export function quoteIfSpecialCharacters(value?: null | string): null | string | undefined {
     // Check for lucene special characters or whitespace
     const regex = new RegExp('\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s', 'g');
 
@@ -516,7 +516,7 @@ export function quoteIfSpecialCharacters(value?: string | null): string | null |
     return value;
 }
 
-export function quote(value?: string | null): string | undefined {
+export function quote(value?: null | string): string | undefined {
     return value ? `"${value}"` : undefined;
 }
 

@@ -2,7 +2,7 @@
     import type { ErrorInfo, SimpleErrorInfo } from '$lib/models/client-data';
 
     interface Props {
-        errors: (SimpleErrorInfo | ErrorInfo)[];
+        errors: (ErrorInfo | SimpleErrorInfo)[];
     }
 
     let { errors }: Props = $props();

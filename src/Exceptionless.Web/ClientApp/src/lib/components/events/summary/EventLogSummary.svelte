@@ -1,6 +1,8 @@
 <script lang="ts">
-    import { A } from '$comp/typography';
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+
+    import { A } from '$comp/typography';
+
     import LogLevel from '../LogLevel.svelte';
 
     interface EventFeatureSummaryProps {

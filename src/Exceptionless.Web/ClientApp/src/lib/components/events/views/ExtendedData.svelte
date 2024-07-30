@@ -1,10 +1,11 @@
 <script lang="ts">
+    import type { PersistentEvent, ViewProject } from '$lib/models/api';
+
+    import { mutatePromoteTab } from '$api/projectsApi.svelte';
+    import { getExtendedDataItems } from '$lib/helpers/persistent-event';
     import { toast } from 'svelte-sonner';
 
-    import type { PersistentEvent, ViewProject } from '$lib/models/api';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
-    import { getExtendedDataItems } from '$lib/helpers/persistent-event';
-    import { mutatePromoteTab } from '$api/projectsApi.svelte';
 
     interface Props {
         event: PersistentEvent;

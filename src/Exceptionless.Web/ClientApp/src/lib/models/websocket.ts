@@ -1,19 +1,19 @@
 export enum ChangeType {
     Added = 0,
-    Saved = 1,
-    Removed = 2
+    Removed = 2,
+    Saved = 1
 }
 
 export interface EntityChanged {
-    type: string;
     change_type: ChangeType;
+    data: Record<string, unknown>;
 
     id: string;
     organization_id?: string;
     projectId?: string;
     stackId?: string;
 
-    data: Record<string, unknown>;
+    type: string;
 }
 
 export interface PlanChanged {
@@ -21,14 +21,14 @@ export interface PlanChanged {
 }
 
 export interface PlanOverage {
-    organization_id: string;
     is_hourly: boolean;
+    organization_id: string;
 }
 
 export interface UserMembershipChanged {
     change_type: ChangeType;
-    user_id: string;
     organization_id: string;
+    user_id: string;
 }
 
 export interface ReleaseNotification {
@@ -42,7 +42,7 @@ export interface SystemNotification {
     message?: string;
 }
 
-export type WebSocketMessageType = 'PlanChanged' | 'PlanOverage' | 'UserMembershipChanged' | 'ReleaseNotification' | 'SystemNotification' | `${string}Changed`;
+export type WebSocketMessageType = 'PlanChanged' | 'PlanOverage' | 'ReleaseNotification' | 'SystemNotification' | 'UserMembershipChanged' | `${string}Changed`;
 
 export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'PlanChanged'
     ? PlanChanged
@@ -57,8 +57,8 @@ export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'P
             : EntityChanged;
 
 export interface WebSocketMessage<T extends WebSocketMessageType> {
-    type: T;
     message: WebSocketMessageValue<T>;
+    type: T;
 }
 
 export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
@@ -69,6 +69,6 @@ export function isWebSocketMessageType(type: string): type is WebSocketMessageTy
     );
 }
 
-export function isEntityChangedType(message: { type: WebSocketMessageType; message: unknown }): message is WebSocketMessage<`${string}Changed`> {
+export function isEntityChangedType(message: { message: unknown; type: WebSocketMessageType }): message is WebSocketMessage<`${string}Changed`> {
     return message.type !== 'PlanChanged' && message.type !== 'UserMembershipChanged' && message.type.endsWith('Changed');
 }

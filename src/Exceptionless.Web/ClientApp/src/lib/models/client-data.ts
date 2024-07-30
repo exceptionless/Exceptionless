@@ -1,49 +1,49 @@
 export interface EnvironmentInfo {
-    processor_count?: number;
-    total_physical_memory?: number;
+    architecture?: string;
     available_physical_memory?: number;
     command_line?: string;
-    process_name?: string;
-    process_id?: string;
-    process_memory_size?: number;
-    thread_id?: string;
-    architecture?: string;
-    o_s_name?: string;
-    o_s_version?: string;
+    data?: Record<string, unknown>;
+    install_id?: string;
     ip_address?: string;
     machine_name?: string;
-    install_id?: string;
+    o_s_name?: string;
+    o_s_version?: string;
+    process_id?: string;
+    process_memory_size?: number;
+    process_name?: string;
+    processor_count?: number;
     runtime_version?: string;
-    data?: Record<string, unknown>;
+    thread_id?: string;
+    total_physical_memory?: number;
 }
 
-export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | string;
+export type LogLevel = 'debug' | 'error' | 'fatal' | 'info' | 'trace' | 'warn' | string;
 
 export interface IRequestInfoInfoData extends Record<string, unknown> {
     '@browser'?: string;
-    '@browser_version'?: string;
     '@browser_major_version'?: string;
+    '@browser_version'?: string;
     '@device'?: string;
-    '@os'?: string;
-    '@os_version'?: string;
-    '@os_major_version'?: string;
     '@is_bot'?: boolean;
+    '@os'?: string;
+    '@os_major_version'?: string;
+    '@os_version'?: string;
 }
 
 export interface RequestInfo {
-    user_agent?: string;
+    client_ip_address?: string;
+    cookies?: Record<string, string>;
+    data?: IRequestInfoInfoData;
+    headers?: Record<string, string[]>;
+    host?: string;
     http_method?: string;
     is_secure?: boolean;
-    host?: string;
-    port?: number;
     path?: string;
-    referrer?: string;
-    client_ip_address?: string;
-    headers?: Record<string, string[]>;
-    cookies?: Record<string, string>;
+    port?: number;
     post_data?: Record<string, unknown>;
     query_string?: Record<string, string>;
-    data?: IRequestInfoInfoData;
+    referrer?: string;
+    user_agent?: string;
 }
 
 export interface ISimpleErrorInfoData extends Record<string, unknown> {
@@ -51,11 +51,11 @@ export interface ISimpleErrorInfoData extends Record<string, unknown> {
 }
 
 export interface SimpleErrorInfo {
-    message?: string;
-    type?: string;
-    stack_trace?: string;
     data?: ISimpleErrorInfoData;
     inner?: SimpleErrorInfo;
+    message?: string;
+    stack_trace?: string;
+    type?: string;
 }
 
 export interface ITargetErrorData extends Record<string, string | undefined> {
@@ -69,13 +69,13 @@ export interface IErrorData extends Record<string, unknown> {
 }
 
 export interface InnerErrorInfo {
-    message?: string;
-    type?: string;
     code?: string;
     data?: IErrorData;
     inner?: InnerErrorInfo;
+    message?: string;
     stack_trace?: StackFrameInfo[];
     target_method?: MethodInfo;
+    type?: string;
 }
 
 export interface ErrorInfo extends InnerErrorInfo {
@@ -84,13 +84,13 @@ export interface ErrorInfo extends InnerErrorInfo {
 
 export interface MethodInfo {
     data?: Record<string, unknown>;
-    generic_arguments?: string[];
-    parameters?: ParameterInfo[];
-    is_signature_target?: boolean;
     declaring_namespace?: string;
     declaring_type?: string;
-    name?: string;
+    generic_arguments?: string[];
+    is_signature_target?: boolean;
     module_id?: number;
+    name?: string;
+    parameters?: ParameterInfo[];
 }
 
 export interface ParameterInfo {
@@ -102,28 +102,28 @@ export interface ParameterInfo {
 }
 
 export interface StackFrameInfo extends MethodInfo {
+    column?: number;
     file_name?: string;
     line_number?: number;
-    column?: number;
 }
 
 export interface ModuleInfo {
+    created_date?: Date;
     data?: Record<string, unknown>;
+    is_entry?: boolean;
+    modified_date?: Date;
     module_id?: number;
     name?: string;
     version?: string;
-    is_entry?: boolean;
-    created_date?: Date;
-    modified_date?: Date;
 }
 
 export interface UserInfo {
+    data?: Record<string, unknown>;
     identity?: string;
     name?: string;
-    data?: Record<string, unknown>;
 }
 
 export interface ManualStackingInfo {
-    title?: string;
     signature_data?: Record<string, string>;
+    title?: string;
 }

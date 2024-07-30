@@ -1,19 +1,19 @@
 <script lang="ts">
-    import ArrowDownIcon from '~icons/mdi/arrow-down';
-    import ArrowUpIcon from '~icons/mdi/arrow-up';
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ObjectDump from '$comp/ObjectDump.svelte';
-    import { Button } from '$comp/ui/button';
     import { Code, H4 } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import ArrowDownIcon from '~icons/mdi/arrow-down';
+    import ArrowUpIcon from '~icons/mdi/arrow-up';
 
     interface Props {
-        title: string;
-        data: unknown;
         canPromote?: boolean;
-        isPromoted?: boolean;
+        data: unknown;
         demote?: (title: string) => Promise<void>;
         excludedKeys?: string[];
+        isPromoted?: boolean;
         promote?: (title: string) => Promise<void>;
+        title: string;
     }
 
     let { canPromote = true, data, demote = async () => {}, excludedKeys = [], isPromoted = false, promote = async () => {}, title }: Props = $props();
@@ -63,7 +63,7 @@
     <div class="flex justify-between">
         <H4 class="mb-2">{title}</H4>
         <div class="flex justify-end gap-x-1">
-            <Button variant="outline" on:click={onToggleView}>Toggle View</Button>
+            <Button on:click={onToggleView} variant="outline">Toggle View</Button>
 
             <CopyToClipboardButton value={json}></CopyToClipboardButton>
 

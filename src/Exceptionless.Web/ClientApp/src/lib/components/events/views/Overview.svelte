@@ -1,11 +1,20 @@
 <script lang="ts">
-    import IconEmail from '~icons/mdi/email';
-    import IconFilter from '~icons/mdi/filter';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
+    import type { IFilter } from '$comp/filters/filters.svelte';
     import type { PersistentEvent } from '$lib/models/api';
-    import * as Table from '$comp/ui/table';
+
+    import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
+    import ClickableNumberFilter from '$comp/filters/ClickableNumberFilter.svelte';
+    import ClickableReferenceFilter from '$comp/filters/ClickableReferenceFilter.svelte';
+    import ClickableSessionFilter from '$comp/filters/ClickableSessionFilter.svelte';
+    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+    import ClickableTypeFilter from '$comp/filters/ClickableTypeFilter.svelte';
+    import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
     import Duration from '$comp/formatters/Duration.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+    import { A, H4 } from '$comp/typography';
+    import { Badge } from '$comp/ui/badge';
+    import { Button } from '$comp/ui/button';
+    import * as Table from '$comp/ui/table';
     import {
         getErrorType,
         getLocation,
@@ -15,27 +24,20 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '$lib/helpers/persistent-event';
+    import IconEmail from '~icons/mdi/email';
+    import IconFilter from '~icons/mdi/filter';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
+
+    import LogLevel from '../LogLevel.svelte';
     import SimpleStackTrace from '../SimpleStackTrace.svelte';
     import StackTrace from '../StackTrace.svelte';
-    import LogLevel from '../LogLevel.svelte';
-    import ClickableSessionFilter from '$comp/filters/ClickableSessionFilter.svelte';
-    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
-    import ClickableReferenceFilter from '$comp/filters/ClickableReferenceFilter.svelte';
-    import ClickableNumberFilter from '$comp/filters/ClickableNumberFilter.svelte';
-    import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
-    import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import { A, H4 } from '$comp/typography';
-    import ClickableTypeFilter from '$comp/filters/ClickableTypeFilter.svelte';
-    import type { IFilter } from '$comp/filters/filters.svelte';
 
     interface Props {
-        event: PersistentEvent;
         changed: (filter: IFilter) => void;
+        event: PersistentEvent;
     }
 
-    let { event, changed }: Props = $props();
+    let { changed, event }: Props = $props();
 
     let hasError = $derived(hasErrorOrSimpleError(event));
     let errorType = $derived(hasError ? getErrorType(event) : null);
@@ -108,9 +110,9 @@
                 <Table.Head class="w-40 whitespace-nowrap">Reference</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     >{#if isSessionStart}
-                        <ClickableSessionFilter value={event.reference_id} {changed} />
+                        <ClickableSessionFilter {changed} value={event.reference_id} />
                     {:else}
-                        <ClickableReferenceFilter value={event.reference_id} {changed} />
+                        <ClickableReferenceFilter {changed} value={event.reference_id} />
                     {/if}</Table.Cell
                 >
                 <Table.Cell>{event.reference_id}</Table.Cell>
@@ -119,21 +121,21 @@
         {#each references as reference (reference.id)}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">{reference.name}</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter value={reference.id} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter {changed} value={reference.id} /></Table.Cell>
                 <Table.Cell>{reference.id}</Table.Cell>
             </Table.Row>
         {/each}
         {#if level}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Level</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="level" value={level} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="level" value={level} /></Table.Cell>
                 <Table.Cell class="flex items-center"><LogLevel {level}></LogLevel></Table.Cell>
             </Table.Row>
         {/if}
         {#if event.type !== 'error'}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableTypeFilter value={[event.type]} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableTypeFilter {changed} value={[event.type]} /></Table.Cell>
                 <Table.Cell>{event.type}</Table.Cell>
             </Table.Row>
         {/if}
@@ -141,7 +143,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="error.type" value={errorType} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="error.type" value={errorType} /></Table.Cell
                 >
                 <Table.Cell>{errorType}</Table.Cell>
             </Table.Row>
@@ -150,7 +152,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Source</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="source" value={event.source} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="source" value={event.source} /></Table.Cell
                 >
                 <Table.Cell>{event.source}</Table.Cell>
             </Table.Row>
@@ -158,21 +160,21 @@
         {#if !isSessionStart && event.value}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Value</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableNumberFilter term="value" value={event.value} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableNumberFilter {changed} term="value" value={event.value} /></Table.Cell>
                 <Table.Cell>{event.value}</Table.Cell>
             </Table.Row>
         {/if}
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="message" value={message} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="message" value={message} /></Table.Cell>
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if version}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Version</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="version" value={version} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter {changed} term="version" value={version} /></Table.Cell>
                 <Table.Cell>{version}</Table.Cell>
             </Table.Row>
         {/if}
@@ -190,7 +192,7 @@
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                     {#each event.tags as tag (tag)}
                         <Badge color="dark"
-                            ><ClickableStringFilter term="tag" value={tag} {changed} class="mr-1"
+                            ><ClickableStringFilter {changed} class="mr-1" term="tag" value={tag}
                                 ><IconFilter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
                             >{tag}</Badge
                         >
@@ -202,10 +204,10 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="path" value={requestUrlPath} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center gap-x-1"
-                    >{requestUrl}<Button href={requestUrl} target="_blank" variant="outline" size="icon" rel="noopener noreferrer" title="Open in new window"
+                    >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="icon" target="_blank" title="Open in new window" variant="outline"
                         ><IconOpenInNew /></Button
                     ></Table.Cell
                 >
@@ -222,7 +224,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Email</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter term="user.email" value={userEmail} {changed} /></Table.Cell
+                        ><ClickableStringFilter {changed} term="user.email" value={userEmail} /></Table.Cell
                     >
                     <Table.Cell class="flex items-center"
                         >{userEmail}<A href="mailto:{userEmail}" title="Send email to {userEmail}"><IconEmail /></A></Table.Cell
@@ -233,7 +235,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Identity</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter term="user" value={userIdentity} {changed} /></Table.Cell
+                        ><ClickableStringFilter {changed} term="user" value={userIdentity} /></Table.Cell
                     >
                     <Table.Cell>{userIdentity}</Table.Cell>
                 </Table.Row>
@@ -242,7 +244,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Name</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter term="user.name" value={userName} {changed} /></Table.Cell
+                        ><ClickableStringFilter {changed} term="user.name" value={userName} /></Table.Cell
                     >
                     <Table.Cell>{userName}</Table.Cell>
                 </Table.Row>
@@ -251,7 +253,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Description</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter term="user.description" value={userDescription} {changed} /></Table.Cell
+                        ><ClickableStringFilter {changed} term="user.description" value={userDescription} /></Table.Cell
                     >
                     <Table.Cell>{userDescription}</Table.Cell>
                 </Table.Row>

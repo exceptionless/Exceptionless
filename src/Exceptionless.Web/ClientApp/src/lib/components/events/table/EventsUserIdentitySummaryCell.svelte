@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { SummaryModel, SummaryTemplateKeys, EventSummaryModel } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     interface Props {
         summary: SummaryModel<SummaryTemplateKeys>;
@@ -12,7 +12,7 @@
 </script>
 
 {#if name && identity}
-    <abbr title="{name} ({identity})" class="line-clamp-1">
+    <abbr class="line-clamp-1" title="{name} ({identity})">
         {name}
     </abbr>
 {:else if name || identity}

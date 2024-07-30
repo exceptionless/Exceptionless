@@ -2,12 +2,12 @@
     import * as Command from '$comp/ui/command';
 
     interface Props {
-        showApply: boolean;
-        showClear: boolean;
         apply: () => void;
         clear: () => void;
         close: () => void;
         remove: () => void;
+        showApply: boolean;
+        showClear: boolean;
     }
 
     let { apply, clear, close, remove, showApply, showClear }: Props = $props();

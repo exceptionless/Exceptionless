@@ -1,26 +1,27 @@
 <script lang="ts">
-    import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
-    import { createTable } from '@tanstack/svelte-table';
+    import type { EventSummaryModel, GetEventsMode, SummaryTemplateKeys } from '$lib/models/api';
     import type { Snippet } from 'svelte';
-    import { useEventListener } from 'runed';
 
     import * as DataTable from '$comp/data-table';
-    import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
-    import type { EventSummaryModel, GetEventsMode, SummaryTemplateKeys } from '$lib/models/api';
+    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener } from 'runed';
+
+    import { getTableContext } from './options.svelte';
 
     interface Props {
         filter: string;
-        pageFilter?: string;
         limit: number;
-        time: string;
         mode?: GetEventsMode;
-        toolbarChildren?: Snippet;
+        pageFilter?: string;
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
+        time: string;
+        toolbarChildren?: Snippet;
     }
 
-    let { filter, pageFilter = undefined, limit = $bindable(DEFAULT_LIMIT), time, mode = 'summary', rowclick, toolbarChildren }: Props = $props();
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ mode, limit });
+    let { filter, limit = $bindable(DEFAULT_LIMIT), mode = 'summary', pageFilter = undefined, rowclick, time, toolbarChildren }: Props = $props();
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit, mode });
     const table = createTable(context.options);
 
     const client = useFetchClient();
@@ -60,8 +61,8 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {table} {rowclick}></DataTable.Body>
+    <DataTable.Body {rowclick} {table}></DataTable.Body>
     <DataTable.Pagination {table}>
-        <DataTable.PageSize {table} bind:value={context.limit}></DataTable.PageSize>
+        <DataTable.PageSize bind:value={context.limit} {table}></DataTable.PageSize>
     </DataTable.Pagination>
 </DataTable.Root>

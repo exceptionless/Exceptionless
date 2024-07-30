@@ -1,13 +1,13 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
     type TData = unknown;
 </script>
 
-<script lang="ts" generics="TData">
-    import IconViewColumn from '~icons/mdi/view-column';
+<script generics="TData" lang="ts">
+    import type { Table } from '@tanstack/svelte-table';
+
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-
-    import type { Table } from '@tanstack/svelte-table';
+    import IconViewColumn from '~icons/mdi/view-column';
 
     interface Props {
         table: Table<TData>;
@@ -18,7 +18,7 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-        <Button variant="outline" size="sm" class="h-8" builders={[builder]}>
+        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
             <IconViewColumn class="mr-2 h-4 w-4" />
             View
         </Button>

@@ -1,7 +1,8 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { Stack } from '$lib/models/api';
-import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
+
 import { accessToken } from '$api/auth.svelte';
+import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 export const queryKeys = {
     all: ['Stack'] as const,
@@ -20,7 +21,6 @@ export async function prefetchStack(props: GetStackByIdProps) {
 
     const queryClient = useQueryClient();
     await queryClient.prefetchQuery<Stack, ProblemDetails>({
-        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
@@ -32,14 +32,14 @@ export async function prefetchStack(props: GetStackByIdProps) {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.id(props.id)
     });
 }
 
 export function getStackByIdQuery(props: GetStackByIdProps) {
     return createQuery<Stack, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,
-        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
@@ -51,6 +51,7 @@ export function getStackByIdQuery(props: GetStackByIdProps) {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.id(props.id)
     }));
 }

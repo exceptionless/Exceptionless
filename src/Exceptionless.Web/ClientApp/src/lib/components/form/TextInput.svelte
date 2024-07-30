@@ -1,34 +1,34 @@
 <script lang="ts">
-    import type { Snippet } from 'svelte';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { Snippet } from 'svelte';
 
     import Input from '$comp/ui/input/input.svelte';
     import { Label } from '$comp/ui/label';
 
     interface Props {
-        name: string;
-        value: unknown;
-        problem?: ProblemDetails | null;
-        required?: boolean;
-        autocomplete?: string | null;
+        autocomplete?: null | string;
         label?: string | undefined;
         labelChildren?: Snippet;
-        minlength?: number | undefined;
         maxlength?: number | undefined;
+        minlength?: number | undefined;
+        name: string;
         placeholder?: string | undefined;
+        problem?: null | ProblemDetails;
+        required?: boolean;
+        value: unknown;
     }
 
     let {
-        name,
-        value = $bindable(),
-        problem = null,
-        required = false,
         autocomplete = null,
         label,
         labelChildren,
-        minlength,
         maxlength,
-        placeholder = 'Enter email address'
+        minlength,
+        name,
+        placeholder = 'Enter email address',
+        problem = null,
+        required = false,
+        value = $bindable()
     }: Props = $props();
     let error = $derived(problem?.errors?.[name]);
 
@@ -38,14 +38,14 @@
 </script>
 
 <div class="space-y-2">
-    <Label for={name} class={error ? 'text-destructive' : ''}>
+    <Label class={error ? 'text-destructive' : ''} for={name}>
         {label ?? name.charAt(0).toUpperCase() + name.slice(1)}
         {#if labelChildren}
             {@render labelChildren()}
         {/if}
     </Label>
-    <Input id={name} type="text" {autocomplete} {placeholder} {minlength} {maxlength} class="w-full" on:change={clearError} bind:value {required} />
+    <Input {autocomplete} bind:value class="w-full" id={name} {maxlength} {minlength} on:change={clearError} {placeholder} {required} type="text" />
     {#if error}
-        <Label for={name} class="text-[0.8rem] font-medium text-destructive">{error.join(' ')}</Label>
+        <Label class="text-[0.8rem] font-medium text-destructive" for={name}>{error.join(' ')}</Label>
     {/if}
 </div>

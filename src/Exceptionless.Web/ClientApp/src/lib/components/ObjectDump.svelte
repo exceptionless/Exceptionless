@@ -1,11 +1,13 @@
 <script lang="ts">
-    import * as Table from '$comp/ui/table';
     import type { Snippet } from 'svelte';
+
+    import * as Table from '$comp/ui/table';
+
     import List from './typography/List.svelte';
 
     interface Props {
-        value: unknown;
         children?: Snippet<[unknown]>;
+        value: unknown;
     }
 
     let { value }: Props = $props();

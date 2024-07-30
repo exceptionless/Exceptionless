@@ -1,12 +1,12 @@
 import { IsOptional, ValidateNested } from 'class-validator';
 
-import { PersistentEvent as PersistentEventBase, StackStatus, UserDescription } from './api.generated';
-
 import type { EnvironmentInfo, ErrorInfo, LogLevel, ManualStackingInfo, RequestInfo, SimpleErrorInfo, UserInfo } from './client-data';
 
-export { Login, ViewOrganization, ViewProject, Stack, StackStatus, TokenResult, User } from './api.generated';
+import { PersistentEvent as PersistentEventBase, StackStatus, UserDescription } from './api.generated';
 
-export type PersistentEventKnownTypes = '404' | 'error' | 'heartbeat' | 'log' | 'usage' | 'session' | 'sessionend' | string;
+export { Login, Stack, StackStatus, TokenResult, User, ViewOrganization, ViewProject } from './api.generated';
+
+export type PersistentEventKnownTypes = '404' | 'error' | 'heartbeat' | 'log' | 'session' | 'sessionend' | 'usage' | string;
 
 export type KnownDataKeys =
     | '@environment'
@@ -16,8 +16,8 @@ export type KnownDataKeys =
     | '@request'
     | '@simple_error'
     | '@stack'
-    | '@submission_method'
     | '@submission_client'
+    | '@submission_method'
     | '@trace'
     | '@user'
     | '@user_description'
@@ -45,8 +45,8 @@ export interface IPersistentEventData extends Record<string, unknown> {
     '@request'?: RequestInfo;
     '@simple_error'?: SimpleErrorInfo;
     '@stack'?: ManualStackingInfo;
-    '@submission_method'?: string;
     '@submission_client'?: SubmissionClient;
+    '@submission_method'?: string;
     '@trace'?: string[];
     '@user'?: UserInfo;
     '@user_description'?: UserDescription;
@@ -56,25 +56,25 @@ export interface IPersistentEventData extends Record<string, unknown> {
 }
 
 export class PersistentEvent extends PersistentEventBase {
-    @IsOptional() type?: PersistentEventKnownTypes = undefined;
     @IsOptional() @ValidateNested() data?: IPersistentEventData = undefined;
+    @IsOptional() type?: PersistentEventKnownTypes = undefined;
 }
 
 export type SummaryTemplateKeys =
-    | 'event-summary'
-    | 'stack-summary'
-    | 'event-simple-summary'
-    | 'stack-simple-summary'
     | 'event-error-summary'
-    | 'stack-error-summary'
-    | 'event-session-summary'
-    | 'stack-session-summary'
-    | 'event-notfound-summary'
-    | 'stack-notfound-summary'
     | 'event-feature-summary'
-    | 'stack-feature-summary'
     | 'event-log-summary'
-    | 'stack-log-summary';
+    | 'event-notfound-summary'
+    | 'event-session-summary'
+    | 'event-simple-summary'
+    | 'event-summary'
+    | 'stack-error-summary'
+    | 'stack-feature-summary'
+    | 'stack-log-summary'
+    | 'stack-notfound-summary'
+    | 'stack-session-summary'
+    | 'stack-simple-summary'
+    | 'stack-summary';
 
 export type SummaryDataValue<T extends SummaryTemplateKeys> = T extends 'event-summary'
     ? EventSummaryData
@@ -101,11 +101,11 @@ export type SummaryDataValue<T extends SummaryTemplateKeys> = T extends 'event-s
                         : Record<string, unknown>;
 
 export interface EventSummaryData {
+    Identity?: string;
     Message?: string;
+    Name?: string;
     Source?: string;
     Type?: string;
-    Identity?: string;
-    Name?: string;
 }
 
 export interface StackSummaryData {
@@ -115,64 +115,64 @@ export interface StackSummaryData {
 
 export interface EventSimpleSummaryData {
     Message?: string;
+    Path?: string;
     Type?: string;
     TypeFullName?: string;
-    Path?: string;
 }
 
 export interface StackSimpleSummaryData {
+    Path?: string;
     Type?: string;
     TypeFullName?: string;
-    Path?: string;
 }
 
 export interface EventErrorSummaryData {
     Message?: string;
-    Type?: string;
-    TypeFullName?: string;
     Method?: string;
     MethodFullName?: string;
     Path?: string;
+    Type?: string;
+    TypeFullName?: string;
 }
 
 export interface StackErrorSummaryData {
     Message?: string;
-    Type?: string;
-    TypeFullName?: string;
     Method?: string;
     MethodFullName?: string;
     Path?: string;
+    Type?: string;
+    TypeFullName?: string;
 }
 
 export interface EventSessionSummaryData {
-    SessionId?: string;
-    SessionEnd?: string;
-    Value?: string;
-    Type?: 'session' | 'sessionend' | 'heartbeat';
     Identity?: string;
     Name?: string;
+    SessionEnd?: string;
+    SessionId?: string;
+    Type?: 'heartbeat' | 'session' | 'sessionend';
+    Value?: string;
 }
 
 export interface EventNotFoundSummaryData {
-    Source?: string;
     Identity?: string;
     Name?: string;
+    Source?: string;
 }
 
 export interface EventFeatureSummaryData {
-    Source?: string;
     Identity?: string;
-    Name?: string;
     IpAddress?: string[];
+    Name?: string;
+    Source?: string;
 }
 
 export interface EventLogSummaryData {
+    Identity?: string;
+    Level?: LogLevel;
     Message?: string;
+    Name?: string;
     Source?: string;
     SourceShortName?: string;
-    Level?: LogLevel;
-    Identity?: string;
-    Name?: string;
 }
 
 export interface StackLogSummaryData {
@@ -181,9 +181,9 @@ export interface StackLogSummaryData {
 }
 
 export interface SummaryModel<T extends SummaryTemplateKeys> {
+    data: SummaryDataValue<T>;
     id: string;
     template_key: T;
-    data: SummaryDataValue<T>;
 }
 
 export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
@@ -192,30 +192,30 @@ export interface EventSummaryModel<T extends SummaryTemplateKeys> extends Summar
 }
 
 export interface StackSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
-    title: string;
-    status: StackStatus;
     /** @format date-time */
     first_occurrence: string;
     /** @format date-time */
     last_occurrence: string;
+    status: StackStatus;
+    title: string;
     /** @format int64 */
     total: number;
     /** @format double */
-    users: number;
-    /** @format double */
     total_users: number;
+    /** @format double */
+    users: number;
 }
 
-export type GetEventsMode = 'summary' | 'stack_recent' | 'stack_frequent' | 'stack_new' | 'stack_users' | null;
+export type GetEventsMode = 'stack_frequent' | 'stack_new' | 'stack_recent' | 'stack_users' | 'summary' | null;
 
 export interface IGetEventsParams {
+    after?: string;
+    before?: string;
     filter?: string;
+    limit?: number;
+    mode?: GetEventsMode;
+    offset?: string;
+    page?: number;
     sort?: string;
     time?: string;
-    offset?: string;
-    mode?: GetEventsMode;
-    page?: number;
-    limit?: number;
-    before?: string;
-    after?: string;
 }

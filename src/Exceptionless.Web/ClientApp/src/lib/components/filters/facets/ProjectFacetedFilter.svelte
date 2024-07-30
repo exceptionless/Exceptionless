@@ -1,10 +1,12 @@
 <script lang="ts">
     import { getProjectsByOrganizationIdQuery } from '$api/projectsApi.svelte';
     import { ProjectFilter } from '$comp/filters/filters.svelte';
-    import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
+
     import type { FacetedFilterProps } from '.';
 
-    let { title = 'Status', filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<ProjectFilter> = $props();
+    import MultiselectFacetedFilter from './base/MultiselectFacetedFilter.svelte';
+
+    let { filter, filterChanged, filterRemoved, title = 'Status', ...props }: FacetedFilterProps<ProjectFilter> = $props();
 
     const response = getProjectsByOrganizationIdQuery({
         get organizationId() {
@@ -13,8 +15,8 @@
     });
     const options = $derived(
         response.data?.map((project) => ({
-            value: project.id!,
-            label: project.name!
+            label: project.name!,
+            value: project.id!
         })) ?? []
     );
 
@@ -32,18 +34,18 @@
 </script>
 
 <MultiselectFacetedFilter
-    {title}
-    values={filter.value}
-    {options}
-    loading={response.isLoading}
-    noOptionsText="No projects found."
     changed={(values) => {
         filter.value = values;
         filterChanged(filter);
     }}
+    loading={response.isLoading}
+    noOptionsText="No projects found."
+    {options}
     remove={() => {
         filter.value = [];
         filterRemoved(filter);
     }}
+    {title}
+    values={filter.value}
     {...props}
 ></MultiselectFacetedFilter>

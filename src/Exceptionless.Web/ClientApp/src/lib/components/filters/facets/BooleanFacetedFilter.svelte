@@ -1,13 +1,14 @@
 <script lang="ts">
     import { BooleanFilter } from '$comp/filters/filters.svelte';
-    import BooleanFacetedFilter from './base/BooleanFacetedFilter.svelte';
+
     import type { FacetedFilterProps } from '.';
+
+    import BooleanFacetedFilter from './base/BooleanFacetedFilter.svelte';
 
     let { filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<BooleanFilter> = $props();
 </script>
 
 <BooleanFacetedFilter
-    value={filter.value}
     changed={(value) => {
         filter.value = value;
         filterChanged(filter);
@@ -16,5 +17,6 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    value={filter.value}
     {...props}
 ></BooleanFacetedFilter>

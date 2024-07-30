@@ -1,8 +1,10 @@
 <script lang="ts">
     import type { ErrorInfo } from '$lib/models/client-data';
-    import { getErrors, getStackFrame } from '$lib/helpers/persistent-event';
-    import StackTraceHeader from './StackTraceHeader.svelte';
+
     import { Code } from '$comp/typography';
+    import { getErrors, getStackFrame } from '$lib/helpers/persistent-event';
+
+    import StackTraceHeader from './StackTraceHeader.svelte';
 
     interface Props {
         error: ErrorInfo;

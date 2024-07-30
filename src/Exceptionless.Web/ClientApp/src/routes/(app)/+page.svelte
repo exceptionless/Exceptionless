@@ -1,20 +1,18 @@
 <script lang="ts">
-    import IconOpenInNew from '~icons/mdi/open-in-new';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
+    import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+    import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
+    import * as FacetedFilter from '$comp/faceted-filter';
+    import { toFacetedFilters } from '$comp/filters/facets';
+    import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import * as FacetedFilter from '$comp/faceted-filter';
-
-    import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
-    import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-
-    import { type IFilter, FilterSerializer, toFilter, DateFilter, filterRemoved, filterChanged, getDefaultFilters } from '$comp/filters/filters.svelte';
-    import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
 
-    let selectedEventId: string | null = $state(null);
+    let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
     }
@@ -44,25 +42,25 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Events</Card.Title>
+        <Card.Title class="p-6 pb-4 text-2xl" tag="h2">Events</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} bind:limit={limit.value} {time} {rowclick}>
+            <EventsDataTable bind:limit={limit.value} {filter} {rowclick} {time}>
                 {#snippet toolbarChildren()}
-                    <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
+                    <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}
             </EventsDataTable>
         </Card.Content>
     </Card.Root>
 </div>
 
-<Sheet.Root open={!!selectedEventId} onOpenChange={() => (selectedEventId = null)}>
+<Sheet.Root onOpenChange={() => (selectedEventId = null)} open={!!selectedEventId}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/event/{selectedEventId}" variant="ghost" size="sm" title="Open in new window"><IconOpenInNew /></Button
+                >Event Details <Button href="/event/{selectedEventId}" size="sm" title="Open in new window" variant="ghost"><IconOpenInNew /></Button
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer id={selectedEventId || ''} changed={onDrawerFilterChanged}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

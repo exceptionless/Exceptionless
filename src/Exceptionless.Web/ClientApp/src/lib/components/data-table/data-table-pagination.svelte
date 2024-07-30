@@ -1,16 +1,16 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
     type TData = unknown;
 </script>
 
-<script lang="ts" generics="TData">
-    import type { Snippet } from 'svelte';
+<script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
+    import type { Snippet } from 'svelte';
 
+    import Number from '$comp/formatters/Number.svelte';
     import { Button } from '$comp/ui/button';
+    import IconChevronDoubleLeft from '~icons/mdi/chevron-double-left';
     import IconChevronLeft from '~icons/mdi/chevron-left';
     import IconChevronRight from '~icons/mdi/chevron-right';
-    import IconChevronDoubleLeft from '~icons/mdi/chevron-double-left';
-    import Number from '$comp/formatters/Number.svelte';
 
     interface Props {
         children: Snippet;
@@ -35,16 +35,16 @@
         </div>
         <div class="flex items-center space-x-2">
             {#if table.getState().pagination.pageIndex > 1}
-                <Button variant="outline" class="hidden h-8 w-8 p-0 lg:flex" on:click={() => table.resetPageIndex(true)}>
+                <Button class="hidden h-8 w-8 p-0 lg:flex" on:click={() => table.resetPageIndex(true)} variant="outline">
                     <span class="sr-only">Go to first page</span>
                     <IconChevronDoubleLeft class="mr-2 h-4 w-4" />
                 </Button>
             {/if}
-            <Button variant="outline" class="h-8 w-8 p-0" disabled={!table.getCanPreviousPage()} on:click={() => table.previousPage()}>
+            <Button class="h-8 w-8 p-0" disabled={!table.getCanPreviousPage()} on:click={() => table.previousPage()} variant="outline">
                 <span class="sr-only">Go to previous page</span>
                 <IconChevronLeft class="h-4 w-4" />
             </Button>
-            <Button variant="outline" class="h-8 w-8 p-0" disabled={!table.getCanNextPage()} on:click={() => table.nextPage()}>
+            <Button class="h-8 w-8 p-0" disabled={!table.getCanNextPage()} on:click={() => table.nextPage()} variant="outline">
                 <span class="sr-only">Go to next page</span>
                 <IconChevronRight class="h-4 w-4" />
             </Button>

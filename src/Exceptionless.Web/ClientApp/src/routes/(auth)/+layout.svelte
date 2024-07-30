@@ -7,8 +7,8 @@
 
 <div class="flex h-screen">
     <div class="m-auto w-full rounded-md p-6 shadow-md lg:max-w-lg">
-        <img src={logo} class="mx-auto h-[100px] dark:hidden" alt="Exceptionless Logo" />
-        <img src={logoDark} class="mx-auto hidden h-[100px] dark:block" alt="Exceptionless Logo" />
+        <img alt="Exceptionless Logo" class="mx-auto h-[100px] dark:hidden" src={logo} />
+        <img alt="Exceptionless Logo" class="mx-auto hidden h-[100px] dark:block" src={logoDark} />
 
         {@render children()}
     </div>

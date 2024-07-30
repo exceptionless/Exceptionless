@@ -1,14 +1,15 @@
 <script lang="ts">
     import * as Card from '$comp/ui/card';
     import { Separator } from '$comp/ui/separator';
-    import { routes } from './routes';
+
     import SidebarNav from './(components)/sidebar-nav.svelte';
+    import { routes } from './routes';
 
     let { children } = $props();
 </script>
 
 <Card.Root>
-    <Card.Title tag="h2" class="p-6 pb-0 text-2xl">Settings</Card.Title>
+    <Card.Title class="p-6 pb-0 text-2xl" tag="h2">Settings</Card.Title>
     <Card.Description class="pl-6">Manage your account settings and set e-mail preferences.</Card.Description>
 
     <Separator class="mx-6 my-6 w-auto" />

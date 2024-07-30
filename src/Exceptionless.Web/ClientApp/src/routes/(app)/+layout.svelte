@@ -1,24 +1,22 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { MediaQuery } from 'runed';
-
-    import { page } from '$app/stores';
-
-    import NavbarLayout from './(components)/layouts/Navbar.svelte';
-    import SidebarLayout from './(components)/layouts/Sidebar.svelte';
-    import FooterLayout from './(components)/layouts/Footer.svelte';
 
     import { accessToken, gotoLogin } from '$api/auth.svelte';
-    import { WebSocketClient } from '$api/WebSocketClient.svelte';
-    import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
-    import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
-    import { validate } from '$lib/validation/validation';
-
-    import { useQueryClient } from '@tanstack/svelte-query';
-    import NavigationCommand from './(components)/NavigationCommand.svelte';
     import { getMeQuery } from '$api/usersApi.svelte';
-    import { routes, type NavigationItemContext } from '../routes';
+    import { WebSocketClient } from '$api/WebSocketClient.svelte';
+    import { page } from '$app/stores';
     import { persisted } from '$lib/helpers/persisted.svelte';
+    import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
+    import { validate } from '$lib/validation/validation';
+    import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
+    import { useQueryClient } from '@tanstack/svelte-query';
+    import { MediaQuery } from 'runed';
+
+    import { type NavigationItemContext, routes } from '../routes';
+    import FooterLayout from './(components)/layouts/Footer.svelte';
+    import NavbarLayout from './(components)/layouts/Navbar.svelte';
+    import SidebarLayout from './(components)/layouts/Sidebar.svelte';
+    import NavigationCommand from './(components)/NavigationCommand.svelte';
 
     interface Props {
         children: Snippet;
@@ -47,15 +45,15 @@
 
             ctx.response.meta.total = resultCountHeaderValue;
 
-            if (typeof ctx.response?.data === 'object' && (ctx.response.data as { resultCount?: number | null }).resultCount === undefined) {
-                (ctx.response.data as { resultCount?: number | null }).resultCount = !isNaN(resultCountHeaderValue) ? resultCountHeaderValue : null;
+            if (typeof ctx.response?.data === 'object' && (ctx.response.data as { resultCount?: null | number }).resultCount === undefined) {
+                (ctx.response.data as { resultCount?: null | number }).resultCount = !isNaN(resultCountHeaderValue) ? resultCountHeaderValue : null;
             }
         }
     });
 
     const queryClient = useQueryClient();
     async function onMessage(message: MessageEvent) {
-        const data: { type: WebSocketMessageType; message: unknown } = message.data ? JSON.parse(message.data) : null;
+        const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
 
         if (!data?.type) {
             return;
@@ -63,8 +61,8 @@
 
         document.dispatchEvent(
             new CustomEvent(data.type, {
-                detail: data.message,
-                bubbles: true
+                bubbles: true,
+                detail: data.message
             })
         );
 
@@ -107,8 +105,8 @@
             if (isReconnect) {
                 document.dispatchEvent(
                     new CustomEvent('refresh', {
-                        detail: 'WebSocket Connected',
-                        bubbles: true
+                        bubbles: true,
+                        detail: 'WebSocket Connected'
                     })
                 );
             }

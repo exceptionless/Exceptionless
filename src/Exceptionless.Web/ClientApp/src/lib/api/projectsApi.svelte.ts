@@ -1,14 +1,15 @@
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { ViewProject } from '$lib/models/api';
-import { useFetchClient, type FetchClientResponse, type ProblemDetails } from '@exceptionless/fetchclient';
+
 import { accessToken } from '$api/auth.svelte';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 export const queryKeys = {
     all: ['Project'] as const,
     allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
+    id: (id: string | undefined) => [...queryKeys.all, id] as const,
     organization: (id: string | undefined) => [...queryKeys.all, 'organization', id] as const,
-    organizationWithFilters: (id: string | undefined, filters: string) => [...queryKeys.organization(id), { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const
+    organizationWithFilters: (id: string | undefined, filters: string) => [...queryKeys.organization(id), { filters }] as const
 };
 
 export interface GetProjectByIdProps {
@@ -18,7 +19,6 @@ export interface GetProjectByIdProps {
 export function getProjectByIdQuery(props: GetProjectByIdProps) {
     return createQuery<ViewProject, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,
-        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewProject>(`projects/${props.id}`, {
@@ -30,13 +30,14 @@ export function getProjectByIdQuery(props: GetProjectByIdProps) {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.id(props.id)
     }));
 }
 
 export interface GetProjectsByOrganizationIdProps {
-    organizationId: string | undefined;
     limit?: number;
+    organizationId: string | undefined;
 }
 
 export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizationIdProps) {
@@ -45,14 +46,13 @@ export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizatio
     return createQuery<ViewProject[], ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.organizationId,
         queryClient,
-        queryKey: queryKeys.organization(props.organizationId),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewProject[]>(`organizations/${props.organizationId}/projects`, {
-                signal,
                 params: {
                     limit: props.limit ?? 1000
-                }
+                },
+                signal
             });
 
             if (response.ok) {
@@ -64,7 +64,8 @@ export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizatio
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.organization(props.organizationId)
     }));
 }
 
@@ -75,7 +76,6 @@ export interface PromoteProjectTabProps {
 export function mutatePromoteTab(props: PromoteProjectTabProps) {
     const queryClient = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>(() => ({
-        mutationKey: queryKeys.id(props.id),
         mutationFn: async (params: { name: string }) => {
             const client = useFetchClient();
             const response = await client.post(`projects/${props.id}/promotedtabs`, undefined, {
@@ -97,6 +97,7 @@ export function mutatePromoteTab(props: PromoteProjectTabProps) {
 
             throw response.problem;
         },
+        mutationKey: queryKeys.id(props.id),
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }
@@ -110,7 +111,6 @@ export interface DemoteProjectTabProps {
 export function mutateDemoteTab(props: DemoteProjectTabProps) {
     const queryClient = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>(() => ({
-        mutationKey: queryKeys.id(props.id),
         mutationFn: async ({ name }) => {
             const client = useFetchClient();
             const response = await client.delete(`projects/${props.id}/promotedtabs`, {
@@ -132,6 +132,7 @@ export function mutateDemoteTab(props: DemoteProjectTabProps) {
 
             throw response.problem;
         },
+        mutationKey: queryKeys.id(props.id),
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }

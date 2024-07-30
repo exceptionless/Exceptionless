@@ -1,16 +1,18 @@
 <script lang="ts">
     import { getOrganizationQuery } from '$api/organizationsApi.svelte';
     import { OrganizationFilter } from '$comp/filters/filters.svelte';
-    import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+
     import type { FacetedFilterProps } from '.';
 
-    let { filter, title = 'Status', filterChanged, filterRemoved, ...props }: FacetedFilterProps<OrganizationFilter> = $props();
+    import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+
+    let { filter, filterChanged, filterRemoved, title = 'Status', ...props }: FacetedFilterProps<OrganizationFilter> = $props();
 
     const response = getOrganizationQuery({ mode: 'stats' });
     const options = $derived(
         response.data?.map((organization) => ({
-            value: organization.id!,
-            label: organization.name!
+            label: organization.name!,
+            value: organization.id!
         })) ?? []
     );
 
@@ -28,18 +30,18 @@
 </script>
 
 <DropDownFacetedFilter
-    {title}
-    value={filter.value}
-    {options}
-    loading={response.isLoading}
-    noOptionsText="No organizations found."
     changed={(value) => {
         filter.value = value;
         filterChanged(filter);
     }}
+    loading={response.isLoading}
+    noOptionsText="No organizations found."
+    {options}
     remove={() => {
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    {title}
+    value={filter.value}
     {...props}
 ></DropDownFacetedFilter>
