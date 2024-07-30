@@ -67,14 +67,14 @@
     </Exec>
     <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
     <Message Importance="high" Text="Restoring dependencies using 'npm'. This may take several minutes..." />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci --force" />
   </Target>
 
   <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaPublish)' != 'true'">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci --force" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
-    <Exec WorkingDirectory="$(AngularSpaRoot)" Command="npm ci" />
+    <Exec WorkingDirectory="$(AngularSpaRoot)" Command="npm ci --force" />
     <Exec WorkingDirectory="$(AngularSpaRoot)" Command="npm run build" />
 
     <!-- Include the newly-built files in the publish output -->
