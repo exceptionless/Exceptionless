@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
-    import { goto } from '$app/navigation';
     import { accessToken, logout } from '$api/auth.svelte';
-    import Loading from '$comp/Loading.svelte';
+    import { goto } from '$app/navigation';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import { Button } from '$comp/ui/button';
+    import Loading from '$comp/Loading.svelte';
     import { H2 } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 
     let isAuthenticated = $derived(accessToken.value !== null);
     $effect(() => {
@@ -32,7 +32,7 @@
 </script>
 
 <H2 class="mb-2 mt-4 text-center leading-9">Log out?</H2>
-<form onsubmit={onLogout} class="space-y-2">
+<form class="space-y-2" onsubmit={onLogout}>
     <ErrorMessage message={problem.errors.general}></ErrorMessage>
     <div class="pt-2">
         <Button type="submit">

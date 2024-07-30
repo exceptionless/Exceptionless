@@ -1,20 +1,22 @@
 <script lang="ts">
-    import IconOpenInNew from '~icons/mdi/open-in-new';
-    import * as Table from '$comp/ui/table';
-    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
-    import type { PersistentEvent } from '$lib/models/api';
-    import ExtendedDataItem from '../ExtendedDataItem.svelte';
-    import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
-    import { Button } from '$comp/ui/button';
-    import { H4 } from '$comp/typography';
     import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { PersistentEvent } from '$lib/models/api';
+
+    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+    import { H4 } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import * as Table from '$comp/ui/table';
+    import { getRequestInfoPath, getRequestInfoUrl } from '$lib/helpers/persistent-event';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
+
+    import ExtendedDataItem from '../ExtendedDataItem.svelte';
 
     interface Props {
-        event: PersistentEvent;
         changed: (filter: IFilter) => void;
+        event: PersistentEvent;
     }
 
-    let { event, changed }: Props = $props();
+    let { changed, event }: Props = $props();
     let request = $derived(event.data?.['@request'] ?? {});
     let requestUrl = $derived(getRequestInfoUrl(event));
     let requestUrlPath = $derived(getRequestInfoPath(event));
@@ -57,10 +59,10 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="path" value={requestUrlPath} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center gap-x-1"
-                    >{requestUrl}<Button href={requestUrl} target="_blank" variant="ghost" size="sm" rel="noopener noreferrer" title="Open in new window"
+                    >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
                         ><IconOpenInNew /></Button
                     ></Table.Cell
                 >
@@ -69,7 +71,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="path" value={requestUrlPath} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell>{requestUrlPath}</Table.Cell>
             </Table.Row>
@@ -79,7 +81,7 @@
                 <Table.Head class="w-40 whitespace-nowrap">Referrer</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center gap-x-1"
-                    >{request.referrer}<a href={request.referrer} target="_blank" class="link" rel="noopener noreferrer" title="Open in new window"
+                    >{request.referrer}<a class="link" href={request.referrer} rel="noopener noreferrer" target="_blank" title="Open in new window"
                         ><IconOpenInNew /></a
                     ></Table.Cell
                 >
@@ -89,7 +91,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Client IP Address</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="ip" value={request.client_ip_address} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="ip" value={request.client_ip_address} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{request.client_ip_address}</Table.Cell>
             </Table.Row>
@@ -98,7 +100,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">User Agent</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="useragent" value={request.user_agent} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="useragent" value={request.user_agent} /></Table.Cell
                 >
                 <Table.Cell>{request.user_agent}</Table.Cell>
             </Table.Row>
@@ -106,19 +108,19 @@
         {#if device}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Device</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="device" value={device} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="device" value={device} /></Table.Cell>
                 <Table.Cell>{device}</Table.Cell>
             </Table.Row>
         {/if}
         {#if browser}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Browser</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="browser" value={browser} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="browser" value={browser} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{browser}
                     {#if browserMajorVersion}
                         <abbr title={browserVersion}>
-                            <ClickableStringFilter term="browser.major" value={browserMajorVersion} {changed} />{browserMajorVersion}
+                            <ClickableStringFilter {changed} term="browser.major" value={browserMajorVersion} />{browserMajorVersion}
                         </abbr>
                     {/if}</Table.Cell
                 >
@@ -127,12 +129,12 @@
         {#if os}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Browser OS</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="os" value={os} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="os" value={os} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{os}
                     {#if osMajorVersion}
                         <abbr title={osVersion}>
-                            <ClickableStringFilter term="os.major" value={osMajorVersion} {changed} />{osMajorVersion}
+                            <ClickableStringFilter {changed} term="os.major" value={osMajorVersion} />{osMajorVersion}
                         </abbr>
                     {/if}</Table.Cell
                 >
@@ -143,7 +145,7 @@
 
 {#if request.post_data}
     <div class="mt-2">
-        <ExtendedDataItem canPromote={false} title="Post Data" data={request.post_data}></ExtendedDataItem>
+        <ExtendedDataItem canPromote={false} data={request.post_data} title="Post Data"></ExtendedDataItem>
     </div>
 {/if}
 
@@ -189,6 +191,6 @@
 
 {#if request.data}
     <div class="mt-2">
-        <ExtendedDataItem canPromote={false} title="Additional Data" data={request.data} excludedKeys={excludedAdditionalData}></ExtendedDataItem>
+        <ExtendedDataItem canPromote={false} data={request.data} excludedKeys={excludedAdditionalData} title="Additional Data"></ExtendedDataItem>
     </div>
 {/if}

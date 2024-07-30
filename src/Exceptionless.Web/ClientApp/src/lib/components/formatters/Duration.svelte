@@ -1,13 +1,13 @@
 <script lang="ts">
-    import prettyMilliseconds from 'pretty-ms';
     import { getSetIntervalTime } from '$lib/helpers/dates';
+    import prettyMilliseconds from 'pretty-ms';
 
     interface Props {
         /**
          * If the value is a number, it should represent the time difference in milliseconds.
          * If the value is a string or a Date object, it will be parsed to a date and compared to the current time.
          */
-        value: Date | string | number | undefined;
+        value: Date | number | string | undefined;
     }
 
     let { value }: Props = $props();

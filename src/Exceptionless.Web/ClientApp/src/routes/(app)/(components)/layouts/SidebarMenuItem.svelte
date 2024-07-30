@@ -1,14 +1,15 @@
 <script lang="ts">
     import type { Component } from 'svelte';
     import type { HTMLAnchorAttributes } from 'svelte/elements';
+
     import { page } from '$app/stores';
 
-    type Props = HTMLAnchorAttributes & {
+    type Props = {
         icon: Component;
         isLargeScreen?: boolean;
         isSidebarOpen?: boolean;
         title: string;
-    };
+    } & HTMLAnchorAttributes;
 
     let { href, icon, isLargeScreen, isSidebarOpen = $bindable(), title, ...props }: Props = $props();
 

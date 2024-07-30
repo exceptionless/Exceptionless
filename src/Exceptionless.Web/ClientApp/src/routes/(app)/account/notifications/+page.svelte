@@ -1,13 +1,12 @@
 <script lang="ts">
     import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import { Separator } from '$comp/ui/separator';
-    import { Button } from '$comp/ui/button';
     import Loading from '$comp/Loading.svelte';
-
-    import { H3, H4, Muted } from '$comp/typography';
-    import { User } from '$lib/models/api';
-    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import Switch from '$comp/primitives/Switch.svelte';
+    import { H3, H4, Muted } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import { Separator } from '$comp/ui/separator';
+    import { User } from '$lib/models/api';
+    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 
     const data = $state(new User());
     data.email_notifications_enabled = true;
@@ -36,7 +35,7 @@
     </div>
     <Separator />
 
-    <form onsubmit={onSave} class="space-y-2">
+    <form class="space-y-2" onsubmit={onSave}>
         <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
         <H4 class="mb-4">Email Notifications</H4>
@@ -45,7 +44,7 @@
                 <H4>Communication emails</H4>
                 <Muted>Receive emails about your account activity.</Muted>
             </div>
-            <Switch id="email_notifications_enabled" bind:checked={data.email_notifications_enabled}></Switch>
+            <Switch bind:checked={data.email_notifications_enabled} id="email_notifications_enabled"></Switch>
         </div>
 
         <div class="pt-2">

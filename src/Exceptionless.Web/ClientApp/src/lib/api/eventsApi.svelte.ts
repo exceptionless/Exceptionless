@@ -1,14 +1,15 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { PersistentEvent } from '$lib/models/api';
-import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
+
 import { accessToken } from '$api/auth.svelte';
+import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 export const queryKeys = {
     all: ['PersistentEvent'] as const,
     allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
+    id: (id: string | undefined) => [...queryKeys.all, id] as const,
     stacks: (id: string | undefined) => [...queryKeys.all, 'stacks', id] as const,
-    stackWithFilters: (id: string | undefined, filters: string) => [...queryKeys.stacks(id), { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const
+    stackWithFilters: (id: string | undefined, filters: string) => [...queryKeys.stacks(id), { filters }] as const
 };
 
 export interface GetEventByIdProps {
@@ -18,7 +19,6 @@ export interface GetEventByIdProps {
 export function getEventByIdQuery(props: GetEventByIdProps) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,
-        queryKey: queryKeys.id(props.id),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${props.id}`, {
@@ -30,13 +30,14 @@ export function getEventByIdQuery(props: GetEventByIdProps) {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.id(props.id)
     }));
 }
 
 export interface GetEventsByStackIdProps {
-    stackId: string | undefined;
     limit?: number;
+    stackId: string | undefined;
 }
 
 export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
@@ -45,14 +46,13 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
     return createQuery<PersistentEvent[], ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.stackId,
         queryClient,
-        queryKey: queryKeys.stacks(props.stackId),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent[]>(`stacks/${props.stackId}/events`, {
-                signal,
                 params: {
                     limit: props.limit ?? 10
-                }
+                },
+                signal
             });
 
             if (response.ok) {
@@ -64,6 +64,7 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.stacks(props.stackId)
     }));
 }

@@ -1,8 +1,8 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-
-import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
 import type { User } from '$lib/models/api';
+
 import { accessToken } from '$api/auth.svelte';
+import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 export const queryKeys = {
     all: ['User'] as const,
@@ -16,7 +16,6 @@ export function getMeQuery() {
     return createQuery<User, ProblemDetails>(() => ({
         enabled: !!accessToken.value,
         queryClient,
-        queryKey: queryKeys.me(),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<User>('users/me', {
@@ -29,6 +28,7 @@ export function getMeQuery() {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: queryKeys.me()
     }));
 }

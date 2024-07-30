@@ -1,55 +1,56 @@
+import type { EventSummaryModel, GetEventsMode, IGetEventsParams, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+import type { FetchClientResponse } from '@exceptionless/fetchclient';
+
+import Summary from '$comp/events/summary/Summary.svelte';
+import NumberFormatter from '$comp/formatters/Number.svelte';
+import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+import { Checkbox } from '$comp/ui/checkbox';
+import { DEFAULT_LIMIT } from '$lib/helpers/api';
+import { persisted } from '$lib/helpers/persisted.svelte';
+import { nameof } from '$lib/utils';
 import {
     type ColumnDef,
-    getCoreRowModel,
     type ColumnSort,
+    getCoreRowModel,
     type PaginationState,
+    renderComponent,
+    type RowSelectionState,
     type TableOptions,
     type Updater,
-    type VisibilityState,
-    renderComponent,
-    type RowSelectionState
+    type VisibilityState
 } from '@tanstack/svelte-table';
 
-import type { EventSummaryModel, GetEventsMode, IGetEventsParams, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-import Summary from '$comp/events/summary/Summary.svelte';
-import { nameof } from '$lib/utils';
-import NumberFormatter from '$comp/formatters/Number.svelte';
 import EventsUserIdentitySummaryCell from './EventsUserIdentitySummaryCell.svelte';
-import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-import StackUsersSummaryCell from './StackUsersSummaryCell.svelte';
-import { DEFAULT_LIMIT } from '$lib/helpers/api';
-import type { FetchClientResponse } from '@exceptionless/fetchclient';
-import { Checkbox } from '$comp/ui/checkbox';
 import StackStatusCell from './StackStatusCell.svelte';
-import { persisted } from '$lib/helpers/persisted.svelte';
+import StackUsersSummaryCell from './StackUsersSummaryCell.svelte';
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(mode: GetEventsMode = 'summary'): ColumnDef<TSummaryModel>[] {
     const columns: ColumnDef<TSummaryModel>[] = [
         {
-            id: 'select',
-            header: ({ table }) =>
-                renderComponent(Checkbox, {
-                    checked: table.getIsAllRowsSelected() ? true : table.getIsSomeRowsSelected() ? 'indeterminate' : false,
-                    onCheckedChange: (checked: boolean | 'indeterminate') => table.getToggleAllRowsSelectedHandler()({ target: { checked } })
-                }),
             cell: (props) =>
                 renderComponent(Checkbox, {
-                    checked: props.row.getIsSelected() ? true : props.row.getIsSomeSelected() ? 'indeterminate' : false,
-                    disabled: !props.row.getCanSelect(),
-                    onCheckedChange: (checked: boolean | 'indeterminate') => props.row.getToggleSelectedHandler()({ target: { checked } }),
                     'aria-label': 'Select row',
-                    class: 'translate-y-[2px]'
+                    checked: props.row.getIsSelected() ? true : props.row.getIsSomeSelected() ? 'indeterminate' : false,
+                    class: 'translate-y-[2px]',
+                    disabled: !props.row.getCanSelect(),
+                    onCheckedChange: (checked: 'indeterminate' | boolean) => props.row.getToggleSelectedHandler()({ target: { checked } })
                 }),
             enableHiding: false,
             enableSorting: false,
+            header: ({ table }) =>
+                renderComponent(Checkbox, {
+                    checked: table.getIsAllRowsSelected() ? true : table.getIsSomeRowsSelected() ? 'indeterminate' : false,
+                    onCheckedChange: (checked: 'indeterminate' | boolean) => table.getToggleAllRowsSelectedHandler()({ target: { checked } })
+                }),
+            id: 'select',
             meta: {
                 class: 'w-6'
             }
         },
         {
-            header: 'Summary',
+            cell: (prop) => renderComponent(Summary, { summary: prop.row.original }),
             enableHiding: false,
-            cell: (prop) => renderComponent(Summary, { summary: prop.row.original })
+            header: 'Summary'
         }
     ];
 
@@ -57,74 +58,74 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     if (isEventSummary) {
         columns.push(
             {
-                id: 'user',
-                header: 'User',
+                cell: (prop) => renderComponent(EventsUserIdentitySummaryCell, { summary: prop.row.original }),
                 enableSorting: false,
+                header: 'User',
+                id: 'user',
                 meta: {
                     class: 'w-28'
-                },
-                cell: (prop) => renderComponent(EventsUserIdentitySummaryCell, { summary: prop.row.original })
+                }
             },
             {
-                id: 'date',
-                header: 'Date',
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
+                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+                header: 'Date',
+                id: 'date',
                 meta: {
                     class: 'w-36'
-                },
-                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() })
+                }
             }
         );
     } else {
         columns.push(
             {
-                id: 'status',
-                header: 'Status',
-                enableSorting: false,
-                meta: {
-                    class: 'w-36'
-                },
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
-                cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<string>() })
+                cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<string>() }),
+                enableSorting: false,
+                header: 'Status',
+                id: 'status',
+                meta: {
+                    class: 'w-36'
+                }
             },
             {
-                id: 'users',
+                cell: (prop) => renderComponent(StackUsersSummaryCell, { summary: prop.row.original }),
+                enableSorting: false,
                 header: 'Users',
-                enableSorting: false,
+                id: 'users',
                 meta: {
                     class: 'w-24'
-                },
-                cell: (prop) => renderComponent(StackUsersSummaryCell, { summary: prop.row.original })
+                }
             },
             {
-                id: 'events',
-                header: 'Events',
-                enableSorting: false,
-                meta: {
-                    class: 'w-24'
-                },
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-                cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() })
+                cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() }),
+                enableSorting: false,
+                header: 'Events',
+                id: 'events',
+                meta: {
+                    class: 'w-24'
+                }
             },
             {
-                id: 'first',
-                header: 'First',
-                enableSorting: false,
-                meta: {
-                    class: 'w-36'
-                },
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() })
-            },
-            {
-                id: 'last',
-                header: 'Last',
+                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
                 enableSorting: false,
+                header: 'First',
+                id: 'first',
                 meta: {
                     class: 'w-36'
-                },
+                }
+            },
+            {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() })
+                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+                enableSorting: false,
+                header: 'Last',
+                id: 'last',
+                meta: {
+                    class: 'w-36'
+                }
             }
         );
     }
@@ -150,8 +151,8 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     });
     const [sorting, setSorting] = createTableState<ColumnSort[]>([
         {
-            id: 'date',
-            desc: true
+            desc: true,
+            id: 'date'
         }
     ]);
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
@@ -170,8 +171,8 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         const currentPageInfo = pagination();
         parameters = {
             ...parameters,
-            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? (meta.links.previous?.before as string) : undefined,
             after: currentPageInfo.pageIndex > previousPageIndex ? (meta.links.next?.after as string) : undefined,
+            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? (meta.links.previous?.before as string) : undefined,
             limit: currentPageInfo.pageSize
         };
     };
@@ -181,8 +182,8 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
 
         parameters = {
             ...parameters,
-            before: undefined,
             after: undefined,
+            before: undefined,
             sort:
                 sorting().length > 0
                     ? sorting()
@@ -197,11 +198,17 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         get data() {
             return data;
         },
-        enableRowSelection: true,
         enableMultiRowSelection: true,
+        enableRowSelection: true,
         enableSortingRemoval: false,
-        manualSorting: true,
+        getCoreRowModel: getCoreRowModel(),
+        getRowId: (originalRow) => originalRow.id,
         manualPagination: true,
+        manualSorting: true,
+        onColumnVisibilityChange: setColumnVisibility,
+        onPaginationChange,
+        onRowSelectionChange: setRowSelection,
+        onSortingChange,
         get pageCount() {
             return pageCount;
         },
@@ -218,13 +225,7 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
             get sorting() {
                 return sorting();
             }
-        },
-        getCoreRowModel: getCoreRowModel(),
-        getRowId: (originalRow) => originalRow.id,
-        onColumnVisibilityChange: setColumnVisibility,
-        onPaginationChange,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange
+        }
     });
 
     return {
@@ -234,15 +235,15 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         set data(value) {
             data = value;
         },
-        get loading() {
-            return loading;
-        },
         get limit() {
             return parameters.limit ?? DEFAULT_LIMIT;
         },
         set limit(value) {
             parameters.limit = value;
             setPagination({ pageIndex: 0, pageSize: value });
+        },
+        get loading() {
+            return loading;
         },
         get meta() {
             return meta;

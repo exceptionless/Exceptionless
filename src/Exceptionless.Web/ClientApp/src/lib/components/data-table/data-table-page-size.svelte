@@ -1,28 +1,28 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
     type TData = unknown;
 </script>
 
-<script lang="ts" generics="TData">
+<script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
     import type { Selected } from 'bits-ui';
 
     import * as Select from '$comp/ui/select';
 
     interface Props {
+        defaultValue?: number;
         table: Table<TData>;
         value: number;
-        defaultValue?: number;
     }
 
-    let { table, value = $bindable(), defaultValue = 10 }: Props = $props();
+    let { defaultValue = 10, table, value = $bindable() }: Props = $props();
 
     const items = [
-        { value: 5, label: '5' },
-        { value: 10, label: '10' },
-        { value: 20, label: '20' },
-        { value: 30, label: '30' },
-        { value: 40, label: '40' },
-        { value: 50, label: '50' }
+        { label: '5', value: 5 },
+        { label: '10', value: 10 },
+        { label: '20', value: 20 },
+        { label: '30', value: 30 },
+        { label: '40', value: 40 },
+        { label: '50', value: 50 }
     ];
 
     let selected = $state(items.find((item) => item.value === value) || items[0]);
@@ -39,7 +39,7 @@
 
 <div class="flex items-center space-x-2">
     <p class="text-sm font-medium">Rows per page</p>
-    <Select.Root {items} bind:selected {onSelectedChange}>
+    <Select.Root bind:selected {items} {onSelectedChange}>
         <Select.Trigger class="h-8 w-[70px]">
             <Select.Value placeholder="Select page size" />
         </Select.Trigger>

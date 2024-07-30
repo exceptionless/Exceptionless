@@ -1,18 +1,20 @@
 <script lang="ts">
+    import type { IFilter } from '$comp/filters/filters.svelte';
     import type { PersistentEvent } from '$lib/models/api';
-    import * as Table from '$comp/ui/table';
+
     import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
-    import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import Bytes from '$comp/formatters/Bytes.svelte';
     import Number from '$comp/formatters/Number.svelte';
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import * as Table from '$comp/ui/table';
+
+    import ExtendedDataItem from '../ExtendedDataItem.svelte';
 
     interface Props {
-        event: PersistentEvent;
         changed: (filter: IFilter) => void;
+        event: PersistentEvent;
     }
 
-    let { event, changed }: Props = $props();
+    let { changed, event }: Props = $props();
     let environment = $derived(event.data?.['@environment'] ?? {});
 </script>
 
@@ -22,7 +24,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Machine Name</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="machine" value={environment.machine_name} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="machine" value={environment.machine_name} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.machine_name}</Table.Cell>
             </Table.Row>
@@ -31,7 +33,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">IP Address</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="ip" value={environment.ip_address} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="ip" value={environment.ip_address} /></Table.Cell
                 >
                 <Table.Cell>{environment.ip_address}</Table.Cell>
             </Table.Row>
@@ -68,7 +70,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">OS Name</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="os" value={environment.o_s_name} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="os" value={environment.o_s_name} /></Table.Cell
                 >
                 <Table.Cell>{environment.o_s_name}</Table.Cell>
             </Table.Row>
@@ -77,7 +79,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">OS Version</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="os.version" value={environment.o_s_version} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="os.version" value={environment.o_s_version} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.o_s_version}</Table.Cell>
             </Table.Row>
@@ -86,7 +88,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Architecture</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="architecture" value={environment.architecture} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="architecture" value={environment.architecture} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.architecture}</Table.Cell>
             </Table.Row>
@@ -124,6 +126,6 @@
 
 {#if environment.data}
     <div class="mt-2">
-        <ExtendedDataItem canPromote={false} title="Additional Data" data={environment.data}></ExtendedDataItem>
+        <ExtendedDataItem canPromote={false} data={environment.data} title="Additional Data"></ExtendedDataItem>
     </div>
 {/if}

@@ -1,19 +1,17 @@
 <script lang="ts">
-    import IconOpenInNew from '~icons/mdi/open-in-new';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
+    import { getEventsByStackIdQuery } from '$api/eventsApi.svelte';
+    import EventsDrawer from '$comp/events/EventsDrawer.svelte';
+    import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
+    import * as FacetedFilter from '$comp/faceted-filter';
+    import { toFacetedFilters } from '$comp/filters/facets';
+    import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import * as FacetedFilter from '$comp/faceted-filter';
-
-    import { getEventsByStackIdQuery } from '$api/eventsApi.svelte';
-    import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
-    import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-
-    import { type IFilter, FilterSerializer, toFilter, DateFilter, getDefaultFilters, filterChanged, filterRemoved } from '$comp/filters/filters.svelte';
-    import { toFacetedFilters } from '$comp/filters/facets';
     import { persisted } from '$lib/helpers/persisted.svelte';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
 
     let selectedStackId = $state<string>();
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
@@ -22,10 +20,10 @@
 
     // Load the latest event for the stack and display it in the sidebar.
     const eventsResponse = getEventsByStackIdQuery({
+        limit: 1,
         get stackId() {
             return selectedStackId;
-        },
-        limit: 1
+        }
     });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);
 
@@ -59,24 +57,24 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title tag="h2" class="p-6 pb-4 text-2xl">Issues</Card.Title>
+        <Card.Title class="p-6 pb-4 text-2xl" tag="h2">Issues</Card.Title>
         <Card.Content>
-            <EventsDataTable {filter} bind:limit={limit.value} {time} {rowclick} mode="stack_frequent" pageFilter="(type:404 OR type:error)">
+            <EventsDataTable bind:limit={limit.value} {filter} mode="stack_frequent" pageFilter="(type:404 OR type:error)" {rowclick} {time}>
                 {#snippet toolbarChildren()}
-                    <FacetedFilter.Root {facets} changed={onFilterChanged} remove={onFilterRemoved}></FacetedFilter.Root>
+                    <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}
             </EventsDataTable>
         </Card.Content>
     </Card.Root>
 </div>
 
-<Sheet.Root open={eventsResponse.isSuccess} onOpenChange={() => (selectedStackId = undefined)}>
+<Sheet.Root onOpenChange={() => (selectedStackId = undefined)} open={eventsResponse.isSuccess}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/event/{eventId}" variant="ghost" size="sm" title="Open in new window"><IconOpenInNew /></Button></Sheet.Title
+                >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><IconOpenInNew /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer id={eventId || ''} changed={onDrawerFilterChanged}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

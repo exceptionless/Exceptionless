@@ -1,20 +1,22 @@
 <script lang="ts">
     import { DateFilter } from '$comp/filters/filters.svelte';
-    import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+
     import type { FacetedFilterProps } from '.';
 
-    let { filter, title = 'Date Range', filterChanged, filterRemoved, ...props }: FacetedFilterProps<DateFilter> = $props();
+    import DropDownFacetedFilter from './base/DropDownFacetedFilter.svelte';
+
+    let { filter, filterChanged, filterRemoved, title = 'Date Range', ...props }: FacetedFilterProps<DateFilter> = $props();
 
     const options = [
-        { value: 'last hour', label: 'Last Hour' },
-        { value: 'last 24 hours', label: 'Last 24 Hours' },
-        { value: 'last week', label: 'Last Week' },
-        { value: 'last 30 days', label: 'Last 30 Days' },
-        { value: '', label: 'All Time' }
+        { label: 'Last Hour', value: 'last hour' },
+        { label: 'Last 24 Hours', value: 'last 24 hours' },
+        { label: 'Last Week', value: 'last week' },
+        { label: 'Last 30 Days', value: 'last 30 days' },
+        { label: 'All Time', value: '' }
     ];
 
     if (isCustomDate(filter)) {
-        options.push({ value: filter.value as string, label: filter.value as string });
+        options.push({ label: filter.value as string, value: filter.value as string });
     }
 
     function isCustomDate(filter: DateFilter) {
@@ -31,16 +33,16 @@
 </script>
 
 <DropDownFacetedFilter
-    {title}
-    value={filter.value as string}
-    {options}
     changed={(value) => {
         filter.value = value;
         filterChanged(filter);
     }}
+    {options}
     remove={() => {
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    {title}
+    value={filter.value as string}
     {...props}
 ></DropDownFacetedFilter>

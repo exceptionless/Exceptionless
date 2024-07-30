@@ -1,6 +1,7 @@
 <script lang="ts">
     import { A } from '$comp/typography';
     import * as Command from '$comp/ui/command';
+
     import type { NavigationItem } from '../../routes';
 
     let { open = $bindable(), routes }: { open: boolean; routes: NavigationItem[] } = $props();
@@ -20,7 +21,7 @@
             <Command.Group heading={group}>
                 {#each items as route (route.href)}
                     <Command.Item>
-                        <A href={route.href} class="flex gap-x-2" onclick={closeCommandWindow}>
+                        <A class="flex gap-x-2" href={route.href} onclick={closeCommandWindow}>
                             {#if route.icon}
                                 <svelte:component this={route.icon} />
                             {/if}

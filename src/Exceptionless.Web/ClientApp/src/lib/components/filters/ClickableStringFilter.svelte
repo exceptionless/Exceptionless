@@ -1,13 +1,14 @@
 <script lang="ts">
-    import IconFilter from '~icons/mdi/filter';
     import { A, type AProps } from '$comp/typography';
+    import IconFilter from '~icons/mdi/filter';
+
     import { StringFilter } from './filters.svelte';
 
-    type Props = AProps & {
+    type Props = {
         changed: (filter: StringFilter) => void;
         term: string;
-        value?: string | null;
-    };
+        value?: null | string;
+    } & AProps;
     let { changed, children, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;

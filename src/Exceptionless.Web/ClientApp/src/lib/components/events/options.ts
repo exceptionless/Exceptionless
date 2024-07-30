@@ -1,60 +1,61 @@
 import type { PersistentEventKnownTypes } from '$lib/models/api';
+
 import { StackStatus } from '$lib/models/api';
 
-export const eventTypes: { value: PersistentEventKnownTypes; label: string }[] = [
+export const eventTypes: { label: string; value: PersistentEventKnownTypes }[] = [
     {
-        value: '404',
-        label: 'Not Found'
+        label: 'Not Found',
+        value: '404'
     },
     {
-        value: 'error',
-        label: 'Errors'
+        label: 'Errors',
+        value: 'error'
     },
     {
-        value: 'log',
-        label: 'Logs'
+        label: 'Logs',
+        value: 'log'
     },
     {
-        value: 'usage',
-        label: 'Feature Usage'
+        label: 'Feature Usage',
+        value: 'usage'
     },
     {
-        value: 'session',
-        label: 'Session Start'
+        label: 'Session Start',
+        value: 'session'
     },
     {
-        value: 'heartbeat',
-        label: 'Session Heartbeat'
+        label: 'Session Heartbeat',
+        value: 'heartbeat'
     },
     {
-        value: 'sessionend',
-        label: 'Session End'
+        label: 'Session End',
+        value: 'sessionend'
     }
 ];
 
-export const stackStatuses: { value: StackStatus; label: string }[] = [
+export const stackStatuses: { label: string; value: StackStatus }[] = [
     {
-        value: StackStatus.Open,
-        label: 'Open'
+        label: 'Open',
+        value: StackStatus.Open
     },
     {
-        value: StackStatus.Fixed,
-        label: 'Fixed'
+        label: 'Fixed',
+        value: StackStatus.Fixed
     },
     {
-        value: StackStatus.Regressed,
-        label: 'Regressed'
+        label: 'Regressed',
+        value: StackStatus.Regressed
     },
     {
-        value: StackStatus.Snoozed,
-        label: 'Snoozed'
+        label: 'Snoozed',
+        value: StackStatus.Snoozed
     },
     {
-        value: StackStatus.Ignored,
-        label: 'Ignored'
+        label: 'Ignored',
+        value: StackStatus.Ignored
     },
     {
-        value: StackStatus.Discarded,
-        label: 'Discarded'
+        label: 'Discarded',
+        value: StackStatus.Discarded
     }
 ];

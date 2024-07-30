@@ -1,5 +1,6 @@
 import type { PersistentEvent, ViewProject } from '$lib/models/api';
 import type { ErrorInfo, ParameterInfo, SimpleErrorInfo, StackFrameInfo } from '$lib/models/client-data';
+
 import { buildUrl } from './url';
 
 export function getLocation(event: PersistentEvent) {
@@ -40,17 +41,17 @@ export function getMessage(event: PersistentEvent) {
 }
 
 export type ErrorData = {
+    data: Record<string, unknown>;
+    message: string;
     title: string;
     type: string;
-    message: string;
-    data: Record<string, unknown>;
 };
 
 export function getErrorData(event: PersistentEvent): ErrorData[] {
     const exceptions = getErrorsFromEvent(event);
     return exceptions
-        .map((ex: SimpleErrorInfo | ErrorInfo, index: number) => {
-            const getAdditionalData = (error: SimpleErrorInfo | ErrorInfo) => {
+        .map((ex: ErrorInfo | SimpleErrorInfo, index: number) => {
+            const getAdditionalData = (error: ErrorInfo | SimpleErrorInfo) => {
                 if (!error.data) {
                     return;
                 }
@@ -72,16 +73,16 @@ export function getErrorData(event: PersistentEvent): ErrorData[] {
 
             const errorType = ex.type || 'Unknown';
             return <ErrorData>{
-                title: index === 0 ? 'Additional Data' : `${errorType} Additional Data`,
-                type: errorType,
+                data: data,
                 message: ex.message,
-                data: data
+                title: index === 0 ? 'Additional Data' : `${errorType} Additional Data`,
+                type: errorType
             };
         })
         .filter((errorData) => !!errorData) as ErrorData[];
 }
 
-function getErrorsFromEvent(event: PersistentEvent): SimpleErrorInfo[] | ErrorInfo[] {
+function getErrorsFromEvent(event: PersistentEvent): ErrorInfo[] | SimpleErrorInfo[] {
     const error = event.data?.['@error'];
     if (error) {
         return getErrors(error);
@@ -91,7 +92,7 @@ function getErrorsFromEvent(event: PersistentEvent): SimpleErrorInfo[] | ErrorIn
     return getErrors(simpleError);
 }
 
-export function getErrors<T extends SimpleErrorInfo | ErrorInfo>(error: T | undefined): T[] {
+export function getErrors<T extends ErrorInfo | SimpleErrorInfo>(error: T | undefined): T[] {
     const errors: T[] = [];
     let current: T | undefined = error;
     while (current) {
@@ -212,7 +213,7 @@ export function getStackFrame(frame: StackFrameInfo) {
     return result;
 }
 
-function getStackTraceHeader<T extends SimpleErrorInfo | ErrorInfo>(errors: T[]) {
+function getStackTraceHeader<T extends ErrorInfo | SimpleErrorInfo>(errors: T[]) {
     let header = '';
     errors.forEach((error, index) => {
         if (index > 0) {
@@ -290,14 +291,14 @@ export function getStackTrace(event: PersistentEvent): string | undefined {
     return simpleError?.stack_trace;
 }
 
-export function hasErrorOrSimpleError(event: PersistentEvent | null): boolean {
+export function hasErrorOrSimpleError(event: null | PersistentEvent): boolean {
     return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
 }
 
 export type ExtendedDataItem = {
-    title: string;
-    promoted?: boolean;
     data: unknown;
+    promoted?: boolean;
+    title: string;
 };
 
 export function getExtendedDataItems(event: PersistentEvent, project?: ViewProject): ExtendedDataItem[] {
@@ -310,7 +311,7 @@ export function getExtendedDataItems(event: PersistentEvent, project?: ViewProje
         }
 
         const promoted = project?.promoted_tabs?.includes(key) ?? false;
-        items.push({ title: key, promoted, data });
+        items.push({ data, promoted, title: key });
     }
 
     return items;

@@ -1,19 +1,19 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
     type TData = unknown;
 </script>
 
-<script lang="ts" generics="TData">
-    import { FlexRender, type Cell, type Header, type Table as SvelteTable } from '@tanstack/svelte-table';
+<script generics="TData" lang="ts">
+    import * as Table from '$comp/ui/table';
+    import { type Cell, FlexRender, type Header, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     import DataTableColumnHeader from './data-table-column-header.svelte';
-    import * as Table from '$comp/ui/table';
 
     interface Props {
-        table: SvelteTable<TData>;
         rowclick?: (row: TData) => void;
+        table: SvelteTable<TData>;
     }
 
-    let { table, rowclick }: Props = $props();
+    let { rowclick, table }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
         const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
@@ -61,7 +61,7 @@
             {#each table.getRowModel().rows as row (row.id)}
                 <Table.Row>
                     {#each row.getVisibleCells() as cell (cell.id)}
-                        <Table.Cell on:click={() => onCellClick(cell)} class={getCellClass(cell)}>
+                        <Table.Cell class={getCellClass(cell)} on:click={() => onCellClick(cell)}>
                             <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
                         </Table.Cell>
                     {/each}

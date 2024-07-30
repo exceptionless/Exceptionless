@@ -1,34 +1,36 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import { getExtendedDataItems, hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
+    import type { IFilter } from '$comp/filters/filters.svelte';
     import type { PersistentEvent, ViewProject } from '$lib/models/api';
-    import Error from './views/Error.svelte';
-    import Overview from './views/Overview.svelte';
-    import Environment from './views/Environment.svelte';
-    import Request from './views/Request.svelte';
-    import TraceLog from './views/TraceLog.svelte';
-    import ExtendedData from './views/ExtendedData.svelte';
+
     import { getEventByIdQuery } from '$api/eventsApi.svelte';
-    import DateTime from '$comp/formatters/DateTime.svelte';
-    import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import { getProjectByIdQuery } from '$api/projectsApi.svelte';
     import { getStackByIdQuery } from '$api/stacksApi.svelte';
-    import PromotedExtendedData from './views/PromotedExtendedData.svelte';
+    import ErrorMessage from '$comp/ErrorMessage.svelte';
+    import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
+    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
+    import DateTime from '$comp/formatters/DateTime.svelte';
+    import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+    import { P } from '$comp/typography';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
-    import { P } from '$comp/typography';
-    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
-    import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import { getExtendedDataItems, hasErrorOrSimpleError } from '$lib/helpers/persistent-event';
+
+    import Environment from './views/Environment.svelte';
+    import Error from './views/Error.svelte';
+    import ExtendedData from './views/ExtendedData.svelte';
+    import Overview from './views/Overview.svelte';
+    import PromotedExtendedData from './views/PromotedExtendedData.svelte';
+    import Request from './views/Request.svelte';
+    import TraceLog from './views/TraceLog.svelte';
 
     interface Props {
-        id: string;
         changed: (filter: IFilter) => void;
+        id: string;
     }
 
-    let { id, changed }: Props = $props();
+    let { changed, id }: Props = $props();
 
-    function getTabs(event?: PersistentEvent | null, project?: ViewProject): TabType[] {
+    function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
             return [];
         }
@@ -90,7 +92,7 @@
         }
     });
 
-    type TabType = 'Overview' | 'Exception' | 'Environment' | 'Request' | 'Trace Log' | 'Extended Data' | string;
+    type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
     let activeTab = $state<TabType>('Overview');
     let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data));
@@ -121,10 +123,10 @@
                     <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                         ><ClickableProjectFilter
-                            organization={projectResponse.data.organization_id!}
-                            value={[projectResponse.data.id!]}
                             {changed}
                             class="mr-0"
+                            organization={projectResponse.data.organization_id!}
+                            value={[projectResponse.data.id!]}
                         /></Table.Cell
                     >
                     <Table.Cell>{projectResponse.data.name}</Table.Cell>
@@ -134,7 +136,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">Stack</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter term="stack" value={stackResponse.data.id} {changed} class="mr-0" /></Table.Cell
+                        ><ClickableStringFilter {changed} class="mr-0" term="stack" value={stackResponse.data.id} /></Table.Cell
                     >
                     <Table.Cell>{stackResponse.data.title}</Table.Cell>
                 </Table.Row>
@@ -142,7 +144,7 @@
         </Table.Body>
     </Table.Root>
 
-    <Tabs.Root value={activeTab} class="mb-4 mt-4">
+    <Tabs.Root class="mb-4 mt-4" value={activeTab}>
         <Tabs.List class="mb-4 w-full justify-normal">
             {#each tabs as tab (tab)}
                 <Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
@@ -152,19 +154,19 @@
         {#each tabs as tab (tab)}
             <Tabs.Content value={tab}>
                 {#if tab === 'Overview'}
-                    <Overview event={eventResponse.data} {changed}></Overview>
+                    <Overview {changed} event={eventResponse.data}></Overview>
                 {:else if tab === 'Exception'}
-                    <Error event={eventResponse.data} {changed}></Error>
+                    <Error {changed} event={eventResponse.data}></Error>
                 {:else if tab === 'Environment'}
-                    <Environment event={eventResponse.data} {changed}></Environment>
+                    <Environment {changed} event={eventResponse.data}></Environment>
                 {:else if tab === 'Request'}
-                    <Request event={eventResponse.data} {changed}></Request>
+                    <Request {changed} event={eventResponse.data}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventResponse.data.data?.['@trace']}></TraceLog>
                 {:else if tab === 'Extended Data'}
                     <ExtendedData event={eventResponse.data} project={projectResponse.data} promoted={onPromoted}></ExtendedData>
                 {:else}
-                    <PromotedExtendedData title={tab + ''} event={eventResponse.data} demoted={onDemoted}></PromotedExtendedData>
+                    <PromotedExtendedData demoted={onDemoted} event={eventResponse.data} title={tab + ''}></PromotedExtendedData>
                 {/if}
             </Tabs.Content>
         {/each}

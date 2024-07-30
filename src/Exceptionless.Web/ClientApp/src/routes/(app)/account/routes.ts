@@ -1,40 +1,40 @@
 import IconAccount from '~icons/mdi/account';
-import IconAppearance from '~icons/mdi/theme-light-dark';
+import IconSessions from '~icons/mdi/account-multiple';
 import IconNotifications from '~icons/mdi/bell';
 import IconPassword from '~icons/mdi/form-textbox-password';
-import IconSessions from '~icons/mdi/account-multiple';
+import IconAppearance from '~icons/mdi/theme-light-dark';
 
 import type { NavigationItem } from '../../routes';
 
 export const routes: NavigationItem[] = [
     {
         group: 'My Account',
-        title: 'Account',
         href: '/next/account/manage',
-        icon: IconAccount
+        icon: IconAccount,
+        title: 'Account'
     },
     {
         group: 'My Account',
-        title: 'Appearance',
         href: '/next/account/appearance',
-        icon: IconAppearance
+        icon: IconAppearance,
+        title: 'Appearance'
     },
     {
         group: 'My Account',
-        title: 'Notifications',
         href: '/next/account/notifications',
-        icon: IconNotifications
+        icon: IconNotifications,
+        title: 'Notifications'
     },
     {
         group: 'My Account',
-        title: 'Password and authentication',
         href: '/next/account/security',
-        icon: IconPassword
+        icon: IconPassword,
+        title: 'Password and authentication'
     },
     {
         group: 'My Account',
-        title: 'Sessions',
         href: '/next/account/sessions',
-        icon: IconSessions
+        icon: IconSessions,
+        title: 'Sessions'
     }
 ];

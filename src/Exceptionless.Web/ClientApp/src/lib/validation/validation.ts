@@ -1,8 +1,7 @@
+import { ProblemDetails } from '@exceptionless/fetchclient';
 import { validate as classValidate } from 'class-validator';
 
-import { ProblemDetails } from '@exceptionless/fetchclient';
-
-export async function validate(data: object | null): Promise<ProblemDetails | null> {
+export async function validate(data: null | object): Promise<null | ProblemDetails> {
     if (data === null) return null;
 
     const validationErrors = await classValidate(data);

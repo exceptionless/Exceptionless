@@ -1,31 +1,30 @@
 <script lang="ts">
-    import IconCheck from '~icons/mdi/check';
-
+    import * as FacetedFilter from '$comp/faceted-filter';
+    import Loading from '$comp/Loading.svelte';
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
-    import Loading from '$comp/Loading.svelte';
     import { cn } from '$lib/utils';
-    import * as FacetedFilter from '$comp/faceted-filter';
+    import IconCheck from '~icons/mdi/check';
 
     type Option = {
-        value: string;
         label: string;
+        value: string;
     };
 
     interface Props {
+        changed: (value?: string) => void;
+        loading?: boolean;
+        noOptionsText?: string;
+        open: boolean;
+        options: Option[];
+        remove: () => void;
         title: string;
         value?: string;
-        options: Option[];
-        noOptionsText?: string;
-        loading?: boolean;
-        open: boolean;
-        changed: (value?: string) => void;
-        remove: () => void;
     }
 
-    let { title, value, options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
+    let { changed, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, value }: Props = $props();
     let updatedValue = $state(value);
 
     $effect(() => {
@@ -72,9 +71,9 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} variant="outline" size="sm" class="h-8">
+        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
             {title}
-            <Separator orientation="vertical" class="mx-2 h-4" />
+            <Separator class="mx-2 h-4" orientation="vertical" />
             {#if loading}
                 <FacetedFilter.BadgeLoading />
             {:else if value !== undefined}
@@ -84,7 +83,7 @@
             {/if}
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="p-0" align="start" side="bottom">
+    <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>
             {#if options.length > 10}
                 <Command.Input placeholder={title} />
@@ -97,7 +96,7 @@
                 {#if options.length > 0}
                     <Command.Group>
                         {#each options as option (option.value)}
-                            <Command.Item id={option.value} value={option.value} onSelect={() => onValueSelected(option.value)}>
+                            <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
                                 <div
                                     class={cn(
                                         'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
@@ -115,12 +114,12 @@
             </Command.List>
         </Command.Root>
         <FacetedFilter.Actions
-            showApply={updatedValue !== value}
             apply={onApplyFilter}
-            showClear={!!updatedValue?.trim()}
             clear={onClearFilter}
-            {remove}
             close={() => (open = false)}
+            {remove}
+            showApply={updatedValue !== value}
+            showClear={!!updatedValue?.trim()}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

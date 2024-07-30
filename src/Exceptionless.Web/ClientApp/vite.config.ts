@@ -15,14 +15,20 @@ export default defineConfig({
             compiler: 'svelte'
         })
     ],
-    test: {
-        include: ['src/**/*.{test,spec}.{js,ts}']
-    },
     server: {
-        port: 5173,
-        strictPort: true,
         hmr: aspNetConfig.hmr,
+        port: 5173,
         proxy: {
+            '/_framework': {
+                changeOrigin: true,
+                secure: false,
+                target: aspNetConfig.url
+            },
+            '/_vs': {
+                changeOrigin: true,
+                secure: false,
+                target: aspNetConfig.url
+            },
             // proxy API requests to the ASP.NET backend
             '/api': {
                 changeOrigin: true,
@@ -50,22 +56,16 @@ export default defineConfig({
                 secure: false,
                 target: aspNetConfig.url
             },
-            '/_framework': {
-                changeOrigin: true,
-                secure: false,
-                target: aspNetConfig.url
-            },
-            '/_vs': {
-                changeOrigin: true,
-                secure: false,
-                target: aspNetConfig.url
-            },
             '^/(?!(next|api|docs|health|ready|_)).*': {
                 changeOrigin: true,
                 secure: false,
                 target: 'http://localhost:5100'
             }
-        }
+        },
+        strictPort: true
+    },
+    test: {
+        include: ['src/**/*.{test,spec}.{js,ts}']
     }
 });
 
@@ -94,13 +94,13 @@ function getAspNetConfig() {
     const hmrRemoteProtocol = codespaceName ? 'wss' : wsUrl.startsWith('wss') ? 'wss' : 'ws';
 
     return {
-        url,
-        wsUrl,
         hmr: {
-            protocol: hmrRemoteProtocol,
+            clientPort: hmrRemotePort,
             host: hmrRemoteHost,
             port: hmrRemotePort,
-            clientPort: hmrRemotePort
-        }
+            protocol: hmrRemoteProtocol
+        },
+        url,
+        wsUrl
     };
 }

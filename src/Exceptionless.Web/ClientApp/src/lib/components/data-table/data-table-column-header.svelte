@@ -1,21 +1,21 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
     type TData = unknown;
 </script>
 
-<script lang="ts" generics="TData">
+<script generics="TData" lang="ts">
+    import type { Column } from '@tanstack/svelte-table';
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import type { Column } from '@tanstack/svelte-table';
-    import IconArrowDownward from '~icons/mdi/arrow-downward';
-    import IconArrowUpward from '~icons/mdi/arrow-upward';
-    import IconUnfoldMore from '~icons/mdi/unfold-more-horizontal';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { cn } from '$lib/utils';
+    import IconArrowDownward from '~icons/mdi/arrow-downward';
+    import IconArrowUpward from '~icons/mdi/arrow-upward';
+    import IconUnfoldMore from '~icons/mdi/unfold-more-horizontal';
 
-    type Props = HTMLAttributes<Element> & {
+    type Props = {
         column: Column<TData, unknown>;
-    };
+    } & HTMLAttributes<Element>;
 
     let { children, class: className, column }: Props = $props();
 
@@ -40,7 +40,7 @@
     <div class={cn('flex items-center', className)}>
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
-                <Button variant="ghost" builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent">
+                <Button builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
                     {#if children}
                         {@render children()}
                     {/if}

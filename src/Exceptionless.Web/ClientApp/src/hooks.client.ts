@@ -1,6 +1,5 @@
-import { Exceptionless, toError } from '@exceptionless/browser';
-
 import { env } from '$env/dynamic/public';
+import { Exceptionless, toError } from '@exceptionless/browser';
 
 // If the PUBLIC_BASE_URL is set in local storage, we will use that instead of the one from the environment variables.
 // This allows you to target other environments from your browser.
@@ -18,8 +17,8 @@ await Exceptionless.startup((c) => {
 });
 
 /** @type {import('@sveltejs/kit').HandleClientError} */
-export async function handleError({ error, event, status, message }) {
-    console.warn({ source: 'client error handler', error, event, status, message });
+export async function handleError({ error, event, message, status }) {
+    console.warn({ error, event, message, source: 'client error handler', status });
     await Exceptionless.createException(toError(error ?? message))
         .setProperty('status', status)
         .submit();

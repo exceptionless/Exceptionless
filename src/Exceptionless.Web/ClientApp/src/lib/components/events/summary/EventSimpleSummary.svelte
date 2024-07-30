@@ -1,7 +1,8 @@
 <script lang="ts">
-    import IconChevronRight from '~icons/mdi/chevron-right';
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+
     import { A, Muted } from '$comp/typography';
+    import IconChevronRight from '~icons/mdi/chevron-right';
 
     interface Props {
         summary: SummaryModel<SummaryTemplateKeys>;

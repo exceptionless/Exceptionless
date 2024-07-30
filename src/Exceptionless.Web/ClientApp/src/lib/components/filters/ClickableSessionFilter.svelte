@@ -1,12 +1,13 @@
 <script lang="ts">
-    import IconFilter from '~icons/mdi/filter';
     import { A, type AProps } from '$comp/typography';
+    import IconFilter from '~icons/mdi/filter';
+
     import { SessionFilter } from './filters.svelte';
 
-    type Props = AProps & {
+    type Props = {
         changed: (filter: SessionFilter) => void;
         value: string;
-    };
+    } & AProps;
     let { changed, value, ...props }: Props = $props();
 
     const title = `Search ref.session:${value}`;

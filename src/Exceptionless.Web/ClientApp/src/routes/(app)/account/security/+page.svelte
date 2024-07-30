@@ -1,30 +1,27 @@
 <script lang="ts">
-    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
+    import {
+        enableOAuthLogin,
+        facebookClientId,
+        facebookLogin,
+        gitHubClientId,
+        githubLogin,
+        googleClientId,
+        googleLogin,
+        liveLogin,
+        microsoftClientId
+    } from '$api/auth.svelte';
+    import ErrorMessage from '$comp/ErrorMessage.svelte';
+    import PasswordInput from '$comp/form/PasswordInput.svelte';
+    import Loading from '$comp/Loading.svelte';
+    import { H3, Muted } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import { Separator } from '$comp/ui/separator';
+    import { User } from '$lib/models/api';
+    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
     import IconGoogle from '~icons/mdi/google';
     import IconMicrosoft from '~icons/mdi/microsoft';
-
-    import {
-        liveLogin,
-        facebookLogin,
-        googleLogin,
-        githubLogin,
-        googleClientId,
-        enableOAuthLogin,
-        facebookClientId,
-        gitHubClientId,
-        microsoftClientId
-    } from '$api/auth.svelte';
-
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import { Separator } from '$comp/ui/separator';
-    import { Button } from '$comp/ui/button';
-    import Loading from '$comp/Loading.svelte';
-
-    import { User } from '$lib/models/api';
-    import PasswordInput from '$comp/form/PasswordInput.svelte';
-    import { H3, Muted } from '$comp/typography';
 
     const data = $state(new User());
 
@@ -52,43 +49,43 @@
     </div>
     <Separator />
 
-    <form onsubmit={onSave} class="space-y-2">
+    <form class="space-y-2" onsubmit={onSave}>
         <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
         <PasswordInput
-            name="current_password"
-            label="Old password"
-            bind:value={data.password}
             autocomplete="current-password"
-            minlength={6}
+            bind:value={data.password}
+            label="Old password"
             maxlength={100}
-            required
-            {problem}
+            minlength={6}
+            name="current_password"
             placeholder=""
+            {problem}
+            required
         ></PasswordInput>
 
         <PasswordInput
-            name="new_password"
+            autocomplete="new-password"
+            bind:value={data.password}
             label="New password"
-            bind:value={data.password}
-            autocomplete="new-password"
-            minlength={6}
             maxlength={100}
-            required
-            {problem}
+            minlength={6}
+            name="new_password"
             placeholder=""
+            {problem}
+            required
         ></PasswordInput>
 
         <PasswordInput
-            name="confirm_new_password"
-            label="Confirm new password"
-            bind:value={data.password}
             autocomplete="new-password"
-            minlength={6}
+            bind:value={data.password}
+            label="Confirm new password"
             maxlength={100}
-            required
-            {problem}
+            minlength={6}
+            name="confirm_new_password"
             placeholder=""
+            {problem}
+            required
         ></PasswordInput>
 
         <Muted>Make sure it's at least 6 characters including a number and a lowercase letter.</Muted>

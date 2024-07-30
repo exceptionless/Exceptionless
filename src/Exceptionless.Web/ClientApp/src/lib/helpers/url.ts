@@ -1,4 +1,4 @@
-export function buildUrl(isSecure?: boolean, host?: string, port?: number, path?: string, queryString?: Record<string, string>): string | null {
+export function buildUrl(isSecure?: boolean, host?: string, port?: number, path?: string, queryString?: Record<string, string>): null | string {
     if (!host) {
         return null;
     }

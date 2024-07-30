@@ -1,20 +1,20 @@
 import type { Component } from 'svelte';
+
 import {
+    type BooleanFilter,
+    type DateFilter,
+    type IFilter,
     KeywordFilter,
+    type NumberFilter,
     OrganizationFilter,
     ProjectFilter,
     ReferenceFilter,
     SessionFilter,
     StatusFilter,
-    TypeFilter,
-    type BooleanFilter,
-    type DateFilter,
-    type IFilter,
-    type NumberFilter,
     type StringFilter,
+    TypeFilter,
     type VersionFilter
 } from '../filters.svelte';
-
 import BooleanFacetedFilter from './BooleanFacetedFilter.svelte';
 import DateFacetedFilter from './DateFacetedFilter.svelte';
 import KeywordFacetedFilter from './KeywordFacetedFilter.svelte';
@@ -29,11 +29,11 @@ import TypeFacetedFilter from './TypeFacetedFilter.svelte';
 import VersionFacetedFilter from './VersionFacetedFilter.svelte';
 
 export type FacetedFilterProps<TFilter extends IFilter> = {
-    title: string;
-    open: boolean;
     filter: TFilter;
     filterChanged: (filter: TFilter) => void;
     filterRemoved: (filter: TFilter) => void;
+    open: boolean;
+    title: string;
 };
 
 export class FacetedFilter<TFilter extends IFilter> {

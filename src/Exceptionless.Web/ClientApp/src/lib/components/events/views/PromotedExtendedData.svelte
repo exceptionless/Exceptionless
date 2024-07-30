@@ -1,17 +1,18 @@
 <script lang="ts">
-    import { toast } from 'svelte-sonner';
+    import type { PersistentEvent } from '$lib/models/api';
 
     import { mutateDemoteTab } from '$api/projectsApi.svelte';
-    import type { PersistentEvent } from '$lib/models/api';
+    import { toast } from 'svelte-sonner';
+
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
 
     interface Props {
+        demoted: (name: string) => void;
         event: PersistentEvent;
         title: string;
-        demoted: (name: string) => void;
     }
 
-    let { event, title, demoted }: Props = $props();
+    let { demoted, event, title }: Props = $props();
 
     const demoteTab = mutateDemoteTab({
         get id() {

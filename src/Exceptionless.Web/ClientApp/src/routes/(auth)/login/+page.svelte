@@ -1,33 +1,31 @@
 <script lang="ts">
+    import {
+        enableAccountCreation,
+        enableOAuthLogin,
+        facebookClientId,
+        facebookLogin,
+        gitHubClientId,
+        githubLogin,
+        googleClientId,
+        googleLogin,
+        liveLogin,
+        login,
+        microsoftClientId
+    } from '$api/auth.svelte';
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
+    import ErrorMessage from '$comp/ErrorMessage.svelte';
+    import EmailInput from '$comp/form/EmailInput.svelte';
+    import PasswordInput from '$comp/form/PasswordInput.svelte';
+    import Loading from '$comp/Loading.svelte';
+    import { A, H2, Muted, P } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import { Login } from '$lib/models/api';
+    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
     import IconGoogle from '~icons/mdi/google';
     import IconMicrosoft from '~icons/mdi/microsoft';
-
-    import EmailInput from '$comp/form/EmailInput.svelte';
-    import PasswordInput from '$comp/form/PasswordInput.svelte';
-
-    import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
-    import {
-        login,
-        liveLogin,
-        facebookLogin,
-        googleLogin,
-        githubLogin,
-        enableAccountCreation,
-        googleClientId,
-        enableOAuthLogin,
-        facebookClientId,
-        gitHubClientId,
-        microsoftClientId
-    } from '$api/auth.svelte';
-    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
-    import { Login } from '$lib/models/api';
-    import Loading from '$comp/Loading.svelte';
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import { Button } from '$comp/ui/button';
-    import { A, H2, Muted, P } from '$comp/typography';
 
     const data = $state(new Login());
     data.invite_token = $page.url.searchParams.get('token');
@@ -52,20 +50,20 @@
 
 <H2 class="mb-2 mt-4 text-center leading-9">Log in to your account</H2>
 
-<form onsubmit={onLogin} class="space-y-2">
+<form class="space-y-2" onsubmit={onLogin}>
     <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
-    <EmailInput name="email" bind:value={data.email} autocomplete="email" required {problem}></EmailInput>
+    <EmailInput autocomplete="email" bind:value={data.email} name="email" {problem} required></EmailInput>
 
     <PasswordInput
-        name="password"
-        bind:value={data.password}
         autocomplete="current-password"
-        minlength={6}
+        bind:value={data.password}
         maxlength={100}
-        required
-        {problem}
+        minlength={6}
+        name="password"
         placeholder="Enter password"
+        {problem}
+        required
     >
         {#snippet labelChildren()}
             <Muted class="float-right">

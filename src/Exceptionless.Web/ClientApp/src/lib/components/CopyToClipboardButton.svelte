@@ -1,18 +1,18 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { toast } from 'svelte-sonner';
     import type { VariantProps } from 'tailwind-variants';
-    import IconContentCopy from '~icons/mdi/content-copy';
 
     import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
+    import IconContentCopy from '~icons/mdi/content-copy';
+    import { toast } from 'svelte-sonner';
 
-    type Props = ButtonProps & {
+    type Props = {
         children?: Snippet;
-        value?: string | null;
         size?: VariantProps<typeof buttonVariants>['size'];
-    };
+        value?: null | string;
+    } & ButtonProps;
 
-    let { children, title = 'Copy to Clipboard', value, size = 'icon' }: Props = $props();
+    let { children, size = 'icon', title = 'Copy to Clipboard', value }: Props = $props();
 
     async function copyToClipboard() {
         try {
@@ -25,7 +25,7 @@
 </script>
 
 <div>
-    <Button {title} {size} on:click={copyToClipboard}>
+    <Button on:click={copyToClipboard} {size} {title}>
         {#if children}
             {@render children()}
         {:else}

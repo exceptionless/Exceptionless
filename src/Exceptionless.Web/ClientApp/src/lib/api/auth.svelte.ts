@@ -1,11 +1,10 @@
+import type { Login, TokenResult } from '$lib/models/api';
+
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { env } from '$env/dynamic/public';
-
-import { useFetchClient } from '@exceptionless/fetchclient';
-
-import type { Login, TokenResult } from '$lib/models/api';
 import { AuthJSONSerializer, persisted } from '$lib/helpers/persisted.svelte';
+import { useFetchClient } from '@exceptionless/fetchclient';
 import { get } from 'svelte/store';
 
 export const accessToken = persisted('satellizer_token', null, new AuthJSONSerializer());
@@ -52,14 +51,14 @@ export async function liveLogin(redirectUrl?: string) {
     }
 
     await oauthLogin({
-        provider: 'live',
-        clientId: microsoftClientId,
         authUrl: 'https://login.live.com/oauth20_authorize.srf',
-        scope: 'wl.emails',
+        clientId: microsoftClientId,
         extraParams: {
             display: 'popup'
         },
-        redirectUrl
+        provider: 'live',
+        redirectUrl,
+        scope: 'wl.emails'
     });
 }
 
@@ -69,11 +68,11 @@ export async function facebookLogin(redirectUrl?: string) {
     }
 
     await oauthLogin({
-        provider: 'facebook',
-        clientId: facebookClientId,
         authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
-        scope: 'email',
-        redirectUrl
+        clientId: facebookClientId,
+        provider: 'facebook',
+        redirectUrl,
+        scope: 'email'
     });
 }
 
@@ -83,18 +82,18 @@ export async function googleLogin(redirectUrl?: string) {
     }
 
     await oauthLogin({
-        provider: 'google',
-        clientId: googleClientId,
         authUrl: 'https://accounts.google.com/o/oauth2/auth/oauthchooseaccount',
-        scope: 'openid profile email',
+        clientId: googleClientId,
         extraParams: {
-            state: encodeURIComponent(Math.random().toString(36).substring(2)),
             display: 'popup',
-            service: 'lso',
+            flowName: 'GeneralOAuthFlow',
             o2v: '1',
-            flowName: 'GeneralOAuthFlow'
+            service: 'lso',
+            state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
-        redirectUrl
+        provider: 'google',
+        redirectUrl,
+        scope: 'openid profile email'
     });
 }
 
@@ -104,39 +103,39 @@ export async function githubLogin(redirectUrl?: string) {
     }
 
     await oauthLogin({
-        provider: 'github',
-        clientId: gitHubClientId,
         authUrl: 'https://github.com/login/oauth/authorize',
-        scope: 'user:email',
-        popupOptions: { width: 1020, height: 618 },
-        redirectUrl
+        clientId: gitHubClientId,
+        popupOptions: { height: 618, width: 1020 },
+        provider: 'github',
+        redirectUrl,
+        scope: 'user:email'
     });
 }
 
 async function oauthLogin(options: {
-    provider: string;
-    clientId: string;
     authUrl: string;
-    scope: string;
-    popupOptions?: { width: number; height: number };
+    clientId: string;
     extraParams?: Record<string, string>;
+    popupOptions?: { height: number; width: number };
+    provider: string;
     redirectUrl?: string;
+    scope: string;
 }) {
     const width = options.popupOptions?.width || 500;
     const height = options.popupOptions?.height || 500;
     const features = {
-        width: width,
         height: height,
+        left: window.screenX + (window.outerWidth - width) / 2,
         top: window.screenY + (window.outerHeight - height) / 2.5,
-        left: window.screenX + (window.outerWidth - width) / 2
+        width: width
     };
 
     const redirectUrl = window.location.origin;
     const params = Object.assign(
         {
-            response_type: 'code',
             client_id: options.clientId,
             redirect_uri: redirectUrl,
+            response_type: 'code',
             scope: options.scope
         },
         options.extraParams
@@ -152,10 +151,10 @@ async function oauthLogin(options: {
 
     const client = useFetchClient();
     const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
-        state: data.state,
-        code: data.code,
         clientId: options.clientId,
-        redirectUri: redirectUrl
+        code: data.code,
+        redirectUri: redirectUrl,
+        state: data.state
     });
 
     if (response.ok && response.data?.token) {
@@ -164,7 +163,7 @@ async function oauthLogin(options: {
     }
 }
 
-function waitForUrl(popup: Window, redirectUri: string): Promise<{ state: string; code: string }> {
+function waitForUrl(popup: Window, redirectUri: string): Promise<{ code: string; state: string }> {
     return new Promise((resolve, reject) => {
         const polling = setInterval(() => {
             if (!popup || popup.closed || popup.closed === undefined) {
@@ -178,8 +177,8 @@ function waitForUrl(popup: Window, redirectUri: string): Promise<{ state: string
                         const query = Object.fromEntries(new URLSearchParams(popup.location.search.substring(1).replace(/\/$/, '')));
                         const hash = Object.fromEntries(new URLSearchParams(popup.location.hash.substring(1).replace(/[/$]/, '')));
                         const params = Object.assign({}, query, hash) as {
-                            state: string;
                             code: string;
+                            state: string;
                         };
 
                         if ('error' in params && (params as { error: string }).error) {

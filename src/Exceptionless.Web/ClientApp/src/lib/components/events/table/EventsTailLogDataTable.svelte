@@ -1,30 +1,31 @@
 <script lang="ts">
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import type { Snippet } from 'svelte';
-    import { useEventListener } from 'runed';
-    import { createTable } from '@tanstack/svelte-table';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
 
     import * as DataTable from '$comp/data-table';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Muted } from '$comp/typography';
-    import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
     import { ChangeType, type WebSocketMessageValue } from '$lib/models/websocket';
+    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener } from 'runed';
+
+    import { getTableContext } from './options.svelte';
 
     interface Props {
         filter: string;
         limit: number;
-        toolbarChildren?: Snippet;
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
+        toolbarChildren?: Snippet;
     }
 
     let { filter, limit = $bindable(DEFAULT_LIMIT), rowclick, toolbarChildren }: Props = $props();
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ mode: 'summary', limit }, (options) => ({
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit, mode: 'summary' }, (options) => ({
         ...options,
         columns: options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false })),
-        enableRowSelection: false,
         enableMultiRowSelection: false,
+        enableRowSelection: false,
         manualSorting: false
     }));
     const table = createTable(context.options);
@@ -50,8 +51,8 @@
         response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...context.parameters,
-                filter,
-                before
+                before,
+                filter
             }
         });
 
@@ -89,9 +90,9 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {table} {rowclick}></DataTable.Body>
+    <DataTable.Body {rowclick} {table}></DataTable.Body>
     <Muted class="flex flex-1 items-center justify-between">
-        <DataTable.PageSize {table} bind:value={context.limit}></DataTable.PageSize>
+        <DataTable.PageSize bind:value={context.limit} {table}></DataTable.PageSize>
         <Muted class="py-2 text-center">
             {#if response?.problem?.errors.general}
                 <ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>

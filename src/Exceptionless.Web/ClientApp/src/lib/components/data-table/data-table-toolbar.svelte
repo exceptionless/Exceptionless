@@ -1,10 +1,10 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
     type TData = unknown;
 </script>
 
-<script lang="ts" generics="TData">
-    import type { Snippet } from 'svelte';
+<script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
+    import type { Snippet } from 'svelte';
 
     import DataTableViewOptions from './data-table-view-options.svelte';
 

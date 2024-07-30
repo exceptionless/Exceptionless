@@ -1,20 +1,20 @@
 <script lang="ts">
-    import { toast } from 'svelte-sonner';
-    import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
+    import type { FacetedFilter } from '$comp/filters/facets';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
+    import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
-    import { Button } from '$comp/ui/button';
-    import type { IFilter } from '$comp/filters/filters.svelte';
-    import type { FacetedFilter } from '$comp/filters/facets';
+    import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
+    import { toast } from 'svelte-sonner';
 
     interface Props {
-        facets: FacetedFilter<IFilter>[];
         changed: (filter: IFilter) => void;
+        facets: FacetedFilter<IFilter>[];
         remove: (filter?: IFilter) => void;
     }
 
-    let { facets, changed, remove }: Props = $props();
+    let { changed, facets, remove }: Props = $props();
 
     let open = $state(false);
     let visible = $state<string[]>([]);
@@ -65,18 +65,18 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} variant="outline" size="sm" class="h-8">
+        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
             <IconAddCircleOutline class="mr-2 h-4 w-4" /> Filter
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="w-[200px] p-0" align="start" side="bottom">
+    <Popover.Content align="start" class="w-[200px] p-0" side="bottom">
         <Command.Root>
             <Command.Input placeholder={'Search...'} />
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each facets as facet (facet.filter.key)}
-                        <Command.Item value={facet.filter.key} onSelect={() => onFacetSelected(facet)}>{facet.title}</Command.Item>
+                        <Command.Item onSelect={() => onFacetSelected(facet)} value={facet.filter.key}>{facet.title}</Command.Item>
                     {/each}
                 </Command.Group>
             </Command.List>
@@ -95,6 +95,6 @@
 
 {#each facets as facet (facet.filter.key)}
     {#if isVisible(facet)}
-        <svelte:component this={facet.component} title={facet.title} open={facet.open} filter={facet.filter} {filterChanged} {filterRemoved} />
+        <svelte:component this={facet.component} filter={facet.filter} {filterChanged} {filterRemoved} open={facet.open} title={facet.title} />
     {/if}
 {/each}

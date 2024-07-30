@@ -1,20 +1,21 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { Switch } from '$comp/ui/switch';
+
     import Label from '$comp/ui/label/label.svelte';
+    import { Switch } from '$comp/ui/switch';
 
     interface Props {
-        children: Snippet;
         checked?: boolean;
+        children: Snippet;
         disabled: boolean;
         id: string;
     }
 
-    let { children, checked = $bindable(), disabled = false, id }: Props = $props();
+    let { checked = $bindable(), children, disabled = false, id }: Props = $props();
 </script>
 
 <div class="flex items-center space-x-2">
-    <Switch {id} bind:checked on:click {disabled} />
+    <Switch bind:checked {disabled} {id} on:click />
     <Label for={id}>
         {@render children()}
     </Label>

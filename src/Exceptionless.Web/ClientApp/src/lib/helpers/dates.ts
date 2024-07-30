@@ -30,12 +30,12 @@ export function getSetIntervalTime(value: Date | string): number {
 
     const unit = getRelativeTimeFormatUnit(getDifferenceInSeconds(value));
     switch (unit) {
-        case 'seconds':
-            return 15 * 1000; // update every 15 seconds
-        case 'minutes':
-            return minute * 1000; // update every minute
         case 'hours':
             return hour * 1000; // update every hour
+        case 'minutes':
+            return minute * 1000; // update every minute
+        case 'seconds':
+            return 15 * 1000; // update every 15 seconds
         default:
             return day * 1000; // update every day
     }

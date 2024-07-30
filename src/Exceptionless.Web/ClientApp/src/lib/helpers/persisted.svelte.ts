@@ -1,17 +1,17 @@
 export abstract class Serializer<T> {
     abstract deserialize(item: string): T;
-    abstract serialize(value: T): string | null;
+    abstract serialize(value: T): null | string;
 }
 
-export class AuthJSONSerializer extends Serializer<string | null> {
-    deserialize(item: string): string | null {
+export class AuthJSONSerializer extends Serializer<null | string> {
+    deserialize(item: string): null | string {
         if (item === 'null') {
             return null;
         }
 
         return item;
     }
-    serialize(value: string | null): string | null {
+    serialize(value: null | string): null | string {
         return value;
     }
 }
@@ -20,7 +20,7 @@ export class JSONSerializer<T> extends Serializer<T> {
     deserialize(item: string): T {
         return JSON.parse(item);
     }
-    serialize(value: T): string | null {
+    serialize(value: T): null | string {
         return JSON.stringify(value);
     }
 }

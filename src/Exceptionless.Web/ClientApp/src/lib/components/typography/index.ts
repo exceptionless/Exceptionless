@@ -1,6 +1,6 @@
 import type { Props as AProps } from './A';
-import A from './A.svelte';
 
+import A from './A.svelte';
 import Blockquote from './Blockquote.svelte';
 import Code from './Code.svelte';
 import H1 from './H1.svelte';

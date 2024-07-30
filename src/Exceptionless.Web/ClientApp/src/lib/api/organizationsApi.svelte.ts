@@ -1,7 +1,8 @@
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import type { ViewOrganization } from '$lib/models/api';
-import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
+
 import { accessToken } from '$api/auth.svelte';
+import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 export const queryKeys = {
     all: ['Organization'] as const,
@@ -19,14 +20,13 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
     return createQuery<ViewOrganization[], ProblemDetails>(() => ({
         enabled: !!accessToken.value,
         queryClient,
-        queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewOrganization[]>('organizations', {
-                signal,
                 params: {
                     mode: props.mode
-                }
+                },
+                signal
             });
 
             if (response.ok) {
@@ -38,6 +38,7 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
             }
 
             throw response.problem;
-        }
+        },
+        queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all
     }));
 }

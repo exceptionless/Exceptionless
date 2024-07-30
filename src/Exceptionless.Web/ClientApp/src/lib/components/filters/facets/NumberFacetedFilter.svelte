@@ -1,13 +1,14 @@
 <script lang="ts">
     import { NumberFilter } from '$comp/filters/filters.svelte';
-    import NumberFacetedFilter from './base/NumberFacetedFilter.svelte';
+
     import type { FacetedFilterProps } from '.';
+
+    import NumberFacetedFilter from './base/NumberFacetedFilter.svelte';
 
     let { filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<NumberFilter> = $props();
 </script>
 
 <NumberFacetedFilter
-    value={filter.value}
     changed={(value) => {
         filter.value = value;
         filterChanged(filter);
@@ -16,5 +17,6 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    value={filter.value}
     {...props}
 ></NumberFacetedFilter>

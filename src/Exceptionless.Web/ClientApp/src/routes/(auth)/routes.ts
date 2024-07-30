@@ -6,16 +6,16 @@ import type { NavigationItem, NavigationItemContext } from '../routes';
 export const routes: NavigationItem[] = [
     {
         group: 'Session',
-        title: 'Log in',
         href: '/next/login',
         icon: IconLogin,
-        show: (context: NavigationItemContext) => !context.authenticated
+        show: (context: NavigationItemContext) => !context.authenticated,
+        title: 'Log in'
     },
     {
         group: 'Session',
-        title: 'Log out',
         href: '/next/logout',
         icon: IconLogout,
-        show: (context: NavigationItemContext) => context.authenticated
+        show: (context: NavigationItemContext) => context.authenticated,
+        title: 'Log out'
     }
 ];

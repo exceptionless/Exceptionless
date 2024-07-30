@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { SummaryModel, SummaryTemplateKeys, StackSummaryModel } from '$lib/models/api';
+    import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     interface Props {
         summary: SummaryModel<SummaryTemplateKeys>;

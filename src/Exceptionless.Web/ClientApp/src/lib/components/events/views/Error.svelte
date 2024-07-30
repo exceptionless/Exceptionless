@@ -1,22 +1,24 @@
 <script lang="ts">
-    import * as Table from '$comp/ui/table';
+    import type { IFilter } from '$comp/filters/filters.svelte';
     import type { PersistentEvent } from '$lib/models/api';
-    import { getErrorData, getErrorType, getMessage, getStackTrace } from '$lib/helpers/persistent-event';
-    import SimpleStackTrace from '../SimpleStackTrace.svelte';
-    import StackTrace from '../StackTrace.svelte';
+
+    import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
-    import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
-    import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import { H4 } from '$comp/typography';
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import * as Table from '$comp/ui/table';
+    import { getErrorData, getErrorType, getMessage, getStackTrace } from '$lib/helpers/persistent-event';
+
+    import ExtendedDataItem from '../ExtendedDataItem.svelte';
+    import SimpleStackTrace from '../SimpleStackTrace.svelte';
+    import StackTrace from '../StackTrace.svelte';
 
     interface Props {
-        event: PersistentEvent;
         changed: (filter: IFilter) => void;
+        event: PersistentEvent;
     }
 
-    let { event, changed }: Props = $props();
+    let { changed, event }: Props = $props();
 
     let errorData = $derived(getErrorData(event));
     let errorType = $derived(getErrorType(event));
@@ -32,14 +34,14 @@
     <Table.Body>
         <Table.Row class="group">
             <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
-            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.type" value={errorType} {changed} /></Table.Cell>
+            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="error.type" value={errorType} /></Table.Cell>
             <Table.Cell>{errorType}</Table.Cell>
         </Table.Row>
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter term="error.message" value={message} {changed} /></Table.Cell
+                    ><ClickableStringFilter {changed} term="error.message" value={message} /></Table.Cell
                 >
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
@@ -47,7 +49,7 @@
         {#if code}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="error.code" value={code} {changed} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter {changed} term="error.code" value={code} /></Table.Cell>
                 <Table.Cell>{code}</Table.Cell>
             </Table.Row>
         {/if}
@@ -77,7 +79,7 @@
 
 {#each errorData as ed}
     <div class="mt-2">
-        <ExtendedDataItem canPromote={false} title={ed.title} data={ed.data}></ExtendedDataItem>
+        <ExtendedDataItem canPromote={false} data={ed.data} title={ed.title}></ExtendedDataItem>
     </div>
 {/each}
 

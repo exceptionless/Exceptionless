@@ -1,7 +1,8 @@
 <script lang="ts">
+    import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+
     import { A } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
-    import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
 
     interface Props {
         badgeClass: string;
