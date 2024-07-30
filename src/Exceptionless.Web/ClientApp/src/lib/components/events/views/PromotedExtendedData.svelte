@@ -19,17 +19,14 @@
         }
     });
 
-    function onDemote(title: string): void {
-        demoteTab.mutate({ name: title });
-    }
-
-    $effect(() => {
-        if (demoteTab.isError) {
-            toast.error(`An error occurred demoting tab ${demoteTab.variables.name}`);
-        } else if (demoteTab.isSuccess) {
-            demoted(demoteTab.variables.name);
+    async function onDemote(title: string): Promise<void> {
+        const response = await demoteTab.mutateAsync({ name: title });
+        if (response.ok) {
+            demoted(title);
+        } else {
+            toast.error(`An error occurred demoting tab ${title}`);
         }
-    });
+    }
 </script>
 
-<ExtendedDataItem {title} isPromoted={true} data={event.data?.[title]} demote={onDemote}></ExtendedDataItem>
+<ExtendedDataItem data={event.data?.[title]} demote={onDemote} isPromoted={true} {title}></ExtendedDataItem>

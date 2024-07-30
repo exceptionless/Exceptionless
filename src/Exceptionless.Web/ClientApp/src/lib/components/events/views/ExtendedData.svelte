@@ -21,24 +21,21 @@
         }
     });
 
-    function onPromote(title: string): void {
-        promoteTab.mutate({ name: title });
-    }
-
-    $effect(() => {
-        if (promoteTab.isError) {
-            toast.error(`An error occurred promoting tab ${promoteTab.variables.name}`);
-        } else if (promoteTab.isSuccess) {
-            promoted(promoteTab.variables.name);
+    async function onPromote(title: string): Promise<void> {
+        const response = await promoteTab.mutateAsync({ name: title });
+        if (response.ok) {
+            promoted(title);
+        } else {
+            toast.error(`An error occurred promoting tab ${title}`);
         }
-    });
+    }
 </script>
 
 <div class="space-y-4">
-    {#each items as { title, promoted, data }}
+    {#each items as { data, promoted, title }}
         {#if promoted === false}
             <div data-id={title}>
-                <ExtendedDataItem {title} {data} promote={onPromote}></ExtendedDataItem>
+                <ExtendedDataItem {data} promote={onPromote} {title}></ExtendedDataItem>
             </div>
         {/if}
     {/each}

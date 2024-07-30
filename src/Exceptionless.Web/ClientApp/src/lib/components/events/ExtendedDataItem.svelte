@@ -11,12 +11,12 @@
         data: unknown;
         canPromote?: boolean;
         isPromoted?: boolean;
+        demote?: (title: string) => Promise<void>;
         excludedKeys?: string[];
-        promote?: (title: string) => void;
-        demote?: (title: string) => void;
+        promote?: (title: string) => Promise<void>;
     }
 
-    let { title, data, canPromote = true, isPromoted = false, excludedKeys = [], promote = () => {}, demote = () => {} }: Props = $props();
+    let { canPromote = true, data, demote = async () => {}, excludedKeys = [], isPromoted = false, promote = async () => {}, title }: Props = $props();
 
     function getData(data: unknown, exclusions: string[]): unknown {
         if (typeof data !== 'object' || !(data instanceof Object)) {
@@ -69,9 +69,9 @@
 
             {#if canPromote}
                 {#if !isPromoted}
-                    <Button size="icon" on:click={() => promote(title)} title="Promote to Tab"><ArrowUpIcon /></Button>
+                    <Button on:click={async () => await promote(title)} size="icon" title="Promote to Tab"><ArrowUpIcon /></Button>
                 {:else}
-                    <Button size="icon" on:click={() => demote(title)} title="Demote Tab"><ArrowDownIcon /></Button>
+                    <Button on:click={async () => await demote(title)} size="icon" title="Demote Tab"><ArrowDownIcon /></Button>
                 {/if}
             {/if}
         </div>
