@@ -1,11 +1,14 @@
 <script lang="ts">
     import IconChevronRight from '~icons/mdi/chevron-right';
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '$lib/models/api';
-    import Muted from '$comp/typography/Muted.svelte';
-    import A from '$comp/typography/A.svelte';
+    import { A, Muted } from '$comp/typography';
 
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    const source = summary as EventSummaryModel<'event-simple-summary'>;
+    interface Props {
+        summary: SummaryModel<SummaryTemplateKeys>;
+    }
+
+    let { summary }: Props = $props();
+    let source = $derived(summary as EventSummaryModel<'event-simple-summary'>);
 </script>
 
 <div class="line-clamp-2">

@@ -1,71 +1,67 @@
 <script lang="ts">
-    import { createSvelteTable } from '@tanstack/svelte-table';
-    import { createEventDispatcher } from 'svelte';
-    import { writable, type Readable } from 'svelte/store';
-
-    import type { EventSummaryModel, GetEventsMode, IGetEventsParams, SummaryTemplateKeys } from '$lib/models/api';
-    import { FetchClient, type FetchClientResponse } from '$api/FetchClient';
-    import CustomEventMessage from '$comp/messaging/CustomEventMessage.svelte';
+    import { useFetchClient, type FetchClientResponse } from '@exceptionless/fetchclient';
+    import { createTable } from '@tanstack/svelte-table';
+    import type { Snippet } from 'svelte';
+    import { useEventListener } from 'runed';
 
     import * as DataTable from '$comp/data-table';
-    import { getOptions } from './options';
+    import { getTableContext } from './options.svelte';
     import { DEFAULT_LIMIT } from '$lib/helpers/api';
+    import type { EventSummaryModel, GetEventsMode, SummaryTemplateKeys } from '$lib/models/api';
 
-    export let filter: Readable<string>;
-    export let pageFilter: string | undefined = undefined;
-    export let limit: Readable<number>;
-    export let time: Readable<string>;
-    export let mode: GetEventsMode = 'summary';
+    interface Props {
+        filter: string;
+        pageFilter?: string;
+        limit: number;
+        time: string;
+        mode?: GetEventsMode;
+        toolbarChildren?: Snippet;
+        rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
+    }
 
-    const parameters = writable<IGetEventsParams>({ mode, limit: $limit });
-    const options = getOptions<EventSummaryModel<SummaryTemplateKeys>>(parameters);
-    const table = createSvelteTable(options);
+    let { filter, pageFilter = undefined, limit = $bindable(DEFAULT_LIMIT), time, mode = 'summary', rowclick, toolbarChildren }: Props = $props();
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ mode, limit });
+    const table = createTable(context.options);
 
-    const { getJSON, loading } = new FetchClient();
+    const client = useFetchClient();
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
-    parameters.subscribe(async () => await loadData());
-    filter.subscribe(async () => await loadData());
-    time.subscribe(async () => await loadData());
+
+    $effect(() => {
+        limit = context.limit;
+        loadData();
+    });
 
     async function loadData() {
-        if ($loading) {
+        if (client.loading) {
             return;
         }
 
-        response = await getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
-                ...$parameters,
-                filter: [pageFilter, $filter].filter(Boolean).join(' '),
-                time: $time
+                ...context.parameters,
+                filter: [pageFilter, filter].filter(Boolean).join(' '),
+                time
             }
         });
 
         if (response.ok) {
-            const limit = $parameters.limit ?? DEFAULT_LIMIT;
-            const total = (response.meta?.total as number) ?? 0;
-            options.update((options) => ({
-                ...options,
-                data: response.data || [],
-                page: $parameters.page ?? 0,
-                pageCount: Math.ceil(total / limit),
-                meta: response.meta
-            }));
-
-            $table.resetRowSelection();
+            context.data = response.data || [];
+            context.meta = response.meta;
+            table.resetRowSelection();
         }
     }
 
-    const dispatch = createEventDispatcher();
+    useEventListener(document, 'refresh', async () => await loadData());
 </script>
-
-<CustomEventMessage type="refresh" on:message={loadData}></CustomEventMessage>
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>
-        <slot name="toolbar" />
+        {#if toolbarChildren}
+            {@render toolbarChildren()}
+        {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {table} on:rowclick={(event) => dispatch('rowclick', event.detail)}></DataTable.Body>
+    <DataTable.Body {table} {rowclick}></DataTable.Body>
     <DataTable.Pagination {table}>
-        <DataTable.PageSize {table} bind:value={$limit}></DataTable.PageSize>
+        <DataTable.PageSize {table} bind:value={context.limit}></DataTable.PageSize>
     </DataTable.Pagination>
 </DataTable.Root>

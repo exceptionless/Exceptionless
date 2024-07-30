@@ -1,9 +1,13 @@
 <script lang="ts">
     import P from './typography/P.svelte';
 
-    export let message: string[] | string | undefined;
+    interface Props {
+        message?: string[] | string;
+    }
 
-    $: text = Array.isArray(message) ? message.join(', ') : message;
+    let { message }: Props = $props();
+
+    const text = $derived(Array.isArray(message) ? message.join(', ') : message);
 </script>
 
 {#if text}

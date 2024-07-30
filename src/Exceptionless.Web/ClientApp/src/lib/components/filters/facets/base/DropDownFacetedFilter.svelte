@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-    import { writable, type Writable } from 'svelte/store';
     import IconCheck from '~icons/mdi/check';
 
     import { Button } from '$comp/ui/button';
@@ -16,44 +14,42 @@
         label: string;
     };
 
-    export let loading: boolean = false;
-    export let title: string;
-    export let value: string | undefined;
-    export let options: Option[];
-    export let noOptionsText: string = 'No results found.';
-    export let open: Writable<boolean>;
+    interface Props {
+        title: string;
+        value?: string;
+        options: Option[];
+        noOptionsText?: string;
+        loading?: boolean;
+        open: boolean;
+        changed: (value?: string) => void;
+        remove: () => void;
+    }
 
-    const updatedValue = writable<string | undefined>(value);
+    let { title, value, options, noOptionsText = 'No results found.', loading = false, open = $bindable(), changed, remove }: Props = $props();
+    let updatedValue = $state(value);
 
-    // bind:open doesn't trigger subscriptions when the variable changes. It only updates the value of the variable.
-    open.subscribe(() => updatedValue.set(value));
-    $: updatedValue.set(value);
+    $effect(() => {
+        updatedValue = value;
+    });
 
-    const dispatch = createEventDispatcher();
     function onApplyFilter() {
-        if ($updatedValue !== value) {
-            value = $updatedValue;
-            dispatch('changed', value);
+        if (updatedValue !== value) {
+            changed(updatedValue);
         }
 
-        open.set(false);
+        open = false;
     }
 
     export function onValueSelected(currentValue: string) {
-        if ($updatedValue === currentValue) {
-            updatedValue.set(undefined);
+        if (updatedValue === currentValue) {
+            updatedValue = undefined;
         } else {
-            updatedValue.set(currentValue);
+            updatedValue = currentValue;
         }
     }
 
     export function onClearFilter() {
-        updatedValue.set(undefined);
-    }
-
-    function onRemoveFilter(): void {
-        value = undefined;
-        dispatch('remove');
+        updatedValue = undefined;
     }
 
     function displayValue(value: string | undefined) {
@@ -74,7 +70,7 @@
     }
 </script>
 
-<Popover.Root bind:open={$open}>
+<Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
         <Button builders={[builder]} variant="outline" size="sm" class="h-8">
             {title}
@@ -105,7 +101,7 @@
                                 <div
                                     class={cn(
                                         'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                        $updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                        updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
                                     <IconCheck className={cn('h-4 w-4')} />
@@ -119,12 +115,12 @@
             </Command.List>
         </Command.Root>
         <FacetedFilter.Actions
-            showApply={$updatedValue !== value}
-            on:apply={onApplyFilter}
-            showClear={!!$updatedValue?.trim()}
-            on:clear={onClearFilter}
-            on:remove={onRemoveFilter}
-            on:close={() => open.set(false)}
+            showApply={updatedValue !== value}
+            apply={onApplyFilter}
+            showClear={!!updatedValue?.trim()}
+            clear={onClearFilter}
+            {remove}
+            close={() => (open = false)}
         ></FacetedFilter.Actions>
     </Popover.Content>
 </Popover.Root>

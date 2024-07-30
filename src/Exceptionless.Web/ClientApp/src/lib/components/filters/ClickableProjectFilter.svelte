@@ -1,26 +1,20 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
-    import { ProjectFilter } from './filters';
+    import { A, type AProps } from '$comp/typography';
+    import { ProjectFilter } from './filters.svelte';
 
-    export let organization: string;
-    export let value: string[];
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    type Props = AProps & {
+        changed: (filter: ProjectFilter) => void;
+        organization: string;
+        value: string[];
+    };
+    let { changed, organization, value, ...props }: Props = $props();
 
     const title = `Search project:${value}`;
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new ProjectFilter(organization, value)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+<A onclick={() => changed(new ProjectFilter(organization, value))} {title} {...props}>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

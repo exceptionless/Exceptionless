@@ -2,7 +2,11 @@
     import * as Select from '$comp/ui/select';
     import type { Selected } from 'bits-ui';
 
-    export let value: string;
+    interface Props {
+        value: string;
+    }
+
+    let { value = $bindable() }: Props = $props();
 
     const items = [
         { value: 'last hour', label: 'Last Hour' },
@@ -12,7 +16,7 @@
         { value: '', label: 'All Time' }
     ];
 
-    let selected = items.find((item) => item.value === value) || items[items.length - 1];
+    let selected = $derived(items.find((item) => item.value === value) || items[items.length - 1]);
 
     function onSelectedChange(selected: Selected<string> | undefined) {
         const newValue = selected?.value ?? '';
@@ -22,7 +26,7 @@
     }
 </script>
 
-<Select.Root {items} bind:selected {onSelectedChange}>
+<Select.Root {items} {selected} {onSelectedChange}>
     <Select.Trigger class="w-[135px]">
         <Select.Value placeholder="" />
     </Select.Trigger>

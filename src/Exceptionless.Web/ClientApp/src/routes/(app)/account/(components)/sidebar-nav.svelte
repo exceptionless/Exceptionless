@@ -6,10 +6,13 @@
     import { Button } from '$comp/ui/button';
     import { cn } from '$lib/utils';
     import type { NavigationItem } from '../../../routes';
+    import type { HTMLAttributes } from 'svelte/elements';
 
-    let className: string | undefined | null = undefined;
-    export let routes: NavigationItem[];
-    export { className as class };
+    type Props = HTMLAttributes<HTMLElement> & {
+        routes: NavigationItem[];
+    };
+
+    let { class: className, routes, ...props }: Props = $props();
 
     const [send, receive] = crossfade({
         duration: 250,
@@ -17,7 +20,7 @@
     });
 </script>
 
-<nav class={cn('flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1', className)}>
+<nav class={cn('flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1', className)} {...props}>
     {#each routes as route (route.href)}
         {@const isActive = $page.url.pathname === route.href}
 

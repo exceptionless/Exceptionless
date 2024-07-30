@@ -1,18 +1,20 @@
 <script lang="ts">
     import prettyMilliseconds from 'pretty-ms';
     import { getSetIntervalTime } from '$lib/helpers/dates';
-    import { onMount } from 'svelte';
 
-    /**
-     * @property value
-     * If the value is a number, it should represent the time difference in milliseconds.
-     * If the value is a string or a Date object, it will be parsed to a date and compared to the current time.
-     */
-    export let value: Date | string | number | undefined;
+    interface Props {
+        /**
+         * If the value is a number, it should represent the time difference in milliseconds.
+         * If the value is a string or a Date object, it will be parsed to a date and compared to the current time.
+         */
+        value: Date | string | number | undefined;
+    }
 
-    let durationText = '';
+    let { value }: Props = $props();
 
-    onMount(() => {
+    let durationText = $state('');
+
+    $effect(() => {
         function setDurationText() {
             const options = {
                 secondsDecimalDigits: 0,
@@ -38,7 +40,7 @@
         return () => clearInterval(interval);
     });
 
-    onMount(() => {
+    $effect(() => {
         function setDurationText() {
             if (typeof value === 'number') {
                 durationText = prettyMilliseconds(value, {

@@ -1,21 +1,36 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
+
     import Input from '$comp/ui/input/input.svelte';
     import { Label } from '$comp/ui/label';
-    import type { ProblemDetails } from '$lib/api/FetchClient';
 
-    export let name: string;
-    export let value: unknown;
-    export let problem: ProblemDetails | null = null;
-    export let required: boolean = false;
+    interface Props {
+        name: string;
+        value: unknown;
+        problem?: ProblemDetails | null;
+        required?: boolean;
+        autocomplete?: string | null;
+        label?: string | null;
+        labelChildren?: Snippet;
+        minlength?: number;
+        maxlength?: number;
+        placeholder?: string | null;
+    }
 
-    export let autocomplete: string | null = null;
-    export let label: string | null = null;
-    export let minlength: number | undefined;
-    export let maxlength: number | undefined;
-    export let placeholder: string | null = null;
-
-    $: error = problem?.errors?.[name];
-    $: label = label ?? name.charAt(0).toUpperCase() + name.slice(1);
+    let {
+        name,
+        value = $bindable(),
+        problem = null,
+        required = false,
+        autocomplete = null,
+        label = null,
+        labelChildren,
+        minlength,
+        maxlength,
+        placeholder = 'Enter password'
+    }: Props = $props();
+    let error = $derived(problem?.errors?.[name]);
 
     function clearError() {
         problem = problem?.clear(name) || null;
@@ -24,8 +39,10 @@
 
 <div class="space-y-2">
     <Label for={name} class={error ? 'text-destructive' : ''}>
-        {label}
-        <slot name="label" />
+        {label ?? name.charAt(0).toUpperCase() + name.slice(1)}
+        {#if labelChildren}
+            {@render labelChildren()}
+        {/if}
     </Label>
     <Input id={name} type="password" {autocomplete} {placeholder} {minlength} {maxlength} class="w-full" on:change={clearError} bind:value {required} />
     {#if error}

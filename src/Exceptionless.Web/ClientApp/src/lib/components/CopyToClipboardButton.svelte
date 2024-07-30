@@ -1,25 +1,35 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+    import { toast } from 'svelte-sonner';
     import type { VariantProps } from 'tailwind-variants';
     import IconContentCopy from '~icons/mdi/content-copy';
-    import { clickToCopyAction } from 'svelte-legos';
-    import { toast } from 'svelte-sonner';
-    import { Button, buttonVariants } from '$comp/ui/button';
 
-    export let title: string = 'Copy to Clipboard';
-    export let value: string | null | undefined;
-    export let size: VariantProps<typeof buttonVariants>['size'] = 'icon';
+    import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
 
-    function handleCopyDone() {
-        toast.success('Copy to clipboard succeeded');
-    }
+    type Props = ButtonProps & {
+        children?: Snippet;
+        value?: string | null;
+        size?: VariantProps<typeof buttonVariants>['size'];
+    };
 
-    function handleCopyError() {
-        toast.error('Copy to clipboard failed');
+    let { children, title = 'Copy to Clipboard', value, size = 'icon' }: Props = $props();
+
+    async function copyToClipboard() {
+        try {
+            await navigator.clipboard.writeText(value ?? '');
+            toast.success('Copy to clipboard succeeded');
+        } catch {
+            toast.error('Copy to clipboard failed');
+        }
     }
 </script>
 
-<div use:clickToCopyAction={() => value || ''} on:copy-done={handleCopyDone} on:copy-error={handleCopyError}>
-    <Button {title} {size}>
-        <slot><IconContentCopy class="h-4 w-4" /></slot>
+<div>
+    <Button {title} {size} on:click={copyToClipboard}>
+        {#if children}
+            {@render children()}
+        {:else}
+            <IconContentCopy class="h-4 w-4" />
+        {/if}
     </Button>
 </div>

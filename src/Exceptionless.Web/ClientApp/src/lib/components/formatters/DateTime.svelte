@@ -1,5 +1,9 @@
 <script lang="ts">
-    export let value: Date | string | undefined;
+    interface Props {
+        value: Date | string | undefined;
+    }
+
+    let { value }: Props = $props();
 </script>
 
 {#if value}

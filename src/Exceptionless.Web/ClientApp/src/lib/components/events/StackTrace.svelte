@@ -2,9 +2,13 @@
     import type { ErrorInfo } from '$lib/models/client-data';
     import { getErrors, getStackFrame } from '$lib/helpers/persistent-event';
     import StackTraceHeader from './StackTraceHeader.svelte';
-    import Code from '$comp/typography/Code.svelte';
+    import { Code } from '$comp/typography';
 
-    export let error: ErrorInfo | undefined;
+    interface Props {
+        error: ErrorInfo;
+    }
+
+    let { error }: Props = $props();
 
     const errors = getErrors(error);
 </script>

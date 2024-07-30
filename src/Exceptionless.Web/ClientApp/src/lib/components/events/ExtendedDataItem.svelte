@@ -3,16 +3,20 @@
     import ArrowUpIcon from '~icons/mdi/arrow-up';
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ObjectDump from '$comp/ObjectDump.svelte';
-    import { createEventDispatcher } from 'svelte';
     import { Button } from '$comp/ui/button';
-    import H4 from '$comp/typography/H4.svelte';
-    import Code from '$comp/typography/Code.svelte';
+    import { Code, H4 } from '$comp/typography';
 
-    export let title: string;
-    export let data: unknown;
-    export let canPromote: boolean = true;
-    export let isPromoted: boolean = false;
-    export let excludedKeys: string[] = [];
+    interface Props {
+        title: string;
+        data: unknown;
+        canPromote?: boolean;
+        isPromoted?: boolean;
+        demote?: (title: string) => Promise<void>;
+        excludedKeys?: string[];
+        promote?: (title: string) => Promise<void>;
+    }
+
+    let { canPromote = true, data, demote = async () => {}, excludedKeys = [], isPromoted = false, promote = async () => {}, title }: Props = $props();
 
     function getData(data: unknown, exclusions: string[]): unknown {
         if (typeof data !== 'object' || !(data instanceof Object)) {
@@ -44,26 +48,15 @@
         return true;
     }
 
-    function onPromote(e: Event) {
-        e.preventDefault();
-        dispatch('promote', title);
-    }
-
-    function onDemote(e: Event) {
-        e.preventDefault();
-        dispatch('demote', title);
-    }
-
     function onToggleView(e: Event) {
         e.preventDefault();
         showRaw = !showRaw;
     }
 
-    let showRaw = false;
+    let showRaw = $state(false);
     let filteredData = getData(data, excludedKeys);
     let hasData = hasFilteredData(filteredData);
     let json = data ? JSON.stringify(data, null, 2) : null;
-    const dispatch = createEventDispatcher();
 </script>
 
 {#if hasData}
@@ -76,9 +69,9 @@
 
             {#if canPromote}
                 {#if !isPromoted}
-                    <Button size="icon" on:click={onPromote} title="Promote to Tab"><ArrowUpIcon /></Button>
+                    <Button on:click={async () => await promote(title)} size="icon" title="Promote to Tab"><ArrowUpIcon /></Button>
                 {:else}
-                    <Button size="icon" on:click={onDemote} title="Demote Tab"><ArrowDownIcon /></Button>
+                    <Button on:click={async () => await demote(title)} size="icon" title="Demote Tab"><ArrowDownIcon /></Button>
                 {/if}
             {/if}
         </div>

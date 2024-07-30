@@ -1,7 +1,11 @@
 <script lang="ts">
-    import List from '$comp/typography/List.svelte';
+    import { List } from '$comp/typography';
 
-    export let logs: string[] | undefined;
+    interface Props {
+        logs?: string[];
+    }
+
+    let { logs }: Props = $props();
 </script>
 
 {#if logs}

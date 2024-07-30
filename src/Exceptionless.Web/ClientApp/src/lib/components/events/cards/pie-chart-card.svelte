@@ -1,7 +1,11 @@
 <script lang="ts">
     import * as Card from '$comp/ui/card';
 
-    export let title: string;
+    interface Props {
+        title: string;
+    }
+
+    let { title }: Props = $props();
 </script>
 
 <Card.Root>

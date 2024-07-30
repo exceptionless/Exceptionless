@@ -1,25 +1,19 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
-    import { ReferenceFilter } from './filters';
+    import { A, type AProps } from '$comp/typography';
+    import { ReferenceFilter } from './filters.svelte';
 
-    export let value: string;
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
+    type Props = AProps & {
+        changed: (filter: ReferenceFilter) => void;
+        value: string;
+    };
+    let { changed, value, ...props }: Props = $props();
 
     const title = `Search reference:${value}`;
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new ReferenceFilter(value)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+<A onclick={() => changed(new ReferenceFilter(value))} {title} {...props}>
+    {#snippet children()}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/snippet}
 </A>

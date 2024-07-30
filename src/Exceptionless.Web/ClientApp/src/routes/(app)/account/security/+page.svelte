@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
     import IconGoogle from '~icons/mdi/google';
@@ -14,7 +15,7 @@
         facebookClientId,
         gitHubClientId,
         microsoftClientId
-    } from '$api/auth';
+    } from '$api/auth.svelte';
 
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import { Separator } from '$comp/ui/separator';
@@ -22,17 +23,16 @@
     import Loading from '$comp/Loading.svelte';
 
     import { User } from '$lib/models/api';
-    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
     import PasswordInput from '$comp/form/PasswordInput.svelte';
-    import H3 from '$comp/typography/H3.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { H3, Muted } from '$comp/typography';
 
-    const data = new User();
-    let problem = new ProblemDetails();
+    const data = $state(new User());
 
-    const { loading } = new FetchClient();
+    const client = useFetchClient();
+    let problem = $state(new ProblemDetails());
+
     async function onSave() {
-        if ($loading) {
+        if (client.loading) {
             return;
         }
 
@@ -52,7 +52,7 @@
     </div>
     <Separator />
 
-    <form on:submit|preventDefault={onSave} class="space-y-2">
+    <form onsubmit={onSave} class="space-y-2">
         <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
         <PasswordInput
@@ -95,7 +95,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if $loading}
+                {#if client.loading}
                     <Loading class="mr-2" variant="secondary"></Loading> Updating password...
                 {:else}
                     Update password

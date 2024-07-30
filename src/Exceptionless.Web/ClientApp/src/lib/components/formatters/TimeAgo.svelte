@@ -1,7 +1,11 @@
 <script lang="ts">
     import Time from 'svelte-time';
 
-    export let value: Date | string | undefined;
+    interface Props {
+        value: Date | string | undefined;
+    }
+
+    let { value }: Props = $props();
 </script>
 
 <Time live={true} relative={true} timestamp={value}></Time>

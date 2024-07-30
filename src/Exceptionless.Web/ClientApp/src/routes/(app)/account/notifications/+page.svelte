@@ -4,21 +4,19 @@
     import { Button } from '$comp/ui/button';
     import Loading from '$comp/Loading.svelte';
 
-    import H3 from '$comp/typography/H3.svelte';
-    import H4 from '$comp/typography/H4.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
+    import { H3, H4, Muted } from '$comp/typography';
     import { User } from '$lib/models/api';
-    import { FetchClient, ProblemDetails } from '$lib/api/FetchClient';
+    import { useFetchClient, ProblemDetails } from '@exceptionless/fetchclient';
     import Switch from '$comp/primitives/Switch.svelte';
 
-    const data = new User();
+    const data = $state(new User());
     data.email_notifications_enabled = true;
 
-    let problem = new ProblemDetails();
+    const client = useFetchClient();
+    let problem = $state(new ProblemDetails());
 
-    const { loading } = new FetchClient();
     async function onSave() {
-        if ($loading) {
+        if (client.loading) {
             return;
         }
 
@@ -38,7 +36,7 @@
     </div>
     <Separator />
 
-    <form on:submit|preventDefault={onSave} class="space-y-2">
+    <form onsubmit={onSave} class="space-y-2">
         <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
         <H4 class="mb-4">Email Notifications</H4>
@@ -52,7 +50,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if $loading}
+                {#if client.loading}
                     <Loading class="mr-2" variant="secondary"></Loading> Saving...
                 {:else}
                     Save

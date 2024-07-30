@@ -1,35 +1,37 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import type { Snippet } from 'svelte';
+    import { setAccessTokenFunc, setBaseUrl, useMiddleware, type FetchClientContext } from '@exceptionless/fetchclient';
+    import { error } from '@sveltejs/kit';
+
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
 
     import { page } from '$app/stores';
-    import { setDefaultBaseUrl, setAccessTokenStore } from '$api/FetchClient';
-    import { accessToken } from '$api/auth';
+    import { accessToken } from '$api/auth.svelte';
     import { Toaster } from '$comp/ui/sonner';
 
     import '../app.css';
     import { routes } from './routes';
-    import { isCommandOpen } from '$lib/stores/app';
 
-    onMount(() => {
-        function handleKeydown(e: KeyboardEvent) {
-            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                $isCommandOpen = !$isCommandOpen;
-            }
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+
+    setBaseUrl('api/v2');
+    setAccessTokenFunc(() => accessToken.value);
+
+    useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {
+        await next();
+
+        if (ctx.response?.status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
+            throw error(404, 'Not found');
         }
-        document.addEventListener('keydown', handleKeydown);
-        return () => {
-            document.removeEventListener('keydown', handleKeydown);
-        };
     });
 
-    setDefaultBaseUrl('api/v2');
-    setAccessTokenStore(accessToken);
-
-    page.subscribe(($page) => {
+    $effect(() => {
         const currentRoute = routes.find((route) => $page.url.pathname === route.href);
         if (currentRoute) {
             document.title = `${currentRoute.title} - Exceptionless`;
@@ -51,7 +53,7 @@
     <ModeWatcher defaultMode={'dark'} />
 
     <QueryClientProvider client={queryClient}>
-        <slot />
+        {@render children()}
 
         <SvelteQueryDevtools />
     </QueryClientProvider>

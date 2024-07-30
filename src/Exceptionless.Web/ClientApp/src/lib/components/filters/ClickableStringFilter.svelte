@@ -1,26 +1,22 @@
 <script lang="ts">
     import IconFilter from '~icons/mdi/filter';
-    import A from '$comp/typography/A.svelte';
-    import { StringFilter } from './filters';
+    import { A, type AProps } from '$comp/typography';
+    import { StringFilter } from './filters.svelte';
 
-    export let term: string;
-    export let value: string | null | undefined;
+    type Props = AProps & {
+        changed: (filter: StringFilter) => void;
+        term: string;
+        value?: string | null;
+    };
+    let { changed, children, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;
-
-    let className: string | undefined | null = undefined;
-    export { className as class };
-
-    function onSearchClick(e: Event) {
-        e.preventDefault();
-        document.dispatchEvent(
-            new CustomEvent('filter', {
-                detail: new StringFilter(term, value ?? undefined)
-            })
-        );
-    }
 </script>
 
-<A on:click={onSearchClick} {title} class={className}>
-    <slot><IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" /></slot>
+<A onclick={() => changed(new StringFilter(term, value ?? undefined))} {title} {...props}>
+    {#if children}
+        {@render children()}
+    {:else}
+        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+    {/if}
 </A>

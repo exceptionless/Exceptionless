@@ -5,9 +5,7 @@
     import { Separator } from '$comp/ui/separator';
     import { Button } from '$comp/ui/button';
 
-    import H3 from '$comp/typography/H3.svelte';
-    import Muted from '$comp/typography/Muted.svelte';
-    import P from '$comp/typography/P.svelte';
+    import { H3, Muted, P } from '$comp/typography';
     import DateTime from '$comp/formatters/DateTime.svelte';
 </script>
 

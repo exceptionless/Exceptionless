@@ -8,38 +8,46 @@
     import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
     import CopyToClipboardButton from '$comp/CopyToClipboardButton.svelte';
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
-    import H4 from '$comp/typography/H4.svelte';
+    import { H4 } from '$comp/typography';
+    import type { IFilter } from '$comp/filters/filters.svelte';
 
-    export let event: PersistentEvent;
+    interface Props {
+        event: PersistentEvent;
+        changed: (filter: IFilter) => void;
+    }
 
-    const errorData = getErrorData(event);
-    const errorType = getErrorType(event);
-    const stackTrace = getStackTrace(event);
+    let { event, changed }: Props = $props();
 
-    const code = event.data?.['@error']?.code;
-    const message = getMessage(event);
-    const modules = event.data?.['@error']?.modules || [];
-    const submissionMethod = event.data?.['@submission_method'];
+    let errorData = $derived(getErrorData(event));
+    let errorType = $derived(getErrorType(event));
+    let stackTrace = $derived(getStackTrace(event));
+
+    let code = $derived(event.data?.['@error']?.code);
+    let message = $derived(getMessage(event));
+    let modules = $derived(event.data?.['@error']?.modules || []);
+    let submissionMethod = $derived(event.data?.['@submission_method']);
 </script>
 
 <Table.Root>
     <Table.Body>
         <Table.Row class="group">
             <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
-            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.type" value={errorType} /></Table.Cell>
+            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.type" value={errorType} {changed} /></Table.Cell>
             <Table.Cell>{errorType}</Table.Cell>
         </Table.Row>
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter term="error.message" value={message} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><ClickableStringFilter term="error.message" value={message} {changed} /></Table.Cell
+                >
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if code}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="error.code" value={code} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter term="error.code" value={code} {changed} /></Table.Cell>
                 <Table.Cell>{code}</Table.Cell>
             </Table.Row>
         {/if}
@@ -62,7 +70,7 @@
 <div class="mt-2 overflow-auto p-2 text-xs">
     {#if event.data?.['@error']}
         <StackTrace error={event.data['@error']} />
-    {:else}
+    {:else if event.data?.['@simple_error']}
         <SimpleStackTrace error={event.data?.['@simple_error']} />
     {/if}
 </div>

@@ -1,6 +1,6 @@
 import { validate as classValidate } from 'class-validator';
 
-import { ProblemDetails } from '../api/FetchClient';
+import { ProblemDetails } from '@exceptionless/fetchclient';
 
 export async function validate(data: object | null): Promise<ProblemDetails | null> {
     if (data === null) return null;

@@ -139,7 +139,7 @@ jobs:
           node-version: 20
 
       - name: Install Npm Packages
-        run: npm ci
+        run: npm ci --force
 
       - name: Lint Client
         run: npm run lint

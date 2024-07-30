@@ -15,12 +15,15 @@
     import StackSessionSummary from './StackSessionSummary.svelte';
     import StackFeatureSummary from './StackFeatureSummary.svelte';
 
-    export let summary: SummaryModel<SummaryTemplateKeys>;
-    export let showStatus: boolean = true;
-    export let showType: boolean = true;
+    interface Props {
+        summary: SummaryModel<SummaryTemplateKeys>;
+        showStatus?: boolean;
+        showType?: boolean;
+    }
 
-    const showBadge: boolean = showStatus && 'status' in summary && summary.status !== 'open';
-    const badgeClass = 'label-' + (('status' in summary && summary.status) || 'open');
+    let { summary, showStatus = true, showType = true }: Props = $props();
+    let showBadge: boolean = $derived(showStatus && 'status' in summary && summary.status !== 'open');
+    let badgeClass = $derived('label-' + (('status' in summary && summary.status) || 'open'));
 </script>
 
 {#if summary.template_key === 'event-summary'}
