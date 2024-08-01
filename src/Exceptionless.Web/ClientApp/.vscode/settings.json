@@ -46,6 +46,10 @@
     },
     "editor.formatOnSave": true,
     "eslint.validate": ["javascript", "svelte"],
+    "search.exclude": {
+        ".svelte-kit": true,
+        "build": true
+    },
     "svelte.plugin.svelte.defaultScriptLanguage": "ts",
     "tailwindCSS.includeLanguages": {
         "svelte": "html"

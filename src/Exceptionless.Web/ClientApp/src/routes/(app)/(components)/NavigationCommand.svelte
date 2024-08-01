@@ -23,7 +23,8 @@
                     <Command.Item>
                         <A class="flex gap-x-2" href={route.href} onclick={closeCommandWindow}>
                             {#if route.icon}
-                                <svelte:component this={route.icon} />
+                                {@const Icon = route.icon}
+                                <Icon />
                             {/if}
                             <div>{route.title}</div>
                         </A>
