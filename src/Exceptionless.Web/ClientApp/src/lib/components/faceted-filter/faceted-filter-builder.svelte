@@ -95,6 +95,7 @@
 
 {#each facets as facet (facet.filter.key)}
     {#if isVisible(facet)}
-        <svelte:component this={facet.component} filter={facet.filter} {filterChanged} {filterRemoved} open={facet.open} title={facet.title} />
+        {@const Facet = facet.component}
+        <Facet filter={facet.filter} {filterChanged} {filterRemoved} open={facet.open} title={facet.title} />
     {/if}
 {/each}
