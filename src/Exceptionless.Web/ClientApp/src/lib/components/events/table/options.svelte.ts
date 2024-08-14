@@ -141,7 +141,7 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     let pageCount = $state(0);
     let data = $state([] as TSummaryModel[]);
     let loading = $state(false);
-    let meta = $state.frozen({} as FetchClientResponse<unknown>['meta']);
+    let meta = $state({} as FetchClientResponse<unknown>['meta']);
 
     const columns = getColumns<TSummaryModel>(parameters.mode);
     const [columnVisibility, setColumnVisibility] = createPersistedTableState('events-column-visibility', <VisibilityState>{});

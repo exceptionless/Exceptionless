@@ -123,6 +123,7 @@ k8s/ex-prod\.yaml
 *secrets*
 k8s/ex-*-snapshots.yaml
 node_modules
+src/Exceptionless.Web/ClientApp/test-results/
 src/Exceptionless\.Web/ClientApp/build/
 src/Exceptionless\.Web/ClientApp.angular/dist/
 
