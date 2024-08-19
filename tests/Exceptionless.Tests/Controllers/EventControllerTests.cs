@@ -324,7 +324,7 @@ public class EventControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
-            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events")
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events")
             .Content(ev)
             .StatusCodeShouldBeAccepted()
         );
@@ -347,7 +347,7 @@ public class EventControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
-            .AppendPath("projects", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, "events")
+            .AppendPaths("projects", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, "events")
             .Content(ev)
             .StatusCodeShouldBeNotFound()
         );
@@ -380,7 +380,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsTestOrganizationUser()
-            .AppendPath("projects", projectId, "events")
+            .AppendPaths("projects", projectId, "events")
             .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
             .QueryString("mode", "stack_frequent")
             .QueryString("offset", "-300m")
@@ -403,7 +403,7 @@ public class EventControllerTests : IntegrationTestsBase
         string projectId = SampleDataService.FREE_PROJECT_ID;
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
-            .AppendPath("projects", projectId, "events")
+            .AppendPaths("projects", projectId, "events")
             .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
             .QueryString("mode", "stack_frequent")
             .QueryString("offset", "-300m")
@@ -483,7 +483,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var countResult = await SendRequestAsAsync<CountResult>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "count")
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events", "count")
             .QueryString("filter", "type:session _missing_:data.sessionend")
             .StatusCodeShouldBeOk()
         );
@@ -492,7 +492,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var results = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events", "sessions")
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events", "sessions")
             .QueryString("filter", "_missing_:data.sessionend")
             .StatusCodeShouldBeOk()
         );
@@ -514,7 +514,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("stacks", stacks.Single().Id, "events")
+            .AppendPaths("stacks", stacks.Single().Id, "events")
             .StatusCodeShouldBeOk()
         );
 
@@ -537,7 +537,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events/sessions", sessionId)
+            .AppendPaths("events/sessions", sessionId)
             .QueryString("filter", "-type:heartbeat")
             .QueryString("limit", "10")
             .StatusCodeShouldBeOk()
@@ -547,7 +547,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events/sessions", sessionId)
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events/sessions", sessionId)
             .QueryString("filter", "-type:heartbeat")
             .QueryString("limit", "10")
             .QueryString("offset", "-360m")
@@ -692,7 +692,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var countResult = await SendRequestAsAsync<CountResult>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events", "count")
+            .AppendPaths("events", "count")
             .QueryStringIf(() => !String.IsNullOrEmpty(filter), "filter", filter)
             .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
             .StatusCodeShouldBeOk()
@@ -808,7 +808,7 @@ public class EventControllerTests : IntegrationTestsBase
         _logger.LogInformation("Running normal count");
         var countResult = await SendRequestAsAsync<CountResult>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events", "count")
+            .AppendPaths("events", "count")
             .QueryString("filter", filter)
             .QueryString("time", time)
             .QueryString("mode", "stack_new")
@@ -961,7 +961,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
-            .AppendPath("organizations", organizationId)
+            .AppendPaths("organizations", organizationId)
             .StatusCodeShouldBeOk()
         );
 
@@ -1029,7 +1029,7 @@ public class EventControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .Post()
-            .AppendPath("organizations", organizationId, "suspend")
+            .AppendPaths("organizations", organizationId, "suspend")
             .StatusCodeShouldBeOk()
         );
 
@@ -1045,7 +1045,7 @@ public class EventControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationUser()
-            .AppendPath("projects", SampleDataService.TEST_PROJECT_ID, "events")
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events")
             .Content(new RandomEventGenerator().Generate(1))
             .StatusCodeShouldBePaymentRequired() // We do payment required if no events left otherwise we do plan limit reached (upgrade required)
         );
@@ -1064,13 +1064,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
-            .AppendPath("api", "blah")
+            .AppendPaths("api", "blah")
             .StatusCodeShouldBeNotFound()
         );
 
         await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
-            .AppendPath("docs", "blah")
+            .AppendPaths("docs", "blah")
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -1189,7 +1189,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
-            .AppendPath("organizations", organizationId)
+            .AppendPaths("organizations", organizationId)
             .StatusCodeShouldBeOk()
         );
 
