@@ -111,7 +111,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Post()
            .AsGlobalAdminUser()
-           .AppendPath($"organizations", SampleDataService.TEST_ORG_ID, "suspend")
+           .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "suspend")
            .QueryString("code", SuspensionCode.Billing)
            .StatusCodeShouldBeOk()
         );
@@ -123,7 +123,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
            .Delete()
            .AsGlobalAdminUser()
-           .AppendPath($"organizations", SampleDataService.TEST_ORG_ID, "suspend")
+           .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "suspend")
            .StatusCodeShouldBeOk()
         );
 

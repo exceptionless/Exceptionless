@@ -43,7 +43,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
             .AsTestOrganizationUser()
             .Patch()
-            .AppendPath("projects", project.Id)
+            .AppendPaths("projects", project.Id)
             .Content(new UpdateProject
             {
                 Name = "Test Project 2",
@@ -76,7 +76,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
             .AsTestOrganizationUser()
             .Patch()
-            .AppendPath("projects", project.Id)
+            .AppendPaths("projects", project.Id)
             .Content(project)
             .StatusCodeShouldBeOk()
         );
@@ -137,7 +137,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         // Reset Project data and ensure soft deleted counts don't show up
         var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
             .AsTestOrganizationUser()
-            .AppendPath("projects", project.Id, "reset-data")
+            .AppendPaths("projects", project.Id, "reset-data")
             .StatusCodeShouldBeAccepted()
         );
 
