@@ -8,9 +8,11 @@ const config = {
             fallback: 'index.html'
         }),
         alias: {
-            $api: 'src/lib/api',
-            $comp: 'src/lib/components',
-            $lib: 'src/lib'
+            $comp: 'src/lib/features/shared/components',
+            $features: 'src/lib/features',
+            $generated: 'src/lib/generated',
+            $lib: 'src/lib',
+            $shared: 'src/lib/features/shared'
         },
         paths: {
             base: '/next'

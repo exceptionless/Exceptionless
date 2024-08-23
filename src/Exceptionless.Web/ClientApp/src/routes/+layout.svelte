@@ -1,9 +1,9 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { accessToken } from '$api/auth.svelte';
     import { page } from '$app/stores';
     import { Toaster } from '$comp/ui/sonner';
+    import { accessToken } from '$features/auth/index.svelte';
     import { type FetchClientContext, setAccessTokenFunc, setBaseUrl, useMiddleware } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';

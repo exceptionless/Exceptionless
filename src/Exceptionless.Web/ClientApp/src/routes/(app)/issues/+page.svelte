@@ -1,16 +1,16 @@
 <script lang="ts">
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$lib/models/api';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/summary/index';
 
-    import { getEventsByStackIdQuery } from '$api/eventsApi.svelte';
-    import EventsDrawer from '$comp/events/EventsDrawer.svelte';
-    import EventsDataTable from '$comp/events/table/EventsDataTable.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import { persisted } from '$lib/helpers/persisted.svelte';
+    import { getEventsByStackIdQuery } from '$features/events/api.svelte';
+    import EventsDrawer from '$features/events/components/EventsDrawer.svelte';
+    import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
+    import { persisted } from '$shared/persisted.svelte';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
     let selectedStackId = $state<string>();

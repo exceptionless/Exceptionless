@@ -5,7 +5,7 @@
     import { H3, H4, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
-    import { User } from '$lib/models/api';
+    import { User } from '$features/users/models';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 
     const data = $state(new User());

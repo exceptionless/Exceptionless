@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { getGravatarFromCurrentUser } from '$api/gravatar.svelte';
-    import { getMeQuery } from '$api/usersApi.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import EmailInput from '$comp/form/EmailInput.svelte';
     import TextInput from '$comp/form/TextInput.svelte';
@@ -9,6 +7,8 @@
     import * as Avatar from '$comp/ui/avatar';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
+    import { getMeQuery } from '$features/users/api.svelte';
+    import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
 
     const userResponse = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(userResponse);

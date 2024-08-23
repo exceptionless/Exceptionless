@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { getGravatarFromCurrentUser } from '$api/gravatar.svelte';
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import Loading from '$comp/Loading.svelte';
     import * as Avatar from '$comp/ui/avatar';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import logoSmall from '$lib/assets/exceptionless-48.png';
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';

@@ -1,13 +1,13 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { accessToken, gotoLogin } from '$api/auth.svelte';
-    import { getMeQuery } from '$api/usersApi.svelte';
-    import { WebSocketClient } from '$api/WebSocketClient.svelte';
     import { page } from '$app/stores';
-    import { persisted } from '$lib/helpers/persisted.svelte';
-    import { isEntityChangedType, type WebSocketMessageType } from '$lib/models/websocket';
-    import { validate } from '$lib/validation/validation';
+    import { accessToken, gotoLogin } from '$features/auth/index.svelte';
+    import { getMeQuery } from '$features/users/api.svelte';
+    import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
+    import { WebSocketClient } from '$features/websockets/WebSocketClient.svelte';
+    import { persisted } from '$shared/persisted.svelte';
+    import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { MediaQuery } from 'runed';

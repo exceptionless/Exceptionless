@@ -30,7 +30,7 @@ export default [
         }
     },
     {
-        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/components/ui/', 'src/lib/models/api.generated.ts']
+        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/generated/api.ts', 'src/lib/features/shared/components/ui/']
     },
 
     {
