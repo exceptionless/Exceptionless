@@ -16,6 +16,20 @@ export interface GetEventByIdProps {
     id: string | undefined;
 }
 
+export type GetEventsMode = 'stack_frequent' | 'stack_new' | 'stack_recent' | 'stack_users' | 'summary' | null;
+
+export interface IGetEventsParams {
+    after?: string;
+    before?: string;
+    filter?: string;
+    limit?: number;
+    mode?: GetEventsMode;
+    offset?: string;
+    page?: number;
+    sort?: string;
+    time?: string;
+}
+
 export function getEventByIdQuery(props: GetEventByIdProps) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
         enabled: !!accessToken.value && !!props.id,

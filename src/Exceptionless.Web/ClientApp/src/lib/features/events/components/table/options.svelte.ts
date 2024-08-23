@@ -18,7 +18,7 @@ import {
     type VisibilityState
 } from '@tanstack/svelte-table';
 
-import type { GetEventsMode, IGetEventsParams } from '../../models/index';
+import type { GetEventsMode, IGetEventsParams } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
 
 import Summary from '../summary/Summary.svelte';
