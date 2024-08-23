@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { accessToken, logout } from '$api/auth.svelte';
     import { goto } from '$app/navigation';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import Loading from '$comp/Loading.svelte';
     import { H2 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
+    import { accessToken, logout } from '$features/auth/index.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 
     let isAuthenticated = $derived(accessToken.value !== null);

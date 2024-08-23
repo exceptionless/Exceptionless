@@ -1,4 +1,4 @@
-import type { User } from '$lib/models/api';
+import type { User } from '$features/users/models';
 import type { Component } from 'svelte';
 
 import { routes as appRoutes } from './(app)/routes';
