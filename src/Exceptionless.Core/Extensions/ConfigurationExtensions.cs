@@ -24,17 +24,13 @@ public static class ConfigurationExtensions
 
     public static string ToScope(this AppMode mode)
     {
-        switch (mode)
+        return mode switch
         {
-            case AppMode.Development:
-                return "dev";
-            case AppMode.Staging:
-                return "stage";
-            case AppMode.Production:
-                return "prod";
-        }
-
-        return String.Empty;
+            AppMode.Development => "dev",
+            AppMode.Staging => "stage",
+            AppMode.Production => "prod",
+            _ => String.Empty
+        };
     }
 
     public static List<string> GetValueList(this IConfiguration config, string key, char[]? separators = null)
