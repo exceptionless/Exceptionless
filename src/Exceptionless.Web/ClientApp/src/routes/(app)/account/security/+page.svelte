@@ -1,4 +1,10 @@
 <script lang="ts">
+    import ErrorMessage from '$comp/ErrorMessage.svelte';
+    import PasswordInput from '$comp/form/PasswordInput.svelte';
+    import Loading from '$comp/Loading.svelte';
+    import { H3, Muted } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
+    import { Separator } from '$comp/ui/separator';
     import {
         enableOAuthLogin,
         facebookClientId,
@@ -9,14 +15,8 @@
         googleLogin,
         liveLogin,
         microsoftClientId
-    } from '$api/auth.svelte';
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import PasswordInput from '$comp/form/PasswordInput.svelte';
-    import Loading from '$comp/Loading.svelte';
-    import { H3, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
-    import { User } from '$lib/models/api';
+    } from '$features/auth/index.svelte';
+    import { User } from '$features/users/models';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';

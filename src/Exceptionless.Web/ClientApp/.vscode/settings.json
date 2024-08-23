@@ -1,6 +1,7 @@
 {
     "debug.allowBreakpointsEverywhere": true,
     "cSpell.words": [
+        "acacode",
         "clsx",
         "cmdk",
         "colour",
@@ -23,7 +24,8 @@
         "sonner",
         "superforms",
         "tailwindcss",
-        "tanstack"
+        "tanstack",
+        "websockets"
     ],
     "css.customData": [".vscode/tailwind.json"],
     "css.lint.unknownAtRules": "ignore",
@@ -55,8 +57,8 @@
     },
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "workbench.editor.customLabels.patterns": {
+        "**/lib/**/*.ts": "${dirname}/${filename}.${extname}",
         "**/routes/**/+page.svelte": "${dirname(1)}/${dirname}",
-        "**/routes/**/+layout.svelte": "${dirname}/+layout.svelte",
-        "**/lib/**/index.ts": "${dirname}/index.ts"
+        "**/routes/**/+layout.svelte": "${dirname}/+layout.svelte"
     }
 }

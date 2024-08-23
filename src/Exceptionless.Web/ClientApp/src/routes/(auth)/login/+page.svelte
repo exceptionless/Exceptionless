@@ -1,4 +1,12 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
+    import ErrorMessage from '$comp/ErrorMessage.svelte';
+    import EmailInput from '$comp/form/EmailInput.svelte';
+    import PasswordInput from '$comp/form/PasswordInput.svelte';
+    import Loading from '$comp/Loading.svelte';
+    import { A, H2, Muted, P } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import {
         enableAccountCreation,
         enableOAuthLogin,
@@ -11,16 +19,8 @@
         liveLogin,
         login,
         microsoftClientId
-    } from '$api/auth.svelte';
-    import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import EmailInput from '$comp/form/EmailInput.svelte';
-    import PasswordInput from '$comp/form/PasswordInput.svelte';
-    import Loading from '$comp/Loading.svelte';
-    import { A, H2, Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Login } from '$lib/models/api';
+    } from '$features/auth/index.svelte';
+    import { Login } from '$features/auth/models';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
