@@ -55,7 +55,7 @@
         "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@7bccb14",
         "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@7bccb14",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
-        "@typeschema/class-validator": "^0.1.2",
+        "@typeschema/class-validator": "^0.2.0",
         "bits-ui": "^0.21.13",
         "class-validator": "^0.14.1",
         "clsx": "^2.1.1",
