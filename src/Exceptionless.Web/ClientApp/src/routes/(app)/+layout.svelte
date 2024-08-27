@@ -93,6 +93,9 @@
         }
 
         if (!isAuthenticated) {
+            queryClient.cancelQueries();
+            queryClient.invalidateQueries();
+
             gotoLogin();
             return;
         }
