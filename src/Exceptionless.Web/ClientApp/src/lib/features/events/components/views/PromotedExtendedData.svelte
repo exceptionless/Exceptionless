@@ -2,7 +2,7 @@
     import { mutateDemoteTab } from '$features/projects/api.svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { PersistentEvent } from '../models/index';
+    import type { PersistentEvent } from '../../models/index';
 
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
 

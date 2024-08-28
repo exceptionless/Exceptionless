@@ -8,7 +8,7 @@
     import { getRequestInfoPath, getRequestInfoUrl } from '$features/events/persistent-event';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
-    import type { PersistentEvent } from '../models/index';
+    import type { PersistentEvent } from '../../models/index';
 
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
 
