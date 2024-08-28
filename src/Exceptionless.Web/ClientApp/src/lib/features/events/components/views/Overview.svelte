@@ -27,7 +27,7 @@
     import IconFilter from '~icons/mdi/filter';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
-    import type { PersistentEvent } from '../models/index';
+    import type { PersistentEvent } from '../../models/index';
 
     import LogLevel from '../LogLevel.svelte';
     import SimpleStackTrace from '../SimpleStackTrace.svelte';
@@ -48,11 +48,11 @@
     let message = $derived(getMessage(event));
 
     const referencePrefix = '@ref:';
-    let references: { id: string; name: string }[] = $derived.by(() => {
-        let refs = [];
+    let references = $derived.by(() => {
+        let refs: { id: string; name: string }[] = [];
         Object.entries(event.data || {}).forEach(([key, value]) => {
             if (key.startsWith(referencePrefix)) {
-                references.push({ id: value as string, name: key.slice(5) });
+                refs.push({ id: value as string, name: key.slice(5) });
             }
         });
         return refs;
@@ -136,7 +136,7 @@
         {#if event.type !== 'error'}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableTypeFilter {changed} value={[event.type]} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableTypeFilter {changed} value={[event.type as string]} /></Table.Cell>
                 <Table.Cell>{event.type}</Table.Cell>
             </Table.Row>
         {/if}
@@ -273,7 +273,7 @@
     <div class="mt-2 max-h-[150px] overflow-auto p-2 text-xs">
         {#if event.data?.['@error']}
             <StackTrace error={event.data['@error']} />
-        {:else}
+        {:else if event.data?.['@simple_error']}
             <SimpleStackTrace error={event.data?.['@simple_error']} />
         {/if}
     </div>

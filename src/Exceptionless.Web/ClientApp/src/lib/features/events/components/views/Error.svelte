@@ -8,7 +8,7 @@
     import * as Table from '$comp/ui/table';
     import { getErrorData, getErrorType, getMessage, getStackTrace } from '$features/events/persistent-event';
 
-    import type { PersistentEvent } from '../models/index';
+    import type { PersistentEvent } from '../../models/index';
 
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
     import SimpleStackTrace from '../SimpleStackTrace.svelte';

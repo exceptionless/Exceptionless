@@ -1,9 +1,11 @@
 <script lang="ts">
+    import type { ViewProject } from '$features/projects/models';
+
     import { getExtendedDataItems } from '$features/events/persistent-event';
     import { mutatePromoteTab } from '$features/projects/api.svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { PersistentEvent, ViewProject } from '../models/index';
+    import type { PersistentEvent } from '../../models/index';
 
     import ExtendedDataItem from '../ExtendedDataItem.svelte';
 
