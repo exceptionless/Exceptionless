@@ -3,7 +3,7 @@
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.2.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="10.7.1" />
-    <PackageReference Include="Foundatio.AWS" Version="10.7.1" />
+    <PackageReference Include="Foundatio.AWS" Version="11.0.2" />
     <PackageReference Include="Foundatio.AzureStorage" Version="10.7.1" />
     <PackageReference Include="Foundatio.Minio" Version="10.7.1" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="10.7.1" />
