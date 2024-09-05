@@ -7,7 +7,6 @@ using Exceptionless.Tests.Mail;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Xunit.Abstractions;
@@ -27,7 +26,6 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
-        Log.SetLogLevel<InMemoryMetricsClient>(LogLevel.Information);
 
         _container = CreateContainer();
     }

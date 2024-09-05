@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Queues;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -22,7 +21,7 @@ public class QueueHealthCheck<T> : IHealthCheck where T : class
     {
         if (_queue is IQueueActivity qa)
         {
-            if (qa.LastDequeueActivity.HasValue && qa.LastDequeueActivity.Value.IsBefore(SystemClock.UtcNow.SubtractMinutes(1)))
+            if (qa.LastDequeueActivity.HasValue && qa.LastDequeueActivity.Value.IsBefore(_timeProvider.GetUtcNow().UtcDateTime.SubtractMinutes(1)))
                 return HealthCheckResult.Unhealthy("Last Dequeue was over a minute ago");
 
             return HealthCheckResult.Healthy();

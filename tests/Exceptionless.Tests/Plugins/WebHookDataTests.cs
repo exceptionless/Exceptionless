@@ -3,7 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Tests.Utility;
-using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -83,7 +82,7 @@ public sealed class WebHookDataTests : TestWithServices
             Url = "http://localhost:40000/test",
             EventTypes = [WebHook.KnownEventTypes.StackPromoted],
             Version = version,
-            CreatedUtc = SystemClock.UtcNow
+            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         var organization = OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>());

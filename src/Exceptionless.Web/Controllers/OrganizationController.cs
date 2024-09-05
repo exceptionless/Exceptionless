@@ -18,7 +18,6 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Stripe;
@@ -420,7 +419,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (String.IsNullOrEmpty(stripeToken))
                     return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
-                organization.SubscribeDate = SystemClock.UtcNow;
+                organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
 
                 var createCustomer = new CustomerCreateOptions
                 {
@@ -540,7 +539,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 {
                     Token = StringExtensions.GetNewToken(),
                     EmailAddress = email.ToLowerInvariant(),
-                    DateAdded = SystemClock.UtcNow
+                    DateAdded = _timeProvider.GetUtcNow().UtcDateTime
                 };
                 organization.Invites.Add(invite);
                 await _repository.SaveAsync(organization, o => o.Cache());
@@ -619,7 +618,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return NotFound();
 
         organization.IsSuspended = true;
-        organization.SuspensionDate = SystemClock.UtcNow;
+        organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
         organization.SuspendedByUserId = CurrentUser?.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
@@ -818,7 +817,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         int maximumRetentionDays = _options.MaximumRetentionDays;
         var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
         var sf = new AppFilter(organizations);
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
+        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), _timeProvider.GetUtcNow().UtcDateTime, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), _timeProvider.GetUtcNow().UtcDateTime);
         var result = await _eventRepository.CountAsync(q => q
             .SystemFilter(systemFilter)
             .AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)")

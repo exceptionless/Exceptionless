@@ -1,10 +1,8 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -36,7 +34,7 @@ internal static class StackData
 
     public static Stack GenerateStack(bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null, string? title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string? signatureHash = null)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var stack = new Stack
         {
             Id = (id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id)!,
@@ -87,8 +85,8 @@ internal static class StackData
 
                     if (updateDates)
                     {
-                        stack.CreatedUtc = stack.FirstOccurrence = SystemClock.UtcNow.SubtractDays(1);
-                        stack.LastOccurrence = SystemClock.UtcNow;
+                        stack.CreatedUtc = stack.FirstOccurrence = _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(1);
+                        stack.LastOccurrence = _timeProvider.GetUtcNow().UtcDateTime;
                     }
 
                     await stackRepository.AddAsync(stack, o => o.ImmediateConsistency());

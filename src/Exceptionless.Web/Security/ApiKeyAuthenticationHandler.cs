@@ -110,7 +110,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow)
+        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < _timeProvider.GetUtcNow().UtcDateTime)
         {
             Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}", token, Request.Path, tokenRecord.ExpiresUtc.Value);
 
@@ -149,7 +149,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private AuthenticationProperties CreateAuthenticationProperties(Token? token)
     {
-        var utcNow = Foundatio.Utility.SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         return new AuthenticationProperties
         {
             ExpiresUtc = token?.ExpiresUtc ?? utcNow.AddHours(12),

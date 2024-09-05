@@ -8,7 +8,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -219,7 +218,7 @@ public sealed class AggregationTests : IntegrationTestsBase
 
     private async Task CreateEventsAsync(int eventCount, string[]? projectIds, decimal? value = -1)
     {
-        var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: SystemClock.OffsetUtcNow.SubtractDays(3), endDate: SystemClock.OffsetUtcNow, value: value);
+        var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(3), endDate: _timeProvider.GetUtcNow().UtcDateTime, value: value);
         foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
             await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         await _stackService.SaveStackUsagesAsync();
@@ -229,7 +228,7 @@ public sealed class AggregationTests : IntegrationTestsBase
 
     private async Task<List<PersistentEvent>> CreateSessionEventsAsync()
     {
-        var startDate = SystemClock.OffsetUtcNow.SubtractHours(1);
+        var startDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractHours(1);
         var events = new List<PersistentEvent> {
                 EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
                 EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),

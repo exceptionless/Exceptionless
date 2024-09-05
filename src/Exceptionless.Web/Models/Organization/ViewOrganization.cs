@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 
 namespace Exceptionless.Web.Models;
 
@@ -63,14 +62,14 @@ public static class ViewOrganizationExtensions
 
     public static UsageHourInfo GetCurrentHourlyUsage(this ViewOrganization organization)
     {
-        return organization.GetHourlyUsage(SystemClock.UtcNow);
+        return organization.GetHourlyUsage(_timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static void EnsureUsage(this ViewOrganization organization)
     {
-        var startDate = SystemClock.UtcNow.SubtractMonths(11).StartOfMonth();
+        var startDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(11).StartOfMonth();
 
-        while (startDate <= SystemClock.UtcNow.StartOfMonth())
+        while (startDate <= _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
         {
             organization.GetUsage(startDate);
             startDate = startDate.AddMonths(1).StartOfMonth();
@@ -79,7 +78,7 @@ public static class ViewOrganizationExtensions
 
     public static UsageInfo GetCurrentUsage(this ViewOrganization organization)
     {
-        return organization.GetUsage(SystemClock.UtcNow);
+        return organization.GetUsage(_timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date)
@@ -104,7 +103,7 @@ public static class ViewOrganizationExtensions
         if (organization.MaxEventsPerMonth <= 0)
             return -1;
 
-        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > SystemClock.UtcNow ? organization.BonusEventsPerMonth : 0;
+        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > _timeProvider.GetUtcNow().UtcDateTime ? organization.BonusEventsPerMonth : 0;
         return organization.MaxEventsPerMonth + bonusEvents;
     }
 
@@ -112,13 +111,13 @@ public static class ViewOrganizationExtensions
     {
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .OrderBy(u => u.Date)
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .OrderBy(u => u.Date)
             .ToList();
     }

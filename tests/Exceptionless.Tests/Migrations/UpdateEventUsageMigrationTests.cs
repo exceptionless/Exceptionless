@@ -2,7 +2,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -47,11 +46,11 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
 
         var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
-        var previousMonthUsageDate = SystemClock.UtcNow.SubtractMonths(1).StartOfMonth();
+        var previousMonthUsageDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(1).StartOfMonth();
         await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: stack.Id, startDate: previousMonthUsageDate, endDate: previousMonthUsageDate.EndOfMonth()), o => o.ImmediateConsistency());
 
-        var currentMonthUsageDate = SystemClock.UtcNow.StartOfMonth();
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: SystemClock.UtcNow), o => o.ImmediateConsistency());
+        var currentMonthUsageDate = _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
+        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: _timeProvider.GetUtcNow().UtcDateTime), o => o.ImmediateConsistency());
 
         var migration = GetService<UpdateEventUsage>();
         var context = new MigrationContext(GetService<ILock>(), _logger, CancellationToken.None);

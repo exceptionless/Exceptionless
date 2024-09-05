@@ -10,7 +10,6 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -219,7 +218,7 @@ public sealed class MailerTests : TestWithServices
 
         await _mailer.SendOrganizationInviteAsync(user, organization, new Invite
         {
-            DateAdded = SystemClock.UtcNow,
+            DateAdded = _timeProvider.GetUtcNow().UtcDateTime,
             EmailAddress = "test@exceptionless.com",
             Token = "1"
         });
@@ -269,7 +268,7 @@ public sealed class MailerTests : TestWithServices
         var project = ProjectData.GenerateSampleProject();
         var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, SystemClock.UtcNow.Date, true, 12, 1, 0, 1, 0, 0, false);
+        await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, _timeProvider.GetUtcNow().UtcDateTime.Date, true, 12, 1, 0, 1, 0, 0, false);
         await RunMailJobAsync();
     }
 
@@ -280,7 +279,7 @@ public sealed class MailerTests : TestWithServices
         var project = ProjectData.GenerateSampleProject();
         var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, SystemClock.UtcNow.Date, true, 123456, 1, 0, 1, 123456, 0, false);
+        await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, _timeProvider.GetUtcNow().UtcDateTime.Date, true, 123456, 1, 0, 1, 123456, 0, false);
         await RunMailJobAsync();
     }
 
@@ -290,7 +289,7 @@ public sealed class MailerTests : TestWithServices
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, false, 0, 0, 0, 0, 0, 0, false);
+        await _mailer.SendProjectDailySummaryAsync(user, project, null, null, _timeProvider.GetUtcNow().UtcDateTime.Date, false, 0, 0, 0, 0, 0, 0, false);
         await RunMailJobAsync();
     }
 
@@ -300,7 +299,7 @@ public sealed class MailerTests : TestWithServices
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, true, 0, 0, 0, 10, 0, 0, false);
+        await _mailer.SendProjectDailySummaryAsync(user, project, null, null, _timeProvider.GetUtcNow().UtcDateTime.Date, true, 0, 0, 0, 10, 0, 0, false);
         await RunMailJobAsync();
     }
 
@@ -310,7 +309,7 @@ public sealed class MailerTests : TestWithServices
         var user = UserData.GenerateSampleUser();
         var project = ProjectData.GenerateSampleProject();
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, null, null, SystemClock.UtcNow.Date, true, 0, 0, 0, 10, 123456, 23, false);
+        await _mailer.SendProjectDailySummaryAsync(user, project, null, null, _timeProvider.GetUtcNow().UtcDateTime.Date, true, 0, 0, 0, 10, 123456, 23, false);
         await RunMailJobAsync();
     }
 
@@ -322,7 +321,7 @@ public sealed class MailerTests : TestWithServices
         var mostFrequent = StackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
         var newest = StackData.GenerateStacks(1, generateId: true, type: Event.KnownTypes.Error);
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, SystemClock.UtcNow.Date, true, 12, 1, 1, 2, 0, 0, true);
+        await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, _timeProvider.GetUtcNow().UtcDateTime.Date, true, 12, 1, 1, 2, 0, 0, true);
         await RunMailJobAsync();
     }
 

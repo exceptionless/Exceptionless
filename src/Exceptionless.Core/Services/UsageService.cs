@@ -6,7 +6,6 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
@@ -31,7 +30,7 @@ public class UsageService
 
     public async Task SavePendingUsageAsync()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await SavePendingOrganizationUsageAsync(utcNow);
         await SavePendingProjectUsageAsync(utcNow);
@@ -77,7 +76,7 @@ public class UsageService
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
 
-                    organization.LastEventDateUtc = SystemClock.UtcNow;
+                    organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     var usage = organization.GetUsage(bucketUtc);
                     usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
@@ -153,7 +152,7 @@ public class UsageService
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId));
 
-                    project.LastEventDateUtc = SystemClock.UtcNow;
+                    project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     (string OrganizationId, Organization? Organization) context = (OrganizationId: project.OrganizationId, Organization: null);
                     int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
@@ -195,7 +194,7 @@ public class UsageService
 
     public async Task HandleOrganizationChange(Organization modified, Organization original)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _cache.RemoveAsync($"usage:limits:{modified.Id}");
 
@@ -261,7 +260,7 @@ public class UsageService
 
     public async Task<UsageInfoResponse> GetUsageAsync(string organizationId, string? projectId = null)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         // default to checking just the previous bucket
         var lastUsageSave = utcNow.Subtract(_bucketSize).Floor(_bucketSize);
@@ -328,7 +327,7 @@ public class UsageService
 
     public async Task<int> GetEventsLeftAsync(string organizationId)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         (string OrganizationId, Organization? Organization) context = (OrganizationId: organizationId, Organization: null);
         int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
@@ -382,7 +381,7 @@ public class UsageService
         if (eventCount <= 0)
             return;
 
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         long bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
         await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
@@ -414,7 +413,7 @@ public class UsageService
         if (eventCount <= 0)
             return;
 
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _cache.IncrementAsync(GetBucketBlockedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
         await _cache.IncrementAsync(GetBucketBlockedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
@@ -430,7 +429,7 @@ public class UsageService
         if (eventCount <= 0)
             return;
 
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
         await _cache.IncrementAsync(GetBucketDiscardedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
@@ -443,7 +442,7 @@ public class UsageService
 
     public async Task IncrementTooBigAsync(string organizationId, string? projectId)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId), 1, TimeSpan.FromHours(8));
         await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId, projectId), 1, TimeSpan.FromHours(8));
@@ -459,7 +458,7 @@ public class UsageService
         if (maxEventsPerMonth < 5000)
             return maxEventsPerMonth;
 
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var timeLeftInMonth = utcNow.EndOfMonth() - utcNow;
         if (timeLeftInMonth < TimeSpan.FromDays(1))
             return maxEventsPerMonth;

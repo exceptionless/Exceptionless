@@ -13,7 +13,6 @@ using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -45,7 +44,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
-        Log.SetLogLevel<InMemoryMetricsClient>(LogLevel.Information);
         Log.SetLogLevel("StartupActions", LogLevel.Warning);
         Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
 

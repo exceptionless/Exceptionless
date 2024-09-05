@@ -6,7 +6,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -40,7 +39,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     {
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
         organization.IsSuspended = true;
-        organization.SuspensionDate = SystemClock.UtcNow;
+        organization.SuspensionDate = DateTime.UtcNow;
         organization.SuspendedByUserId = "1";
         organization.SuspensionCode = Core.Models.SuspensionCode.Billing;
         organization.SuspensionNotes = "blah";
@@ -126,7 +125,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
         var options = GetService<AppOptions>();
-        var date = SystemClock.OffsetUtcNow.SubtractDays(options.MaximumRetentionDays);
+        var date = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
         var persistentEvent = await _eventRepository.AddAsync(EventData.GenerateEvent(organization.Id, project.Id, stack.Id, date, date, date), o => o.ImmediateConsistency());
 
         await _job.RunAsync();

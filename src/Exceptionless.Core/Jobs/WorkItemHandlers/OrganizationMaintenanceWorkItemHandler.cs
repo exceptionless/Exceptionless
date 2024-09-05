@@ -7,7 +7,6 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -46,10 +45,10 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 
                 if (wi.RemoveOldUsageStats)
                 {
-                    foreach (var usage in organization.UsageHours.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(3))).ToList())
+                    foreach (var usage in organization.UsageHours.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromDays(3))).ToList())
                         organization.UsageHours.Remove(usage);
 
-                    foreach (var usage in organization.Usage.Where(u => u.Date < SystemClock.UtcNow.Subtract(TimeSpan.FromDays(366))).ToList())
+                    foreach (var usage in organization.Usage.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromDays(366))).ToList())
                         organization.Usage.Remove(usage);
                 }
             }
@@ -58,7 +57,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
                 await _organizationRepository.SaveAsync(results.Documents);
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;

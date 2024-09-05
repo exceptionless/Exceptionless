@@ -2,12 +2,10 @@ using System.Diagnostics;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -31,8 +29,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
         var ev = await _repository.AddAsync(new PersistentEvent
         {
-            CreatedUtc = SystemClock.UtcNow,
-            Date = new DateTimeOffset(SystemClock.UtcNow.Date, TimeSpan.Zero),
+            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+            Date = new DateTimeOffset(_timeProvider.GetUtcNow().UtcDateTime.Date, TimeSpan.Zero),
             OrganizationId = TestConstants.OrganizationId,
             ProjectId = TestConstants.ProjectId,
             StackId = TestConstants.StackId,
@@ -68,7 +66,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     {
         var events = new List<PersistentEvent>();
         for (int i = 0; i < 6; i++)
-            events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(i))));
+            events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromMinutes(i))));
 
         await _repository.AddAsync(events);
         await RefreshDataAsync();
@@ -174,7 +172,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetOpenSessionsAsync()
     {
-        var firstEvent = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(35));
+        var firstEvent = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(35));
 
         var sessionLastActive35MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
         var sessionLastActive34MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);
@@ -193,7 +191,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         await _repository.AddAsync(events, o => o.ImmediateConsistency());
 
-        var results = await _repository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(30));
+        var results = await _repository.GetOpenSessionsAsync(_timeProvider.GetUtcNow().UtcDateTime.SubtractMinutes(30));
         Assert.Equal(3, results.Total);
     }
 
@@ -203,7 +201,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         const string _clientIpAddress = "123.123.12.255";
         const int NUMBER_OF_EVENTS_TO_CREATE = 50;
 
-        var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, startDate: SystemClock.UtcNow.SubtractDays(2), endDate: SystemClock.UtcNow).ToList();
+        var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, startDate: _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(2), endDate: _timeProvider.GetUtcNow().UtcDateTime).ToList();
         events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
         await _repository.AddAsync(events, o => o.ImmediateConsistency());
 
@@ -216,7 +214,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
 
-        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2), o => o.ImmediateConsistency());
+        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(3), _timeProvider.GetUtcNow().UtcDateTime.AddDays(2), o => o.ImmediateConsistency());
 
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Empty(events);
@@ -226,7 +224,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
     private async Task CreateDataAsync()
     {
-        var baseDate = SystemClock.UtcNow.SubtractHours(1);
+        var baseDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractHours(1);
         var occurrenceDateStart = baseDate.AddMinutes(-30);
         var occurrenceDateMid = baseDate;
         var occurrenceDateEnd = baseDate.AddMinutes(30);

@@ -4,7 +4,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility;
@@ -122,7 +121,7 @@ public class SampleDataService
             Id = TEST_PROJECT_ID,
             Name = "Disintegrating Pistol",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         disintegratingPistolProject.Configuration.Settings.Add("IncludeConditionalData", "true");
         disintegratingPistolProject.AddDefaultNotificationSettings(user.Id);
@@ -132,7 +131,7 @@ public class SampleDataService
             Id = TEST_ROCKET_SHIP_PROJECT_ID,
             Name = "Rocket Ship",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
 
         await _projectRepository.AddAsync(new List<Project> {
@@ -147,8 +146,8 @@ public class SampleDataService
                     Id = TEST_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = disintegratingPistolProject.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
+                    CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+                    UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = TokenType.Access
                 },
                 new()
@@ -156,16 +155,16 @@ public class SampleDataService
                     Id = TEST_ROCKET_SHIP_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = rocketShipProject.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
+                    CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+                    UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = TokenType.Access
                 },
                 new()
                 {
                     Id = TEST_USER_API_KEY,
                     UserId = user.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
+                    CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+                    UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = TokenType.Access
                 }
             }, o => o.ImmediateConsistency().Cache());
@@ -207,7 +206,7 @@ public class SampleDataService
             Id = FREE_PROJECT_ID,
             Name = "Free Plan Project",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         project.Configuration.Settings.Add("IncludeConditionalData", "true");
         project.AddDefaultNotificationSettings(user.Id);
@@ -220,16 +219,16 @@ public class SampleDataService
                     Id = FREE_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = project.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
+                    CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+                    UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = TokenType.Access
                 },
                     new()
                     {
                     Id = FREE_USER_API_KEY,
                     UserId = user.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
+                    CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+                    UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = TokenType.Access
                 }
             }, o => o.ImmediateConsistency().Cache());
@@ -254,7 +253,7 @@ public class SampleDataService
             Id = INTERNAL_PROJECT_ID,
             Name = "API",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         project.AddDefaultNotificationSettings(userId);
         project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache());
@@ -265,8 +264,8 @@ public class SampleDataService
             OrganizationId = organization.Id,
             ProjectId = project.Id,
             CreatedBy = userId,
-            CreatedUtc = SystemClock.UtcNow,
-            UpdatedUtc = SystemClock.UtcNow,
+            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+            UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
             Type = TokenType.Access
         }, o => o.ImmediateConsistency());
 

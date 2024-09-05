@@ -3,9 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Queues;
-using Foundatio.Utility;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
 
@@ -161,7 +159,7 @@ public class Mailer : IMailer
                 { "OrganizationName", organization.Name },
                 { "IsOverMonthlyLimit", isOverMonthlyLimit },
                 { "IsOverHourlyLimit", isOverHourlyLimit },
-                { "ThrottledUntil", SystemClock.UtcNow.StartOfHour().AddHours(1).ToShortTimeString() }
+                { "ThrottledUntil", _timeProvider.GetUtcNow().UtcDateTime.StartOfHour().AddHours(1).ToShortTimeString() }
             };
 
         return QueueMessageAsync(new MailMessage

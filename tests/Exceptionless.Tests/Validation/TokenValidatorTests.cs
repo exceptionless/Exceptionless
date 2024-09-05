@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,8 +28,8 @@ public sealed class TokenValidatorTests : TestWithServices
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Type = type,
             IsDisabled = isDisabled,
-            CreatedUtc = SystemClock.UtcNow,
-            UpdatedUtc = SystemClock.UtcNow
+            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+            UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         var result = _validator.Validate(token);

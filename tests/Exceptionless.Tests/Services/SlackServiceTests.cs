@@ -3,7 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -215,7 +214,7 @@ public sealed class SlackServiceTests : TestWithServices
         ev.OrganizationId = TestConstants.OrganizationId;
         ev.ProjectId = TestConstants.ProjectId;
         ev.StackId = TestConstants.StackId;
-        ev.Date = SystemClock.OffsetUtcNow;
+        ev.Date = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _slackService.SendEventNoticeAsync(ev, _project, RandomData.GetBool(), RandomData.GetBool());
         await RunWebHookJobAsync();

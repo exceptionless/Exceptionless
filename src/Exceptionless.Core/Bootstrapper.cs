@@ -250,17 +250,17 @@ public class Bootstrapper
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)
     {
-        services.AddJob<CloseInactiveSessionsJob>(true);
-        services.AddJob<DailySummaryJob>(true);
-        services.AddJob<EventNotificationsJob>(true);
-        services.AddJob<EventPostsJob>(true);
-        services.AddJob<EventUserDescriptionsJob>(true);
-        services.AddJob<MailMessageJob>(true);
-        services.AddJob<StackStatusJob>(true);
-        services.AddJob<StackEventCountJob>(true);
-        services.AddJob<WebHooksJob>(true);
-        services.AddJob<WorkItemJob>(true);
-        services.AddJob<EventUsageJob>(true);
+        services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventPostsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<MailMessageJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<StackStatusJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<WebHooksJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<WorkItemJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventUsageJob>(o => o.WaitForStartupActions(true));
 
         services.AddCronJob<CleanupDataJob>("30 */4 * * *");
         services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");

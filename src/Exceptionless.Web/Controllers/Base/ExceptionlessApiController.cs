@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -46,7 +47,7 @@ public abstract class ExceptionlessApiController : Controller
         var utcOffset = GetOffset(offset);
 
         // range parsing needs to be based on the user's local time.
-        var range = DateTimeRange.Parse(time, Foundatio.Utility.SystemClock.OffsetUtcNow.ToOffset(utcOffset));
+        var range = DateTimeRange.Parse(time, _timeProvider.GetUtcNow().UtcDateTime.ToOffset(utcOffset));
         var timeInfo = new TimeInfo { Field = field, Offset = utcOffset, Range = range };
         if (minimumUtcStartDate.HasValue)
             timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);

@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
@@ -25,8 +24,8 @@ internal static class TokenData
             UserId = userId,
             OrganizationId = organizationId!,
             ProjectId = projectId!,
-            CreatedUtc = SystemClock.UtcNow,
-            UpdatedUtc = SystemClock.UtcNow,
+            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
+            UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
             CreatedBy = userId ?? TestConstants.UserId,
             Type = type,
             Notes = notes

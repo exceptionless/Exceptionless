@@ -8,7 +8,6 @@ using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -285,7 +284,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     protected override Task<Token> AddModelAsync(Token value)
     {
         value.Id = StringExtensions.GetNewToken();
-        value.CreatedUtc = value.UpdatedUtc = SystemClock.UtcNow;
+        value.CreatedUtc = value.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         value.Type = TokenType.Access;
         value.CreatedBy = CurrentUser?.Id ?? throw new InvalidOperationException();
 

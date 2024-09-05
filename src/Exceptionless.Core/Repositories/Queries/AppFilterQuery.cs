@@ -8,7 +8,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
-using Foundatio.Utility;
 using Nest;
 
 namespace Exceptionless.Core.Repositories
@@ -177,7 +176,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 throw new ArgumentNullException(nameof(field), "Retention field not specified for this index");
 
             var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge);
-            double retentionDays = Math.Max(Math.Round(Math.Abs(SystemClock.UtcNow.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);
+            double retentionDays = Math.Max(Math.Round(Math.Abs(_timeProvider.GetUtcNow().UtcDateTime.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 

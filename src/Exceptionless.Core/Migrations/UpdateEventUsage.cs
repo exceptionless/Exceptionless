@@ -7,7 +7,6 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -53,7 +52,7 @@ public sealed class UpdateEventUsage : MigrationBase
         long total = organizationResults.Total;
         int processed = 0;
         int error = 0;
-        var lastStatus = SystemClock.Now;
+        var lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
 
         while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
@@ -93,14 +92,14 @@ public sealed class UpdateEventUsage : MigrationBase
                 }
             }
 
-            if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
+            if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
             {
-                lastStatus = SystemClock.UtcNow;
+                lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
                 _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount} Duration={Duration}", processed, total, error, sw.Elapsed.ToWords());
             }
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
             if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
                 break;
         }

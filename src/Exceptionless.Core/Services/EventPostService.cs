@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Queues.Models;
 using Foundatio.Queues;
 using Foundatio.Storage;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
@@ -25,7 +24,7 @@ public class EventPostService
 
         if (data.ShouldArchive)
         {
-            data.FilePath = GetArchivePath(SystemClock.UtcNow, data.ProjectId, $"{Guid.NewGuid():N}.json");
+            data.FilePath = GetArchivePath(_timeProvider.GetUtcNow().UtcDateTime, data.ProjectId, $"{Guid.NewGuid():N}.json");
         }
         else
         {

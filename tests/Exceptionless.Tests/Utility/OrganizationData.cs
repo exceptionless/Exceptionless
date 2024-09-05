@@ -3,7 +3,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
@@ -54,8 +53,8 @@ internal static class OrganizationData
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -65,7 +64,7 @@ internal static class OrganizationData
             {
                 EmailAddress = inviteEmail,
                 Token = Guid.NewGuid().ToString(),
-                DateAdded = SystemClock.UtcNow
+                DateAdded = _timeProvider.GetUtcNow().UtcDateTime
             });
         }
 
@@ -74,7 +73,7 @@ internal static class OrganizationData
             organization.IsSuspended = true;
             organization.SuspensionCode = SuspensionCode.Abuse;
             organization.SuspendedByUserId = TestConstants.UserId;
-            organization.SuspensionDate = SystemClock.UtcNow;
+            organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
         }
 
         return organization;

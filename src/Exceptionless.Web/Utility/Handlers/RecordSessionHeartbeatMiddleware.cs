@@ -2,7 +2,6 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
-using Foundatio.Utility;
 
 namespace Exceptionless.Web.Utility;
 
@@ -57,7 +56,7 @@ public sealed class RecordSessionHeartbeatMiddleware
         try
         {
             await Task.WhenAll(
-                _cache.SetAsync(heartbeatCacheKey, SystemClock.UtcNow, TimeSpan.FromHours(2)),
+                _cache.SetAsync(heartbeatCacheKey, _timeProvider.GetUtcNow().UtcDateTime, TimeSpan.FromHours(2)),
                 close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
             );
         }

@@ -2,7 +2,6 @@
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Utility;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -34,7 +33,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
         var message = CreateMailMessage(model);
         message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
-        message.Headers.Add("X-Mailer-Date", SystemClock.UtcNow.ToString());
+        message.Headers.Add("X-Mailer-Date", _timeProvider.GetUtcNow().UtcDateTime.ToString());
         message.Headers.Add("X-Auto-Response-Suppress", "All");
         message.Headers.Add("Auto-Submitted", "auto-generated");
 
@@ -69,7 +68,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
         sw.Stop();
 
-        _lastSuccessfulConnection = SystemClock.UtcNow;
+        _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
     }
 
     private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption)
@@ -107,7 +106,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        if (_lastSuccessfulConnection.IsAfter(SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(5))))
+        if (_lastSuccessfulConnection.IsAfter(_timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromMinutes(5))))
             return HealthCheckResult.Healthy();
 
         string? host = _emailOptions.SmtpHost;
@@ -135,7 +134,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
             await client.DisconnectAsync(true);
 
-            _lastSuccessfulConnection = SystemClock.UtcNow;
+            _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
         }
         catch (Exception ex)
         {

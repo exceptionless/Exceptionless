@@ -1,5 +1,4 @@
 using Exceptionless.Core.Models;
-using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -32,7 +31,7 @@ public static class UsageExtensions
             return;
 
         // remove old usage entries
-        foreach (var usage in usages.Where(u => u.Date < SystemClock.UtcNow.Subtract(maxUsageAge.Value)).ToList())
+        foreach (var usage in usages.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(maxUsageAge.Value)).ToList())
             usages.Remove(usage);
     }
 }

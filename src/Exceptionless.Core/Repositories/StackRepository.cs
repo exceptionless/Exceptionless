@@ -5,7 +5,6 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -78,7 +77,7 @@ ctx._source.total_occurrences += params.count;";
                         { "minOccurrenceDateUtc", minOccurrenceDateUtc },
                         { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
                         { "count", count },
-                        { "updatedUtc", SystemClock.UtcNow }
+                        { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
                     }
             }
         };
@@ -123,7 +122,7 @@ ctx._source.total_occurrences += params.count;";
 
         return PatchAllAsync(
             q => q.Organization(organizationId).Project(projectId),
-            new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow })
+            new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime })
         );
     }
 

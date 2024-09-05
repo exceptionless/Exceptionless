@@ -4,7 +4,6 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Xunit;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -63,10 +62,10 @@ internal static class EventData
 
     public static PersistentEvent GenerateEvent(string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
     {
-        if (!startDate.HasValue || startDate > SystemClock.OffsetNow.AddHours(1))
-            startDate = SystemClock.OffsetNow.AddDays(-30);
-        if (!endDate.HasValue || endDate > SystemClock.OffsetNow.AddHours(1))
-            endDate = SystemClock.OffsetNow;
+        if (!startDate.HasValue || startDate > _timeProvider.GetLocalNow().AddHours(1))
+            startDate = _timeProvider.GetLocalNow().AddDays(-30);
+        if (!endDate.HasValue || endDate > _timeProvider.GetLocalNow().AddHours(1))
+            endDate = _timeProvider.GetLocalNow();
 
         var ev = new PersistentEvent
         {
@@ -201,8 +200,8 @@ internal static class EventData
             {
                 if (updateDates)
                 {
-                    ev.Date = SystemClock.OffsetNow;
-                    ev.CreatedUtc = SystemClock.UtcNow;
+                    ev.Date = _timeProvider.GetLocalNow();
+                    ev.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
                 }
 
                 ev.CopyDataToIndex([]);

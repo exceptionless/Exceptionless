@@ -7,7 +7,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -18,13 +17,15 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 {
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cache;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastActivity;
 
-    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _eventRepository = eventRepository;
         _cache = cacheClient;
+        _timeProvider = timeProvider;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
     }
 
@@ -35,8 +36,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        _lastActivity = SystemClock.UtcNow;
-        var results = await _eventRepository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(1), o => o.SearchAfterPaging().PageLimit(100));
+        _lastActivity = _timeProvider.GetUtcNow().UtcDateTime;
+        var results = await _eventRepository.GetOpenSessionsAsync(_timeProvider.GetUtcNow().UtcDateTime.SubtractMinutes(1), o => o.SearchAfterPaging().PageLimit(100));
         int sessionsClosed = 0;
         int totalSessions = 0;
         if (results.Documents.Count == 0)
@@ -44,7 +45,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
-            var inactivePeriodUtc = SystemClock.UtcNow.Subtract(DefaultInactivePeriod);
+            var inactivePeriodUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(DefaultInactivePeriod);
             var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
             var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
             var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -88,7 +89,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate.Count, results.Documents.Count);
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
@@ -96,7 +97,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             if (results.Documents.Count > 0)
             {
                 await context.RenewLockAsync();
-                _lastActivity = SystemClock.UtcNow;
+                _lastActivity = _timeProvider.GetUtcNow().UtcDateTime;
             }
         }
         _logger.LogInformation("Done checking active sessions. Closed {SessionClosedCount} of {SessionCount} sessions", sessionsClosed, totalSessions);
@@ -147,7 +148,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         if (!_lastActivity.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastActivity.Value) > TimeSpan.FromMinutes(5))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastActivity.Value) > TimeSpan.FromMinutes(5))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has no activity in the last 5 minutes."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has no activity in the last 5 minutes."));

@@ -12,7 +12,6 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
@@ -140,7 +139,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = _timeProvider.GetUtcNow().UtcDateTime
         };
         organization.Invites.Add(invite);
         organization = await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -190,7 +189,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         organization.Invites.Add(invite);
@@ -308,7 +307,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         organization.Invites.Clear();
@@ -371,7 +370,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = _timeProvider.GetUtcNow().UtcDateTime
         };
         organization.Invites.Add(invite);
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -407,7 +406,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = _timeProvider.GetUtcNow().UtcDateTime
         };
         organization.Invites.Add(invite);
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());

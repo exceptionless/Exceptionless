@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser;
@@ -15,7 +14,7 @@ public class FallbackEventParserPlugin : PluginBase, IEventParserPlugin
     {
         var events = input.SplitLines().Select(entry => new PersistentEvent
         {
-            Date = SystemClock.OffsetNow,
+            Date = _timeProvider.GetLocalNow(),
             Type = "log",
             Message = entry
         }).ToList();

@@ -1,8 +1,6 @@
 ﻿using System.Net;
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace Exceptionless.Core.Extensions;
 
 internal static class LoggerExtensions

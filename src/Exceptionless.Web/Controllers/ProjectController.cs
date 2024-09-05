@@ -16,7 +16,6 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -764,7 +763,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         var user = CurrentUser ?? throw new InvalidOperationException();
 
         value.IsConfigured = false;
-        value.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+        value.NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks;
         value.AddDefaultNotificationSettings(user.Id);
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
@@ -803,7 +802,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         var organizations = await _organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).ToArray(), o => o.Cache());
         var projects = viewProjects.Select(p => new Project { Id = p.Id, CreatedUtc = p.CreatedUtc, OrganizationId = p.OrganizationId }).ToList();
         var sf = new AppFilter(projects, organizations);
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
+        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), _timeProvider.GetUtcNow().UtcDateTime, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), _timeProvider.GetUtcNow().UtcDateTime);
         var result = await _eventRepository.CountAsync(q => q
             .SystemFilter(systemFilter)
             .AggregationsExpression($"terms:(project_id~{viewProjects.Count} cardinality:stack_id)")

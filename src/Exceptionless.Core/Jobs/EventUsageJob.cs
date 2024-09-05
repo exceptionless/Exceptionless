@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Services;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -12,12 +11,14 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck
 {
     private readonly UsageService _usageService;
     private readonly ILockProvider _lockProvider;
+    private readonly TimeProvider _timeProvider;
     private DateTime? _lastRun;
 
-    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _usageService = usageService;
         _lockProvider = lockProvider;
+        _timeProvider = timeProvider;
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
@@ -27,19 +28,19 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
 
         _logger.LogInformation("Saving pending event usage");
         await _usageService.SavePendingUsageAsync();
         _logger.LogInformation("Finished saving pending event usage");
 
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return JobResult.Success;
     }
 
     private Task RenewLockAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return context.RenewLockAsync();
     }
 
@@ -48,7 +49,7 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(5))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(5))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 5 minutes."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 30 minutes."));

@@ -4,7 +4,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;

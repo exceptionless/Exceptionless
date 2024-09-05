@@ -1,5 +1,4 @@
 ﻿using Exceptionless.Core.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser;
@@ -29,7 +28,7 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
                 events.ForEach(e =>
                 {
                     if (e.Date == DateTimeOffset.MinValue)
-                        e.Date = SystemClock.OffsetNow;
+                        e.Date = _timeProvider.GetLocalNow();
 
                     if (String.IsNullOrWhiteSpace(e.Type))
                         e.Type = e.HasError() || e.HasSimpleError() ? Event.KnownTypes.Error : Event.KnownTypes.Log;

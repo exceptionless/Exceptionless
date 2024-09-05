@@ -1,6 +1,5 @@
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -52,9 +51,9 @@ public class StackService
             string countCacheKey = GetStackOccurrenceCountCacheKey(stackId);
             var countTask = _cache.GetAsync<long>(countCacheKey, 0);
             string minDateCacheKey = GetStackOccurrenceMinDateCacheKey(stackId);
-            var minDateTask = _cache.GetUnixTimeMillisecondsAsync(minDateCacheKey, SystemClock.UtcNow);
+            var minDateTask = _cache.GetUnixTimeMillisecondsAsync(minDateCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
             string maxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(stackId);
-            var maxDateTask = _cache.GetUnixTimeMillisecondsAsync(maxDateCacheKey, SystemClock.UtcNow);
+            var maxDateTask = _cache.GetUnixTimeMillisecondsAsync(maxDateCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
 
             await Task.WhenAll(
                 removeFromSetTask,

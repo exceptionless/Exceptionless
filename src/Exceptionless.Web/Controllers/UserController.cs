@@ -6,14 +6,12 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -172,7 +170,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         // Only allow 3 email address updates per hour period by a single user.
         string updateEmailAddressAttemptsCacheKey = $"{CurrentUser?.Id}:attempts";
-        long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+        long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
             return BadRequest("Update email address rate limit reached. Please try updating later.");
 

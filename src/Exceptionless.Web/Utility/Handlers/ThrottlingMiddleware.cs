@@ -1,8 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
-using Foundatio.Utility;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
@@ -54,7 +52,7 @@ public class ThrottlingMiddleware
 
     private string GetCacheKey(string userIdentifier)
     {
-        return String.Concat("api:", userIdentifier, ":", SystemClock.UtcNow.Floor(_options.Period).Ticks);
+        return String.Concat("api:", userIdentifier, ":", _timeProvider.GetUtcNow().UtcDateTime.Floor(_options.Period).Ticks);
     }
 
     public async Task Invoke(HttpContext context)
@@ -78,7 +76,7 @@ public class ThrottlingMiddleware
             string cacheKey = GetCacheKey(identifier);
             requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
             if (requestCount == 1)
-                await _cacheClient.SetExpirationAsync(cacheKey, SystemClock.UtcNow.Ceiling(_options.Period));
+                await _cacheClient.SetExpirationAsync(cacheKey, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(_options.Period));
         }
         catch { }
 

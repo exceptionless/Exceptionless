@@ -4,7 +4,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -14,12 +13,14 @@ namespace Exceptionless.Core.Jobs;
 public class StackStatusJob : JobWithLockBase, IHealthCheck
 {
     private readonly IStackRepository _stackRepository;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(timeProvider, loggerFactory)
     {
         _stackRepository = stackRepository;
+        _timeProvider = timeProvider;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(10));
     }
 
@@ -31,11 +32,11 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
         const int LIMIT = 100;
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         _logger.LogTrace("Start save stack event counts");
 
         // Get list of stacks where snooze has expired
-        var results = await _stackRepository.GetExpiredSnoozedStatuses(SystemClock.UtcNow, o => o.PageLimit(LIMIT));
+        var results = await _stackRepository.GetExpiredSnoozedStatuses(_timeProvider.GetUtcNow().UtcDateTime, o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var stack in results.Documents)
@@ -44,7 +45,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
             await _stackRepository.SaveAsync(results.Documents);
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
@@ -62,7 +63,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(1))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(1))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last minute."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last minute."));

@@ -7,7 +7,6 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -52,7 +51,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
             }
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;

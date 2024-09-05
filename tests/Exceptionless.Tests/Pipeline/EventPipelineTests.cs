@@ -13,12 +13,10 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Storage;
-using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 using Xunit;
 using Xunit.Abstractions;
@@ -58,7 +56,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task NoFutureEventsAsync()
     {
-        var localTime = SystemClock.UtcNow;
+        var localTime = _timeProvider.GetUtcNow().UtcDateTime;
         var ev = GenerateEvent(localTime.AddMinutes(10));
 
         var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
@@ -73,7 +71,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public Task CreateAutoSessionAsync()
     {
-        return CreateAutoSessionInternalAsync(SystemClock.OffsetNow);
+        return CreateAutoSessionInternalAsync(_timeProvider.GetLocalNow());
     }
 
     private async Task CreateAutoSessionInternalAsync(DateTimeOffset date)
@@ -97,7 +95,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CanUpdateExistingAutoSessionAsync()
     {
-        var startDate = SystemClock.OffsetNow.SubtractMinutes(5);
+        var startDate = _timeProvider.GetLocalNow().SubtractMinutes(5);
         await CreateAutoSessionInternalAsync(startDate);
 
         var ev = GenerateEvent(startDate.AddMinutes(4), "blake@exceptionless.io");
@@ -120,7 +118,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task IgnoreAutoSessionsWithoutIdentityAsync()
     {
-        var ev = GenerateEvent(SystemClock.OffsetNow);
+        var ev = GenerateEvent(_timeProvider.GetLocalNow());
         var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         Assert.False(context.HasError, context.ErrorMessage);
         Assert.False(context.IsCancelled);
@@ -136,7 +134,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CreateAutoSessionStartEventsAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io"),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
@@ -167,7 +165,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task UpdateAutoMultipleSessionStartEventDurationsAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.Session),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.Session),
@@ -192,7 +190,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task UpdateAutoSessionLastActivityAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
         var events = new List<PersistentEvent> {
@@ -235,7 +233,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CloseExistingAutoSessionAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         string identity = "blake@exceptionless.io";
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, identity),
@@ -279,7 +277,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task IgnoreDuplicateAutoEndSessionsAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, "blake@exceptionless.io", Event.KnownTypes.SessionEnd),
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionEnd)
@@ -298,7 +296,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task WillMarkAutoSessionHeartbeatStackHiddenAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), "blake@exceptionless.io", Event.KnownTypes.SessionHeartbeat)
             };
@@ -322,7 +320,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public Task CreateManualSessionAsync()
     {
-        return CreateManualSessionInternalAsync(SystemClock.OffsetNow);
+        return CreateManualSessionInternalAsync(_timeProvider.GetLocalNow());
     }
 
     private async Task CreateManualSessionInternalAsync(DateTimeOffset start)
@@ -347,7 +345,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CanUpdateExistingManualSessionAsync()
     {
-        var startDate = SystemClock.OffsetNow.SubtractMinutes(5);
+        var startDate = _timeProvider.GetLocalNow().SubtractMinutes(5);
         await CreateManualSessionInternalAsync(startDate);
 
         var ev = GenerateEvent(startDate.AddMinutes(4), sessionId: "12345678");
@@ -370,7 +368,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CreateManualSingleSessionStartEventAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.Session, sessionId: "12345678"),
@@ -397,7 +395,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CreateManualSessionStartEventAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 // This event will be deduplicated as part of the manual session plugin.
@@ -426,7 +424,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task UpdateManualSessionLastActivityAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var lastEventDate = firstEventDate.Add(TimeSpan.FromMinutes(1));
 
         var events = new List<PersistentEvent> {
@@ -452,7 +450,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task CloseExistingManualSessionAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
@@ -493,7 +491,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task IgnoreDuplicateManualEndSessionsAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate, type: Event.KnownTypes.SessionEnd, sessionId: "12345678"),
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionEnd, sessionId: "12345678")
@@ -512,7 +510,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task WillMarkManualSessionHeartbeatStackHiddenAsync()
     {
-        var firstEventDate = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(5));
+        var firstEventDate = _timeProvider.GetLocalNow().Subtract(TimeSpan.FromMinutes(5));
         var events = new List<PersistentEvent> {
                 GenerateEvent(firstEventDate.AddSeconds(10), type: Event.KnownTypes.SessionHeartbeat, sessionId: "12345678")
             };
@@ -536,7 +534,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public void CanIndexExtendedData()
     {
-        var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: SystemClock.UtcNow);
+        var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: _timeProvider.GetUtcNow().UtcDateTime);
         ev.Data ??= new DataDictionary();
         ev.Data.Add("First Name", "Eric"); // invalid field name
         ev.Data.Add("IsVerified", true);
@@ -577,7 +575,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         const string Tag2 = "Tag Two";
         const string Tag2_Lowercase = "tag two";
 
-        var ev = GenerateEvent(SystemClock.UtcNow);
+        var ev = GenerateEvent(_timeProvider.GetUtcNow().UtcDateTime);
         ev.Tags ??= [];
         ev.Tags.Add(Tag1);
 
@@ -591,7 +589,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
         Assert.Equal(new[] { Tag1 }, stack.Tags.ToArray());
 
-        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: _timeProvider.GetUtcNow().UtcDateTime);
         ev.Tags ??= [];
         ev.Tags.Add(Tag2);
 
@@ -601,7 +599,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
         Assert.Equal(new[] { Tag1, Tag2 }, stack.Tags.ToArray());
 
-        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: _timeProvider.GetUtcNow().UtcDateTime);
         ev.Tags ??= [];
         ev.Tags.Add(Tag2_Lowercase);
 
@@ -617,7 +615,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     {
         string LargeRemovedTags = new('x', 150);
 
-        var ev = GenerateEvent(SystemClock.UtcNow);
+        var ev = GenerateEvent(_timeProvider.GetUtcNow().UtcDateTime);
         ev.Tags ??= [];
         ev.Tags.Add(LargeRemovedTags);
 
@@ -633,7 +631,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
         Assert.Empty(stack.Tags);
 
-        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: _timeProvider.GetUtcNow().UtcDateTime);
         ev.Tags.AddRange(Enumerable.Range(0, 100).Select(i => i.ToString()));
 
         await RefreshDataAsync();
@@ -649,7 +647,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
         Assert.Equal(50, stack.Tags.Count);
 
-        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: SystemClock.UtcNow);
+        ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: _timeProvider.GetUtcNow().UtcDateTime);
         ev.Tags ??= [];
         ev.Tags.Add(new string('x', 150));
         ev.Tags.AddRange(Enumerable.Range(100, 200).Select(i => i.ToString()));
@@ -678,8 +676,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     {
         string source = Guid.NewGuid().ToString();
         var contexts = new List<EventContext> {
-                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
-                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = SystemClock.UtcNow, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = _timeProvider.GetUtcNow().UtcDateTime, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
+                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = _timeProvider.GetUtcNow().UtcDateTime, Type = Event.KnownTypes.Log }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
             };
 
         await _pipeline.RunAsync(contexts);
@@ -698,7 +696,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
-                    Date = SystemClock.UtcNow,
+                    Date = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception", Type = "Error" } } }
                 }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
@@ -706,7 +704,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
-                    Date = SystemClock.UtcNow,
+                    Date = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary { { "@error", new Error { Message = "Test Exception 2", Type = "Error" } } }
                 }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject()),
@@ -723,7 +721,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task EnsureSingleRegressionAsync()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
         var context = new EventContext(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
         await _pipeline.RunAsync(context);
@@ -793,7 +791,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task EnsureVersionedRegressionAsync()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
         var project = ProjectData.GenerateSampleProject();
         var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
@@ -868,7 +866,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ProjectId = TestConstants.ProjectId,
                     OrganizationId = TestConstants.OrganizationId,
                     Message = "Test Exception",
-                    Date = SystemClock.UtcNow,
+                    Date = _timeProvider.GetUtcNow().UtcDateTime,
                     Type = Event.KnownTypes.Error,
                     Data = new DataDictionary {
                         { "@error", new Error { Message = "Test Exception", Type = "Error" } },
@@ -930,7 +928,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
         var project = ProjectData.GenerateSampleProject();
 
-        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow());
         var context = await _pipeline.RunAsync(ev, organization, project);
         Assert.True(context.IsProcessed);
         Assert.False(context.HasError);
@@ -945,7 +943,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         stack.Status = StackStatus.Discarded;
         stack = await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
 
-        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow());
         context = await _pipeline.RunAsync(ev, organization, project);
         Assert.False(context.IsProcessed);
         Assert.False(context.HasError);
@@ -953,7 +951,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.True(context.IsDiscarded);
         await RefreshDataAsync();
 
-        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow());
         context = await _pipeline.RunAsync(ev, organization, project);
         Assert.False(context.IsProcessed);
         Assert.False(context.HasError);
@@ -974,7 +972,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId, o => o.Cache());
         var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId, o => o.Cache());
 
-        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow());
         var context = await _pipeline.RunAsync(ev, organization, project);
 
         var stack = context.Stack;
@@ -992,7 +990,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
 
         await RefreshDataAsync();
-        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow, semver: eventSemanticVersion);
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow(), semver: eventSemanticVersion);
         context = await _pipeline.RunAsync(ev, organization, project);
 
         stack = context.Stack;
@@ -1014,7 +1012,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var project = await _projectRepository.AddAsync(ProjectData.GenerateProject(organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
 
-        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow);
+        var ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow());
         var context = await _pipeline.RunAsync(ev, organization, project);
 
         var stack = context.Stack;
@@ -1032,7 +1030,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
 
         await RefreshDataAsync();
-        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: SystemClock.OffsetNow, semver: eventSemanticVersion);
+        ev = EventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: _timeProvider.GetLocalNow(), semver: eventSemanticVersion);
         context = await _pipeline.RunAsync(ev, organization, project);
 
         stack = context.Stack;
@@ -1054,7 +1052,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         foreach (var ev in events)
         {
-            ev.Date = SystemClock.UtcNow;
+            ev.Date = _timeProvider.GetUtcNow().UtcDateTime;
             ev.ProjectId = TestConstants.ProjectId;
             ev.OrganizationId = TestConstants.OrganizationId;
         }
@@ -1070,7 +1068,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     {
         var parserPluginManager = GetService<EventParserPluginManager>();
         var pipeline = GetService<EventPipeline>();
-        var startDate = SystemClock.OffsetNow.SubtractHours(1);
+        var startDate = _timeProvider.GetLocalNow().SubtractHours(1);
         int totalBatches = 0;
         int totalEvents = 0;
 
@@ -1232,8 +1230,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             {
                 organization.StripeCustomerId = "stripe_customer_id";
                 organization.CardLast4 = "1234";
-                organization.SubscribeDate = SystemClock.UtcNow;
-                organization.BillingChangeDate = SystemClock.UtcNow;
+                organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+                organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
                 organization.BillingChangedByUserId = TestConstants.UserId;
             }
 
@@ -1241,7 +1239,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             {
                 organization.SuspendedByUserId = TestConstants.UserId;
                 organization.SuspensionCode = SuspensionCode.Billing;
-                organization.SuspensionDate = SystemClock.UtcNow;
+                organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
             }
 
             await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
@@ -1266,7 +1264,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
     private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)
     {
-        occurrenceDate ??= SystemClock.OffsetNow;
+        occurrenceDate ??= _timeProvider.GetLocalNow();
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
     }
 }

@@ -6,7 +6,6 @@ using Foundatio.Jobs;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -16,14 +15,17 @@ namespace Exceptionless.Core.Jobs.Elastic;
 public class DataMigrationJob : JobBase
 {
     private readonly ExceptionlessElasticConfiguration _configuration;
+    private readonly TimeProvider _timeProvider;
     private const string MIGRATE_VERSION_SCRIPT = "if (ctx._source.version instanceof String == false) { ctx._source.version = 'v' + ctx._source.version.major; }";
 
     public DataMigrationJob(
         ExceptionlessElasticConfiguration configuration,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(loggerFactory)
+    ) : base(timeProvider, loggerFactory)
     {
         _configuration = configuration;
+        _timeProvider = timeProvider;
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
@@ -53,7 +55,7 @@ public class DataMigrationJob : JobBase
         {
             for (int day = 0; day <= retentionPeriod.Days; day++)
             {
-                var date = day == 0 ? SystemClock.UtcNow : SystemClock.UtcNow.SubtractDays(day);
+                var date = day == 0 ? _timeProvider.GetUtcNow().UtcDateTime : _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(day);
                 string indexToCreate = $"{scope}events-v1-{date:yyyy.MM.dd}";
                 workItemQueue.Enqueue(new ReindexWorkItem($"{sourceScope}events-v1-{date:yyyy.MM.dd}", "events", indexToCreate, "updated_utc", () => index.EnsureIndexAsync(date)));
             }
@@ -63,8 +65,8 @@ public class DataMigrationJob : JobBase
         var aliasCache = new ScopedCacheClient(_configuration.Cache, "alias");
         await aliasCache.RemoveAllAsync();
 
-        var started = SystemClock.UtcNow;
-        var lastProgress = SystemClock.UtcNow;
+        var started = _timeProvider.GetUtcNow().UtcDateTime;
+        var lastProgress = _timeProvider.GetUtcNow().UtcDateTime;
         int retriesCount = 0;
         int totalTasks = workItemQueue.Count;
         var workingTasks = new List<ReindexWorkItem>();
@@ -188,15 +190,15 @@ public class DataMigrationJob : JobBase
 
                 _logger.LogInformation("COMPLETED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
             }
-            if (SystemClock.UtcNow.Subtract(lastProgress) > TimeSpan.FromMinutes(5))
+            if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(lastProgress) > TimeSpan.FromMinutes(5))
             {
-                _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, SystemClock.UtcNow.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
-                lastProgress = SystemClock.UtcNow;
+                _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
+                lastProgress = _timeProvider.GetUtcNow().UtcDateTime;
             }
             await Task.Delay(TimeSpan.FromSeconds(2));
         }
 
-        _logger.LogInformation("----- REINDEX COMPLETE", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
+        _logger.LogInformation("----- REINDEX COMPLETE", completedTasks.Count, totalTasks, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), failedTasks.Count, retriesCount);
         foreach (var task in completedTasks)
         {
             var status = task.LastTaskInfo.Status;
@@ -216,7 +218,7 @@ public class DataMigrationJob : JobBase
             var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
             _logger.LogCritical("FAILED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
-        _logger.LogInformation("----- SUMMARY - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, SystemClock.UtcNow.Subtract(started), failedTasks.Count, retriesCount);
+        _logger.LogInformation("----- SUMMARY - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), failedTasks.Count, retriesCount);
 
         _logger.LogInformation("Updating aliases");
         await _configuration.MaintainIndexesAsync();

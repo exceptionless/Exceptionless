@@ -25,7 +25,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -179,7 +178,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization is null)
             return NotFound();
 
-        if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < SystemClock.UtcNow.SubtractDays(organization.RetentionDays))
+        if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(organization.RetentionDays))
             return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
         var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
@@ -862,7 +861,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         try
         {
             await Task.WhenAll(
-                _cache.SetAsync(heartbeatCacheKey, SystemClock.UtcNow, TimeSpan.FromHours(2)),
+                _cache.SetAsync(heartbeatCacheKey, _timeProvider.GetUtcNow().UtcDateTime, TimeSpan.FromHours(2)),
                 close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
             );
         }

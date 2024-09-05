@@ -16,7 +16,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -26,7 +25,6 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Xunit;
@@ -551,7 +549,7 @@ public class EventControllerTests : IntegrationTestsBase
             .QueryString("filter", "-type:heartbeat")
             .QueryString("limit", "10")
             .QueryString("offset", "-360m")
-            .QueryString("time", $"{SystemClock.UtcNow.SubtractDays(180):s}-now")
+            .QueryString("time", $"{_timeProvider.GetUtcNow().UtcDateTime.SubtractDays(180):s}-now")
             .StatusCodeShouldBeOk()
         );
 
@@ -658,7 +656,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Theory]
     public async Task WillExcludeDeletedStacks(string? filter)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await CreateDataAsync(d =>
         {
@@ -716,7 +714,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task WillExcludeOldStacksForStackNewMode()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await CreateDataAsync(d =>
         {
@@ -834,7 +832,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task ShouldRespectEventUsageLimits()
     {
-        TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
+        TestSystemClock.SetFrozenTime(_timeProvider.GetUtcNow().UtcDateTime.StartOfMonth());
 
         // update plan limits
         var billingManager = GetService<BillingManager>();
@@ -847,8 +845,8 @@ public class EventControllerTests : IntegrationTestsBase
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -994,7 +992,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task ShouldDiscardEventsForSuspendedOrganization()
     {
-        TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
+        TestSystemClock.SetFrozenTime(_timeProvider.GetUtcNow().UtcDateTime.StartOfMonth());
 
         // update plan limits
         var billingManager = GetService<BillingManager>();
@@ -1007,8 +1005,8 @@ public class EventControllerTests : IntegrationTestsBase
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1078,7 +1076,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PlanChangeShouldAllowEventSubmission()
     {
-        TestSystemClock.SetFrozenTime(SystemClock.UtcNow.StartOfMonth());
+        TestSystemClock.SetFrozenTime(_timeProvider.GetUtcNow().UtcDateTime.StartOfMonth());
 
         // update plan limits
         var billingManager = GetService<BillingManager>();
@@ -1091,8 +1089,8 @@ public class EventControllerTests : IntegrationTestsBase
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1154,8 +1152,8 @@ public class EventControllerTests : IntegrationTestsBase
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1207,8 +1205,8 @@ public class EventControllerTests : IntegrationTestsBase
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1243,7 +1241,7 @@ public class EventControllerTests : IntegrationTestsBase
 
     private async Task CreateStacksAndEventsAsync()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         await CreateDataAsync(d =>
         {

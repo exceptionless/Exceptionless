@@ -5,7 +5,6 @@ using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
@@ -92,7 +91,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     private async Task<string?> GetPreviousEventIdAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
-        var retentionDate = _options.MaximumRetentionDays > 0 ? SystemClock.UtcNow.Date.SubtractDays(_options.MaximumRetentionDays) : DateTime.MinValue;
+        var retentionDate = _options.MaximumRetentionDays > 0 ? _timeProvider.GetUtcNow().UtcDateTime.Date.SubtractDays(_options.MaximumRetentionDays) : DateTime.MinValue;
         if (!utcStart.HasValue || utcStart.Value.IsBefore(retentionDate))
             utcStart = retentionDate;
 
@@ -136,8 +135,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (!utcStart.HasValue || utcStart.Value.IsBefore(ev.Date.UtcDateTime))
             utcStart = ev.Date.UtcDateTime;
 
-        if (!utcEnd.HasValue || utcEnd.Value.IsAfter(SystemClock.UtcNow))
-            utcEnd = SystemClock.UtcNow;
+        if (!utcEnd.HasValue || utcEnd.Value.IsAfter(_timeProvider.GetUtcNow().UtcDateTime))
+            utcEnd = _timeProvider.GetUtcNow().UtcDateTime;
 
         var utcEventDate = ev.Date.UtcDateTime;
         // utcEnd is before the current event date.

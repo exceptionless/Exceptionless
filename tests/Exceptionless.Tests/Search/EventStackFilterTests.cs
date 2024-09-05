@@ -5,7 +5,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;

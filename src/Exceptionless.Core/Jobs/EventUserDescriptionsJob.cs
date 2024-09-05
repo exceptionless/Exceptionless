@@ -14,7 +14,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 {
     private readonly IEventRepository _eventRepository;
 
-    public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
+    public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
     {
         _eventRepository = eventRepository;
     }

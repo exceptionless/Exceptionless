@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
-using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -33,7 +32,7 @@ public static class OrganizationExtensions
             oldestPossibleEventAge = oldestPossibleOrganizationEventAge;
 
         int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : maximumRetentionDays;
-        var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : SystemClock.UtcNow.Date.AddDays(-retentionDays);
+        var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(-retentionDays);
         return retentionDate.IsAfter(oldestPossibleEventAge.Value) ? retentionDate : oldestPossibleEventAge.Value;
     }
 
@@ -56,7 +55,7 @@ public static class OrganizationExtensions
         if (apiThrottleLimit == Int32.MaxValue)
             return false;
 
-        string cacheKey = String.Concat("api", ":", organizationId, ":", SystemClock.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
+        string cacheKey = String.Concat("api", ":", organizationId, ":", _timeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(15)).Ticks);
         var limit = await cacheClient.GetAsync<long>(cacheKey);
         return limit.HasValue && limit.Value >= apiThrottleLimit;
     }
@@ -66,7 +65,7 @@ public static class OrganizationExtensions
         if (organization.MaxEventsPerMonth <= 0)
             return -1;
 
-        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > SystemClock.UtcNow ? organization.BonusEventsPerMonth : 0;
+        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > _timeProvider.GetUtcNow().UtcDateTime ? organization.BonusEventsPerMonth : 0;
         return organization.MaxEventsPerMonth + bonusEvents;
     }
 
@@ -100,25 +99,25 @@ public static class OrganizationExtensions
 
     public static UsageHourInfo GetCurrentHourlyUsage(this Organization organization)
     {
-        return organization.GetHourlyUsage(SystemClock.UtcNow);
+        return organization.GetHourlyUsage(_timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static void TrimUsage(this Organization organization)
     {
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .ToList();
     }
 
     public static UsageInfo GetCurrentUsage(this Organization organization)
     {
-        return organization.GetUsage(SystemClock.UtcNow);
+        return organization.GetUsage(_timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static UsageInfo GetUsage(this Organization organization, DateTime date)

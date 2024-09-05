@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Utility;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -35,7 +34,7 @@ public static class TimeInfoExtensions
         long startTicks = ti.Range.UtcStart.Ticks + ti.Offset.Ticks;
         var start = startTicks > DateTime.MinValue.Ticks ? new DateTimeOffset(startTicks, ti.Offset) : new DateTimeOffset(DateTime.MinValue, TimeSpan.Zero);
 
-        var end = new DateTimeOffset(SystemClock.UtcNow.Ticks + ti.Offset.Ticks, ti.Offset);
+        var end = new DateTimeOffset(_timeProvider.GetUtcNow().UtcDateTime.Ticks + ti.Offset.Ticks, ti.Offset);
         ti.Range = new DateTimeRange(start, end);
     }
 }

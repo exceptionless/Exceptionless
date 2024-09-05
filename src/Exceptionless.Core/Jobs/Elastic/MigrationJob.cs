@@ -12,8 +12,8 @@ public class MigrationJob : JobBase
     private readonly MigrationManager _migrationManager;
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public MigrationJob(ILoggerFactory loggerFactory, MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration)
-        : base(loggerFactory)
+    public MigrationJob(MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration, TimeProvider timeProvider, LoggerFactory loggerFactory)
+        : base(timeProvider, loggerFactory)
     {
 
         _migrationManager = migrationManager;

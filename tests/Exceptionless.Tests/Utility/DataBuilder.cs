@@ -403,7 +403,7 @@ public class EventDataBuilder
         Status(StackStatus.Fixed);
         _stackMutations.Add(s =>
         {
-            var fixedOn = dateFixed ?? SystemClock.UtcNow;
+            var fixedOn = dateFixed ?? _timeProvider.GetUtcNow().UtcDateTime;
             if (s.FirstOccurrence.IsAfter(fixedOn))
                 throw new ArgumentException("Fixed on date is before first occurence");
 
@@ -432,7 +432,7 @@ public class EventDataBuilder
     public EventDataBuilder Snooze(DateTime? snoozeUntil = null)
     {
         Status(StackStatus.Snoozed);
-        _stackMutations.Add(s => s.SnoozeUntilUtc = snoozeUntil ?? SystemClock.UtcNow.AddDays(1));
+        _stackMutations.Add(s => s.SnoozeUntilUtc = snoozeUntil ?? _timeProvider.GetUtcNow().UtcDateTime.AddDays(1));
 
         return this;
     }
@@ -458,7 +458,7 @@ public class EventDataBuilder
         if (String.IsNullOrEmpty(_event.Source))
             _event.Source = "Test Event";
         if (_event.Date == DateTimeOffset.MinValue)
-            _event.Date = SystemClock.OffsetNow;
+            _event.Date = _timeProvider.GetLocalNow();
         if (_event.CreatedUtc == DateTime.MinValue)
             _event.CreatedUtc = _event.Date.UtcDateTime;
 

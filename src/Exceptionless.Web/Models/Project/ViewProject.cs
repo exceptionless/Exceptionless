@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 
 namespace Exceptionless.Web.Models;
 
@@ -43,14 +42,14 @@ public static class ViewProjectExtensions
 
     public static UsageHourInfo GetCurrentHourlyUsage(this ViewProject project)
     {
-        return project.GetHourlyUsage(SystemClock.UtcNow);
+        return project.GetHourlyUsage(_timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static void EnsureUsage(this ViewProject project, int limit)
     {
-        var startDate = SystemClock.UtcNow.SubtractYears(1).StartOfMonth();
+        var startDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractYears(1).StartOfMonth();
 
-        while (startDate < SystemClock.UtcNow.StartOfMonth())
+        while (startDate < _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
         {
             project.GetUsage(startDate, limit);
             startDate = startDate.AddMonths(1).StartOfMonth();
@@ -59,7 +58,7 @@ public static class ViewProjectExtensions
 
     public static UsageInfo GetCurrentUsage(this ViewProject project, int limit)
     {
-        return project.GetUsage(SystemClock.UtcNow, limit);
+        return project.GetUsage(_timeProvider.GetUtcNow().UtcDateTime, limit);
     }
 
     public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
@@ -82,12 +81,12 @@ public static class ViewProjectExtensions
     {
         // keep 1 year of usage
         project.Usage = project.Usage.Except(project.Usage
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         project.UsageHours = project.UsageHours.Except(project.UsageHours
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .ToList();
     }
 }

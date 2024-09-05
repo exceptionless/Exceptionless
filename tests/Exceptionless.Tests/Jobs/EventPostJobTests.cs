@@ -12,7 +12,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Foundatio.Storage;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -198,8 +197,8 @@ public class EventPostJobTests : IntegrationTestsBase
             {
                 organization.StripeCustomerId = "stripe_customer_id";
                 organization.CardLast4 = "1234";
-                organization.SubscribeDate = SystemClock.UtcNow;
-                organization.BillingChangeDate = SystemClock.UtcNow;
+                organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+                organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
                 organization.BillingChangedByUserId = TestConstants.UserId;
             }
 
@@ -207,7 +206,7 @@ public class EventPostJobTests : IntegrationTestsBase
             {
                 organization.SuspendedByUserId = TestConstants.UserId;
                 organization.SuspensionCode = SuspensionCode.Billing;
-                organization.SuspensionDate = SystemClock.UtcNow;
+                organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
             }
 
             await _organizationRepository.AddAsync(organization, o => o.Cache().ImmediateConsistency());
@@ -256,7 +255,7 @@ public class EventPostJobTests : IntegrationTestsBase
 
     private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? source = null, string? sessionId = null)
     {
-        occurrenceDate ??= SystemClock.OffsetNow;
+        occurrenceDate ??= _timeProvider.GetLocalNow();
         return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
     }
 }

@@ -3,7 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using Token = Exceptionless.Core.Models.Token;
@@ -23,12 +22,12 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
     public async Task GetAndRemoveByProjectIdOrDefaultProjectIdAsync()
     {
         await _repository.AddAsync(new List<Token> {
-                new() { OrganizationId = TestConstants.OrganizationId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
-                new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
-                new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
-                new() { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
-                new() { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() },
-                new() { DefaultProjectId = TestConstants.ProjectIdWithNoRoles, UserId = TestConstants.UserId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken() }
+                new() { OrganizationId = TestConstants.OrganizationId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken() },
+                new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken() },
+                new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken() },
+                new() { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken() },
+                new() { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken() },
+                new() { DefaultProjectId = TestConstants.ProjectIdWithNoRoles, UserId = TestConstants.UserId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken() }
             }, o => o.ImmediateConsistency());
 
         Assert.Equal(5, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
@@ -61,9 +60,9 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
     public async Task GetAndRemoveByByUserIdAsync()
     {
         await _repository.AddAsync(new List<Token> {
-                new() { OrganizationId = TestConstants.OrganizationId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
-                new() { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
-                new() { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = SystemClock.UtcNow, UpdatedUtc = SystemClock.UtcNow, Id = StringExtensions.GetNewToken(), Type = TokenType.Authentication }
+                new() { OrganizationId = TestConstants.OrganizationId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
+                new() { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken(), Type = TokenType.Access },
+                new() { OrganizationId = TestConstants.OrganizationId, UserId = TestConstants.UserId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime, UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime, Id = StringExtensions.GetNewToken(), Type = TokenType.Authentication }
             }, o => o.ImmediateConsistency());
         Assert.Equal(1, (await _repository.GetByTypeAndUserIdAsync(TokenType.Access, TestConstants.UserId)).Total);
         Assert.Equal(1, (await _repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId)).Total);

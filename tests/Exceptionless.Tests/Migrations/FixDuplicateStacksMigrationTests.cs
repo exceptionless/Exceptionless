@@ -35,7 +35,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillMergeDuplicatedStacks()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var originalStack = StackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 100;
@@ -89,7 +89,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillMergeToStackWithMostEvents()
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var originalStack = StackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 10;

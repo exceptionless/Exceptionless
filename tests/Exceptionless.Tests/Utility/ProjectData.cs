@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
@@ -41,7 +40,7 @@ internal static class ProjectData
             project.NextSummaryEndOfDayTicks = nextSummaryEndOfDayTicks.Value;
         else
         {
-            project.NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            project.NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks;
         }
 
         for (int i = 0; i < RandomData.GetInt(0, 5); i++)

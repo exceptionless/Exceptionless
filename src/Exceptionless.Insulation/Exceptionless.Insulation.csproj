@@ -2,12 +2,12 @@
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.2.0" />
-    <PackageReference Include="Foundatio.Aliyun" Version="10.7.1" />
-    <PackageReference Include="Foundatio.AWS" Version="10.7.1" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="10.7.1" />
-    <PackageReference Include="Foundatio.Minio" Version="10.7.1" />
-    <PackageReference Include="Foundatio.RabbitMQ" Version="10.7.1" />
-    <PackageReference Include="Foundatio.Redis" Version="10.7.1" />
+    <PackageReference Include="Foundatio.Aliyun" Version="$(FoundatioVersion)" />
+    <PackageReference Include="Foundatio.AWS" Version="$(FoundatioVersion)" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="$(FoundatioVersion)" />
+    <PackageReference Include="Foundatio.Minio" Version="$(FoundatioVersion)" />
+    <PackageReference Include="Foundatio.RabbitMQ" Version="$(FoundatioVersion)" />
+    <PackageReference Include="Foundatio.Redis" Version="$(FoundatioVersion)" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
@@ -20,8 +20,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.2" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.ExceptionLess" Version="5.0.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.8.0" />
-    <PackageReference Include="YamlDotNet" Version="16.0.0" />
+    <PackageReference Include="YamlDotNet" Version="16.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Core\Exceptionless.Core.csproj" />

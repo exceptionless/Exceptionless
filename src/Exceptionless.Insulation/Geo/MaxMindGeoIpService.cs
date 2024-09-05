@@ -1,10 +1,8 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Storage;
-using Foundatio.Utility;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -80,7 +78,7 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
     private async Task<DatabaseReader?> GetDatabaseAsync(CancellationToken cancellationToken)
     {
         // Try to load the new database from disk if the current one is a day old.
-        if (_database is not null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < SystemClock.UtcNow.SubtractDays(1))
+        if (_database is not null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(1))
         {
             _database.Dispose();
             _database = null;
@@ -89,10 +87,10 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         if (_database is not null)
             return _database;
 
-        if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= SystemClock.UtcNow.SubtractSeconds(30))
+        if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= _timeProvider.GetUtcNow().UtcDateTime.SubtractSeconds(30))
             return null;
 
-        _databaseLastChecked = SystemClock.UtcNow;
+        _databaseLastChecked = _timeProvider.GetUtcNow().UtcDateTime;
 
         if (!await _storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH))
         {
