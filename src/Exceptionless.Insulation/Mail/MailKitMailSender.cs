@@ -14,12 +14,14 @@ namespace Exceptionless.Insulation.Mail;
 public class MailKitMailSender : IMailSender, IHealthCheck
 {
     private readonly EmailOptions _emailOptions;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private DateTime _lastSuccessfulConnection = DateTime.MinValue;
 
-    public MailKitMailSender(EmailOptions emailOptions, ILoggerFactory loggerFactory)
+    public MailKitMailSender(EmailOptions emailOptions, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         _emailOptions = emailOptions;
+        _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<MailKitMailSender>();
     }
 

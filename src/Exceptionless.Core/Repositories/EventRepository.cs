@@ -11,9 +11,13 @@ namespace Exceptionless.Core.Repositories;
 
 public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
 {
+    private readonly TimeProvider _timeProvider;
+
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, IValidator<PersistentEvent> validator)
         : base(configuration.Events, validator, options)
     {
+        _timeProvider = configuration.TimeProvider;
+
         DisableCache(); // NOTE: If cache is ever enabled, then fast paths for patching/deleting with scripts will be super slow!
         BatchNotifications = true;
         DefaultPipeline = "events-pipeline";

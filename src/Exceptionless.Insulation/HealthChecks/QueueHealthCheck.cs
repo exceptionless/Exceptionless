@@ -9,11 +9,13 @@ namespace Exceptionless.Insulation.HealthChecks;
 public class QueueHealthCheck<T> : IHealthCheck where T : class
 {
     private readonly IQueue<T> _queue;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public QueueHealthCheck(IQueue<T> queue, ILoggerFactory loggerFactory)
+    public QueueHealthCheck(IQueue<T> queue, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         _queue = queue;
+        _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<T>();
     }
 

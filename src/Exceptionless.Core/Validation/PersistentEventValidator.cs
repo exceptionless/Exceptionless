@@ -6,6 +6,13 @@ namespace Exceptionless.Core.Validation;
 
 public class PersistentEventValidator : AbstractValidator<PersistentEvent>
 {
+    private readonly TimeProvider _timeProvider;
+
+    public PersistentEventValidator(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public override ValidationResult Validate(ValidationContext<PersistentEvent> context)
     {
         var result = new ValidationResult();

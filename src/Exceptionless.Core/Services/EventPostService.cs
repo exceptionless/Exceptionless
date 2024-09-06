@@ -9,12 +9,15 @@ public class EventPostService
 {
     private readonly IQueue<EventPost> _queue;
     private readonly IFileStorage _storage;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public EventPostService(IQueue<EventPost> queue, IFileStorage storage, ILoggerFactory loggerFactory)
+    public EventPostService(IQueue<EventPost> queue, IFileStorage storage,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         _queue = queue;
         _storage = storage;
+        _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<EventPostService>();
     }
 

@@ -18,18 +18,21 @@ public sealed class UpdateEventUsage : MigrationBase
     private readonly IProjectRepository _projectRepository;
     private readonly IEventRepository _eventRepository;
     private readonly ExceptionlessElasticConfiguration _config;
+    private readonly TimeProvider _timeProvider;
 
     public UpdateEventUsage(
         IOrganizationRepository organizationRepository,
         IProjectRepository projectRepository,
         IEventRepository eventRepository,
         ExceptionlessElasticConfiguration configuration,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _eventRepository = eventRepository;
         _config = configuration;
+        _timeProvider = timeProvider;
 
         MigrationType = MigrationType.Repeatable;
     }

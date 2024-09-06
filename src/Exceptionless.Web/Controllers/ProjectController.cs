@@ -50,8 +50,9 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IAppQueryValidator validator,
         AppOptions options,
         UsageService usageService,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(projectRepository, mapper, validator, loggerFactory)
+    ) : base(projectRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;

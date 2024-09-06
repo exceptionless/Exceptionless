@@ -62,8 +62,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         IMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(repository, mapper, validator, loggerFactory)
+    ) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;

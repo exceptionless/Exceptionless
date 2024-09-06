@@ -9,15 +9,18 @@ public sealed class RecordSessionHeartbeatMiddleware
 {
     private readonly ICacheClient _cache;
     private readonly AppOptions _appOptions;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
     private static readonly PathString _heartbeatPath = new("/api/v2/events/session/heartbeat");
 
-    public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, AppOptions appOptions, ILogger<ProjectConfigMiddleware> logger)
+    public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, AppOptions appOptions,
+        TimeProvider timeProvider, ILogger<ProjectConfigMiddleware> logger)
     {
         _next = next;
         _cache = cache;
         _appOptions = appOptions;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 

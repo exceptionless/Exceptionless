@@ -58,8 +58,9 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         IMapper mapper,
         StackQueryValidator validator,
         AppOptions options,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(stackRepository, mapper, validator, loggerFactory)
+    ) : base(stackRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _stackRepository = stackRepository;
         _organizationRepository = organizationRepository;

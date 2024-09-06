@@ -17,7 +17,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(timeProvider, loggerFactory)
+    public StackStatusJob(IStackRepository stackRepository, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _stackRepository = stackRepository;
         _timeProvider = timeProvider;

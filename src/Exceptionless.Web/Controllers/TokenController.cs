@@ -19,7 +19,13 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 {
     private readonly IProjectRepository _projectRepository;
 
-    public TokenController(ITokenRepository repository, IProjectRepository projectRepository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory)
+    public TokenController(
+        ITokenRepository repository,
+        IProjectRepository projectRepository,
+        IMapper mapper,
+        IAppQueryValidator validator,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
     }

@@ -12,11 +12,13 @@ namespace Exceptionless.Core.Repositories;
 
 public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository
 {
+    private readonly TimeProvider _timeProvider;
     private const string STACKING_VERSION = "v2";
 
     public StackRepository(ExceptionlessElasticConfiguration configuration, IValidator<Stack> validator, AppOptions options)
         : base(configuration.Stacks, validator, options)
     {
+        _timeProvider = configuration.TimeProvider;
         AddPropertyRequiredForRemove(s => s.SignatureHash);
     }
 

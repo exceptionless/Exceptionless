@@ -8,7 +8,13 @@ namespace Exceptionless.Core.Plugins.EventParser;
 [Priority(Int32.MaxValue)]
 public class FallbackEventParserPlugin : PluginBase, IEventParserPlugin
 {
-    public FallbackEventParserPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly TimeProvider _timeProvider;
+
+    public FallbackEventParserPlugin(
+        TimeProvider timeProvider, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    {
+        _timeProvider = timeProvider;
+    }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
     {

@@ -11,9 +11,12 @@ namespace Exceptionless.Core.Repositories;
 
 public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository
 {
+    private readonly TimeProvider _timeProvider;
+
     public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, AppOptions options)
         : base(configuration.Projects, validator, options)
     {
+        _timeProvider = configuration.TimeProvider;
         DocumentsChanging.AddSyncHandler(OnDocumentsChanging);
     }
 

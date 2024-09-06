@@ -51,14 +51,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IUserRepository userRepository,
         IProjectRepository projectRepository,
         BillingManager billingManager,
+        BillingPlans plans,
         UsageService usageService,
         IMailer mailer,
         IMessagePublisher messagePublisher,
         IMapper mapper,
         IAppQueryValidator validator,
         AppOptions options,
-        ILoggerFactory loggerFactory,
-        BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory)
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationService = organizationService;
         _cacheClient = cacheClient;
@@ -66,11 +67,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _userRepository = userRepository;
         _projectRepository = projectRepository;
         _billingManager = billingManager;
+        _plans = plans;
         _usageService = usageService;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
         _options = options;
-        _plans = plans;
     }
 
     #region CRUD

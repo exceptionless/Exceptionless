@@ -11,13 +11,15 @@ public class BillingManager
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingPlans _plans;
+    private readonly TimeProvider _timeProvider;
 
-    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans)
+    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans, TimeProvider timeProvider)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _plans = plans;
+        _timeProvider = timeProvider;
     }
 
     public async Task<bool> CanAddOrganizationAsync(User? user)

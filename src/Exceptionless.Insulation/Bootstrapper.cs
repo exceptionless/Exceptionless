@@ -128,6 +128,7 @@ public class Bootstrapper
                 Subscriber = s.GetRequiredService<IConnectionMultiplexer>().GetSubscriber(),
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -138,6 +139,7 @@ public class Bootstrapper
                 ConnectionString = options.ConnectionString,
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -187,6 +189,7 @@ public class Bootstrapper
             {
                 ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -197,6 +200,7 @@ public class Bootstrapper
                 ConnectionString = options.ConnectionString,
                 ContainerName = $"{options.ScopePrefix}ex-events",
                 Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -207,6 +211,7 @@ public class Bootstrapper
             {
                 Folder = PathHelper.ExpandPath(path),
                 Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -216,6 +221,7 @@ public class Bootstrapper
             {
                 ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -228,6 +234,7 @@ public class Bootstrapper
                 Region = GetAWSRegionEndpoint(options.Data),
                 Bucket = $"{options.ScopePrefix}{options.Data.GetString("bucket", "ex-events")}",
                 Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -243,6 +250,7 @@ public class Bootstrapper
             Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
+            TimeProvider = container.GetRequiredService<TimeProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
     }
@@ -258,6 +266,7 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             RunMaintenanceTasks = runMaintenanceTasks,
             Serializer = container.GetRequiredService<ISerializer>(),
+            TimeProvider = container.GetRequiredService<TimeProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
     }
@@ -268,6 +277,7 @@ public class Bootstrapper
         {
             ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
             Serializer = container.GetRequiredService<ISerializer>(),
+            TimeProvider = container.GetRequiredService<TimeProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
     }
@@ -284,6 +294,7 @@ public class Bootstrapper
             Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
+            TimeProvider = container.GetRequiredService<TimeProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
     }

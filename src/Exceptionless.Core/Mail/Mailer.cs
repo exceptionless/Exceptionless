@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Queues;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
@@ -15,13 +16,15 @@ public class Mailer : IMailer
     private readonly IQueue<MailMessage> _queue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, ILogger<Mailer> logger)
+    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
     {
         _queue = queue;
         _pluginManager = pluginManager;
         _appOptions = appOptions;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 

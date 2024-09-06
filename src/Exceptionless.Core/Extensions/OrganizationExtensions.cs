@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using System;
+using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 
@@ -104,14 +105,16 @@ public static class OrganizationExtensions
 
     public static void TrimUsage(this Organization organization)
     {
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
-            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
-            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .ToList();
     }
 

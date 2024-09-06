@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using FluentValidation;
@@ -37,7 +38,9 @@ public class AuthController : ExceptionlessApiController
 
     private static bool _isFirstUserChecked;
 
-    public AuthController(AuthOptions authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider)
+    public AuthController(AuthOptions authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
+        ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
+        TimeProvider timeProvider, ILogger<AuthController> logger) : base(timeProvider)
     {
         _authOptions = authOptions;
         _domainLoginProvider = domainLoginProvider;
@@ -74,11 +77,11 @@ public class AuthController : ExceptionlessApiController
         string email = model.Email.Trim().ToLowerInvariant();
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext));
 
-        // Only allow 5 password attempts per 15 minute period.
+        // Only allow 5 password attempts per 15-minute period.
         string userLoginAttemptsCacheKey = $"user:{email}:attempts";
         long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
 
-        // Only allow 15 login attempts per 15 minute period by a single ip.
+        // Only allow 15 login attempts per 15-minute period by a single ip.
         string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
         long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
 
@@ -846,7 +849,9 @@ public class AuthController : ExceptionlessApiController
     private async Task<string> GetOrCreateAuthenticationTokenAsync(User user)
     {
         var userTokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id);
-        var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > _timeProvider.GetUtcNow().UtcDateTime));
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > utcNow));
         if (validAccessToken is not null)
             return validAccessToken.Id;
 
@@ -854,9 +859,9 @@ public class AuthController : ExceptionlessApiController
         {
             Id = Core.Extensions.StringExtensions.GetNewToken(),
             UserId = user.Id,
-            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
-            UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
-            ExpiresUtc = _timeProvider.GetUtcNow().UtcDateTime.AddMonths(3),
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow,
+            ExpiresUtc = utcNow.AddMonths(3),
             CreatedBy = user.Id,
             Type = TokenType.Authentication
         }, o => o.ImmediateConsistency().Cache());

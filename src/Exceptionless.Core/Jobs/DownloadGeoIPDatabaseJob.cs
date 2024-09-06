@@ -15,13 +15,15 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
     public const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
     private readonly AppOptions _options;
     private readonly IFileStorage _storage;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public DownloadGeoIPDatabaseJob(AppOptions options, ICacheClient cacheClient, IFileStorage storage, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _options = options;
         _storage = storage;
+        _timeProvider = timeProvider;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1));
     }
 

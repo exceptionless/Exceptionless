@@ -5,7 +5,13 @@ namespace Exceptionless.Core.Plugins.EventParser;
 
 public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
 {
-    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
+    private readonly TimeProvider _timeProvider;
+
+    public EventParserPluginManager(IServiceProvider serviceProvider, AppOptions options,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory)
+    {
+        _timeProvider = timeProvider;
+    }
 
     /// <summary>
     /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.

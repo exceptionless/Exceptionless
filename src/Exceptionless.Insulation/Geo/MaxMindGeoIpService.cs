@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Storage;
 using MaxMind.GeoIP2;
@@ -13,14 +14,16 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
 {
     private readonly InMemoryCacheClient _localCache;
     private readonly IFileStorage _storage;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private DatabaseReader? _database;
     private DateTime? _databaseLastChecked;
 
-    public MaxMindGeoIpService(IFileStorage storage, ILoggerFactory loggerFactory)
+    public MaxMindGeoIpService(IFileStorage storage, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         _storage = storage;
-        _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory, MaxItems = 250, CloneValues = true });
+        _timeProvider = timeProvider;
+        _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { MaxItems = 250, CloneValues = true, TimeProvider = timeProvider, LoggerFactory = loggerFactory });
         _logger = loggerFactory.CreateLogger<MaxMindGeoIpService>();
     }
 

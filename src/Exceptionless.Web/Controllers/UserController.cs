@@ -6,6 +6,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
@@ -27,7 +28,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     private readonly IMailer _mailer;
     private readonly IntercomOptions _intercomOptions;
 
-    public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory)
+    public UserController(
+        IUserRepository userRepository,
+        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer,
+        IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;

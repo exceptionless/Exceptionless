@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.DateTimeExtensions;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
@@ -6,8 +7,12 @@ namespace Exceptionless.Core.Pipeline;
 [Priority(1)]
 public class CheckEventDateAction : EventPipelineActionBase
 {
-    public CheckEventDateAction(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    private readonly TimeProvider _timeProvider;
+
+    public CheckEventDateAction(
+        TimeProvider timeProvider, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
+        _timeProvider = timeProvider;
         ContinueOnError = true;
     }
 

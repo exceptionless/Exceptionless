@@ -19,15 +19,17 @@ public sealed class FixDuplicateStacks : MigrationBase
     private readonly ICacheClient _cache;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly TimeProvider _timeProvider;
     private readonly ExceptionlessElasticConfiguration _config;
 
-    public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _config = configuration;
         _client = configuration.Client;
         _cache = configuration.Cache;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
+        _timeProvider = timeProvider;
 
         MigrationType = MigrationType.Repeatable;
     }

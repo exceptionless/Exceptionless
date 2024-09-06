@@ -77,7 +77,7 @@ public class Bootstrapper
         services.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
-        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), CloneValues = true, Serializer = s.GetRequiredService<ISerializer>() }));
+        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>()}));
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
@@ -112,13 +112,14 @@ public class Bootstrapper
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
         services.AddStartupAction<MessageService>();
-        services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), Serializer = s.GetRequiredService<ISerializer>() }));
+        services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
         services.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
         services.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
         services.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions
         {
             Serializer = s.GetRequiredService<ITextSerializer>(),
+            TimeProvider = s.GetRequiredService<TimeProvider>(),
             LoggerFactory = s.GetRequiredService<ILoggerFactory>()
         }));
 
@@ -286,6 +287,7 @@ public class Bootstrapper
         {
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
+            TimeProvider = container.GetRequiredService<TimeProvider>(),
             LoggerFactory = loggerFactory
         });
     }

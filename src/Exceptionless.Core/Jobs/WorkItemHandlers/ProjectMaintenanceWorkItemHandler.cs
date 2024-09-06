@@ -13,11 +13,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IProjectRepository _projectRepository;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
 
-    public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient, IMessageBus messageBus,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _projectRepository = projectRepository;
+        _timeProvider = timeProvider;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -46,10 +49,11 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
 
                 if (workItem.RemoveOldUsageStats)
                 {
-                    foreach (var usage in project.UsageHours.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromDays(3))).ToList())
+                    var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+                    foreach (var usage in project.UsageHours.Where(u => u.Date < utcNow.Subtract(TimeSpan.FromDays(3))).ToList())
                         project.UsageHours.Remove(usage);
 
-                    foreach (var usage in project.Usage.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromDays(366))).ToList())
+                    foreach (var usage in project.Usage.Where(u => u.Date < utcNow.Subtract(TimeSpan.FromDays(366))).ToList())
                         project.Usage.Remove(usage);
                 }
             }

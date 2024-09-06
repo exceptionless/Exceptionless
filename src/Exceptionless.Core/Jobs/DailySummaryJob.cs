@@ -27,10 +27,12 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly IMailer _mailer;
     private readonly BillingPlans _plans;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _emailOptions = emailOptions;
         _projectRepository = projectRepository;
@@ -40,6 +42,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _mailer = mailer;
         _plans = plans;
+        _timeProvider = timeProvider;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
     }
 

@@ -10,12 +10,14 @@ public class StackService
     private readonly ILogger<UsageService> _logger;
     private readonly IStackRepository _stackRepository;
     private readonly ICacheClient _cache;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _expireTimeout = TimeSpan.FromHours(12);
 
-    public StackService(IStackRepository stackRepository, ICacheClient cache, ILoggerFactory loggerFactory)
+    public StackService(IStackRepository stackRepository, ICacheClient cache, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         _stackRepository = stackRepository;
         _cache = cache;
+        _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<UsageService>() ?? NullLogger<UsageService>.Instance;
     }
 

@@ -33,7 +33,8 @@ public class StatusController : ExceptionlessApiController
         IQueue<EventNotification> notificationQueue,
         IQueue<WebHookNotification> webHooksQueue,
         IQueue<EventUserDescription> userDescriptionQueue,
-        AppOptions appOptions)
+        AppOptions appOptions,
+        TimeProvider timeProvider) : base(timeProvider)
     {
         _cacheClient = cacheClient;
         _messagePublisher = messagePublisher;
