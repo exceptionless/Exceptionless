@@ -14,12 +14,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IUserRepository _userRepository;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
 
     public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient,
-        IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+        IMessageBus messageBus, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _userRepository = userRepository;
+        _timeProvider = timeProvider;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -89,7 +91,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 
         foreach (var user in unverifiedUsers)
         {
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
             Log.LogInformation("Reset verify email address token and expiration for {EmailAddress}", user.EmailAddress);
         }
 

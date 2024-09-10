@@ -17,7 +17,7 @@ public class StripeController : ExceptionlessApiController
 
     public StripeController(StripeEventHandler stripeEventHandler, StripeOptions stripeOptions,
         TimeProvider timeProvider,
-        ILogger<StripeController> logger): base(timeProvider)
+        ILogger<StripeController> logger) : base(timeProvider)
     {
         _stripeEventHandler = stripeEventHandler;
         _stripeOptions = stripeOptions;

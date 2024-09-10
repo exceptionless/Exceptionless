@@ -82,8 +82,8 @@ public class UsageService
 
                     organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-                    var usage = organization.GetUsage(bucketUtc);
-                    usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
+                    var usage = organization.GetUsage(bucketUtc, _timeProvider);
+                    usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                     usage.Total += bucketTotal?.Value ?? 0;
                     usage.Blocked += bucketBlocked?.Value ?? 0;
                     usage.Discarded += bucketDiscarded?.Value ?? 0;
@@ -95,7 +95,7 @@ public class UsageService
                     hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
                     hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
 
-                    organization.TrimUsage();
+                    organization.TrimUsage(_timeProvider);
 
                     await _cache.RemoveAllAsync(new[] {
                         GetBucketTotalCacheKey(bucketUtc, organizationId),
@@ -174,7 +174,7 @@ public class UsageService
                     hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
                     hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
 
-                    project.TrimUsage();
+                    project.TrimUsage(_timeProvider);
 
                     await _cache.RemoveAllAsync(new[] {
                         GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
@@ -202,8 +202,8 @@ public class UsageService
 
         await _cache.RemoveAsync($"usage:limits:{modified.Id}");
 
-        int modifiedMaxEvents = modified.GetMaxEventsPerMonthWithBonus();
-        int originalMaxEvents = original.GetMaxEventsPerMonthWithBonus();
+        int modifiedMaxEvents = modified.GetMaxEventsPerMonthWithBonus(_timeProvider);
+        int originalMaxEvents = original.GetMaxEventsPerMonthWithBonus(_timeProvider);
 
         if (modifiedMaxEvents == originalMaxEvents)
             return;
@@ -254,7 +254,7 @@ public class UsageService
 
             if (context.Organization is not null)
             {
-                maxEventsPerMonth = context.Organization.GetMaxEventsPerMonthWithBonus();
+                maxEventsPerMonth = context.Organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                 await _cache.SetAsync($"usage:limits:{context.OrganizationId}", maxEventsPerMonth, TimeSpan.FromDays(1));
             }
         }
@@ -282,25 +282,25 @@ public class UsageService
         if (projectId is null)
         {
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-            organization.TrimUsage();
+            organization.TrimUsage(_timeProvider);
 
             usage = new UsageInfoResponse
             {
                 IsThrottled = isThrottled?.Value ?? false,
-                CurrentUsage = organization.GetCurrentUsage(),
-                CurrentHourUsage = organization.GetCurrentHourlyUsage()
+                CurrentUsage = organization.GetCurrentUsage(_timeProvider),
+                CurrentHourUsage = organization.GetCurrentHourlyUsage(_timeProvider)
             };
         }
         else
         {
             var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
-            project.TrimUsage();
+            project.TrimUsage(_timeProvider);
 
             usage = new UsageInfoResponse
             {
                 IsThrottled = isThrottled?.Value ?? false,
-                CurrentUsage = project.GetCurrentUsage(),
-                CurrentHourUsage = project.GetCurrentHourlyUsage()
+                CurrentUsage = project.GetCurrentUsage(_timeProvider),
+                CurrentHourUsage = project.GetCurrentHourlyUsage(_timeProvider)
             };
         }
 
@@ -351,7 +351,7 @@ public class UsageService
             if (context.Organization is null)
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
-            currentTotal = context.Organization.GetCurrentUsage().Total;
+            currentTotal = context.Organization.GetCurrentUsage(_timeProvider).Total;
             await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal, TimeSpan.FromHours(8));
         }
 

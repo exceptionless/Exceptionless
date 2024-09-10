@@ -14,10 +14,15 @@ namespace Exceptionless.Tests.Jobs;
 public class CleanupDataJobTests : IntegrationTestsBase
 {
     private readonly CleanupDataJob _job;
+    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
+    private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
+    private readonly TokenData _tokenData;
     private readonly ITokenRepository _tokenRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
@@ -25,10 +30,15 @@ public class CleanupDataJobTests : IntegrationTestsBase
     public CleanupDataJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _job = GetService<CleanupDataJob>();
+        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
+        _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
+        _tokenData = GetService<TokenData>();
         _tokenRepository = GetService<ITokenRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
@@ -37,7 +47,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanCleanupSuspendedTokens()
     {
-        var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         organization.IsSuspended = true;
         organization.SuspensionDate = DateTime.UtcNow;
         organization.SuspendedByUserId = "1";
@@ -45,8 +55,8 @@ public class CleanupDataJobTests : IntegrationTestsBase
         organization.SuspensionNotes = "blah";
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
-        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject());
-        var token = await _tokenRepository.AddAsync(TokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject());
+        var token = await _tokenRepository.AddAsync(_tokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency());
         Assert.False(token.IsSuspended);
 
         await _job.RunAsync();
@@ -58,13 +68,13 @@ public class CleanupDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanCleanupSoftDeletedOrganization()
     {
-        var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         organization.IsDeleted = true;
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
-        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-        var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        var persistentEvent = await _eventRepository.AddAsync(EventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
         await _job.RunAsync();
 
@@ -77,14 +87,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanCleanupSoftDeletedProject()
     {
-        var organization = await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
 
-        var project = ProjectData.GenerateSampleProject();
+        var project = _projectData.GenerateSampleProject();
         project.IsDeleted = true;
         await _projectRepository.AddAsync(project, o => o.ImmediateConsistency());
 
-        var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        var persistentEvent = await _eventRepository.AddAsync(EventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
         await _job.RunAsync();
 
@@ -97,14 +107,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanCleanupSoftDeletedStack()
     {
-        var organization = await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
-        var stack = StackData.GenerateSampleStack();
+        var stack = _stackData.GenerateSampleStack();
         stack.IsDeleted = true;
         await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
 
-        var persistentEvent = await _eventRepository.AddAsync(EventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
         await _job.RunAsync();
 
@@ -117,16 +127,16 @@ public class CleanupDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanCleanupEventsOutsideOfRetentionPeriod()
     {
-        var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         _billingManager.ApplyBillingPlan(organization, _plans.FreePlan);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
-        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-        var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
         var options = GetService<AppOptions>();
         var date = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
-        var persistentEvent = await _eventRepository.AddAsync(EventData.GenerateEvent(organization.Id, project.Id, stack.Id, date, date, date), o => o.ImmediateConsistency());
+        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, date, date, date), o => o.ImmediateConsistency());
 
         await _job.RunAsync();
 
@@ -139,14 +149,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanDeleteOrphanedEventsByStack()
     {
-        var organization = OrganizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
-        var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        await _eventRepository.AddAsync(EventData.GenerateEvents(5000, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(5000, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        var orphanedEvents = EventData.GenerateEvents(10000, organization.Id, project.Id).ToList();
+        var orphanedEvents = _eventData.GenerateEvents(10000, organization.Id, project.Id).ToList();
         orphanedEvents.ForEach(e => e.StackId = ObjectId.GenerateNewId().ToString());
 
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());

@@ -6,6 +6,13 @@ namespace Exceptionless.Helpers;
 
 public class RandomEventGenerator
 {
+    private readonly TimeProvider _timeProvider;
+
+    public RandomEventGenerator(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public DateTime? MinDate { get; set; }
     public DateTime? MaxDate { get; set; }
 

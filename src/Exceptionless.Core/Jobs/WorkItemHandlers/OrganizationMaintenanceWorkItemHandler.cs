@@ -15,12 +15,14 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly BillingManager _billingManager;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
 
-    public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, BillingManager billingManager, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMessageBus messageBus, BillingManager billingManager, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _billingManager = billingManager;
+        _timeProvider = timeProvider;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -38,6 +40,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
         var results = await _organizationRepository.GetAllAsync(o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
             foreach (var organization in results.Documents)
             {
                 if (wi.UpgradePlans)
@@ -45,10 +48,10 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 
                 if (wi.RemoveOldUsageStats)
                 {
-                    foreach (var usage in organization.UsageHours.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromDays(3))).ToList())
+                    foreach (var usage in organization.UsageHours.Where(u => u.Date < utcNow.Subtract(TimeSpan.FromDays(3))).ToList())
                         organization.UsageHours.Remove(usage);
 
-                    foreach (var usage in organization.Usage.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromDays(366))).ToList())
+                    foreach (var usage in organization.Usage.Where(u => u.Date < utcNow.Subtract(TimeSpan.FromDays(366))).ToList())
                         organization.Usage.Remove(usage);
                 }
             }

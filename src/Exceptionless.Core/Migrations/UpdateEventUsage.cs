@@ -74,7 +74,7 @@ public sealed class UpdateEventUsage : MigrationBase
                     var dateAggs = result.Aggregations.DateHistogram("date_date");
                     foreach (var dateHistogramBucket in dateAggs.Buckets)
                     {
-                        var usage = organization.GetUsage(dateHistogramBucket.Date);
+                        var usage = organization.GetUsage(dateHistogramBucket.Date, _timeProvider);
                         long eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
                         if (eventTotal > usage.Total)
                         {
@@ -134,7 +134,7 @@ public sealed class UpdateEventUsage : MigrationBase
                         }
 
                         if (usage.Limit == 0)
-                            usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
+                            usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                     }
 
                     await _projectRepository.SaveAsync(project);

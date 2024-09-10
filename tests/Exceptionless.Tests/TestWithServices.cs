@@ -1,9 +1,11 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Mail;
+using Exceptionless.Helpers;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Mail;
+using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
@@ -16,8 +18,8 @@ namespace Exceptionless.Tests;
 
 public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 {
-    private readonly IDisposable _testSystemClock = TestSystemClock.Install();
     private readonly IServiceProvider _container;
+    private readonly ProxyTimeProvider _timeProvider;
     private static bool _startupActionsRun;
 
     public TestWithServices(ITestOutputHelper output) : base(output)
@@ -28,6 +30,11 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
 
         _container = CreateContainer();
+
+        if (GetService<TimeProvider>() is ProxyTimeProvider proxyTimeProvider)
+            _timeProvider = proxyTimeProvider;
+        else
+            throw new InvalidOperationException("TimeProvider must be of type ProxyTimeProvider");
     }
 
     public virtual async Task InitializeAsync()
@@ -41,6 +48,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 
         _startupActionsRun = true;
     }
+    protected ProxyTimeProvider TimeProvider => _timeProvider;
 
     protected TService GetService<TService>() where TService : class
     {
@@ -51,10 +59,20 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
     {
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+        services.AddSingleton<TimeProvider, ProxyTimeProvider>(_ => new ProxyTimeProvider());
         Web.Bootstrapper.RegisterServices(services, options, Log);
         Bootstrapper.RegisterServices(services, options);
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
+
+        services.AddSingleton<EventData>();
+        services.AddTransient<EventDataBuilder>();
+        services.AddSingleton<OrganizationData>();
+        services.AddSingleton<ProjectData>();
+        services.AddSingleton<RandomEventGenerator>();
+        services.AddSingleton<StackData>();
+        services.AddSingleton<TokenData>();
+        services.AddSingleton<UserData>();
     }
 
     private IServiceProvider CreateContainer()
@@ -77,7 +95,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        _testSystemClock.Dispose();
+        _timeProvider.Restore();
         return Task.CompletedTask;
     }
 }

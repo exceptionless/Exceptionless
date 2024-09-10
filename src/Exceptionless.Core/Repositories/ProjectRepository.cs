@@ -23,7 +23,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Project> args)
     {
         foreach (var project in args.Documents)
-            project.Value.TrimUsage();
+            project.Value.TrimUsage(_timeProvider);
     }
 
     public async Task<Project?> GetConfigAsync(string? projectId)

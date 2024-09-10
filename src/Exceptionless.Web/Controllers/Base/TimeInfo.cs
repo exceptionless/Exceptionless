@@ -26,7 +26,7 @@ public static class TimeInfoExtensions
         ti.Range = new DateTimeRange(start, end);
     }
 
-    public static void AdjustEndTimeIfMaxValue(this TimeInfo ti)
+    public static void AdjustEndTimeIfMaxValue(this TimeInfo ti, TimeProvider timeProvider)
     {
         if (ti.Range.UtcEnd != DateTime.MaxValue)
             return;
@@ -34,7 +34,7 @@ public static class TimeInfoExtensions
         long startTicks = ti.Range.UtcStart.Ticks + ti.Offset.Ticks;
         var start = startTicks > DateTime.MinValue.Ticks ? new DateTimeOffset(startTicks, ti.Offset) : new DateTimeOffset(DateTime.MinValue, TimeSpan.Zero);
 
-        var end = new DateTimeOffset(_timeProvider.GetUtcNow().UtcDateTime.Ticks + ti.Offset.Ticks, ti.Offset);
+        var end = new DateTimeOffset(timeProvider.GetUtcNow().UtcDateTime.Ticks + ti.Offset.Ticks, ti.Offset);
         ti.Range = new DateTimeRange(start, end);
     }
 }

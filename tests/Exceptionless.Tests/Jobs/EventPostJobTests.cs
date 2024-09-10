@@ -22,11 +22,15 @@ public class EventPostJobTests : IntegrationTestsBase
 {
     private readonly EventPostsJob _job;
     private readonly IFileStorage _storage;
+    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
+    private readonly UserData _userData;
     private readonly IUserRepository _userRepository;
     private readonly UsageService _usageService;
     private readonly ITextSerializer _serializer;
@@ -40,11 +44,15 @@ public class EventPostJobTests : IntegrationTestsBase
         _job = GetService<EventPostsJob>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _storage = GetService<IFileStorage>();
-        _eventPostService = new EventPostService(_eventQueue, _storage, Log);
+        _eventPostService = new EventPostService(_eventQueue, _storage, TimeProvider, Log);
+        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
+        _userData = GetService<UserData>();
         _userRepository = GetService<IUserRepository>();
         _usageService = GetService<UsageService>();
         _serializer = GetService<ITextSerializer>();
@@ -184,21 +192,21 @@ public class EventPostJobTests : IntegrationTestsBase
 
     private async Task CreateDataAsync(BillingPlan? plan = null)
     {
-        foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
+        foreach (var organization in _organizationData.GenerateSampleOrganizations(_billingManager, _plans))
         {
             if (plan is not null)
-                _billingManager.ApplyBillingPlan(organization, plan, UserData.GenerateSampleUser());
+                _billingManager.ApplyBillingPlan(organization, plan, _userData.GenerateSampleUser());
             else if (organization.Id == TestConstants.OrganizationId3)
-                _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, UserData.GenerateSampleUser());
+                _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, _userData.GenerateSampleUser());
             else
-                _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
+                _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, _userData.GenerateSampleUser());
 
             if (organization.BillingPrice > 0)
             {
                 organization.StripeCustomerId = "stripe_customer_id";
                 organization.CardLast4 = "1234";
-                organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-                organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+                organization.SubscribeDate = DateTime.UtcNow;
+                organization.BillingChangeDate = DateTime.UtcNow;
                 organization.BillingChangedByUserId = TestConstants.UserId;
             }
 
@@ -206,15 +214,15 @@ public class EventPostJobTests : IntegrationTestsBase
             {
                 organization.SuspendedByUserId = TestConstants.UserId;
                 organization.SuspensionCode = SuspensionCode.Billing;
-                organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
+                organization.SuspensionDate = DateTime.UtcNow;
             }
 
             await _organizationRepository.AddAsync(organization, o => o.Cache().ImmediateConsistency());
         }
 
-        await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache().ImmediateConsistency());
+        await _projectRepository.AddAsync(_projectData.GenerateSampleProjects(), o => o.Cache().ImmediateConsistency());
 
-        foreach (var user in UserData.GenerateSampleUsers())
+        foreach (var user in _userData.GenerateSampleUsers())
         {
             if (user.Id == TestConstants.UserId)
             {
@@ -223,7 +231,7 @@ public class EventPostJobTests : IntegrationTestsBase
             }
 
             if (!user.IsEmailAddressVerified)
-                user.ResetVerifyEmailAddressTokenAndExpiration();
+                user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
 
             await _userRepository.AddAsync(user, o => o.Cache().ImmediateConsistency());
         }
@@ -253,9 +261,9 @@ public class EventPostJobTests : IntegrationTestsBase
         return _eventPostService.EnqueueAsync(eventPostInfo, stream);
     }
 
-    private static PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? source = null, string? sessionId = null)
+    private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? source = null, string? sessionId = null)
     {
-        occurrenceDate ??= _timeProvider.GetLocalNow();
-        return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
+        occurrenceDate ??= DateTimeOffset.Now;
+        return _eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
     }
 }

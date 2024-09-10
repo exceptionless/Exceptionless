@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -32,30 +31,30 @@ public class StripeEventHandler
         switch (stripeEvent.Type)
         {
             case "customer.subscription.updated":
-                {
-                    await SubscriptionUpdatedAsync((Subscription)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await SubscriptionUpdatedAsync((Subscription)stripeEvent.Data.Object);
+                break;
+            }
             case "customer.subscription.deleted":
-                {
-                    await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object);
+                break;
+            }
             case "invoice.payment_succeeded":
-                {
-                    await InvoicePaymentSucceededAsync((Invoice)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await InvoicePaymentSucceededAsync((Invoice)stripeEvent.Data.Object);
+                break;
+            }
             case "invoice.payment_failed":
-                {
-                    await InvoicePaymentFailedAsync((Invoice)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await InvoicePaymentFailedAsync((Invoice)stripeEvent.Data.Object);
+                break;
+            }
             default:
-                {
-                    _logger.LogTrace("Unhandled stripe webhook called. Type: {Type} Id: {Id} Account: {Account}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
-                    break;
-                }
+            {
+                _logger.LogTrace("Unhandled stripe webhook called. Type: {Type} Id: {Id} Account: {Account}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
+                break;
+            }
         }
     }
 
@@ -74,30 +73,30 @@ public class StripeEventHandler
         switch (sub.Status)
         {
             case "trialing":
-                {
-                    status = BillingStatus.Trialing;
-                    break;
-                }
+            {
+                status = BillingStatus.Trialing;
+                break;
+            }
             case "active":
-                {
-                    status = BillingStatus.Active;
-                    break;
-                }
+            {
+                status = BillingStatus.Active;
+                break;
+            }
             case "past_due":
-                {
-                    status = BillingStatus.PastDue;
-                    break;
-                }
+            {
+                status = BillingStatus.PastDue;
+                break;
+            }
             case "canceled":
-                {
-                    status = BillingStatus.Canceled;
-                    break;
-                }
+            {
+                status = BillingStatus.Canceled;
+                break;
+            }
             case "unpaid":
-                {
-                    status = BillingStatus.Unpaid;
-                    break;
-                }
+            {
+                status = BillingStatus.Unpaid;
+                break;
+            }
         }
 
         if (!status.HasValue || status.Value == org.BillingStatus)

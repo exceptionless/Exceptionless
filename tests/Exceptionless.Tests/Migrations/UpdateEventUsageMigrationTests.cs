@@ -2,6 +2,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -14,16 +15,24 @@ namespace Exceptionless.Tests.Migrations;
 
 public class UpdateEventUsageMigrationTests : IntegrationTestsBase
 {
+    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
+    private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
 
     public UpdateEventUsageMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
+        _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
     }
 
@@ -38,31 +47,31 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
     public async Task ShouldPopulateUsageStats()
     {
         var billingPlans = GetService<BillingPlans>();
-        var organization = await _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizationWithPlan(GetService<BillingManager>(), billingPlans, billingPlans.MediumPlan), o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganizationWithPlan(GetService<BillingManager>(), billingPlans, billingPlans.MediumPlan), o => o.ImmediateConsistency());
         Assert.Single(organization.Usage);
 
-        var project = await _projectRepository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         Assert.Empty(project.Usage);
 
-        var stack = await _stackRepository.AddAsync(StackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
-        var previousMonthUsageDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(1).StartOfMonth();
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: stack.Id, startDate: previousMonthUsageDate, endDate: previousMonthUsageDate.EndOfMonth()), o => o.ImmediateConsistency());
+        var previousMonthUsageDate = DateTime.UtcNow.SubtractMonths(1).StartOfMonth();
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 100, stackId: stack.Id, startDate: previousMonthUsageDate, endDate: previousMonthUsageDate.EndOfMonth()), o => o.ImmediateConsistency());
 
-        var currentMonthUsageDate = _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: _timeProvider.GetUtcNow().UtcDateTime), o => o.ImmediateConsistency());
+        var currentMonthUsageDate = DateTime.UtcNow.StartOfMonth();
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: DateTime.UtcNow), o => o.ImmediateConsistency());
 
         var migration = GetService<UpdateEventUsage>();
         var context = new MigrationContext(GetService<ILock>(), _logger, CancellationToken.None);
         await migration.RunAsync(context);
 
-        int limit = organization.GetMaxEventsPerMonthWithBonus();
+        int limit = organization.GetMaxEventsPerMonthWithBonus(TimeProvider);
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.Equal(2, organization.Usage.Count);
-        var previousMonthsUsage = organization.GetUsage(previousMonthUsageDate);
+        var previousMonthsUsage = organization.GetUsage(previousMonthUsageDate, TimeProvider);
         Assert.Equal(100, previousMonthsUsage.Total);
         Assert.Equal(limit, previousMonthsUsage.Limit);
-        var currentMonthsUsage = organization.GetUsage(currentMonthUsageDate);
+        var currentMonthsUsage = organization.GetUsage(currentMonthUsageDate, TimeProvider);
         Assert.Equal(10, currentMonthsUsage.Total);
         Assert.Equal(limit, currentMonthsUsage.Limit);
 

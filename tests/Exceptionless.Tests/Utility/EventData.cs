@@ -9,26 +9,40 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Utility;
 
-internal static class EventData
+public class EventData
 {
-    public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, decimal? value = -1, string? semver = null)
+    private readonly ExceptionlessElasticConfiguration _configuration;
+    private readonly IEventRepository _eventRepository;
+    private readonly EventParserPluginManager _parserPluginManager;
+    private readonly TimeProvider _timeProvider;
+    private List<Error>? _randomErrors;
+
+    public EventData(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager, TimeProvider timeProvider)
+    {
+        _configuration = configuration;
+        _eventRepository = eventRepository;
+        _parserPluginManager = parserPluginManager;
+        _timeProvider = timeProvider;
+    }
+
+    public IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, decimal? value = -1, string? semver = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateEvent(organizationIds, projectIds, stackIds, startDate, endDate, generateTags: generateTags, generateData: generateData, maxErrorNestingLevel: maxErrorNestingLevel, referenceIds: referenceIds, value: value, semver: semver);
     }
 
-    public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string? organizationId = null, string? projectId = null, string? stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, string? referenceId = null, decimal? value = -1, string? semver = null)
+    public IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string? organizationId = null, string? projectId = null, string? stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int maxErrorNestingLevel = 3, bool generateTags = true, bool generateData = true, string? referenceId = null, decimal? value = -1, string? semver = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, generateTags: generateTags, generateData: generateData, maxErrorNestingLevel: maxErrorNestingLevel, referenceId: referenceId, value: value, semver: semver);
     }
 
-    public static PersistentEvent GenerateSampleEvent()
+    public PersistentEvent GenerateSampleEvent()
     {
         return GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, maxErrorNestingLevel: 4);
     }
 
-    public static PersistentEvent GenerateEvent(string? organizationId = null, string? projectId = null, string? stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string? referenceId = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
+    public PersistentEvent GenerateEvent(string? organizationId = null, string? projectId = null, string? stackId = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string? referenceId = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
     {
         return GenerateEvent(
             organizationId is not null ? [organizationId] : null,
@@ -50,17 +64,17 @@ internal static class EventData
         );
     }
 
-    public static PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string? sessionId = null, string? userIdentity = null, decimal? value = -1)
+    public PersistentEvent GenerateSessionStartEvent(DateTimeOffset occurrenceDate, string? sessionId = null, string? userIdentity = null, decimal? value = -1)
     {
         return GenerateEvent(projectIds: [], type: Event.KnownTypes.Session, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false, value: value);
     }
 
-    public static PersistentEvent GenerateSessionEndEvent(DateTimeOffset occurrenceDate, string? sessionId = null, string? userIdentity = null)
+    public PersistentEvent GenerateSessionEndEvent(DateTimeOffset occurrenceDate, string? sessionId = null, string? userIdentity = null)
     {
         return GenerateEvent(projectIds: [], type: Event.KnownTypes.SessionEnd, occurrenceDate: occurrenceDate, sessionId: sessionId, userIdentity: userIdentity, generateData: false, generateTags: false);
     }
 
-    public static PersistentEvent GenerateEvent(string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
+    public PersistentEvent GenerateEvent(string[]? organizationIds = null, string[]? projectIds = null, string[]? stackIds = null, DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, DateTimeOffset? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, string[]? referenceIds = null, string? type = null, string? sessionId = null, string? userIdentity = null, decimal? value = -1, string? semver = null, string? source = null)
     {
         if (!startDate.HasValue || startDate > _timeProvider.GetLocalNow().AddHours(1))
             startDate = _timeProvider.GetLocalNow().AddDays(-30);
@@ -131,9 +145,7 @@ internal static class EventData
         return ev;
     }
 
-    private static List<Error>? _randomErrors;
-
-    internal static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
+    internal Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0)
     {
         var error = new Error
         {
@@ -168,7 +180,7 @@ internal static class EventData
         return error;
     }
 
-    private static StackFrame GenerateStackFrame()
+    private StackFrame GenerateStackFrame()
     {
         return new StackFrame
         {
@@ -185,7 +197,7 @@ internal static class EventData
         };
     }
 
-    public static async Task CreateSearchDataAsync(ExceptionlessElasticConfiguration configuration, IEventRepository eventRepository, EventParserPluginManager parserPluginManager, bool updateDates = false)
+    public async Task CreateSearchDataAsync(bool updateDates = false)
     {
         string path = Path.Combine("..", "..", "..", "Search", "Data");
         foreach (string file in Directory.GetFiles(path, "event*.json", SearchOption.AllDirectories))
@@ -193,7 +205,7 @@ internal static class EventData
             if (file.EndsWith("summary.json"))
                 continue;
 
-            var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
+            var events = _parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
             Assert.True(events.Count > 0);
             foreach (var ev in events)
@@ -207,9 +219,9 @@ internal static class EventData
                 ev.CopyDataToIndex([]);
             }
 
-            await eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+            await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
         }
 
-        configuration.Events.QueryParser.Configuration.MappingResolver.RefreshMapping();
+        _configuration.Events.QueryParser.Configuration.MappingResolver.RefreshMapping();
     }
 }

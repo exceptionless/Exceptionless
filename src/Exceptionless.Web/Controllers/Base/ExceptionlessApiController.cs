@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -58,7 +57,7 @@ public abstract class ExceptionlessApiController : Controller
         if (minimumUtcStartDate.HasValue)
             timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);
 
-        timeInfo.AdjustEndTimeIfMaxValue();
+        timeInfo.AdjustEndTimeIfMaxValue(_timeProvider);
         return timeInfo;
     }
 

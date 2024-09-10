@@ -124,7 +124,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stacks.Count > 0)
         {
             foreach (var stack in stacks)
-                stack.MarkFixed(semanticVersion);
+                stack.MarkFixed(semanticVersion, _timeProvider);
 
             await _stackRepository.SaveAsync(stacks);
         }
@@ -476,7 +476,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
-        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_options.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
@@ -539,7 +539,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_options.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
@@ -573,7 +573,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _options.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }

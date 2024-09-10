@@ -17,9 +17,12 @@ namespace Exceptionless.Tests.Stats;
 public sealed class AggregationTests : IntegrationTestsBase
 {
     private readonly EventPipeline _pipeline;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
     private readonly IStackRepository _stackRepository;
+    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
     private readonly StackService _stackService;
     private readonly BillingManager _billingManager;
@@ -28,9 +31,12 @@ public sealed class AggregationTests : IntegrationTestsBase
     public AggregationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _pipeline = GetService<EventPipeline>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
         _stackRepository = GetService<IStackRepository>();
+        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
         _stackService = GetService<StackService>();
         _billingManager = GetService<BillingManager>();
@@ -206,10 +212,10 @@ public sealed class AggregationTests : IntegrationTestsBase
 
     private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true)
     {
-        var organizations = OrganizationData.GenerateSampleOrganizations(_billingManager, _plans);
+        var organizations = _organizationData.GenerateSampleOrganizations(_billingManager, _plans);
         await _organizationRepository.AddAsync(organizations, o => o.ImmediateConsistency().Cache());
 
-        var projects = ProjectData.GenerateSampleProjects();
+        var projects = _projectData.GenerateSampleProjects();
         await _projectRepository.AddAsync(projects, o => o.ImmediateConsistency().Cache());
 
         if (eventCount > 0)
@@ -218,9 +224,9 @@ public sealed class AggregationTests : IntegrationTestsBase
 
     private async Task CreateEventsAsync(int eventCount, string[]? projectIds, decimal? value = -1)
     {
-        var events = EventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(3), endDate: _timeProvider.GetUtcNow().UtcDateTime, value: value);
+        var events = _eventData.GenerateEvents(eventCount, projectIds: projectIds, startDate: DateTime.UtcNow.SubtractDays(3), endDate: DateTime.UtcNow, value: value);
         foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-            await _pipeline.RunAsync(eventGroup, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
+            await _pipeline.RunAsync(eventGroup, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         await _stackService.SaveStackUsagesAsync();
 
         await RefreshDataAsync();
@@ -228,17 +234,18 @@ public sealed class AggregationTests : IntegrationTestsBase
 
     private async Task<List<PersistentEvent>> CreateSessionEventsAsync()
     {
-        var startDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractHours(1);
-        var events = new List<PersistentEvent> {
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
-                EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "2"),
-                EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(30), userIdentity: "2"),
-                EventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(20), userIdentity: "3"),
-                EventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
-            };
+        var startDate = DateTime.UtcNow.SubtractHours(1);
+        var events = new List<PersistentEvent>
+        {
+            _eventData.GenerateSessionStartEvent(occurrenceDate: startDate, userIdentity: "1"),
+            _eventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "1"),
+            _eventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(10), userIdentity: "2"),
+            _eventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(30), userIdentity: "2"),
+            _eventData.GenerateSessionStartEvent(occurrenceDate: startDate.AddMinutes(20), userIdentity: "3"),
+            _eventData.GenerateSessionEndEvent(occurrenceDate: startDate.AddMinutes(50), userIdentity: "3")
+        };
 
-        await _pipeline.RunAsync(events, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
+        await _pipeline.RunAsync(events, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         await RefreshDataAsync();
 
         var results = await _eventRepository.FindAsync(q => q.SortExpression(EventIndex.Alias.Date));

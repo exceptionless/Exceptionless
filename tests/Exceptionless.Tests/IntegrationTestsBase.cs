@@ -1,9 +1,10 @@
-﻿using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Helpers;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
@@ -25,6 +26,7 @@ using Nest;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
+using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests;
@@ -33,9 +35,9 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 {
     private static bool _indexesHaveBeenConfigured = false;
     private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
-    private readonly IDisposable _testSystemClock = TestSystemClock.Install();
     private readonly ExceptionlessElasticConfiguration _configuration;
     protected readonly TestServer _server;
+    private readonly ProxyTimeProvider _timeProvider;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
     public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
@@ -56,8 +58,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             });
         }
 
-        _disposables.Add(_testSystemClock);
-
         _server = configuredFactory.Server;
         _server.PreserveExecutionContext = true;
 
@@ -66,6 +66,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         ServiceProvider = testScope.ServiceProvider;
 
         _configuration = GetService<ExceptionlessElasticConfiguration>();
+
+        if (GetService<TimeProvider>() is ProxyTimeProvider proxyTimeProvider)
+            _timeProvider = proxyTimeProvider;
+        else
+            throw new InvalidOperationException("TimeProvider must be of type ProxyTimeProvider");
+
+        _disposables.Add(new DisposableAction(() => _timeProvider.Restore()));
     }
 
     public virtual async Task InitializeAsync()
@@ -79,6 +86,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         await ResetDataAsync();
     }
 
+    protected ProxyTimeProvider TimeProvider => _timeProvider;
+
     private IServiceProvider ServiceProvider { get; }
 
     protected TService GetService<TService>() where TService : notnull
@@ -91,11 +100,19 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         // use xunit test logger
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+        services.AddSingleton<TimeProvider, ProxyTimeProvider>(_ => new ProxyTimeProvider());
 
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
 
+        services.AddSingleton<EventData>();
         services.AddTransient<EventDataBuilder>();
+        services.AddSingleton<OrganizationData>();
+        services.AddSingleton<ProjectData>();
+        services.AddSingleton<RandomEventGenerator>();
+        services.AddSingleton<StackData>();
+        services.AddSingleton<TokenData>();
+        services.AddSingleton<UserData>();
 
         services.ReplaceSingleton(s => _server.CreateHandler());
     }
@@ -104,7 +121,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     {
         var eventBuilders = new List<EventDataBuilder>();
 
-        var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider);
+        var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider, _timeProvider);
         dataBuilderFunc(dataBuilder);
 
         var eventRepository = GetService<IEventRepository>();

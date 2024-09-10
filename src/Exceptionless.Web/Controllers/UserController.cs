@@ -188,7 +188,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user.IsEmailAddressVerified)
             user.MarkEmailAddressVerified();
         else
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
 
         try
         {
@@ -230,7 +230,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return NotFound();
         }
 
-        if (!user.HasValidVerifyEmailAddressTokenExpiration())
+        if (!user.HasValidVerifyEmailAddressTokenExpiration(_timeProvider))
             return BadRequest("Verify Email Address Token has expired.");
 
         user.MarkEmailAddressVerified();
@@ -253,7 +253,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         if (!user.IsEmailAddressVerified)
         {
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
             await _repository.SaveAsync(user, o => o.Cache());
             await _mailer.SendUserEmailVerifyAsync(user);
         }
@@ -279,7 +279,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
                 continue;
             }
 
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
             await _repository.SaveAsync(user, o => o.Cache());
             _logger.LogInformation("User {UserId} with email address {EmailAddress} is now unverified", user.Id, emailAddress);
         }

@@ -40,25 +40,25 @@ public static class ViewProjectExtensions
         return overage;
     }
 
-    public static UsageHourInfo GetCurrentHourlyUsage(this ViewProject project)
+    public static UsageHourInfo GetCurrentHourlyUsage(this ViewProject project, TimeProvider timeProvider)
     {
-        return project.GetHourlyUsage(_timeProvider.GetUtcNow().UtcDateTime);
+        return project.GetHourlyUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
-    public static void EnsureUsage(this ViewProject project, int limit)
+    public static void EnsureUsage(this ViewProject project, int limit, TimeProvider timeProvider)
     {
-        var startDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractYears(1).StartOfMonth();
+        var startDate = timeProvider.GetUtcNow().UtcDateTime.SubtractYears(1).StartOfMonth();
 
-        while (startDate < _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
+        while (startDate < timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
         {
             project.GetUsage(startDate, limit);
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
     }
 
-    public static UsageInfo GetCurrentUsage(this ViewProject project, int limit)
+    public static UsageInfo GetCurrentUsage(this ViewProject project, int limit, TimeProvider timeProvider)
     {
-        return project.GetUsage(_timeProvider.GetUtcNow().UtcDateTime, limit);
+        return project.GetUsage(timeProvider.GetUtcNow().UtcDateTime, limit);
     }
 
     public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
@@ -77,16 +77,17 @@ public static class ViewProjectExtensions
         return usage;
     }
 
-    public static void TrimUsage(this ViewProject project)
+    public static void TrimUsage(this ViewProject project, TimeProvider timeProvider)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         // keep 1 year of usage
         project.Usage = project.Usage.Except(project.Usage
-            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         project.UsageHours = project.UsageHours.Except(project.UsageHours
-            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .ToList();
     }
 }

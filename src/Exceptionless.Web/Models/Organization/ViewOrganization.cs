@@ -60,28 +60,28 @@ public static class ViewOrganizationExtensions
         return overage;
     }
 
-    public static UsageHourInfo GetCurrentHourlyUsage(this ViewOrganization organization)
+    public static UsageHourInfo GetCurrentHourlyUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
-        return organization.GetHourlyUsage(_timeProvider.GetUtcNow().UtcDateTime);
+        return organization.GetHourlyUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
-    public static void EnsureUsage(this ViewOrganization organization)
+    public static void EnsureUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
-        var startDate = _timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(11).StartOfMonth();
+        var startDate = timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(11).StartOfMonth();
 
-        while (startDate <= _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
+        while (startDate <= timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
         {
-            organization.GetUsage(startDate);
+            organization.GetUsage(startDate, timeProvider);
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
     }
 
-    public static UsageInfo GetCurrentUsage(this ViewOrganization organization)
+    public static UsageInfo GetCurrentUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
-        return organization.GetUsage(_timeProvider.GetUtcNow().UtcDateTime);
+        return organization.GetUsage(timeProvider.GetUtcNow().UtcDateTime, timeProvider);
     }
 
-    public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date)
+    public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date, TimeProvider timeProvider)
     {
         var startOfMonth = date.ToUniversalTime().StartOfMonth();
         var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
@@ -91,33 +91,35 @@ public static class ViewOrganizationExtensions
         usage = new UsageInfo
         {
             Date = startOfMonth,
-            Limit = organization.GetMaxEventsPerMonthWithBonus()
+            Limit = organization.GetMaxEventsPerMonthWithBonus(timeProvider)
         };
         organization.Usage.Add(usage);
 
         return usage;
     }
 
-    public static int GetMaxEventsPerMonthWithBonus(this ViewOrganization organization)
+    public static int GetMaxEventsPerMonthWithBonus(this ViewOrganization organization, TimeProvider timeProvider)
     {
         if (organization.MaxEventsPerMonth <= 0)
             return -1;
 
-        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > _timeProvider.GetUtcNow().UtcDateTime ? organization.BonusEventsPerMonth : 0;
+        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > timeProvider.GetUtcNow().UtcDateTime ? organization.BonusEventsPerMonth : 0;
         return organization.MaxEventsPerMonth + bonusEvents;
     }
 
-    public static void TrimUsage(this ViewOrganization organization)
+    public static void TrimUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
-            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .OrderBy(u => u.Date)
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
-            .Where(u => _timeProvider.GetUtcNow().UtcDateTime.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .OrderBy(u => u.Date)
             .ToList();
     }

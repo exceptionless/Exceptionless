@@ -784,24 +784,24 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
 
             // ensure 12 months of usage
-            viewOrganization.EnsureUsage();
-            viewOrganization.TrimUsage();
+            viewOrganization.EnsureUsage(_timeProvider);
+            viewOrganization.TrimUsage(_timeProvider);
 
-            var currentUsage = viewOrganization.GetCurrentUsage();
+            var currentUsage = viewOrganization.GetCurrentUsage(_timeProvider);
             currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
             currentUsage.Total = realTimeUsage.CurrentUsage.Total;
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
 
-            var currentHourUsage = viewOrganization.GetCurrentHourlyUsage();
+            var currentHourUsage = viewOrganization.GetCurrentHourlyUsage(_timeProvider);
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
 
             viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
-            viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
+            viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit, _timeProvider);
         }
     }
 
@@ -818,7 +818,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         int maximumRetentionDays = _options.MaximumRetentionDays;
         var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
         var sf = new AppFilter(organizations);
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), _timeProvider.GetUtcNow().UtcDateTime, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), _timeProvider.GetUtcNow().UtcDateTime);
+        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays, _timeProvider), _timeProvider.GetUtcNow().UtcDateTime, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays, _timeProvider), _timeProvider.GetUtcNow().UtcDateTime);
         var result = await _eventRepository.CountAsync(q => q
             .SystemFilter(systemFilter)
             .AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)")

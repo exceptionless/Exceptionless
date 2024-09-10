@@ -30,7 +30,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)
     {
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
 
         ReleaseNotification notification;
         if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty)

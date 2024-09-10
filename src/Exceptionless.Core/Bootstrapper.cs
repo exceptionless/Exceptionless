@@ -77,7 +77,7 @@ public class Bootstrapper
         services.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
-        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>()}));
+        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);

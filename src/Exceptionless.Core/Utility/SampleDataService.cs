@@ -70,7 +70,7 @@ public class SampleDataService
             EmailAddress = TEST_USER_EMAIL
         };
 
-        user.ResetVerifyEmailAddressTokenAndExpiration();
+        user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
         user.Roles.Add(AuthorizationRoles.GlobalAdmin);
@@ -97,7 +97,7 @@ public class SampleDataService
             EmailAddress = TEST_ORG_USER_EMAIL
         };
 
-        user.ResetVerifyEmailAddressTokenAndExpiration();
+        user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
 
@@ -182,7 +182,7 @@ public class SampleDataService
             EmailAddress = FREE_USER_EMAIL
         };
 
-        user.ResetVerifyEmailAddressTokenAndExpiration();
+        user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
 

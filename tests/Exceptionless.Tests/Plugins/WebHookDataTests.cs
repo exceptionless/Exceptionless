@@ -11,11 +11,17 @@ namespace Exceptionless.Tests.Plugins;
 
 public sealed class WebHookDataTests : TestWithServices
 {
+    private readonly OrganizationData _organizationData;
+    private readonly ProjectData _projectData;
+    private readonly StackData _stackData;
     private readonly WebHookDataPluginManager _webHookData;
     private readonly FormattingPluginManager _formatter;
 
     public WebHookDataTests(ITestOutputHelper output) : base(output)
     {
+        _organizationData = GetService<OrganizationData>();
+        _projectData = GetService<ProjectData>();
+        _stackData = GetService<StackData>();
         _webHookData = GetService<WebHookDataPluginManager>();
         _formatter = GetService<FormattingPluginManager>();
     }
@@ -82,11 +88,11 @@ public sealed class WebHookDataTests : TestWithServices
             Url = "http://localhost:40000/test",
             EventTypes = [WebHook.KnownEventTypes.StackPromoted],
             Version = version,
-            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
+            CreatedUtc = DateTime.UtcNow
         };
 
-        var organization = OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>());
-        var project = ProjectData.GenerateSampleProject();
+        var organization = _organizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>());
+        var project = _projectData.GenerateSampleProject();
 
         var ev = JsonConvert.DeserializeObject<PersistentEvent>(json, settings);
         Assert.NotNull(ev);
@@ -95,7 +101,7 @@ public sealed class WebHookDataTests : TestWithServices
         ev.StackId = TestConstants.StackId;
         ev.Id = TestConstants.EventId;
 
-        var stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId,
+        var stack = _stackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId,
             projectId: TestConstants.ProjectId, title: _formatter.GetStackTitle(ev),
             signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
 

@@ -314,7 +314,6 @@ export function getExtendedDataItems(event: PersistentEvent, project?: ViewProje
 
         const promoted = project?.promoted_tabs?.includes(key) ?? false;
         items.push({ data, promoted, title: key });
-        console.log({ data, event, promoted, title: key });
     }
 
     return items;

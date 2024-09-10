@@ -28,8 +28,8 @@ public sealed class TokenValidatorTests : TestWithServices
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Type = type,
             IsDisabled = isDisabled,
-            CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime,
-            UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
         };
 
         var result = _validator.Validate(token);

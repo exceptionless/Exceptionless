@@ -5,6 +5,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -18,9 +19,13 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
 {
     private readonly CloseInactiveSessionsJob _job;
     private readonly ICacheClient _cache;
+    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
+    private readonly UserData _userData;
     private readonly IUserRepository _userRepository;
     private readonly EventPipeline _pipeline;
     private readonly BillingManager _billingManager;
@@ -30,9 +35,13 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     {
         _job = GetService<CloseInactiveSessionsJob>();
         _cache = GetService<ICacheClient>();
+        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
+        _userData = GetService<UserData>();
         _userRepository = GetService<IUserRepository>();
         _pipeline = GetService<EventPipeline>();
         _billingManager = GetService<BillingManager>();
@@ -49,10 +58,10 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     public async Task CloseDuplicateIdentitySessions()
     {
         const string userId = "blake@exceptionless.io";
-        var event1 = GenerateEvent(_timeProvider.GetLocalNow().SubtractMinutes(5), userId);
-        var event2 = GenerateEvent(_timeProvider.GetLocalNow().SubtractMinutes(5), userId, sessionId: "123456789");
+        var event1 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        var event2 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId, sessionId: "123456789");
 
-        var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
+        var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         Assert.True(contexts.All(c => !c.HasError));
         Assert.True(contexts.All(c => !c.IsCancelled));
         Assert.True(contexts.All(c => c.IsProcessed));
@@ -65,7 +74,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         Assert.Equal(0, sessionStarts.Sum(e => e.Value));
         Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
         await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
@@ -85,10 +94,10 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     {
         const string userId = "blake@exceptionless.io";
         const string sessionId = "123456789";
-        var event1 = GenerateEvent(_timeProvider.GetLocalNow().SubtractMinutes(5), userId);
-        var event2 = GenerateEvent(_timeProvider.GetLocalNow().SubtractMinutes(5), userId, sessionId: sessionId);
+        var event1 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        var event2 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId, sessionId: sessionId);
 
-        var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
+        var contexts = await _pipeline.RunAsync(new[] { event1, event2 }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         Assert.True(contexts.All(c => !c.HasError));
         Assert.True(contexts.All(c => !c.IsCancelled));
         Assert.True(contexts.All(c => c.IsProcessed));
@@ -101,7 +110,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         Assert.Equal(0, sessionStarts.Sum(e => e.Value));
         Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
         await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
         await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{sessionId.ToSHA1()}", utcNow.SubtractMinutes(1));
 
@@ -126,9 +135,9 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession)
     {
         const string userId = "blake@exceptionless.io";
-        var ev = GenerateEvent(_timeProvider.GetLocalNow().SubtractMinutes(5), userId);
+        var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
 
-        var context = await _pipeline.RunAsync(ev, OrganizationData.GenerateSampleOrganization(_billingManager, _plans), ProjectData.GenerateSampleProject());
+        var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         Assert.False(context.HasError, context.ErrorMessage);
         Assert.False(context.IsCancelled);
         Assert.True(context.IsProcessed);
@@ -141,7 +150,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         Assert.Equal(0, sessionStart.Value);
         Assert.False(sessionStart.HasSessionEndTime());
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
         if (sessionHeartbeatUpdatedAgoInSeconds.HasValue)
         {
             await _cache.SetAsync($"Project:{sessionStart.ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value));
@@ -171,21 +180,21 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
 
     private async Task CreateDataAsync(BillingPlan? plan = null)
     {
-        foreach (var organization in OrganizationData.GenerateSampleOrganizations(_billingManager, _plans))
+        foreach (var organization in _organizationData.GenerateSampleOrganizations(_billingManager, _plans))
         {
             if (plan is not null)
-                _billingManager.ApplyBillingPlan(organization, plan, UserData.GenerateSampleUser());
+                _billingManager.ApplyBillingPlan(organization, plan, _userData.GenerateSampleUser());
             else if (organization.Id == TestConstants.OrganizationId3)
-                _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, UserData.GenerateSampleUser());
+                _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, _userData.GenerateSampleUser());
             else
-                _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, UserData.GenerateSampleUser());
+                _billingManager.ApplyBillingPlan(organization, _plans.SmallPlan, _userData.GenerateSampleUser());
 
             if (organization.BillingPrice > 0)
             {
                 organization.StripeCustomerId = "stripe_customer_id";
                 organization.CardLast4 = "1234";
-                organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-                organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+                organization.SubscribeDate = DateTime.UtcNow;
+                organization.BillingChangeDate = DateTime.UtcNow;
                 organization.BillingChangedByUserId = TestConstants.UserId;
             }
 
@@ -193,15 +202,15 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
             {
                 organization.SuspendedByUserId = TestConstants.UserId;
                 organization.SuspensionCode = SuspensionCode.Billing;
-                organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
+                organization.SuspensionDate = DateTime.UtcNow;
             }
 
             await _organizationRepository.AddAsync(organization, o => o.Cache());
         }
 
-        await _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.Cache());
+        await _projectRepository.AddAsync(_projectData.GenerateSampleProjects(), o => o.Cache());
 
-        foreach (var user in UserData.GenerateSampleUsers())
+        foreach (var user in _userData.GenerateSampleUsers())
         {
             if (user.Id == TestConstants.UserId)
             {
@@ -210,7 +219,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
             }
 
             if (!user.IsEmailAddressVerified)
-                user.ResetVerifyEmailAddressTokenAndExpiration();
+                user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
 
             await _userRepository.AddAsync(user, o => o.Cache());
         }
@@ -220,7 +229,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
 
     private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)
     {
-        occurrenceDate ??= _timeProvider.GetLocalNow();
-        return EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
+        occurrenceDate ??= DateTimeOffset.Now;
+        return _eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, sessionId: sessionId);
     }
 }

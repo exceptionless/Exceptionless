@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 
@@ -15,17 +14,22 @@ public static class OrganizationExtensions
         return organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project, int maximumRetentionDays)
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, Project project, int maximumRetentionDays, TimeProvider timeProvider)
     {
-        return organization.GetRetentionUtcCutoff(maximumRetentionDays, project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)));
+        return organization.GetRetentionUtcCutoff(maximumRetentionDays, project.CreatedUtc.SafeSubtract(TimeSpan.FromDays(3)), timeProvider);
     }
 
-    public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack, int maximumRetentionDays)
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, Stack stack, int maximumRetentionDays, TimeProvider timeProvider)
     {
-        return organization.GetRetentionUtcCutoff(maximumRetentionDays, stack.FirstOccurrence);
+        return organization.GetRetentionUtcCutoff(maximumRetentionDays, stack.FirstOccurrence, timeProvider);
     }
 
-    public static DateTime GetRetentionUtcCutoff(this Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null)
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, int maximumRetentionDays, TimeProvider timeProvider)
+    {
+        return organization.GetRetentionUtcCutoff(maximumRetentionDays, null, timeProvider);
+    }
+
+    public static DateTime GetRetentionUtcCutoff(this Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge, TimeProvider timeProvider)
     {
         // NOTE: We allow you to submit events 3 days before your creation date.
         var oldestPossibleOrganizationEventAge = organization.CreatedUtc.Date.SafeSubtract(TimeSpan.FromDays(3));
@@ -33,13 +37,13 @@ public static class OrganizationExtensions
             oldestPossibleEventAge = oldestPossibleOrganizationEventAge;
 
         int retentionDays = organization.RetentionDays > 0 ? organization.RetentionDays : maximumRetentionDays;
-        var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(-retentionDays);
+        var retentionDate = retentionDays <= 0 ? oldestPossibleEventAge.Value : timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(-retentionDays);
         return retentionDate.IsAfter(oldestPossibleEventAge.Value) ? retentionDate : oldestPossibleEventAge.Value;
     }
 
-    public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations, int maximumRetentionDays)
+    public static DateTime GetRetentionUtcCutoff(this IReadOnlyCollection<Organization> organizations, int maximumRetentionDays, TimeProvider timeProvider)
     {
-        return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff(maximumRetentionDays)) : DateTime.MinValue;
+        return organizations.Count > 0 ? organizations.Min(o => o.GetRetentionUtcCutoff(maximumRetentionDays, timeProvider)) : DateTime.MinValue;
     }
 
     public static void RemoveSuspension(this Organization organization)
@@ -51,31 +55,31 @@ public static class OrganizationExtensions
         organization.SuspendedByUserId = null;
     }
 
-    public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit)
+    public static async Task<bool> IsOverRequestLimitAsync(string organizationId, ICacheClient cacheClient, int apiThrottleLimit, TimeProvider timeProvider)
     {
         if (apiThrottleLimit == Int32.MaxValue)
             return false;
 
-        string cacheKey = String.Concat("api", ":", organizationId, ":", _timeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(15)).Ticks);
+        string cacheKey = String.Concat("api", ":", organizationId, ":", timeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(15)).Ticks);
         var limit = await cacheClient.GetAsync<long>(cacheKey);
         return limit.HasValue && limit.Value >= apiThrottleLimit;
     }
 
-    public static int GetMaxEventsPerMonthWithBonus(this Organization organization)
+    public static int GetMaxEventsPerMonthWithBonus(this Organization organization, TimeProvider timeProvider)
     {
         if (organization.MaxEventsPerMonth <= 0)
             return -1;
 
-        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > _timeProvider.GetUtcNow().UtcDateTime ? organization.BonusEventsPerMonth : 0;
+        int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > timeProvider.GetUtcNow().UtcDateTime ? organization.BonusEventsPerMonth : 0;
         return organization.MaxEventsPerMonth + bonusEvents;
     }
 
-    public static bool IsOverMonthlyLimit(this Organization organization)
+    public static bool IsOverMonthlyLimit(this Organization organization, TimeProvider timeProvider)
     {
         if (organization.MaxEventsPerMonth < 0)
             return false;
 
-        return organization.GetCurrentUsage().Total >= organization.GetMaxEventsPerMonthWithBonus();
+        return organization.GetCurrentUsage(timeProvider).Total >= organization.GetMaxEventsPerMonthWithBonus(timeProvider);
     }
 
     public static bool HasHourlyUsage(this Organization organization, DateTime date)
@@ -98,14 +102,14 @@ public static class OrganizationExtensions
         return overage;
     }
 
-    public static UsageHourInfo GetCurrentHourlyUsage(this Organization organization)
+    public static UsageHourInfo GetCurrentHourlyUsage(this Organization organization, TimeProvider timeProvider)
     {
-        return organization.GetHourlyUsage(_timeProvider.GetUtcNow().UtcDateTime);
+        return organization.GetHourlyUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
-    public static void TrimUsage(this Organization organization)
+    public static void TrimUsage(this Organization organization, TimeProvider timeProvider)
     {
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
 
         // keep 1 year of usage
         organization.Usage = organization.Usage.Except(organization.Usage
@@ -118,12 +122,12 @@ public static class OrganizationExtensions
             .ToList();
     }
 
-    public static UsageInfo GetCurrentUsage(this Organization organization)
+    public static UsageInfo GetCurrentUsage(this Organization organization, TimeProvider timeProvider)
     {
-        return organization.GetUsage(_timeProvider.GetUtcNow().UtcDateTime);
+        return organization.GetUsage(timeProvider.GetUtcNow().UtcDateTime, timeProvider);
     }
 
-    public static UsageInfo GetUsage(this Organization organization, DateTime date)
+    public static UsageInfo GetUsage(this Organization organization, DateTime date, TimeProvider timeProvider)
     {
         var startOfMonth = date.ToUniversalTime().StartOfMonth();
         var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
@@ -133,7 +137,7 @@ public static class OrganizationExtensions
         usage = new UsageInfo
         {
             Date = startOfMonth,
-            Limit = organization.GetMaxEventsPerMonthWithBonus()
+            Limit = organization.GetMaxEventsPerMonthWithBonus(timeProvider)
         };
         organization.Usage.Add(usage);
 

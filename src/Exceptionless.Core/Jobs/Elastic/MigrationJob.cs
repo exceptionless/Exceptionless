@@ -12,7 +12,7 @@ public class MigrationJob : JobBase
     private readonly MigrationManager _migrationManager;
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public MigrationJob(MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration, TimeProvider timeProvider, LoggerFactory loggerFactory)
+    public MigrationJob(MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration, TimeProvider timeProvider, ILoggerFactory loggerFactory)
         : base(timeProvider, loggerFactory)
     {
 

@@ -15,11 +15,13 @@ public class DataBuilder
 {
     private readonly List<EventDataBuilder> _eventBuilders;
     private readonly IServiceProvider _serviceProvider;
+    private readonly TimeProvider _timeProvider;
 
-    public DataBuilder(List<EventDataBuilder> eventBuilders, IServiceProvider serviceProvider)
+    public DataBuilder(List<EventDataBuilder> eventBuilders, IServiceProvider serviceProvider, TimeProvider timeProvider)
     {
         _eventBuilders = eventBuilders;
         _serviceProvider = serviceProvider;
+        _timeProvider = timeProvider;
     }
 
     public EventDataBuilder Event()
@@ -34,6 +36,7 @@ public class EventDataBuilder
 {
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly ISerializer _serializer;
+    private readonly TimeProvider _timeProvider;
     private readonly ICollection<Action<Stack>> _stackMutations;
     private int _additionalEventsToCreate = 0;
     private readonly PersistentEvent _event = new();
@@ -41,11 +44,12 @@ public class EventDataBuilder
     private EventDataBuilder? _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
 
-    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer)
+    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer, TimeProvider timeProvider)
     {
         _stackMutations = new List<Action<Stack>>();
         _formattingPluginManager = formattingPluginManager;
         _serializer = serializer;
+        _timeProvider = timeProvider;
     }
 
     public EventDataBuilder Mutate(Action<PersistentEvent> mutation)

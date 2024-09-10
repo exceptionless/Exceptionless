@@ -13,13 +13,17 @@ namespace Exceptionless.Tests.Repositories;
 
 public sealed class EventStackFilterTests : IntegrationTestsBase
 {
+    private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
 
     public EventStackFilterTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
+        TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
+        _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
 
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -33,8 +37,8 @@ public sealed class EventStackFilterTests : IntegrationTestsBase
         var oldLoggingLevel = Log.DefaultMinimumLevel;
         Log.DefaultMinimumLevel = LogLevel.Warning;
 
-        await StackData.CreateSearchDataAsync(_stackRepository, GetService<JsonSerializer>());
-        await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>());
+        await _stackData.CreateSearchDataAsync();
+        await _eventData.CreateSearchDataAsync();
 
         Log.DefaultMinimumLevel = oldLoggingLevel;
     }

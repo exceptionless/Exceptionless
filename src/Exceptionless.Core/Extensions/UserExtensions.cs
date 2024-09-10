@@ -13,11 +13,11 @@ public static class UserExtensions
         return String.Equals(encodedPassword, user.Password);
     }
 
-    public static void ResetVerifyEmailAddressTokenAndExpiration(this User user)
+    public static void ResetVerifyEmailAddressTokenAndExpiration(this User user, TimeProvider timeProvider)
     {
         user.IsEmailAddressVerified = false;
         user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
-        user.VerifyEmailAddressTokenExpiration = _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(1440);
+        user.VerifyEmailAddressTokenExpiration = timeProvider.GetUtcNow().UtcDateTime.AddMinutes(1440);
     }
 
     public static void MarkEmailAddressVerified(this User user)
@@ -27,9 +27,9 @@ public static class UserExtensions
         user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
     }
 
-    public static bool HasValidVerifyEmailAddressTokenExpiration(this User user)
+    public static bool HasValidVerifyEmailAddressTokenExpiration(this User user, TimeProvider timeProvider)
     {
-        return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= _timeProvider.GetUtcNow().UtcDateTime;
+        return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= timeProvider.GetUtcNow().UtcDateTime;
     }
 
     public static void ResetPasswordResetToken(this User user)
@@ -38,15 +38,15 @@ public static class UserExtensions
         user.PasswordResetTokenExpiration = DateTime.MinValue;
     }
 
-    public static void CreatePasswordResetToken(this User user)
+    public static void CreatePasswordResetToken(this User user, TimeProvider timeProvider)
     {
         user.PasswordResetToken = StringExtensions.GetNewToken();
-        user.PasswordResetTokenExpiration = _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(1440);
+        user.PasswordResetTokenExpiration = timeProvider.GetUtcNow().UtcDateTime.AddMinutes(1440);
     }
 
-    public static bool HasValidPasswordResetTokenExpiration(this User user)
+    public static bool HasValidPasswordResetTokenExpiration(this User user, TimeProvider timeProvider)
     {
-        return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= _timeProvider.GetUtcNow().UtcDateTime;
+        return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= timeProvider.GetUtcNow().UtcDateTime;
     }
 
     public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)

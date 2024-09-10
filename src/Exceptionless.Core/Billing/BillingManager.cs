@@ -113,13 +113,13 @@ public class BillingManager
         organization.MaxEventsPerMonth = plan.MaxEventsPerMonth;
         organization.HasPremiumFeatures = plan.HasPremiumFeatures;
 
-        organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
+        organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
     }
 
     public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null)
     {
         organization.BonusEventsPerMonth = bonusEvents;
         organization.BonusExpiration = expires;
-        organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
+        organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
     }
 }

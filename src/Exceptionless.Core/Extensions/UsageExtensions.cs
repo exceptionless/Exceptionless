@@ -4,7 +4,7 @@ namespace Exceptionless.Core.Extensions;
 
 public static class UsageExtensions
 {
-    public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null)
+    public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge, TimeProvider timeProvider)
     {
         var usageInfo = usages.FirstOrDefault(o => o.Date == dateUtc);
         if (usageInfo is null)
@@ -31,7 +31,7 @@ public static class UsageExtensions
             return;
 
         // remove old usage entries
-        foreach (var usage in usages.Where(u => u.Date < _timeProvider.GetUtcNow().UtcDateTime.Subtract(maxUsageAge.Value)).ToList())
+        foreach (var usage in usages.Where(u => u.Date < timeProvider.GetUtcNow().UtcDateTime.Subtract(maxUsageAge.Value)).ToList())
             usages.Remove(usage);
     }
 }

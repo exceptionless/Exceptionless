@@ -252,7 +252,7 @@ public class AuthController : ExceptionlessApiController
         if (user.IsEmailAddressVerified)
             user.MarkEmailAddressVerified();
         else
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
 
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
@@ -515,7 +515,7 @@ public class AuthController : ExceptionlessApiController
                 return Ok();
             }
 
-            user.CreatePasswordResetToken();
+            user.CreatePasswordResetToken(_timeProvider);
             await _userRepository.SaveAsync(user, o => o.Cache());
 
             await _mailer.SendUserPasswordResetAsync(user);
@@ -550,7 +550,7 @@ public class AuthController : ExceptionlessApiController
                 return BadRequest("Invalid Password Reset Token.");
             }
 
-            if (!user.HasValidPasswordResetTokenExpiration())
+            if (!user.HasValidPasswordResetTokenExpiration(_timeProvider))
             {
                 _logger.LogError("Reset password failed for {EmailAddress}: Password Reset Token has expired", user.EmailAddress);
                 return BadRequest("Password Reset Token has expired.");

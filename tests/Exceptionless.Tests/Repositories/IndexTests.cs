@@ -29,6 +29,6 @@ public sealed class IndexTests : TestWithServices
     public async Task CanCreateEventIndex()
     {
         await _configuration.Events.ConfigureAsync();
-        await _configuration.Events.EnsureIndexAsync(_timeProvider.GetUtcNow().UtcDateTime);
+        await _configuration.Events.EnsureIndexAsync(DateTime.UtcNow);
     }
 }

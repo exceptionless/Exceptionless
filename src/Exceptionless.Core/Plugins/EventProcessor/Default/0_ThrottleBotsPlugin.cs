@@ -1,5 +1,4 @@
-﻿using System;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.DateTimeExtensions;

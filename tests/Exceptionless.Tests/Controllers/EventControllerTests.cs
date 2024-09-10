@@ -9,13 +9,12 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -26,7 +25,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
@@ -37,16 +35,24 @@ namespace Exceptionless.Tests.Controllers;
 public class EventControllerTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly StackData _stackData;
+    private readonly RandomEventGenerator _randomEventGenerator;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
+    private readonly UserData _userData;
 
     public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
+        _stackData = GetService<StackData>();
+        _randomEventGenerator = GetService<RandomEventGenerator>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _eventUserDescriptionQueue = GetService<IQueue<EventUserDescription>>();
+        _userData = GetService<UserData>();
     }
 
     protected override async Task ResetDataAsync()
@@ -249,7 +255,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanPostEventAsync()
     {
-        var ev = new RandomEventGenerator().GeneratePersistent(false);
+        var ev = _randomEventGenerator.GeneratePersistent(false);
         if (String.IsNullOrEmpty(ev.Message))
             ev.Message = "Generated message.";
 
@@ -285,7 +291,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         await Run.InParallelAsync(batchCount, async i =>
         {
-            var events = new RandomEventGenerator().Generate(batchSize, false);
+            var events = _randomEventGenerator.Generate(batchSize, false);
             await SendRequestAsync(r => r
                .Post()
                .AsTestOrganizationClientUser()
@@ -315,7 +321,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanPostProjectEventAsync()
     {
-        var ev = new RandomEventGenerator().GeneratePersistent(false);
+        var ev = _randomEventGenerator.GeneratePersistent(false);
         if (String.IsNullOrEmpty(ev.Message))
             ev.Message = "Generated message.";
 
@@ -549,7 +555,7 @@ public class EventControllerTests : IntegrationTestsBase
             .QueryString("filter", "-type:heartbeat")
             .QueryString("limit", "10")
             .QueryString("offset", "-360m")
-            .QueryString("time", $"{_timeProvider.GetUtcNow().UtcDateTime.SubtractDays(180):s}-now")
+            .QueryString("time", $"{DateTime.UtcNow.SubtractDays(180):s}-now")
             .StatusCodeShouldBeOk()
         );
 
@@ -656,7 +662,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Theory]
     public async Task WillExcludeDeletedStacks(string? filter)
     {
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
 
         await CreateDataAsync(d =>
         {
@@ -714,7 +720,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task WillExcludeOldStacksForStackNewMode()
     {
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
 
         await CreateDataAsync(d =>
         {
@@ -778,19 +784,6 @@ public class EventControllerTests : IntegrationTestsBase
         const string filter = "(status:open OR status:regressed)";
         const string time = "last week";
 
-        /*
-        _logger.LogInformation("Running non-inverted query");
-        var invertedResults = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
-            .AsGlobalAdminUser()
-            .AppendPath("events")
-            .QueryString("filter", "@!" + filter)
-            .QueryString("time", time)
-            .QueryString("mode", "stack_new")
-            .StatusCodeShouldBeOk()
-        );*/
-
-        //Assert.Equal(2, invertedResults.Count);
-
         _logger.LogInformation("Running inverted query");
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
@@ -832,7 +825,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task ShouldRespectEventUsageLimits()
     {
-        TestSystemClock.SetFrozenTime(_timeProvider.GetUtcNow().UtcDateTime.StartOfMonth());
+        TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.StartOfMonth());
 
         // update plan limits
         var billingManager = GetService<BillingManager>();
@@ -840,13 +833,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = TimeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -874,7 +867,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(total + blocked))
+            .Content(_randomEventGenerator.Generate(total + blocked))
             .StatusCodeShouldBeAccepted()
         );
 
@@ -912,7 +905,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        var organizationUsage = viewOrganization.GetCurrentUsage();
+        var organizationUsage = viewOrganization.GetCurrentUsage(TimeProvider);
         Assert.Equal(viewOrganization.MaxEventsPerMonth, organizationUsage.Limit);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
@@ -929,7 +922,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(1))
+            .Content(_randomEventGenerator.Generate(1))
             .StatusCodeShouldBePaymentRequired()
         );
 
@@ -939,7 +932,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(blocked, usageInfo.CurrentUsage.Blocked);
         Assert.Equal(0, usageInfo.CurrentUsage.TooBig);
 
-        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+        TimeProvider.Advance(TimeSpan.FromMinutes(6));
 
         eventsLeftInBucket = await usageService.GetEventsLeftAsync(organizationId);
         Assert.True(eventsLeftInBucket > 0);
@@ -950,7 +943,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(1))
+            .Content(_randomEventGenerator.Generate(1))
             .StatusCodeShouldBeAccepted()
         );
 
@@ -965,7 +958,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        organizationUsage = viewOrganization.GetCurrentUsage();
+        organizationUsage = viewOrganization.GetCurrentUsage(TimeProvider);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
@@ -976,7 +969,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, secondBucketUsageInfo.CurrentUsage.TooBig);
 
         // move forward again and run process usage job
-        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+        TimeProvider.Advance(TimeSpan.FromMinutes(6));
 
         var processUsageJob = GetService<EventUsageJob>();
         Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
@@ -992,7 +985,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task ShouldDiscardEventsForSuspendedOrganization()
     {
-        TestSystemClock.SetFrozenTime(_timeProvider.GetUtcNow().UtcDateTime.StartOfMonth());
+        TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.StartOfMonth());
 
         // update plan limits
         var billingManager = GetService<BillingManager>();
@@ -1000,13 +993,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = TimeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1020,7 +1013,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(1))
+            .Content(_randomEventGenerator.Generate(1))
             .StatusCodeShouldBeAccepted()
         );
 
@@ -1036,7 +1029,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(1))
+            .Content(_randomEventGenerator.Generate(1))
             .StatusCodeShouldBeUnauthorized()
         );
 
@@ -1044,7 +1037,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationUser()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events")
-            .Content(new RandomEventGenerator().Generate(1))
+            .Content(_randomEventGenerator.Generate(1))
             .StatusCodeShouldBePaymentRequired() // We do payment required if no events left otherwise we do plan limit reached (upgrade required)
         );
     }
@@ -1076,7 +1069,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PlanChangeShouldAllowEventSubmission()
     {
-        TestSystemClock.SetFrozenTime(_timeProvider.GetUtcNow().UtcDateTime.StartOfMonth());
+        TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.StartOfMonth());
 
         // update plan limits
         var billingManager = GetService<BillingManager>();
@@ -1084,13 +1077,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = TimeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1118,7 +1111,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(total + blocked))
+            .Content(_randomEventGenerator.Generate(total + blocked))
             .StatusCodeShouldBeAccepted()
         );
 
@@ -1147,13 +1140,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         // Upgrade Plan
         organization = await _organizationRepository.GetByIdAsync(organizationId);
-        billingManager.ApplyBillingPlan(organization, plans.MediumPlan, UserData.GenerateSampleUser());
+        billingManager.ApplyBillingPlan(organization, plans.MediumPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = TimeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1178,7 +1171,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationClientUser()
             .AppendPath("events")
-            .Content(new RandomEventGenerator().Generate(1))
+            .Content(_randomEventGenerator.Generate(1))
             .StatusCodeShouldBeAccepted()
         );
 
@@ -1193,20 +1186,20 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        var organizationUsage = viewOrganization.GetCurrentUsage();
+        var organizationUsage = viewOrganization.GetCurrentUsage(TimeProvider);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
 
         // Downgrade Plan and verify throttled
         organization = await _organizationRepository.GetByIdAsync(organizationId);
-        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, UserData.GenerateSampleUser());
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
-            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = TimeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -1226,7 +1219,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.False(viewOrganization.IsOverMonthlyLimit);
 
         // move forward again and run process usage job
-        TestSystemClock.AddTime(TimeSpan.FromMinutes(6));
+        TimeProvider.Advance(TimeSpan.FromMinutes(6));
 
         var processUsageJob = GetService<EventUsageJob>();
         Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
@@ -1241,7 +1234,7 @@ public class EventControllerTests : IntegrationTestsBase
 
     private async Task CreateStacksAndEventsAsync()
     {
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var utcNow = DateTime.UtcNow;
 
         await CreateDataAsync(d =>
         {
@@ -1291,8 +1284,8 @@ public class EventControllerTests : IntegrationTestsBase
             d.Event().FreeProject();
         });
 
-        await StackData.CreateSearchDataAsync(GetService<IStackRepository>(), GetService<JsonSerializer>(), true);
-        await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _eventRepository, GetService<EventParserPluginManager>(), true);
+        await _stackData.CreateSearchDataAsync(true);
+        await _eventData.CreateSearchDataAsync(true);
     }
 
     [Fact]

@@ -177,7 +177,7 @@ namespace Exceptionless.Core.Repositories.Queries
             if (field is null)
                 throw new ArgumentNullException(nameof(field), "Retention field not specified for this index");
 
-            var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge);
+            var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge, _timeProvider);
             double retentionDays = Math.Max(Math.Round(Math.Abs(_timeProvider.GetUtcNow().UtcDateTime.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }

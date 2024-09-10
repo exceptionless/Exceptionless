@@ -1,8 +1,6 @@
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -14,12 +12,14 @@ namespace Exceptionless.Tests.Repositories;
 
 public sealed class EventIndexTests : IntegrationTestsBase
 {
+    private readonly EventData _eventData;
     private readonly IEventRepository _repository;
     private readonly PersistentEventQueryValidator _validator;
 
     public EventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
+        TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
+        _eventData = GetService<EventData>();
         _repository = GetService<IEventRepository>();
         _validator = GetService<PersistentEventQueryValidator>();
     }
@@ -27,7 +27,7 @@ public sealed class EventIndexTests : IntegrationTestsBase
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
-        await EventData.CreateSearchDataAsync(GetService<ExceptionlessElasticConfiguration>(), _repository, GetService<EventParserPluginManager>());
+        await _eventData.CreateSearchDataAsync();
     }
 
     [Theory]
