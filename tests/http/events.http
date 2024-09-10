@@ -97,16 +97,16 @@ Content-Type: application/json
   "reference_id": "12345678",
   "session_id": "12345",
   "data": {
-      "number": 1,
-      "decimal": 1.1,
-      "string": "test",
-      "boolean": false,
-        "@user": {
-         "identity": "My-User-Identity"
-        },
-        "@user_description": {
-            "email_address": "{{email}}",
-            "description": "my custom description"
+    "number": 1,
+    "decimal": 1.1,
+    "string": "test",
+    "boolean": false,
+    "@user": {
+      "identity": "My-User-Identity"
+    },
+    "@user_description": {
+      "email_address": "{{email}}",
+      "description": "my custom description"
     }
   }
 }
