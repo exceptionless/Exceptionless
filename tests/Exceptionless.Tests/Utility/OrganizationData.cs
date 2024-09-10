@@ -3,19 +3,24 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
-internal static class OrganizationData
+public class OrganizationData
 {
-    public static IEnumerable<Organization> GenerateOrganizations(BillingManager billingManager, BillingPlans plans, int count = 10, bool generateId = false, string? id = null)
+    private readonly TimeProvider _timeProvider;
+
+    public OrganizationData(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+    public IEnumerable<Organization> GenerateOrganizations(BillingManager billingManager, BillingPlans plans, int count = 10, bool generateId = false, string? id = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateOrganization(billingManager, plans, generateId, id);
     }
 
-    public static List<Organization> GenerateSampleOrganizations(BillingManager billingManager, BillingPlans plans)
+    public List<Organization> GenerateSampleOrganizations(BillingManager billingManager, BillingPlans plans)
     {
         return
         [
@@ -31,17 +36,17 @@ internal static class OrganizationData
         ];
     }
 
-    public static Organization GenerateSampleOrganization(BillingManager billingManager, BillingPlans plans)
+    public Organization GenerateSampleOrganization(BillingManager billingManager, BillingPlans plans)
     {
         return GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail);
     }
 
-    public static Organization GenerateSampleOrganizationWithPlan(BillingManager billingManager, BillingPlans plans, BillingPlan plan)
+    public Organization GenerateSampleOrganizationWithPlan(BillingManager billingManager, BillingPlans plans, BillingPlan plan)
     {
         return GenerateOrganization(billingManager, plans, id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail, plan: plan);
     }
 
-    public static Organization GenerateOrganization(BillingManager billingManager, BillingPlans plans, bool generateId = false, string? name = null, string? id = null, string? inviteEmail = null, bool isSuspended = false, BillingPlan? plan = null)
+    public Organization GenerateOrganization(BillingManager billingManager, BillingPlans plans, bool generateId = false, string? name = null, string? id = null, string? inviteEmail = null, bool isSuspended = false, BillingPlan? plan = null)
     {
         var organization = new Organization
         {
@@ -54,8 +59,8 @@ internal static class OrganizationData
         {
             organization.StripeCustomerId = "stripe_customer_id";
             organization.CardLast4 = "1234";
-            organization.SubscribeDate = SystemClock.UtcNow;
-            organization.BillingChangeDate = SystemClock.UtcNow;
+            organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
+            organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
             organization.BillingChangedByUserId = TestConstants.UserId;
         }
 
@@ -65,7 +70,7 @@ internal static class OrganizationData
             {
                 EmailAddress = inviteEmail,
                 Token = Guid.NewGuid().ToString(),
-                DateAdded = SystemClock.UtcNow
+                DateAdded = _timeProvider.GetUtcNow().UtcDateTime
             });
         }
 
@@ -74,7 +79,7 @@ internal static class OrganizationData
             organization.IsSuspended = true;
             organization.SuspensionCode = SuspensionCode.Abuse;
             organization.SuspendedByUserId = TestConstants.UserId;
-            organization.SuspensionDate = SystemClock.UtcNow;
+            organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
         }
 
         return organization;

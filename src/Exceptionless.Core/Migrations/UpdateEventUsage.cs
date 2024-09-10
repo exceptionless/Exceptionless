@@ -7,7 +7,6 @@ using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -19,18 +18,21 @@ public sealed class UpdateEventUsage : MigrationBase
     private readonly IProjectRepository _projectRepository;
     private readonly IEventRepository _eventRepository;
     private readonly ExceptionlessElasticConfiguration _config;
+    private readonly TimeProvider _timeProvider;
 
     public UpdateEventUsage(
         IOrganizationRepository organizationRepository,
         IProjectRepository projectRepository,
         IEventRepository eventRepository,
         ExceptionlessElasticConfiguration configuration,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _eventRepository = eventRepository;
         _config = configuration;
+        _timeProvider = timeProvider;
 
         MigrationType = MigrationType.Repeatable;
     }
@@ -53,7 +55,7 @@ public sealed class UpdateEventUsage : MigrationBase
         long total = organizationResults.Total;
         int processed = 0;
         int error = 0;
-        var lastStatus = SystemClock.Now;
+        var lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
 
         while (organizationResults.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
@@ -72,7 +74,7 @@ public sealed class UpdateEventUsage : MigrationBase
                     var dateAggs = result.Aggregations.DateHistogram("date_date");
                     foreach (var dateHistogramBucket in dateAggs.Buckets)
                     {
-                        var usage = organization.GetUsage(dateHistogramBucket.Date);
+                        var usage = organization.GetUsage(dateHistogramBucket.Date, _timeProvider);
                         long eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
                         if (eventTotal > usage.Total)
                         {
@@ -93,14 +95,14 @@ public sealed class UpdateEventUsage : MigrationBase
                 }
             }
 
-            if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
+            if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
             {
-                lastStatus = SystemClock.UtcNow;
+                lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
                 _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount} Duration={Duration}", processed, total, error, sw.Elapsed.ToWords());
             }
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
             if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
                 break;
         }
@@ -132,7 +134,7 @@ public sealed class UpdateEventUsage : MigrationBase
                         }
 
                         if (usage.Limit == 0)
-                            usage.Limit = organization.GetMaxEventsPerMonthWithBonus();
+                            usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                     }
 
                     await _projectRepository.SaveAsync(project);

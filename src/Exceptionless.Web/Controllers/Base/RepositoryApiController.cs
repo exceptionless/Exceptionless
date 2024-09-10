@@ -9,13 +9,12 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
 
-#pragma warning disable 1998
-
 namespace Exceptionless.Web.Controllers;
 
 public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new()
 {
-    public RepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory) { }
+    public RepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory) { }
 
     protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value)
     {
@@ -115,15 +114,15 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         }), type);
     }
 
-    protected virtual async Task<PermissionResult> CanAddAsync(TModel value)
+    protected virtual Task<PermissionResult> CanAddAsync(TModel value)
     {
         if (_isOrganization || !(value is IOwnedByOrganization orgModel))
-            return PermissionResult.Allow;
+            return Task.FromResult(PermissionResult.Allow);
 
         if (!CanAccessOrganization(orgModel.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Task.FromResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
-        return PermissionResult.Allow;
+        return Task.FromResult(PermissionResult.Allow);
     }
 
     protected virtual Task<TModel> AddModelAsync(TModel value)
@@ -168,15 +167,15 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return await OkModelAsync(original);
     }
 
-    protected virtual async Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes)
+    protected virtual Task<PermissionResult> CanUpdateAsync(TModel original, Delta<TUpdateModel> changes)
     {
         if (original is IOwnedByOrganization orgModel && !CanAccessOrganization(orgModel.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Task.FromResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
-            return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+            return Task.FromResult(PermissionResult.DenyWithMessage("OrganizationId cannot be modified."));
 
-        return PermissionResult.Allow;
+        return Task.FromResult(PermissionResult.Allow);
     }
 
     protected virtual Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes)
@@ -233,12 +232,12 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         return BadRequest(results);
     }
 
-    protected virtual async Task<PermissionResult> CanDeleteAsync(TModel value)
+    protected virtual Task<PermissionResult> CanDeleteAsync(TModel value)
     {
         if (value is IOwnedByOrganization orgModel && !CanAccessOrganization(orgModel.OrganizationId))
-            return PermissionResult.DenyWithNotFound(value.Id);
+            return Task.FromResult(PermissionResult.DenyWithNotFound(value.Id));
 
-        return PermissionResult.Allow;
+        return Task.FromResult(PermissionResult.Allow);
     }
 
     protected virtual async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<TModel> values)

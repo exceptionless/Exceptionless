@@ -29,8 +29,9 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         ICacheClient cacheClient,
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(workItemQueue, cacheClient, messageBus, loggerFactory)
+    ) : base(workItemQueue, cacheClient, messageBus, timeProvider, loggerFactory)
     {
         _appOptions = appOptions;
         _serializerSettings = serializerSettings;
@@ -56,7 +57,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
 
     public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder)
     {
-        builder.Register(new AppFilterQueryBuilder(_appOptions));
+        builder.Register(new AppFilterQueryBuilder(_appOptions, TimeProvider));
         builder.Register(new OrganizationQueryBuilder());
         builder.Register(new ProjectQueryBuilder());
         builder.Register(new StackQueryBuilder());

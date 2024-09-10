@@ -15,10 +15,12 @@ namespace Exceptionless.Tests.Migrations;
 
 public class SetStackDuplicateSignatureMigrationTests : TestWithServices
 {
+    private readonly StackData _stackData;
     private readonly IStackRepository _repository;
 
     public SetStackDuplicateSignatureMigrationTests(ITestOutputHelper output) : base(output)
     {
+        _stackData = GetService<StackData>();
         _repository = GetService<IStackRepository>();
     }
 
@@ -32,7 +34,7 @@ public class SetStackDuplicateSignatureMigrationTests : TestWithServices
     [Fact]
     public async Task WillSetStackDuplicateSignature()
     {
-        var stack = StackData.GenerateStack();
+        var stack = _stackData.GenerateStack();
         stack.DuplicateSignature = null!;
         stack = await _repository.AddAsync(stack, o => o.ImmediateConsistency());
         Assert.NotEmpty(stack.ProjectId);

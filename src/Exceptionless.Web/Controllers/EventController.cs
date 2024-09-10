@@ -25,7 +25,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -63,8 +62,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         IMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(repository, mapper, validator, loggerFactory)
+    ) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
@@ -98,7 +98,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organizations.All(o => o.IsSuspended))
             return Ok(CountResult.Empty);
 
-        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await CountInternalAsync(sf, ti, filter, aggregations, mode);
     }
@@ -124,7 +124,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
         return await CountInternalAsync(sf, ti, filter, aggregations, mode);
     }
@@ -154,7 +154,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await CountInternalAsync(sf, ti, filter, aggregations, mode);
     }
@@ -179,10 +179,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization is null)
             return NotFound();
 
-        if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < SystemClock.UtcNow.SubtractDays(organization.RetentionDays))
+        if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(organization.RetentionDays))
             return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
         var result = await _repository.GetPreviousAndNextEventIdsAsync(model, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
         return OkWithLinks(model, [GetEntityResourceLink(result.Previous, "previous"),
@@ -216,7 +216,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
-        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
@@ -443,7 +443,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
@@ -482,7 +482,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
@@ -521,7 +521,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack, _appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(stack, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(stack, organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit, before, after);
     }
@@ -549,7 +549,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
-        var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(null, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after);
     }
@@ -586,7 +586,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(null, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, String.Concat("reference:", referenceId), null, mode, page, limit, before, after);
     }
@@ -617,7 +617,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
-        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true);
     }
@@ -657,7 +657,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, $"(reference:{sessionId} OR ref.session:{sessionId}) {filter}", sort, mode, page, limit, before, after, true);
     }
@@ -686,7 +686,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
-        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
     }
@@ -721,7 +721,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
     }
@@ -760,7 +760,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view event occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _appOptions.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, $"type:{Event.KnownTypes.Session} {filter}", sort, mode, page, limit, before, after, true);
     }
@@ -862,7 +862,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         try
         {
             await Task.WhenAll(
-                _cache.SetAsync(heartbeatCacheKey, SystemClock.UtcNow, TimeSpan.FromHours(2)),
+                _cache.SetAsync(heartbeatCacheKey, _timeProvider.GetUtcNow().UtcDateTime, TimeSpan.FromHours(2)),
                 close ? _cache.SetAsync(String.Concat(heartbeatCacheKey, "-close"), true, TimeSpan.FromHours(2)) : Task.CompletedTask
             );
         }

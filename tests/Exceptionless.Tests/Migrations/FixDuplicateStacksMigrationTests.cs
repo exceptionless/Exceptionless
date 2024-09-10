@@ -16,12 +16,16 @@ namespace Exceptionless.Tests.Migrations;
 
 public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
 {
+    private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
+    private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
 
     public FixDuplicateStacksMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
+        _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
     }
 
@@ -35,8 +39,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillMergeDuplicatedStacks()
     {
-        var utcNow = SystemClock.UtcNow;
-        var originalStack = StackData.GenerateStack();
+        var originalStack = _stackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 100;
         var duplicateStack = originalStack.DeepClone();
@@ -53,8 +56,8 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         originalStack = await _stackRepository.AddAsync(originalStack, o => o.ImmediateConsistency());
         duplicateStack = await _stackRepository.AddAsync(duplicateStack, o => o.ImmediateConsistency());
 
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: originalStack.Id), o => o.ImmediateConsistency());
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: duplicateStack.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 100, stackId: originalStack.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: duplicateStack.Id), o => o.ImmediateConsistency());
 
         var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
         Assert.Equal(2, results.Total);
@@ -89,8 +92,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillMergeToStackWithMostEvents()
     {
-        var utcNow = SystemClock.UtcNow;
-        var originalStack = StackData.GenerateStack();
+        var originalStack = _stackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 10;
         var biggerStack = originalStack.DeepClone();
@@ -107,8 +109,8 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         originalStack = await _stackRepository.AddAsync(originalStack, o => o.ImmediateConsistency());
         biggerStack = await _stackRepository.AddAsync(biggerStack, o => o.ImmediateConsistency());
 
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 10, stackId: originalStack.Id), o => o.ImmediateConsistency());
-        await _eventRepository.AddAsync(EventData.GenerateEvents(count: 100, stackId: biggerStack.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: originalStack.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 100, stackId: biggerStack.Id), o => o.ImmediateConsistency());
 
         var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
         Assert.Equal(2, results.Total);
@@ -143,7 +145,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillNotMergeDuplicatedDeletedStacks()
     {
-        var originalStack = StackData.GenerateStack();
+        var originalStack = _stackData.GenerateStack();
         var duplicateStack = originalStack.DeepClone();
         duplicateStack.Id = ObjectId.GenerateNewId().ToString();
         duplicateStack.CreatedUtc = originalStack.CreatedUtc.AddMinutes(1);

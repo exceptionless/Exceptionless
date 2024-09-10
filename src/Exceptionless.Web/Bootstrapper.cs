@@ -49,14 +49,14 @@ public class Bootstrapper
 
     public class ApiMappings : Profile
     {
-        public ApiMappings()
+        public ApiMappings(TimeProvider timeProvider)
         {
             CreateMap<UserDescription, EventUserDescription>();
 
             CreateMap<NewOrganization, Organization>();
             CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) =>
             {
-                vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
+                vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit(timeProvider);
             });
 
             CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) =>

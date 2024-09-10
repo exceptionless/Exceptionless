@@ -9,7 +9,14 @@ namespace Exceptionless.Tests.Plugins;
 
 public class ManualStackingTests : TestWithServices
 {
-    public ManualStackingTests(ITestOutputHelper output) : base(output) { }
+    private readonly OrganizationData _organizationData;
+    private readonly ProjectData _projectData;
+
+    public ManualStackingTests(ITestOutputHelper output) : base(output)
+    {
+        _organizationData = GetService<OrganizationData>();
+        _projectData = GetService<ProjectData>();
+    }
 
     [Theory]
     [MemberData(nameof(StackingData))]
@@ -18,7 +25,7 @@ public class ManualStackingTests : TestWithServices
         var ev = new PersistentEvent();
         ev.SetManualStackingKey(stackingKey);
 
-        var context = new EventContext(ev, OrganizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), ProjectData.GenerateSampleProject());
+        var context = new EventContext(ev, _organizationData.GenerateSampleOrganization(GetService<BillingManager>(), GetService<BillingPlans>()), _projectData.GenerateSampleProject());
         var plugin = GetService<ManualStackingPlugin>();
         await plugin.EventBatchProcessingAsync(new List<EventContext> { context });
         Assert.Equal(willAddManualStackSignature, context.StackSignatureData.Count > 0);

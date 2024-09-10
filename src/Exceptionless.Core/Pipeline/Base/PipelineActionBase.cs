@@ -1,5 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
 

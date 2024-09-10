@@ -9,11 +9,8 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-
-#nullable enable
 
 namespace Exceptionless.Core.Jobs;
 
@@ -42,7 +39,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         get => _client ??= new HttpClient();
     }
 
-    public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, ILoggerFactory? loggerFactory) : base(queue, loggerFactory)
+    public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
         _slackService = slackService;
@@ -70,9 +67,9 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
             long consecutiveErrors = await cache.GetAsync<long>(ConsecutiveErrorsCacheKey, 0);
             if (consecutiveErrors > 10)
             {
-                var lastAttempt = await cache.GetAsync(LastAttemptCacheKey, SystemClock.UtcNow);
+                var lastAttempt = await cache.GetAsync(LastAttemptCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
                 var nextAttemptAllowedAt = lastAttempt.AddMinutes(15);
-                if (nextAttemptAllowedAt >= SystemClock.UtcNow)
+                if (nextAttemptAllowedAt >= _timeProvider.GetUtcNow().UtcDateTime)
                 {
                     _logger.WebHookCancelledBackoff(consecutiveErrors, nextAttemptAllowedAt);
                     return JobResult.Cancelled;
@@ -121,7 +118,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 }
                 else
                 {
-                    var now = SystemClock.UtcNow;
+                    var now = _timeProvider.GetUtcNow().UtcDateTime;
                     await cache.SetAsync(LastAttemptCacheKey, now, TimeSpan.FromDays(3));
                     consecutiveErrors = await cache.IncrementAsync(ConsecutiveErrorsCacheKey, TimeSpan.FromDays(3));
                     DateTime firstAttempt;

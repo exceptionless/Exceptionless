@@ -77,7 +77,7 @@ public class Bootstrapper
         services.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
-        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), CloneValues = true, Serializer = s.GetRequiredService<ISerializer>() }));
+        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
@@ -112,13 +112,14 @@ public class Bootstrapper
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
         services.AddStartupAction<MessageService>();
-        services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { LoggerFactory = s.GetRequiredService<ILoggerFactory>(), Serializer = s.GetRequiredService<ISerializer>() }));
+        services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
         services.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
         services.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
         services.AddSingleton<IFileStorage>(s => new InMemoryFileStorage(new InMemoryFileStorageOptions
         {
             Serializer = s.GetRequiredService<ITextSerializer>(),
+            TimeProvider = s.GetRequiredService<TimeProvider>(),
             LoggerFactory = s.GetRequiredService<ILoggerFactory>()
         }));
 
@@ -250,17 +251,17 @@ public class Bootstrapper
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)
     {
-        services.AddJob<CloseInactiveSessionsJob>(true);
-        services.AddJob<DailySummaryJob>(true);
-        services.AddJob<EventNotificationsJob>(true);
-        services.AddJob<EventPostsJob>(true);
-        services.AddJob<EventUserDescriptionsJob>(true);
-        services.AddJob<MailMessageJob>(true);
-        services.AddJob<StackStatusJob>(true);
-        services.AddJob<StackEventCountJob>(true);
-        services.AddJob<WebHooksJob>(true);
-        services.AddJob<WorkItemJob>(true);
-        services.AddJob<EventUsageJob>(true);
+        services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventPostsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<MailMessageJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<StackStatusJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<WebHooksJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<WorkItemJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<EventUsageJob>(o => o.WaitForStartupActions(true));
 
         services.AddCronJob<CleanupDataJob>("30 */4 * * *");
         services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
@@ -286,6 +287,7 @@ public class Bootstrapper
         {
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
+            TimeProvider = container.GetRequiredService<TimeProvider>(),
             LoggerFactory = loggerFactory
         });
     }

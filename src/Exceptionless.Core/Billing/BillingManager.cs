@@ -2,7 +2,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
-using Foundatio.Utility;
 
 namespace Exceptionless.Core.Billing;
 
@@ -12,13 +11,15 @@ public class BillingManager
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingPlans _plans;
+    private readonly TimeProvider _timeProvider;
 
-    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans)
+    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans, TimeProvider timeProvider)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _plans = plans;
+        _timeProvider = timeProvider;
     }
 
     public async Task<bool> CanAddOrganizationAsync(User? user)
@@ -98,7 +99,7 @@ public class BillingManager
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
         organization.PlanDescription = plan.Description;
-        organization.BillingChangeDate = SystemClock.UtcNow;
+        organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
 
         if (updateBillingPrice)
             organization.BillingPrice = plan.Price;
@@ -112,13 +113,13 @@ public class BillingManager
         organization.MaxEventsPerMonth = plan.MaxEventsPerMonth;
         organization.HasPremiumFeatures = plan.HasPremiumFeatures;
 
-        organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
+        organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
     }
 
     public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null)
     {
         organization.BonusEventsPerMonth = bonusEvents;
         organization.BonusExpiration = expires;
-        organization.GetCurrentUsage().Limit = organization.GetMaxEventsPerMonthWithBonus();
+        organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
     }
 }

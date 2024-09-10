@@ -19,7 +19,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -59,8 +58,9 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         IMapper mapper,
         StackQueryValidator validator,
         AppOptions options,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
-    ) : base(stackRepository, mapper, validator, loggerFactory)
+    ) : base(stackRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _stackRepository = stackRepository;
         _organizationRepository = organizationRepository;
@@ -124,7 +124,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stacks.Count > 0)
         {
             foreach (var stack in stacks)
-                stack.MarkFixed(semanticVersion);
+                stack.MarkFixed(semanticVersion, _timeProvider);
 
             await _stackRepository.SaveAsync(stacks);
         }
@@ -169,7 +169,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
     {
-        if (snoozeUntilUtc < SystemClock.UtcNow.AddMinutes(5))
+        if (snoozeUntilUtc < _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(5))
             return BadRequest("Must snooze for at least 5 minutes.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -353,7 +353,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
                 stack.Status = status;
                 if (status == StackStatus.Fixed)
                 {
-                    stack.DateFixed = SystemClock.UtcNow;
+                    stack.DateFixed = _timeProvider.GetUtcNow().UtcDateTime;
                 }
                 else
                 {
@@ -476,7 +476,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (organizations.All(o => o.IsSuspended))
             return Ok(EmptyModels);
 
-        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_options.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organizations.GetRetentionUtcCutoff(_options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
@@ -539,7 +539,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_options.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(_options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }
@@ -573,7 +573,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (organization.IsSuspended)
             return PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
 
-        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _options.MaximumRetentionDays));
+        var ti = GetTimeInfo(time, offset, organization.GetRetentionUtcCutoff(project, _options.MaximumRetentionDays, _timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, filter, sort, mode, page, limit);
     }

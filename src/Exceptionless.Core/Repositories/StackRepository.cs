@@ -5,7 +5,6 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -13,11 +12,13 @@ namespace Exceptionless.Core.Repositories;
 
 public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository
 {
+    private readonly TimeProvider _timeProvider;
     private const string STACKING_VERSION = "v2";
 
     public StackRepository(ExceptionlessElasticConfiguration configuration, IValidator<Stack> validator, AppOptions options)
         : base(configuration.Stacks, validator, options)
     {
+        _timeProvider = configuration.TimeProvider;
         AddPropertyRequiredForRemove(s => s.SignatureHash);
     }
 
@@ -78,7 +79,7 @@ ctx._source.total_occurrences += params.count;";
                         { "minOccurrenceDateUtc", minOccurrenceDateUtc },
                         { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
                         { "count", count },
-                        { "updatedUtc", SystemClock.UtcNow }
+                        { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
                     }
             }
         };
@@ -123,7 +124,7 @@ ctx._source.total_occurrences += params.count;";
 
         return PatchAllAsync(
             q => q.Organization(organizationId).Project(projectId),
-            new PartialPatch(new { is_deleted = true, updated_utc = SystemClock.UtcNow })
+            new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime })
         );
     }
 

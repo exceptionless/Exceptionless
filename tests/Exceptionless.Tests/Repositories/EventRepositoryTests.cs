@@ -7,7 +7,6 @@ using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -16,12 +15,19 @@ namespace Exceptionless.Tests.Repositories;
 
 public sealed class EventRepositoryTests : IntegrationTestsBase
 {
+    private readonly List<Tuple<string, DateTime>> _ids = new();
+    private readonly RandomEventGenerator _randomEventGenerator;
+    private readonly EventData _eventData;
     private readonly IEventRepository _repository;
+    private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _randomEventGenerator = GetService<RandomEventGenerator>();
+        _eventData = GetService<EventData>();
         _repository = GetService<IEventRepository>();
+        _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
     }
 
@@ -31,8 +37,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
         var ev = await _repository.AddAsync(new PersistentEvent
         {
-            CreatedUtc = SystemClock.UtcNow,
-            Date = new DateTimeOffset(SystemClock.UtcNow.Date, TimeSpan.Zero),
+            CreatedUtc = DateTime.UtcNow,
+            Date = new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero),
             OrganizationId = TestConstants.OrganizationId,
             ProjectId = TestConstants.ProjectId,
             StackId = TestConstants.StackId,
@@ -48,7 +54,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact(Skip = "Performance Testing")]
     public async Task GetAsyncPerformanceAsync()
     {
-        var ev = await _repository.AddAsync(new RandomEventGenerator().GeneratePersistent());
+        var ev = await _repository.AddAsync(_randomEventGenerator.GeneratePersistent());
         await RefreshDataAsync();
         Assert.Equal(1, await _repository.CountAsync());
 
@@ -68,7 +74,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     {
         var events = new List<PersistentEvent>();
         for (int i = 0; i < 6; i++)
-            events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: SystemClock.UtcNow.Subtract(TimeSpan.FromMinutes(i))));
+            events.Add(_eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(i))));
 
         await _repository.AddAsync(events);
         await RefreshDataAsync();
@@ -163,7 +169,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     public async Task GetByReferenceIdAsync()
     {
         string referenceId = ObjectId.GenerateNewId().ToString();
-        await _repository.AddAsync(EventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList(), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, referenceId: referenceId).ToList(), o => o.ImmediateConsistency());
 
         var results = await _repository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId);
         Assert.True(results.Total > 0);
@@ -174,14 +180,14 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetOpenSessionsAsync()
     {
-        var firstEvent = SystemClock.OffsetNow.Subtract(TimeSpan.FromMinutes(35));
+        var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
 
-        var sessionLastActive35MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
-        var sessionLastActive34MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);
+        var sessionLastActive35MinAgo = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
+        var sessionLastActive34MinAgo = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession2", generateData: false);
         sessionLastActive34MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(1));
-        var sessionLastActive5MinAgo = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession3", generateData: false);
+        var sessionLastActive5MinAgo = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession3", generateData: false);
         sessionLastActive5MinAgo.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(30));
-        var closedSession = EventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
+        var closedSession = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "opensession", generateData: false);
         closedSession.UpdateSessionStart(firstEvent.UtcDateTime.AddMinutes(5), true);
 
         var events = new List<PersistentEvent> {
@@ -193,7 +199,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         await _repository.AddAsync(events, o => o.ImmediateConsistency());
 
-        var results = await _repository.GetOpenSessionsAsync(SystemClock.UtcNow.SubtractMinutes(30));
+        var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
         Assert.Equal(3, results.Total);
     }
 
@@ -203,7 +209,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         const string _clientIpAddress = "123.123.12.255";
         const int NUMBER_OF_EVENTS_TO_CREATE = 50;
 
-        var events = EventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, startDate: SystemClock.UtcNow.SubtractDays(2), endDate: SystemClock.UtcNow).ToList();
+        var events = _eventData.GenerateEvents(NUMBER_OF_EVENTS_TO_CREATE, TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2, startDate: DateTime.UtcNow.SubtractDays(2), endDate: DateTime.UtcNow).ToList();
         events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
         await _repository.AddAsync(events, o => o.ImmediateConsistency());
 
@@ -216,22 +222,20 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
 
-        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, SystemClock.UtcNow.SubtractDays(3), SystemClock.UtcNow.AddDays(2), o => o.ImmediateConsistency());
+        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2), o => o.ImmediateConsistency());
 
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Empty(events);
     }
 
-    private readonly List<Tuple<string, DateTime>> _ids = new();
-
     private async Task CreateDataAsync()
     {
-        var baseDate = SystemClock.UtcNow.SubtractHours(1);
+        var baseDate = DateTime.UtcNow.SubtractHours(1);
         var occurrenceDateStart = baseDate.AddMinutes(-30);
         var occurrenceDateMid = baseDate;
         var occurrenceDateEnd = baseDate.AddMinutes(30);
 
-        await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        await _stackRepository.AddAsync(_stackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
 
         var occurrenceDates = new List<DateTime> {
                 occurrenceDateStart,
@@ -250,7 +254,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         foreach (var date in occurrenceDates)
         {
-            var ev = await _repository.AddAsync(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: date), o => o.ImmediateConsistency());
+            var ev = await _repository.AddAsync(_eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: date), o => o.ImmediateConsistency());
             _ids.Add(Tuple.Create(ev.Id, date));
         }
     }

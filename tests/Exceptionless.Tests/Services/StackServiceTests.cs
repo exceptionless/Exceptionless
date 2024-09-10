@@ -4,7 +4,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -14,6 +13,7 @@ namespace Exceptionless.Tests.Services;
 public class StackServiceTests : IntegrationTestsBase
 {
     private readonly ICacheClient _cache;
+    private readonly StackData _stackData;
     private readonly StackService _stackService;
     private readonly IStackRepository _stackRepository;
 
@@ -21,6 +21,7 @@ public class StackServiceTests : IntegrationTestsBase
     {
         Log.SetLogLevel<StackService>(LogLevel.Trace);
         _cache = GetService<ICacheClient>();
+        _stackData = GetService<StackData>();
         _stackService = GetService<StackService>();
         _stackRepository = GetService<IStackRepository>();
     }
@@ -28,12 +29,12 @@ public class StackServiceTests : IntegrationTestsBase
     [Fact]
     public async Task IncrementUsage_OnlyChangeCache()
     {
-        var stack = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
 
         // Assert stack state in elasticsearch before increment usage
         Assert.Equal(0, stack.TotalOccurrences);
-        Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
-        Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
+        Assert.True(stack.FirstOccurrence <= DateTime.UtcNow);
+        Assert.True(stack.LastOccurrence <= DateTime.UtcNow);
 
         // Assert state in cache before increment usage
         Assert.Equal(DateTime.MinValue, await _cache.GetUnixTimeMillisecondsAsync(StackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
@@ -42,15 +43,15 @@ public class StackServiceTests : IntegrationTestsBase
         var occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(StackService.GetStackOccurrenceSetCacheKey());
         Assert.True(occurrenceSet.IsNull || !occurrenceSet.HasValue || occurrenceSet.Value.Count == 0);
 
-        var firstUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
+        var firstUtcNow = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
         await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, firstUtcNow, firstUtcNow, 1);
         await RefreshDataAsync();
 
         // Assert stack state has no change after increment usage
         stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
         Assert.Equal(0, stack.TotalOccurrences);
-        Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
-        Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
+        Assert.True(stack.FirstOccurrence <= DateTime.UtcNow);
+        Assert.True(stack.LastOccurrence <= DateTime.UtcNow);
 
         // Assert state in cache has been changed after increment usage
         Assert.Equal(firstUtcNow, await _cache.GetUnixTimeMillisecondsAsync(StackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
@@ -59,7 +60,7 @@ public class StackServiceTests : IntegrationTestsBase
         occurrenceSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(StackService.GetStackOccurrenceSetCacheKey());
         Assert.Single(occurrenceSet.Value);
 
-        var secondUtcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
+        var secondUtcNow = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
         await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, secondUtcNow, secondUtcNow, 2);
 
         // Assert state in cache has been changed after increment usage again
@@ -73,8 +74,8 @@ public class StackServiceTests : IntegrationTestsBase
     [Fact]
     public async Task IncrementUsageConcurrently()
     {
-        var stack = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
-        var stack2 = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId2, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
+        var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(id: TestConstants.StackId2, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
         DateTime? minOccurrenceDate = null, maxOccurrenceDate = null;
         var tasks = new List<Task>();
@@ -87,8 +88,8 @@ public class StackServiceTests : IntegrationTestsBase
         // Assert stack state has no change after increment usage
         stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
         Assert.Equal(0, stack.TotalOccurrences);
-        Assert.True(stack.FirstOccurrence <= SystemClock.UtcNow);
-        Assert.True(stack.LastOccurrence <= SystemClock.UtcNow);
+        Assert.True(stack.FirstOccurrence <= DateTime.UtcNow);
+        Assert.True(stack.LastOccurrence <= DateTime.UtcNow);
 
         // Assert state in cache has been changed after increment usage
         Assert.Equal(minOccurrenceDate, await _cache.GetUnixTimeMillisecondsAsync(StackService.GetStackOccurrenceMinDateCacheKey(stack.Id)));
@@ -97,8 +98,8 @@ public class StackServiceTests : IntegrationTestsBase
 
         stack2 = await _stackRepository.GetByIdAsync(TestConstants.StackId2);
         Assert.Equal(0, stack2.TotalOccurrences);
-        Assert.True(stack2.FirstOccurrence <= SystemClock.UtcNow);
-        Assert.True(stack2.LastOccurrence <= SystemClock.UtcNow);
+        Assert.True(stack2.FirstOccurrence <= DateTime.UtcNow);
+        Assert.True(stack2.LastOccurrence <= DateTime.UtcNow);
 
         // Assert state in cache has been changed after increment usage
         Assert.Equal(minOccurrenceDate, await _cache.GetUnixTimeMillisecondsAsync(StackService.GetStackOccurrenceMinDateCacheKey(stack2.Id)));
@@ -112,7 +113,7 @@ public class StackServiceTests : IntegrationTestsBase
         {
             for (int i = 0; i < 10; i++)
             {
-                var utcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
+                var utcNow = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
                 if (!minOccurrenceDate.HasValue)
                     minOccurrenceDate = utcNow;
                 maxOccurrenceDate = utcNow;
@@ -125,9 +126,9 @@ public class StackServiceTests : IntegrationTestsBase
     [Fact]
     public async Task CanSaveStackUsage()
     {
-        var stack = await _stackRepository.AddAsync(StackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(id: TestConstants.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId));
 
-        var utcNow = SystemClock.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
+        var utcNow = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
         DateTime minOccurrenceDate = utcNow.AddMinutes(-1), maxOccurrenceDate = utcNow;
         await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, minOccurrenceDate, maxOccurrenceDate, 10);
 

@@ -6,7 +6,6 @@ using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Queues;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,7 +33,8 @@ public class StatusController : ExceptionlessApiController
         IQueue<EventNotification> notificationQueue,
         IQueue<WebHookNotification> webHooksQueue,
         IQueue<EventUserDescription> userDescriptionQueue,
-        AppOptions appOptions)
+        AppOptions appOptions,
+        TimeProvider timeProvider) : base(timeProvider)
     {
         _cacheClient = cacheClient;
         _messagePublisher = messagePublisher;
@@ -111,7 +111,7 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
     {
-        var notification = new ReleaseNotification { Critical = critical, Date = SystemClock.UtcNow, Message = message.Value };
+        var notification = new ReleaseNotification { Critical = critical, Date = _timeProvider.GetUtcNow().UtcDateTime, Message = message.Value };
         await _messagePublisher.PublishAsync(notification);
         return Ok(notification);
     }
@@ -137,7 +137,7 @@ public class StatusController : ExceptionlessApiController
         if (String.IsNullOrWhiteSpace(message?.Value))
             return NotFound();
 
-        var notification = new SystemNotification { Date = SystemClock.UtcNow, Message = message.Value };
+        var notification = new SystemNotification { Date = _timeProvider.GetUtcNow().UtcDateTime, Message = message.Value };
         await _cacheClient.SetAsync("system-notification", notification);
         await _messagePublisher.PublishAsync(notification);
 
@@ -149,7 +149,7 @@ public class StatusController : ExceptionlessApiController
     public async Task<IActionResult> RemoveSystemNotificationAsync()
     {
         await _cacheClient.RemoveAsync("system-notification");
-        await _messagePublisher.PublishAsync(new SystemNotification { Date = SystemClock.UtcNow });
+        await _messagePublisher.PublishAsync(new SystemNotification { Date = _timeProvider.GetUtcNow().UtcDateTime });
         return Ok();
     }
 }

@@ -7,7 +7,6 @@ using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Nest;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -20,15 +19,17 @@ public sealed class FixDuplicateStacks : MigrationBase
     private readonly ICacheClient _cache;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly TimeProvider _timeProvider;
     private readonly ExceptionlessElasticConfiguration _config;
 
-    public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public FixDuplicateStacks(ExceptionlessElasticConfiguration configuration, IStackRepository stackRepository, IEventRepository eventRepository, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _config = configuration;
         _client = configuration.Client;
         _cache = configuration.Cache;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
+        _timeProvider = timeProvider;
 
         MigrationType = MigrationType.Repeatable;
     }
@@ -48,7 +49,7 @@ public sealed class FixDuplicateStacks : MigrationBase
         int processed = 0;
         int error = 0;
         long totalUpdatedEventCount = 0;
-        var lastStatus = SystemClock.Now;
+        var lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
         int batch = 1;
 
         while (buckets.Count > 0)
@@ -124,7 +125,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                             .WaitForCompletion(false));
                         _logger.LogRequest(response, LogLevel.Trace);
 
-                        var taskStartedTime = SystemClock.Now;
+                        var taskStartedTime = _timeProvider.GetUtcNow().UtcDateTime;
                         var taskId = response.Task;
                         int attempts = 0;
                         long affectedRecords = 0;
@@ -136,14 +137,14 @@ public sealed class FixDuplicateStacks : MigrationBase
                             if (taskStatus.Completed)
                             {
                                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
-                                if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                                if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                     _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
 
                                 affectedRecords += status.Created + status.Updated + status.Deleted;
                                 break;
                             }
 
-                            if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                            if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                 _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
 
                             var delay = TimeSpan.FromMilliseconds(50);
@@ -162,9 +163,9 @@ public sealed class FixDuplicateStacks : MigrationBase
                         totalUpdatedEventCount += affectedRecords;
                     }
 
-                    if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
+                    if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
                     {
-                        lastStatus = SystemClock.UtcNow;
+                        lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
                         _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                         await _cache.RemoveByPrefixAsync(nameof(Stack));
                     }

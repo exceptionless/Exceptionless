@@ -3,7 +3,6 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Stripe;
 
@@ -15,13 +14,16 @@ public class StripeEventHandler
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IMailer _mailer;
+    private readonly TimeProvider _timeProvider;
 
-    public StripeEventHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ILogger<StripeEventHandler> logger)
+    public StripeEventHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer,
+        TimeProvider timeProvider, ILogger<StripeEventHandler> logger)
     {
         _logger = logger;
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _mailer = mailer;
+        _timeProvider = timeProvider;
     }
 
     public async Task HandleEventAsync(Stripe.Event stripeEvent)
@@ -29,30 +31,30 @@ public class StripeEventHandler
         switch (stripeEvent.Type)
         {
             case "customer.subscription.updated":
-                {
-                    await SubscriptionUpdatedAsync((Subscription)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await SubscriptionUpdatedAsync((Subscription)stripeEvent.Data.Object);
+                break;
+            }
             case "customer.subscription.deleted":
-                {
-                    await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object);
+                break;
+            }
             case "invoice.payment_succeeded":
-                {
-                    await InvoicePaymentSucceededAsync((Invoice)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await InvoicePaymentSucceededAsync((Invoice)stripeEvent.Data.Object);
+                break;
+            }
             case "invoice.payment_failed":
-                {
-                    await InvoicePaymentFailedAsync((Invoice)stripeEvent.Data.Object);
-                    break;
-                }
+            {
+                await InvoicePaymentFailedAsync((Invoice)stripeEvent.Data.Object);
+                break;
+            }
             default:
-                {
-                    _logger.LogTrace("Unhandled stripe webhook called. Type: {Type} Id: {Id} Account: {Account}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
-                    break;
-                }
+            {
+                _logger.LogTrace("Unhandled stripe webhook called. Type: {Type} Id: {Id} Account: {Account}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
+                break;
+            }
         }
     }
 
@@ -71,41 +73,42 @@ public class StripeEventHandler
         switch (sub.Status)
         {
             case "trialing":
-                {
-                    status = BillingStatus.Trialing;
-                    break;
-                }
+            {
+                status = BillingStatus.Trialing;
+                break;
+            }
             case "active":
-                {
-                    status = BillingStatus.Active;
-                    break;
-                }
+            {
+                status = BillingStatus.Active;
+                break;
+            }
             case "past_due":
-                {
-                    status = BillingStatus.PastDue;
-                    break;
-                }
+            {
+                status = BillingStatus.PastDue;
+                break;
+            }
             case "canceled":
-                {
-                    status = BillingStatus.Canceled;
-                    break;
-                }
+            {
+                status = BillingStatus.Canceled;
+                break;
+            }
             case "unpaid":
-                {
-                    status = BillingStatus.Unpaid;
-                    break;
-                }
+            {
+                status = BillingStatus.Unpaid;
+                break;
+            }
         }
 
         if (!status.HasValue || status.Value == org.BillingStatus)
             return;
 
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         org.BillingStatus = status.Value;
-        org.BillingChangeDate = SystemClock.UtcNow;
+        org.BillingChangeDate = utcNow;
         if (status.Value == BillingStatus.Unpaid || status.Value == BillingStatus.Canceled)
         {
             org.IsSuspended = true;
-            org.SuspensionDate = SystemClock.UtcNow;
+            org.SuspensionDate = utcNow;
             org.SuspensionCode = SuspensionCode.Billing;
             org.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
             org.SuspendedByUserId = "Stripe";
@@ -129,14 +132,15 @@ public class StripeEventHandler
 
         _logger.LogInformation("Stripe subscription deleted. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
 
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        org.BillingChangeDate = utcNow;
         org.BillingStatus = BillingStatus.Canceled;
         org.IsSuspended = true;
-        org.SuspensionDate = SystemClock.UtcNow;
+        org.SuspensionDate = utcNow;
         org.SuspensionCode = SuspensionCode.Billing;
         org.SuspensionNotes = "Stripe subscription deleted.";
         org.SuspendedByUserId = "Stripe";
 
-        org.BillingChangeDate = SystemClock.UtcNow;
         await _organizationRepository.SaveAsync(org, o => o.Cache().Originals());
     }
 

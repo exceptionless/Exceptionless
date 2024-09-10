@@ -3,7 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -14,11 +13,16 @@ public sealed class SlackServiceTests : TestWithServices
 {
     private readonly Project _project;
     private readonly SlackService _slackService;
+    private readonly ProjectData _projectData;
+    private readonly EventData _eventData;
 
     public SlackServiceTests(ITestOutputHelper output) : base(output)
     {
+        _projectData = GetService<ProjectData>();
+        _eventData = GetService<EventData>();
+
         _slackService = GetService<SlackService>();
-        _project = ProjectData.GenerateSampleProject();
+        _project = _projectData.GenerateSampleProject();
         _project.Data ??= new DataDictionary();
         _project.Data[Project.KnownDataKeys.SlackToken] = new SlackToken
         {
@@ -56,7 +60,7 @@ public sealed class SlackServiceTests : TestWithServices
         {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
-                    { Event.KnownDataKeys.Error, EventData.GenerateError() }
+                    { Event.KnownDataKeys.Error, _eventData.GenerateError() }
                 }
         });
     }
@@ -74,7 +78,7 @@ public sealed class SlackServiceTests : TestWithServices
             Count = 2,
             Value = 500,
             Data = new Core.Models.DataDictionary {
-                    { Event.KnownDataKeys.Error, EventData.GenerateError() },
+                    { Event.KnownDataKeys.Error, _eventData.GenerateError() },
                     { Event.KnownDataKeys.Version, "1.2.3" },
                     { Event.KnownDataKeys.UserInfo, new UserInfo("niemyjski", "Blake Niemyjski")  },
                     { Event.KnownDataKeys.UserDescription, new UserDescription("noreply@exceptionless.io", "Blake ate two boxes of cookies and needs help") }
@@ -215,7 +219,7 @@ public sealed class SlackServiceTests : TestWithServices
         ev.OrganizationId = TestConstants.OrganizationId;
         ev.ProjectId = TestConstants.ProjectId;
         ev.StackId = TestConstants.StackId;
-        ev.Date = SystemClock.OffsetUtcNow;
+        ev.Date = DateTimeOffset.Now;
 
         await _slackService.SendEventNoticeAsync(ev, _project, RandomData.GetBool(), RandomData.GetBool());
         await RunWebHookJobAsync();

@@ -21,6 +21,12 @@ public abstract class ExceptionlessApiController : Controller
     protected const int MAXIMUM_LIMIT = 100;
     protected const int MAXIMUM_SKIP = 1000;
     protected static readonly char[] TIME_PARTS = ['|'];
+    protected TimeProvider _timeProvider;
+
+    protected ExceptionlessApiController(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
 
     protected TimeSpan GetOffset(string? offset)
     {
@@ -46,12 +52,12 @@ public abstract class ExceptionlessApiController : Controller
         var utcOffset = GetOffset(offset);
 
         // range parsing needs to be based on the user's local time.
-        var range = DateTimeRange.Parse(time, Foundatio.Utility.SystemClock.OffsetUtcNow.ToOffset(utcOffset));
+        var range = DateTimeRange.Parse(time, _timeProvider.GetUtcNow().ToOffset(utcOffset));
         var timeInfo = new TimeInfo { Field = field, Offset = utcOffset, Range = range };
         if (minimumUtcStartDate.HasValue)
             timeInfo.ApplyMinimumUtcStartDate(minimumUtcStartDate.Value);
 
-        timeInfo.AdjustEndTimeIfMaxValue();
+        timeInfo.AdjustEndTimeIfMaxValue(_timeProvider);
         return timeInfo;
     }
 

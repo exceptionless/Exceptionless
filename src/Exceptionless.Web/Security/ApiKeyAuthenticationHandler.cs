@@ -26,11 +26,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
+    private readonly TimeProvider _timeProvider;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IUserRepository userRepository, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+        TimeProvider timeProvider, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
+        _timeProvider = timeProvider;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -110,7 +113,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < Foundatio.Utility.SystemClock.UtcNow)
+        if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < _timeProvider.GetUtcNow().UtcDateTime)
         {
             Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}", token, Request.Path, tokenRecord.ExpiresUtc.Value);
 
@@ -149,7 +152,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private AuthenticationProperties CreateAuthenticationProperties(Token? token)
     {
-        var utcNow = Foundatio.Utility.SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         return new AuthenticationProperties
         {
             ExpiresUtc = token?.ExpiresUtc ?? utcNow.AddHours(12),

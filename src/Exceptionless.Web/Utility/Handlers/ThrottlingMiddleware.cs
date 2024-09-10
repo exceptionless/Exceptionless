@@ -2,7 +2,6 @@
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
-using Foundatio.Utility;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
@@ -17,6 +16,7 @@ public class ThrottlingMiddleware
 {
     private readonly ICacheClient _cacheClient;
     private readonly ThrottlingOptions _options;
+    private readonly TimeProvider _timeProvider;
     private readonly RequestDelegate _next;
     private static readonly PathString _v1ProjectConfigPath = new("/api/v1/project/config");
     private static readonly PathString _v2ProjectConfigPath = new("/api/v2/projects/config");
@@ -24,11 +24,12 @@ public class ThrottlingMiddleware
     private static readonly PathString _webSocketPath = new("/api/v2/push");
 
 
-    public ThrottlingMiddleware(RequestDelegate next, ICacheClient cacheClient, ThrottlingOptions options)
+    public ThrottlingMiddleware(RequestDelegate next, ICacheClient cacheClient, ThrottlingOptions options, TimeProvider timeProvider)
     {
         _next = next;
         _cacheClient = cacheClient;
         _options = options;
+        _timeProvider = timeProvider;
     }
 
     protected virtual string? GetUserIdentifier(HttpRequest request)
@@ -54,7 +55,7 @@ public class ThrottlingMiddleware
 
     private string GetCacheKey(string userIdentifier)
     {
-        return String.Concat("api:", userIdentifier, ":", SystemClock.UtcNow.Floor(_options.Period).Ticks);
+        return String.Concat("api:", userIdentifier, ":", _timeProvider.GetUtcNow().UtcDateTime.Floor(_options.Period).Ticks);
     }
 
     public async Task Invoke(HttpContext context)
@@ -78,7 +79,7 @@ public class ThrottlingMiddleware
             string cacheKey = GetCacheKey(identifier);
             requestCount = await _cacheClient.IncrementAsync(cacheKey, 1);
             if (requestCount == 1)
-                await _cacheClient.SetExpirationAsync(cacheKey, SystemClock.UtcNow.Ceiling(_options.Period));
+                await _cacheClient.SetExpirationAsync(cacheKey, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(_options.Period));
         }
         catch { }
 
