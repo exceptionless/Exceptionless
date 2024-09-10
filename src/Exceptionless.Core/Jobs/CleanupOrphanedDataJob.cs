@@ -8,7 +8,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Nest;
@@ -25,9 +24,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
+    private readonly TimeProvider _timeProvider;
     private DateTime? _lastRun;
 
-    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _config = config;
         _elasticClient = config.Client;
@@ -35,6 +35,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _cacheClient = cacheClient;
         _lockProvider = lockProvider;
+        _timeProvider = timeProvider;
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
@@ -208,7 +209,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         int processed = 0;
         int error = 0;
         long totalUpdatedEventCount = 0;
-        var lastStatus = SystemClock.Now;
+        var lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
         int batch = 1;
 
         while (buckets.Count > 0)
@@ -285,7 +286,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                             .WaitForCompletion(false));
                         _logger.LogRequest(response, LogLevel.Trace);
 
-                        var taskStartedTime = SystemClock.Now;
+                        var taskStartedTime = _timeProvider.GetUtcNow().UtcDateTime;
                         var taskId = response.Task;
                         int attempts = 0;
                         long affectedRecords = 0;
@@ -297,14 +298,14 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                             if (taskStatus.Completed)
                             {
                                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
-                                if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                                if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                                     _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
 
                                 affectedRecords += status.Created + status.Updated + status.Deleted;
                                 break;
                             }
 
-                            if (SystemClock.Now.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
+                            if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(taskStartedTime) > TimeSpan.FromSeconds(30))
                             {
                                 await RenewLockAsync(context);
                                 _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
@@ -326,9 +327,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                         totalUpdatedEventCount += affectedRecords;
                     }
 
-                    if (SystemClock.UtcNow.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
+                    if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
                     {
-                        lastStatus = SystemClock.UtcNow;
+                        lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
                         _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
                         await _cacheClient.RemoveByPrefixAsync(nameof(Stack));
                     }
@@ -358,7 +359,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     private Task RenewLockAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return context.RenewLockAsync();
     }
 
@@ -367,7 +368,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));

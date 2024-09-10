@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
-using Foundatio.Utility;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -74,29 +73,31 @@ public static class ProjectExtensions
         return usage;
     }
 
-    public static UsageHourInfo GetCurrentHourlyUsage(this Project project)
+    public static UsageHourInfo GetCurrentHourlyUsage(this Project project, TimeProvider timeProvider)
     {
-        return project.GetHourlyUsage(SystemClock.UtcNow);
+        return project.GetHourlyUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
-    public static void TrimUsage(this Project project)
+    public static void TrimUsage(this Project project, TimeProvider timeProvider)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         // keep 1 year of usage
         project.Usage = project.Usage.Except(project.Usage
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .OrderBy(u => u.Date)
             .ToList();
 
         // keep 30 days of hourly usage that have blocked events, otherwise keep it for 7 days
         project.UsageHours = project.UsageHours.Except(project.UsageHours
-            .Where(u => SystemClock.UtcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .OrderBy(u => u.Date)
             .ToList();
     }
 
-    public static UsageInfo GetCurrentUsage(this Project project)
+    public static UsageInfo GetCurrentUsage(this Project project, TimeProvider timeProvider)
     {
-        return project.GetUsage(SystemClock.UtcNow);
+        return project.GetUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static UsageInfo GetUsage(this Project project, DateTime date)

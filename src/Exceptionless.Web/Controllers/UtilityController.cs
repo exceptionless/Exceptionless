@@ -13,7 +13,7 @@ public class UtilityController : ExceptionlessApiController
     private readonly PersistentEventQueryValidator _eventQueryValidator;
     private readonly StackQueryValidator _stackQueryValidator;
 
-    public UtilityController(PersistentEventQueryValidator eventQueryValidator, StackQueryValidator stackQueryValidator)
+    public UtilityController(PersistentEventQueryValidator eventQueryValidator, StackQueryValidator stackQueryValidator, TimeProvider timeProvider) : base(timeProvider)
     {
         _eventQueryValidator = eventQueryValidator;
         _stackQueryValidator = stackQueryValidator;

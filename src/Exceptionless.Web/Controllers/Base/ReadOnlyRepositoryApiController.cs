@@ -19,7 +19,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
     protected readonly IAppQueryValidator _validator;
     protected readonly ILogger _logger;
 
-    public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory)
+    public ReadOnlyRepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(timeProvider)
     {
         _repository = repository;
         _mapper = mapper;

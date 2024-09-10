@@ -11,7 +11,7 @@ public class MailMessageJob : QueueJobBase<MailMessage>
 {
     private readonly IMailSender _mailSender;
 
-    public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
+    public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
     {
         _mailSender = mailSender;
     }

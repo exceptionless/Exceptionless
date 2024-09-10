@@ -10,9 +10,9 @@ public sealed class UserAgentParser
     private readonly InMemoryCacheClient _localCache;
     private readonly ILogger _logger;
 
-    public UserAgentParser(ILoggerFactory loggerFactory)
+    public UserAgentParser(TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
-        _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { LoggerFactory = loggerFactory, MaxItems = 250, CloneValues = true });
+        _localCache = new InMemoryCacheClient(new InMemoryCacheClientOptions { MaxItems = 250, CloneValues = true, TimeProvider = timeProvider, LoggerFactory = loggerFactory });
         _logger = loggerFactory.CreateLogger<UserAgentParser>();
     }
 

@@ -13,18 +13,20 @@ namespace Exceptionless.Core.Repositories;
 public class OrganizationRepository : RepositoryBase<Organization>, IOrganizationRepository
 {
     private readonly BillingPlans _plans;
+    private readonly TimeProvider _timeProvider;
 
     public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingPlans plans, AppOptions options)
         : base(configuration.Organizations, validator, options)
     {
         _plans = plans;
+        _timeProvider = configuration.TimeProvider;
         DocumentsChanging.AddSyncHandler(OnDocumentsChanging);
     }
 
     private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Organization> args)
     {
         foreach (var organization in args.Documents)
-            organization.Value.TrimUsage();
+            organization.Value.TrimUsage(_timeProvider);
     }
 
     public async Task<Organization?> GetByInviteTokenAsync(string token)

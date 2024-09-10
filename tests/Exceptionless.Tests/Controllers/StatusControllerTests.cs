@@ -3,7 +3,6 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,7 +30,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = DateTime.UtcNow;
 
         ReleaseNotification notification;
         if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty)

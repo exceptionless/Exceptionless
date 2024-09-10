@@ -11,7 +11,6 @@ using FluentValidation;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -32,7 +31,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
     private readonly JsonSerializerSettings _jsonSerializerSettings;
     private readonly AppOptions _appOptions;
 
-    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
+    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
     {
         _eventPostService = eventPostService;
         _eventParserPluginManager = eventParserPluginManager;
@@ -88,7 +87,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             if (project is null)
             {
                 if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {Project}", payloadPath, ep.ProjectId);
-                await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask);
+                await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), organizationTask);
                 return JobResult.Success;
             }
 
@@ -113,7 +112,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 catch (Exception ex)
                 {
                     AppDiagnostics.PostsDecompressionErrors.Add(1);
-                    await Task.WhenAll(CompleteEntryAsync(entry, ep, SystemClock.UtcNow), organizationTask);
+                    await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), organizationTask);
                     return JobResult.FailedWithMessage($"Unable to decompress EventPost data '{payloadPath}' ({payload.Length} bytes compressed): {ex.Message}");
                 }
             }
@@ -123,7 +122,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             {
                 var org = await organizationTask;
                 await _usageService.IncrementTooBigAsync(org.Id, project.Id);
-                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow);
+                await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
                 return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
             }
 
@@ -133,7 +132,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     _logger.LogDebug("Processing uncompressed EventPost: {QueueEntryId}  ({UncompressedBytes} bytes)", entry.Id, uncompressedData.Length);
             }
 
-            var createdUtc = SystemClock.UtcNow;
+            var createdUtc = _timeProvider.GetUtcNow().UtcDateTime;
             var events = ParseEventPost(ep, createdUtc, uncompressedData, entry.Id, isInternalProject);
             if (events is null || events.Count == 0)
             {
@@ -153,7 +152,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 if (!isInternalProject)
                     _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {OrganizationId}", payloadPath, project.OrganizationId);
 
-                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow);
+                await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
                 return JobResult.Success;
             }
 
@@ -166,7 +165,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
                 await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
 
-                await CompleteEntryAsync(entry, ep, SystemClock.UtcNow);
+                await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
                 return JobResult.Success;
             }
 

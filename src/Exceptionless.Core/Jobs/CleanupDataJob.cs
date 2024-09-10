@@ -9,7 +9,6 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -27,6 +26,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly IWebHookRepository _webHookRepository;
     private readonly BillingManager _billingManager;
     private readonly AppOptions _appOptions;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
     private DateTime? _lastRun;
@@ -43,6 +43,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         ICacheClient cacheClient,
         BillingManager billingManager,
         AppOptions appOptions,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
     ) : base(loggerFactory)
     {
@@ -55,6 +56,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _webHookRepository = webHookRepository;
         _billingManager = billingManager;
         _appOptions = appOptions;
+        _timeProvider = timeProvider;
         _lockProvider = lockProvider;
         _cacheClient = cacheClient;
     }
@@ -66,7 +68,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
 
         await MarkTokensSuspended(context);
         await CleanupSoftDeletedOrganizationsAsync(context);
@@ -115,7 +117,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
 
                 // Sleep so we are not hammering the backend.
-                await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+                await Task.Delay(TimeSpan.FromSeconds(2.5));
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
@@ -143,7 +145,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
 
                 // Sleep so we are not hammering the backend.
-                await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+                await Task.Delay(TimeSpan.FromSeconds(2.5));
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await projectResults.NextPageAsync())
@@ -248,7 +250,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
 
                 // Sleep so we are not hammering the backend.
-                await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+                await Task.Delay(TimeSpan.FromSeconds(2.5));
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
@@ -260,7 +262,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         await RenewLockAsync(context);
 
-        var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
+        var cutoff = _timeProvider.GetUtcNow().UtcDateTime.Date.SubtractDays(retentionDays);
         var stackResults = await _stackRepository.GetStacksForCleanupAsync(organization.Id, cutoff);
         _logger.RetentionEnforcementStackStart(cutoff, organization.Name, organization.Id, stackResults.Total);
 
@@ -286,7 +288,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         await RenewLockAsync(context);
 
-        var cutoff = SystemClock.UtcNow.Date.SubtractDays(retentionDays);
+        var cutoff = _timeProvider.GetUtcNow().UtcDateTime.Date.SubtractDays(retentionDays);
         _logger.RetentionEnforcementEventStart(cutoff, organization.Name, organization.Id);
 
         long removedEvents = await _eventRepository.RemoveAllAsync(organization.Id, null, null, cutoff);
@@ -295,7 +297,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     private Task RenewLockAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return context.RenewLockAsync();
     }
 
@@ -304,7 +306,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));

@@ -8,7 +8,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
-using Foundatio.Utility;
 using Nest;
 
 namespace Exceptionless.Core.Repositories
@@ -83,15 +82,17 @@ namespace Exceptionless.Core.Repositories.Queries
     public class AppFilterQueryBuilder : IElasticQueryBuilder
     {
         private readonly AppOptions _options;
+        private readonly TimeProvider _timeProvider;
         private readonly string _organizationIdFieldName;
         private readonly string _projectIdFieldName;
         private readonly string _stackIdFieldName;
         private readonly string _stackLastOccurrenceFieldName;
         private readonly string _eventDateFieldName;
 
-        public AppFilterQueryBuilder(AppOptions options)
+        public AppFilterQueryBuilder(AppOptions options, TimeProvider timeProvider)
         {
             _options = options;
+            _timeProvider = timeProvider;
             _organizationIdFieldName = nameof(IOwnedByOrganization.OrganizationId).ToLowerUnderscoredWords();
             _projectIdFieldName = nameof(IOwnedByProject.ProjectId).ToLowerUnderscoredWords();
             _stackIdFieldName = nameof(IOwnedByStack.StackId).ToLowerUnderscoredWords();
@@ -171,13 +172,13 @@ namespace Exceptionless.Core.Repositories.Queries
             return Task.CompletedTask;
         }
 
-        private static QueryContainer GetRetentionFilter<T>(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
+        private QueryContainer GetRetentionFilter<T>(string? field, Organization organization, int maximumRetentionDays, DateTime? oldestPossibleEventAge = null) where T : class, new()
         {
             if (field is null)
                 throw new ArgumentNullException(nameof(field), "Retention field not specified for this index");
 
-            var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge);
-            double retentionDays = Math.Max(Math.Round(Math.Abs(SystemClock.UtcNow.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);
+            var retentionDate = organization.GetRetentionUtcCutoff(maximumRetentionDays, oldestPossibleEventAge, _timeProvider);
+            double retentionDays = Math.Max(Math.Round(Math.Abs(_timeProvider.GetUtcNow().UtcDateTime.Subtract(retentionDate).TotalDays), MidpointRounding.AwayFromZero), 1);
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 

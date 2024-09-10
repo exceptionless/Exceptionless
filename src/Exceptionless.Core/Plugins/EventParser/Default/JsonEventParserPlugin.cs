@@ -25,18 +25,18 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
         switch (input.GetJsonType())
         {
             case JsonType.Object:
-                {
-                    if (input.TryFromJson(out PersistentEvent? ev, _settings) && ev is not null)
-                        events.Add(ev);
-                    break;
-                }
+            {
+                if (input.TryFromJson(out PersistentEvent? ev, _settings) && ev is not null)
+                    events.Add(ev);
+                break;
+            }
             case JsonType.Array:
-                {
-                    if (input.TryFromJson(out PersistentEvent[]? parsedEvents, _settings) && parsedEvents is { Length: > 0 })
-                        events.AddRange(parsedEvents);
+            {
+                if (input.TryFromJson(out PersistentEvent[]? parsedEvents, _settings) && parsedEvents is { Length: > 0 })
+                    events.AddRange(parsedEvents);
 
-                    break;
-                }
+                break;
+            }
         }
 
         return events.Count > 0 ? events : null;

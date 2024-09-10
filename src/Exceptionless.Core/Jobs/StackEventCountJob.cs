@@ -2,7 +2,6 @@
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -12,12 +11,14 @@ namespace Exceptionless.Core.Jobs;
 public class StackEventCountJob : JobWithLockBase, IHealthCheck
 {
     private readonly StackService _stackService;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackEventCountJob(StackService stackService, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public StackEventCountJob(StackService stackService, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _stackService = stackService;
+        _timeProvider = timeProvider;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(5));
     }
 
@@ -28,7 +29,7 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         _logger.LogTrace("Start save stack event counts");
         await _stackService.SaveStackUsagesAsync(cancellationToken: context.CancellationToken);
         _logger.LogTrace("Finished save stack event counts");
@@ -40,7 +41,7 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromSeconds(15))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromSeconds(15))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 15 seconds."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 15 seconds."));

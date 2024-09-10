@@ -12,7 +12,6 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
@@ -23,7 +22,9 @@ public class AuthControllerTests : IntegrationTestsBase
 {
     private readonly AuthOptions _authOptions;
     private readonly IUserRepository _userRepository;
+    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
     private readonly ITokenRepository _tokenRepository;
 
@@ -33,7 +34,9 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
 
+        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
         _userRepository = GetService<IUserRepository>();
         _tokenRepository = GetService<ITokenRepository>();
@@ -140,7 +143,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = DateTime.UtcNow
         };
         organization.Invites.Add(invite);
         organization = await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -190,7 +193,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = DateTime.UtcNow
         };
 
         organization.Invites.Add(invite);
@@ -308,7 +311,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = DateTime.UtcNow
         };
 
         organization.Invites.Clear();
@@ -371,7 +374,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = DateTime.UtcNow
         };
         organization.Invites.Add(invite);
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -407,7 +410,7 @@ public class AuthControllerTests : IntegrationTestsBase
         {
             Token = StringExtensions.GetNewToken(),
             EmailAddress = email.ToLowerInvariant(),
-            DateAdded = SystemClock.UtcNow
+            DateAdded = DateTime.UtcNow
         };
         organization.Invites.Add(invite);
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -836,7 +839,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        user.CreatePasswordResetToken();
+        user.CreatePasswordResetToken(TimeProvider);
         await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
@@ -894,7 +897,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        user.CreatePasswordResetToken();
+        user.CreatePasswordResetToken(TimeProvider);
         await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
@@ -936,8 +939,8 @@ public class AuthControllerTests : IntegrationTestsBase
     private Task CreateTestOrganizationAndProjectsAsync()
     {
         return Task.WhenAll(
-            _organizationRepository.AddAsync(OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
-            _projectRepository.AddAsync(ProjectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
+            _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
+            _projectRepository.AddAsync(_projectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
         );
     }
 }

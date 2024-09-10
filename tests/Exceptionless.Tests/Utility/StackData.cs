@@ -4,21 +4,31 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
-using Foundatio.Utility;
-using Newtonsoft.Json;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Utility;
 
-internal static class StackData
+public class StackData
 {
-    public static IEnumerable<Stack> GenerateStacks(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null)
+    private readonly TimeProvider _timeProvider;
+    private readonly ITextSerializer _serializer;
+    private readonly IStackRepository _stackRepository;
+
+    public StackData(IStackRepository stackRepository, ITextSerializer serializer, TimeProvider timeProvider)
+    {
+        _stackRepository = stackRepository;
+        _serializer = serializer;
+        _timeProvider = timeProvider;
+    }
+
+    public IEnumerable<Stack> GenerateStacks(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateStack(generateId, id, organizationId, projectId, type: type);
     }
 
-    public static List<Stack> GenerateSampleStacks()
+    public List<Stack> GenerateSampleStacks()
     {
         return
         [
@@ -29,14 +39,14 @@ internal static class StackData
         ];
     }
 
-    public static Stack GenerateSampleStack(string id = TestConstants.StackId)
+    public Stack GenerateSampleStack(string id = TestConstants.StackId)
     {
         return GenerateStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
     }
 
-    public static Stack GenerateStack(bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null, string? title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string? signatureHash = null)
+    public Stack GenerateStack(bool generateId = false, string? id = null, string? organizationId = null, string? projectId = null, string? type = null, string? title = null, DateTime? dateFixed = null, DateTime? utcFirstOccurrence = null, DateTime? utcLastOccurrence = null, int totalOccurrences = 0, StackStatus status = StackStatus.Open, string? signatureHash = null)
     {
-        var utcNow = SystemClock.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var stack = new Stack
         {
             Id = (id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id)!,
@@ -70,7 +80,7 @@ internal static class StackData
         return stack;
     }
 
-    public static async Task CreateSearchDataAsync(IStackRepository stackRepository, JsonSerializer serializer, bool updateDates = false)
+    public async Task CreateSearchDataAsync(bool updateDates = false)
     {
         string path = Path.Combine("..", "..", "..", "Search", "Data");
         foreach (string file in Directory.GetFiles(path, "stack*.json", SearchOption.AllDirectories))
@@ -78,22 +88,18 @@ internal static class StackData
             if (file.EndsWith("summary.json"))
                 continue;
 
-            using (var stream = new FileStream(file, FileMode.Open))
+            await using var stream = new FileStream(file, FileMode.Open);
+            var stack = _serializer.Deserialize<Stack>(stream);
+            Assert.NotNull(stack);
+
+            if (updateDates)
             {
-                using (var streamReader = new StreamReader(stream))
-                {
-                    var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;
-                    Assert.NotNull(stack);
-
-                    if (updateDates)
-                    {
-                        stack.CreatedUtc = stack.FirstOccurrence = SystemClock.UtcNow.SubtractDays(1);
-                        stack.LastOccurrence = SystemClock.UtcNow;
-                    }
-
-                    await stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
-                }
+                var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+                stack.CreatedUtc = stack.FirstOccurrence = utcNow.SubtractDays(1);
+                stack.LastOccurrence = utcNow;
             }
+
+            await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
         }
     }
 

@@ -1,12 +1,18 @@
 using Exceptionless.Core.Models;
 using FluentValidation;
 using FluentValidation.Results;
-using Foundatio.Utility;
 
 namespace Exceptionless.Core.Validation;
 
 public class PersistentEventValidator : AbstractValidator<PersistentEvent>
 {
+    private readonly TimeProvider _timeProvider;
+
+    public PersistentEventValidator(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public override ValidationResult Validate(ValidationContext<PersistentEvent> context)
     {
         var result = new ValidationResult();
@@ -27,7 +33,7 @@ public class PersistentEventValidator : AbstractValidator<PersistentEvent>
         if (ev.Date == DateTimeOffset.MinValue)
             result.Errors.Add(new ValidationFailure("Date", "Date must be specified."));
 
-        if (ev.Date.UtcDateTime > SystemClock.UtcNow.AddHours(1))
+        if (ev.Date.UtcDateTime > _timeProvider.GetUtcNow().UtcDateTime.AddHours(1))
             result.Errors.Add(new ValidationFailure("Date", "Date cannot be in the future."));
 
         if (String.IsNullOrEmpty(ev.Type))

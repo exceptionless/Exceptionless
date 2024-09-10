@@ -15,10 +15,14 @@ namespace Exceptionless.Tests.Repositories;
 public sealed class ProjectRepositoryTests : IntegrationTestsBase
 {
     private readonly ICacheClient _cache;
+    private readonly OrganizationData _organizationData;
+    private readonly ProjectData _projectData;
     private readonly IProjectRepository _repository;
 
     public ProjectRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _organizationData = GetService<OrganizationData>();
+        _projectData = GetService<ProjectData>();
         _cache = GetService<ICacheClient>();
         _repository = GetService<IProjectRepository>();
     }
@@ -28,7 +32,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     {
         Assert.Equal(0, await _repository.CountAsync());
 
-        var project = await _repository.AddAsync(ProjectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var project = await _repository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         Assert.NotNull(project.Id);
         Assert.Equal(1, await _repository.CountAsync());
         Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
@@ -44,7 +48,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         Assert.Equal(1, await _repository.CountAsync());
         Assert.Equal(1, await _repository.GetCountByOrganizationIdAsync(project.OrganizationId));
 
-        var project2 = await _repository.AddAsync(ProjectData.GenerateProject(organizationId: project.OrganizationId), o => o.ImmediateConsistency());
+        var project2 = await _repository.AddAsync(_projectData.GenerateProject(organizationId: project.OrganizationId), o => o.ImmediateConsistency());
         Assert.NotNull(project2.Id);
 
         Assert.Equal(2, await _repository.CountAsync());
@@ -58,8 +62,8 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetByOrganizationIdsAsync()
     {
-        var project1 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"), o => o.ImmediateConsistency());
-        var project2 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.OrganizationId, name: "Two"), o => o.ImmediateConsistency());
+        var project1 = await _repository.AddAsync(_projectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"), o => o.ImmediateConsistency());
+        var project2 = await _repository.AddAsync(_projectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: TestConstants.OrganizationId, name: "Two"), o => o.ImmediateConsistency());
 
         var results = await _repository.GetByOrganizationIdsAsync(new[] { project1.OrganizationId, TestConstants.OrganizationId2 });
         Assert.NotNull(results);
@@ -83,12 +87,12 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetByFilterAsyncAsync()
     {
-        var organizations = OrganizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>());
+        var organizations = _organizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>());
         var organization1 = organizations.Single(o => String.Equals(o.Id, TestConstants.OrganizationId));
         var organization2 = organizations.Single(o => String.Equals(o.Id, TestConstants.OrganizationId2));
 
-        var project1 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.ProjectId, organizationId: organization1.Id, name: "One"), o => o.ImmediateConsistency());
-        var project2 = await _repository.AddAsync(ProjectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: organization1.Id, name: "Two"), o => o.ImmediateConsistency());
+        var project1 = await _repository.AddAsync(_projectData.GenerateProject(id: TestConstants.ProjectId, organizationId: organization1.Id, name: "One"), o => o.ImmediateConsistency());
+        var project2 = await _repository.AddAsync(_projectData.GenerateProject(id: TestConstants.SuspendedProjectId, organizationId: organization1.Id, name: "Two"), o => o.ImmediateConsistency());
 
         var results = await _repository.GetByFilterAsync(new AppFilter(organizations), null, null);
         Assert.NotNull(results);
@@ -126,7 +130,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
             }
         };
 
-        var project = ProjectData.GenerateSampleProject();
+        var project = _projectData.GenerateSampleProject();
         project.Data ??= new DataDictionary();
         project.Data[Project.KnownDataKeys.SlackToken] = token;
 

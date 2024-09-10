@@ -4,7 +4,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Utility;
@@ -16,6 +15,7 @@ public class SampleDataService
     private readonly ITokenRepository _tokenRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _billingPlans;
+    private readonly TimeProvider _timeProvider;
     private readonly IUserRepository _userRepository;
     private readonly ILogger<SampleDataService> _logger;
 
@@ -45,6 +45,7 @@ public class SampleDataService
         ITokenRepository tokenRepository,
         BillingManager billingManager,
         BillingPlans billingPlans,
+        TimeProvider timeProvider,
         ILoggerFactory loggerFactory
     )
     {
@@ -54,6 +55,7 @@ public class SampleDataService
         _tokenRepository = tokenRepository;
         _billingManager = billingManager;
         _billingPlans = billingPlans;
+        _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<SampleDataService>();
     }
 
@@ -68,7 +70,7 @@ public class SampleDataService
             EmailAddress = TEST_USER_EMAIL
         };
 
-        user.ResetVerifyEmailAddressTokenAndExpiration();
+        user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
         user.Roles.Add(AuthorizationRoles.GlobalAdmin);
@@ -95,7 +97,7 @@ public class SampleDataService
             EmailAddress = TEST_ORG_USER_EMAIL
         };
 
-        user.ResetVerifyEmailAddressTokenAndExpiration();
+        user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
 
@@ -122,7 +124,7 @@ public class SampleDataService
             Id = TEST_PROJECT_ID,
             Name = "Disintegrating Pistol",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         disintegratingPistolProject.Configuration.Settings.Add("IncludeConditionalData", "true");
         disintegratingPistolProject.AddDefaultNotificationSettings(user.Id);
@@ -132,7 +134,7 @@ public class SampleDataService
             Id = TEST_ROCKET_SHIP_PROJECT_ID,
             Name = "Rocket Ship",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
 
         await _projectRepository.AddAsync(new List<Project> {
@@ -140,15 +142,13 @@ public class SampleDataService
             rocketShipProject
         }, o => o.ImmediateConsistency().Cache());
 
-        await _tokenRepository.AddAsync(new List<Token>()
+        await _tokenRepository.AddAsync(new List<Token>
         {
                 new()
                 {
                     Id = TEST_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = disintegratingPistolProject.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
                 new()
@@ -156,16 +156,12 @@ public class SampleDataService
                     Id = TEST_ROCKET_SHIP_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = rocketShipProject.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
                 new()
                 {
                     Id = TEST_USER_API_KEY,
                     UserId = user.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 }
             }, o => o.ImmediateConsistency().Cache());
@@ -186,7 +182,7 @@ public class SampleDataService
             EmailAddress = FREE_USER_EMAIL
         };
 
-        user.ResetVerifyEmailAddressTokenAndExpiration();
+        user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
 
@@ -207,29 +203,25 @@ public class SampleDataService
             Id = FREE_PROJECT_ID,
             Name = "Free Plan Project",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         project.Configuration.Settings.Add("IncludeConditionalData", "true");
         project.AddDefaultNotificationSettings(user.Id);
         project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache());
 
-        await _tokenRepository.AddAsync(new List<Token>()
+        await _tokenRepository.AddAsync(new List<Token>
         {
                 new()
                 {
                     Id = FREE_API_KEY,
                     OrganizationId = organization.Id,
                     ProjectId = project.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 },
                     new()
                     {
                     Id = FREE_USER_API_KEY,
                     UserId = user.Id,
-                    CreatedUtc = SystemClock.UtcNow,
-                    UpdatedUtc = SystemClock.UtcNow,
                     Type = TokenType.Access
                 }
             }, o => o.ImmediateConsistency().Cache());
@@ -254,7 +246,7 @@ public class SampleDataService
             Id = INTERNAL_PROJECT_ID,
             Name = "API",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = SystemClock.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         project.AddDefaultNotificationSettings(userId);
         project = await _projectRepository.AddAsync(project, o => o.ImmediateConsistency().Cache());
@@ -265,8 +257,6 @@ public class SampleDataService
             OrganizationId = organization.Id,
             ProjectId = project.Id,
             CreatedBy = userId,
-            CreatedUtc = SystemClock.UtcNow,
-            UpdatedUtc = SystemClock.UtcNow,
             Type = TokenType.Access
         }, o => o.ImmediateConsistency());
 

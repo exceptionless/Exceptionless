@@ -11,17 +11,19 @@ namespace Exceptionless.Tests.Repositories;
 
 public sealed class StackIndexTests : IntegrationTestsBase
 {
+    private readonly StackData _stackData;
     private readonly IStackRepository _repository;
 
     public StackIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _stackData = GetService<StackData>();
         _repository = GetService<IStackRepository>();
     }
 
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
-        await StackData.CreateSearchDataAsync(_repository, GetService<JsonSerializer>());
+        await _stackData.CreateSearchDataAsync();
     }
 
     [Theory]

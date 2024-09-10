@@ -7,7 +7,6 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -15,12 +14,14 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IUserRepository _userRepository;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
 
     public UserMaintenanceWorkItemHandler(IUserRepository userRepository, ICacheClient cacheClient,
-        IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+        IMessageBus messageBus, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _userRepository = userRepository;
+        _timeProvider = timeProvider;
         _lockProvider = new CacheLockProvider(cacheClient, messageBus);
     }
 
@@ -52,7 +53,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
             }
 
             // Sleep so we are not hammering the backend.
-            await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5));
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
@@ -90,7 +91,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 
         foreach (var user in unverifiedUsers)
         {
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
             Log.LogInformation("Reset verify email address token and expiration for {EmailAddress}", user.EmailAddress);
         }
 

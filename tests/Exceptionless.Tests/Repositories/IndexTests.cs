@@ -1,5 +1,4 @@
 using Exceptionless.Core.Repositories.Configuration;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,6 +29,6 @@ public sealed class IndexTests : TestWithServices
     public async Task CanCreateEventIndex()
     {
         await _configuration.Events.ConfigureAsync();
-        await _configuration.Events.EnsureIndexAsync(SystemClock.UtcNow);
+        await _configuration.Events.EnsureIndexAsync(DateTime.UtcNow);
     }
 }

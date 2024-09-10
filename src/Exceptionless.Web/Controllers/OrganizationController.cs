@@ -18,7 +18,6 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Stripe;
@@ -52,14 +51,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         IUserRepository userRepository,
         IProjectRepository projectRepository,
         BillingManager billingManager,
+        BillingPlans plans,
         UsageService usageService,
         IMailer mailer,
         IMessagePublisher messagePublisher,
         IMapper mapper,
         IAppQueryValidator validator,
         AppOptions options,
-        ILoggerFactory loggerFactory,
-        BillingPlans plans) : base(organizationRepository, mapper, validator, loggerFactory)
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory) : base(organizationRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationService = organizationService;
         _cacheClient = cacheClient;
@@ -67,11 +67,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _userRepository = userRepository;
         _projectRepository = projectRepository;
         _billingManager = billingManager;
+        _plans = plans;
         _usageService = usageService;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
         _options = options;
-        _plans = plans;
     }
 
     #region CRUD
@@ -420,7 +420,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (String.IsNullOrEmpty(stripeToken))
                     return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
-                organization.SubscribeDate = SystemClock.UtcNow;
+                organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
 
                 var createCustomer = new CustomerCreateOptions
                 {
@@ -540,7 +540,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 {
                     Token = StringExtensions.GetNewToken(),
                     EmailAddress = email.ToLowerInvariant(),
-                    DateAdded = SystemClock.UtcNow
+                    DateAdded = _timeProvider.GetUtcNow().UtcDateTime
                 };
                 organization.Invites.Add(invite);
                 await _repository.SaveAsync(organization, o => o.Cache());
@@ -619,7 +619,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return NotFound();
 
         organization.IsSuspended = true;
-        organization.SuspensionDate = SystemClock.UtcNow;
+        organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
         organization.SuspendedByUserId = CurrentUser?.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
@@ -784,24 +784,24 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             var realTimeUsage = await _usageService.GetUsageAsync(viewOrganization.Id);
 
             // ensure 12 months of usage
-            viewOrganization.EnsureUsage();
-            viewOrganization.TrimUsage();
+            viewOrganization.EnsureUsage(_timeProvider);
+            viewOrganization.TrimUsage(_timeProvider);
 
-            var currentUsage = viewOrganization.GetCurrentUsage();
+            var currentUsage = viewOrganization.GetCurrentUsage(_timeProvider);
             currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
             currentUsage.Total = realTimeUsage.CurrentUsage.Total;
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
 
-            var currentHourUsage = viewOrganization.GetCurrentHourlyUsage();
+            var currentHourUsage = viewOrganization.GetCurrentHourlyUsage(_timeProvider);
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
 
             viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
-            viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit);
+            viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit, _timeProvider);
         }
     }
 
@@ -818,7 +818,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         int maximumRetentionDays = _options.MaximumRetentionDays;
         var organizations = viewOrganizations.Select(o => new Organization { Id = o.Id, CreatedUtc = o.CreatedUtc, RetentionDays = o.RetentionDays }).ToList();
         var sf = new AppFilter(organizations);
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays), SystemClock.UtcNow);
+        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(organizations.GetRetentionUtcCutoff(maximumRetentionDays, _timeProvider), _timeProvider.GetUtcNow().UtcDateTime, (PersistentEvent e) => e.Date).Index(organizations.GetRetentionUtcCutoff(maximumRetentionDays, _timeProvider), _timeProvider.GetUtcNow().UtcDateTime);
         var result = await _eventRepository.CountAsync(q => q
             .SystemFilter(systemFilter)
             .AggregationsExpression($"terms:(organization_id~{viewOrganizations.Count} cardinality:stack_id)")

@@ -11,7 +11,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.Extensions.Logging;
 
 
@@ -30,7 +29,18 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     private readonly ICacheClient _cache;
     private readonly UserAgentParser _parser;
 
-    public EventNotificationsJob(IQueue<EventNotification> queue, SlackService slackService, IMailer mailer, IProjectRepository projectRepository, AppOptions appOptions, EmailOptions emailOptions, IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient, UserAgentParser parser, ILoggerFactory loggerFactory) : base(queue, loggerFactory)
+    public EventNotificationsJob(IQueue<EventNotification> queue,
+        SlackService slackService,
+        IMailer mailer,
+        IProjectRepository projectRepository,
+        AppOptions appOptions,
+        EmailOptions emailOptions,
+        IUserRepository userRepository,
+        IEventRepository eventRepository,
+        ICacheClient cacheClient,
+        UserAgentParser parser,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
     {
         _slackService = slackService;
         _mailer = mailer;
@@ -64,7 +74,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
             var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
-            if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > SystemClock.UtcNow.AddMinutes(-30))
+            if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-30))
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
                 return JobResult.Success;
@@ -75,7 +85,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
             // don't send more than 10 notifications for a given project every 30 minutes
             var projectTimeWindow = TimeSpan.FromMinutes(30);
-            string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", SystemClock.UtcNow.Floor(projectTimeWindow).Ticks);
+            string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", _timeProvider.GetUtcNow().UtcDateTime.Floor(projectTimeWindow).Ticks);
             double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow);
             if (notificationCount > 10 && !wi.IsRegression)
             {
@@ -134,7 +144,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             // if we sent any notifications, mark the last time a notification for this stack was sent.
             if (sent > 0)
             {
-                await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), SystemClock.UtcNow, SystemClock.UtcNow.AddMinutes(15));
+                await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), _timeProvider.GetUtcNow().UtcDateTime, _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(15));
                 if (shouldLog) _logger.LogInformation("Notifications sent: event={Id} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }
         }

@@ -11,7 +11,6 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -28,10 +27,12 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly IMailer _mailer;
     private readonly BillingPlans _plans;
+    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _emailOptions = emailOptions;
         _projectRepository = projectRepository;
@@ -41,6 +42,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _mailer = mailer;
         _plans = plans;
+        _timeProvider = timeProvider;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
     }
 
@@ -51,7 +53,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        _lastRun = SystemClock.UtcNow;
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
 
         if (!_emailOptions.EnableDailySummary || _mailer is null)
             return JobResult.SuccessWithMessage("Summary notifications are disabled.");
@@ -62,7 +64,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
             _logger.LogTrace("Got {Count} projects to process. ", results.Documents.Count);
 
             var projectsToBulkUpdate = new List<Project>(results.Documents.Count);
-            var processSummariesNewerThan = SystemClock.UtcNow.Date.SubtractDays(2);
+            var processSummariesNewerThan = _timeProvider.GetUtcNow().UtcDateTime.Date.SubtractDays(2);
             foreach (var project in results.Documents)
             {
                 using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id)))
@@ -88,7 +90,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                         await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
 
                         // Sleep so we are not hammering the backend as we just generated a report.
-                        await SystemClock.SleepAsync(TimeSpan.FromSeconds(2.5));
+                        await Task.Delay(TimeSpan.FromSeconds(2.5));
                     }
                     else
                     {
@@ -102,7 +104,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                 await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate);
 
                 // Sleep so we are not hammering the backend
-                await SystemClock.SleepAsync(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
@@ -111,7 +113,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
             if (results.Documents.Count > 0)
             {
                 await context.RenewLockAsync();
-                _lastRun = SystemClock.UtcNow;
+                _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
             }
         }
 
@@ -189,7 +191,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (SystemClock.UtcNow.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));

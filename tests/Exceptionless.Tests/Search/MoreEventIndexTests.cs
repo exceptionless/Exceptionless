@@ -4,7 +4,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Xunit;
 using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -18,7 +17,7 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase
 
     public MoreEventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        TestSystemClock.SetFrozenTime(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
+        TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         _repository = GetService<IEventRepository>();
         _validator = GetService<PersistentEventQueryValidator>();
     }

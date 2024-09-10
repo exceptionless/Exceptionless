@@ -1,12 +1,18 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Foundatio.Utility;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Helpers;
 
 public class RandomEventGenerator
 {
+    private readonly TimeProvider _timeProvider;
+
+    public RandomEventGenerator(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public DateTime? MinDate { get; set; }
     public DateTime? MaxDate { get; set; }
 
@@ -26,7 +32,7 @@ public class RandomEventGenerator
             OrganizationId = "537650f3b77efe23a47914f3",
             ProjectId = "537650f3b77efe23a47914f4",
             StackId = "1ecd0826e447a44e78877ab1",
-            Date = SystemClock.UtcNow
+            Date = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         PopulateEvent(ev, setUserIdentity);

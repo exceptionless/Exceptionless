@@ -6,9 +6,11 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
     <PackageReference Include="Foundatio.Xunit" Version="$(FoundatioVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.8" />
 
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="9.9.8" />
+
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="8.9.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" PrivateAssets="All" />

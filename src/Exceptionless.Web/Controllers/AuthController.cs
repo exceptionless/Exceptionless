@@ -11,7 +11,6 @@ using Exceptionless.Web.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -39,7 +38,9 @@ public class AuthController : ExceptionlessApiController
 
     private static bool _isFirstUserChecked;
 
-    public AuthController(AuthOptions authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, ILogger<AuthController> logger, IDomainLoginProvider domainLoginProvider)
+    public AuthController(AuthOptions authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
+        ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
+        TimeProvider timeProvider, ILogger<AuthController> logger) : base(timeProvider)
     {
         _authOptions = authOptions;
         _domainLoginProvider = domainLoginProvider;
@@ -76,13 +77,13 @@ public class AuthController : ExceptionlessApiController
         string email = model.Email.Trim().ToLowerInvariant();
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(HttpContext));
 
-        // Only allow 5 password attempts per 15 minute period.
+        // Only allow 5 password attempts per 15-minute period.
         string userLoginAttemptsCacheKey = $"user:{email}:attempts";
-        long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+        long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
 
-        // Only allow 15 login attempts per 15 minute period by a single ip.
+        // Only allow 15 login attempts per 15-minute period by a single ip.
         string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-        long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+        long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
 
         if (userLoginAttempts > 5)
         {
@@ -152,7 +153,7 @@ public class AuthController : ExceptionlessApiController
             await AddInvitedUserToOrganizationAsync(model.InviteToken, user);
 
         await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-        await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+        await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
 
         _logger.UserLoggedIn(user.EmailAddress);
         return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
@@ -226,7 +227,7 @@ public class AuthController : ExceptionlessApiController
         if (!hasValidInviteToken)
         {
             // Only allow 10 sign-ups per hour period by a single ip.
-            long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long ipSignupAttempts = await _cache.IncrementAsync(ipSignupAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
             if (ipSignupAttempts > 10)
             {
                 _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time", email, ipSignupAttempts);
@@ -251,7 +252,7 @@ public class AuthController : ExceptionlessApiController
         if (user.IsEmailAddressVerified)
             user.MarkEmailAddressVerified();
         else
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
 
         user.Roles.Add(AuthorizationRoles.Client);
         user.Roles.Add(AuthorizationRoles.User);
@@ -449,7 +450,7 @@ public class AuthController : ExceptionlessApiController
             await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
             string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-            long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+            long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
             if (attempts <= 0)
                 await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
@@ -472,7 +473,7 @@ public class AuthController : ExceptionlessApiController
 
         // Only allow 3 checks attempts per hour period by a single ip.
         string ipEmailAddressAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:email:attempts";
-        long attempts = await _cache.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+        long attempts = await _cache.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
 
         if (attempts > 3 || await _userRepository.GetByEmailAddressAsync(email) is null)
             return StatusCode(StatusCodes.Status204NoContent);
@@ -499,7 +500,7 @@ public class AuthController : ExceptionlessApiController
 
             // Only allow 3 checks attempts per hour period by a single ip.
             string ipResetPasswordAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:password:attempts";
-            long attempts = await _cache.IncrementAsync(ipResetPasswordAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+            long attempts = await _cache.IncrementAsync(ipResetPasswordAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
             if (attempts > 3)
             {
                 _logger.LogError("Login denied for {EmailAddress} for the {ResetPasswordAttempts} time", email, attempts);
@@ -514,7 +515,7 @@ public class AuthController : ExceptionlessApiController
                 return Ok();
             }
 
-            user.CreatePasswordResetToken();
+            user.CreatePasswordResetToken(_timeProvider);
             await _userRepository.SaveAsync(user, o => o.Cache());
 
             await _mailer.SendUserPasswordResetAsync(user);
@@ -549,7 +550,7 @@ public class AuthController : ExceptionlessApiController
                 return BadRequest("Invalid Password Reset Token.");
             }
 
-            if (!user.HasValidPasswordResetTokenExpiration())
+            if (!user.HasValidPasswordResetTokenExpiration(_timeProvider))
             {
                 _logger.LogError("Reset password failed for {EmailAddress}: Password Reset Token has expired", user.EmailAddress);
                 return BadRequest("Password Reset Token has expired.");
@@ -580,7 +581,7 @@ public class AuthController : ExceptionlessApiController
             await _cache.RemoveAsync(userLoginAttemptsCacheKey);
 
             string ipLoginAttemptsCacheKey = $"ip:{Request.GetClientIpAddress()}:attempts";
-            long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromMinutes(15)));
+            long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
             if (attempts <= 0)
                 await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
@@ -848,7 +849,9 @@ public class AuthController : ExceptionlessApiController
     private async Task<string> GetOrCreateAuthenticationTokenAsync(User user)
     {
         var userTokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id);
-        var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > SystemClock.UtcNow));
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        var validAccessToken = userTokens.Documents.FirstOrDefault(t => (!t.ExpiresUtc.HasValue || t.ExpiresUtc > utcNow));
         if (validAccessToken is not null)
             return validAccessToken.Id;
 
@@ -856,9 +859,9 @@ public class AuthController : ExceptionlessApiController
         {
             Id = Core.Extensions.StringExtensions.GetNewToken(),
             UserId = user.Id,
-            CreatedUtc = SystemClock.UtcNow,
-            UpdatedUtc = SystemClock.UtcNow,
-            ExpiresUtc = SystemClock.UtcNow.AddMonths(3),
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow,
+            ExpiresUtc = utcNow.AddMonths(3),
             CreatedBy = user.Id,
             Type = TokenType.Authentication
         }, o => o.ImmediateConsistency().Cache());

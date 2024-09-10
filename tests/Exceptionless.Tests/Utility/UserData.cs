@@ -6,15 +6,15 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Tests.Utility;
 
-internal static class UserData
+public class UserData
 {
-    public static IEnumerable<User> GenerateUsers(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? emailAddress = null, List<string>? roles = null)
+    public IEnumerable<User> GenerateUsers(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? emailAddress = null, List<string>? roles = null)
     {
         for (int i = 0; i < count; i++)
             yield return GenerateUser(generateId, id, organizationId, emailAddress, roles);
     }
 
-    public static IEnumerable<User> GenerateSampleUsers()
+    public IEnumerable<User> GenerateSampleUsers()
     {
         return new List<User> {
                 GenerateSampleUser(),
@@ -27,7 +27,7 @@ internal static class UserData
             };
     }
 
-    public static User GenerateSampleUser()
+    public User GenerateSampleUser()
     {
         return GenerateUser(id: TestConstants.UserId, organizationId: TestConstants.OrganizationId, emailAddress: TestConstants.UserEmail, roles: new List<string> {
                 AuthorizationRoles.GlobalAdmin,
@@ -36,12 +36,12 @@ internal static class UserData
             });
     }
 
-    public static User GenerateSampleUserWithNoRoles()
+    public User GenerateSampleUserWithNoRoles()
     {
         return GenerateUser(id: TestConstants.UserIdWithNoRoles, organizationId: TestConstants.OrganizationId, emailAddress: TestConstants.UserEmailWithNoRoles);
     }
 
-    public static User GenerateUser(bool generateId = false, string? id = null, string? organizationId = null, string? emailAddress = null, IEnumerable<string>? roles = null)
+    public User GenerateUser(bool generateId = false, string? id = null, string? organizationId = null, string? emailAddress = null, IEnumerable<string>? roles = null)
     {
         var user = new User
         {

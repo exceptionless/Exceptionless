@@ -5,23 +5,25 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Utility;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
 public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjectRepository
 {
+    private readonly TimeProvider _timeProvider;
+
     public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, AppOptions options)
         : base(configuration.Projects, validator, options)
     {
+        _timeProvider = configuration.TimeProvider;
         DocumentsChanging.AddSyncHandler(OnDocumentsChanging);
     }
 
     private void OnDocumentsChanging(object sender, DocumentsChangeEventArgs<Project> args)
     {
         foreach (var project in args.Documents)
-            project.Value.TrimUsage();
+            project.Value.TrimUsage(_timeProvider);
     }
 
     public async Task<Project?> GetConfigAsync(string? projectId)
@@ -71,7 +73,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
 
     public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50)
     {
-        var filter = Query<Project>.Range(r => r.Field(o => o.NextSummaryEndOfDayTicks).LessThan(SystemClock.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
+        var filter = Query<Project>.Range(r => r.Field(o => o.NextSummaryEndOfDayTicks).LessThan(_timeProvider.GetUtcNow().UtcDateTime.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
         return FindAsync(q => q.ElasticFilter(filter).SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
     }
 

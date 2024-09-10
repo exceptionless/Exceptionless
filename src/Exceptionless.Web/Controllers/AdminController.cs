@@ -44,7 +44,8 @@ public class AdminController : ExceptionlessApiController
         IQueue<WorkItemData> workItemQueue,
         AppOptions appOptions,
         BillingManager billingManager,
-        BillingPlans plans)
+        BillingPlans plans,
+        TimeProvider timeProvider) : base(timeProvider)
     {
         _configuration = configuration;
         _fileStorage = fileStorage;

@@ -147,27 +147,27 @@ public class Program
             services.AddJob<CleanupOrphanedDataJob>();
 
         if (options.CloseInactiveSessions)
-            services.AddJob<CloseInactiveSessionsJob>(true);
+            services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions(true));
         if (options.DailySummary)
-            services.AddJob<DailySummaryJob>(true);
+            services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions(true));
         if (options.DataMigration)
-            services.AddJob<DataMigrationJob>(true);
+            services.AddJob<DataMigrationJob>(o => o.WaitForStartupActions(true));
 
         if (options is { DownloadGeoIPDatabase: true, AllJobs: true })
             services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
         if (options is { DownloadGeoIPDatabase: true, AllJobs: false })
-            services.AddJob<DownloadGeoIPDatabaseJob>(true);
+            services.AddJob<DownloadGeoIPDatabaseJob>(o => o.WaitForStartupActions(true));
 
         if (options.EventNotifications)
-            services.AddJob<EventNotificationsJob>(true);
+            services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions(true));
         if (options.EventPosts)
-            services.AddJob<EventPostsJob>(true);
+            services.AddJob<EventPostsJob>(o => o.WaitForStartupActions(true));
         if (options.EventUsage)
-            services.AddJob<EventUsageJob>(true);
+            services.AddJob<EventUsageJob>(o => o.WaitForStartupActions(true));
         if (options.EventUserDescriptions)
-            services.AddJob<EventUserDescriptionsJob>(true);
+            services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions(true));
         if (options.MailMessage)
-            services.AddJob<MailMessageJob>(true);
+            services.AddJob<MailMessageJob>(o => o.WaitForStartupActions(true));
 
         if (options is { MaintainIndexes: true, AllJobs: true })
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
@@ -175,14 +175,14 @@ public class Program
             services.AddJob<MaintainIndexesJob>();
 
         if (options.Migration)
-            services.AddJob<MigrationJob>(true);
+            services.AddJob<MigrationJob>(o => o.WaitForStartupActions(true));
         if (options.StackStatus)
-            services.AddJob<StackStatusJob>(true);
+            services.AddJob<StackStatusJob>(o => o.WaitForStartupActions(true));
         if (options.StackEventCount)
-            services.AddJob<StackEventCountJob>(true);
+            services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions(true));
         if (options.WebHooks)
-            services.AddJob<WebHooksJob>(true);
+            services.AddJob<WebHooksJob>(o => o.WaitForStartupActions(true));
         if (options.WorkItem)
-            services.AddJob<WorkItemJob>(true);
+            services.AddJob<WorkItemJob>(o => o.WaitForStartupActions(true));
     }
 }

@@ -13,7 +13,6 @@ using Exceptionless.Web.Utility;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
-using Foundatio.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,7 +28,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     private readonly IMailer _mailer;
     private readonly IntercomOptions _intercomOptions;
 
-    public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, loggerFactory)
+    public UserController(
+        IUserRepository userRepository,
+        IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer,
+        IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _tokenRepository = tokenRepository;
@@ -172,7 +175,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         // Only allow 3 email address updates per hour period by a single user.
         string updateEmailAddressAttemptsCacheKey = $"{CurrentUser?.Id}:attempts";
-        long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, SystemClock.UtcNow.Ceiling(TimeSpan.FromHours(1)));
+        long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
             return BadRequest("Update email address rate limit reached. Please try updating later.");
 
@@ -185,7 +188,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user.IsEmailAddressVerified)
             user.MarkEmailAddressVerified();
         else
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
 
         try
         {
@@ -227,7 +230,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return NotFound();
         }
 
-        if (!user.HasValidVerifyEmailAddressTokenExpiration())
+        if (!user.HasValidVerifyEmailAddressTokenExpiration(_timeProvider))
             return BadRequest("Verify Email Address Token has expired.");
 
         user.MarkEmailAddressVerified();
@@ -250,7 +253,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
         if (!user.IsEmailAddressVerified)
         {
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
             await _repository.SaveAsync(user, o => o.Cache());
             await _mailer.SendUserEmailVerifyAsync(user);
         }
@@ -276,7 +279,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
                 continue;
             }
 
-            user.ResetVerifyEmailAddressTokenAndExpiration();
+            user.ResetVerifyEmailAddressTokenAndExpiration(_timeProvider);
             await _repository.SaveAsync(user, o => o.Cache());
             _logger.LogInformation("User {UserId} with email address {EmailAddress} is now unverified", user.Id, emailAddress);
         }

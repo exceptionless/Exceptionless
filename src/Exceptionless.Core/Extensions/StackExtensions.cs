@@ -1,15 +1,14 @@
 ﻿using Exceptionless.Core.Models;
-using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class StackExtensions
 {
-    public static void MarkFixed(this Stack stack, SemanticVersion? version = null)
+    public static void MarkFixed(this Stack stack, SemanticVersion? version, TimeProvider timeProvider)
     {
         stack.Status = StackStatus.Fixed;
-        stack.DateFixed = SystemClock.UtcNow;
+        stack.DateFixed = timeProvider.GetUtcNow().UtcDateTime;
         stack.FixedInVersion = version?.ToString();
         stack.SnoozeUntilUtc = null;
     }
@@ -46,17 +45,11 @@ public static class StackExtensions
 
     public static bool IsFixed(this Stack stack)
     {
-        if (stack is null)
-            return false;
-
         return stack.Status == StackStatus.Fixed;
     }
 
     public static bool Is404(this Stack stack)
     {
-        if (stack?.SignatureInfo is null)
-            return false;
-
         return stack.SignatureInfo.ContainsKey("HttpMethod") && stack.SignatureInfo.ContainsKey("Path");
     }
 }

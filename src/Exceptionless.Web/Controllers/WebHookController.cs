@@ -22,7 +22,8 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     private readonly IProjectRepository _projectRepository;
     private readonly BillingManager _billingManager;
 
-    public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, IAppQueryValidator validator, ILoggerFactory loggerFactory) : base(repository, mapper, validator, loggerFactory)
+    public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, IAppQueryValidator validator,
+        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
         _billingManager = billingManager;
