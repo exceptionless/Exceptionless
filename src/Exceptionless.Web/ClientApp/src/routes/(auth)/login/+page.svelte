@@ -2,11 +2,11 @@
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import EmailInput from '$comp/form/EmailInput.svelte';
-    import PasswordInput from '$comp/form/PasswordInput.svelte';
     import Loading from '$comp/Loading.svelte';
     import { A, H2, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
+    import * as Form from '$comp/ui/form';
+    import { Input } from '$comp/ui/input';
     import {
         enableAccountCreation,
         enableOAuthLogin,
@@ -21,66 +21,79 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { Login } from '$features/auth/models';
-    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { applyServerSideErrors } from '$features/shared/validation';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
     import IconGoogle from '~icons/mdi/google';
     import IconMicrosoft from '~icons/mdi/microsoft';
+    import { defaults, superForm } from 'sveltekit-superforms';
+    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
-    const data = $state(new Login());
-    data.invite_token = $page.url.searchParams.get('token');
-
-    const client = useFetchClient();
-    let problem = $state(new ProblemDetails());
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
 
-    async function onLogin() {
-        if (client.loading) {
-            return;
-        }
+    const defaultFormData = new Login();
+    defaultFormData.invite_token = $page.url.searchParams.get('token');
+    const form = superForm(defaults(defaultFormData, classvalidatorClient(Login)), {
+        async onUpdate({ form }) {
+            if (!form.valid) {
+                return;
+            }
 
-        let response = await login(data.email, data.password);
-        if (response.ok) {
-            await goto(redirectUrl);
-        } else {
-            problem = response.problem;
-        }
-    }
+            let response = await login($formData.email, $formData.password);
+            if (response.ok) {
+                await goto(redirectUrl);
+            } else {
+                applyServerSideErrors(form, response.problem);
+            }
+        },
+        SPA: true,
+        validators: classvalidatorClient(Login)
+    });
+
+    const { enhance, form: formData, message, submitting } = form;
 </script>
 
 <H2 class="mb-2 mt-4 text-center leading-9">Log in to your account</H2>
 
-<form class="space-y-2" onsubmit={onLogin}>
-    <ErrorMessage message={problem.errors.general}></ErrorMessage>
-
-    <EmailInput autocomplete="email" bind:value={data.email} name="email" {problem} required></EmailInput>
-
-    <PasswordInput
-        autocomplete="current-password"
-        bind:value={data.password}
-        maxlength={100}
-        minlength={6}
-        name="password"
-        placeholder="Enter password"
-        {problem}
-        required
+<form method="POST" use:enhance>
+    <ErrorMessage message={$message}></ErrorMessage>
+    <Form.Field {form} name="email">
+        <Form.Control let:attrs>
+            <Form.Label>Email</Form.Label>
+            <Input {...attrs} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
+        </Form.Control>
+        <Form.Description />
+        <Form.FieldErrors />
+    </Form.Field>
+    <Form.Field {form} name="password">
+        <Form.Control let:attrs>
+            <Form.Label
+                >Password
+                <Muted class="float-right">
+                    <A href="/forgot-password">Forgot password?</A>
+                </Muted></Form.Label
+            >
+            <Input
+                {...attrs}
+                bind:value={$formData.password}
+                type="password"
+                placeholder="Enter password"
+                autocomplete="current-password"
+                maxlength={100}
+                minlength={6}
+                required
+            />
+        </Form.Control>
+        <Form.Description />
+        <Form.FieldErrors />
+    </Form.Field>
+    <Form.Button>
+        {#if $submitting}
+            <Loading class="mr-2" variant="secondary"></Loading> Logging in...
+        {:else}
+            Login
+        {/if}</Form.Button
     >
-        {#snippet labelChildren()}
-            <Muted class="float-right">
-                <A href="/forgot-password">Forgot password?</A>
-            </Muted>
-        {/snippet}
-    </PasswordInput>
-
-    <div class="pt-2">
-        <Button type="submit">
-            {#if client.loading}
-                <Loading class="mr-2" variant="secondary"></Loading> Logging in...
-            {:else}
-                Login
-            {/if}
-        </Button>
-    </div>
 </form>
 
 {#if enableOAuthLogin}
