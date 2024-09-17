@@ -66,7 +66,7 @@ public class Startup
         });
 
         services.AddAutoValidation();
-        services.AddProblemDetails(ConfigureProblemDetails);
+        services.AddProblemDetails();
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
         services.AddAuthorization(options =>
@@ -324,31 +324,6 @@ public class Startup
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
-    }
-
-    private static void ConfigureProblemDetails(ProblemDetailsOptions options)
-    {
-        //void SetDetails(ProblemDetails details, int statusCode)
-        //{
-        //    details.Status = statusCode;
-        //    details.Type = GetDefaultType(statusCode);
-        //    details.Title = ReasonPhrases.GetReasonPhrase(statusCode);
-        //}
-
-        //string GetDefaultType(int statusCode)
-        //{
-        //    return $"https://httpstatuses.io/{statusCode}";
-        //}
-
-        //options.CustomizeProblemDetails = context =>
-        //{
-        //    var details = context.ProblemDetails;
-        //    if (details is ValidationProblemDetails { Status: not 422 })
-        //    {
-        //        // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
-        //        SetDetails(details, StatusCodes.Status422UnprocessableEntity);
-        //    }
-        //};
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
