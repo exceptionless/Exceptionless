@@ -39,7 +39,7 @@
                 return;
             }
 
-            let response = await login($formData.email, $formData.password);
+            let response = await login(form.data.email, form.data.password);
             if (response.ok) {
                 await goto(redirectUrl);
             } else {

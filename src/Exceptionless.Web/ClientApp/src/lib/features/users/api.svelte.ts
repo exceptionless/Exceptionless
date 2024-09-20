@@ -1,8 +1,8 @@
 import { accessToken } from '$features/auth/index.svelte';
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { User } from './models';
+import type { UpdateUser, User } from './models';
 
 export const queryKeys = {
     all: ['User'] as const,
@@ -30,5 +30,31 @@ export function getMeQuery() {
             throw response.problem;
         },
         queryKey: queryKeys.me()
+    }));
+}
+
+export interface UpdateUserProps {
+    id: string | undefined;
+}
+
+export function mutateUser(props: UpdateUserProps) {
+    const queryClient = useQueryClient();
+    return createMutation<FetchClientResponse<unknown>, ProblemDetails, UpdateUser>(() => ({
+        enabled: props.id && !!accessToken.value,
+        mutationFn: async (data: UpdateUser) => {
+            const client = useFetchClient();
+
+            const response = await client.patchJSON<User>(`users/${props.id}`, data);
+            if (response.ok) {
+                queryClient.setQueryData(queryKeys.id(props.id), response.data);
+                return response;
+            }
+
+            throw response.problem;
+        },
+        mutationKey: queryKeys.id(props.id),
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
     }));
 }

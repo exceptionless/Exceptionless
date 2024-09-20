@@ -36,7 +36,7 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return await OkModelAsync(model);
     }
 
-    protected async Task<ActionResult<TViewModel>> OkModelAsync(TModel model)
+    protected virtual async Task<ActionResult<TViewModel>> OkModelAsync(TModel model)
     {
         return Ok(await MapAsync<TViewModel>(model, true));
     }

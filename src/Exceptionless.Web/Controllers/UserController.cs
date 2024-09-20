@@ -46,7 +46,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// </summary>
     /// <response code="404">The current user could not be found.</response>
     [HttpGet("me")]
-    public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
+    public async Task<ActionResult<ViewCurrentUser>> GetCurrentUserAsync()
     {
         if (CurrentUser is null)
             return NotFound();
@@ -332,6 +332,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return true;
 
         return await _repository.GetByEmailAddressAsync(email) is null;
+    }
+
+    protected override async Task<ActionResult<ViewUser>> OkModelAsync(User model)
+    {
+        if (String.Equals(CurrentUser?.Id, model.Id))
+            return Ok(new ViewCurrentUser(model, _intercomOptions));
+
+        return await base.OkModelAsync(model);
     }
 
     protected override async Task<User?> GetModelAsync(string id, bool useCache = true)

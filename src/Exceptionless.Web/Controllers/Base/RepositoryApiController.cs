@@ -147,7 +147,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             return NotFound();
 
         // if there are no changes in the delta, then ignore the request
-        if (changes is null || !changes.GetChangedPropertyNames().Any())
+        if (!changes.GetChangedPropertyNames().Any())
             return await OkModelAsync(original);
 
         var permission = await CanUpdateAsync(original, changes);
