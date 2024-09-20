@@ -111,10 +111,10 @@ export interface DemoteProjectTabProps {
 export function mutateDemoteTab(props: DemoteProjectTabProps) {
     const queryClient = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, { name: string }>(() => ({
-        mutationFn: async ({ name }) => {
+        mutationFn: async (params: { name: string }) => {
             const client = useFetchClient();
             const response = await client.delete(`projects/${props.id}/promotedtabs`, {
-                params: { name }
+                params
             });
 
             if (response.ok) {
@@ -123,7 +123,7 @@ export function mutateDemoteTab(props: DemoteProjectTabProps) {
                 if (previousProject) {
                     queryClient.setQueryData(queryKeys.id(props.id), {
                         ...previousProject,
-                        promoted_tabs: (previousProject?.promoted_tabs ?? []).filter((tab) => tab !== name)
+                        promoted_tabs: (previousProject?.promoted_tabs ?? []).filter((tab) => tab !== params.name)
                     });
                 }
 
