@@ -3,6 +3,7 @@
 
     import * as Table from '$comp/ui/table';
 
+    import ObjectDump from './ObjectDump.svelte';
     import List from './typography/List.svelte';
 
     interface Props {
@@ -44,7 +45,7 @@
 {:else if Array.isArray(value)}
     <List items={value}>
         {#snippet displayValue(item)}
-            <svelte:self value={item} />
+            <ObjectDump value={item} />
         {/snippet}
     </List>
 {:else if isObject}
@@ -53,7 +54,7 @@
             {#each Object.entries(value || {}) as [key, val] (key)}
                 <Table.Row>
                     <Table.Head class="w-48 whitespace-nowrap">{key}</Table.Head>
-                    <Table.Cell><svelte:self value={val} /></Table.Cell>
+                    <Table.Cell><ObjectDump value={val} /></Table.Cell>
                 </Table.Row>
             {/each}
         </Table.Body>
