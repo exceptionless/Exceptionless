@@ -45,7 +45,7 @@
         }
     });
 
-    const { enhance, form: formData, message, submitting } = form;
+    const { enhance, form: formData, message, submit, submitting } = form;
 </script>
 
 <div class="space-y-6">
@@ -70,7 +70,7 @@
         <Form.Field {form} name="full_name">
             <Form.Control let:attrs>
                 <Form.Label>Email</Form.Label>
-                <Input {...attrs} bind:value={$formData.full_name} placeholder="Full Name" autocomplete="name" required />
+                <Input {...attrs} bind:value={$formData.full_name} placeholder="Full Name" autocomplete="name" required onchange={submit} />
             </Form.Control>
             <Form.Description />
             <Form.FieldErrors />
