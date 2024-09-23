@@ -1,21 +1,18 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
     import Loading from '$comp/Loading.svelte';
     import { H2, P } from '$comp/typography';
     import { getHealthQuery } from '$features/status/api.svelte';
     import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
 
-    let _redirect = false;
+    let redirect = $page.url.searchParams.get('redirect');
 
     const healthResponse = getHealthQuery();
     $effect(() => {
-        if (healthResponse.isSuccess && _redirect) {
-            //                 if (!authService.isAuthenticated()) {
-            //                     return $state.go('auth.login');
-            //                 }
-            //
-            //                 return stateService.restore();
-            //             }
+        if (healthResponse.isSuccess && redirect) {
+            goto(redirect, { replaceState: true });
         }
     });
 </script>
@@ -34,7 +31,7 @@
                 Service is healthy. If you are currently experiencing an issue please contact support.
             {:else}
                 We're sorry but the website is currently undergoing maintenance.
-                {#if _redirect}
+                {#if redirect}
                     You'll be automatically redirected when the maintenance is completed.
                 {/if}
 
