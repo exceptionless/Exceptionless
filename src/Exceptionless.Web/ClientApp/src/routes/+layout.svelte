@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
+    import { goto } from '$app/navigation';
     import { page } from '$app/stores';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
@@ -9,6 +10,7 @@
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
+    import { get } from 'svelte/store';
 
     import '../app.css';
     import { routes } from './routes';
@@ -25,8 +27,19 @@
     useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {
         await next();
 
-        if (ctx.response?.status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
+        const status = ctx.response?.status;
+        if (status === undefined) {
+            return;
+        }
+
+        if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
             throw error(404, 'Not found');
+        }
+
+        if (status >= 500 && !ctx.options.expectedStatusCodes?.includes(status)) {
+            console.log('Redirecting to status page');
+            const { url } = get(page);
+            await goto(`/next/status?redirect=${url.pathname}`, { replaceState: true });
         }
     });
 

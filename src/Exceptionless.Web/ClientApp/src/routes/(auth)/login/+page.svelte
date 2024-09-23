@@ -26,7 +26,7 @@
     import IconGitHub from '~icons/mdi/github';
     import IconGoogle from '~icons/mdi/google';
     import IconMicrosoft from '~icons/mdi/microsoft';
-    import { defaults, setMessage, superForm } from 'sveltekit-superforms';
+    import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
     const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
