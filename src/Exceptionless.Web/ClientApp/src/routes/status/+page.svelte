@@ -28,15 +28,18 @@
             {#if healthResponse.isLoading}
                 <Loading /> Checking service status...
             {:else if healthResponse.isSuccess}
-                Service is healthy. If you are currently experiencing an issue please contact support.
+                Service is healthy.
             {:else}
                 We're sorry but the website is currently undergoing maintenance.
                 {#if redirect}
                     You'll be automatically redirected when the maintenance is completed.
                 {/if}
-
-                Please contact support for more information.
             {/if}
         </P>
+        {#if healthResponse.isLoading || healthResponse.isSuccess}
+            <P class="text-center text-sm">If you are currently experiencing an issue please contact support.</P>
+        {:else}
+            <P class="text-center text-sm">Please contact support for more information.</P>
+        {/if}
     </div>
 </div>
