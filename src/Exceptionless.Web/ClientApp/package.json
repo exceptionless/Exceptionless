@@ -28,6 +28,7 @@
         "@sveltejs/kit": "^2.5.28",
         "@sveltejs/vite-plugin-svelte": "^3.1.2",
         "@types/eslint": "^9.6.1",
+        "@types/throttle-debounce": "^5.0.2",
         "autoprefixer": "^10.4.20",
         "cross-env": "^7.0.3",
         "eslint": "^9.10.0",
@@ -72,6 +73,7 @@
         "tailwind-merge": "^2.5.2",
         "tailwind-variants": "^0.2.1",
         "tailwindcss": "^3.4.12",
+        "throttle-debounce": "^5.0.2",
         "unplugin-icons": "^0.19.3"
     },
     "type": "module"

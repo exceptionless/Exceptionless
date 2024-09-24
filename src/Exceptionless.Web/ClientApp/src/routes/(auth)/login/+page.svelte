@@ -36,16 +36,13 @@
     const form = superForm(defaults(defaultFormData, classvalidatorClient(Login)), {
         async onUpdate({ form }) {
             if (!form.valid) {
-                console.log('Form is invalid');
                 return;
             }
 
             let response = await login(form.data.email, form.data.password);
             if (response.ok) {
-                console.log('Logged in');
                 await goto(redirectUrl);
             } else {
-                console.log('Failed to log in');
                 applyServerSideErrors(form, response.problem);
             }
         },

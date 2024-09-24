@@ -31,7 +31,8 @@ export function getHealthQuery() {
     return createQuery<string, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.get('health', {
+            const response = await client.get(`${globalThis.location.origin}/health`, {
+                errorCallback: () => true,
                 signal
             });
 
@@ -42,6 +43,7 @@ export function getHealthQuery() {
             throw response.problem;
         },
         queryKey: queryKeys.health,
+        retry: false,
         staleTime: 30 * 1000
     }));
 }

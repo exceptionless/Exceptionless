@@ -12,6 +12,7 @@
     import { UpdateUser } from '$features/users/models';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { debounce } from 'throttle-debounce';
 
     const userResponse = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(userResponse);
@@ -29,7 +30,6 @@
 
             const response = await updateUser.mutateAsync(form.data);
             if (response.ok) {
-                console.log('User updated');
                 form.data = userResponse.data!;
             } else {
                 applyServerSideErrors(form, response.problem);
@@ -46,6 +46,7 @@
     });
 
     const { enhance, form: formData, message, submit, submitting } = form;
+    const debouncedSubmit = debounce(1000, submit);
 </script>
 
 <div class="space-y-6">
@@ -69,8 +70,8 @@
         <ErrorMessage message={$message}></ErrorMessage>
         <Form.Field {form} name="full_name">
             <Form.Control let:attrs>
-                <Form.Label>Email</Form.Label>
-                <Input {...attrs} bind:value={$formData.full_name} placeholder="Full Name" autocomplete="name" required onchange={submit} />
+                <Form.Label>Full Name</Form.Label>
+                <Input {...attrs} bind:value={$formData.full_name} placeholder="Full Name" autocomplete="name" required oninput={debouncedSubmit} />
             </Form.Control>
             <Form.Description />
             <Form.FieldErrors />

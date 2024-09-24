@@ -37,8 +37,11 @@
         }
 
         if (status >= 500 && !ctx.options.expectedStatusCodes?.includes(status)) {
-            console.log('Redirecting to status page');
             const { url } = get(page);
+            if (url.pathname.startsWith('/next/status')) {
+                return;
+            }
+
             await goto(`/next/status?redirect=${url.pathname}`, { replaceState: true });
         }
     });
