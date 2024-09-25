@@ -46,15 +46,15 @@
         "tslib": "^2.7.0",
         "typescript": "^5.6.2",
         "typescript-eslint": "^8.7.0",
-        "vite": "^5.4.7",
+        "vite": "^5.4.8",
         "vitest": "^2.1.1"
     },
     "dependencies": {
         "@exceptionless/browser": "^3.1.0",
         "@exceptionless/fetchclient": "^0.29.0",
         "@iconify-json/mdi": "^1.2.0",
-        "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@59098d7",
-        "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@59098d7",
+        "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@ccce0b8",
+        "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@ccce0b8",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
         "@typeschema/class-validator": "^0.2.0",
         "bits-ui": "^0.21.15",
