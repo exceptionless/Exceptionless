@@ -34,11 +34,7 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all
     }));
