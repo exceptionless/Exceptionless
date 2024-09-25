@@ -13,6 +13,7 @@ export function getAboutQuery() {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<About>('api/v2/about', {
+                errorCallback: () => true,
                 signal
             });
 

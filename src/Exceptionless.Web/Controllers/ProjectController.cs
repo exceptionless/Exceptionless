@@ -502,9 +502,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return NotFound();
 
         project.PromotedTabs ??= [];
-        if (!project.PromotedTabs.Contains(name.Trim()))
+        if (project.PromotedTabs.Add(name.Trim()))
         {
-            project.PromotedTabs.Add(name.Trim());
             await _repository.SaveAsync(project, o => o.Cache());
         }
 
