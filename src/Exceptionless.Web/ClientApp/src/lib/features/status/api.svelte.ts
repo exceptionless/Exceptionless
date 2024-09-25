@@ -4,7 +4,7 @@ import { createQuery } from '@tanstack/svelte-query';
 import type { About } from './models';
 
 export const queryKeys = {
-    about: ['api/v2/about'] as const,
+    about: ['about'] as const,
     health: ['health'] as const
 };
 
@@ -12,7 +12,7 @@ export function getAboutQuery() {
     return createQuery<About, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<About>('api/v2/about', {
+            const response = await client.getJSON<About>('about', {
                 errorCallback: () => true,
                 signal
             });
@@ -31,8 +31,8 @@ export function getAboutQuery() {
 export function getHealthQuery() {
     return createQuery<string, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.get(`${globalThis.location.origin}/health`, {
+            const client = useFetchClient({ baseUrl: '' });
+            const response = await client.get('health', {
                 errorCallback: () => true,
                 signal
             });
