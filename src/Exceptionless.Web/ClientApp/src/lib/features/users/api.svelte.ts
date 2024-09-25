@@ -25,11 +25,7 @@ export function getMeQuery() {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.me()
     }));
@@ -46,11 +42,7 @@ export function mutateUser(props: UpdateUserProps) {
         mutationFn: async (data: UpdateUser) => {
             const client = useFetchClient();
             const response = await client.patchJSON<User>(`users/${props.id}`, data);
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         mutationKey: queryKeys.id(props.id),
         onError: () => {

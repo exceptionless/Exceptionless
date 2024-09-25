@@ -25,11 +25,7 @@ export function getProjectByIdQuery(props: GetProjectByIdProps) {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.id(props.id)
     }));
@@ -60,11 +56,7 @@ export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizatio
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.organization(props.organizationId)
     }));
@@ -83,21 +75,8 @@ export function mutatePromoteTab(props: PromoteProjectTabProps) {
                 params
             });
 
-            if (response.ok) {
-                // Update the project to reflect the new promoted tab until it's updated from the server
-                const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
-                if (previousProject) {
-                    queryClient.setQueryData(queryKeys.id(props.id), {
-                        ...previousProject,
-                        promoted_tabs: [...(previousProject?.promoted_tabs ?? []), params.name]
-                    });
-                }
-
-                // TODO: Fix status code returns.
-                return true;
-            }
-
-            throw response.problem;
+            // TODO: Fix status code returns.
+            return response.ok;
         },
         mutationKey: queryKeys.id(props.id),
         onError: () => {
@@ -129,12 +108,8 @@ export function mutateDemoteTab(props: DemoteProjectTabProps) {
                 params
             });
 
-            if (response.ok) {
-                // TODO: Fix status code returns.
-                return true;
-            }
-
-            throw response.problem;
+            // TODO: Fix status code returns.
+            return response.ok;
         },
         mutationKey: queryKeys.id(props.id),
         onError: () => {

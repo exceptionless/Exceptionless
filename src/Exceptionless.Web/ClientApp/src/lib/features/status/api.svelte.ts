@@ -13,15 +13,10 @@ export function getAboutQuery() {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<About>('about', {
-                errorCallback: () => true,
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.about,
         staleTime: 12 * 60 * 60 * 1000
@@ -33,15 +28,10 @@ export function getHealthQuery() {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient({ baseUrl: '' });
             const response = await client.get('health', {
-                errorCallback: () => true,
                 signal
             });
 
-            if (response.ok) {
-                return response.data! as string;
-            }
-
-            throw response.problem;
+            return response.data! as string;
         },
         queryKey: queryKeys.health,
         retry: false,

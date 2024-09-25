@@ -39,11 +39,7 @@ export function getEventByIdQuery(props: GetEventByIdProps) {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.id(props.id)
     }));
@@ -74,11 +70,7 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.stacks(props.stackId)
     }));

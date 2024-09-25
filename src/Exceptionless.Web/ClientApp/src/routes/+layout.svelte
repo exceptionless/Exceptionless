@@ -5,7 +5,7 @@
     import { page } from '$app/stores';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
-    import { type FetchClientContext, setAccessTokenFunc, setBaseUrl, useMiddleware } from '@exceptionless/fetchclient';
+    import { type FetchClientContext, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
@@ -22,6 +22,11 @@
     let { children }: Props = $props();
 
     setBaseUrl('api/v2');
+    setRequestOptions({
+        errorCallback: (response) => {
+            throw response.problem ?? response;
+        }
+    });
     setAccessTokenFunc(() => accessToken.value);
 
     useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {

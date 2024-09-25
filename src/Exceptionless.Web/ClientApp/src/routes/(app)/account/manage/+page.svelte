@@ -6,7 +6,7 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { applyServerSideErrors } from "$features/shared/validation";
+    import { applyServerSideErrors } from '$features/shared/validation';
     import { getMeQuery, mutateUser } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { UpdateUser } from '$features/users/models';
