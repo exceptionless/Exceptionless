@@ -6,10 +6,10 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { applyServerSideErrors } from '$features/shared/validation';
     import { getMeQuery, mutateUser } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { UpdateUser } from '$features/users/models';
+    import { toast } from 'svelte-sonner';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import { debounce } from 'throttle-debounce';
@@ -23,16 +23,31 @@
     });
 
     const form = superForm(defaults(userResponse.data ?? {}, classvalidatorClient(UpdateUser)), {
-        async onUpdate({ form }) {
+        onChange() {
+            toast.success('Account updated successfully.');
+        },
+        onError() {
+            //applyServerSideErrors(form, result.error);
+            toast.error('An error occurred while saving your full name.');
+        },
+        async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
             }
 
-            const response = await updateUser.mutateAsync(form.data);
-            if (response.ok) {
-                form.data = userResponse.data!;
+            await updateUser.mutateAsync(form.data);
+            while (updateUser.isPending) {
+                console.log('waiting');
+                await new Promise((resolve) => setTimeout(resolve, 1));
+            }
+
+            if (updateUser.isSuccess) {
+                result.data = updateUser.data;
             } else {
-                applyServerSideErrors(form, response.problem);
+                //applyServerSideErrors(form, updateUser.error);
+                result.status = updateUser.error!.status!;
+                result.type = 'failure';
+                result.data = updateUser.error!;
             }
         },
         SPA: true,
@@ -40,7 +55,7 @@
     });
 
     $effect(() => {
-        if (userResponse.data) {
+        if (userResponse.isSuccess && !$submitting) {
             form.reset({ data: userResponse.data });
         }
     });
@@ -84,12 +99,12 @@
             <Form.Description />
             <Form.FieldErrors />
         </Form.Field> -->
-        <Form.Button>
+        <!-- <Form.Button>
             {#if $submitting}
                 <Loading class="mr-2" variant="secondary"></Loading> Saving...
             {:else}
                 Save
             {/if}
-        </Form.Button>
+        </Form.Button> -->
     </form>
 </div>

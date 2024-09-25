@@ -25,8 +25,8 @@
     });
 
     async function onPromote(title: string): Promise<void> {
-        const response = await promoteTab.mutateAsync({ name: title });
-        if (response.ok) {
+        const wasPromoted = await promoteTab.mutateAsync({ name: title });
+        if (wasPromoted) {
             promoted(title);
         } else {
             toast.error(`An error occurred promoting tab ${title}`);

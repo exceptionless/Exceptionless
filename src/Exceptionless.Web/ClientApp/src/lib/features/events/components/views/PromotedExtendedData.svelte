@@ -21,8 +21,8 @@
     });
 
     async function onDemote(title: string): Promise<void> {
-        const response = await demoteTab.mutateAsync({ name: title });
-        if (response.ok) {
+        const wasDemoted = await demoteTab.mutateAsync({ name: title });
+        if (wasDemoted) {
             demoted(title);
         } else {
             toast.error(`An error occurred demoting tab ${title}`);
