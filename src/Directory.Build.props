@@ -15,7 +15,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
-    <FoundatioVersion>11.0.2</FoundatioVersion>
+    <FoundatioVersion>11.0.5</FoundatioVersion>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
   </PropertyGroup>
 
