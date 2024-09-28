@@ -15,7 +15,6 @@ namespace Exceptionless.Core.Jobs.Elastic;
 public class DataMigrationJob : JobBase
 {
     private readonly ExceptionlessElasticConfiguration _configuration;
-    private readonly TimeProvider _timeProvider;
     private const string MIGRATE_VERSION_SCRIPT = "if (ctx._source.version instanceof String == false) { ctx._source.version = 'v' + ctx._source.version.major; }";
 
     public DataMigrationJob(
@@ -25,7 +24,6 @@ public class DataMigrationJob : JobBase
     ) : base(timeProvider, loggerFactory)
     {
         _configuration = configuration;
-        _timeProvider = timeProvider;
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
