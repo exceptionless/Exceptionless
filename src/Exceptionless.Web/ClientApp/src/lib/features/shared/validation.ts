@@ -24,14 +24,15 @@ export async function validate(data: null | object): Promise<null | ProblemDetai
 
 export function applyServerSideErrors<T extends Record<string, unknown> = Record<string, unknown>, M = unknown, In extends Record<string, unknown> = T>(
     form: SuperValidated<T, M, In>,
-    problem: ProblemDetails
+    problem: null | ProblemDetails
 ) {
+    if (!problem || problem.status !== 422) {
+        setMessage(form, 'An error occurred. Please try again.' as M);
+        return;
+    }
+
     for (const key in problem.errors) {
         const errors = problem.errors[key] as string[];
-        if (key === 'general') {
-            setError(form, errors);
-        } else {
-            setError(form, key as FormPathLeavesWithErrors<T>, errors);
-        }
+        setError(form, key as FormPathLeavesWithErrors<T>, errors);
     }
 }

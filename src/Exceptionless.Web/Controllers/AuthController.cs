@@ -66,9 +66,10 @@ public class AuthController : ExceptionlessApiController
     /// Please note that you can also use this token on the documentation site by placing it in the
     /// headers api_key input box.
     /// </remarks>
-    /// <param name="model">The login model.</param>
-    /// <response code="400">The login model is invalid.</response>
-    /// <response code="401">Login failed.</response>
+    /// <param name="model">The login model</param>
+    /// <response code="200">User Authentication Token</response>
+    /// <response code="401">Login failed</response>
+    /// <response code="422">Validation error</response>
     [AllowAnonymous]
     [Consumes("application/json")]
     [HttpPost("login")]
@@ -133,12 +134,6 @@ public class AuthController : ExceptionlessApiController
                 _logger.LogError("Login failed for {EmailAddress}: Invalid Password", user.EmailAddress);
                 return Unauthorized();
             }
-
-            if (!PasswordMeetsRequirements(model.Password))
-            {
-                _logger.LogError("Login denied for {EmailAddress} for invalid password", email);
-                return StatusCode(423, "Password requirements have changed. Password needs to be reset to meet the new requirements.");
-            }
         }
         else
         {
@@ -187,8 +182,12 @@ public class AuthController : ExceptionlessApiController
     /// Sign up
     /// </summary>
     /// <param name="model">The sign-up model.</param>
-    /// <response code="400">The sign-up model is invalid.</response>
-    /// <response code="401">Sign up failed.</response>
+    /// <response code="200">User Authentication Token</response>
+    /// <response code="400">Sign-up failed</response>
+    /// <response code="401">Sign-up failed</response>
+    /// <response code="403">Account Creation is currently disabled</response>
+    /// <response code="422">Validation error</response>
+    /// <response code="500">An error occurred</response>
     [AllowAnonymous]
     [Consumes("application/json")]
     [HttpPost("signup")]
@@ -199,14 +198,7 @@ public class AuthController : ExceptionlessApiController
 
         bool valid = await IsAccountCreationEnabledAsync(model.InviteToken);
         if (!valid)
-            return BadRequest("Account Creation is currently disabled");
-
-        if (!PasswordMeetsRequirements(model.Password))
-        {
-            _logger.LogError("Signup failed for {EmailAddress}: Invalid Password", email);
-            ModelState.AddModelError<Signup>(m => m.Password, "Password must be at least 6 characters long");
-            return ValidationProblem(ModelState);
-        }
+            return StatusCode(403, "Account Creation is currently disabled");
 
         User? user;
         try
@@ -216,7 +208,7 @@ public class AuthController : ExceptionlessApiController
         catch (Exception ex)
         {
             _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
-            return BadRequest();
+            return StatusCode(500, "An error occurred, please try again");
         }
 
         if (user is not null)
@@ -231,14 +223,14 @@ public class AuthController : ExceptionlessApiController
             if (ipSignupAttempts > 10)
             {
                 _logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time", email, ipSignupAttempts);
-                return BadRequest();
+                return Unauthorized();
             }
         }
 
         if (_authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password))
         {
             _logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed", email);
-            return BadRequest();
+            return Unauthorized();
         }
 
         user = new User
@@ -277,7 +269,7 @@ public class AuthController : ExceptionlessApiController
         catch (Exception ex)
         {
             _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
-            return BadRequest("An error occurred.");
+            return StatusCode(500, "An error occurred, please try again");
         }
 
         if (hasValidInviteToken)

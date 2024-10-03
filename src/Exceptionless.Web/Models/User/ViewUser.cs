@@ -5,12 +5,12 @@ namespace Exceptionless.Web.Models;
 public record ViewUser : IIdentity
 {
     public string Id { get; set; } = null!;
-    public ICollection<string> OrganizationIds { get; set; } = null!;
-    public string FullName { get; set; } = null!;
-    public string EmailAddress { get; set; } = null!;
-    public bool EmailNotificationsEnabled { get; set; }
-    public bool IsEmailAddressVerified { get; set; }
-    public bool IsActive { get; set; }
-    public bool IsInvite { get; set; }
-    public ICollection<string> Roles { get; set; } = null!;
+    public ICollection<string> OrganizationIds { get; init; } = null!;
+    public string FullName { get; init; } = null!;
+    public string EmailAddress { get; init; } = null!;
+    public bool EmailNotificationsEnabled { get; init; }
+    public bool IsEmailAddressVerified { get; init; }
+    public bool IsActive { get; init; }
+    public bool IsInvite { get; init; }
+    public ICollection<string> Roles { get; init; } = null!;
 }
