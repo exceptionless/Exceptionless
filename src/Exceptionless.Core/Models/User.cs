@@ -3,7 +3,7 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public class User : IIdentity, IHaveDates
+public record User : IIdentity, IHaveDates
 {
     /// <summary>
     /// Unique id that identifies an user.
@@ -13,13 +13,13 @@ public class User : IIdentity, IHaveDates
     /// <summary>
     /// The organizations that the user has access to.
     /// </summary>
-    public ICollection<string> OrganizationIds { get; set; } = new Collection<string>();
+    public ICollection<string> OrganizationIds { get; } = new Collection<string>();
 
     public string? Password { get; set; }
     public string? Salt { get; set; }
     public string? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
-    public ICollection<OAuthAccount> OAuthAccounts { get; set; } = new Collection<OAuthAccount>();
+    public ICollection<OAuthAccount> OAuthAccounts { get; } = new Collection<OAuthAccount>();
 
     /// <summary>
     /// Gets or sets the users Full Name.
@@ -35,9 +35,9 @@ public class User : IIdentity, IHaveDates
     /// <summary>
     /// Gets or sets the users active state.
     /// </summary>
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; init; } = true;
 
-    public ICollection<string> Roles { get; set; } = new Collection<string>();
+    public ICollection<string> Roles { get; init; } = new Collection<string>();
 
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }

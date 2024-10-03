@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Validation;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Exceptionless.Web.Utility.Handlers;
@@ -40,11 +42,22 @@ public record ApiError
             AttemptedValue = error.AttemptedValue
         }).ToList();
     }
+
+    public ApiError(MiniValidatorException ex, string referenceId)
+    {
+        Message = "Please correct the specified errors and try again.";
+        ReferenceId = referenceId;
+        Errors = ex.Errors.SelectMany(error => error.Value.Select(message => new ApiErrorItem
+        {
+            PropertyName = error.Key.ToLowerUnderscoredWords(),
+            Message = message
+        })).ToList();
+    }
 }
 
 public record ApiErrorItem
 {
     public required string PropertyName { get; set; }
     public required string Message { get; set; }
-    public required object AttemptedValue { get; set; }
+    public object? AttemptedValue { get; set; }
 }
