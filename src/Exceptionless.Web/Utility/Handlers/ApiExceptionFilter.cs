@@ -1,4 +1,5 @@
-﻿using Exceptionless.Plugins;
+﻿using Exceptionless.Core.Validation;
+using Exceptionless.Plugins;
 using FluentValidation;
 using Foundatio.Repositories.Exceptions;
 using Microsoft.AspNetCore.Mvc;
@@ -50,7 +51,12 @@ public class ApiExceptionFilter : ExceptionFilterAttribute
             apiError = new ApiError(notImplementedException.Message, referenceId);
             statusCode = StatusCodes.Status501NotImplemented;
         }
-        else if (context.Exception is ValidationException validationException)
+        else if (context.Exception is ValidationException legacyValidationException)
+        {
+            apiError = new ApiError(legacyValidationException, referenceId);
+            statusCode = StatusCodes.Status422UnprocessableEntity;
+        }
+        else if (context.Exception is MiniValidatorException validationException)
         {
             apiError = new ApiError(validationException, referenceId);
             statusCode = StatusCodes.Status422UnprocessableEntity;
