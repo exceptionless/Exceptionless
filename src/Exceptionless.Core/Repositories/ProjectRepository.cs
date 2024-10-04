@@ -31,7 +31,8 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         if (String.IsNullOrEmpty(projectId))
             return null;
 
-        var configCacheValue = await Cache.GetAsync<Project>($"config:{projectId}");
+        string cacheKey = ConfigCacheKey(projectId);
+        var configCacheValue = await Cache.GetAsync<Project>(cacheKey);
         if (configCacheValue.HasValue)
             return configCacheValue.Value;
 
@@ -39,7 +40,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         if (project?.Document is null)
             return null;
 
-        await Cache.AddAsync($"config:{projectId}", project.Document);
+        await Cache.AddAsync(cacheKey, project.Document);
 
         return project.Document;
     }
@@ -47,8 +48,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
-
-        return CountAsync(q => q.Organization(organizationId), o => o.Cache(String.Concat("Organization:", organizationId)));
+        return CountAsync(q => q.Organization(organizationId), o => o.Cache(OrganizationCacheKey(organizationId)));
     }
 
     public Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project>? options = null)
@@ -91,11 +91,14 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents, ChangeType? changeType = null)
     {
         var organizations = documents.Select(d => d.Value.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-        await Cache.RemoveAllAsync(organizations.Select(id => $"count:Organization:{id}"));
+        await Cache.RemoveAllAsync(organizations.Select(id => $"count:{OrganizationCacheKey(id)}"));
 
-        var configCacheKeys = documents.Select(d => $"config:{d.Value.Id}");
+        var configCacheKeys = documents.Select(d => ConfigCacheKey(d.Value.Id));
         await Cache.RemoveAllAsync(configCacheKeys);
 
         await base.InvalidateCacheAsync(documents, changeType);
     }
+
+    private static string ConfigCacheKey(string projectId) => String.Concat("config:", projectId);
+    private static string OrganizationCacheKey(string organizationId) => String.Concat("Organization:", organizationId);
 }
