@@ -1,7 +1,6 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
-using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;

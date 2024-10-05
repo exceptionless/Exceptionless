@@ -10,7 +10,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -194,14 +193,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         {
             await _repository.SaveAsync(user, o => o.Cache());
         }
-        catch (ValidationException ex)
-        {
-            return BadRequest(String.Join(", ", ex.Errors));
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating user Email Address: {Message}", ex.Message);
-            return BadRequest("An error occurred.");
+            throw;
         }
 
         if (!user.IsEmailAddressVerified)

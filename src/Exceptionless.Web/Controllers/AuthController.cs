@@ -8,12 +8,10 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
-using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json.Linq;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
@@ -260,16 +258,10 @@ public class AuthController : ExceptionlessApiController
         {
             user = await _userRepository.AddAsync(user, o => o.Cache());
         }
-        catch (ValidationException ex)
-        {
-            string errors = String.Join(", ", ex.Errors);
-            _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, errors);
-            return BadRequest(errors);
-        }
         catch (Exception ex)
         {
             _logger.LogCritical(ex, "Signup failed for {EmailAddress}: {Message}", email, ex.Message);
-            return StatusCode(500, "An error occurred, please try again");
+            throw;
         }
 
         if (hasValidInviteToken)
