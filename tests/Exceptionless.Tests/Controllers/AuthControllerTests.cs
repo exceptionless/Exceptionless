@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -840,6 +841,9 @@ public class AuthControllerTests : IntegrationTestsBase
 
         user.MarkEmailAddressVerified();
         user.CreatePasswordResetToken(TimeProvider);
+        Assert.NotNull(user.PasswordResetToken);
+        Assert.True(user.PasswordResetTokenExpiration.IsAfter(TimeProvider.GetUtcNow().UtcDateTime));
+
         await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
@@ -898,6 +902,9 @@ public class AuthControllerTests : IntegrationTestsBase
 
         user.MarkEmailAddressVerified();
         user.CreatePasswordResetToken(TimeProvider);
+        Assert.NotNull(user.PasswordResetToken);
+        Assert.True(user.PasswordResetTokenExpiration.IsAfter(TimeProvider.GetUtcNow().UtcDateTime));
+
         await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
