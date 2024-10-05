@@ -4,7 +4,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Utility;
-using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -30,16 +29,8 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (!permission.Allowed)
             return Permission(permission);
 
-        TModel model;
-        try
-        {
-            model = await AddModelAsync(mapped);
-            await AfterAddAsync(model);
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(ex.Errors.ToErrorMessage());
-        }
+        var model = await AddModelAsync(mapped);
+        await AfterAddAsync(model);
 
         return Created(new Uri(GetEntityLink(model.Id) ?? throw new InvalidOperationException()), await MapAsync<TViewModel>(model, true));
     }
@@ -154,15 +145,8 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (!permission.Allowed)
             return Permission(permission);
 
-        try
-        {
-            await UpdateModelAsync(original, changes);
-            await AfterPatchAsync(original);
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(ex.Errors.ToErrorMessage());
-        }
+        await UpdateModelAsync(original, changes);
+        await AfterPatchAsync(original);
 
         return await OkModelAsync(original);
     }

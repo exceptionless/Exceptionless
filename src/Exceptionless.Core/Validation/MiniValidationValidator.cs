@@ -1,4 +1,5 @@
-﻿using MiniValidation;
+﻿using System.Text;
+using MiniValidation;
 
 namespace Exceptionless.Core.Validation;
 
@@ -22,4 +23,18 @@ public class MiniValidationValidator(IServiceProvider serviceProvider)
 public class MiniValidatorException(string message, IDictionary<string, string[]> errors) : Exception(message)
 {
     public IDictionary<string, string[]> Errors { get; } = errors;
+
+    public string FormattedErrorMessages()
+    {
+        var errorMessages = new StringBuilder();
+        errorMessages.AppendLine(Message);
+        foreach (var error in Errors)
+        {
+            errorMessages.Append("- ").Append(error.Key).Append(": ");
+            errorMessages.AppendJoin(", ", error.Value);
+            errorMessages.AppendLine();
+        }
+
+        return errorMessages.ToString();
+    }
 }
