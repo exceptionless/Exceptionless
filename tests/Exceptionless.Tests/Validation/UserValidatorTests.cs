@@ -1,6 +1,5 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Validation;
-using FluentValidation.Results;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -8,17 +7,17 @@ namespace Exceptionless.Tests.Validation;
 
 public sealed class UserValidatorTests : TestWithServices
 {
-    private readonly UserValidator _validator;
+    private readonly MiniValidationValidator _validator;
 
     public UserValidatorTests(ITestOutputHelper output) : base(output)
     {
-        _validator = new UserValidator();
+        _validator = GetService<MiniValidationValidator>();
     }
 
     [Theory]
     [InlineData("Valid User", true)]
     [InlineData("", false)]
-    public void ValidateFullName(string fullName, bool isValid)
+    public async Task ValidateFullNameAsync(string fullName, bool isValid)
     {
         var user = new User
         {
@@ -27,16 +26,15 @@ public sealed class UserValidatorTests : TestWithServices
             IsEmailAddressVerified = true
         };
 
-        var result = _validator.Validate(user);
-        if (result.IsValid is false && isValid)
-            _logger.LogInformation("Validation Error: {Message}", result.ToString());
+        var result = await _validator.ValidateAsync(user);
+        Assert.Equal(isValid, result.IsValid);
     }
 
     [Theory]
     [InlineData("valid@example.com", true)]
     [InlineData("invalid-email", false)]
     [InlineData("", false)]
-    public void ValidateEmailAddress(string email, bool isValid)
+    public async Task ValidateEmailAddressAsync(string email, bool isValid)
     {
         var user = new User
         {
@@ -45,10 +43,7 @@ public sealed class UserValidatorTests : TestWithServices
             IsEmailAddressVerified = true
         };
 
-        var result = _validator.Validate(user);
-        if (result.IsValid is false && isValid)
-            _logger.LogInformation("Validation Error: {Message}", result.ToString());
-
+        var result = await _validator.ValidateAsync(user);
         Assert.Equal(isValid, result.IsValid);
     }
 
@@ -59,7 +54,7 @@ public sealed class UserValidatorTests : TestWithServices
     [InlineData(true, "token", false)]
     [InlineData(true, "", false)]
     [InlineData(true, null, true)]
-    public void ValidateVerifyEmailAddressToken(bool isEmailAddressVerified, string? token, bool isValid)
+    public async Task ValidateVerifyEmailAddressTokenAsync(bool isEmailAddressVerified, string? token, bool isValid)
     {
         var user = new User
         {
@@ -70,10 +65,7 @@ public sealed class UserValidatorTests : TestWithServices
             VerifyEmailAddressTokenExpiration = isEmailAddressVerified ? DateTime.MinValue : DateTime.UtcNow.AddDays(1)
         };
 
-        var result = _validator.Validate(user);
-        if (result.IsValid is false && isValid)
-            _logger.LogInformation("Validation Error: {Message}", result.ToString());
-
+        var result = await _validator.ValidateAsync(user);
         Assert.Equal(isValid, result.IsValid);
     }
 
@@ -86,7 +78,7 @@ public sealed class UserValidatorTests : TestWithServices
     [InlineData(true, "token", "2024-10-01", false)]
     [InlineData(true, "", "2024-10-01", false)]
     [InlineData(true, null, "2024-10-01", false)]
-    public void ValidateVerifyEmailAddressTokenExpiration(bool isEmailAddressVerified, string? token, string? expiration, bool isValid)
+    public async Task ValidateVerifyEmailAddressTokenExpirationAsync(bool isEmailAddressVerified, string? token, string? expiration, bool isValid)
     {
         var tokenExpiration = expiration is null ? DateTime.MinValue : DateTime.Parse(expiration);
 
@@ -99,10 +91,7 @@ public sealed class UserValidatorTests : TestWithServices
             VerifyEmailAddressTokenExpiration = tokenExpiration
         };
 
-        var result = _validator.Validate(user);
-        if (result.IsValid is false && isValid)
-            _logger.LogInformation("Validation Error: {Message}", result.ToString());
-
+        var result = await _validator.ValidateAsync(user);
         Assert.Equal(isValid, result.IsValid);
     }
 }
