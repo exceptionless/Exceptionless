@@ -8,8 +8,9 @@
     <Copyright>Copyright (c) 2024 Exceptionless.  All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/exceptionless/exceptionless</RepositoryUrl>
     <Authors>Exceptionless</Authors>
-    <NoWarn>$(NoWarn);CS1591;NU1902;NU1903;NU1904</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;</NoWarn>
     <Nullable>enable</Nullable>
+    <WarningsNotAsErrors>NU1902;NU1903;NU1904;</WarningsNotAsErrors>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
