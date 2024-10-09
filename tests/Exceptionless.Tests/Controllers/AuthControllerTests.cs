@@ -1,10 +1,10 @@
 ﻿using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
@@ -46,7 +46,8 @@ public class AuthControllerTests : IntegrationTestsBase
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
-        await CreateTestOrganizationAndProjectsAsync();
+        var service = GetService<SampleDataService>();
+        await service.CreateDataAsync();
     }
 
     [Fact]
@@ -90,7 +91,7 @@ public class AuthControllerTests : IntegrationTestsBase
                 Password = password,
                 InviteToken = null
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeForbidden()
         );
     }
 
@@ -119,7 +120,7 @@ public class AuthControllerTests : IntegrationTestsBase
                 Password = password,
                 InviteToken = StringExtensions.GetNewToken()
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeForbidden()
         );
     }
 
@@ -211,7 +212,7 @@ public class AuthControllerTests : IntegrationTestsBase
                Password = password,
                InviteToken = invite.Token
            })
-           .StatusCodeShouldBeBadRequest()
+           .StatusCodeShouldBeUnauthorized()
         );
     }
 
@@ -293,7 +294,7 @@ public class AuthControllerTests : IntegrationTestsBase
                Password = "literallydoesntmatter",
                InviteToken = null
            })
-           .StatusCodeShouldBeBadRequest()
+           .StatusCodeShouldBeUnauthorized()
         );
     }
 
@@ -427,7 +428,7 @@ public class AuthControllerTests : IntegrationTestsBase
                Password = TestDomainLoginProvider.ValidPassword,
                InviteToken = invite.Token
            })
-           .StatusCodeShouldBeBadRequest()
+           .StatusCodeShouldBeUnauthorized()
         );
     }
 
@@ -807,7 +808,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
-        await SendRequestAsync(r => r
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/change-password")
@@ -816,9 +817,11 @@ public class AuthControllerTests : IntegrationTestsBase
                 CurrentPassword = password,
                 Password = password
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
 
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, nameof(ChangePasswordModel.Password)));
         Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
     }
 
@@ -943,11 +946,94 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
     }
 
-    private Task CreateTestOrganizationAndProjectsAsync()
+    [Fact]
+    public async Task CanLogoutUserAsync()
     {
-        return Task.WhenAll(
-            _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganizations(GetService<BillingManager>(), GetService<BillingPlans>()), o => o.ImmediateConsistency()),
-            _projectRepository.AddAsync(_projectData.GenerateSampleProjects(), o => o.ImmediateConsistency())
+        const string email = "test7@exceptionless.io";
+        const string password = "Test7 password";
+        const string salt = "1234567890123456";
+        string passwordHash = password.ToSaltedHash(salt);
+
+        var user = new User
+        {
+            EmailAddress = email,
+            Password = passwordHash,
+            Salt = salt,
+            FullName = "User 7",
+            Roles = AuthorizationRoles.AllScopes
+        };
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        var result = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login
+            {
+                Email = email,
+                Password = password,
+            })
+            .StatusCodeShouldBeOk()
         );
+
+        Assert.NotNull(result);
+
+        // Verify that the token is valid
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.Equal(TokenType.Authentication, token.Type);
+        Assert.False(token.IsDisabled);
+        Assert.False(token.IsSuspended);
+
+        await SendRequestAsync(r => r
+            .BearerToken(result.Token)
+            .AppendPath("auth/logout")
+            .StatusCodeShouldBeOk()
+        );
+
+        token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.Null(token);
+    }
+
+    [Fact]
+    public async Task CanLogoutUserAccessTokenAsync()
+    {
+        var token = await _tokenRepository.GetByIdAsync(TestConstants.UserApiKey);
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Access, token.Type);
+        Assert.False(token.IsDisabled);
+        Assert.False(token.IsSuspended);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.Id)
+            .AppendPath("auth/logout")
+            .StatusCodeShouldBeForbidden()
+        );
+
+        token = await _tokenRepository.GetByIdAsync(token.Id);
+        Assert.Equal(TokenType.Access, token.Type);
+        Assert.False(token.IsDisabled);
+        Assert.False(token.IsSuspended);
+    }
+
+    [Fact]
+    public async Task CanLogoutClientAccessTokenAsync()
+    {
+        var token = await _tokenRepository.GetByIdAsync(TestConstants.ApiKey);
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Access, token.Type);
+        Assert.False(token.IsDisabled);
+        Assert.False(token.IsSuspended);
+
+        await SendRequestAsync(r => r
+            .BearerToken(token.Id)
+            .AppendPath("auth/logout")
+            .StatusCodeShouldBeForbidden()
+        );
+
+        token = await _tokenRepository.GetByIdAsync(token.Id);
+        Assert.Equal(TokenType.Access, token.Type);
+        Assert.False(token.IsDisabled);
+        Assert.False(token.IsSuspended);
     }
 }
