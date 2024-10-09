@@ -41,8 +41,7 @@ public class ThrottlingMiddleware
         if (authType == AuthType.User)
         {
             var user = request.GetUser();
-            if (user is not null)
-                return user.Id;
+            return user.Id;
         }
 
         // fallback to using the IP address

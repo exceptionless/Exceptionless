@@ -248,10 +248,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                 _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations");
 
-            return BadRequest("An error has occurred. Please check your search filter.");
+            throw;
         }
 
         return Ok(result);
@@ -272,7 +272,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 After = after
             })
             .Tag("Search")
-            .Identity(CurrentUser?.EmailAddress)
+            .Identity(CurrentUser.EmailAddress)
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext)
         );
@@ -359,7 +359,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 message = $"An error has occurred: {ex.Message ?? "Please limit your search criteria."}";
 
             _logger.LogError(ex, message);
-            return BadRequest(message);
+            throw;
         }
     }
 
@@ -791,9 +791,6 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (String.IsNullOrEmpty(referenceId))
             return NotFound();
 
-        if (description is null)
-            return BadRequest("Description must be specified.");
-
         projectId ??= claimProjectId ?? Request.GetDefaultProjectId();
 
         // must have a project id
@@ -870,11 +867,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         {
             if (projectId != _appOptions.InternalProjectId)
             {
-                using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).Property("Id", id).Property("Close", close).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "Error enqueuing session heartbeat");
             }
 
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            throw;
         }
 
         return Ok();
@@ -1130,11 +1127,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         {
             if (projectId != _appOptions.InternalProjectId)
             {
-                using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "Error enqueuing event post");
             }
 
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            throw;
         }
 
         return Ok();
@@ -1331,11 +1328,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         {
             if (projectId != _appOptions.InternalProjectId)
             {
-                using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
+                using (_logger.BeginScope(new ExceptionlessState().Project(projectId).Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
                     _logger.LogError(ex, "Error enqueuing event post");
             }
 
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            throw;
         }
 
         return StatusCode(StatusCodes.Status202Accepted);

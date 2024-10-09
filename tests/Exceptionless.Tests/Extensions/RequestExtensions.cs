@@ -45,6 +45,11 @@ public static class RequestExtensions
         return builder.ExpectedStatus(HttpStatusCode.Unauthorized);
     }
 
+    public static AppSendBuilder StatusCodeShouldBeForbidden(this AppSendBuilder builder)
+    {
+        return builder.ExpectedStatus(HttpStatusCode.Forbidden);
+    }
+
     public static AppSendBuilder StatusCodeShouldBeUpgradeRequired(this AppSendBuilder builder)
     {
         return builder.ExpectedStatus(HttpStatusCode.UpgradeRequired);

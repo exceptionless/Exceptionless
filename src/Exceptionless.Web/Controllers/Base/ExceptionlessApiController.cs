@@ -93,7 +93,7 @@ public abstract class ExceptionlessApiController : Controller
         return skip;
     }
 
-    protected virtual User? CurrentUser => Request.GetUser();
+    protected virtual User CurrentUser => Request.GetUser();
 
     protected bool CanAccessOrganization(string organizationId)
     {

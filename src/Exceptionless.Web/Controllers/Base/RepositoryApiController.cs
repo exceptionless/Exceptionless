@@ -196,18 +196,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (list.Count == 0)
             return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
-        IEnumerable<string> workIds;
-        try
-        {
-            workIds = await DeleteModelsAsync(list) ?? new List<string>();
-        }
-        catch (Exception ex)
-        {
-            using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, ex.Message);
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-
+        var workIds = await DeleteModelsAsync(list);
         if (results.Failure.Count == 0)
             return WorkInProgress(workIds);
 
@@ -236,6 +225,6 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             await _repository.RemoveAsync(values);
         }
 
-        return Enumerable.Empty<string>();
+        return [];
     }
 }
