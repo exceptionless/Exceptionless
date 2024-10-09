@@ -198,7 +198,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Project> projects)
     {
-        var user = CurrentUser ?? throw new InvalidOperationException();
+        var user = CurrentUser;
         foreach (var project in projects)
         {
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
@@ -360,8 +360,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        var user = CurrentUser ?? throw new InvalidOperationException();
-        if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
+        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
             return NotFound();
 
         return Ok(project.NotificationSettings.TryGetValue(userId, out var settings) ? settings : new NotificationSettings());
@@ -406,7 +405,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser?.Id, userId))
+        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
             return NotFound();
 
         if (settings is null)
@@ -469,8 +468,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        var user = CurrentUser ?? throw new InvalidOperationException();
-        if (!Request.IsGlobalAdmin() && !String.Equals(user.Id, userId))
+        if (!Request.IsGlobalAdmin() && !String.Equals(CurrentUser.Id, userId))
             return NotFound();
 
         if (project.NotificationSettings.Remove(userId))
@@ -636,22 +634,21 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
+        using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
+
         if (project.Data is not null && project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
             return StatusCode(StatusCodes.Status304NotModified);
 
-        SlackToken? token = null;
+        SlackToken? token;
         try
         {
             token = await _slackService.GetAccessTokenAsync(code);
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", code).Tag("Slack").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, "Error getting slack access token: {Message}", ex.Message);
+            _logger.LogError(ex, "Error getting slack access token: {Message}", ex.Message);
+            throw;
         }
-
-        if (token is null)
-            return BadRequest();
 
         project.AddDefaultNotificationSettings(Project.NotificationIntegrations.Slack);
 
@@ -677,17 +674,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return NotFound();
 
         var token = project.GetSlackToken();
+        using var _ = _logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
+
         if (token is not null)
         {
-            try
-            {
-                await _slackService.RevokeAccessTokenAsync(token.AccessToken);
-            }
-            catch (Exception ex)
-            {
-                using (_logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                    _logger.LogError(ex, "Error revoking slack access token: {Message}", ex.Message);
-            }
+            await _slackService.RevokeAccessTokenAsync(token.AccessToken);
         }
 
         bool shouldSave = project.NotificationSettings.Remove(Project.NotificationIntegrations.Slack);
@@ -760,11 +751,9 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
     protected override Task<Project> AddModelAsync(Project value)
     {
-        var user = CurrentUser ?? throw new InvalidOperationException();
-
         value.IsConfigured = false;
         value.NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks;
-        value.AddDefaultNotificationSettings(user.Id);
+        value.AddDefaultNotificationSettings(CurrentUser.Id);
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
 
