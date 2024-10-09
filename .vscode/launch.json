@@ -7,7 +7,7 @@
       "request": "launch",
       "preLaunchTask": "build",
       // If you have changed target frameworks, make sure to update the program path.
-      "program": "${workspaceFolder}/src/Exceptionless.Web/bin/Debug/net8.0/Exceptionless.Web.dll",
+      "program": "${workspaceFolder}/src/Exceptionless.Web/bin/Debug/net9.0/Exceptionless.Web.dll",
       "args": [],
       "cwd": "${workspaceFolder}/src/Exceptionless.Web",
       "stopAtEntry": false,
@@ -25,7 +25,7 @@
       "request": "launch",
       "preLaunchTask": "build",
       // If you have changed target frameworks, make sure to update the program path.
-      "program": "${workspaceFolder}/src/Exceptionless.Job/bin/Debug/net8.0/Exceptionless.Job.dll",
+      "program": "${workspaceFolder}/src/Exceptionless.Job/bin/Debug/net9.0/Exceptionless.Job.dll",
       "args": [],
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
