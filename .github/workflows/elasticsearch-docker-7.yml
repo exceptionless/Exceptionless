@@ -19,7 +19,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.*
-        #dotnet-quality: preview
+        dotnet-quality: preview
     - name: Build Reason
       env:
         GITHUB_EVENT: ${{ toJson(github) }}

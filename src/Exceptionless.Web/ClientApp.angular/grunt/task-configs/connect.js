@@ -5,8 +5,8 @@ var s = require("child_process");
 var proxyRequest = require("grunt-connect-proxy2/lib/utils").proxyRequest;
 
 module.exports = function () {
-    var certs = generateCerts();
     var target = getTarget();
+    var certs = target.ssl ? generateCerts() : { cert: undefined, key: undefined };
 
     return {
         main: {
@@ -87,15 +87,6 @@ function getTarget() {
 
 /** Function taken from aspnetcore-https.js in ASP.NET React template https://github.com/microsoft/commercial-marketplace-offer-deploy/blob/main/src/ClientApp/ClientApp/aspnetcore-https.ts */
 function generateCerts() {
-    if (process.env.CI) {
-        // eslint-disable-next-line no-console
-        console.warn("Skipping certificate generation in CI environment.");
-        return {
-            cert: undefined,
-            key: undefined,
-        };
-    }
-
     var baseFolder =
         process.env.APPDATA !== undefined && process.env.APPDATA !== ""
             ? `${process.env.APPDATA}/ASP.NET/https`

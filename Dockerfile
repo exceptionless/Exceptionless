@@ -50,7 +50,7 @@ FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -yq nodejs
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -yq nodejs
 
 RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
@@ -70,7 +70,7 @@ FROM build AS app-publish
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -yq nodejs
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -yq nodejs
 
 RUN dotnet publish -c Release -o out
 
