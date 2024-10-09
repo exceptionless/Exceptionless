@@ -81,7 +81,8 @@ public static class IdentityUtils
             claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.User));
         }
 
-        return new ClaimsIdentity(claims, UserAuthenticationType);
+        string authenticationType = token is { Type: TokenType.Access } ? TokenAuthenticationType : UserAuthenticationType;
+        return new ClaimsIdentity(claims, authenticationType);
     }
 
     public static bool IsAuthenticated(this ClaimsPrincipal principal)
