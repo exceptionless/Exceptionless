@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/dotnet:0-8.0
+FROM mcr.microsoft.com/devcontainers/dotnet:0-9.0
 
 RUN apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/library-scripts
 

@@ -18,9 +18,9 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.0.4" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="8.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="9.0.0-rc.2.24474.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.0-rc.2.24474.3" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.0-rc.2.24474.3" />
     <PackageReference Include="MiniValidation" Version="0.9.1" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
     <PackageReference Include="OAuth2" Version="0.10.3" />

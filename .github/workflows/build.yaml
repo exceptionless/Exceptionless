@@ -38,8 +38,8 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.*
-          #dotnet-quality: preview
+          dotnet-version: 9.0.*
+          dotnet-quality: preview
 
       - name: Version
         id: version
@@ -64,8 +64,8 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.*
-          #dotnet-quality: preview
+          dotnet-version: 9.0.*
+          dotnet-quality: preview
 
       - name: Start Services
         working-directory: docker

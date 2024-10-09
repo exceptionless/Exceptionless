@@ -32,7 +32,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 - Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md)
 - Requirements
   - [Docker](https://www.docker.com/get-docker)
-  - [.NET 8.0](https://dotnet.microsoft.com/)
+  - [.NET 9.0](https://dotnet.microsoft.com/)
   - [Node 20+](https://nodejs.org/)
 - Visual Studio Code
   - Open Visual Studio Code and then open the Exceptionless root folder
