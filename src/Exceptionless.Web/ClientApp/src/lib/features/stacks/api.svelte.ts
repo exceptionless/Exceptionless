@@ -27,11 +27,7 @@ export async function prefetchStack(props: GetStackByIdProps) {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.id(props.id)
     });
@@ -39,18 +35,14 @@ export async function prefetchStack(props: GetStackByIdProps) {
 
 export function getStackByIdQuery(props: GetStackByIdProps) {
     return createQuery<Stack, ProblemDetails>(() => ({
-        enabled: !!accessToken.value && !!props.id,
+        enabled: () => !!accessToken.value && !!props.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.id(props.id)
     }));

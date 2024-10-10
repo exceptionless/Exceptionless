@@ -48,8 +48,7 @@ public class SlackService
 
         if (!result.ok)
         {
-            _logger.LogWarning("Error getting access token: {Message}, Response: {Response}", result.error ?? result.warning, result);
-            return null;
+            throw new Exception($"Error getting access token: {result.error ?? result.warning}, Response: {result}");
         }
 
         var token = new SlackToken

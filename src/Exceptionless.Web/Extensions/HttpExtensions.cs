@@ -10,9 +10,12 @@ namespace Exceptionless.Web.Extensions;
 
 public static class HttpExtensions
 {
-    public static User? GetUser(this HttpRequest request)
+    public static User GetUser(this HttpRequest request)
     {
-        return request.HttpContext.Items.TryGetAndReturn("User") as User;
+        if (request.HttpContext.Items.TryGetAndReturn("User") is User user)
+            return user;
+
+        throw new UnauthorizedAccessException("User is not authenticated");
     }
 
     public static void SetUser(this HttpRequest request, User user)

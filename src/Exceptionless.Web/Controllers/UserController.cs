@@ -10,7 +10,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -46,11 +45,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// </summary>
     /// <response code="404">The current user could not be found.</response>
     [HttpGet("me")]
-    public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
+    public async Task<ActionResult<ViewCurrentUser>> GetCurrentUserAsync()
     {
-        if (CurrentUser is null)
-            return NotFound();
-
         var currentUser = await GetModelAsync(CurrentUser.Id);
         if (currentUser is null)
             return NotFound();
@@ -133,7 +129,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : [];
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser.Id) ? [CurrentUser.Id] : [];
         return DeleteImplAsync(userIds);
     }
 
@@ -170,11 +166,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext));
 
         email = email.Trim().ToLowerInvariant();
-        if (String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
         // Only allow 3 email address updates per hour period by a single user.
-        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser?.Id}:attempts";
+        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
             return BadRequest("Update email address rate limit reached. Please try updating later.");
@@ -194,14 +190,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         {
             await _repository.SaveAsync(user, o => o.Cache());
         }
-        catch (ValidationException ex)
-        {
-            return BadRequest(String.Join(", ", ex.Errors));
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating user Email Address: {Message}", ex.Message);
-            return BadRequest("An error occurred.");
+            throw;
         }
 
         if (!user.IsEmailAddressVerified)
@@ -224,7 +216,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
         {
             // The user may already be logged in and verified.
-            if (CurrentUser is not null && CurrentUser.IsEmailAddressVerified)
+            if (CurrentUser.IsEmailAddressVerified)
                 return Ok();
 
             return NotFound();
@@ -328,17 +320,22 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return false;
 
         email = email.Trim().ToLowerInvariant();
-        if (CurrentUser is not null && String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return true;
 
         return await _repository.GetByEmailAddressAsync(email) is null;
     }
 
+    protected override async Task<ActionResult<ViewUser>> OkModelAsync(User model)
+    {
+        if (String.Equals(CurrentUser.Id, model.Id))
+            return Ok(new ViewCurrentUser(model, _intercomOptions));
+
+        return await base.OkModelAsync(model);
+    }
+
     protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
     {
-        if (CurrentUser is null)
-            return null;
-
         if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
             return await base.GetModelAsync(id, useCache);
 
@@ -347,9 +344,6 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
     {
-        if (CurrentUser is null)
-            return base.GetModelsAsync([]);
-
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);
 
@@ -361,7 +355,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (value.OrganizationIds.Count > 0)
             return PermissionResult.DenyWithMessage("Please delete or leave any organizations before deleting your account.");
 
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser?.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser.Id)
             return PermissionResult.Deny;
 
         return await base.CanDeleteAsync(value);

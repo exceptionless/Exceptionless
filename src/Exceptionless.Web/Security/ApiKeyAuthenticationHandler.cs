@@ -126,7 +126,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             if (user is null)
             {
                 Logger.LogInformation("Could not find user for token {Token} with user {UserId} for {Path}", token, tokenRecord.UserId, Request.Path);
-
                 return AuthenticateResult.Fail("Token is not valid");
             }
 

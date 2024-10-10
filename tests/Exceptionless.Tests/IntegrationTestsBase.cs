@@ -236,7 +236,10 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     protected async Task<T> SendRequestAsAsync<T>(Action<AppSendBuilder> configure)
     {
         var response = await SendRequestAsync(configure);
-        return await response.DeserializeAsync<T>();
+
+        // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
+        bool ensureSuccess = typeof(T) != typeof(ProblemDetails);
+        return await response.DeserializeAsync<T>(ensureSuccess);
     }
 
     protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure)
