@@ -30,11 +30,14 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0-rc.2.24473.5" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.0-rc.2.24474.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0-rc.2.24473.5" />
-    <PackageReference Include="Stripe.net" Version="46.1.0" />
+    <PackageReference Include="Stripe.net" Version="46.2.0" />
     <PackageReference Include="System.DirectoryServices" Version="9.0.0-rc.2.24473.5" />
     <PackageReference Include="UAParser" Version="3.1.47" />
-
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.17.12" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
     <ProjectReference Include="..\..\..\..\Foundatio\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj" Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup Label="Transitive dependency updates to resolve vulnerability warnings">
+    <PackageReference Include="System.Text.Json" Version="9.0.0-rc.2.24473.5" />
   </ItemGroup>
 </Project>
