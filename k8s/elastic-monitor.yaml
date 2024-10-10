@@ -4,7 +4,13 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 8.14.1
+  version: 8.15.2
+  podDisruptionBudget:
+    spec:
+      minAvailable: 2
+      selector:
+        matchLabels:
+          elasticsearch.k8s.elastic.co/cluster-name: elastic-monitor
   nodeSets:
     - name: main
       count: 3
@@ -50,7 +56,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 8.14.1
+  version: 8.15.2
   count: 1
   elasticsearchRef:
     name: elastic-monitor
@@ -144,7 +150,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 8.14.1
+  version: 8.15.2
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -168,7 +174,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 8.14.1
+  version: 8.15.2
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:
