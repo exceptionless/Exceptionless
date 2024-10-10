@@ -8,6 +8,7 @@ using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Controllers;
@@ -238,4 +239,10 @@ public abstract class ExceptionlessApiController : Controller
 
         return (page + 1) * limit >= MAXIMUM_SKIP;
     }
+
+    // We need to override this to ensure Validation Problems return a 422 status code.
+    public override ActionResult ValidationProblem(string? detail = null, string? instance = null, int? statusCode = null,
+        string? title = null, string? type = null, ModelStateDictionary? modelStateDictionary = null,
+        IDictionary<string, object?>? extensions = null) =>
+        base.ValidationProblem(detail, instance, statusCode ?? 422, title, type, modelStateDictionary, extensions);
 }
