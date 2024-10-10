@@ -2,13 +2,18 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
+using Exceptionless.Web.Utility.Results;
+using FluentValidation;
 using Foundatio.Extensions.Hosting.Startup;
+using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -53,7 +58,6 @@ public class Startup
 
         services.AddControllers(o =>
         {
-            o.Filters.Add<ApiExceptionFilter>();
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
             o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
@@ -65,8 +69,9 @@ public class Startup
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
 
+        services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
+        services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
         services.AddAutoValidation();
-        services.AddProblemDetails();
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
         services.AddAuthorization(options =>
@@ -173,12 +178,49 @@ public class Startup
         });
     }
 
+    private void CustomizeProblemDetails(ProblemDetailsContext ctx)
+    {
+        if (ctx.HttpContext.Items.TryGetValue("EventReferenceId", out object? value) && value is string eventReferenceId)
+        {
+            ctx.ProblemDetails.Extensions.Add("reference-id", eventReferenceId);
+        }
+
+        ctx.ProblemDetails.Extensions.Add("trace-id", ctx.HttpContext.TraceIdentifier);
+        ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+
+        if (ctx.Exception is ValidationException legacyValidationException)
+        {
+            // TODO: Check casing of property names.
+            var invalidParams = legacyValidationException.Errors.Select(e => new ValidationProblemDetailsParam(e.PropertyName, e.ErrorMessage)).ToList();
+            ctx.ProblemDetails.Extensions.Add("invalid-params", invalidParams);
+        }
+        else if (ctx.Exception is MiniValidatorException validationException)
+        {
+            var invalidParams = validationException.Errors.SelectMany(e => e.Value.Select(message => new ValidationProblemDetailsParam(e.Key.ToLowerUnderscoredWords(), message))).ToList();
+            ctx.ProblemDetails.Extensions.Add("invalid-params", invalidParams);
+        }
+
+        // TODO: Check casing of property names of model state validation errors.
+    }
+
     public void Configure(IApplicationBuilder app)
     {
         var options = app.ApplicationServices.GetRequiredService<AppOptions>();
         Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
-        app.UseExceptionHandler();
+        app.UseExceptionHandler(new ExceptionHandlerOptions
+        {
+            StatusCodeSelector = ex => ex switch
+            {
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                ValidationException => StatusCodes.Status422UnprocessableEntity,
+                MiniValidatorException => StatusCodes.Status422UnprocessableEntity,
+                ApplicationException applicationException when applicationException.Message.Contains("version_conflict") => StatusCodes.Status409Conflict,
+                VersionConflictDocumentException => StatusCodes.Status409Conflict,
+                NotImplementedException => StatusCodes.Status501NotImplemented,
+                _ => StatusCodes.Status500InternalServerError
+            }
+        });
         app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
