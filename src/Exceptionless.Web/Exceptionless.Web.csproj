@@ -42,6 +42,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.8.1" />
     <PackageReference Include="Unchase.Swashbuckle.AspNetCore.Extensions" Version="2.7.1" />
   </ItemGroup>
+  <ItemGroup Label="Transitive dependency updates to resolve vulnerability warnings">
+    <PackageReference Include="System.Text.Encodings.Web" Version="9.0.0-rc.2.24473.5" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
