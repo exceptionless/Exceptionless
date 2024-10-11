@@ -181,7 +181,7 @@ Write-Output "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TE
 
 # renew service principal
 $SP_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER --query servicePrincipalProfile.clientId -o tsv)
-$SP_SECRET=$(az ad sp credential reset --name $SP_ID --years 3 --query password -o tsv)
+$SP_SECRET=$(az ad sp credential reset --id $SP_ID --years 3 --query password -o tsv)
 # store secret in 1Password (Exceptionless Azure CI Service Principal)
 az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing

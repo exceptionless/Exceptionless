@@ -57,6 +57,25 @@ spec:
             - configMapRef:
                 name: {{ template "exceptionless.fullname" . }}-config
           env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: K8S_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: $(HOST_IP):4317
+            - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
             - name: RunJobsInProcess
               value: 'false'
 {{- if (empty .Values.storage.connectionString) }}
