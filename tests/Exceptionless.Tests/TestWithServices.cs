@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Helpers;
 using Exceptionless.Insulation.Configuration;
@@ -59,9 +60,9 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
     {
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
-        services.AddSingleton<TimeProvider, ProxyTimeProvider>(_ => new ProxyTimeProvider());
         Web.Bootstrapper.RegisterServices(services, options, Log);
         Bootstrapper.RegisterServices(services, options);
+        services.ReplaceSingleton<TimeProvider>(_ => new ProxyTimeProvider());
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
 
