@@ -343,6 +343,28 @@ spec:
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 
+{{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).maxReplicaCount) }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-event-posts-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "exceptionless.fullname" . }}-jobs-event-posts
+  minReplicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).minReplicaCount) }}{{ .Values.jobs.eventPosts.minReplicaCount }}{{ else }}{{ 2 }}{{ end }}
+  maxReplicas: {{ .Values.jobs.eventPosts.maxReplicaCount }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+{{- end }}
+
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -943,6 +965,28 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
+
+{{- if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).maxReplicaCount) }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-work-item-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "exceptionless.fullname" . }}-jobs-work-item
+  minReplicas: {{ if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).minReplicaCount) }}{{ .Values.jobs.workitem.minReplicaCount }}{{ else }}{{ 2 }}{{ end }}
+  maxReplicas: {{ .Values.jobs.workitem.maxReplicaCount }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
 {{- end }}
 
 ---
