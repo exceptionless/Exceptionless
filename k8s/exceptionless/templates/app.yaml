@@ -10,7 +10,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.app.replicaCount }}
+  replicas: {{ if not (kindIs "invalid" ( .Values.app | default dict ).replicaCount) }}{{ .Values.app.replicaCount }}{{ else }}{{ 2 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-app
@@ -86,6 +86,28 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
+
+{{- if not (kindIs "invalid" ( .Values.app | default dict ).replicaCount) }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "exceptionless.fullname" . }}-app
+  minReplicas: {{ if not (kindIs "invalid" ( .Values.app | default dict ).minReplicaCount) }}{{ .Values.app.minReplicaCount }}{{ else }}{{ 2 }}{{ end }}
+  maxReplicas: {{ .Values.app.maxReplicaCount }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
 {{- end }}
 
 ---

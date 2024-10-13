@@ -147,6 +147,10 @@ helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --na
 # upgrade redis server
 helm upgrade ex-$ENV-redis bitnami/redis --reset-values --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
+# install signoz otel collector
+helm repo add signoz https://charts.signoz.io
+helm install signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY"
+
 # install exceptionless app
 $VERSION="8.0.0"
 helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml `
