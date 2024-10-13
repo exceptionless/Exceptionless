@@ -88,7 +88,7 @@ spec:
             claimName: {{ template "exceptionless.fullname" . }}-storage
 {{- end }}
 
-{{- if not (kindIs "invalid" ( .Values.app | default dict ).replicaCount) }}
+{{- if not (kindIs "invalid" ( .Values.app | default dict ).maxReplicaCount) }}
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
