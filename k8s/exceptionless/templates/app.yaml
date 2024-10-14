@@ -10,7 +10,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.app.replicaCount }}
+  replicas: {{ if not (kindIs "invalid" ( .Values.app | default dict ).replicaCount) }}{{ .Values.app.replicaCount }}{{ else }}{{ 2 }}{{ end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-app
@@ -57,6 +57,25 @@ spec:
             - configMapRef:
                 name: {{ template "exceptionless.fullname" . }}-config
           env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: K8S_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: $(HOST_IP):4317
+            - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
             - name: RunJobsInProcess
               value: 'false'
 {{- if (empty .Values.storage.connectionString) }}
@@ -67,6 +86,28 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
+
+{{- if not (kindIs "invalid" ( .Values.app | default dict ).maxReplicaCount) }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "exceptionless.fullname" . }}-app
+  minReplicas: {{ if not (kindIs "invalid" ( .Values.app | default dict ).minReplicaCount) }}{{ .Values.app.minReplicaCount }}{{ else }}{{ 2 }}{{ end }}
+  maxReplicas: {{ .Values.app.maxReplicaCount }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
 {{- end }}
 
 ---

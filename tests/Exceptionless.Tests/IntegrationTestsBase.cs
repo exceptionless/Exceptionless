@@ -100,7 +100,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         // use xunit test logger
         services.AddSingleton<ILoggerFactory>(Log);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
-        services.AddSingleton<TimeProvider, ProxyTimeProvider>(_ => new ProxyTimeProvider());
+        services.ReplaceSingleton<TimeProvider>(_ => new ProxyTimeProvider());
 
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();

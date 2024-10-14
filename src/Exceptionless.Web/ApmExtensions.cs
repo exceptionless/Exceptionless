@@ -32,7 +32,6 @@ public static partial class ApmExtensions
 
             services.AddOpenTelemetry().WithTracing(b =>
             {
-                b.AddProcessor<ElasticCompatibilityProcessor>();
                 b.SetResourceBuilder(resourceBuilder);
 
                 b.AddAspNetCoreInstrumentation(o =>
@@ -151,7 +150,7 @@ public class ApmConfig
 
     public ApmConfig(IConfigurationRoot config, string processName, string? serviceVersion, bool enableRedis)
     {
-        EnableExporter = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
+        EnableExporter = !string.IsNullOrWhiteSpace(config.GetValue<string>("OTEL_EXPORTER_OTLP_ENDPOINT"));
 
         _apmConfig = config.GetSection("Apm");
         processName = processName.StartsWith('-') ? processName : "-" + processName;
@@ -258,132 +257,4 @@ public static class CustomFilterProcessorExtensions
 public class FilteredOtlpExporterOptions : OtlpExporterOptions
 {
     public Func<Activity, bool>? Filter { get; set; }
-}
-
-public class ElasticCompatibilityProcessor : BaseProcessor<Activity>
-{
-    private readonly AsyncLocal<ActivitySpanId?> _currentTransactionId = new();
-    public const string TransactionIdTagName = "transaction.id";
-
-    public override void OnEnd(Activity activity)
-    {
-        if (activity.Parent == null)
-            _currentTransactionId.Value = activity.SpanId;
-
-        if (_currentTransactionId.Value.HasValue)
-            activity.SetTag(TransactionIdTagName, _currentTransactionId.Value.Value.ToString());
-
-        if (activity.Kind == ActivityKind.Server)
-        {
-            string? httpScheme = null;
-            string? httpTarget = null;
-            string? urlScheme = null;
-            string? urlPath = null;
-            string? urlQuery = null;
-            string? netHostName = null;
-            int? netHostPort = null;
-            string? serverAddress = null;
-            int? serverPort = null;
-
-            foreach (var tag in activity.TagObjects)
-            {
-                if (tag.Key == TraceSemanticConventions.HttpScheme)
-                    httpScheme = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.HttpTarget)
-                    httpTarget = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.UrlScheme)
-                    urlScheme = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.UrlPath)
-                    urlPath = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.UrlQuery)
-                    urlQuery = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.NetHostName)
-                    netHostName = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.ServerAddress)
-                    serverAddress = ProcessStringAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.NetHostPort)
-                    netHostPort = ProcessIntAttribute(tag);
-
-                if (tag.Key == TraceSemanticConventions.ServerPort)
-                    serverPort = ProcessIntAttribute(tag);
-            }
-
-            // Set the older semantic convention attributes
-            if (httpScheme is null && urlScheme is not null)
-                SetStringAttribute(TraceSemanticConventions.HttpScheme, urlScheme);
-
-            if (httpTarget is null && urlPath is not null)
-            {
-                var target = urlPath;
-
-                if (urlQuery is not null)
-                    target += $"?{urlQuery}";
-
-                SetStringAttribute(TraceSemanticConventions.HttpTarget, target);
-            }
-
-            if (netHostName is null && serverAddress is not null)
-                SetStringAttribute(TraceSemanticConventions.NetHostName, serverAddress);
-
-            if (netHostPort is null && serverPort is not null)
-                SetIntAttribute(TraceSemanticConventions.NetHostPort, serverPort.Value);
-        }
-
-        string? ProcessStringAttribute(KeyValuePair<string, object?> tag)
-        {
-            if (tag.Value is string value)
-            {
-                return value;
-            }
-
-            return null;
-        }
-
-        int? ProcessIntAttribute(KeyValuePair<string, object?> tag)
-        {
-            if (tag.Value is int value)
-            {
-                return value;
-            }
-
-            return null;
-        }
-
-        void SetStringAttribute(string attributeName, string value)
-        {
-            activity.SetTag(attributeName, value);
-        }
-
-        void SetIntAttribute(string attributeName, int value)
-        {
-            activity.SetTag(attributeName, value);
-        }
-    }
-}
-
-internal static class TraceSemanticConventions
-{
-    // HTTP
-    public const string HttpScheme = "http.scheme";
-    public const string HttpTarget = "http.target";
-
-    // NET
-    public const string NetHostName = "net.host.name";
-    public const string NetHostPort = "net.host.port";
-
-    // SERVER
-    public const string ServerAddress = "server.address";
-    public const string ServerPort = "server.port";
-
-    // URL
-    public const string UrlPath = "url.path";
-    public const string UrlQuery = "url.query";
-    public const string UrlScheme = "url.scheme";
 }
