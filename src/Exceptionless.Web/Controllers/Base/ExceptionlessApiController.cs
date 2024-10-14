@@ -196,6 +196,15 @@ public abstract class ExceptionlessApiController : Controller
     {
         return StatusCode(StatusCodes.Status400BadRequest, results);
     }
+    protected StatusCodeResult Forbidden()
+    {
+        return StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    protected ObjectResult Forbidden(string message)
+    {
+        return StatusCode(StatusCodes.Status403Forbidden, new MessageContent(message));
+    }
 
     protected ObjectResult PlanLimitReached(string message)
     {

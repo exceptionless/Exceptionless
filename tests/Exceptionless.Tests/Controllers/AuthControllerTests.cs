@@ -1,4 +1,4 @@
-using Exceptionless.Core.Authorization;
+﻿using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;

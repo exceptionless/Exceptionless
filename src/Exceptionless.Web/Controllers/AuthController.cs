@@ -199,7 +199,7 @@ public class AuthController : ExceptionlessApiController
 
         bool valid = await IsAccountCreationEnabledAsync(model.InviteToken);
         if (!valid)
-            return StatusCode(403, "Account Creation is currently disabled");
+            return Forbidden("Account Creation is currently disabled");
 
         User? user;
         try
@@ -661,7 +661,7 @@ public class AuthController : ExceptionlessApiController
         catch (ApplicationException ex)
         {
             _logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
-            return StatusCode(403, "Account Creation is currently disabled");
+            return Forbidden("Account Creation is currently disabled");
         }
         catch (Exception ex)
         {
