@@ -1,4 +1,8 @@
-﻿using Exceptionless.Plugins;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Validation;
+using Exceptionless.Plugins;
+using Exceptionless.Web.Utility.Results;
+using FluentValidation;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
@@ -14,7 +18,25 @@ public class ExceptionToProblemDetailsHandler()
         builder.Submit();
 
         string referenceId = builder.Target.ReferenceId;
-        httpContext.Items.Add("EventReferenceId", referenceId);
+        if (!String.IsNullOrEmpty(referenceId))
+        {
+            httpContext.Items.Add("reference-id", referenceId);
+        }
+
+        if (exception is ValidationException legacyValidationException)
+        {
+            httpContext.Items.Add("errors", legacyValidationException.Errors.ToDictionary(
+                error => error.PropertyName.ToLowerUnderscoredWords(),
+                error => new[] { error.ErrorMessage }
+            ));
+        }
+        else if (exception is MiniValidatorException validationException)
+        {
+            httpContext.Items.Add("errors", validationException.Errors.ToDictionary(
+                error => error.Key.ToLowerUnderscoredWords(),
+                error => error.Value
+            ));
+        }
 
         return ValueTask.FromResult(false);
     }

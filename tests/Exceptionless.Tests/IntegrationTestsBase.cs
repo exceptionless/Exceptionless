@@ -238,7 +238,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         var response = await SendRequestAsync(configure);
 
         // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
-        bool ensureSuccess = typeof(T) != typeof(ProblemDetails);
+        bool ensureSuccess = !typeof(Microsoft.AspNetCore.Mvc.ProblemDetails).IsAssignableFrom(typeof(T));
         return await response.DeserializeAsync<T>(ensureSuccess);
     }
 

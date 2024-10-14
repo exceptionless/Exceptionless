@@ -43,13 +43,12 @@ public class AutoValidationActionFilter : IAsyncActionFilter
                 foreach (var error in errors)
                 {
                     // TODO: Verify nested object keys
-                    string key = error.Key.ToLowerUnderscoredWords();
-                    var modelStateEntry = context.ModelState[key];
+                    var modelStateEntry = context.ModelState[error.Key];
                     foreach (string errorMessage in error.Value)
                     {
                         hasErrors = true;
                         if (modelStateEntry is null || !modelStateEntry.Errors.Contains(e => String.Equals(e.ErrorMessage, errorMessage)))
-                            context.ModelState.AddModelError(key, errorMessage);
+                            context.ModelState.AddModelError(error.Key, errorMessage);
                     }
                 }
             }

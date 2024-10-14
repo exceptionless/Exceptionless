@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -13,6 +13,7 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
@@ -23,10 +24,7 @@ public class AuthControllerTests : IntegrationTestsBase
 {
     private readonly AuthOptions _authOptions;
     private readonly IUserRepository _userRepository;
-    private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
-    private readonly ProjectData _projectData;
-    private readonly IProjectRepository _projectRepository;
     private readonly ITokenRepository _tokenRepository;
 
     public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
@@ -35,10 +33,7 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
 
-        _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
-        _projectData = GetService<ProjectData>();
-        _projectRepository = GetService<IProjectRepository>();
         _userRepository = GetService<IUserRepository>();
         _tokenRepository = GetService<ITokenRepository>();
     }
@@ -51,9 +46,9 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task CannotSignupWithoutPassword()
+    public async Task CannotSignupWithoutPassword()
     {
-        return SendRequestAsync(r => r
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .AppendPath("auth/signup")
             .Content(new Signup
@@ -64,6 +59,10 @@ public class AuthControllerTests : IntegrationTestsBase
             })
             .StatusCodeShouldBeUnprocessableEntity()
         );
+
+        Assert.NotNull(problemDetails);
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
     }
 
     [Theory]
@@ -451,7 +450,7 @@ public class AuthControllerTests : IntegrationTestsBase
         user.MarkEmailAddressVerified();
         await _userRepository.AddAsync(user);
 
-        await SendRequestAsync(r => r
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .AppendPath("auth/signup")
             .Content(new Signup
@@ -462,6 +461,10 @@ public class AuthControllerTests : IntegrationTestsBase
             })
             .StatusCodeShouldBeUnprocessableEntity()
         );
+
+        Assert.NotNull(problemDetails);
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
 
         await SendRequestAsync(r => r
             .Post()
@@ -702,7 +705,7 @@ public class AuthControllerTests : IntegrationTestsBase
                 Email = TestDomainLoginProvider.ValidUsername,
                 Password = "Totallywrongpassword1234"
             })
-            .StatusCodeShouldBeUnprocessableEntity()
+            .StatusCodeShouldBeUnauthorized()
         );
     }
 
@@ -808,7 +811,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
-        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/change-password")
@@ -820,8 +823,10 @@ public class AuthControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeUnprocessableEntity()
         );
 
+        Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
-        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, nameof(ChangePasswordModel.Password)));
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
+
         Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
     }
 
@@ -931,7 +936,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
-        await SendRequestAsync(r => r
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .BasicAuthorization(email, password)
             .AppendPath("auth/reset-password")
@@ -940,8 +945,12 @@ public class AuthControllerTests : IntegrationTestsBase
                 PasswordResetToken = user.PasswordResetToken,
                 Password = password
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
+
+        Assert.NotNull(problemDetails);
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
 
         Assert.NotNull(await _tokenRepository.GetByIdAsync(result.Token));
     }
