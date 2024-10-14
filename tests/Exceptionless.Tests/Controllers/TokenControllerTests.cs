@@ -6,6 +6,7 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
 

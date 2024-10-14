@@ -147,7 +147,7 @@ public static class IdentityUtils
         if (String.IsNullOrEmpty(ids))
             return [];
 
-        return ids.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        return ids.Split([','], StringSplitOptions.RemoveEmptyEntries);
     }
 
     public static string? GetProjectId(this ClaimsPrincipal principal)

@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
@@ -61,7 +62,8 @@ public class Startup
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
             o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-        }).AddNewtonsoftJson(o =>
+        })
+        .AddNewtonsoftJson(o =>
         {
             o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
             o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
@@ -69,8 +71,8 @@ public class Startup
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
 
-        services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
         services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
+        services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
         services.AddAutoValidation();
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
@@ -180,25 +182,28 @@ public class Startup
 
     private void CustomizeProblemDetails(ProblemDetailsContext ctx)
     {
-        if (ctx.HttpContext.Items.TryGetValue("EventReferenceId", out object? value) && value is string eventReferenceId)
-        {
-            ctx.ProblemDetails.Extensions.Add("reference-id", eventReferenceId);
-        }
-
-        ctx.ProblemDetails.Extensions.Add("trace-id", ctx.HttpContext.TraceIdentifier);
         ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+        if (ctx.HttpContext.Items.TryGetValue("reference-id", out object? refId) && refId is string referenceId)
+        {
+            ctx.ProblemDetails.Extensions.Add("reference-id", referenceId);
+        }
 
-        if (ctx.Exception is ValidationException legacyValidationException)
+        if (ctx.HttpContext.Items.TryGetValue("errors", out object? value) && value is Dictionary<string, string[]> errors)
         {
-            // TODO: Check casing of property names.
-            var invalidParams = legacyValidationException.Errors.Select(e => new ValidationProblemDetailsParam(e.PropertyName, e.ErrorMessage)).ToList();
-            ctx.ProblemDetails.Extensions.Add("invalid-params", invalidParams);
+            ctx.ProblemDetails.Extensions.Add("errors", errors);
         }
-        else if (ctx.Exception is MiniValidatorException validationException)
+
+        if (ctx.ProblemDetails is ValidationProblemDetails validationProblem)
         {
-            var invalidParams = validationException.Errors.SelectMany(e => e.Value.Select(message => new ValidationProblemDetailsParam(e.Key.ToLowerUnderscoredWords(), message))).ToList();
-            ctx.ProblemDetails.Extensions.Add("invalid-params", invalidParams);
+            // This might be possible to accomplish via serializer.
+            validationProblem.Errors = validationProblem.Errors
+                .ToDictionary(
+                    error => error.Key.ToLowerUnderscoredWords(),
+                    error => error.Value
+                );
         }
+
+        // errors
 
         // TODO: Check casing of property names of model state validation errors.
     }
