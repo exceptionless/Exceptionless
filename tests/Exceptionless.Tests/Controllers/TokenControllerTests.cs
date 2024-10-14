@@ -24,6 +24,61 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PreventAccessTokenForTokenActions()
+    {
+        var token = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client, AuthorizationRoles.User]
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(token.Id);
+        Assert.Null(token.UserId);
+        Assert.False(token.IsDisabled);
+        Assert.Equal(2, token.Scopes.Count);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .BearerToken(token.Id)
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client, AuthorizationRoles.User]
+            })
+            .StatusCodeShouldBeForbidden()
+        );
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .BearerToken(token.Id)
+            .AppendPath($"tokens/{token.Id}")
+            .Content(new UpdateToken
+            {
+                IsDisabled = true,
+                Notes = "Disabling until next release"
+            })
+            .StatusCodeShouldBeForbidden()
+        );
+
+        await SendRequestAsync(r => r
+            .Delete()
+            .BearerToken(token.Id)
+            .AppendPath($"tokens/{token.Id}")
+            .StatusCodeShouldBeForbidden()
+        );
+
+    }
+
+    [Fact]
     public async Task CanDisableApiKey()
     {
         var token = await SendRequestAsAsync<ViewToken>(r => r
@@ -40,6 +95,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         );
 
         Assert.NotNull(token.Id);
+        Assert.Null(token.UserId);
         Assert.False(token.IsDisabled);
         Assert.Equal(2, token.Scopes.Count);
 
@@ -51,7 +107,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
 
         var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
            .Patch()
-           .BearerToken(token.Id)
+           .AsTestOrganizationUser()
            .AppendPath($"tokens/{token.Id}")
            .Content(updateToken)
            .StatusCodeShouldBeOk()
@@ -61,24 +117,22 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.Equal(updateToken.Notes, updatedToken.Notes);
 
         await SendRequestAsync(r => r
-           .BearerToken(token.Id)
-           .AppendPath($"tokens/{token.Id}")
-           .StatusCodeShouldBeUnauthorized()
+            .BearerToken(token.Id)
+            .AppendPath("projects/config")
+            .StatusCodeShouldBeUnauthorized()
         );
 
         var repository = GetService<ITokenRepository>();
         var actualToken = await repository.GetByIdAsync(token.Id);
         Assert.NotNull(actualToken);
         actualToken.IsDisabled = false;
-        await repository.SaveAsync(actualToken);
+        await repository.SaveAsync(actualToken, o => o.ImmediateConsistency());
 
-        token = await SendRequestAsAsync<ViewToken>(r => r
-           .BearerToken(token.Id)
-           .AppendPath($"tokens/{token.Id}")
-           .StatusCodeShouldBeOk()
+        await SendRequestAsync(r => r
+            .BearerToken(token.Id)
+            .AppendPath("projects/config")
+            .StatusCodeShouldBeOk()
         );
-
-        Assert.False(token.IsDisabled);
     }
 
     [Fact]
@@ -98,6 +152,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         );
 
         Assert.NotNull(token.Id);
+        Assert.Null(token.UserId);
         Assert.False(token.IsDisabled);
         Assert.Single(token.Scopes);
 
@@ -131,5 +186,26 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
         Assert.NotNull(actualToken);
         Assert.False(actualToken.IsSuspended);
+    }
+
+    [Fact]
+    public async Task ShouldPreventAddingUserScopeToTokenWithoutElevatedRole()
+    {
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+           .Post()
+           .AsFreeOrganizationUser()
+           .AppendPath("tokens")
+           .Content(new NewToken
+           {
+               OrganizationId = SampleDataService.TEST_ORG_ID,
+               ProjectId = SampleDataService.TEST_PROJECT_ID,
+               Scopes = [AuthorizationRoles.Client, AuthorizationRoles.User, AuthorizationRoles.GlobalAdmin]
+           })
+           .StatusCodeShouldBeBadRequest() // NOTE: This status code could be better.
+        );
+
+        Assert.NotNull(problemDetails);
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "scopes"));
     }
 }
