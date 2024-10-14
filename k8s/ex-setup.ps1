@@ -147,6 +147,10 @@ helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --na
 # upgrade redis server
 helm upgrade ex-$ENV-redis bitnami/redis --reset-values --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
 
+# install signoz otel collector
+helm repo add signoz https://charts.signoz.io
+helm install signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY"
+
 # install exceptionless app
 $VERSION="8.0.0"
 helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml `
@@ -181,7 +185,7 @@ Write-Output "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TE
 
 # renew service principal
 $SP_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER --query servicePrincipalProfile.clientId -o tsv)
-$SP_SECRET=$(az ad sp credential reset --name $SP_ID --years 3 --query password -o tsv)
+$SP_SECRET=$(az ad sp credential reset --id $SP_ID --years 3 --query password -o tsv)
 # store secret in 1Password (Exceptionless Azure CI Service Principal)
 az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing

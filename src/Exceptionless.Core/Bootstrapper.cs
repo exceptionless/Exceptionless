@@ -74,6 +74,7 @@ public class Bootstrapper
             return settings;
         });
 
+        services.ReplaceSingleton<TimeProvider>(_ => TimeProvider.System);
         services.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));

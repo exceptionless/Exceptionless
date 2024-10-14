@@ -1,0 +1,17 @@
+global:
+  cloud: aks
+  clusterName: ex-k8s-v6
+  deploymentEnvironment: prod
+otelCollectorEndpoint: ingest.us.signoz.cloud:443
+otelInsecure: false
+presets:
+  otlpExporter:
+    enabled: true
+  loggingExporter:
+    enabled: false
+  logsCollection:
+    enabled: false
+  resourceDetection:
+    detectors:
+      - azure
+      - system
