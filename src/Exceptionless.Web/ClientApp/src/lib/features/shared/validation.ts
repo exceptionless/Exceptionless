@@ -1,6 +1,6 @@
 import { ProblemDetails } from '@exceptionless/fetchclient';
 import { validate as classValidate } from 'class-validator';
-import { type FormPathLeavesWithErrors, setError, type SuperValidated } from 'sveltekit-superforms';
+import { type FormPathLeavesWithErrors, setError, setMessage, type SuperValidated } from 'sveltekit-superforms';
 
 export async function validate(data: null | object): Promise<null | ProblemDetails> {
     if (data === null) {
