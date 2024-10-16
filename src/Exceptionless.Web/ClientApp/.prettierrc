@@ -10,5 +10,6 @@
     "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
     "printWidth": 160,
     "singleQuote": true,
-    "trailingComma": "none"
+    "trailingComma": "none",
+    "endOfLine": "auto"
 }
