@@ -72,9 +72,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
             - name: RunJobsInProcess
               value: 'false'
