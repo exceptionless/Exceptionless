@@ -47,3 +47,6 @@ config:
   EX_Serilog__MinimumLevel__Default: "Warning"
   EX_Apm__EnableLogs: "true"
   EX_Apm__FullDetails: "true"
+  EX_OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
+  EX_OTEL_TRACES_SAMPLER_ARG: "0.1"
+  EX_OTEL_LOG_LEVEL: "warn"
