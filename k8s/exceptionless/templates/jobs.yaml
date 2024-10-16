@@ -63,9 +63,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 
 ---
@@ -134,9 +140,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 
 ---
@@ -195,9 +207,15 @@ spec:
                       fieldPath: metadata.uid
                 - name: EX_OTEL_EXPORTER_OTLP_INSECURE
                   value: "true"
+                - name: OTEL_EXPORTER_OTLP_INSECURE
+                  value: "true"
                 - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
                   value: http://$(HOST_IP):4317
+                - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                  value: http://$(HOST_IP):4317
                 - name: EX_OTEL_RESOURCE_ATTRIBUTES
+                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+                - name: OTEL_RESOURCE_ATTRIBUTES
                   value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
           restartPolicy: OnFailure
 
@@ -267,9 +285,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 
 ---
@@ -338,9 +362,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 
 {{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).maxReplicaCount) }}
@@ -415,9 +445,15 @@ spec:
                       fieldPath: metadata.uid
                 - name: EX_OTEL_EXPORTER_OTLP_INSECURE
                   value: "true"
+                - name: OTEL_EXPORTER_OTLP_INSECURE
+                  value: "true"
                 - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
                   value: http://$(HOST_IP):4317
+                - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                  value: http://$(HOST_IP):4317
                 - name: EX_OTEL_RESOURCE_ATTRIBUTES
+                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+                - name: OTEL_RESOURCE_ATTRIBUTES
                   value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
           restartPolicy: OnFailure
 
@@ -487,9 +523,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 ---
 apiVersion: apps/v1
@@ -557,9 +599,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 ---
 apiVersion: batch/v1
@@ -617,9 +665,15 @@ spec:
                       fieldPath: metadata.uid
                 - name: EX_OTEL_EXPORTER_OTLP_INSECURE
                   value: "true"
+                - name: OTEL_EXPORTER_OTLP_INSECURE
+                  value: "true"
                 - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
                   value: http://$(HOST_IP):4317
+                - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                  value: http://$(HOST_IP):4317
                 - name: EX_OTEL_RESOURCE_ATTRIBUTES
+                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+                - name: OTEL_RESOURCE_ATTRIBUTES
                   value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
           restartPolicy: OnFailure
 
@@ -679,9 +733,15 @@ spec:
                       fieldPath: metadata.uid
                 - name: EX_OTEL_EXPORTER_OTLP_INSECURE
                   value: "true"
+                - name: OTEL_EXPORTER_OTLP_INSECURE
+                  value: "true"
                 - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
                   value: http://$(HOST_IP):4317
+                - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                  value: http://$(HOST_IP):4317
                 - name: EX_OTEL_RESOURCE_ATTRIBUTES
+                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+                - name: OTEL_RESOURCE_ATTRIBUTES
                   value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
           restartPolicy: OnFailure
 
@@ -741,9 +801,15 @@ spec:
                       fieldPath: metadata.uid
                 - name: EX_OTEL_EXPORTER_OTLP_INSECURE
                   value: "true"
+                - name: OTEL_EXPORTER_OTLP_INSECURE
+                  value: "true"
                 - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
                   value: http://$(HOST_IP):4317
+                - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                  value: http://$(HOST_IP):4317
                 - name: EX_OTEL_RESOURCE_ATTRIBUTES
+                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+                - name: OTEL_RESOURCE_ATTRIBUTES
                   value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
           restartPolicy: OnFailure
 
@@ -813,9 +879,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 ---
 apiVersion: apps/v1
@@ -883,9 +955,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 ---
 apiVersion: apps/v1
@@ -953,9 +1031,15 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
 {{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
@@ -1055,7 +1139,13 @@ spec:
                   fieldPath: metadata.uid
             - name: EX_OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(HOST_IP):4317
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(HOST_IP):4317
             - name: EX_OTEL_RESOURCE_ATTRIBUTES
+              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+            - name: OTEL_RESOURCE_ATTRIBUTES
               value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
