@@ -2,18 +2,24 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
+using Exceptionless.Web.Utility.Results;
+using FluentValidation;
 using Foundatio.Extensions.Hosting.Startup;
+using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
@@ -53,11 +59,11 @@ public class Startup
 
         services.AddControllers(o =>
         {
-            o.Filters.Add<ApiExceptionFilter>();
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
             o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-        }).AddNewtonsoftJson(o =>
+        })
+        .AddNewtonsoftJson(o =>
         {
             o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
             o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
@@ -65,8 +71,9 @@ public class Startup
             o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
         });
 
+        services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
+        services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
         services.AddAutoValidation();
-        services.AddProblemDetails(ConfigureProblemDetails);
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
         services.AddAuthorization(options =>
@@ -173,12 +180,52 @@ public class Startup
         });
     }
 
+    private void CustomizeProblemDetails(ProblemDetailsContext ctx)
+    {
+        ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+        if (ctx.HttpContext.Items.TryGetValue("reference-id", out object? refId) && refId is string referenceId)
+        {
+            ctx.ProblemDetails.Extensions.Add("reference-id", referenceId);
+        }
+
+        if (ctx.HttpContext.Items.TryGetValue("errors", out object? value) && value is Dictionary<string, string[]> errors)
+        {
+            ctx.ProblemDetails.Extensions.Add("errors", errors);
+        }
+
+        if (ctx.ProblemDetails is ValidationProblemDetails validationProblem)
+        {
+            // This might be possible to accomplish via serializer.
+            validationProblem.Errors = validationProblem.Errors
+                .ToDictionary(
+                    error => error.Key.ToLowerUnderscoredWords(),
+                    error => error.Value
+                );
+        }
+
+        // errors
+
+        // TODO: Check casing of property names of model state validation errors.
+    }
+
     public void Configure(IApplicationBuilder app)
     {
         var options = app.ApplicationServices.GetRequiredService<AppOptions>();
         Core.Bootstrapper.LogConfiguration(app.ApplicationServices, options, Log.Logger.ToLoggerFactory().CreateLogger<Startup>());
 
-        app.UseExceptionHandler();
+        app.UseExceptionHandler(new ExceptionHandlerOptions
+        {
+            StatusCodeSelector = ex => ex switch
+            {
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                ValidationException => StatusCodes.Status422UnprocessableEntity,
+                MiniValidatorException => StatusCodes.Status422UnprocessableEntity,
+                ApplicationException applicationException when applicationException.Message.Contains("version_conflict") => StatusCodes.Status409Conflict,
+                VersionConflictDocumentException => StatusCodes.Status409Conflict,
+                NotImplementedException => StatusCodes.Status501NotImplemented,
+                _ => StatusCodes.Status500InternalServerError
+            }
+        });
         app.UseStatusCodePages();
         app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
@@ -324,31 +371,6 @@ public class Startup
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
-    }
-
-    private static void ConfigureProblemDetails(ProblemDetailsOptions options)
-    {
-        //void SetDetails(ProblemDetails details, int statusCode)
-        //{
-        //    details.Status = statusCode;
-        //    details.Type = GetDefaultType(statusCode);
-        //    details.Title = ReasonPhrases.GetReasonPhrase(statusCode);
-        //}
-
-        //string GetDefaultType(int statusCode)
-        //{
-        //    return $"https://httpstatuses.io/{statusCode}";
-        //}
-
-        //options.CustomizeProblemDetails = context =>
-        //{
-        //    var details = context.ProblemDetails;
-        //    if (details is ValidationProblemDetails { Status: not 422 })
-        //    {
-        //        // TODO: Serialization work around until .NET 8 https://github.com/dotnet/aspnetcore/issues/44132
-        //        SetDetails(details, StatusCodes.Status422UnprocessableEntity);
-        //    }
-        //};
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)

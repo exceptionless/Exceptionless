@@ -20,7 +20,7 @@ export async function login(email: string, password: string) {
     const data: Login = { email, password };
     const client = useFetchClient();
     const response = await client.postJSON<TokenResult>('auth/login', data, {
-        expectedStatusCodes: [401]
+        expectedStatusCodes: [401, 422]
     });
 
     if (response.ok && response.data?.token) {

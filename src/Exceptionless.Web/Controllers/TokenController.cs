@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -42,6 +42,9 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
     public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 10)
     {
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return NotFound();
 
@@ -62,6 +65,9 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
     public async Task<ActionResult<IReadOnlyCollection<ViewToken>>> GetByProjectAsync(string projectId, int page = 1, int limit = 10)
     {
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
         var project = await GetProjectAsync(projectId);
         if (project is null)
             return NotFound();
@@ -81,6 +87,9 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/default")]
     public async Task<ActionResult<ViewToken>> GetDefaultTokenAsync(string projectId)
     {
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
         var project = await GetProjectAsync(projectId);
         if (project is null)
             return NotFound();
@@ -98,9 +107,12 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <param name="id">The identifier of the token.</param>
     /// <response code="404">The token could not be found.</response>
     [HttpGet("{id:token}", Name = "GetTokenById")]
-    public Task<ActionResult<ViewToken>> GetAsync(string id)
+    public async Task<ActionResult<ViewToken>> GetAsync(string id)
     {
-        return GetByIdImplAsync(id);
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
+        return await GetByIdImplAsync(id);
     }
 
     /// <summary>
@@ -114,9 +126,12 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost]
     [Consumes("application/json")]
-    public Task<ActionResult<ViewToken>> PostAsync(NewToken token)
+    public async Task<ActionResult<ViewToken>> PostAsync(NewToken token)
     {
-        return PostImplAsync(token);
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
+        return await PostImplAsync(token);
     }
 
     /// <summary>
@@ -135,6 +150,9 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [Consumes("application/json")]
     public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken? token = null)
     {
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
         var project = await GetProjectAsync(projectId);
         if (project is null)
             return NotFound();
@@ -162,6 +180,9 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [Consumes("application/json")]
     public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken? token = null)
     {
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
         if (token is null)
             token = new NewToken();
 
@@ -182,24 +203,30 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     [HttpPatch("{id:tokens}")]
     [HttpPut("{id:tokens}")]
     [Consumes("application/json")]
-    public Task<ActionResult<ViewToken>> PatchAsync(string id, Delta<UpdateToken> changes)
+    public async Task<ActionResult<ViewToken>> PatchAsync(string id, Delta<UpdateToken> changes)
     {
-        return PatchImplAsync(id, changes);
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
+        return await PatchImplAsync(id, changes);
     }
 
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of token identifiers.</param>
+    /// <param name="ids">A comma-delimited list of token identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more tokens were not found.</response>
     /// <response code="500">An error occurred while deleting one or more tokens.</response>
     [HttpDelete("{ids:tokens}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
+    public async Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
-        return DeleteImplAsync(ids.FromDelimitedString());
+        if (User.IsTokenAuthType())
+            return Forbidden();
+
+        return await DeleteImplAsync(ids.FromDelimitedString());
     }
 
     #endregion
@@ -216,7 +243,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
             return null;
 
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser?.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(model.UserId) && model.UserId != CurrentUser.Id)
             return null;
 
         if (model.Type != TokenType.Access)
@@ -236,7 +263,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 
         bool hasUserRole = User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin);
-        if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser?.Id)
+        if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser.Id)
             return PermissionResult.Deny;
 
         if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
@@ -292,13 +319,13 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         value.Id = StringExtensions.GetNewToken();
         value.CreatedUtc = value.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         value.Type = TokenType.Access;
-        value.CreatedBy = CurrentUser?.Id ?? throw new InvalidOperationException();
+        value.CreatedBy = CurrentUser.Id;
 
         // add implied scopes
-        if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !value.Scopes.Contains(AuthorizationRoles.User))
+        if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin))
             value.Scopes.Add(AuthorizationRoles.User);
 
-        if (value.Scopes.Contains(AuthorizationRoles.User) && !value.Scopes.Contains(AuthorizationRoles.Client))
+        if (value.Scopes.Contains(AuthorizationRoles.User))
             value.Scopes.Add(AuthorizationRoles.Client);
 
         return base.AddModelAsync(value);
@@ -306,7 +333,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 
     protected override async Task<PermissionResult> CanDeleteAsync(Token value)
     {
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser?.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && !String.IsNullOrEmpty(value.UserId) && value.UserId != CurrentUser.Id)
             return PermissionResult.DenyWithMessage("Can only delete tokens created by you.");
 
         if (!String.IsNullOrEmpty(value.ProjectId) && !await IsInProjectAsync(value.ProjectId))

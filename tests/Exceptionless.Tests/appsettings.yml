@@ -22,11 +22,5 @@ EnableDailySummary: false
 RunJobsInProcess: false
 EnableWebSockets: false
 
-Logging:
-  IncludeScopes: false
-  Debug:
-    LogLevel:
-      Default: Warning
-  Console:
-    LogLevel:
-      Default: Warning
+Serilog:
+  MinimumLevel: Warning

@@ -4,7 +4,10 @@ namespace Exceptionless.Web.Models;
 
 public record Login
 {
-    [Required, EmailAddress]
+    /// <summary>
+    /// The email address or domain username
+    /// </summary>
+    [Required]
     public required string Email { get; init; }
 
     [Required, StringLength(100, MinimumLength = 6)]

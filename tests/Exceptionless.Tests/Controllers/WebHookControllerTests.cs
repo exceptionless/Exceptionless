@@ -2,6 +2,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -37,20 +38,25 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task CreateNewWebHookWithInvalidEventTypeFails()
+    public async Task CreateNewWebHookWithInvalidEventTypeFails()
     {
-        return SendRequestAsync(r => r
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPath("webhooks")
-            .Content(new NewWebHook
-            {
-                EventTypes = ["Invalid"],
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                ProjectId = SampleDataService.TEST_PROJECT_ID,
-                Url = "https://localhost/test"
-            })
-            .StatusCodeShouldBeBadRequest()
-        );
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+           .Post()
+           .AsTestOrganizationUser()
+           .AppendPath("webhooks")
+           .Content(new NewWebHook
+           {
+               EventTypes = ["Invalid"],
+               OrganizationId = SampleDataService.TEST_ORG_ID,
+               ProjectId = SampleDataService.TEST_PROJECT_ID,
+               Url = "https://localhost/test"
+           })
+           .StatusCodeShouldBeUnprocessableEntity()
+       );
+
+        Assert.NotNull(problemDetails);
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types[0]"));
+
     }
 }
