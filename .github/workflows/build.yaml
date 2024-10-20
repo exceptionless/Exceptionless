@@ -144,6 +144,9 @@ jobs:
       - name: Lint Client
         run: npm run lint
 
+      - name: Build
+        run: npm run build
+
       - name: Run Unit Tests
         run: echo "npm run test:unit"
 
