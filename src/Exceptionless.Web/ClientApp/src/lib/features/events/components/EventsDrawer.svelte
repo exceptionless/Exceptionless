@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { ViewProject } from '$features/projects/models';
 
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
@@ -14,7 +15,7 @@
     import { getProjectByIdQuery } from '$features/projects/api.svelte';
     import { getStackByIdQuery } from '$features/stacks/api.svelte';
 
-    import type { PersistentEvent, ViewProject } from '../models/index';
+    import type { PersistentEvent } from '../models/index';
 
     import Environment from './views/Environment.svelte';
     import Error from './views/Error.svelte';

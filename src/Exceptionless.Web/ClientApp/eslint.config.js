@@ -7,8 +7,8 @@ import tseslint from 'typescript-eslint';
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default tseslint.config(
-	eslint.configs.recommended,
-	...tseslint.configs.recommended,
+    eslint.configs.recommended,
+    ...tseslint.configs.recommended,
     ...svelte.configs['flat/recommended'],
     perfectionist.configs['recommended-natural'],
     prettier,
@@ -25,7 +25,7 @@ export default tseslint.config(
         files: ['**/*.svelte'],
         languageOptions: {
             parserOptions: {
-				parser: tseslint.parser
+                parser: tseslint.parser
             }
         }
     },

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { GetEventsMode } from '$features/events/api.svelte';
     import type { Snippet } from 'svelte';
 
     import * as DataTable from '$comp/data-table';
@@ -7,8 +8,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { useEventListener } from 'runed';
 
-    import type { EventSummaryModel, GetEventsMode } from '../models/index';
-    import type { SummaryTemplateKeys } from '../summary/index';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     import { getTableContext } from './options.svelte';
 
