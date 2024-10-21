@@ -118,7 +118,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: ./src/Exceptionless.Web/ClientApp
+        working-directory: src/Exceptionless.Web/ClientApp
 
     steps:
 
