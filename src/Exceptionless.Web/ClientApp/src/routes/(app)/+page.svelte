@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';

@@ -1,12 +1,13 @@
 <script lang="ts">
     import type { ProblemDetails } from '@exceptionless/fetchclient';
     import type { Snippet } from 'svelte';
+    import type { FullAutoFill } from 'svelte/elements';
 
     import Input from '$comp/ui/input/input.svelte';
     import Label from '$comp/ui/label/label.svelte';
 
     interface Props {
-        autocomplete?: null | string;
+        autocomplete?: FullAutoFill | null | undefined;
         label?: null | string;
         labelChildren?: Snippet;
         name: string;

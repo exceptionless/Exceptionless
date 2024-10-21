@@ -7,8 +7,8 @@
     import { createTable } from '@tanstack/svelte-table';
     import { useEventListener } from 'runed';
 
-    import type { EventSummaryModel, GetEventsMode } from '../models/index';
-    import type { SummaryTemplateKeys } from '../summary/index';
+    import type { GetEventsMode } from '../../api.svelte';
+    import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     import { getTableContext } from './options.svelte';
 
