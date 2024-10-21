@@ -1,14 +1,14 @@
-import js from '@eslint/js';
+import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import perfectionist from 'eslint-plugin-perfectionist';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
-import ts from 'typescript-eslint';
+import tseslint from 'typescript-eslint';
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
-export default [
-    js.configs.recommended,
-    ...ts.configs.recommended,
+export default tseslint.config(
+    eslint.configs.recommended,
+    ...tseslint.configs.recommended,
     ...svelte.configs['flat/recommended'],
     perfectionist.configs['recommended-natural'],
     prettier,
@@ -25,7 +25,7 @@ export default [
         files: ['**/*.svelte'],
         languageOptions: {
             parserOptions: {
-                parser: ts.parser
+                parser: tseslint.parser
             }
         }
     },
@@ -38,4 +38,4 @@ export default [
             'perfectionist/sort-svelte-attributes': 'off'
         }
     }
-];
+);

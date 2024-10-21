@@ -6,8 +6,8 @@
 
     interface Props {
         checked?: boolean;
-        children: Snippet;
-        disabled: boolean;
+        children?: Snippet;
+        disabled?: boolean;
         id: string;
     }
 
@@ -17,6 +17,8 @@
 <div class="flex items-center space-x-2">
     <Switch bind:checked {disabled} {id} on:click />
     <Label for={id}>
-        {@render children()}
+        {#if children}
+            {@render children()}
+        {/if}
     </Label>
 </div>

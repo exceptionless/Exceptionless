@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '../models/index';
+    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary';
 
     interface Props {
         summary: SummaryModel<SummaryTemplateKeys>;

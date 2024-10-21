@@ -118,7 +118,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: ./src/Exceptionless.Web/ClientApp
+        working-directory: src/Exceptionless.Web/ClientApp
 
     steps:
 
@@ -127,22 +127,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ hashFiles('package-lock.json') }}
-
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: cache-node-modules
+        with:
+          path: src/Exceptionless.Web/ClientApp/node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
       - name: Install Npm Packages
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci --force
 
       - name: Lint Client
         run: npm run lint
+
+      - name: Build
+        run: npm run build
 
       - name: Run Unit Tests
         run: echo "npm run test:unit"
