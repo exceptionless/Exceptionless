@@ -135,7 +135,7 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: src/Exceptionless.Web/ClientApp/node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Install Npm Packages
