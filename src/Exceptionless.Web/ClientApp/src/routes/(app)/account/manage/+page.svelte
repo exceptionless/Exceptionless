@@ -81,7 +81,7 @@
 
     <SuperDebug data={$tainted} />
     <SuperDebug data={$formData} />
-    <form method="PATCH" use:enhance>
+    <form use:enhance>
         <ErrorMessage message={$message}></ErrorMessage>
         <Form.Field {form} name="full_name">
             <Form.Control let:attrs>
