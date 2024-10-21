@@ -42,7 +42,7 @@
                     acc[key] = request.headers?.[key].join(',') ?? '';
                     return acc;
                 },
-                <Record<string, string>>{}
+                {} as Record<string, string>
             )
     );
 </script>
