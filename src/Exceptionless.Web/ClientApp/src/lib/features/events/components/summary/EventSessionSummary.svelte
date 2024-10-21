@@ -1,7 +1,7 @@
 <script lang="ts">
     import { A } from '$comp/typography';
 
-    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '.././index';
+    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '.';
 
     interface EventFeatureSummaryProps {
         showType: boolean;

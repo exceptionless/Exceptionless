@@ -6,7 +6,13 @@
 
     let { open = $bindable(), routes }: { open: boolean; routes: NavigationItem[] } = $props();
 
-    const groupedRoutes: Record<string, NavigationItem[]> = Object.groupBy(routes, (item: NavigationItem) => item.group);
+    const groupedRoutes: Record<string, NavigationItem[]> = Object.entries(Object.groupBy(routes, (item: NavigationItem) => item.group)).reduce(
+        (acc, [key, value]) => {
+            if (value) acc[key] = value;
+            return acc;
+        },
+        {} as Record<string, NavigationItem[]>
+    );
 
     function closeCommandWindow() {
         open = false;
