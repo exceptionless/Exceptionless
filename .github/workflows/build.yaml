@@ -127,16 +127,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - name: Install Npm Packages
         run: npm ci --force
