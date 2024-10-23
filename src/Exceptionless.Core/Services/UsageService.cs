@@ -50,6 +50,8 @@ public class UsageService
         if (lastUsageSaveCache.HasValue)
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
 
+        _logger.LogInformation("Saving organization usage starting from: {LastUsageSave}...", lastUsageSave);
+
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
 
@@ -126,6 +128,8 @@ public class UsageService
         var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-project-save");
         if (lastUsageSaveCache.HasValue)
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+
+        _logger.LogInformation("Saving project usage starting from: {LastUsageSave}...", lastUsageSave);
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
