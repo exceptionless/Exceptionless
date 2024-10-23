@@ -82,8 +82,13 @@
                 <Table.Head class="w-40 whitespace-nowrap">Referrer</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center gap-x-1"
-                    >{request.referrer}<a class="link" href={request.referrer} rel="noopener noreferrer" target="_blank" title="Open in new window"
-                        ><IconOpenInNew /></a
+                    >{request.referrer}<Button
+                        href={request.referrer}
+                        rel="noopener noreferrer"
+                        size="icon"
+                        target="_blank"
+                        title="Open in new window"
+                        variant="outline"><IconOpenInNew /></Button
                     ></Table.Cell
                 >
             </Table.Row>

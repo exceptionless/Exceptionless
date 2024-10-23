@@ -14,7 +14,7 @@
     const title = `Search project:${value}`;
 </script>
 
-<A onclick={() => changed(new ProjectFilter(organization, value))} {title} {...props}>
+<A class="cursor-pointer" onclick={() => changed(new ProjectFilter(organization, value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}
