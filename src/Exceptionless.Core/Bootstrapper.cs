@@ -27,6 +27,7 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Extensions.Hosting.Cronos;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
@@ -254,22 +255,22 @@ public class Bootstrapper
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)
     {
-        services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<EventPostsJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<MailMessageJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<StackStatusJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<WebHooksJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<WorkItemJob>(o => o.WaitForStartupActions(true));
-        services.AddJob<EventUsageJob>(o => o.WaitForStartupActions(true));
+        services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions());
+        services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions());
+        services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions());
+        services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
+        services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
+        services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
+        services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
+        services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
+        services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
+        services.AddJob<WorkItemJob>(o => o.WaitForStartupActions());
 
-        services.AddCronJob<CleanupDataJob>("30 */4 * * *");
-        services.AddCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
-        services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
-        services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
+        services.AddDistributedCronJob<EventUsageJob>(Cron.Minutely());
+        services.AddDistributedCronJob<CleanupDataJob>("30 */4 * * *");
+        services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
+        services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
+        services.AddDistributedCronJob<MaintainIndexesJob>("10 */2 * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
         logger.LogWarning("Jobs running in process");
