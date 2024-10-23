@@ -34,7 +34,7 @@
     const defaultFormData = new Login();
     defaultFormData.invite_token = $page.url.searchParams.get('token');
     const form = superForm(defaults(defaultFormData, classvalidatorClient(Login)), {
-        async onUpdate({ form }) {
+        async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
             }
@@ -44,6 +44,7 @@
                 await goto(redirectUrl);
             } else {
                 applyServerSideErrors(form, response.problem);
+                result.status = response.problem.status ?? 500;
             }
         },
         SPA: true,

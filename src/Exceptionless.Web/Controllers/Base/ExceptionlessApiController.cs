@@ -196,6 +196,7 @@ public abstract class ExceptionlessApiController : Controller
     {
         return StatusCode(StatusCodes.Status400BadRequest, results);
     }
+
     protected StatusCodeResult Forbidden()
     {
         return StatusCode(StatusCodes.Status403Forbidden);
@@ -203,17 +204,22 @@ public abstract class ExceptionlessApiController : Controller
 
     protected ObjectResult Forbidden(string message)
     {
-        return StatusCode(StatusCodes.Status403Forbidden, new MessageContent(message));
+        return Problem(statusCode: StatusCodes.Status403Forbidden, title: message);
     }
 
     protected ObjectResult PlanLimitReached(string message)
     {
-        return StatusCode(StatusCodes.Status426UpgradeRequired, new MessageContent(message));
+        return Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: message);
+    }
+
+    protected ObjectResult TooManyRequests(string message)
+    {
+        return Problem(statusCode: StatusCodes.Status429TooManyRequests, title: message);
     }
 
     protected ObjectResult NotImplemented(string message)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, new MessageContent(message));
+        return Problem(statusCode: StatusCodes.Status501NotImplemented, title: message);
     }
 
     protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link)

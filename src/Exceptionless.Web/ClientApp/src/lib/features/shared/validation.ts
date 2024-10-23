@@ -1,6 +1,6 @@
 import { ProblemDetails } from '@exceptionless/fetchclient';
 import { validate as classValidate } from 'class-validator';
-import { type FormPathLeavesWithErrors, setError, setMessage, type SuperValidated } from 'sveltekit-superforms';
+import { type ErrorStatus, type FormPathLeavesWithErrors, setError, setMessage, type SuperValidated } from 'sveltekit-superforms';
 
 export async function validate(data: null | object): Promise<null | ProblemDetails> {
     if (data === null) {
@@ -27,12 +27,12 @@ export function applyServerSideErrors<T extends Record<string, unknown> = Record
     problem: null | ProblemDetails
 ) {
     if (!problem || problem.status !== 422) {
-        setMessage(form, 'An error occurred. Please try again.' as M);
+        setMessage(form, problem?.title as M, { status: (problem?.status as ErrorStatus) ?? 500 });
         return;
     }
 
     for (const key in problem.errors) {
         const errors = problem.errors[key] as string[];
-        setError(form, key as FormPathLeavesWithErrors<T>, errors);
+        setError(form, key as FormPathLeavesWithErrors<T>, errors, { status: (problem?.status as ErrorStatus) ?? 500 });
     }
 }
