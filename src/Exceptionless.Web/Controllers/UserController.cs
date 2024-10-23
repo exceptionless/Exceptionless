@@ -14,6 +14,7 @@ using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -136,7 +137,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of user identifiers.</param>
+    /// <param name="ids">A comma-delimited list of user identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more users were not found.</response>
@@ -155,7 +156,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <param name="id">The identifier of the user.</param>
     /// <param name="email">The new email address.</param>
     /// <response code="400">An error occurred while updating the users email address.</response>
-    /// <response code="404">The user could not be found.</response>
+    /// <response code="422">Validation error</response>
+    /// <response code="429">Update email address rate limit reached.</response>
     [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
     public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email)
     {
@@ -173,10 +175,13 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         string updateEmailAddressAttemptsCacheKey = $"{CurrentUser.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
-            return BadRequest("Update email address rate limit reached. Please try updating later.");
+            return TooManyRequests("Unable to update email address. Please try later.");
 
         if (!await IsEmailAddressAvailableInternalAsync(email))
-            return BadRequest("A user with this email address already exists.");
+        {
+            ModelState.AddModelError<User>(m => m.EmailAddress, "A user already exists with this email address.");
+            return ValidationProblem(ModelState);
+        }
 
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
@@ -199,7 +204,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (!user.IsEmailAddressVerified)
             await ResendVerificationEmailAsync(id);
 
-        // TODO: We may want to send an email to old email addresses as well.
+        // TODO: We may want to send email to old email addresses as well.
         return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
     }
 

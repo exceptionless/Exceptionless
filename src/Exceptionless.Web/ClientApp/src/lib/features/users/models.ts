@@ -1,6 +1,6 @@
 import { IsOptional } from 'class-validator';
 
-export { User } from '$generated/api';
+export { UpdateEmailAddressResult, User } from '$generated/api';
 
 export class UpdateUser {
     @IsOptional() email_notifications_enabled?: boolean;
