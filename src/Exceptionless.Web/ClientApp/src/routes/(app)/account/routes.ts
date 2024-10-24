@@ -2,6 +2,7 @@ import IconAccount from '~icons/mdi/account';
 import IconSessions from '~icons/mdi/account-multiple';
 import IconNotifications from '~icons/mdi/bell';
 import IconPassword from '~icons/mdi/form-textbox-password';
+import IconVerify from '~icons/mdi/shield-check';
 import IconAppearance from '~icons/mdi/theme-light-dark';
 
 import type { NavigationItem } from '../../routes';
@@ -36,5 +37,12 @@ export const routes: NavigationItem[] = [
         href: '/next/account/sessions',
         icon: IconSessions,
         title: 'Sessions'
+    },
+    {
+        group: 'My Account',
+        href: '/next/account/verify',
+        icon: IconVerify,
+        show: () => false,
+        title: 'Verify'
     }
 ];

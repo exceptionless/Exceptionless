@@ -212,8 +212,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// Verify email address
     /// </summary>
     /// <param name="token">The token identifier.</param>
-    /// <response code="400">Verify Email Address Token has expired.</response>
     /// <response code="404">The user could not be found.</response>
+    /// <response code="422">Verify Email Address Token has expired.</response>
     [HttpGet("verify-email-address/{token:token}")]
     public async Task<IActionResult> VerifyAsync(string token)
     {
@@ -228,7 +228,10 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         }
 
         if (!user.HasValidVerifyEmailAddressTokenExpiration(_timeProvider))
-            return BadRequest("Verify Email Address Token has expired.");
+        {
+            ModelState.AddModelError<User>(m => m.VerifyEmailAddressTokenExpiration, "Verify Email Address Token has expired.");
+            return ValidationProblem(ModelState);
+        }
 
         user.MarkEmailAddressVerified();
         await _repository.SaveAsync(user, o => o.Cache());
@@ -240,6 +243,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// Resend verification email
     /// </summary>
     /// <param name="id">The identifier of the user.</param>
+    /// <response code="200">The user verification email has been sent.</response>
     /// <response code="404">The user could not be found.</response>
     [HttpGet("{id:objectid}/resend-verification-email")]
     public async Task<IActionResult> ResendVerificationEmailAsync(string id)
