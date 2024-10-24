@@ -24,18 +24,21 @@ export const routes: NavigationItem[] = [
         group: 'My Account',
         href: '/next/account/notifications',
         icon: IconNotifications,
+        show: () => false,
         title: 'Notifications'
     },
     {
         group: 'My Account',
         href: '/next/account/security',
         icon: IconPassword,
+        show: () => false,
         title: 'Password and authentication'
     },
     {
         group: 'My Account',
         href: '/next/account/sessions',
         icon: IconSessions,
+        show: () => false,
         title: 'Sessions'
     },
     {

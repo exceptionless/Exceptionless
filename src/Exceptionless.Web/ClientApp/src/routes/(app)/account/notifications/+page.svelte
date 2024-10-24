@@ -18,13 +18,6 @@
         if (client.loading) {
             return;
         }
-
-        // let response = await save(data);
-        // if (response.ok) {
-        //     // TODO
-        // } else {
-        // 	problem = response.problem;
-        // }
     }
 </script>
 
