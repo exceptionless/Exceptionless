@@ -13,7 +13,7 @@
     const title = `Search organization:${value}`;
 </script>
 
-<A onclick={() => changed(new OrganizationFilter(value))} {title} {...props}>
+<A class="cursor-pointer" onclick={() => changed(new OrganizationFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

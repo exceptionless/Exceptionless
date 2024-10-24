@@ -15,7 +15,7 @@
     const title = `Search status:${value}`;
 </script>
 
-<A onclick={() => changed(new StatusFilter(value))} {title} {...props}>
+<A class="cursor-pointer" onclick={() => changed(new StatusFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

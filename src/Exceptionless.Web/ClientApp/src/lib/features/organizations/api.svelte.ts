@@ -18,7 +18,12 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
     const queryClient = useQueryClient();
 
     return createQuery<ViewOrganization[], ProblemDetails>(() => ({
-        enabled: !!accessToken.value,
+        enabled: () => !!accessToken.value,
+        onSuccess: (data: ViewOrganization[]) => {
+            data.forEach((organization) => {
+                queryClient.setQueryData(queryKeys.id(organization.id!), organization);
+            });
+        },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -29,15 +34,7 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
                 signal
             });
 
-            if (response.ok) {
-                response.data?.forEach((organization) => {
-                    queryClient.setQueryData(queryKeys.id(organization.id!), organization);
-                });
-
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all
     }));

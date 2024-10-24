@@ -4,18 +4,18 @@ const { require, _ } = utils;
 
 function getFormatValidation(field) {
     if (field.type === "integer") {
-        return "@IsInt()";
+        return `@IsInt({ message: '${field.name} must be a whole number.' })`;
     }
 
     if (field.type === "number") {
-        return "@IsNumber()";
+        return `@IsNumber({}, { message: '${field.name} must be a numeric value.' })`;
     }
 
     switch (field.format) {
         case "date-time":
-            return "@IsDate()";
+            return `@IsDate({ message: '${field.name} must be a valid date and time.' })`;
         case "email":
-            return "@IsEmail({ require_tld: false })";
+            return `@IsEmail({ require_tld: false }, { message: '${field.name} must be a valid email address.' })`;
         default:
             throw new Error(`Unknown format: ${field.format}`);
     }
@@ -23,17 +23,17 @@ function getFormatValidation(field) {
 
 const validationDecorators = _.compact([
     !field.isRequired && "@IsOptional()",
-    (field.name === "id" || field.name.endsWith("_id")) && "@IsMongoId()",
-    field.name === "url" && "@IsUrl()",
+    (field.name === "id" || field.name.endsWith("_id")) && `@IsMongoId({ message: '${field.name} must be a valid ObjectId.' })`,
+    field.name === "url" && `@IsUrl({}, { message: '${field.name} must be a valid URL.' })`,
     !_.isUndefined(field.format) && getFormatValidation(field),
-    !_.isUndefined(field.minLength) && `@MinLength(${field.minLength})`,
-    !_.isUndefined(field.maxLength) && `@MaxLength(${field.maxLength})`,
-    !_.isUndefined(field.pattern) && `@Matches(${field.pattern})`,
-    !_.isUndefined(field.type) && (field.type === "object" || (field.type === "array" && field.items.$ref)) && `@ValidateNested()`,
+    !_.isUndefined(field.minLength) && `@MinLength(${field.minLength}, { message: '${field.name} must be at least ${field.minLength} characters long.' })`,
+    !_.isUndefined(field.maxLength) && `@MaxLength(${field.maxLength}, { message: '${field.name} must be at most ${field.maxLength} characters long.' })`,
+    !_.isUndefined(field.pattern) && `@Matches(${field.pattern}, { message: '${field.name} must match the pattern ${field.pattern}.' })`,
+    !_.isUndefined(field.type) && (field.type === "object" || (field.type === "array" && field.items.$ref)) && `@ValidateNested({ message: '${field.name} must be a valid nested object.' })`,
 ]);
 
 if (!validationDecorators.length && field.isRequired) {
-    validationDecorators.push("@IsDefined()");
+    validationDecorators.push(`@IsDefined({ message: '${field.name} is required.' })`);
 }
 
 const validationLines = _.uniq(validationDecorators).reduce((acc, validation) => [...acc, ...validation.split(/\n/g)], []);

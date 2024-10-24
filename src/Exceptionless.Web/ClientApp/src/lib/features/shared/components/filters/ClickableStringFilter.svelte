@@ -14,7 +14,7 @@
     const title = `Search ${term}:${value}`;
 </script>
 
-<A onclick={() => changed(new StringFilter(term, value ?? undefined))} {title} {...props}>
+<A class="cursor-pointer" onclick={() => changed(new StringFilter(term, value ?? undefined))} {title} {...props}>
     {#if children}
         {@render children()}
     {:else}

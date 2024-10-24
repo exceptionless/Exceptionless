@@ -8,6 +8,7 @@ using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Results;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Controllers;
@@ -93,7 +94,7 @@ public abstract class ExceptionlessApiController : Controller
         return skip;
     }
 
-    protected virtual User? CurrentUser => Request.GetUser();
+    protected virtual User CurrentUser => Request.GetUser();
 
     protected bool CanAccessOrganization(string organizationId)
     {
@@ -180,10 +181,13 @@ public abstract class ExceptionlessApiController : Controller
 
     protected ObjectResult Permission(PermissionResult permission)
     {
-        if (String.IsNullOrEmpty(permission.Message))
-            return StatusCode(permission.StatusCode, null);
+        if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
+            return (ObjectResult)ValidationProblem(ModelState);
 
-        return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
+        if (String.IsNullOrEmpty(permission.Message))
+            return Problem(statusCode: permission.StatusCode);
+
+        return Problem(statusCode: permission.StatusCode, title: permission.Message);
     }
 
     protected ActionResult<WorkInProgressResult> WorkInProgress(IEnumerable<string> workers)
@@ -196,14 +200,29 @@ public abstract class ExceptionlessApiController : Controller
         return StatusCode(StatusCodes.Status400BadRequest, results);
     }
 
+    protected StatusCodeResult Forbidden()
+    {
+        return StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    protected ObjectResult Forbidden(string message)
+    {
+        return Problem(statusCode: StatusCodes.Status403Forbidden, title: message);
+    }
+
     protected ObjectResult PlanLimitReached(string message)
     {
-        return StatusCode(StatusCodes.Status426UpgradeRequired, new MessageContent(message));
+        return Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: message);
+    }
+
+    protected ObjectResult TooManyRequests(string message)
+    {
+        return Problem(statusCode: StatusCodes.Status429TooManyRequests, title: message);
     }
 
     protected ObjectResult NotImplemented(string message)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, new MessageContent(message));
+        return Problem(statusCode: StatusCodes.Status501NotImplemented, title: message);
     }
 
     protected OkWithHeadersContentResult<T> OkWithLinks<T>(T content, string link)
@@ -238,4 +257,10 @@ public abstract class ExceptionlessApiController : Controller
 
         return (page + 1) * limit >= MAXIMUM_SKIP;
     }
+
+    // We need to override this to ensure Validation Problems return a 422 status code.
+    public override ActionResult ValidationProblem(string? detail = null, string? instance = null, int? statusCode = null,
+        string? title = null, string? type = null, ModelStateDictionary? modelStateDictionary = null,
+        IDictionary<string, object?>? extensions = null) =>
+        base.ValidationProblem(detail, instance, statusCode ?? 422, title, type, modelStateDictionary, extensions);
 }

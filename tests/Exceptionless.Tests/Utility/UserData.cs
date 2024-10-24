@@ -8,6 +8,13 @@ namespace Exceptionless.Tests.Utility;
 
 public class UserData
 {
+    private readonly TimeProvider _timeProvider;
+
+    public UserData(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
     public IEnumerable<User> GenerateUsers(int count = 10, bool generateId = false, string? id = null, string? organizationId = null, string? emailAddress = null, List<string>? roles = null)
     {
         for (int i = 0; i < count; i++)
@@ -48,10 +55,10 @@ public class UserData
             Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.UserId : id,
             EmailAddress = emailAddress.IsNullOrEmpty() ? String.Concat(RandomData.GetWord(false), "@", RandomData.GetWord(false), ".com") : emailAddress,
             Password = TestConstants.UserPassword,
-            FullName = "Eric Smith",
-            PasswordResetToken = Guid.NewGuid().ToString()
+            FullName = "Eric Smith"
         };
 
+        user.CreatePasswordResetToken(_timeProvider);
         user.OrganizationIds.Add(organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId);
 
         if (roles is not null)
