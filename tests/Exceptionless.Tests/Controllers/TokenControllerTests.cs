@@ -201,7 +201,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
                ProjectId = SampleDataService.TEST_PROJECT_ID,
                Scopes = [AuthorizationRoles.Client, AuthorizationRoles.User, AuthorizationRoles.GlobalAdmin]
            })
-           .StatusCodeShouldBeBadRequest() // NOTE: This status code could be better.
+           .StatusCodeShouldBeUnprocessableEntity()
         );
 
         Assert.NotNull(problemDetails);

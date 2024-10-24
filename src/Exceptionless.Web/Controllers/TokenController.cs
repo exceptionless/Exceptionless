@@ -10,6 +10,7 @@ using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Exceptionless.App.Controllers.API;
 
@@ -279,26 +280,41 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
             }
 
             if (!AuthorizationRoles.AllScopes.Contains(lowerCaseScoped))
-                return PermissionResult.DenyWithMessage("Invalid token scope requested.");
+            {
+                ModelState.AddModelError<Token>(m => m.Scopes, "Invalid token scope requested.");
+                return PermissionResult.DenyWithValidationProblem();
+            }
         }
 
         if (value.Scopes.Count == 0)
             value.Scopes.Add(AuthorizationRoles.Client);
 
         if (value.Scopes.Contains(AuthorizationRoles.Client) && !hasUserRole)
-            return PermissionResult.Deny;
+        {
+            ModelState.AddModelError<Token>(m => m.Scopes, "Invalid token scope requested.");
+            return PermissionResult.DenyWithValidationProblem();
+        }
 
         if (value.Scopes.Contains(AuthorizationRoles.User) && !hasUserRole)
-            return PermissionResult.Deny;
+        {
+            ModelState.AddModelError<Token>(m => m.Scopes, "Invalid token scope requested.");
+            return PermissionResult.DenyWithValidationProblem();
+        }
 
         if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !hasGlobalAdminRole)
-            return PermissionResult.Deny;
+        {
+            ModelState.AddModelError<Token>(m => m.Scopes, "Invalid token scope requested.");
+            return PermissionResult.DenyWithValidationProblem();
+        }
 
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             var project = await GetProjectAsync(value.ProjectId);
             if (project is null)
-                return PermissionResult.Deny;
+            {
+                ModelState.AddModelError<Token>(m => m.ProjectId, "Please specify a valid project id.");
+                return PermissionResult.DenyWithValidationProblem();
+            }
 
             value.OrganizationId = project.OrganizationId;
             value.DefaultProjectId = null;
@@ -308,7 +324,10 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         {
             var project = await GetProjectAsync(value.DefaultProjectId);
             if (project is null)
-                return PermissionResult.Deny;
+            {
+                ModelState.AddModelError<Token>(m => m.DefaultProjectId, "Please specify a valid default project id.");
+                return PermissionResult.DenyWithValidationProblem();
+            }
         }
 
         return await base.CanAddAsync(value);

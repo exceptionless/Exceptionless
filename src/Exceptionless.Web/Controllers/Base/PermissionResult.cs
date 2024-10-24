@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.Web.Controllers;
+namespace Exceptionless.Web.Controllers;
 
 public record PermissionResult
 {
@@ -54,6 +54,15 @@ public record PermissionResult
             Id = id,
             Message = message,
             StatusCode = StatusCodes.Status426UpgradeRequired
+        };
+    }
+
+    public static PermissionResult DenyWithValidationProblem()
+    {
+        return new PermissionResult
+        {
+            Allowed = false,
+            StatusCode = StatusCodes.Status422UnprocessableEntity
         };
     }
 }
