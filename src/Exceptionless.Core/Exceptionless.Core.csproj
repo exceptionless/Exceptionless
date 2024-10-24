@@ -24,6 +24,7 @@
     <PackageReference Include="FluentValidation" Version="11.10.0" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="$(FoundatioVersion)" />
     <PackageReference Include="Foundatio.JsonNet" Version="$(FoundatioVersion)" />
+    <PackageReference Include="MiniValidation" Version="0.9.1" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
     <PackageReference Include="Handlebars.Net" Version="2.1.6" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.4.1" />

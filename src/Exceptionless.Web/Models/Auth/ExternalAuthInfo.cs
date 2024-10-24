@@ -1,9 +1,22 @@
+using System.ComponentModel.DataAnnotations;
+using Newtonsoft.Json;
+
 namespace Exceptionless.Web.Models;
 
 public record ExternalAuthInfo
 {
-    public required string ClientId { get; set; }
-    public required string Code { get; set; }
-    public required string RedirectUri { get; set; }
-    public required string InviteToken { get; set; }
+    [Required]
+    [JsonProperty("clientId")]
+    public required string ClientId { get; init; }
+
+    [Required]
+    [JsonProperty("code")]
+    public required string Code { get; init; }
+
+    [Required]
+    [JsonProperty("redirectUri")]
+    public required string RedirectUri { get; init; }
+
+    [JsonProperty("inviteToken")]
+    public string? InviteToken { get; init; }
 }

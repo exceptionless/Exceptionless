@@ -10,11 +10,11 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -46,11 +46,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// </summary>
     /// <response code="404">The current user could not be found.</response>
     [HttpGet("me")]
-    public async Task<ActionResult<ViewUser>> GetCurrentUserAsync()
+    public async Task<ActionResult<ViewCurrentUser>> GetCurrentUserAsync()
     {
-        if (CurrentUser is null)
-            return NotFound();
-
         var currentUser = await GetModelAsync(CurrentUser.Id);
         if (currentUser is null)
             return NotFound();
@@ -133,14 +130,14 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
-        string[] userIds = !String.IsNullOrEmpty(CurrentUser?.Id) ? [CurrentUser.Id] : [];
+        string[] userIds = !String.IsNullOrEmpty(CurrentUser.Id) ? [CurrentUser.Id] : [];
         return DeleteImplAsync(userIds);
     }
 
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of user identifiers.</param>
+    /// <param name="ids">A comma-delimited list of user identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more users were not found.</response>
@@ -159,7 +156,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <param name="id">The identifier of the user.</param>
     /// <param name="email">The new email address.</param>
     /// <response code="400">An error occurred while updating the users email address.</response>
-    /// <response code="404">The user could not be found.</response>
+    /// <response code="422">Validation error</response>
+    /// <response code="429">Update email address rate limit reached.</response>
     [HttpPost("{id:objectid}/email-address/{email:minlength(1)}")]
     public async Task<ActionResult<UpdateEmailAddressResult>> UpdateEmailAddressAsync(string id, string email)
     {
@@ -170,17 +168,20 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext));
 
         email = email.Trim().ToLowerInvariant();
-        if (String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
         // Only allow 3 email address updates per hour period by a single user.
-        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser?.Id}:attempts";
+        string updateEmailAddressAttemptsCacheKey = $"{CurrentUser.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, _timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
-            return BadRequest("Update email address rate limit reached. Please try updating later.");
+            return TooManyRequests("Unable to update email address. Please try later.");
 
         if (!await IsEmailAddressAvailableInternalAsync(email))
-            return BadRequest("A user with this email address already exists.");
+        {
+            ModelState.AddModelError<User>(m => m.EmailAddress, "A user already exists with this email address.");
+            return ValidationProblem(ModelState);
+        }
 
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
@@ -194,20 +195,16 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         {
             await _repository.SaveAsync(user, o => o.Cache());
         }
-        catch (ValidationException ex)
-        {
-            return BadRequest(String.Join(", ", ex.Errors));
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating user Email Address: {Message}", ex.Message);
-            return BadRequest("An error occurred.");
+            throw;
         }
 
         if (!user.IsEmailAddressVerified)
             await ResendVerificationEmailAsync(id);
 
-        // TODO: We may want to send an email to old email addresses as well.
+        // TODO: We may want to send email to old email addresses as well.
         return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
     }
 
@@ -215,8 +212,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// Verify email address
     /// </summary>
     /// <param name="token">The token identifier.</param>
-    /// <response code="400">Verify Email Address Token has expired.</response>
     /// <response code="404">The user could not be found.</response>
+    /// <response code="422">Verify Email Address Token has expired.</response>
     [HttpGet("verify-email-address/{token:token}")]
     public async Task<IActionResult> VerifyAsync(string token)
     {
@@ -224,14 +221,17 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (user is null)
         {
             // The user may already be logged in and verified.
-            if (CurrentUser is not null && CurrentUser.IsEmailAddressVerified)
+            if (CurrentUser.IsEmailAddressVerified)
                 return Ok();
 
             return NotFound();
         }
 
         if (!user.HasValidVerifyEmailAddressTokenExpiration(_timeProvider))
-            return BadRequest("Verify Email Address Token has expired.");
+        {
+            ModelState.AddModelError<User>(m => m.VerifyEmailAddressTokenExpiration, "Verify Email Address Token has expired.");
+            return ValidationProblem(ModelState);
+        }
 
         user.MarkEmailAddressVerified();
         await _repository.SaveAsync(user, o => o.Cache());
@@ -243,6 +243,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// Resend verification email
     /// </summary>
     /// <param name="id">The identifier of the user.</param>
+    /// <response code="200">The user verification email has been sent.</response>
     /// <response code="404">The user could not be found.</response>
     [HttpGet("{id:objectid}/resend-verification-email")]
     public async Task<IActionResult> ResendVerificationEmailAsync(string id)
@@ -328,17 +329,22 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return false;
 
         email = email.Trim().ToLowerInvariant();
-        if (CurrentUser is not null && String.Equals(CurrentUser?.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return true;
 
         return await _repository.GetByEmailAddressAsync(email) is null;
     }
 
+    protected override async Task<ActionResult<ViewUser>> OkModelAsync(User model)
+    {
+        if (String.Equals(CurrentUser.Id, model.Id))
+            return Ok(new ViewCurrentUser(model, _intercomOptions));
+
+        return await base.OkModelAsync(model);
+    }
+
     protected override async Task<User?> GetModelAsync(string id, bool useCache = true)
     {
-        if (CurrentUser is null)
-            return null;
-
         if (Request.IsGlobalAdmin() || String.Equals(CurrentUser.Id, id))
             return await base.GetModelAsync(id, useCache);
 
@@ -347,9 +353,6 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
 
     protected override Task<IReadOnlyCollection<User>> GetModelsAsync(string[] ids, bool useCache = true)
     {
-        if (CurrentUser is null)
-            return base.GetModelsAsync([]);
-
         if (Request.IsGlobalAdmin())
             return base.GetModelsAsync(ids, useCache);
 
@@ -361,7 +364,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         if (value.OrganizationIds.Count > 0)
             return PermissionResult.DenyWithMessage("Please delete or leave any organizations before deleting your account.");
 
-        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser?.Id)
+        if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && value.Id != CurrentUser.Id)
             return PermissionResult.Deny;
 
         return await base.CanDeleteAsync(value);

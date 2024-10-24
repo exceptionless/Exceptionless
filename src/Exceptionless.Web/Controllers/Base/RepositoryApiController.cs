@@ -4,7 +4,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Utility;
-using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -30,16 +29,8 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (!permission.Allowed)
             return Permission(permission);
 
-        TModel model;
-        try
-        {
-            model = await AddModelAsync(mapped);
-            await AfterAddAsync(model);
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(ex.Errors.ToErrorMessage());
-        }
+        var model = await AddModelAsync(mapped);
+        await AfterAddAsync(model);
 
         return Created(new Uri(GetEntityLink(model.Id) ?? throw new InvalidOperationException()), await MapAsync<TViewModel>(model, true));
     }
@@ -147,22 +138,15 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             return NotFound();
 
         // if there are no changes in the delta, then ignore the request
-        if (changes is null || !changes.GetChangedPropertyNames().Any())
+        if (!changes.GetChangedPropertyNames().Any())
             return await OkModelAsync(original);
 
         var permission = await CanUpdateAsync(original, changes);
         if (!permission.Allowed)
             return Permission(permission);
 
-        try
-        {
-            await UpdateModelAsync(original, changes);
-            await AfterPatchAsync(original);
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(ex.Errors.ToErrorMessage());
-        }
+        await UpdateModelAsync(original, changes);
+        await AfterPatchAsync(original);
 
         return await OkModelAsync(original);
     }
@@ -212,18 +196,7 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (list.Count == 0)
             return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
-        IEnumerable<string> workIds;
-        try
-        {
-            workIds = await DeleteModelsAsync(list) ?? new List<string>();
-        }
-        catch (Exception ex)
-        {
-            using (_logger.BeginScope(new ExceptionlessState().Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, ex.Message);
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-
+        var workIds = await DeleteModelsAsync(list);
         if (results.Failure.Count == 0)
             return WorkInProgress(workIds);
 
@@ -252,6 +225,6 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
             await _repository.RemoveAsync(values);
         }
 
-        return Enumerable.Empty<string>();
+        return [];
     }
 }

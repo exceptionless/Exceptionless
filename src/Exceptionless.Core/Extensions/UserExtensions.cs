@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -29,7 +30,7 @@ public static class UserExtensions
 
     public static bool HasValidVerifyEmailAddressTokenExpiration(this User user, TimeProvider timeProvider)
     {
-        return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= timeProvider.GetUtcNow().UtcDateTime;
+        return user.VerifyEmailAddressTokenExpiration.IsAfterOrEqual(timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public static void ResetPasswordResetToken(this User user)

@@ -184,7 +184,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
     protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Organization> organizations)
     {
-        var user = CurrentUser ?? throw new InvalidOperationException();
+        var user = CurrentUser;
         foreach (var organization in organizations)
         {
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
@@ -209,6 +209,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (!_options.StripeOptions.EnableBilling)
             return NotFound();
 
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser.EmailAddress)
+                   .Property("User", CurrentUser).SetHttpContext(HttpContext));
+
         if (!id.StartsWith("in_"))
             id = "in_" + id;
 
@@ -221,8 +224,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
+            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -374,6 +376,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
             return NotFound();
 
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Organization(id)
+            .Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
+
         if (!_options.StripeOptions.EnableBilling)
             return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
@@ -427,7 +432,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Source = stripeToken,
                     Plan = planId,
                     Description = organization.Name,
-                    Email = CurrentUser?.EmailAddress
+                    Email = CurrentUser.EmailAddress
                 };
 
                 if (!String.IsNullOrWhiteSpace(couponId))
@@ -448,7 +453,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
                 if (!Request.IsGlobalAdmin())
-                    customerUpdateOptions.Email = CurrentUser?.EmailAddress;
+                    customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
                 if (!String.IsNullOrEmpty(stripeToken))
                 {
@@ -484,9 +489,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Identity(CurrentUser?.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext)))
-                _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
-
+            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
             return Ok(ChangePlanResult.FailWithMessage(ex.Message));
         }
 
@@ -504,7 +507,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     [Route("{id:objectid}/users/{email:minlength(1)}")]
     public async Task<ActionResult<User>> AddUserAsync(string id, string email)
     {
-        if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email) || CurrentUser is null)
+        if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
             return NotFound();
 
         var organization = await GetModelAsync(id);
@@ -620,7 +623,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         organization.IsSuspended = true;
         organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
-        organization.SuspendedByUserId = CurrentUser?.Id;
+        organization.SuspendedByUserId = CurrentUser.Id;
         organization.SuspensionCode = code;
         organization.SuspensionNotes = notes;
         await _repository.SaveAsync(organization, o => o.Cache().Originals());
@@ -736,7 +739,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
     protected override async Task<Organization> AddModelAsync(Organization value)
     {
-        var user = CurrentUser ?? throw new InvalidOperationException();
+        var user = CurrentUser;
         _billingManager.ApplyBillingPlan(value, _options.StripeOptions.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, user);
 
         var organization = await base.AddModelAsync(value);

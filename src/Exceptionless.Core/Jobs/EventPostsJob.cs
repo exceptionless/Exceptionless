@@ -7,6 +7,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using FluentValidation;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -208,7 +209,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                         continue;
 
                     if (!isInternalProject) _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ctx.ErrorMessage);
-                    if (ctx.Exception is ValidationException)
+                    if (ctx.Exception is ValidationException or MiniValidatorException)
                         continue;
 
                     errorCount++;

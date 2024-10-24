@@ -13,7 +13,7 @@
     const title = `Search reference:${value}`;
 </script>
 
-<A onclick={() => changed(new ReferenceFilter(value))} {title} {...props}>
+<A class="cursor-pointer" onclick={() => changed(new ReferenceFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

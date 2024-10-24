@@ -1,6 +1,6 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
@@ -11,11 +11,20 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
-    public UserRepository(ExceptionlessElasticConfiguration configuration, IValidator<User> validator, AppOptions options)
-        : base(configuration.Users, validator, options)
+    private readonly MiniValidationValidator _miniValidationValidator;
+
+    public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+        : base(configuration.Users, null, options)
     {
+        _miniValidationValidator = validator;
         DefaultConsistency = Consistency.Immediate;
         AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
+    }
+
+    protected override Task ValidateAndThrowAsync(User document)
+    {
+        // TOOD: Deprecate this once all are converted to MiniValidationValidator.
+        return _miniValidationValidator.ValidateAndThrowAsync(document);
     }
 
     public async Task<User?> GetByEmailAddressAsync(string emailAddress)

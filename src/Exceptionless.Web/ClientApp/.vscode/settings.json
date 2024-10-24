@@ -2,6 +2,7 @@
     "debug.allowBreakpointsEverywhere": true,
     "cSpell.words": [
         "acacode",
+        "classvalidator",
         "clsx",
         "cmdk",
         "colour",
@@ -59,6 +60,8 @@
     "workbench.editor.customLabels.patterns": {
         "**/lib/**/*.ts": "${dirname}/${filename}.${extname}",
         "**/routes/**/+page.svelte": "${dirname(1)}/${dirname}",
-        "**/routes/**/+layout.svelte": "${dirname}/+layout.svelte"
+        "**/routes/**/+layout.svelte": "${dirname}/+layout.svelte",
+        "**/routes/**/routes.ts": "${dirname}/routes.ts",
+        "**/lib/**/index.ts": "${dirname}/index.ts"
     }
 }

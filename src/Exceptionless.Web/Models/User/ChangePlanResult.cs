@@ -1,6 +1,6 @@
 ﻿namespace Exceptionless.Web.Models;
 
-public class UpdateEmailAddressResult
+public record UpdateEmailAddressResult
 {
-    public bool IsVerified { get; set; }
+    public required bool IsVerified { get; init; }
 }

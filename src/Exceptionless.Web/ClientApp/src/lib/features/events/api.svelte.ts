@@ -32,18 +32,14 @@ export interface IGetEventsParams {
 
 export function getEventByIdQuery(props: GetEventByIdProps) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
-        enabled: !!accessToken.value && !!props.id,
+        enabled: () => !!accessToken.value && !!props.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${props.id}`, {
                 signal
             });
 
-            if (response.ok) {
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.id(props.id)
     }));
@@ -58,7 +54,12 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
     const queryClient = useQueryClient();
 
     return createQuery<PersistentEvent[], ProblemDetails>(() => ({
-        enabled: !!accessToken.value && !!props.stackId,
+        enabled: () => !!accessToken.value && !!props.stackId,
+        onSuccess: (data: PersistentEvent[]) => {
+            data.forEach((event) => {
+                queryClient.setQueryData(queryKeys.id(event.id!), event);
+            });
+        },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -69,15 +70,7 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
                 signal
             });
 
-            if (response.ok) {
-                response.data?.forEach((event) => {
-                    queryClient.setQueryData(queryKeys.id(event.id!), event);
-                });
-
-                return response.data!;
-            }
-
-            throw response.problem;
+            return response.data!;
         },
         queryKey: queryKeys.stacks(props.stackId)
     }));

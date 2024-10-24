@@ -14,7 +14,7 @@
     const title = `Search ${term}:${value}`;
 </script>
 
-<A onclick={() => changed(new BooleanFilter(term, value))} {title} {...props}>
+<A class="cursor-pointer" onclick={() => changed(new BooleanFilter(term, value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}
