@@ -182,9 +182,9 @@ public abstract class ExceptionlessApiController : Controller
     protected ObjectResult Permission(PermissionResult permission)
     {
         if (String.IsNullOrEmpty(permission.Message))
-            return StatusCode(permission.StatusCode, null);
+            return Problem(statusCode: permission.StatusCode);
 
-        return StatusCode(permission.StatusCode, new MessageContent(permission.Id, permission.Message));
+        return Problem(statusCode: permission.StatusCode, title: permission.Message);
     }
 
     protected ActionResult<WorkInProgressResult> WorkInProgress(IEnumerable<string> workers)

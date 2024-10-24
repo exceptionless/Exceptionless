@@ -163,11 +163,11 @@ public class AuthController : ExceptionlessApiController
     {
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Logout").Identity(CurrentUser.EmailAddress).SetHttpContext(HttpContext));
         if (User.IsTokenAuthType())
-            return StatusCode(403, "Logout not supported for current user access token");
+            return Forbidden("Logout not supported for current user access token");
 
         string? id = User.GetLoggedInUsersTokenId();
         if (String.IsNullOrEmpty(id))
-            return StatusCode(403, "Logout not supported");
+            return Forbidden("Logout not supported");
 
         try
         {
