@@ -181,6 +181,9 @@ public abstract class ExceptionlessApiController : Controller
 
     protected ObjectResult Permission(PermissionResult permission)
     {
+        if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
+            return (ObjectResult)ValidationProblem(ModelState);
+
         if (String.IsNullOrEmpty(permission.Message))
             return Problem(statusCode: permission.StatusCode);
 
