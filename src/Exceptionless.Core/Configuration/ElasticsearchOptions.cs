@@ -33,6 +33,8 @@ public class ElasticsearchOptions
         options.ReindexCutOffDate = config.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
 
         string? connectionString = config.GetConnectionString("Elasticsearch");
+        if (connectionString !=null && (connectionString.StartsWith("http://") || connectionString.StartsWith("https://")))
+            connectionString = "server=" + connectionString;
         ParseConnectionString(connectionString, options, appOptions.AppMode);
 
         string? connectionStringToMigrate = config.GetConnectionString("ElasticsearchToMigrate");

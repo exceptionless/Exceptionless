@@ -17,7 +17,8 @@ export default defineConfig({
     ],
     server: {
         hmr: aspNetConfig.hmr,
-        port: 5173,
+        host: true,
+        port: parseInt(process.env.PORT ?? '5173'),
         proxy: {
             '/_framework': {
                 changeOrigin: true,
@@ -77,7 +78,7 @@ function getAspNetConfig() {
 
     // get current aspnetcore port / url
     const aspnetHttpsPort = process.env.ASPNETCORE_HTTPS_PORT;
-    const aspnetUrls = process.env.ASPNETCORE_URLS;
+    const aspnetUrls = process.env.ASPNETCORE_URLS ?? process.env.services__Api__0;;
     const serverPort = 5173;
 
     const hmrRemoteHost = codespaceName ? `${codespaceName}-${serverPort}.${codespaceDomain}` : 'localhost';

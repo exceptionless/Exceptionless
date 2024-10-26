@@ -94,6 +94,7 @@ public static partial class ApmExtensions
                 b.AddHttpClientInstrumentation();
                 b.AddAspNetCoreInstrumentation();
                 b.AddMeter("Exceptionless", "Foundatio");
+                b.AddMeter("System.Runtime");
                 b.AddRuntimeInstrumentation();
                 b.AddProcessInstrumentation();
 
