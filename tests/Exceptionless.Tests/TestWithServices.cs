@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Helpers;
@@ -83,7 +84,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
-            .AddEnvironmentVariables()
+            .AddCustomEnvironmentVariables()
             .Build();
 
         services.AddSingleton<IConfiguration>(config);

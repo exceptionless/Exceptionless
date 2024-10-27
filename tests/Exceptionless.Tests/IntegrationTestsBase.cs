@@ -54,7 +54,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     public virtual async Task InitializeAsync()
     {
-        await _hostFixture.StartAsync();
+        //await _hostFixture.StartAsync();
 
         var configuredFactory = _hostFixture.Factories.Count > 0 ? _hostFixture.Factories[0] : null;
         if (configuredFactory is null)

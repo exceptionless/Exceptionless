@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
@@ -49,8 +50,7 @@ public class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables("EX_")
-            .AddEnvironmentVariables("ASPNETCORE_")
+            .AddCustomEnvironmentVariables()
             .AddCommandLine(args)
             .Build();
 

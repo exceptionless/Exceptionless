@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using OpenTelemetry;
@@ -43,8 +44,7 @@ public class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables("EX_")
-            .AddEnvironmentVariables("ASPNETCORE_")
+            .AddCustomEnvironmentVariables()
             .AddCommandLine(args)
             .Build();
 
@@ -64,7 +64,7 @@ public class Program
         var apmConfig = new ApmConfig(config, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         var configDictionary = config.ToDictionary("Serilog");
-        Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
+        Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", environment, options.InformationalVersion, Environment.MachineName, options);
 
         SetClientEnvironmentVariablesInDevelopmentMode(options);
 

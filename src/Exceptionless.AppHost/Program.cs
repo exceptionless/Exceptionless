@@ -25,7 +25,7 @@ var job = builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
     .WaitFor(cache)
     .WithHttpHealthCheck("/health");
 
-var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless API")
+var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WithReference(cache)
     .WithReference(elastic)
     .WaitFor(elastic)
