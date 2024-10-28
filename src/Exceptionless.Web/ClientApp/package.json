@@ -23,7 +23,7 @@
         "upgrade": "ncu -i"
     },
     "devDependencies": {
-        "@playwright/test": "^1.48.1",
+        "@playwright/test": "^1.48.2",
         "@sveltejs/adapter-static": "^3.0.5",
         "@sveltejs/kit": "^2.7.2",
         "@sveltejs/vite-plugin-svelte": "^4.0.0",
