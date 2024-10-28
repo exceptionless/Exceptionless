@@ -149,10 +149,10 @@
     <form use:updateUserFormEnhance>
         <Form.Field form={updateUserForm} name="full_name">
             <Form.Control>
-                {#snippet children({ attrs })}
+                {#snippet children({ props })}
                     <Form.Label>Full Name</Form.Label>
                     <Input
-                        {...attrs}
+                        {...props}
                         bind:value={$updateUserFormData.full_name}
                         placeholder="Full Name"
                         autocomplete="name"
@@ -169,10 +169,10 @@
     <form use:updateEmailAddressFormEnhance>
         <Form.Field form={updateEmailAddressForm} name="email_address">
             <Form.Control>
-                {#snippet children({ attrs })}
+                {#snippet children({ props })}
                     <Form.Label>Email</Form.Label>
                     <Input
-                        {...attrs}
+                        {...props}
                         bind:value={$updateEmailAddressFormData.email_address}
                         placeholder="Enter email address"
                         autocomplete="email"

@@ -35,16 +35,16 @@
         </div>
         <div class="flex items-center space-x-2">
             {#if table.getState().pagination.pageIndex > 1}
-                <Button class="hidden h-8 w-8 p-0 lg:flex" on:click={() => table.resetPageIndex(true)} variant="outline">
+                <Button class="hidden h-8 w-8 p-0 lg:flex" onclick={() => table.resetPageIndex(true)} variant="outline">
                     <span class="sr-only">Go to first page</span>
                     <IconChevronDoubleLeft class="mr-2 h-4 w-4" />
                 </Button>
             {/if}
-            <Button class="h-8 w-8 p-0" disabled={!table.getCanPreviousPage()} on:click={() => table.previousPage()} variant="outline">
+            <Button class="h-8 w-8 p-0" disabled={!table.getCanPreviousPage()} onclick={() => table.previousPage()} variant="outline">
                 <span class="sr-only">Go to previous page</span>
                 <IconChevronLeft class="h-4 w-4" />
             </Button>
-            <Button class="h-8 w-8 p-0" disabled={!table.getCanNextPage()} on:click={() => table.nextPage()} variant="outline">
+            <Button class="h-8 w-8 p-0" disabled={!table.getCanNextPage()} onclick={() => table.nextPage()} variant="outline">
                 <span class="sr-only">Go to next page</span>
                 <IconChevronRight class="h-4 w-4" />
             </Button>

@@ -30,7 +30,7 @@
         <DropdownMenu.Separator />
         {#each table.getAllLeafColumns() as column (column.id)}
             {#if column.getCanHide()}
-                <DropdownMenu.CheckboxItem checked={column.getIsVisible()} on:click={() => column.toggleVisibility()}>
+                <DropdownMenu.CheckboxItem checked={column.getIsVisible()} onclick={() => column.toggleVisibility()}>
                     {column.columnDef.header}
                 </DropdownMenu.CheckboxItem>
             {/if}

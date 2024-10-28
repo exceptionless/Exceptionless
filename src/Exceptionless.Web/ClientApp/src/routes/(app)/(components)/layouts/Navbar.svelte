@@ -35,10 +35,10 @@
     <div class="px-3 py-3 lg:px-5 lg:pl-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
-                <Button aria-controls="sidebar" class="mr-3 hidden p-1 lg:block" on:click={onHamburgerClick} size="icon" variant="outline">
+                <Button aria-controls="sidebar" class="mr-3 hidden p-1 lg:block" onclick={onHamburgerClick} size="icon" variant="outline">
                     <IconMenu class="h-6 w-6" />
                 </Button>
-                <Button aria-controls="sidebar" class="mr-2 lg:hidden" on:click={onHamburgerClick} size="icon" variant="outline">
+                <Button aria-controls="sidebar" class="mr-2 lg:hidden" onclick={onHamburgerClick} size="icon" variant="outline">
                     {#if isSidebarOpen}
                         <IconClose class="h-6 w-6" />
                     {:else}
@@ -55,7 +55,7 @@
                 </a>
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button on:click={onSearchClick} size="default" variant="outline">
+                <Button onclick={onSearchClick} size="default" variant="outline">
                     <IconSearch class="h-6 w-6" />
                     Search
                     <DropdownMenu.Shortcut class="ml-12">⌘K</DropdownMenu.Shortcut>
