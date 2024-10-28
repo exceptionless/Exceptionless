@@ -34,9 +34,9 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild >
+    <Popover.Trigger asChild>
         {#snippet children({ builder })}
-                <Button builders={[builder]} class="h-8" size="sm" variant="outline">
+            <Button builders={[builder]} class="h-8" size="sm" variant="outline">
                 {title}
                 <Separator class="mx-2 h-4" orientation="vertical" />
                 {#if value}
@@ -45,8 +45,8 @@
                     <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
                 {/if}
             </Button>
-                    {/snippet}
-        </Popover.Trigger>
+        {/snippet}
+    </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <div class="flex items-center border-b">
             <Input bind:value={updatedValue} placeholder={title} type="boolean" />

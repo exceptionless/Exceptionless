@@ -64,9 +64,9 @@
                 <DarkModeButton></DarkModeButton>
 
                 <DropdownMenu.Root>
-                    <DropdownMenu.Trigger asChild >
+                    <DropdownMenu.Trigger asChild>
                         {#snippet children({ builder })}
-                                                <Button builders={[builder]} class="rounded-full" size="icon" variant="ghost">
+                            <Button builders={[builder]} class="rounded-full" size="icon" variant="ghost">
                                 <Avatar.Root class="h-7 w-7" title="Profile Image">
                                     {#await gravatar.src}
                                         <Avatar.Fallback><Loading /></Avatar.Fallback>
@@ -76,8 +76,8 @@
                                     <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
                                 </Avatar.Root>
                             </Button>
-                                                                    {/snippet}
-                                        </DropdownMenu.Trigger>
+                        {/snippet}
+                    </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end" class="w-56">
                         <DropdownMenu.Label>My Account</DropdownMenu.Label>
                         <DropdownMenu.Separator />

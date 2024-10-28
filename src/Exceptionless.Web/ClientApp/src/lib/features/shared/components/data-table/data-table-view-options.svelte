@@ -17,14 +17,14 @@
 </script>
 
 <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild >
+    <DropdownMenu.Trigger asChild>
         {#snippet children({ builder })}
-                <Button builders={[builder]} class="h-8" size="sm" variant="outline">
+            <Button builders={[builder]} class="h-8" size="sm" variant="outline">
                 <IconViewColumn class="mr-2 h-4 w-4" />
                 View
             </Button>
-                    {/snippet}
-        </DropdownMenu.Trigger>
+        {/snippet}
+    </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
         <DropdownMenu.Separator />

@@ -59,19 +59,19 @@
 <form method="POST" use:enhance>
     <ErrorMessage message={$message}></ErrorMessage>
     <Form.Field {form} name="email">
-        <Form.Control >
+        <Form.Control>
             {#snippet children({ attrs })}
-                        <Form.Label>Email</Form.Label>
+                <Form.Label>Email</Form.Label>
                 <Input {...attrs} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
-                                {/snippet}
-                </Form.Control>
+            {/snippet}
+        </Form.Control>
         <Form.Description />
         <Form.FieldErrors />
     </Form.Field>
     <Form.Field {form} name="password">
-        <Form.Control >
+        <Form.Control>
             {#snippet children({ attrs })}
-                        <Form.Label
+                <Form.Label
                     >Password
                     <Muted class="float-right">
                         <A href="/forgot-password">Forgot password?</A>
@@ -87,8 +87,8 @@
                     minlength={6}
                     required
                 />
-                                {/snippet}
-                </Form.Control>
+            {/snippet}
+        </Form.Control>
         <Form.Description />
         <Form.FieldErrors />
     </Form.Field>

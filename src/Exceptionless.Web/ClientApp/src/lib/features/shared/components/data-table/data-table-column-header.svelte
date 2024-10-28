@@ -39,9 +39,9 @@
 {#if column.getCanSort()}
     <div class={cn('flex items-center', className)}>
         <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild >
+            <DropdownMenu.Trigger asChild>
                 {#snippet children({ builder })}
-                                <Button builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
+                    <Button builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
                         {#if children}
                             {@render children()}
                         {/if}
@@ -53,8 +53,8 @@
                             <IconUnfoldMore class="ml-2 h-4 w-4" />
                         {/if}
                     </Button>
-                                            {/snippet}
-                        </DropdownMenu.Trigger>
+                {/snippet}
+            </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
                 <DropdownMenu.Item on:click={handleAscSort}>Asc</DropdownMenu.Item>
                 <DropdownMenu.Item on:click={handleDescSort}>Desc</DropdownMenu.Item>

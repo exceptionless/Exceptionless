@@ -148,9 +148,9 @@
 
     <form use:updateUserFormEnhance>
         <Form.Field form={updateUserForm} name="full_name">
-            <Form.Control >
+            <Form.Control>
                 {#snippet children({ attrs })}
-                                <Form.Label>Full Name</Form.Label>
+                    <Form.Label>Full Name</Form.Label>
                     <Input
                         {...attrs}
                         bind:value={$updateUserFormData.full_name}
@@ -159,8 +159,8 @@
                         required
                         oninput={debouncedUpdatedUserFormSubmit}
                     />
-                                            {/snippet}
-                        </Form.Control>
+                {/snippet}
+            </Form.Control>
             <Form.Description />
             <Form.FieldErrors />
             <ErrorMessage message={$updateUserFormMessage}></ErrorMessage>
@@ -168,9 +168,9 @@
     </form>
     <form use:updateEmailAddressFormEnhance>
         <Form.Field form={updateEmailAddressForm} name="email_address">
-            <Form.Control >
+            <Form.Control>
                 {#snippet children({ attrs })}
-                                <Form.Label>Email</Form.Label>
+                    <Form.Label>Email</Form.Label>
                     <Input
                         {...attrs}
                         bind:value={$updateEmailAddressFormData.email_address}
@@ -179,8 +179,8 @@
                         required
                         oninput={debouncedUpdateEmailAddressFormSubmit}
                     />
-                                            {/snippet}
-                        </Form.Control>
+                {/snippet}
+            </Form.Control>
             <Form.Description />
             <Form.FieldErrors />
             <ErrorMessage message={$updateEmailAddressFormMessage}></ErrorMessage>

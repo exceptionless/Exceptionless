@@ -64,13 +64,13 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild >
+    <Popover.Trigger asChild>
         {#snippet children({ builder })}
-                <Button builders={[builder]} class="h-8" size="sm" variant="outline">
+            <Button builders={[builder]} class="h-8" size="sm" variant="outline">
                 <IconAddCircleOutline class="mr-2 h-4 w-4" /> Filter
             </Button>
-                    {/snippet}
-        </Popover.Trigger>
+        {/snippet}
+    </Popover.Trigger>
     <Popover.Content align="start" class="w-[200px] p-0" side="bottom">
         <Command.Root>
             <Command.Input placeholder={'Search...'} />
