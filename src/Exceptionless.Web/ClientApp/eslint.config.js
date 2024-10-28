@@ -34,6 +34,19 @@ export default tseslint.config(
     },
 
     {
+        /* location of your components where you would like to apply these rules  */
+        files: ['src/lib/features/shared/components/ui/**/*.svelte'],
+        rules: {
+            '@typescript-eslint/no-unused-vars': [
+                'warn',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^$$(Props|Events|Slots|Generic)$'
+                }
+            ]
+        }
+    },
+    {
         rules: {
             'perfectionist/sort-svelte-attributes': 'off'
         }
