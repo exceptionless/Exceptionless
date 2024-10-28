@@ -59,32 +59,36 @@
 <form method="POST" use:enhance>
     <ErrorMessage message={$message}></ErrorMessage>
     <Form.Field {form} name="email">
-        <Form.Control let:attrs>
-            <Form.Label>Email</Form.Label>
-            <Input {...attrs} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
-        </Form.Control>
+        <Form.Control >
+            {#snippet children({ attrs })}
+                        <Form.Label>Email</Form.Label>
+                <Input {...attrs} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
+                                {/snippet}
+                </Form.Control>
         <Form.Description />
         <Form.FieldErrors />
     </Form.Field>
     <Form.Field {form} name="password">
-        <Form.Control let:attrs>
-            <Form.Label
-                >Password
-                <Muted class="float-right">
-                    <A href="/forgot-password">Forgot password?</A>
-                </Muted></Form.Label
-            >
-            <Input
-                {...attrs}
-                bind:value={$formData.password}
-                type="password"
-                placeholder="Enter password"
-                autocomplete="current-password"
-                maxlength={100}
-                minlength={6}
-                required
-            />
-        </Form.Control>
+        <Form.Control >
+            {#snippet children({ attrs })}
+                        <Form.Label
+                    >Password
+                    <Muted class="float-right">
+                        <A href="/forgot-password">Forgot password?</A>
+                    </Muted></Form.Label
+                >
+                <Input
+                    {...attrs}
+                    bind:value={$formData.password}
+                    type="password"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    maxlength={100}
+                    minlength={6}
+                    required
+                />
+                                {/snippet}
+                </Form.Control>
         <Form.Description />
         <Form.FieldErrors />
     </Form.Field>

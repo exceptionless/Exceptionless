@@ -39,20 +39,22 @@
 {#if column.getCanSort()}
     <div class={cn('flex items-center', className)}>
         <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-                <Button builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
-                    {#if children}
-                        {@render children()}
-                    {/if}
-                    {#if column.getIsSorted() === 'desc'}
-                        <IconArrowDownward class="ml-2 h-4 w-4" />
-                    {:else if column.getIsSorted() === 'asc'}
-                        <IconArrowUpward class="ml-2 h-4 w-4" />
-                    {:else}
-                        <IconUnfoldMore class="ml-2 h-4 w-4" />
-                    {/if}
-                </Button>
-            </DropdownMenu.Trigger>
+            <DropdownMenu.Trigger asChild >
+                {#snippet children({ builder })}
+                                <Button builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
+                        {#if children}
+                            {@render children()}
+                        {/if}
+                        {#if column.getIsSorted() === 'desc'}
+                            <IconArrowDownward class="ml-2 h-4 w-4" />
+                        {:else if column.getIsSorted() === 'asc'}
+                            <IconArrowUpward class="ml-2 h-4 w-4" />
+                        {:else}
+                            <IconUnfoldMore class="ml-2 h-4 w-4" />
+                        {/if}
+                    </Button>
+                                            {/snippet}
+                        </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
                 <DropdownMenu.Item on:click={handleAscSort}>Asc</DropdownMenu.Item>
                 <DropdownMenu.Item on:click={handleDescSort}>Desc</DropdownMenu.Item>

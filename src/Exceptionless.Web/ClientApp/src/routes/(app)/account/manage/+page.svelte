@@ -148,17 +148,19 @@
 
     <form use:updateUserFormEnhance>
         <Form.Field form={updateUserForm} name="full_name">
-            <Form.Control let:attrs>
-                <Form.Label>Full Name</Form.Label>
-                <Input
-                    {...attrs}
-                    bind:value={$updateUserFormData.full_name}
-                    placeholder="Full Name"
-                    autocomplete="name"
-                    required
-                    oninput={debouncedUpdatedUserFormSubmit}
-                />
-            </Form.Control>
+            <Form.Control >
+                {#snippet children({ attrs })}
+                                <Form.Label>Full Name</Form.Label>
+                    <Input
+                        {...attrs}
+                        bind:value={$updateUserFormData.full_name}
+                        placeholder="Full Name"
+                        autocomplete="name"
+                        required
+                        oninput={debouncedUpdatedUserFormSubmit}
+                    />
+                                            {/snippet}
+                        </Form.Control>
             <Form.Description />
             <Form.FieldErrors />
             <ErrorMessage message={$updateUserFormMessage}></ErrorMessage>
@@ -166,17 +168,19 @@
     </form>
     <form use:updateEmailAddressFormEnhance>
         <Form.Field form={updateEmailAddressForm} name="email_address">
-            <Form.Control let:attrs>
-                <Form.Label>Email</Form.Label>
-                <Input
-                    {...attrs}
-                    bind:value={$updateEmailAddressFormData.email_address}
-                    placeholder="Enter email address"
-                    autocomplete="email"
-                    required
-                    oninput={debouncedUpdateEmailAddressFormSubmit}
-                />
-            </Form.Control>
+            <Form.Control >
+                {#snippet children({ attrs })}
+                                <Form.Label>Email</Form.Label>
+                    <Input
+                        {...attrs}
+                        bind:value={$updateEmailAddressFormData.email_address}
+                        placeholder="Enter email address"
+                        autocomplete="email"
+                        required
+                        oninput={debouncedUpdateEmailAddressFormSubmit}
+                    />
+                                            {/snippet}
+                        </Form.Control>
             <Form.Description />
             <Form.FieldErrors />
             <ErrorMessage message={$updateEmailAddressFormMessage}></ErrorMessage>

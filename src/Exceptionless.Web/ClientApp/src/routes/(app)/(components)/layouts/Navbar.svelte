@@ -64,18 +64,20 @@
                 <DarkModeButton></DarkModeButton>
 
                 <DropdownMenu.Root>
-                    <DropdownMenu.Trigger asChild let:builder>
-                        <Button builders={[builder]} class="rounded-full" size="icon" variant="ghost">
-                            <Avatar.Root class="h-7 w-7" title="Profile Image">
-                                {#await gravatar.src}
-                                    <Avatar.Fallback><Loading /></Avatar.Fallback>
-                                {:then src}
-                                    <Avatar.Image alt="gravatar" {src} />
-                                {/await}
-                                <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
-                            </Avatar.Root>
-                        </Button>
-                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Trigger asChild >
+                        {#snippet children({ builder })}
+                                                <Button builders={[builder]} class="rounded-full" size="icon" variant="ghost">
+                                <Avatar.Root class="h-7 w-7" title="Profile Image">
+                                    {#await gravatar.src}
+                                        <Avatar.Fallback><Loading /></Avatar.Fallback>
+                                    {:then src}
+                                        <Avatar.Image alt="gravatar" {src} />
+                                    {/await}
+                                    <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
+                                </Avatar.Root>
+                            </Button>
+                                                                    {/snippet}
+                                        </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end" class="w-56">
                         <DropdownMenu.Label>My Account</DropdownMenu.Label>
                         <DropdownMenu.Separator />
