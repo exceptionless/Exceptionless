@@ -237,12 +237,12 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         set data(value) {
             data = value;
         },
-        get limit() {
-            return parameters.limit ?? DEFAULT_LIMIT;
+        get limit(): string {
+            return `${parameters.limit ?? DEFAULT_LIMIT}`;
         },
-        set limit(value) {
-            parameters.limit = value;
-            setPagination({ pageIndex: 0, pageSize: value });
+        set limit(value: string) {
+            parameters.limit = Number(value);
+            setPagination({ pageIndex: 0, pageSize: Number(value) });
         },
         get loading() {
             return loading;

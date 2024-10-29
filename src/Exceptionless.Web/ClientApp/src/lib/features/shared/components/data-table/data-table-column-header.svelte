@@ -39,9 +39,9 @@
 {#if column.getCanSort()}
     <div class={cn('flex items-center', className)}>
         <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-                {#snippet children({ builder })}
-                    <Button builders={[builder]} class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
+            <DropdownMenu.Trigger>
+                {#snippet children()}
+                    <Button class="-ml-3 h-8 data-[state=open]:bg-accent" variant="ghost">
                         {#if children}
                             {@render children()}
                         {/if}

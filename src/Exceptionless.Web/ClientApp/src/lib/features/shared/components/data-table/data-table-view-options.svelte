@@ -17,9 +17,9 @@
 </script>
 
 <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-        {#snippet children({ builder })}
-            <Button builders={[builder]} class="h-8" size="sm" variant="outline">
+    <DropdownMenu.Trigger>
+        {#snippet children()}
+            <Button class="h-8" size="sm" variant="outline">
                 <IconViewColumn class="mr-2 h-4 w-4" />
                 View
             </Button>

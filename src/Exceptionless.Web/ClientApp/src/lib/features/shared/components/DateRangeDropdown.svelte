@@ -1,6 +1,4 @@
 <script lang="ts">
-    import type { Selected } from 'bits-ui';
-
     import * as Select from '$comp/ui/select';
 
     interface Props {
@@ -18,18 +16,11 @@
     ];
 
     let selected = $derived(items.find((item) => item.value === value) || items[items.length - 1]);
-
-    function onSelectedChange(selected: Selected<string> | undefined) {
-        const newValue = selected?.value ?? '';
-        if (newValue !== value) {
-            value = newValue;
-        }
-    }
 </script>
 
-<Select.Root {items} {onSelectedChange} {selected}>
+<Select.Root type="single" {items} bind:value>
     <Select.Trigger class="w-[135px]">
-        <Select.Value placeholder="" />
+        {selected.label}
     </Select.Trigger>
     <Select.Content>
         {#each items as item (item.label)}

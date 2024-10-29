@@ -34,9 +34,9 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild>
-        {#snippet children({ builder })}
-            <Button builders={[builder]} class="h-8" size="sm" variant="outline">
+    <Popover.Trigger>
+        {#snippet children()}
+            <Button class="h-8" size="sm" variant="outline">
                 {title}
                 <Separator class="mx-2 h-4" orientation="vertical" />
                 {#if value !== undefined && !isNaN(value)}

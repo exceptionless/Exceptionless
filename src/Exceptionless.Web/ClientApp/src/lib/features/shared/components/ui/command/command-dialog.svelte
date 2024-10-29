@@ -6,7 +6,7 @@
 	} from "bits-ui";
 	import type { Snippet } from "svelte";
 	import Command from "./command.svelte";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import * as Dialog from "$lib/features/shared/components/ui/dialog/index.js";
 
 	let {
 		open = $bindable(false),
