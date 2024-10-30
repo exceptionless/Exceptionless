@@ -32,7 +32,6 @@ export default tseslint.config(
     {
         ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/generated/api.ts', 'src/lib/features/shared/components/ui/']
     },
-
     {
         rules: {
             'perfectionist/sort-svelte-attributes': 'off'

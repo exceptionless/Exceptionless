@@ -4,44 +4,36 @@
 
 <script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
-    import type { Selected } from 'bits-ui';
 
     import * as Select from '$comp/ui/select';
 
     interface Props {
-        defaultValue?: number;
         table: Table<TData>;
-        value: number;
+        value: string;
     }
 
-    let { defaultValue = 10, table, value = $bindable() }: Props = $props();
+    let { table, value = $bindable() }: Props = $props();
 
     const items = [
-        { label: '5', value: 5 },
-        { label: '10', value: 10 },
-        { label: '20', value: 20 },
-        { label: '30', value: 30 },
-        { label: '40', value: 40 },
-        { label: '50', value: 50 }
+        { label: '5', value: '5' },
+        { label: '10', value: '10' },
+        { label: '20', value: '20' },
+        { label: '30', value: '30' },
+        { label: '40', value: '40' },
+        { label: '50', value: '50' }
     ];
 
-    let selected = $state(items.find((item) => item.value === value) || items[0]);
-    function onSelectedChange(selected: Selected<number> | undefined) {
-        const newValue = selected?.value ?? defaultValue;
-        if (newValue === value) {
-            return;
-        }
-
-        value = newValue;
-        table.setPageSize(newValue);
+    let selected = $derived(items.find((item) => item.value === value) || items[0]);
+    function onValueChange(newValue: string) {
+        table.setPageSize(Number(newValue));
     }
 </script>
 
 <div class="flex items-center space-x-2">
     <p class="text-sm font-medium">Rows per page</p>
-    <Select.Root bind:selected {items} {onSelectedChange}>
+    <Select.Root type="single" {items} bind:value {onValueChange}>
         <Select.Trigger class="h-8 w-[70px]">
-            <Select.Value placeholder="Select page size" />
+            {selected.label}
         </Select.Trigger>
         <Select.Content>
             {#each items as item (item.value)}

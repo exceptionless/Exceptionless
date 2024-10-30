@@ -57,7 +57,7 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title class="p-6 pb-4 text-2xl" tag="h2">Issues</Card.Title>
+        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues</Card.Title>
         <Card.Content>
             <EventsDataTable bind:limit={limit.value} {filter} mode="stack_frequent" pageFilter="(type:404 OR type:error)" {rowclick} {time}>
                 {#snippet toolbarChildren()}

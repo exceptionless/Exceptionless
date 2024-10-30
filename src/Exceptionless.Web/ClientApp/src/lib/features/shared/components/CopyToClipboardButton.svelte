@@ -25,7 +25,7 @@
 </script>
 
 <div>
-    <Button on:click={copyToClipboard} {size} {title}>
+    <Button onclick={copyToClipboard} {size} {title}>
         {#if children}
             {@render children()}
         {:else}

@@ -42,7 +42,7 @@
 </script>
 
 <Card.Root>
-    <Card.Title class="p-6 pb-4 text-2xl" tag="h2">Event Stream</Card.Title>
+    <Card.Title class="p-6 pb-0 text-2xl" level={2}>Event Stream</Card.Title>
     <Card.Content>
         <EventsTailLogDataTable bind:limit={limit.value} {filter} {rowclick}>
             {#snippet toolbarChildren()}

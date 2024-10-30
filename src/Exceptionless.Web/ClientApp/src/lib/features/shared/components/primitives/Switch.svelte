@@ -15,7 +15,7 @@
 </script>
 
 <div class="flex items-center space-x-2">
-    <Switch bind:checked {disabled} {id} on:click />
+    <Switch bind:checked {disabled} {id} />
     <Label for={id}>
         {#if children}
             {@render children()}

@@ -137,11 +137,11 @@ jobs:
         id: cache-node-modules
         with:
           path: src/Exceptionless.Web/ClientApp/node_modules
-          key: node-modules-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ hashFiles('src/Exceptionless.Web/ClientApp/package-lock.json') }}
 
       - name: Install Npm Packages
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci --force
+        run: npm ci
 
       - name: Lint Client
         run: npm run lint

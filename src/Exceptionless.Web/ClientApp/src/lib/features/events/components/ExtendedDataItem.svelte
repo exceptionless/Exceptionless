@@ -63,15 +63,15 @@
     <div class="flex justify-between">
         <H4 class="mb-2">{title}</H4>
         <div class="flex justify-end gap-x-1">
-            <Button on:click={onToggleView} variant="outline">Toggle View</Button>
+            <Button onclick={onToggleView} variant="outline">Toggle View</Button>
 
             <CopyToClipboardButton value={json}></CopyToClipboardButton>
 
             {#if canPromote}
                 {#if !isPromoted}
-                    <Button on:click={async () => await promote(title)} size="icon" title="Promote to Tab"><ArrowUpIcon /></Button>
+                    <Button onclick={async () => await promote(title)} size="icon" title="Promote to Tab"><ArrowUpIcon /></Button>
                 {:else}
-                    <Button on:click={async () => await demote(title)} size="icon" title="Demote Tab"><ArrowDownIcon /></Button>
+                    <Button onclick={async () => await demote(title)} size="icon" title="Demote Tab"><ArrowDownIcon /></Button>
                 {/if}
             {/if}
         </div>
