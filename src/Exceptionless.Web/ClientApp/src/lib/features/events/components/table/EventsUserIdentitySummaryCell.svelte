@@ -16,7 +16,7 @@
         {name}
     </abbr>
 {:else if name || identity}
-    <span class="line-clamp-1">
+    <abbr class="line-clamp-1" title={name || identity}>
         {name || identity}
-    </span>
+    </abbr>
 {/if}

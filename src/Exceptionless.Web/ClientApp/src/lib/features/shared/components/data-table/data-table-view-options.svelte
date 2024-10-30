@@ -17,18 +17,20 @@
 </script>
 
 <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
-            <IconViewColumn class="mr-2 h-4 w-4" />
-            View
-        </Button>
+    <DropdownMenu.Trigger>
+        {#snippet children()}
+            <Button class="h-8" size="sm" variant="outline">
+                <IconViewColumn class="mr-2 h-4 w-4" />
+                View
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
         <DropdownMenu.Separator />
         {#each table.getAllLeafColumns() as column (column.id)}
             {#if column.getCanHide()}
-                <DropdownMenu.CheckboxItem checked={column.getIsVisible()} on:click={() => column.toggleVisibility()}>
+                <DropdownMenu.CheckboxItem checked={column.getIsVisible()} onclick={() => column.toggleVisibility()}>
                     {column.columnDef.header}
                 </DropdownMenu.CheckboxItem>
             {/if}

@@ -64,10 +64,12 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
-            <IconAddCircleOutline class="mr-2 h-4 w-4" /> Filter
-        </Button>
+    <Popover.Trigger>
+        {#snippet children()}
+            <Button class="h-8" size="sm" variant="outline">
+                <IconAddCircleOutline class="mr-2 h-4 w-4" /> Filter
+            </Button>
+        {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="w-[200px] p-0" side="bottom">
         <Command.Root>

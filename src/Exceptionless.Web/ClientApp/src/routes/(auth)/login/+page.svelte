@@ -59,31 +59,35 @@
 <form method="POST" use:enhance>
     <ErrorMessage message={$message}></ErrorMessage>
     <Form.Field {form} name="email">
-        <Form.Control let:attrs>
-            <Form.Label>Email</Form.Label>
-            <Input {...attrs} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
+        <Form.Control>
+            {#snippet children({ props })}
+                <Form.Label>Email</Form.Label>
+                <Input {...props} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
+            {/snippet}
         </Form.Control>
         <Form.Description />
         <Form.FieldErrors />
     </Form.Field>
     <Form.Field {form} name="password">
-        <Form.Control let:attrs>
-            <Form.Label
-                >Password
-                <Muted class="float-right">
-                    <A href="/forgot-password">Forgot password?</A>
-                </Muted></Form.Label
-            >
-            <Input
-                {...attrs}
-                bind:value={$formData.password}
-                type="password"
-                placeholder="Enter password"
-                autocomplete="current-password"
-                maxlength={100}
-                minlength={6}
-                required
-            />
+        <Form.Control>
+            {#snippet children({ props })}
+                <Form.Label
+                    >Password
+                    <Muted class="float-right">
+                        <A href="/forgot-password">Forgot password?</A>
+                    </Muted></Form.Label
+                >
+                <Input
+                    {...props}
+                    bind:value={$formData.password}
+                    type="password"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    maxlength={100}
+                    minlength={6}
+                    required
+                />
+            {/snippet}
         </Form.Control>
         <Form.Description />
         <Form.FieldErrors />
@@ -105,22 +109,22 @@
     </div>
     <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
         {#if microsoftClientId}
-            <Button aria-label="Login with Microsoft" on:click={() => liveLogin(redirectUrl)}>
+            <Button aria-label="Login with Microsoft" onclick={() => liveLogin(redirectUrl)}>
                 <IconMicrosoft /> Microsoft
             </Button>
         {/if}
         {#if googleClientId}
-            <Button aria-label="Login with Google" on:click={() => googleLogin(redirectUrl)}>
+            <Button aria-label="Login with Google" onclick={() => googleLogin(redirectUrl)}>
                 <IconGoogle /> Google
             </Button>
         {/if}
         {#if facebookClientId}
-            <Button aria-label="Login with Facebook" on:click={() => facebookLogin(redirectUrl)}>
+            <Button aria-label="Login with Facebook" onclick={() => facebookLogin(redirectUrl)}>
                 <IconFacebook /> Facebook
             </Button>
         {/if}
         {#if gitHubClientId}
-            <Button aria-label="Login with GitHub" on:click={() => githubLogin(redirectUrl)}>
+            <Button aria-label="Login with GitHub" onclick={() => githubLogin(redirectUrl)}>
                 <IconGitHub /> GitHub
             </Button>
         {/if}

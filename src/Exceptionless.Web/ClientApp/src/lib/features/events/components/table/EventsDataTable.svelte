@@ -30,7 +30,7 @@
     let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
 
     $effect(() => {
-        limit = context.limit;
+        limit = Number(context.limit);
         loadData();
     });
 

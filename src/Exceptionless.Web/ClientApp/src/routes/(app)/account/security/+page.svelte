@@ -116,11 +116,11 @@
                         <div class="min-w-0 flex-1 font-semibold">Microsoft account</div>
                         <div class="inline-flex items-center">
                             {#if true}
-                                <Button aria-label="Disconnect Microsoft account" on:click={() => liveLogin('/next/account/security')} variant="outline">
+                                <Button aria-label="Disconnect Microsoft account" onclick={() => liveLogin('/next/account/security')} variant="outline">
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect Microsoft account" on:click={() => liveLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect Microsoft account" onclick={() => liveLogin('/next/account/security')}>Connect</Button>
                             {/if}
                         </div>
                     </div>
@@ -133,11 +133,11 @@
                         <div class="min-w-0 flex-1 font-semibold">Google account</div>
                         <div class="inline-flex items-center">
                             {#if false}
-                                <Button aria-label="Disconnect Google account" on:click={() => googleLogin('/next/account/security')} variant="outline">
+                                <Button aria-label="Disconnect Google account" onclick={() => googleLogin('/next/account/security')} variant="outline">
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect Google account" on:click={() => googleLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect Google account" onclick={() => googleLogin('/next/account/security')}>Connect</Button>
                             {/if}
                         </div>
                     </div>
@@ -150,11 +150,11 @@
                         <div class="min-w-0 flex-1 font-semibold">Facebook account</div>
                         <div class="inline-flex items-center">
                             {#if false}
-                                <Button aria-label="Disconnect Facebook account" on:click={() => facebookLogin('/next/account/security')} variant="outline">
+                                <Button aria-label="Disconnect Facebook account" onclick={() => facebookLogin('/next/account/security')} variant="outline">
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect Facebook account" on:click={() => facebookLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect Facebook account" onclick={() => facebookLogin('/next/account/security')}>Connect</Button>
                             {/if}
                         </div>
                     </div>
@@ -167,11 +167,11 @@
                         <div class="min-w-0 flex-1 font-semibold">GitHub account</div>
                         <div class="inline-flex items-center">
                             {#if true}
-                                <Button aria-label="Disconnect GitHub account" on:click={() => githubLogin('/next/account/security')} variant="outline">
+                                <Button aria-label="Disconnect GitHub account" onclick={() => githubLogin('/next/account/security')} variant="outline">
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect GitHub account" on:click={() => githubLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect GitHub account" onclick={() => githubLogin('/next/account/security')}>Connect</Button>
                             {/if}
                         </div>
                     </div>
