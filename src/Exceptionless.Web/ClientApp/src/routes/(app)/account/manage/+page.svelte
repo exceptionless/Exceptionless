@@ -148,16 +148,18 @@
 
     <form use:updateUserFormEnhance>
         <Form.Field form={updateUserForm} name="full_name">
-            <Form.Control let:attrs>
-                <Form.Label>Full Name</Form.Label>
-                <Input
-                    {...attrs}
-                    bind:value={$updateUserFormData.full_name}
-                    placeholder="Full Name"
-                    autocomplete="name"
-                    required
-                    oninput={debouncedUpdatedUserFormSubmit}
-                />
+            <Form.Control>
+                {#snippet children({ props })}
+                    <Form.Label>Full Name</Form.Label>
+                    <Input
+                        {...props}
+                        bind:value={$updateUserFormData.full_name}
+                        placeholder="Full Name"
+                        autocomplete="name"
+                        required
+                        oninput={debouncedUpdatedUserFormSubmit}
+                    />
+                {/snippet}
             </Form.Control>
             <Form.Description />
             <Form.FieldErrors />
@@ -166,16 +168,18 @@
     </form>
     <form use:updateEmailAddressFormEnhance>
         <Form.Field form={updateEmailAddressForm} name="email_address">
-            <Form.Control let:attrs>
-                <Form.Label>Email</Form.Label>
-                <Input
-                    {...attrs}
-                    bind:value={$updateEmailAddressFormData.email_address}
-                    placeholder="Enter email address"
-                    autocomplete="email"
-                    required
-                    oninput={debouncedUpdateEmailAddressFormSubmit}
-                />
+            <Form.Control>
+                {#snippet children({ props })}
+                    <Form.Label>Email</Form.Label>
+                    <Input
+                        {...props}
+                        bind:value={$updateEmailAddressFormData.email_address}
+                        placeholder="Enter email address"
+                        autocomplete="email"
+                        required
+                        oninput={debouncedUpdateEmailAddressFormSubmit}
+                    />
+                {/snippet}
             </Form.Control>
             <Form.Description />
             <Form.FieldErrors />

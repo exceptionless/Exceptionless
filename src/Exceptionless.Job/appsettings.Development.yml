@@ -13,7 +13,7 @@ BaseURL: 'http://localhost:9001/#!'
 
 Serilog:
   MinimumLevel:
-    Default: Debug
+    Default: Information
 
 Apm:
   EnableLogs: false

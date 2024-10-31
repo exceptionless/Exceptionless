@@ -61,7 +61,7 @@
             {#each table.getRowModel().rows as row (row.id)}
                 <Table.Row>
                     {#each row.getVisibleCells() as cell (cell.id)}
-                        <Table.Cell class={getCellClass(cell)} on:click={() => onCellClick(cell)}>
+                        <Table.Cell class={getCellClass(cell)} onclick={() => onCellClick(cell)}>
                             <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
                         </Table.Cell>
                     {/each}

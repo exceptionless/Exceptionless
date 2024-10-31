@@ -69,22 +69,24 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild let:builder>
-        <Button builders={[builder]} class="h-8" size="sm" variant="outline">
-            {title}
-            <Separator class="mx-2 h-4" orientation="vertical" />
-            {#if loading}
-                <FacetedFilter.BadgeLoading />
-            {:else if values.length > 0}
-                <FacetedFilter.BadgeValues values={displayValues}>
-                    {#snippet displayValue(value)}
-                        {value}
-                    {/snippet}
-                </FacetedFilter.BadgeValues>
-            {:else}
-                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
-            {/if}
-        </Button>
+    <Popover.Trigger>
+        {#snippet children()}
+            <Button class="h-8" size="sm" variant="outline">
+                {title}
+                <Separator class="mx-2 h-4" orientation="vertical" />
+                {#if loading}
+                    <FacetedFilter.BadgeLoading />
+                {:else if values.length > 0}
+                    <FacetedFilter.BadgeValues values={displayValues}>
+                        {#snippet displayValue(value)}
+                            {value}
+                        {/snippet}
+                    </FacetedFilter.BadgeValues>
+                {:else}
+                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                {/if}
+            </Button>
+        {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>

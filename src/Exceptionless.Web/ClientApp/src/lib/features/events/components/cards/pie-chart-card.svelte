@@ -9,7 +9,7 @@
 </script>
 
 <Card.Root>
-    <Card.Title class="p-6 pb-4 text-2xl" tag="h2">{title}</Card.Title>
+    <Card.Title class="p-6 pb-0 text-2xl" level={2}>{title}</Card.Title>
     <Card.Content>
         <div class="w-[200px] border">
             <svg viewBox="0 0 20 20">

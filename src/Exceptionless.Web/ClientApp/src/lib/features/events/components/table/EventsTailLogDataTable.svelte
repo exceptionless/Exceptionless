@@ -36,7 +36,7 @@
     let before: string | undefined;
 
     $effect(() => {
-        limit = context.limit;
+        limit = Number(context.limit);
         loadData(true);
     });
 
