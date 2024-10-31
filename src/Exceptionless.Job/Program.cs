@@ -62,8 +62,7 @@ public class Program
         var options = AppOptions.ReadFromConfiguration(config);
         var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-        var configDictionary = config.ToDictionary("Serilog");
-        Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
+        Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options);
 
         var builder = Host.CreateDefaultBuilder()
             .UseEnvironment(environment)
