@@ -22,12 +22,27 @@ public class MessageBusOptions
         options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages")!;
 
         string? cs = config.GetConnectionString("MessageBus");
-        options.Data = cs.ParseConnectionString();
-        options.Provider = options.Data.GetString(nameof(options.Provider));
+        if (cs != null)
+        {
+            options.Data = cs.ParseConnectionString();
+            options.Provider = options.Data.GetString(nameof(options.Provider));
+        }
+        else
+        {
+            var redisConnectionString = config.GetConnectionString("Redis");
+            if (!String.IsNullOrEmpty(redisConnectionString))
+            {
+                options.Provider = "redis";
+            }
+        }
 
         string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
         if (!String.IsNullOrEmpty(providerConnectionString))
-            options.Data.AddRange(providerConnectionString.ParseConnectionString());
+        {
+            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
+            options.Data ??= [];
+            options.Data.AddRange(providerOptions);
+        }
 
         options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
 

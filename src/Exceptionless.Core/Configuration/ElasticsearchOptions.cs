@@ -33,8 +33,6 @@ public class ElasticsearchOptions
         options.ReindexCutOffDate = config.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
 
         string? connectionString = config.GetConnectionString("Elasticsearch");
-        if (connectionString !=null && (connectionString.StartsWith("http://") || connectionString.StartsWith("https://")))
-            connectionString = "server=" + connectionString;
         ParseConnectionString(connectionString, options, appOptions.AppMode);
 
         string? connectionStringToMigrate = config.GetConnectionString("ElasticsearchToMigrate");
@@ -53,7 +51,7 @@ public class ElasticsearchOptions
 
     private static void ParseConnectionString(string? connectionString, ElasticsearchOptions options, AppMode appMode)
     {
-        var pairs = connectionString.ParseConnectionString();
+        var pairs = connectionString.ParseConnectionString(defaultKey: "server");
         options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
 
         int shards = pairs.GetValueOrDefault<int>("shards", 1);
