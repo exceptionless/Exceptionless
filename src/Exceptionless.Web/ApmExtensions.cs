@@ -28,7 +28,7 @@ public static partial class ApmExtensions
         builder.ConfigureServices(services =>
         {
             services.AddSingleton(config);
-            services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
+            //services.AddHostedService(sp => new SelfDiagnosticsLoggingHostedService(sp.GetRequiredService<ILoggerFactory>(), config.Debug ? EventLevel.Verbose : null));
 
             services.AddOpenTelemetry().WithTracing(b =>
             {
@@ -39,6 +39,9 @@ public static partial class ApmExtensions
                     o.Filter = context =>
                     {
                         if (context.Request.Path.StartsWithSegments("/api/v2/push", StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
                             return false;
 
                         if (context.Request.Headers.UserAgent.ToString().Contains("HealthChecker"))
@@ -84,7 +87,30 @@ public static partial class ApmExtensions
                     b.AddConsoleExporter();
 
                 if (config.EnableExporter)
+                {
+                    b.AddProcessor(new FilteringProcessor(activity =>
+                    {
+                        // filter out insignificant activities
+                        if (config.MinDurationMs > 0 && activity.Duration < TimeSpan.FromMilliseconds(config.MinDurationMs))
+                            return false;
+
+                        if (activity is { DisplayName: "LLEN", Parent: null })
+                            return false;
+
+                        if (activity.DisplayName == "Elasticsearch HEAD")
+                            return false;
+
+                        if (activity.GetTagItem("db.statement") is not string statement)
+                            return true;
+
+                        if (statement.EndsWith("__PING__"))
+                            return false;
+
+                        return true;
+                    }));
+
                     b.AddOtlpExporter();
+                }
             });
 
             services.AddOpenTelemetry().WithMetrics(b =>
@@ -173,4 +199,20 @@ public class ApmConfig
     public bool EnableRedis { get; }
     public bool Debug => _apmConfig.GetValue("Debug", false);
     public bool Console => _apmConfig.GetValue("Console", false);
+}
+
+public class FilteringProcessor : BaseProcessor<Activity>
+{
+    private readonly Func<Activity, bool> _filter;
+
+    public FilteringProcessor(Func<Activity, bool> filter)
+    {
+        _filter = filter ?? throw new ArgumentNullException(nameof(filter));
+    }
+
+    public override void OnEnd(Activity activity)
+    {
+        if (!_filter(activity))
+            activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;
+    }
 }

@@ -63,8 +63,7 @@ public class Program
         var options = AppOptions.ReadFromConfiguration(config);
         var apmConfig = new ApmConfig(config, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-        var configDictionary = config.ToDictionary("Serilog");
-        Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with settings {@Settings}", environment, options.InformationalVersion, Environment.MachineName, configDictionary);
+        Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", environment, options.InformationalVersion, Environment.MachineName, options);
 
         SetClientEnvironmentVariablesInDevelopmentMode(options);
 

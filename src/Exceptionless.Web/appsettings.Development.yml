@@ -21,7 +21,7 @@ RunJobsInProcess: true
 
 Serilog:
   MinimumLevel:
-    Default: Debug
+    Default: Information
 
 Apm:
   EnableLogs: true
