@@ -34,6 +34,7 @@
     const defaultFormData = new Login();
     defaultFormData.invite_token = $page.url.searchParams.get('token');
     const form = superForm(defaults(defaultFormData, classvalidatorClient(Login)), {
+        dataType: 'json',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

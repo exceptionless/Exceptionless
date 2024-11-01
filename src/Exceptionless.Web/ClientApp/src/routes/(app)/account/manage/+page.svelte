@@ -32,6 +32,7 @@
     });
 
     const updateEmailAddressForm = superForm(defaults(userResponse.data ?? {}, classvalidatorClient(User)), {
+        dataType: 'json',
         id: 'update-email-address',
         async onUpdate({ form, result }) {
             if (!form.valid) {
@@ -58,6 +59,7 @@
     });
 
     const updateUserForm = superForm(defaults(userResponse.data ?? {}, classvalidatorClient(UpdateUser)), {
+        dataType: 'json',
         id: 'update-user',
         async onUpdate({ form, result }) {
             if (!form.valid) {
