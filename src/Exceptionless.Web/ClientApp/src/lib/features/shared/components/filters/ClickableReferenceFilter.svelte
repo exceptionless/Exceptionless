@@ -1,5 +1,6 @@
 <script lang="ts">
     import { A, type AProps } from '$comp/typography';
+    import { cn } from '$lib/utils';
     import IconFilter from '~icons/mdi/filter';
 
     import { ReferenceFilter } from './filters.svelte';
@@ -8,12 +9,12 @@
         changed: (filter: ReferenceFilter) => void;
         value: string;
     } & AProps;
-    let { changed, value, ...props }: Props = $props();
+    let { changed, class: className, value, ...props }: Props = $props();
 
     const title = `Search reference:${value}`;
 </script>
 
-<A class="cursor-pointer" onclick={() => changed(new ReferenceFilter(value))} {title} {...props}>
+<A class={cn('cursor-pointer', className)} onclick={() => changed(new ReferenceFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

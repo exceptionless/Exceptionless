@@ -2,6 +2,7 @@
     import type { StackStatus } from '$features/stacks/models';
 
     import { A, type AProps } from '$comp/typography';
+    import { cn } from '$lib/utils';
     import IconFilter from '~icons/mdi/filter';
 
     import { StatusFilter } from './filters.svelte';
@@ -10,12 +11,12 @@
         changed: (filter: StatusFilter) => void;
         value: StackStatus[];
     } & AProps;
-    let { changed, value, ...props }: Props = $props();
+    let { changed, class: className, value, ...props }: Props = $props();
 
     const title = `Search status:${value}`;
 </script>
 
-<A class="cursor-pointer" onclick={() => changed(new StatusFilter(value))} {title} {...props}>
+<A class={cn('cursor-pointer', className)} onclick={() => changed(new StatusFilter(value))} {title} {...props}>
     {#snippet children()}
         <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}

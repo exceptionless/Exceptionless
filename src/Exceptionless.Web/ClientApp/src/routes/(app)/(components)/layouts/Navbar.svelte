@@ -87,10 +87,10 @@
                                 ><A variant="ghost" href="/next/account/manage" class="w-full">Account</A>
                                 <DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item
+                            <!-- <DropdownMenu.Item
                                 ><A variant="ghost" href="/next/account/notifications" class="w-full">Notifications</A>
                                 <DropdownMenu.Shortcut>⇧⌘N</DropdownMenu.Shortcut>
-                            </DropdownMenu.Item>
+                            </DropdownMenu.Item> -->
                         </DropdownMenu.Group>
                         <!-- <DropdownMenu.Label>My Organization</DropdownMenu.Label>
                         <DropdownMenu.Separator />
