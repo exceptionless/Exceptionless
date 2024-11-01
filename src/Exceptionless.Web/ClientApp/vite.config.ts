@@ -91,7 +91,11 @@ function getAspNetConfig() {
     }
 
     const wsUrl = url.replace('https://', 'wss://').replace('http://', 'ws://');
-    const hmrRemoteProtocol = codespaceName ? 'wss' : wsUrl.startsWith('wss') ? 'wss' : 'ws';
+
+    let hmrRemoteProtocol = 'ws';
+    if (codespaceName || (wsUrl.startsWith('wss') && hmrRemoteHost !== 'localhost')) {
+        hmrRemoteProtocol = 'wss';
+    }
 
     return {
         hmr: {
