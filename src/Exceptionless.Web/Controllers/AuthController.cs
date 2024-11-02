@@ -477,7 +477,7 @@ public class AuthController : ExceptionlessApiController
             return StatusCode(StatusCodes.Status204NoContent);
 
         email = email.Trim().ToLowerInvariant();
-        if (String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
+        if (User.IsUserAuthType() && String.Equals(CurrentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
             return StatusCode(StatusCodes.Status201Created);
 
         // Only allow 3 checks attempts per hour period by a single ip.
@@ -631,7 +631,7 @@ public class AuthController : ExceptionlessApiController
 
     private async Task<ActionResult<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, string? appId, string? appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client
     {
-        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("External Login").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(HttpContext));
         if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
             throw new ConfigurationErrorsException("Missing Configuration for OAuth provider");
 
@@ -679,7 +679,7 @@ public class AuthController : ExceptionlessApiController
     private async Task<User> FromExternalLoginAsync(UserInfo userInfo)
     {
         var existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
-        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("External Login").Identity(CurrentUser.EmailAddress).Property("User Info", userInfo).Property("User", CurrentUser).Property("ExistingUser", existingUser).SetHttpContext(HttpContext));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("External Login").Property("User Info", userInfo).Property("ExistingUser", existingUser).SetHttpContext(HttpContext));
 
         // Link user accounts.
         if (User.IsUserAuthType())
