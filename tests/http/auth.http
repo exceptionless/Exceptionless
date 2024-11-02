@@ -38,5 +38,5 @@ Content-Type: application/json
 {
     "code": "code",
     "clientId": "clientId",
-    "redirectUri": "http://localhost",
+    "redirectUri": "http://localhost"
 }
