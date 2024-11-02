@@ -10,7 +10,6 @@ using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
-using Exceptionless.Web.Utility.Results;
 using FluentValidation;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Exceptions;
@@ -196,6 +195,7 @@ public class Startup
         if (ctx.ProblemDetails is ValidationProblemDetails validationProblem)
         {
             // This might be possible to accomplish via serializer.
+            // NOTE: the key could be wrong for things like ExternalAuthInfo where the keys are camel case.
             validationProblem.Errors = validationProblem.Errors
                 .ToDictionary(
                     error => error.Key.ToLowerUnderscoredWords(),
@@ -204,7 +204,6 @@ public class Startup
         }
 
         // errors
-
         // TODO: Check casing of property names of model state validation errors.
     }
 
