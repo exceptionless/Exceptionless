@@ -43,11 +43,12 @@ public class AutoValidationActionFilter : IAsyncActionFilter
                 foreach (var error in errors)
                 {
                     // TODO: Verify nested object keys
-                    var modelStateEntry = context.ModelState[error.Key];
+                    // NOTE: Fallback to finding model state errors where the serializer already changed the key, but differs from ModelState like ExternalAuthInfo (without NamingStrategyType) 
+                    var modelStateEntry = context.ModelState[error.Key] ?? context.ModelState[error.Key.ToLowerUnderscoredWords()];
                     foreach (string errorMessage in error.Value)
                     {
                         hasErrors = true;
-                        if (modelStateEntry is null || !modelStateEntry.Errors.Contains(e => String.Equals(e.ErrorMessage, errorMessage)))
+                        if (modelStateEntry is null || !modelStateEntry.Errors.Contains(e => String.Equals(e.ErrorMessage, errorMessage, StringComparison.OrdinalIgnoreCase)))
                             context.ModelState.AddModelError(error.Key, errorMessage);
                     }
                 }
