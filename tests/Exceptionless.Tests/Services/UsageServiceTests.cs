@@ -21,7 +21,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
 
-    public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public UsageServiceTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);

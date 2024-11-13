@@ -39,7 +39,7 @@ public class EventPostJobTests : IntegrationTestsBase
     private readonly BillingPlans _plans;
     private readonly AppOptions _options;
 
-    public EventPostJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public EventPostJobTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _job = GetService<EventPostsJob>();
         _eventQueue = GetService<IQueue<EventPost>>();

@@ -21,7 +21,7 @@ public class StackControllerTests : IntegrationTestsBase
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<WorkItemData> _workItemQueue;
 
-    public StackControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public StackControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();

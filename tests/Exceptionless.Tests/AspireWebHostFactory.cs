@@ -1,4 +1,5 @@
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web;
@@ -8,7 +9,7 @@ using Xunit;
 
 namespace Exceptionless.Tests;
 
-public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
+public class AspireWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
     private DistributedApplication? _app;
 
@@ -16,18 +17,21 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public string? ElasticsearchConnectionString { get; private set; }
     public string? RedisConnectionString { get; private set; }
-    public string? MailConnectionString { get; private set; }
 
     public async Task InitializeAsync()
     {
         var options = new DistributedApplicationOptions { AssemblyName = typeof(ElasticsearchResource).Assembly.FullName, DisableDashboard = true };
         var builder = DistributedApplication.CreateBuilder(options);
 
-        var elastic = builder.AddElasticsearch("Elasticsearch")
-            .WithContainerName("Exceptionless-Elasticsearch-Test");
+        builder.AddElasticsearch("Elasticsearch")
+            .WithContainerName("Exceptionless-Elasticsearch-Test")
+            .WithImageTag("8.15.2")
+            .WithLifetime(ContainerLifetime.Persistent);
 
-        var cache = builder.AddRedis("Redis")
-            .WithContainerName("Exceptionless-Redis-Test");
+        builder.AddRedis("Redis")
+            .WithContainerName("Exceptionless-Redis-Test")
+            .WithImageTag("7.4")
+            .WithLifetime(ContainerLifetime.Persistent);;
 
         _app = builder.Build();
 

@@ -17,7 +17,7 @@ public class StackServiceTests : IntegrationTestsBase
     private readonly StackService _stackService;
     private readonly IStackRepository _stackRepository;
 
-    public StackServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public StackServiceTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         Log.SetLogLevel<StackService>(LogLevel.Trace);
         _cache = GetService<ICacheClient>();

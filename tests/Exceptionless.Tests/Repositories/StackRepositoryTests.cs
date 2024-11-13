@@ -19,7 +19,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     private readonly StackData _stackData;
     private readonly IStackRepository _repository;
 
-    public StackRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public StackRepositoryTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _cache = GetService<ICacheClient>() as InMemoryCacheClient ?? throw new InvalidOperationException();
         _stackData = GetService<StackData>();

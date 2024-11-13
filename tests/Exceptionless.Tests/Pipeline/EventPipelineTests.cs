@@ -40,7 +40,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public EventPipelineTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public EventPipelineTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();

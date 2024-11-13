@@ -27,7 +27,7 @@ public class AuthControllerTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
 
-    public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public AuthControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _authOptions = GetService<AuthOptions>();
         _authOptions.EnableAccountCreation = true;

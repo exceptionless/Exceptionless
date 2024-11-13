@@ -11,7 +11,7 @@ public sealed class WebHookRepositoryTests : IntegrationTestsBase
 {
     private readonly IWebHookRepository _repository;
 
-    public WebHookRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public WebHookRepositoryTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _repository = GetService<IWebHookRepository>();
     }

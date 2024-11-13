@@ -21,7 +21,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
 
-    public FixDuplicateStacksMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public FixDuplicateStacksMigrationTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();

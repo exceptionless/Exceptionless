@@ -31,17 +31,17 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests;
 
-public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory>
+public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AspireWebHostFactory>
 {
     private static bool _indexesHaveBeenConfigured = false;
     private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     private ExceptionlessElasticConfiguration? _configuration;
     private ProxyTimeProvider? _timeProvider;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
-    protected readonly AppWebHostFactory _hostFixture;
+    protected readonly AspireWebHostFactory _hostFixture;
     protected TestServer? _server;
 
-    public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory hostFixture) : base(output)
+    public IntegrationTestsBase(ITestOutputHelper output, AspireWebHostFactory hostFixture) : base(output)
     {
         Log.DefaultMinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);

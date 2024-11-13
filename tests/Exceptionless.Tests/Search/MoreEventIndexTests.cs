@@ -15,7 +15,7 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase
     private readonly IEventRepository _repository;
     private readonly PersistentEventQueryValidator _validator;
 
-    public MoreEventIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public MoreEventIndexTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         _repository = GetService<IEventRepository>();

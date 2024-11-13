@@ -20,7 +20,7 @@ var mail = builder.AddContainer("Mail", "mailhog/mailhog")
     .WithEndpoint(8025, 8025, "http")
     .WithEndpoint(1025, 1025);
 
-var job = builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
+builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
     .WithReference(cache)
     .WithReference(elastic)
     .WithEnvironment("ConnectionStrings:Email", "smtp://localhost:1025")
@@ -39,12 +39,12 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WaitFor(mail)
     .WithHttpHealthCheck("/health");
 
-//builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
-//    .WithReference(api)
-//    .WithEndpoint(scheme: "http", env: "PORT");
+builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
+    .WithReference(api)
+    .WithEndpoint(scheme: "http", env: "PORT");
 
-//builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
-//    .WithReference(api)
-//    .WithEndpoint(scheme: "http", env: "PORT");
+builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
+    .WithReference(api)
+    .WithEndpoint(scheme: "http", env: "PORT");
 
 builder.Build().Run();

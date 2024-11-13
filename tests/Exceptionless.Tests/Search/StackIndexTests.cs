@@ -13,7 +13,7 @@ public sealed class StackIndexTests : IntegrationTestsBase
     private readonly StackData _stackData;
     private readonly IStackRepository _repository;
 
-    public StackIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public StackIndexTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _stackData = GetService<StackData>();
         _repository = GetService<IStackRepository>();

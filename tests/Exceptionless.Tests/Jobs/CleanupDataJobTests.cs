@@ -27,7 +27,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public CleanupDataJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public CleanupDataJobTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _job = GetService<CleanupDataJob>();
         _organizationData = GetService<OrganizationData>();

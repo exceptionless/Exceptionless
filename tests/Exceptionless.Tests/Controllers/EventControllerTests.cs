@@ -43,7 +43,7 @@ public class EventControllerTests : IntegrationTestsBase
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
     private readonly UserData _userData;
 
-    public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public EventControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
         _stackData = GetService<StackData>();

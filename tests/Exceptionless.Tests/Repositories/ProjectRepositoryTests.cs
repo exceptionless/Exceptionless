@@ -19,7 +19,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     private readonly ProjectData _projectData;
     private readonly IProjectRepository _repository;
 
-    public ProjectRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public ProjectRepositoryTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
     {
         _organizationData = GetService<OrganizationData>();
         _projectData = GetService<ProjectData>();
