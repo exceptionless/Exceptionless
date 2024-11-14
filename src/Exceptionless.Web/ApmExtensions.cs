@@ -70,9 +70,7 @@ public static partial class ApmExtensions
                         // 404s should not be error
                         if (activity.GetTagItem("http.status_code") is 404)
                         {
-#pragma warning disable CS0618 // Type or member is obsolete
-                            activity.SetStatus(Status.Unset);
-#pragma warning restore CS0618 // Type or member is obsolete
+                            activity.SetStatus(ActivityStatusCode.Unset);
                         }
                     };
                 });
