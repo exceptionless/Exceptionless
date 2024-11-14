@@ -18,7 +18,7 @@ Content-Type: application/json
 {
   "email": "{{email}}",
   "password": "{{password}}",
-  "name":"test"
+  "name": "test"
 }
 
 ### Signup with token
@@ -28,5 +28,15 @@ Content-Type: application/json
 {
   "email": "{{email}}",
   "password": "{{password}}",
-  "name":"test"
+  "name": "test"
+}
+
+### OAuth Login
+POST {{apiUrl}}/auth/google
+Content-Type: application/json
+
+{
+    "code": "code",
+    "clientId": "clientId",
+    "redirectUri": "http://localhost"
 }

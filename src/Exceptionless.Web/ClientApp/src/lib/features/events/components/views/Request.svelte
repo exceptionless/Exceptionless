@@ -85,10 +85,10 @@
                     >{request.referrer}<Button
                         href={request.referrer}
                         rel="noopener noreferrer"
-                        size="icon"
+                        size="sm"
                         target="_blank"
                         title="Open in new window"
-                        variant="outline"><IconOpenInNew /></Button
+                        variant="ghost"><IconOpenInNew /></Button
                     ></Table.Cell
                 >
             </Table.Row>
@@ -124,10 +124,10 @@
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="browser" value={browser} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{browser}
-                    {#if browserMajorVersion}
-                        <abbr title={browserVersion}>
-                            <ClickableStringFilter {changed} term="browser.major" value={browserMajorVersion} />{browserMajorVersion}
-                        </abbr>
+                    {#if browserMajorVersion}&nbsp;
+                        <ClickableStringFilter {changed} term="browser.major" value={browserMajorVersion} class="decoration-dotted"
+                            >{browserVersion}</ClickableStringFilter
+                        >
                     {/if}</Table.Cell
                 >
             </Table.Row>
@@ -138,10 +138,8 @@
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="os" value={os} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{os}
-                    {#if osMajorVersion}
-                        <abbr title={osVersion}>
-                            <ClickableStringFilter {changed} term="os.major" value={osMajorVersion} />{osMajorVersion}
-                        </abbr>
+                    {#if osMajorVersion}&nbsp;
+                        <ClickableStringFilter {changed} term="os.major" value={osMajorVersion} class="decoration-dotted">{osVersion}</ClickableStringFilter>
                     {/if}</Table.Cell
                 >
             </Table.Row>

@@ -29,7 +29,7 @@
         {#if source.data.Name || source.data.Identity || source.data.SessionId}
             {source.data.Name || source.data.Identity || source.data.SessionId}
             {#if source.data.Name && source.data.Identity}
-                <span class="text-muted"> ({source.data.Identity})</span>
+                <span class="text-muted-foreground"> ({source.data.Identity})</span>
             {/if}
         {/if}
     </A>

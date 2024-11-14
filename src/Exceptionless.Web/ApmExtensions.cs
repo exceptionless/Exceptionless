@@ -69,7 +69,9 @@ public static partial class ApmExtensions
 
                         // 404s should not be error
                         if (activity.GetTagItem("http.status_code") is 404)
-                            activity.SetStatus(Status.Unset);
+                        {
+                            activity.SetStatus(ActivityStatusCode.Unset);
+                        }
                     };
                 });
 
@@ -93,6 +95,13 @@ public static partial class ApmExtensions
                         // filter out insignificant activities
                         if (config.MinDurationMs > 0 && activity.Duration < TimeSpan.FromMilliseconds(config.MinDurationMs))
                             return false;
+
+                        if (activity.GetTagItem("http.route") is string httpRoute)
+                        {
+                            // only capture 10% of config requests
+                            if (httpRoute == "api/v2/projects/config")
+                                return Random.Shared.Next(100) > 90;
+                        }
 
                         if (activity is { DisplayName: "LLEN", Parent: null })
                             return false;

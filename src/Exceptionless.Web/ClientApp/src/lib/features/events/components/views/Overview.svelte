@@ -208,7 +208,7 @@
                     ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center gap-x-1"
-                    >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="icon" target="_blank" title="Open in new window" variant="outline"
+                    >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
                         ><IconOpenInNew /></Button
                     ></Table.Cell
                 >
