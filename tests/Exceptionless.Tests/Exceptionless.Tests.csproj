@@ -7,10 +7,10 @@
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
     <PackageReference Include="Foundatio.Xunit" Version="$(FoundatioVersion)" />
 
-    <PackageReference Include="FluentRest.NewtonsoftJson" Version="9.9.9" />
+    <PackageReference Include="FluentRest.NewtonsoftJson" Version="10.0.0" />
 
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0-rc.2.24474.3" />
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.0.0-preview.9.24507.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" PrivateAssets="All" />
