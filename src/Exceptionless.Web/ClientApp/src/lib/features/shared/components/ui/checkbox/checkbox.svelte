@@ -19,8 +19,8 @@
 		className
 	)}
 	bind:checked
-	bind:indeterminate
 	bind:ref
+	bind:indeterminate
 	{...restProps}
 >
 	{#snippet children({ checked, indeterminate })}
