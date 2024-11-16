@@ -1,23 +1,48 @@
 <script lang="ts">
+    import * as Sidebar from '$comp/ui/sidebar';
+    import { useSidebar } from '$comp/ui/sidebar';
+
     import type { NavigationItem } from '../../../routes';
 
-    import SidebarMenuItem from './SidebarMenuItem.svelte';
-
     interface Props {
-        isLargeScreen?: boolean;
-        isSidebarOpen?: boolean;
         routes: NavigationItem[];
     }
 
-    let { isLargeScreen, isSidebarOpen = $bindable(), routes }: Props = $props();
+    let { routes }: Props = $props();
     const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
 
-    function onBackdropClick() {
-        isSidebarOpen = false;
-    }
+    // function onBackdropClick() {
+    //     isSidebarOpen = false;
+    // }
+
+    const sidebar = useSidebar();
+    // const collapsible = $derived(!isLargeScreen ? 'offcanvas' : 'icon');
+    // const variant = $derived(isLargeScreen ? 'sidebar' : 'floating');
 </script>
 
-<aside
+<Sidebar.Root collapsible="icon">
+    <Sidebar.Content class={!sidebar.openMobile ? 'mt-16' : ''}>
+        <Sidebar.Group>
+            <Sidebar.Menu>
+                {#each dashboardRoutes as route (route.href)}
+                    {@const Icon = route.icon}
+                    <Sidebar.MenuItem>
+                        <Sidebar.MenuButton isActive={true}>
+                            {#snippet child({ props })}
+                                <a href={route.href} title={route.title} {...props}>
+                                    <Icon />
+                                    <span>{route.title}</span>
+                                </a>
+                            {/snippet}
+                        </Sidebar.MenuButton>
+                    </Sidebar.MenuItem>
+                {/each}
+            </Sidebar.Menu>
+        </Sidebar.Group>
+    </Sidebar.Content>
+</Sidebar.Root>
+
+<!-- <aside
     aria-label="Sidebar"
     class="transition-width fixed left-0 top-0 z-20 flex h-full w-64 flex-shrink-0 flex-col bg-background pt-16 text-foreground duration-75 lg:flex {isSidebarOpen
         ? 'lg:w-64'
@@ -44,4 +69,4 @@
     class="fixed inset-0 z-10 bg-gray-900/50 dark:bg-gray-900/90 {!isLargeScreen && !!isSidebarOpen ? '' : 'hidden'}"
     onclick={onBackdropClick}
     title="Close sidebar"
-></button>
+></button> -->

@@ -17,7 +17,7 @@
     <ul class="divide-y divide-border">
         <li class="pb-4">
             <div class="flex items-center space-x-4">
-                <IconLaptop class="h-6 w-6" />
+                <IconLaptop />
                 <div class="min-w-0 flex-1">
                     <P class="font-semibold">Wisconsin</P>
                     <Muted>Signed in on <DateTime value={new Date()}></DateTime></Muted>
@@ -29,7 +29,7 @@
         </li>
         <li class="py-4">
             <div class="flex items-center space-x-4">
-                <IconCellphone class="h-6 w-6" />
+                <IconCellphone />
                 <div class="min-w-0 flex-1">
                     <P class="font-semibold">Texas</P>
                     <Muted>Signed in on <DateTime value={new Date()}></DateTime></Muted>
