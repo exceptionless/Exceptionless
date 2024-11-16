@@ -31,13 +31,6 @@
     <div class="px-3 py-3 lg:px-5 lg:pl-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
-                <!-- <Button aria-controls="sidebar" onclick={onHamburgerClick} variant="outline" size="icon">
-                    {#if sidebar.open || sidebar.openMobile}
-                        <IconClose class="size-4" /><span class="sr-only">Close</span>
-                    {:else}
-                        <IconMenu  class="size-4" /><span class="sr-only">Toggle Sidebar</span>
-                    {/if}
-                </Button> -->
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
                 <a class="ml-2 mr-14 flex min-w-[250px] dark:text-white lg:ml-3" href="./">
