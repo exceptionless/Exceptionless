@@ -24,13 +24,7 @@
     let { children }: Props = $props();
     let isAuthenticated = $derived(accessToken.value !== null);
     const sidebar = useSidebar();
-
-    // NOTE: might need to adjust SIDEBAR_WIDTH to 640px
-    //let isSidebarOpen = persisted('sidebar-open', false);
     let isCommandOpen = $state(false);
-    // const isSmallScreenQuery = new MediaQuery('(min-width: 640px)');
-    // const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
-    //const isLargeScreenQuery = new MediaQuery('(min-width: 1024px)');
 
     setModelValidator(validate);
     useMiddleware(async (ctx, next) => {
