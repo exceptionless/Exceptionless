@@ -21,7 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="$(FoundatioVersion)" />
     <PackageReference Include="Foundatio.JsonNet" Version="$(FoundatioVersion)" />
     <PackageReference Include="MiniValidation" Version="0.9.1" />
