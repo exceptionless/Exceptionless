@@ -3,6 +3,7 @@
 
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+    import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
     import { type FetchClientContext, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@exceptionless/fetchclient';
@@ -73,7 +74,9 @@
     <ModeWatcher defaultMode={'dark'} />
 
     <QueryClientProvider client={queryClient}>
-        {@render children()}
+        <Sidebar.Provider>
+            {@render children()}
+        </Sidebar.Provider>
 
         <SvelteQueryDevtools />
     </QueryClientProvider>

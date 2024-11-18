@@ -69,9 +69,13 @@
 
             {#if canPromote}
                 {#if !isPromoted}
-                    <Button onclick={async () => await promote(title)} size="icon" title="Promote to Tab"><ArrowUpIcon /></Button>
+                    <Button onclick={async () => await promote(title)} size="icon" title="Promote to Tab"
+                        ><ArrowUpIcon /><span class="sr-only">Promote to Tab</span></Button
+                    >
                 {:else}
-                    <Button onclick={async () => await demote(title)} size="icon" title="Demote Tab"><ArrowDownIcon /></Button>
+                    <Button onclick={async () => await demote(title)} size="icon" title="Demote Tab"
+                        ><ArrowDownIcon /><span class="sr-only">Demote Tab</span></Button
+                    >
                 {/if}
             {/if}
         </div>

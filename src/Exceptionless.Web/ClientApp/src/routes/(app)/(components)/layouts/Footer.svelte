@@ -32,16 +32,16 @@
     </ul>
     <div class="flex space-x-6 sm:justify-center">
         <A aria-label="Exceptionless Facebook Website" href="https://www.facebook.com/exceptionless/" target="_blank" variant="navigation">
-            <IconFacebook class="h-5 w-5" />
+            <IconFacebook class="size-5" />
         </A>
         <A aria-label="Exceptionless Twitter Website" href="https://x.com/Exceptionless" target="_blank" variant="navigation">
-            <IconTwitter class="h-5 w-5" />
+            <IconTwitter class="size-5" />
         </A>
         <A aria-label="Exceptionless GitHub Website" href="https://github.com/exceptionless" target="_blank" variant="navigation">
-            <IconGitHub class="h-5 w-5" />
+            <IconGitHub class="size-5" />
         </A>
         <A aria-label="Exceptionless Website" href="https://exceptionless.com/" target="_blank" variant="navigation">
-            <IconWeb class="h-5 w-5" />
+            <IconWeb class="size-5" />
         </A>
     </div>
 </div>
