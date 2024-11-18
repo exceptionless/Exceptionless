@@ -2,15 +2,14 @@
     import type { Snippet } from 'svelte';
 
     import { page } from '$app/stores';
+    import { useSidebar } from '$comp/ui/sidebar';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/WebSocketClient.svelte';
-    import { persisted } from '$shared/persisted.svelte';
     import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
-    import { MediaQuery } from 'runed';
 
     import { type NavigationItemContext, routes } from '../routes';
     import FooterLayout from './(components)/layouts/Footer.svelte';
@@ -24,12 +23,8 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(accessToken.value !== null);
-
-    let isSidebarOpen = persisted('sidebar-open', false);
+    const sidebar = useSidebar();
     let isCommandOpen = $state(false);
-    const isSmallScreenQuery = new MediaQuery('(min-width: 640px)');
-    const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
-    const isLargeScreenQuery = new MediaQuery('(min-width: 1024px)');
 
     setModelValidator(validate);
     useMiddleware(async (ctx, next) => {
@@ -79,8 +74,8 @@
 
     // Close Sidebar on page change on mobile
     page.subscribe(() => {
-        if (isSmallScreenQuery.matches) {
-            isSidebarOpen.value = false;
+        if (sidebar.isMobile) {
+            sidebar.setOpen(false);
         }
     });
 
@@ -129,16 +124,13 @@
 </script>
 
 {#if isAuthenticated}
-    <NavbarLayout bind:isCommandOpen bind:isSidebarOpen={isSidebarOpen.value} isMediumScreen={isMediumScreenQuery.matches}></NavbarLayout>
-    <div class="flex overflow-hidden pt-16">
-        <SidebarLayout bind:isSidebarOpen={isSidebarOpen.value} isLargeScreen={isLargeScreenQuery.matches} routes={filteredRoutes} />
-
-        <div class="relative h-full w-full overflow-y-auto text-secondary-foreground {isSidebarOpen.value ? 'lg:ml-64' : 'lg:ml-16'}">
-            <main>
-                <div class="px-4 pt-4">
-                    <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                    {@render children()}
-                </div>
+    <NavbarLayout bind:isCommandOpen></NavbarLayout>
+    <SidebarLayout routes={filteredRoutes} />
+    <div class="flex w-full overflow-hidden pt-16">
+        <div class="w-full text-secondary-foreground">
+            <main class="px-4 pt-4">
+                <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+                {@render children()}
             </main>
 
             <FooterLayout></FooterLayout>
