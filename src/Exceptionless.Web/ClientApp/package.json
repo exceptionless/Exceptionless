@@ -65,7 +65,7 @@
         "formsnap": "^2.0.0-next.1",
         "mode-watcher": "^0.4.1",
         "oidc-client-ts": "^3.1.0",
-        "pretty-ms": "^9.1.0",
+        "pretty-ms": "^9.2.0",
         "runed": "^0.15.3",
         "svelte-sonner": "^0.3.28",
         "svelte-time": "^0.9.0",
