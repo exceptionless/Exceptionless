@@ -127,7 +127,7 @@
     <NavbarLayout bind:isCommandOpen></NavbarLayout>
     <SidebarLayout routes={filteredRoutes} />
     <div class="flex w-full overflow-hidden pt-16">
-        <div class=" w-full text-secondary-foreground">
+        <div class="w-full text-secondary-foreground">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
                 {@render children()}
