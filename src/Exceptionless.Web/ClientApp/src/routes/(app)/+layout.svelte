@@ -131,15 +131,12 @@
 
 {#if isAuthenticated}
     <NavbarLayout bind:isCommandOpen></NavbarLayout>
-    <div class="flex overflow-hidden pt-16">
-        <SidebarLayout routes={filteredRoutes} />
-
-        <div class="relative h-full w-full overflow-y-auto text-secondary-foreground">
-            <main>
-                <div class="px-4 pt-4">
-                    <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                    {@render children()}
-                </div>
+    <SidebarLayout routes={filteredRoutes} />
+    <div class="flex w-full overflow-hidden pt-16">
+        <div class=" w-full text-secondary-foreground">
+            <main class="px-4 pt-4">
+                <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+                {@render children()}
             </main>
 
             <FooterLayout></FooterLayout>

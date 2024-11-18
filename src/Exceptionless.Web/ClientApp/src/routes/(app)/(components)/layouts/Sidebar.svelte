@@ -13,8 +13,6 @@
     const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
 
     const sidebar = useSidebar();
-    // const collapsible = $derived(!isLargeScreen ? 'offcanvas' : 'icon');
-    // const variant = $derived(isLargeScreen ? 'sidebar' : 'floating');
 </script>
 
 <Sidebar.Root collapsible="icon">
