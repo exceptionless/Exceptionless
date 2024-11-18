@@ -16,7 +16,7 @@
 </script>
 
 <Sidebar.Root collapsible="icon">
-    <Sidebar.Content class={!sidebar.openMobile ? 'mt-16' : ''}>
+    <Sidebar.Content class={!sidebar.isMobile ? 'mt-16' : ''}>
         <Sidebar.Group>
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
