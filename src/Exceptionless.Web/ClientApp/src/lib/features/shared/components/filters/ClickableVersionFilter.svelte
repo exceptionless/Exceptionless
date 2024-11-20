@@ -5,11 +5,11 @@
 
     import { VersionFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: VersionFilter) => void;
         term: string;
         value?: string;
-    } & AProps;
+    };
     let { changed, class: className, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;

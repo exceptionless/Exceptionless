@@ -5,8 +5,8 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
-    import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
     import { toast } from 'svelte-sonner';
+    import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
 
     interface Props {
         changed: (filter: IFilter) => void;

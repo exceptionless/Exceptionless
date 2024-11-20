@@ -1,6 +1,6 @@
 <script lang="ts">
-    import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
+    import logo from '$lib/assets/logo.svg';
 
     let { children } = $props();
 </script>

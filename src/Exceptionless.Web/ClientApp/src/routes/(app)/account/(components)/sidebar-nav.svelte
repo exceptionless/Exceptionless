@@ -9,9 +9,9 @@
 
     import type { NavigationItem } from '../../../routes';
 
-    type Props = {
+    type Props = HTMLAttributes<HTMLElement> & {
         routes: NavigationItem[];
-    } & HTMLAttributes<HTMLElement>;
+    };
 
     let { class: className, routes, ...props }: Props = $props();
 

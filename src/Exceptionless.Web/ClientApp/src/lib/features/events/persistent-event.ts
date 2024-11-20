@@ -5,48 +5,17 @@ import { buildUrl } from '$shared/url';
 import type { PersistentEvent } from './models';
 import type { ErrorInfo, ParameterInfo, SimpleErrorInfo, StackFrameInfo } from './models/event-data';
 
-export function getLocation(event: PersistentEvent) {
-    const location = event.data?.['@location'];
-    if (!location) {
-        return null;
-    }
-
-    return [location.locality, location.level1, location.country]
-        .filter((value) => value?.length)
-        .reduce((a, b, index) => {
-            a += (index > 0 ? ', ' : '') + b;
-            return a;
-        }, '');
-}
-
-export function getRequestInfoPath(event: PersistentEvent) {
-    const requestInfo = event.data?.['@request'];
-    return requestInfo ? requestInfo.path : null;
-}
-
-export function getRequestInfoUrl(event: PersistentEvent) {
-    const requestInfo = event.data?.['@request'];
-    if (requestInfo) {
-        return buildUrl(requestInfo.is_secure, requestInfo.host, requestInfo.port, requestInfo.path, requestInfo.query_string);
-    }
-
-    return null;
-}
-
-export function getMessage(event: PersistentEvent) {
-    const error = event.data?.['@error'];
-    if (error) {
-        return getTargetInfoMessage(error) || event.message;
-    }
-
-    return event.message;
-}
-
 export type ErrorData = {
     data: Record<string, unknown>;
     message: string;
     title: string;
     type: string;
+};
+
+export type ExtendedDataItem = {
+    data: unknown;
+    promoted?: boolean;
+    title: string;
 };
 
 export function getErrorData(event: PersistentEvent): ErrorData[] {
@@ -84,14 +53,27 @@ export function getErrorData(event: PersistentEvent): ErrorData[] {
         .filter((errorData) => !!errorData) as ErrorData[];
 }
 
-function getErrorsFromEvent(event: PersistentEvent): ErrorInfo[] | SimpleErrorInfo[] {
-    const error = event.data?.['@error'];
-    if (error) {
-        return getErrors(error);
+export function getErrorInfoStackTrace(error: ErrorInfo) {
+    function buildStackFrames(errors: ErrorInfo[]) {
+        let frames = '';
+        errors.forEach((error, index) => {
+            const stackTrace = error.stack_trace;
+            if (stackTrace) {
+                stackTrace.forEach((trace) => {
+                    frames += `${getStackFrame(trace)}\r\n`;
+                });
+
+                if (index < errors.length - 1) {
+                    frames += '--- End of inner exception stack trace ---';
+                }
+            }
+        });
+
+        return frames;
     }
 
-    const simpleError = event.data?.['@simple_error'];
-    return getErrors(simpleError);
+    const errors = getErrors(error);
+    return getStackTraceHeader(errors) + buildStackFrames(errors.reverse());
 }
 
 export function getErrors<T extends ErrorInfo | SimpleErrorInfo>(error: T | undefined): T[] {
@@ -116,62 +98,78 @@ export function getErrorType(event: PersistentEvent) {
     return simpleError?.type || 'Unknown';
 }
 
-export function getTargetInfo(error: ErrorInfo) {
-    return error.data?.['@target'];
-}
+export function getExtendedDataItems(event: PersistentEvent, project?: ViewProject): ExtendedDataItem[] {
+    const items: ExtendedDataItem[] = [];
 
-export function getTargetInfoExceptionType(error: ErrorInfo) {
-    const target = getTargetInfo(error);
-    return target?.ErrorType;
-}
-
-export function getTargetInfoMethod(error: ErrorInfo) {
-    const target = getTargetInfo(error);
-    return target?.Method;
-}
-
-export function getTargetInfoMessage(error: ErrorInfo) {
-    const target = getTargetInfo(error);
-    return target?.Message;
-}
-
-function getParameter(parameter: ParameterInfo) {
-    let result = '';
-
-    const parts = [];
-    if (parameter.type_namespace) {
-        parts.push(parameter.type_namespace);
-    }
-
-    if (parameter.type) {
-        parts.push(parameter.type);
-    }
-
-    result += parts.join('.').replace('+', '.');
-
-    if (parameter.generic_arguments && parameter.generic_arguments.length > 0) {
-        result += `[${parameter.generic_arguments.join(',')}]`;
-    }
-
-    if (parameter.name) {
-        result += ` ${parameter.name}`;
-    }
-
-    return result;
-}
-
-function getParameters(parameters?: ParameterInfo[]) {
-    let result = '(';
-
-    parameters?.forEach((parameter, index) => {
-        if (index > 0) {
-            result += ', ';
+    for (const [key, data] of Object.entries(event.data ?? {})) {
+        const knownDataKeys = ['haserror', 'sessionend'];
+        if (key.startsWith('@') || knownDataKeys.includes(key)) {
+            continue;
         }
 
-        result += getParameter(parameter);
-    });
+        const promoted = project?.promoted_tabs?.includes(key) ?? false;
+        items.push({ data, promoted, title: key });
+    }
 
-    return result + ')';
+    return items;
+}
+
+export function getLocation(event: PersistentEvent) {
+    const location = event.data?.['@location'];
+    if (!location) {
+        return null;
+    }
+
+    return [location.locality, location.level1, location.country]
+        .filter((value) => value?.length)
+        .reduce((a, b, index) => {
+            a += (index > 0 ? ', ' : '') + b;
+            return a;
+        }, '');
+}
+
+export function getMessage(event: PersistentEvent) {
+    const error = event.data?.['@error'];
+    if (error) {
+        return getTargetInfoMessage(error) || event.message;
+    }
+
+    return event.message;
+}
+
+export function getRequestInfoPath(event: PersistentEvent) {
+    const requestInfo = event.data?.['@request'];
+    return requestInfo ? requestInfo.path : null;
+}
+
+export function getRequestInfoUrl(event: PersistentEvent) {
+    const requestInfo = event.data?.['@request'];
+    if (requestInfo) {
+        return buildUrl(requestInfo.is_secure, requestInfo.host, requestInfo.port, requestInfo.path, requestInfo.query_string);
+    }
+
+    return null;
+}
+
+export function getSimpleErrorInfoStackTrace(error: SimpleErrorInfo) {
+    function buildStackFrames(errors: SimpleErrorInfo[]) {
+        let frames = '';
+        errors.forEach((error, index) => {
+            const stackTrace = error.stack_trace;
+            if (stackTrace) {
+                frames += stackTrace.replace(' ', '');
+
+                if (index < errors.length - 1) {
+                    frames += '--- End of inner error stack trace ---';
+                }
+            }
+        });
+
+        return frames;
+    }
+
+    const errors = getErrors(error);
+    return getStackTraceHeader(errors) + buildStackFrames(errors.reverse());
 }
 
 export function getStackFrame(frame: StackFrameInfo) {
@@ -215,6 +213,88 @@ export function getStackFrame(frame: StackFrameInfo) {
     return result;
 }
 
+export function getStackTrace(event: PersistentEvent): string | undefined {
+    const error = event.data?.['@error'];
+    if (error) {
+        return getErrorInfoStackTrace(error);
+    }
+
+    const simpleError = event.data?.['@simple_error'];
+    return simpleError?.stack_trace;
+}
+
+export function getTargetInfo(error: ErrorInfo) {
+    return error.data?.['@target'];
+}
+
+export function getTargetInfoExceptionType(error: ErrorInfo) {
+    const target = getTargetInfo(error);
+    return target?.ErrorType;
+}
+
+export function getTargetInfoMessage(error: ErrorInfo) {
+    const target = getTargetInfo(error);
+    return target?.Message;
+}
+
+export function getTargetInfoMethod(error: ErrorInfo) {
+    const target = getTargetInfo(error);
+    return target?.Method;
+}
+
+export function hasErrorOrSimpleError(event: null | PersistentEvent): boolean {
+    return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
+}
+
+function getErrorsFromEvent(event: PersistentEvent): ErrorInfo[] | SimpleErrorInfo[] {
+    const error = event.data?.['@error'];
+    if (error) {
+        return getErrors(error);
+    }
+
+    const simpleError = event.data?.['@simple_error'];
+    return getErrors(simpleError);
+}
+
+function getParameter(parameter: ParameterInfo) {
+    let result = '';
+
+    const parts = [];
+    if (parameter.type_namespace) {
+        parts.push(parameter.type_namespace);
+    }
+
+    if (parameter.type) {
+        parts.push(parameter.type);
+    }
+
+    result += parts.join('.').replace('+', '.');
+
+    if (parameter.generic_arguments && parameter.generic_arguments.length > 0) {
+        result += `[${parameter.generic_arguments.join(',')}]`;
+    }
+
+    if (parameter.name) {
+        result += ` ${parameter.name}`;
+    }
+
+    return result;
+}
+
+function getParameters(parameters?: ParameterInfo[]) {
+    let result = '(';
+
+    parameters?.forEach((parameter, index) => {
+        if (index > 0) {
+            result += ', ';
+        }
+
+        result += getParameter(parameter);
+    });
+
+    return result + ')';
+}
+
 function getStackTraceHeader<T extends ErrorInfo | SimpleErrorInfo>(errors: T[]) {
     let header = '';
     errors.forEach((error, index) => {
@@ -237,84 +317,4 @@ function getStackTraceHeader<T extends ErrorInfo | SimpleErrorInfo>(errors: T[])
     });
 
     return header;
-}
-
-export function getErrorInfoStackTrace(error: ErrorInfo) {
-    function buildStackFrames(errors: ErrorInfo[]) {
-        let frames = '';
-        errors.forEach((error, index) => {
-            const stackTrace = error.stack_trace;
-            if (stackTrace) {
-                stackTrace.forEach((trace) => {
-                    frames += `${getStackFrame(trace)}\r\n`;
-                });
-
-                if (index < errors.length - 1) {
-                    frames += '--- End of inner exception stack trace ---';
-                }
-            }
-        });
-
-        return frames;
-    }
-
-    const errors = getErrors(error);
-    return getStackTraceHeader(errors) + buildStackFrames(errors.reverse());
-}
-
-export function getSimpleErrorInfoStackTrace(error: SimpleErrorInfo) {
-    function buildStackFrames(errors: SimpleErrorInfo[]) {
-        let frames = '';
-        errors.forEach((error, index) => {
-            const stackTrace = error.stack_trace;
-            if (stackTrace) {
-                frames += stackTrace.replace(' ', '');
-
-                if (index < errors.length - 1) {
-                    frames += '--- End of inner error stack trace ---';
-                }
-            }
-        });
-
-        return frames;
-    }
-
-    const errors = getErrors(error);
-    return getStackTraceHeader(errors) + buildStackFrames(errors.reverse());
-}
-
-export function getStackTrace(event: PersistentEvent): string | undefined {
-    const error = event.data?.['@error'];
-    if (error) {
-        return getErrorInfoStackTrace(error);
-    }
-
-    const simpleError = event.data?.['@simple_error'];
-    return simpleError?.stack_trace;
-}
-
-export function hasErrorOrSimpleError(event: null | PersistentEvent): boolean {
-    return !!event?.data?.['@error'] || !!event?.data?.['@simple_error'];
-}
-
-export type ExtendedDataItem = {
-    data: unknown;
-    promoted?: boolean;
-    title: string;
-};
-
-export function getExtendedDataItems(event: PersistentEvent, project?: ViewProject): ExtendedDataItem[] {
-    const items: ExtendedDataItem[] = [];
-
-    for (const [key, data] of Object.entries(event.data ?? {})) {
-        const knownDataKeys = ['haserror', 'sessionend'];
-        if (key.startsWith('@') || knownDataKeys.includes(key)) {
-            continue;
-        }
-
-        const promoted = project?.promoted_tabs?.includes(key) ?? false;
-        items.push({ data, promoted, title: key });
-    }
-
-    return items;
 }

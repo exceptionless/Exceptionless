@@ -13,9 +13,9 @@
     import IconArrowUpward from '~icons/mdi/arrow-upward';
     import IconUnfoldMore from '~icons/mdi/unfold-more-horizontal';
 
-    type Props = {
+    type Props = HTMLAttributes<Element> & {
         column: Column<TData, unknown>;
-    } & HTMLAttributes<Element>;
+    };
 
     let { children, class: className, column }: Props = $props();
 

@@ -17,9 +17,9 @@
         }
     });
 
-    type Props = {
+    type Props = HTMLAttributes<SVGSVGElement> & {
         variant?: VariantProps<typeof variants>['variant'];
-    } & HTMLAttributes<SVGSVGElement>;
+    };
 
     let { class: className, variant = 'default' }: Props = $props();
 </script>

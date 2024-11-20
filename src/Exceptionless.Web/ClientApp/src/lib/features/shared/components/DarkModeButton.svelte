@@ -1,9 +1,9 @@
 <script lang="ts">
     import { Button } from '$comp/ui/button';
     import * as ContextMenu from '$comp/ui/context-menu';
+    import { setMode, toggleMode, userPrefersMode } from 'mode-watcher';
     import IconMoonWaningCrescent from '~icons/mdi/moon-waning-crescent';
     import IconWhiteBalanceSunny from '~icons/mdi/white-balance-sunny';
-    import { setMode, toggleMode, userPrefersMode } from 'mode-watcher';
 
     function onUserThemePreferenceChange(mode?: string) {
         setMode(mode as 'dark' | 'light' | 'system');

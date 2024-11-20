@@ -1,3 +1,7 @@
+export function getDifferenceInSeconds(value: Date | string): number {
+    return (new Date().getTime() - new Date(value).getTime()) / 1000;
+}
+
 export function getRelativeTimeFormatUnit(differenceInSeconds: number): Intl.RelativeTimeFormatUnit {
     const minute = 60;
     const hour = minute * 60;
@@ -39,8 +43,4 @@ export function getSetIntervalTime(value: Date | string): number {
         default:
             return day * 1000; // update every day
     }
-}
-
-export function getDifferenceInSeconds(value: Date | string): number {
-    return (new Date().getTime() - new Date(value).getTime()) / 1000;
 }

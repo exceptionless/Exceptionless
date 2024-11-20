@@ -14,6 +14,21 @@ export interface GetStackByIdProps {
     id: string | undefined;
 }
 
+export function getStackByIdQuery(props: GetStackByIdProps) {
+    return createQuery<Stack, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.id(props.id)
+    }));
+}
+
 export async function prefetchStack(props: GetStackByIdProps) {
     if (!accessToken.value) {
         return;
@@ -31,19 +46,4 @@ export async function prefetchStack(props: GetStackByIdProps) {
         },
         queryKey: queryKeys.id(props.id)
     });
-}
-
-export function getStackByIdQuery(props: GetStackByIdProps) {
-    return createQuery<Stack, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!props.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${props.id}`, {
-                signal
-            });
-
-            return response.data!;
-        },
-        queryKey: queryKeys.id(props.id)
-    }));
 }
