@@ -5,11 +5,11 @@
 
     import { DateFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: DateFilter) => void;
         term: string;
         value?: Date | string;
-    } & AProps;
+    };
     let { changed, class: className, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;

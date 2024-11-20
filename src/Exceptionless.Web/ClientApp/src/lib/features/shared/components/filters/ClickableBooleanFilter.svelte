@@ -5,11 +5,11 @@
 
     import { BooleanFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: BooleanFilter) => void;
         term: string;
         value?: boolean;
-    } & AProps;
+    };
     let { changed, class: className, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;

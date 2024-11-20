@@ -16,6 +16,11 @@ export interface GetEventByIdProps {
     id: string | undefined;
 }
 
+export interface GetEventsByStackIdProps {
+    limit?: number;
+    stackId: string | undefined;
+}
+
 export type GetEventsMode = 'stack_frequent' | 'stack_new' | 'stack_recent' | 'stack_users' | 'summary' | null;
 
 export interface IGetEventsParams {
@@ -43,11 +48,6 @@ export function getEventByIdQuery(props: GetEventByIdProps) {
         },
         queryKey: queryKeys.id(props.id)
     }));
-}
-
-export interface GetEventsByStackIdProps {
-    limit?: number;
-    stackId: string | undefined;
 }
 
 export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {

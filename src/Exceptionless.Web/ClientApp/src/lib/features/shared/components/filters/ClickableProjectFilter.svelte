@@ -5,11 +5,11 @@
 
     import { ProjectFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: ProjectFilter) => void;
         organization: string;
         value: string[];
-    } & AProps;
+    };
     let { changed, class: className, organization, value, ...props }: Props = $props();
 
     const title = `Search project:${value}`;

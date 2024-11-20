@@ -11,6 +11,13 @@ export const queryKeys = {
     me: () => [...queryKeys.all, 'me'] as const
 };
 
+export interface UpdateEmailAddressProps {
+    id: string | undefined;
+}
+export interface UpdateUserProps {
+    id: string | undefined;
+}
+
 export function getMeQuery() {
     const queryClient = useQueryClient();
 
@@ -30,9 +37,6 @@ export function getMeQuery() {
         },
         queryKey: queryKeys.me()
     }));
-}
-export interface UpdateEmailAddressProps {
-    id: string | undefined;
 }
 
 export function mutateEmailAddress(props: UpdateEmailAddressProps) {
@@ -59,10 +63,6 @@ export function mutateEmailAddress(props: UpdateEmailAddressProps) {
             }
         }
     }));
-}
-
-export interface UpdateUserProps {
-    id: string | undefined;
 }
 
 export function mutateUser(props: UpdateUserProps) {

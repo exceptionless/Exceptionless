@@ -16,52 +16,6 @@ export const googleClientId = env.PUBLIC_GOOGLE_APPID;
 export const microsoftClientId = env.PUBLIC_MICROSOFT_APPID;
 export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
 
-export async function login(email: string, password: string) {
-    const data: Login = { email, password };
-    const client = useFetchClient();
-    const response = await client.postJSON<TokenResult>('auth/login', data, {
-        expectedStatusCodes: [401, 422]
-    });
-
-    if (response.ok && response.data?.token) {
-        accessToken.value = response.data.token;
-    } else if (response.status === 401) {
-        response.problem.setErrorMessage('Invalid email or password');
-    }
-
-    return response;
-}
-
-export async function gotoLogin() {
-    const { url } = get(page);
-    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
-    const redirect = url.pathname === '/next/' || isAuthPath ? '/next/login' : `/next/login?redirect=${url.pathname}`;
-    await goto(redirect, { replaceState: true });
-}
-
-export async function logout() {
-    const client = useFetchClient();
-    await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
-    accessToken.value = null;
-}
-
-export async function liveLogin(redirectUrl?: string) {
-    if (!microsoftClientId) {
-        throw new Error('Live client id not set');
-    }
-
-    await oauthLogin({
-        authUrl: 'https://login.live.com/oauth20_authorize.srf',
-        clientId: microsoftClientId,
-        extraParams: {
-            display: 'popup'
-        },
-        provider: 'live',
-        redirectUrl,
-        scope: 'wl.emails'
-    });
-}
-
 export async function facebookLogin(redirectUrl?: string) {
     if (!facebookClientId) {
         throw new Error('Facebook client id not set');
@@ -73,6 +27,21 @@ export async function facebookLogin(redirectUrl?: string) {
         provider: 'facebook',
         redirectUrl,
         scope: 'email'
+    });
+}
+
+export async function githubLogin(redirectUrl?: string) {
+    if (!gitHubClientId) {
+        throw new Error('GitHub client id not set');
+    }
+
+    await oauthLogin({
+        authUrl: 'https://github.com/login/oauth/authorize',
+        clientId: gitHubClientId,
+        popupOptions: { height: 618, width: 1020 },
+        provider: 'github',
+        redirectUrl,
+        scope: 'user:email'
     });
 }
 
@@ -97,19 +66,50 @@ export async function googleLogin(redirectUrl?: string) {
     });
 }
 
-export async function githubLogin(redirectUrl?: string) {
-    if (!gitHubClientId) {
-        throw new Error('GitHub client id not set');
+export async function gotoLogin() {
+    const { url } = get(page);
+    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
+    const redirect = url.pathname === '/next/' || isAuthPath ? '/next/login' : `/next/login?redirect=${url.pathname}`;
+    await goto(redirect, { replaceState: true });
+}
+
+export async function liveLogin(redirectUrl?: string) {
+    if (!microsoftClientId) {
+        throw new Error('Live client id not set');
     }
 
     await oauthLogin({
-        authUrl: 'https://github.com/login/oauth/authorize',
-        clientId: gitHubClientId,
-        popupOptions: { height: 618, width: 1020 },
-        provider: 'github',
+        authUrl: 'https://login.live.com/oauth20_authorize.srf',
+        clientId: microsoftClientId,
+        extraParams: {
+            display: 'popup'
+        },
+        provider: 'live',
         redirectUrl,
-        scope: 'user:email'
+        scope: 'wl.emails'
     });
+}
+
+export async function login(email: string, password: string) {
+    const data: Login = { email, password };
+    const client = useFetchClient();
+    const response = await client.postJSON<TokenResult>('auth/login', data, {
+        expectedStatusCodes: [401, 422]
+    });
+
+    if (response.ok && response.data?.token) {
+        accessToken.value = response.data.token;
+    } else if (response.status === 401) {
+        response.problem.setErrorMessage('Invalid email or password');
+    }
+
+    return response;
+}
+
+export async function logout() {
+    const client = useFetchClient();
+    await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
+    accessToken.value = null;
 }
 
 async function oauthLogin(options: {
@@ -163,6 +163,16 @@ async function oauthLogin(options: {
     }
 }
 
+function stringifyOptions(options: object): string {
+    const parts = [];
+
+    for (const [key, value] of Object.entries(options)) {
+        parts.push(key + '=' + value);
+    }
+
+    return parts.join(',');
+}
+
 function waitForUrl(popup: Window, redirectUri: string): Promise<{ code: string; state: string }> {
     return new Promise((resolve, reject) => {
         const polling = setInterval(() => {
@@ -206,14 +216,4 @@ function waitForUrl(popup: Window, redirectUri: string): Promise<{ code: string;
             }
         }, 500);
     });
-}
-
-function stringifyOptions(options: object): string {
-    const parts = [];
-
-    for (const [key, value] of Object.entries(options)) {
-        parts.push(key + '=' + value);
-    }
-
-    return parts.join(',');
 }

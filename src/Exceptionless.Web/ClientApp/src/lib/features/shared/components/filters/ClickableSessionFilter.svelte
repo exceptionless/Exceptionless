@@ -5,10 +5,10 @@
 
     import { SessionFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: SessionFilter) => void;
         value: string;
-    } & AProps;
+    };
     let { changed, class: className, value, ...props }: Props = $props();
 
     const title = `Search ref.session:${value}`;

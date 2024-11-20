@@ -1,19 +1,19 @@
-import Root from './data-table.svelte';
 import Body from './data-table-body.svelte';
 import PageSize from './data-table-page-size.svelte';
 import Pagination from './data-table-pagination.svelte';
 import Toolbar from './data-table-toolbar.svelte';
+import Root from './data-table.svelte';
 
 export {
     Body,
-    Body as DataTableBody,
-    PageSize,
-    PageSize as DataTablePageSize,
-    Pagination,
-    Pagination as DataTablePagination,
-    Root,
     //
     Root as DataTable,
-    Toolbar,
-    Toolbar as DataTableToolbar
+    Body as DataTableBody,
+    PageSize as DataTablePageSize,
+    Pagination as DataTablePagination,
+    Toolbar as DataTableToolbar,
+    PageSize,
+    Pagination,
+    Root,
+    Toolbar
 };

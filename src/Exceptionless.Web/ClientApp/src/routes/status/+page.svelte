@@ -4,8 +4,8 @@
     import Loading from '$comp/Loading.svelte';
     import { H2, P } from '$comp/typography';
     import { getHealthQuery } from '$features/status/api.svelte';
-    import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
+    import logo from '$lib/assets/logo.svg';
 
     let redirect = $page.url.searchParams.get('redirect');
 

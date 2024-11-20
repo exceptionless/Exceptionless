@@ -8,10 +8,10 @@
 
     import { cn } from '$lib/utils';
 
-    type Props = {
+    type Props = HTMLAttributes<Element> & {
         displayValue?: Snippet<[TData]>;
         items: TData[];
-    } & HTMLAttributes<Element>;
+    };
 
     let { class: className, displayValue, items = [], ...props }: Props = $props();
 </script>

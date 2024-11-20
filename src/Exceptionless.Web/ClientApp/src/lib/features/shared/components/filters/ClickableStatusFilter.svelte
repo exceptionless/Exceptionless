@@ -7,10 +7,10 @@
 
     import { StatusFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: StatusFilter) => void;
         value: StackStatus[];
-    } & AProps;
+    };
     let { changed, class: className, value, ...props }: Props = $props();
 
     const title = `Search status:${value}`;

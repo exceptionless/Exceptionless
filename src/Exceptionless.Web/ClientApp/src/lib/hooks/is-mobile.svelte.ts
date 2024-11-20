@@ -3,6 +3,10 @@ import { untrack } from 'svelte';
 const MOBILE_BREAKPOINT = 768;
 
 export class IsMobile {
+    get current() {
+        return this.#current;
+    }
+
     #current = $state<boolean>(false);
 
     constructor() {
@@ -19,9 +23,5 @@ export class IsMobile {
                 };
             });
         });
-    }
-
-    get current() {
-        return this.#current;
     }
 }

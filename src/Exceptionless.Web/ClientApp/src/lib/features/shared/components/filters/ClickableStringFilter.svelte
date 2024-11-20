@@ -5,11 +5,11 @@
 
     import { StringFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: StringFilter) => void;
         term: string;
         value?: null | string;
-    } & AProps;
+    };
     let { changed, children, class: className, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;

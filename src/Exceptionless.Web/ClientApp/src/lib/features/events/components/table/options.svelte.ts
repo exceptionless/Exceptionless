@@ -271,21 +271,6 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     };
 }
 
-function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) => void] {
-    let value = $state(initialValue);
-
-    return [
-        () => value,
-        (updater: Updater<T>) => {
-            if (updater instanceof Function) {
-                value = updater(value);
-            } else {
-                value = updater;
-            }
-        }
-    ];
-}
-
 function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
     const persistedValue = persisted<T>(key, initialValue);
 
@@ -296,6 +281,21 @@ function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (
                 persistedValue.value = updater(persistedValue.value);
             } else {
                 persistedValue.value = updater;
+            }
+        }
+    ];
+}
+
+function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) => void] {
+    let value = $state(initialValue);
+
+    return [
+        () => value,
+        (updater: Updater<T>) => {
+            if (updater instanceof Function) {
+                value = updater(value);
+            } else {
+                value = updater;
             }
         }
     ];

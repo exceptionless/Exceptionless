@@ -1,9 +1,6 @@
 import { useEventListener } from 'runed';
 
 export class DocumentVisibility {
-    #effectRegistered = 0;
-    #visible = $state<boolean | undefined>(!document.hidden);
-
     get visible(): boolean {
         if ($effect.tracking() && this.#effectRegistered === 0) {
             // If we are in an effect and this effect has not been registered yet
@@ -28,4 +25,7 @@ export class DocumentVisibility {
 
         return this.#visible ?? !document.hidden;
     }
+    #effectRegistered = 0;
+
+    #visible = $state<boolean | undefined>(!document.hidden);
 }

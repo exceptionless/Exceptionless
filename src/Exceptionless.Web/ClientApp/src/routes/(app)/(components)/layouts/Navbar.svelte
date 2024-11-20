@@ -8,10 +8,10 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import logo from '$lib/assets/logo.svg';
     import logoDark from '$lib/assets/logo-dark.svg';
-    import IconSearch from '~icons/mdi/search';
+    import logo from '$lib/assets/logo.svg';
     import { MediaQuery } from 'runed';
+    import IconSearch from '~icons/mdi/search';
 
     interface Props {
         isCommandOpen: boolean;
