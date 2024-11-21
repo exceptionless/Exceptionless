@@ -16,7 +16,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
-    <FoundatioVersion>11.0.6-alpha.0.18</FoundatioVersion>
+    <FoundatioVersion>11.0.6-alpha.disposable-action.0.1</FoundatioVersion>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
   </PropertyGroup>
 
