@@ -24,11 +24,11 @@
 	{...restProps}
 >
 	{#snippet children({ checked, indeterminate })}
-		<span class="flex size-4 items-center justify-center text-current">
+		<span class="flex items-center justify-center text-current">
 			{#if indeterminate}
-				<Minus class="size-3.5" />
+				<Minus class="size-4" />
 			{:else}
-				<Check class={cn("size-3.5", !checked && "text-transparent")} />
+				<Check class={cn("size-4", !checked && "text-transparent")} />
 			{/if}
 		</span>
 	{/snippet}
