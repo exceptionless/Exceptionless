@@ -8,10 +8,10 @@ export interface EntityChanged {
     change_type: ChangeType;
     data: Record<string, unknown>;
 
-    id: string;
+    id?: string;
     organization_id?: string;
-    projectId?: string;
-    stackId?: string;
+    project_id?: string;
+    stack_id?: string;
 
     type: string;
 }
