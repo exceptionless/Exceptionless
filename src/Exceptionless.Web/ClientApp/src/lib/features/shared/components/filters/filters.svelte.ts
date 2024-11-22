@@ -590,6 +590,22 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
     }
 }
 
+export function getKeywordFilter(filters: IFilter[]): KeywordFilter | undefined {
+    return filters.find((f) => f.type === 'keyword') as KeywordFilter;
+}
+
+export function getOrganizationFilter(filters: IFilter[]): OrganizationFilter | undefined {
+    return filters.find((f) => f.type === 'organization') as OrganizationFilter;
+}
+
+export function getProjectFilter(filters: IFilter[]): ProjectFilter {
+    return filters.find((f) => f.type === 'project') as ProjectFilter;
+}
+
+export function getStackFilter(filters: IFilter[]): StringFilter | undefined {
+    return filters.find((f) => f.type === 'string') as StringFilter;
+}
+
 export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
     // Allow only one filter per type and term.
     const groupedFilters: Partial<Record<string, IFilter[]>> = Object.groupBy(filters, (f: IFilter) => f.key);

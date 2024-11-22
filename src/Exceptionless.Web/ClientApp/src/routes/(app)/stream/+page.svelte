@@ -44,7 +44,7 @@
 <Card.Root>
     <Card.Title class="p-6 pb-0 text-2xl" level={2}>Event Stream</Card.Title>
     <Card.Content>
-        <EventsTailLogDataTable bind:limit={limit.value} {filter} {rowclick}>
+        <EventsTailLogDataTable bind:limit={limit.value} {filter} filters={persistedFilters.value} {rowclick}>
             {#snippet toolbarChildren()}
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             {/snippet}
