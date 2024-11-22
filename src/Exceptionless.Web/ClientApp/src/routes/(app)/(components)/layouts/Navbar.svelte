@@ -1,6 +1,7 @@
 <script lang="ts">
     import DarkModeButton from '$comp/DarkModeButton.svelte';
     import Loading from '$comp/Loading.svelte';
+    import Logo from '$comp/Logo.svelte';
     import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
     import { Button } from '$comp/ui/button';
@@ -8,8 +9,6 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import logoDark from '$lib/assets/logo-dark.svg';
-    import logo from '$lib/assets/logo.svg';
     import { MediaQuery } from 'runed';
     import IconSearch from '~icons/mdi/search';
 
@@ -33,10 +32,9 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <a class="ml-2 mr-14 flex min-w-[250px] dark:text-white lg:ml-3" href="./">
+                <a class="ml-2 mr-14 flex dark:text-white md:min-w-[250px] lg:ml-3" href="./">
                     {#if isMediumScreenQuery.matches}
-                        <img alt="Exceptionless Logo" class="absolute top-[0px] mr-3 h-[65px] dark:hidden" src={logo} />
-                        <img alt="Exceptionless Logo" class="absolute top-[0px] mr-3 hidden h-[65px] dark:block" src={logoDark} />
+                        <Logo class="absolute top-[0px] mr-3 h-[65px]" />
                     {:else}
                         <img alt="Exceptionless Logo" class="mr-3 h-8" src={logoSmall} />
                     {/if}
