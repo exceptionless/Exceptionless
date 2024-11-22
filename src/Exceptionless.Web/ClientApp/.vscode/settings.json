@@ -27,6 +27,7 @@
         "superforms",
         "tailwindcss",
         "tanstack",
+        "typeschema",
         "websockets"
     ],
     "css.customData": [".vscode/tailwind.json"],
