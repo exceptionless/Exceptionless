@@ -23,7 +23,7 @@
         "upgrade": "ncu -i"
     },
     "devDependencies": {
-        "@iconify-json/lucide": "^1.2.15",
+        "@iconify-json/lucide": "^1.2.16",
         "@playwright/test": "^1.49.0",
         "@sveltejs/adapter-static": "^3.0.6",
         "@sveltejs/kit": "^2.8.1",
