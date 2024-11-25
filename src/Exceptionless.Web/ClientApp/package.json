@@ -43,7 +43,7 @@
         "prettier-plugin-svelte": "^3.2.8",
         "prettier-plugin-tailwindcss": "^0.6.9",
         "svelte": "^5.2.6",
-        "svelte-check": "^4.0.9",
+        "svelte-check": "^4.1.0",
         "swagger-typescript-api": "^13.0.23",
         "tslib": "^2.8.1",
         "typescript": "^5.6.3",
