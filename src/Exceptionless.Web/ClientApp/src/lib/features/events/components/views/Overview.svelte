@@ -98,6 +98,8 @@
                 <Table.Cell>
                     {#if !event.data?.sessionend}
                         <span class="inline-flex h-2 w-2 animate-pulse items-center rounded-full bg-green-500" title="Online"></span>
+                    {:else}
+                        <span class="inline-flex h-2 w-2 items-center rounded-full bg-destructive" title="Ended"></span>
                     {/if}
                     <Duration value={getSessionStartDuration(event)}></Duration>
                     {#if event.data?.sessionend}
@@ -108,21 +110,26 @@
         {/if}
         {#if event.reference_id}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Reference</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    >{#if isSessionStart}
-                        <ClickableSessionFilter {changed} value={event.reference_id} />
-                    {:else}
-                        <ClickableReferenceFilter {changed} value={event.reference_id} />
-                    {/if}</Table.Cell
-                >
+                {#if isSessionStart}
+                    <Table.Head class="w-40 whitespace-nowrap">Session</Table.Head>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableSessionFilter {changed} value={event.reference_id} /></Table.Cell>
+                {:else}
+                    <Table.Head class="w-40 whitespace-nowrap">Reference</Table.Head>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter {changed} value={event.reference_id} /></Table.Cell
+                    >
+                {/if}
                 <Table.Cell>{event.reference_id}</Table.Cell>
             </Table.Row>
         {/if}
         {#each references as reference (reference.id)}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">{reference.name}</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter {changed} value={reference.id} /></Table.Cell>
+                {#if reference.name === 'session'}
+                    <Table.Head class="w-40 whitespace-nowrap">Session</Table.Head>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableSessionFilter {changed} value={reference.id} /></Table.Cell>
+                {:else}
+                    <Table.Head class="w-40 whitespace-nowrap">{reference.name}</Table.Head>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter {changed} value={reference.id} /></Table.Cell>
+                {/if}
                 <Table.Cell>{reference.id}</Table.Cell>
             </Table.Row>
         {/each}

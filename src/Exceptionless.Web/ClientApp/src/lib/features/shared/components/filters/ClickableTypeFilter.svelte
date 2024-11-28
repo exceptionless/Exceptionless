@@ -5,10 +5,10 @@
 
     import { TypeFilter } from './filters.svelte';
 
-    type Props = {
+    type Props = AProps & {
         changed: (filter: TypeFilter) => void;
         value: string[];
-    } & AProps;
+    };
     let { changed, class: className, value, ...props }: Props = $props();
 
     const title = `Search type:${value}`;

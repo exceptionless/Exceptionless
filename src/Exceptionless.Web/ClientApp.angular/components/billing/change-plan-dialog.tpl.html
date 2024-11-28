@@ -184,21 +184,14 @@
         <button type="button" role="button" class="btn btn-default" ng-click="vm.cancel()">
             {{::'Cancel' | translate}}
         </button>
-        <span ng-if="vm.isCancellingPlan()">
-            <button type="submit" role="button" class="btn btn-primary" ng-click="vm.showIntercom()">
-                {{::'Contact Us' | translate}}
-            </button>
-        </span>
-        <span ng-if="!vm.isCancellingPlan()">
-            <button
-                type="submit"
-                role="button"
-                class="btn btn-primary"
-                promise-button="vm.save(vm.changePlanForm.$valid)"
-                promise-button-busy-text="{{::'Changing Plan' | translate}}"
-            >
-                {{::'Change Plan' | translate}}
-            </button>
-        </span>
+        <button
+            type="submit"
+            role="button"
+            class="btn btn-primary"
+            promise-button="vm.save(vm.changePlanForm.$valid)"
+            promise-button-busy-text="{{::'Changing Plan' | translate}}"
+        >
+            {{::'Change Plan' | translate}}
+        </button>
     </div>
 </form>

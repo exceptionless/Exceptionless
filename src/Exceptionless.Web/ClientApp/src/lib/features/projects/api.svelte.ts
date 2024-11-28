@@ -1,19 +1,47 @@
+import type { WebSocketMessageValue } from '$features/websockets/models';
+
 import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { ViewProject } from './models';
 
+export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
+    const { id, organization_id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+    }
+
+    if (organization_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    }
+
+    if (!id && !organization_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    }
+}
+
 export const queryKeys = {
-    all: ['Project'] as const,
-    allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const,
-    organization: (id: string | undefined) => [...queryKeys.all, 'organization', id] as const,
-    organizationWithFilters: (id: string | undefined, filters: string) => [...queryKeys.organization(id), { filters }] as const
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
+    type: ['Project'] as const
 };
+
+export interface DemoteProjectTabProps {
+    id: string;
+}
 
 export interface GetProjectByIdProps {
     id: string | undefined;
+}
+
+export interface GetProjectsByOrganizationIdProps {
+    limit?: number;
+    organizationId: string | undefined;
+}
+
+export interface PromoteProjectTabProps {
+    id: string;
 }
 
 export function getProjectByIdQuery(props: GetProjectByIdProps) {
@@ -29,11 +57,6 @@ export function getProjectByIdQuery(props: GetProjectByIdProps) {
         },
         queryKey: queryKeys.id(props.id)
     }));
-}
-
-export interface GetProjectsByOrganizationIdProps {
-    limit?: number;
-    organizationId: string | undefined;
 }
 
 export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizationIdProps) {
@@ -62,8 +85,33 @@ export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizatio
     }));
 }
 
-export interface PromoteProjectTabProps {
-    id: string;
+export function mutateDemoteTab(props: DemoteProjectTabProps) {
+    const queryClient = useQueryClient();
+    return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
+        mutationFn: async (params: { name: string }) => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${props.id}/promotedtabs`, {
+                params
+            });
+
+            // TODO: Fix status code returns.
+            return response.ok;
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: (_: boolean, variables: { name: string }) => {
+            // Update the project to reflect the demoted tab until it's updated from the server
+            const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
+            if (previousProject) {
+                queryClient.setQueryData(queryKeys.id(props.id), {
+                    ...previousProject,
+                    promoted_tabs: (previousProject?.promoted_tabs ?? []).filter((tab) => tab !== variables.name)
+                });
+            }
+        }
+    }));
 }
 
 export function mutatePromoteTab(props: PromoteProjectTabProps) {
@@ -89,39 +137,6 @@ export function mutatePromoteTab(props: PromoteProjectTabProps) {
                 queryClient.setQueryData(queryKeys.id(props.id), {
                     ...previousProject,
                     promoted_tabs: [...(previousProject?.promoted_tabs ?? []), variables.name]
-                });
-            }
-        }
-    }));
-}
-
-export interface DemoteProjectTabProps {
-    id: string;
-}
-
-export function mutateDemoteTab(props: DemoteProjectTabProps) {
-    const queryClient = useQueryClient();
-    return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
-        mutationFn: async (params: { name: string }) => {
-            const client = useFetchClient();
-            const response = await client.delete(`projects/${props.id}/promotedtabs`, {
-                params
-            });
-
-            // TODO: Fix status code returns.
-            return response.ok;
-        },
-        mutationKey: queryKeys.id(props.id),
-        onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
-        },
-        onSuccess: (_: boolean, variables: { name: string }) => {
-            // Update the project to reflect the demoted tab until it's updated from the server
-            const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
-            if (previousProject) {
-                queryClient.setQueryData(queryKeys.id(props.id), {
-                    ...previousProject,
-                    promoted_tabs: (previousProject?.promoted_tabs ?? []).filter((tab) => tab !== variables.name)
                 });
             }
         }

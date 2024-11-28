@@ -18,7 +18,7 @@ export const variants = tv({
     }
 });
 
-export type Variant = VariantProps<typeof variants>['variant'];
-export type Props = {
+export type Props = HTMLAnchorAttributes & {
     variant?: Variant;
-} & HTMLAnchorAttributes;
+};
+export type Variant = VariantProps<typeof variants>['variant'];

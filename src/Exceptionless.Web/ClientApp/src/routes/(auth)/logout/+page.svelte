@@ -2,7 +2,8 @@
     import { goto } from '$app/navigation';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import Loading from '$comp/Loading.svelte';
-    import { H2 } from '$comp/typography';
+    import Logo from '$comp/Logo.svelte';
+    import * as Card from '$comp/ui/card';
     import * as Form from '$comp/ui/form';
     import { accessToken, logout } from '$features/auth/index.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
@@ -32,15 +33,22 @@
     }
 </script>
 
-<H2 class="mb-2 mt-4 text-center leading-9">Log out?</H2>
-<form class="space-y-2" onsubmit={onLogout}>
-    <ErrorMessage {message}></ErrorMessage>
+<Card.Root class="mx-auto max-w-sm">
+    <Card.Header>
+        <Logo />
+        <Card.Title class="text-center text-2xl">Log out?</Card.Title>
+    </Card.Header>
+    <Card.Content>
+        <form onsubmit={onLogout}>
+            <ErrorMessage {message}></ErrorMessage>
 
-    <Form.Button>
-        {#if client.loading}
-            <Loading class="mr-2" variant="secondary"></Loading> Logging out...
-        {:else}
-            Logout
-        {/if}
-    </Form.Button>
-</form>
+            <Form.Button>
+                {#if client.loading}
+                    <Loading class="mr-2" variant="secondary"></Loading> Logging out...
+                {:else}
+                    Logout
+                {/if}
+            </Form.Button>
+        </form>
+    </Card.Content>
+</Card.Root>

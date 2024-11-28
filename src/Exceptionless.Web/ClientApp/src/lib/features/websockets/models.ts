@@ -8,10 +8,10 @@ export interface EntityChanged {
     change_type: ChangeType;
     data: Record<string, unknown>;
 
-    id: string;
+    id?: string;
     organization_id?: string;
-    projectId?: string;
-    stackId?: string;
+    project_id?: string;
+    stack_id?: string;
 
     type: string;
 }
@@ -25,12 +25,6 @@ export interface PlanOverage {
     organization_id: string;
 }
 
-export interface UserMembershipChanged {
-    change_type: ChangeType;
-    organization_id: string;
-    user_id: string;
-}
-
 export interface ReleaseNotification {
     critical: boolean;
     date: string;
@@ -40,6 +34,17 @@ export interface ReleaseNotification {
 export interface SystemNotification {
     date: string;
     message?: string;
+}
+
+export interface UserMembershipChanged {
+    change_type: ChangeType;
+    organization_id: string;
+    user_id: string;
+}
+
+export interface WebSocketMessage<T extends WebSocketMessageType> {
+    message: WebSocketMessageValue<T>;
+    type: T;
 }
 
 export type WebSocketMessageType = 'PlanChanged' | 'PlanOverage' | 'ReleaseNotification' | 'SystemNotification' | 'UserMembershipChanged' | `${string}Changed`;
@@ -56,9 +61,8 @@ export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'P
             ? SystemNotification
             : EntityChanged;
 
-export interface WebSocketMessage<T extends WebSocketMessageType> {
-    message: WebSocketMessageValue<T>;
-    type: T;
+export function isEntityChangedType(message: { message: unknown; type: WebSocketMessageType }): message is WebSocketMessage<`${string}Changed`> {
+    return message.type !== 'PlanChanged' && message.type !== 'UserMembershipChanged' && message.type.endsWith('Changed');
 }
 
 export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
@@ -67,8 +71,4 @@ export function isWebSocketMessageType(type: string): type is WebSocketMessageTy
             type as Exclude<WebSocketMessageType, `${string}Changed`>
         ) || type.endsWith('Changed')
     );
-}
-
-export function isEntityChangedType(message: { message: unknown; type: WebSocketMessageType }): message is WebSocketMessage<`${string}Changed`> {
-    return message.type !== 'PlanChanged' && message.type !== 'UserMembershipChanged' && message.type.endsWith('Changed');
 }

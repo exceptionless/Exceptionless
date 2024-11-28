@@ -5,7 +5,7 @@ module.exports = {
             patterns: [
                 {
                     match: "version",
-                    replacement: process.env.UI_VERSION || "2.0.0-dev",
+                    replacement: process.env.VERSION || "8.0.0-dev",
                 },
             ],
         },

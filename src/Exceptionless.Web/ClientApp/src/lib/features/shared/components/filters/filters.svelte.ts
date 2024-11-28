@@ -16,6 +16,10 @@ export class BooleanFilter implements IFilter {
 
     public value = $state<boolean>();
 
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
+
     constructor(term?: string, value?: boolean) {
         this.term = term;
         this.value = value;
@@ -48,10 +52,6 @@ export class BooleanFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
-    }
 }
 
 export class DateFilter implements IFilter {
@@ -59,6 +59,10 @@ export class DateFilter implements IFilter {
     public type: string = 'date';
 
     public value = $state<Date | string>();
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     constructor(term?: string, value?: Date | string) {
         this.term = term;
@@ -93,9 +97,28 @@ export class DateFilter implements IFilter {
             value: this.value
         };
     }
+}
 
-    public get key(): string {
-        return `${this.type}:${this.term}`;
+export class FilterSerializer implements Serializer<IFilter[]> {
+    public deserialize(text: string): IFilter[] {
+        if (!text) {
+            return [];
+        }
+
+        const data: unknown[] = JSON.parse(text);
+        const filters: IFilter[] = [];
+        for (const filterData of data) {
+            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
+            if (filter) {
+                filters.push(filter);
+            }
+        }
+
+        return filters;
+    }
+
+    public serialize(object: IFilter[]): string {
+        return JSON.stringify(object);
     }
 }
 
@@ -103,6 +126,10 @@ export class KeywordFilter implements IFilter {
     public type: string = 'keyword';
 
     public value = $state<string>();
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(value?: string) {
         this.value = value;
@@ -130,10 +157,6 @@ export class KeywordFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class NumberFilter implements IFilter {
@@ -141,6 +164,10 @@ export class NumberFilter implements IFilter {
     public type: string = 'number';
 
     public value = $state<number>();
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     constructor(term?: string, value?: number) {
         this.term = term;
@@ -174,15 +201,15 @@ export class NumberFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
-    }
 }
 
 export class OrganizationFilter implements IFilter {
     public type: string = 'organization';
     public value = $state<string>();
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(value?: string) {
         this.value = value;
@@ -210,10 +237,6 @@ export class OrganizationFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class ProjectFilter implements IFilter {
@@ -221,6 +244,10 @@ export class ProjectFilter implements IFilter {
     public type: string = 'project';
 
     public value = $state<string[]>([]);
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(organization: string | undefined, value: string[] = []) {
         this.organization = organization;
@@ -254,16 +281,16 @@ export class ProjectFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class ReferenceFilter implements IFilter {
     public type: string = 'reference';
 
     public value = $state<string>();
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(value?: string) {
         this.value = value;
@@ -291,16 +318,16 @@ export class ReferenceFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class SessionFilter implements IFilter {
     public type: string = 'session';
 
     public value = $state<string>();
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(value?: string) {
         this.value = value;
@@ -329,16 +356,16 @@ export class SessionFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class StatusFilter implements IFilter {
     public type: string = 'status';
 
     public value = $state<StackStatus[]>([]);
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(value: StackStatus[] = []) {
         this.value = value;
@@ -370,10 +397,6 @@ export class StatusFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class StringFilter implements IFilter {
@@ -381,6 +404,10 @@ export class StringFilter implements IFilter {
     public type: string = 'string';
 
     public value = $state<string>();
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     constructor(term?: string, value?: string) {
         this.term = term;
@@ -414,16 +441,16 @@ export class StringFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return `${this.type}:${this.term}`;
-    }
 }
 
 export class TypeFilter implements IFilter {
     public type: string = 'type';
 
     public value = $state<PersistentEventKnownTypes[]>([]);
+
+    public get key(): string {
+        return this.type;
+    }
 
     constructor(value: PersistentEventKnownTypes[] = []) {
         this.value = value;
@@ -455,10 +482,6 @@ export class TypeFilter implements IFilter {
             value: this.value
         };
     }
-
-    public get key(): string {
-        return this.type;
-    }
 }
 
 export class VersionFilter implements IFilter {
@@ -466,6 +489,10 @@ export class VersionFilter implements IFilter {
     public type: string = 'version';
 
     public value = $state<string>();
+
+    public get key(): string {
+        return `${this.type}:${this.term}`;
+    }
 
     constructor(term?: string, value?: string) {
         this.term = term;
@@ -499,33 +526,37 @@ export class VersionFilter implements IFilter {
             value: this.value
         };
     }
+}
 
-    public get key(): string {
-        return `${this.type}:${this.term}`;
+export function filterChanged(filters: IFilter[], updated: IFilter): IFilter[] {
+    return processFilterRules(setFilter(filters, updated), updated);
+}
+
+export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): IFilter[] {
+    // If detail is undefined, remove all filters.
+    if (!removed) {
+        return defaultFilters;
+    } else if (defaultFilters.find((f) => f.key === removed.key)) {
+        return processFilterRules(setFilter(filters, removed), removed);
+    } else {
+        return processFilterRules(
+            filters.filter((f) => f.key !== removed.key),
+            removed
+        );
     }
 }
 
-export function quoteIfSpecialCharacters(value?: null | string): null | string | undefined {
-    // Check for lucene special characters or whitespace
-    const regex = new RegExp('\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s', 'g');
-
-    if (value && value.match(regex)) {
-        return quote(value);
-    }
-
-    return value;
-}
-
-export function quote(value?: null | string): string | undefined {
-    return value ? `"${value}"` : undefined;
-}
-
-export function toFilter(filters: IFilter[]): string {
-    return filters
-        .map((f) => f.toFilter())
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+export function getDefaultFilters(includeDateFilter = true): IFilter[] {
+    return [
+        new OrganizationFilter(),
+        new ProjectFilter(undefined, []),
+        new StatusFilter([]),
+        new TypeFilter([]),
+        new DateFilter('date', 'last week'),
+        new ReferenceFilter(),
+        new SessionFilter(),
+        new KeywordFilter()
+    ].filter((f) => includeDateFilter || f.type !== 'date');
 }
 
 export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'> & Record<string, unknown>): IFilter | undefined {
@@ -559,6 +590,72 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
     }
 }
 
+export function getKeywordFilter(filters: IFilter[]): KeywordFilter | undefined {
+    return filters.find((f) => f.type === 'keyword') as KeywordFilter;
+}
+
+export function getOrganizationFilter(filters: IFilter[]): OrganizationFilter | undefined {
+    return filters.find((f) => f.type === 'organization') as OrganizationFilter;
+}
+
+export function getProjectFilter(filters: IFilter[]): ProjectFilter {
+    return filters.find((f) => f.type === 'project') as ProjectFilter;
+}
+
+export function getStackFilter(filters: IFilter[]): StringFilter | undefined {
+    return filters.find((f) => f.type === 'string') as StringFilter;
+}
+
+export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
+    // Allow only one filter per type and term.
+    const groupedFilters: Partial<Record<string, IFilter[]>> = Object.groupBy(filters, (f: IFilter) => f.key);
+    const filtered: IFilter[] = [];
+    Object.entries(groupedFilters).forEach(([, items]) => {
+        if (items && items.length > 0) {
+            filtered.push(items[0] as IFilter);
+        }
+    });
+
+    const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
+    if (projectFilter) {
+        let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
+
+        // If there is a project filter, verify the organization filter is set
+        if (!organizationFilter) {
+            organizationFilter = new OrganizationFilter(projectFilter.organization);
+            filtered.push(organizationFilter);
+        }
+
+        // If the organization filter changes and organization is not set on the project filter, clear the project filter
+        if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
+            projectFilter.organization = organizationFilter.value;
+            projectFilter.value = [];
+        }
+
+        // If the project filter changes and the organization filter is not set, set it
+        if (organizationFilter.value !== projectFilter.organization) {
+            organizationFilter.value = projectFilter.organization;
+        }
+    }
+
+    return filtered;
+}
+
+export function quote(value?: null | string): string | undefined {
+    return value ? `"${value}"` : undefined;
+}
+
+export function quoteIfSpecialCharacters(value?: null | string): null | string | undefined {
+    // Check for lucene special characters or whitespace
+    const regex = new RegExp('\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s', 'g');
+
+    if (value && value.match(regex)) {
+        return quote(value);
+    }
+
+    return value;
+}
+
 /**
  * Mutates the given array of filters by adding or updating the specified filter.
  * If a filter with the same key and term already exists, it will be updated with the new filter's value.
@@ -586,91 +683,10 @@ export function setFilter(filters: IFilter[], filter: IFilter): IFilter[] {
     return filters;
 }
 
-export class FilterSerializer implements Serializer<IFilter[]> {
-    public deserialize(text: string): IFilter[] {
-        if (!text) {
-            return [];
-        }
-
-        const data: unknown[] = JSON.parse(text);
-        const filters: IFilter[] = [];
-        for (const filterData of data) {
-            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
-            if (filter) {
-                filters.push(filter);
-            }
-        }
-
-        return filters;
-    }
-
-    public serialize(object: IFilter[]): string {
-        return JSON.stringify(object);
-    }
-}
-
-export function getDefaultFilters(includeDateFilter = true): IFilter[] {
-    return [
-        new OrganizationFilter(),
-        new ProjectFilter(undefined, []),
-        new StatusFilter([]),
-        new TypeFilter([]),
-        new DateFilter('date', 'last week'),
-        new ReferenceFilter(),
-        new SessionFilter(),
-        new KeywordFilter()
-    ].filter((f) => includeDateFilter || f.type !== 'date');
-}
-
-export function filterChanged(filters: IFilter[], updated: IFilter): IFilter[] {
-    return processFilterRules(setFilter(filters, updated), updated);
-}
-
-export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): IFilter[] {
-    // If detail is undefined, remove all filters.
-    if (!removed) {
-        return defaultFilters;
-    } else if (defaultFilters.find((f) => f.key === removed.key)) {
-        return processFilterRules(setFilter(filters, removed), removed);
-    } else {
-        return processFilterRules(
-            filters.filter((f) => f.key !== removed.key),
-            removed
-        );
-    }
-}
-
-export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilter[] {
-    // Allow only one filter per type and term.
-    const groupedFilters: Partial<Record<string, IFilter[]>> = Object.groupBy(filters, (f: IFilter) => f.key);
-    const filtered: IFilter[] = [];
-    Object.entries(groupedFilters).forEach(([, items]) => {
-        if (items && items.length > 0) {
-            filtered.push(items[0]);
-        }
-    });
-
-    const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
-    if (projectFilter) {
-        let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
-
-        // If there is a project filter, verify the organization filter is set
-        if (!organizationFilter) {
-            organizationFilter = new OrganizationFilter(projectFilter.organization);
-            filtered.push(organizationFilter);
-        }
-
-        // If the organization filter changes and organization is not set on the project filter, clear the project filter
-        if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
-            projectFilter.organization = organizationFilter.value;
-            projectFilter.value = [];
-        }
-
-        // If the project filter changes and the organization filter is not set, set it
-        if (organizationFilter.value !== projectFilter.organization) {
-            organizationFilter.value = projectFilter.organization;
-        }
-    }
-
-    return filtered;
+export function toFilter(filters: IFilter[]): string {
+    return filters
+        .map((f) => f.toFilter())
+        .filter(Boolean)
+        .join(' ')
+        .trim();
 }

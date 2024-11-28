@@ -3,14 +3,14 @@
     import type { VariantProps } from 'tailwind-variants';
 
     import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
-    import IconContentCopy from '~icons/mdi/content-copy';
     import { toast } from 'svelte-sonner';
+    import IconContentCopy from '~icons/mdi/content-copy';
 
-    type Props = {
+    type Props = ButtonProps & {
         children?: Snippet;
         size?: VariantProps<typeof buttonVariants>['size'];
         value?: null | string;
-    } & ButtonProps;
+    };
 
     let { children, size = 'icon', title = 'Copy to Clipboard', value }: Props = $props();
 

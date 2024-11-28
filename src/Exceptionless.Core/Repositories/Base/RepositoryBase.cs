@@ -32,7 +32,7 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         return _validator.ValidateAndThrowAsync(document);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T? document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
     {
         if (!NotificationsEnabled)
             return Task.CompletedTask;

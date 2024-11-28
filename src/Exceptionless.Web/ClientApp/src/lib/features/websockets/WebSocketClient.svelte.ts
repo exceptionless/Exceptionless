@@ -3,22 +3,16 @@ import { DocumentVisibility } from '$shared/document-visibility.svelte';
 import { accessToken } from '../auth/index.svelte';
 
 export class WebSocketClient {
+    public readyState: number = WebSocket.CLOSED;
+
+    public reconnectInterval: number = 1000;
+    public timeoutInterval: number = 2000;
+    public url: string;
     private accessToken: null | string = null;
 
     private forcedClose: boolean = false;
     private timedOut: boolean = false;
     private ws: null | WebSocket = null;
-    public onClose: (ev: CloseEvent) => void = () => {};
-
-    public onConnecting: (isReconnect: boolean) => void = () => {};
-    public onError: (ev: Event) => void = () => {};
-    public onMessage: (ev: MessageEvent) => void = () => {};
-
-    public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
-    public readyState: number = WebSocket.CLOSED;
-    public reconnectInterval: number = 1000;
-    public timeoutInterval: number = 2000;
-    public url: string;
 
     constructor(path: string = '/api/v2/push') {
         const { host, protocol } = window.location;
@@ -40,7 +34,6 @@ export class WebSocketClient {
             }
         });
     }
-
     public close(): boolean {
         if (this.ws) {
             this.forcedClose = true;
@@ -50,7 +43,6 @@ export class WebSocketClient {
 
         return false;
     }
-
     public connect(reconnectAttempt: boolean = true) {
         const isReconnect: boolean = this.forcedClose;
 
@@ -101,6 +93,14 @@ export class WebSocketClient {
             this.onError(event);
         };
     }
+    public onClose: (ev: CloseEvent) => void = () => {};
+    public onConnecting: (isReconnect: boolean) => void = () => {};
+
+    public onError: (ev: Event) => void = () => {};
+
+    public onMessage: (ev: MessageEvent) => void = () => {};
+
+    public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
 
     public send(data: ArrayBufferLike | ArrayBufferView | Blob | string) {
         if (this.ws) {

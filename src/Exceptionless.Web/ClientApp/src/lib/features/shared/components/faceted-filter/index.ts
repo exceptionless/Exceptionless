@@ -6,14 +6,14 @@ import Root from './faceted-filter-builder.svelte';
 
 export {
     Actions,
-    Actions as FacetedFilterActions,
     BadgeLoading,
-    BadgeLoading as FacetedFilterBadgeLoading,
     BadgeValue,
-    BadgeValue as FacetedFilterBadgeValue,
     BadgeValues,
+    Actions as FacetedFilterActions,
+    BadgeLoading as FacetedFilterBadgeLoading,
+    BadgeValue as FacetedFilterBadgeValue,
     BadgeValues as FacetedFilterBadgeValues,
-    Root,
     //
-    Root as FacetedFilterBuilder
+    Root as FacetedFilterBuilder,
+    Root
 };

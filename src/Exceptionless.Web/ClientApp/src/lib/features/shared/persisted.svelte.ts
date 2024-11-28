@@ -26,6 +26,14 @@ export class JSONSerializer<T> extends Serializer<T> {
 }
 
 export class LocalStore<T> {
+    public get value(): T {
+        return this._value;
+    }
+
+    public set value(value: T) {
+        this._value = value;
+    }
+
     private _value = $state<T>() as T;
 
     constructor(
@@ -51,14 +59,6 @@ export class LocalStore<T> {
                 }
             });
         });
-    }
-
-    public get value(): T {
-        return this._value;
-    }
-
-    public set value(value: T) {
-        this._value = value;
     }
 }
 

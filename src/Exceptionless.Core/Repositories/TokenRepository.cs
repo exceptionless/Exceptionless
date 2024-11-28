@@ -51,7 +51,7 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
         return RemoveAllAsync(q => q.ElasticFilter(Query<Token>.Term(t => t.UserId, userId)), options);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token? document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
     {
         var items = new Foundatio.Utility.DataDictionary(data ?? new Dictionary<string, object>()) {
                 { ExtendedEntityChanged.KnownKeys.IsAuthenticationToken, TokenType.Authentication == document?.Type },
