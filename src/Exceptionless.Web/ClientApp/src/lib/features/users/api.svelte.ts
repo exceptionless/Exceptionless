@@ -50,7 +50,7 @@ export function mutateEmailAddress(props: UpdateEmailAddressProps) {
         },
         mutationKey: queryKeys.idEmailAddress(props.id),
         onSuccess: (data, variables) => {
-            const partialUserData: User = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
+            const partialUserData: Partial<User> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
 
             const user = queryClient.getQueryData<User>(queryKeys.id(props.id));
             if (user) {

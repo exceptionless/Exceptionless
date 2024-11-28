@@ -7,7 +7,8 @@
 
     let { value = $bindable() }: Props = $props();
 
-    const items = [
+    type Item = { label: string; value: string };
+    const items: Item[] = [
         { label: 'Last Hour', value: 'last hour' },
         { label: 'Last 24 Hours', value: 'last 24 hours' },
         { label: 'Last Week', value: 'last week' },
@@ -15,7 +16,7 @@
         { label: 'All Time', value: '' }
     ];
 
-    let selected = $derived(items.find((item) => item.value === value) || items[items.length - 1]);
+    let selected = $derived((items.find((item) => item.value === value) || items[items.length - 1]) as Item);
 </script>
 
 <Select.Root type="single" {items} bind:value>

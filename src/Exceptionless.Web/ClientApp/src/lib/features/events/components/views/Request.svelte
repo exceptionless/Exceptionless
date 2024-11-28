@@ -39,7 +39,7 @@
             .sort()
             .reduce(
                 (acc, key) => {
-                    acc[key] = request.headers?.[key].join(',') ?? '';
+                    acc[key] = request.headers?.[key]?.join(',') ?? '';
                     return acc;
                 },
                 {} as Record<string, string>
