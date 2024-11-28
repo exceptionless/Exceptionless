@@ -11,15 +11,18 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
     const { id } = message;
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+
+        // Invalidate regardless of mode
+        await queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
 }
 
 export const queryKeys = {
-    all: ['Organization'] as const,
-    allWithMode: (mode: 'stats' | undefined) => [...queryKeys.all, { mode }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    list: (mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, 'list', { mode }] as const) : ([...queryKeys.type, 'list'] as const)),
+    type: ['Organization'] as const
 };
 
 export interface GetOrganizationsProps {
@@ -48,6 +51,6 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
 
             return response.data!;
         },
-        queryKey: props.mode ? queryKeys.allWithMode(props.mode) : queryKeys.all
+        queryKey: queryKeys.list(props.mode ?? undefined)
     }));
 }

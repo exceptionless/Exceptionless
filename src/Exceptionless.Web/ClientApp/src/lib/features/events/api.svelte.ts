@@ -17,16 +17,14 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (!id && !stack_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
 }
 
 export const queryKeys = {
-    all: ['PersistentEvent'] as const,
-    allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const,
-    stacks: (id: string | undefined) => [...queryKeys.all, 'stacks', id] as const,
-    stackWithFilters: (id: string | undefined, filters: string) => [...queryKeys.stacks(id), { filters }] as const
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
+    type: ['PersistentEvent'] as const
 };
 
 export interface GetEventByIdProps {
