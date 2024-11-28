@@ -31,7 +31,7 @@
         }
     });
 
-    const updateEmailAddressForm = superForm(defaults(userResponse.data ?? {}, classvalidatorClient(User)), {
+    const updateEmailAddressForm = superForm(defaults(userResponse.data ?? new User(), classvalidatorClient(User)), {
         dataType: 'json',
         id: 'update-email-address',
         async onUpdate({ form, result }) {
@@ -58,7 +58,7 @@
         validators: classvalidatorClient(User)
     });
 
-    const updateUserForm = superForm(defaults(userResponse.data ?? {}, classvalidatorClient(UpdateUser)), {
+    const updateUserForm = superForm(defaults(userResponse.data ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
         dataType: 'json',
         id: 'update-user',
         async onUpdate({ form, result }) {

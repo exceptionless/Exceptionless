@@ -87,7 +87,7 @@ function getAspNetConfig() {
     if (aspnetHttpsPort) {
         url = `https://localhost:${aspnetHttpsPort}`;
     } else if (aspnetUrls) {
-        url = aspnetUrls.split(';')[0];
+        url = aspnetUrls.split(';')[0] as string;
     }
 
     const wsUrl = url.replace('https://', 'wss://').replace('http://', 'ws://');

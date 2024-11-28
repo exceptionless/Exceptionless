@@ -1,14 +1,30 @@
+import type { WebSocketMessageValue } from '$features/websockets/models';
+
 import { accessToken } from '$features/auth/index.svelte';
 import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import { UpdateEmailAddressResult, type UpdateUser, User } from './models';
 
+export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
+    const { id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+
+        const currentUser = queryClient.getQueryData<User>(queryKeys.me());
+        if (currentUser?.id === id) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.me() });
+        }
+    } else {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    }
+}
+
 export const queryKeys = {
-    all: ['User'] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const,
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
     idEmailAddress: (id?: string) => [...queryKeys.id(id), 'email-address'] as const,
-    me: () => [...queryKeys.all, 'me'] as const
+    me: () => [...queryKeys.type, 'me'] as const,
+    type: ['User'] as const
 };
 
 export interface UpdateEmailAddressProps {
@@ -50,7 +66,7 @@ export function mutateEmailAddress(props: UpdateEmailAddressProps) {
         },
         mutationKey: queryKeys.idEmailAddress(props.id),
         onSuccess: (data, variables) => {
-            const partialUserData: User = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
+            const partialUserData: Partial<User> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
 
             const user = queryClient.getQueryData<User>(queryKeys.id(props.id));
             if (user) {

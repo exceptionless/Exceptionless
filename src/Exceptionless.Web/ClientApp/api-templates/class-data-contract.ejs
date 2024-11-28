@@ -6,7 +6,7 @@ export class <%~ contract.name %> {
   <% for (const field of contract.$content) { %>
     <%~ includeFile('@base/object-field-jsdoc.ejs', { ...it, field }) %>
     <%~ includeFile('./object-field-class-validator.ejs', { ...it, field }) %>
-    <%~ field.name %><%~ field.isRequired || field.nullable !== true ? '!' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %><%~ field.type === "object" && field.nullable === true ? ' | null' : '' %><%~ field.nullable === true ? ' = null' : '' %>;
+    <%~ field.name %><%~ field.isRequired || !field.nullable ? '!' : '' %><%~ field.nullable ? '?' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
   <% } %>
 }
 
