@@ -1,8 +1,20 @@
+import type { WebSocketMessageValue } from '$features/websockets/models';
+
 import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { Stack } from './models';
+
+//
+export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
+    const { id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+    } else {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+    }
+}
 
 export const queryKeys = {
     all: ['Stack'] as const,

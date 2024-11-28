@@ -1,8 +1,24 @@
+import type { WebSocketMessageValue } from '$features/websockets/models';
+
 import { accessToken } from '$features/auth/index.svelte';
 import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import { UpdateEmailAddressResult, type UpdateUser, User } from './models';
+
+export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
+    const { id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+
+        const currentUser = queryClient.getQueryData<User>(queryKeys.me());
+        if (currentUser?.id === id) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.me() });
+        }
+    } else {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+    }
+}
 
 export const queryKeys = {
     all: ['User'] as const,
