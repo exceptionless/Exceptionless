@@ -612,7 +612,7 @@ export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilt
     const filtered: IFilter[] = [];
     Object.entries(groupedFilters).forEach(([, items]) => {
         if (items && items.length > 0) {
-            filtered.push(items[0]);
+            filtered.push(items[0] as IFilter);
         }
     });
 
