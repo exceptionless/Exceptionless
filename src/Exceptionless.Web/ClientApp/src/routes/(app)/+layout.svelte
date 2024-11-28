@@ -102,6 +102,7 @@
         ws.onMessage = onMessage;
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
+                queryClient.invalidateQueries();
                 document.dispatchEvent(
                     new CustomEvent('refresh', {
                         bubbles: true,
