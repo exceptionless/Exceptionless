@@ -141,17 +141,17 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     params: IGetEventsParams,
     configureOptions: (options: TableOptions<TSummaryModel>) => TableOptions<TSummaryModel> = (options) => options
 ) {
-    let parameters = $state(params);
-    let pageCount = $state(0);
-    let data = $state([] as TSummaryModel[]);
-    let loading = $state(false);
-    let meta = $state({} as FetchClientResponse<unknown>['meta']);
+    let _parameters = $state(params);
+    let _pageCount = $state(0);
+    let _data = $state([] as TSummaryModel[]);
+    let _loading = $state(false);
+    let _meta = $state({} as FetchClientResponse<unknown>['meta']);
 
-    const columns = getColumns<TSummaryModel>(parameters.mode);
+    const columns = getColumns<TSummaryModel>(_parameters.mode);
     const [columnVisibility, setColumnVisibility] = createPersistedTableState('events-column-visibility', <VisibilityState>{});
     const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: 0,
-        pageSize: parameters.limit ?? DEFAULT_LIMIT
+        pageSize: _parameters.limit ?? DEFAULT_LIMIT
     });
     const [sorting, setSorting] = createTableState<ColumnSort[]>([
         {
@@ -161,11 +161,11 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     ]);
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
-        if (loading) {
+        if (_loading) {
             return;
         }
 
-        loading = true;
+        _loading = true;
         const previousPageIndex = pagination().pageIndex;
         setPagination(updaterOrValue);
 
@@ -173,10 +173,10 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         setRowSelection({});
 
         const currentPageInfo = pagination();
-        parameters = {
-            ...parameters,
-            after: currentPageInfo.pageIndex > previousPageIndex ? (meta.links.next?.after as string) : undefined,
-            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? (meta.links.previous?.before as string) : undefined,
+        _parameters = {
+            ..._parameters,
+            after: currentPageInfo.pageIndex > previousPageIndex ? (_meta.links.next?.after as string) : undefined,
+            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? (_meta.links.previous?.before as string) : undefined,
             limit: currentPageInfo.pageSize
         };
     };
@@ -184,8 +184,8 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     const onSortingChange = (updaterOrValue: Updater<ColumnSort[]>) => {
         setSorting(updaterOrValue);
 
-        parameters = {
-            ...parameters,
+        _parameters = {
+            ..._parameters,
             after: undefined,
             before: undefined,
             sort:
@@ -200,7 +200,7 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     const options = configureOptions({
         columns,
         get data() {
-            return data;
+            return _data;
         },
         enableMultiRowSelection: true,
         enableRowSelection: true,
@@ -214,7 +214,7 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         onRowSelectionChange: setRowSelection,
         onSortingChange,
         get pageCount() {
-            return pageCount;
+            return _pageCount;
         },
         state: {
             get columnVisibility() {
@@ -234,39 +234,32 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
 
     return {
         get data() {
-            return data;
+            return _data;
         },
         set data(value) {
-            data = value;
-        },
-        get limit(): string {
-            return `${parameters.limit ?? DEFAULT_LIMIT}`;
-        },
-        set limit(value: string) {
-            parameters.limit = Number(value);
-            setPagination({ pageIndex: 0, pageSize: Number(value) });
+            _data = value;
         },
         get loading() {
-            return loading;
+            return _loading;
         },
         get meta() {
-            return meta;
+            return _meta;
         },
         set meta(value) {
-            meta = value;
+            _meta = value;
 
-            const limit = parameters.limit ?? DEFAULT_LIMIT;
-            const total = (meta?.total as number) ?? 0;
-            pageCount = Math.ceil(total / limit);
+            const limit = _parameters.limit ?? DEFAULT_LIMIT;
+            const total = (_meta?.total as number) ?? 0;
+            _pageCount = Math.ceil(total / limit);
 
-            loading = false;
+            _loading = false;
         },
         options,
         get pageCount() {
-            return pageCount;
+            return _pageCount;
         },
         get parameters() {
-            return parameters;
+            return _parameters;
         }
     };
 }

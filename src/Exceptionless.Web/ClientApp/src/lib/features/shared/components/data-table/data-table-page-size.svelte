@@ -9,12 +9,13 @@
 
     interface Props {
         table: Table<TData>;
-        value: string;
+        value: number;
     }
 
     let { table, value = $bindable() }: Props = $props();
 
-    const items = [
+    type Item = { label: string; value: string };
+    const items: Item[] = [
         { label: '5', value: '5' },
         { label: '10', value: '10' },
         { label: '20', value: '20' },
@@ -23,15 +24,17 @@
         { label: '50', value: '50' }
     ];
 
-    let selected = $derived(items.find((item) => item.value === value) || items[0]);
+    let valueString = $derived(value + '');
+    let selected = $derived((items.find((item) => item.value === valueString) || items[0]) as Item);
     function onValueChange(newValue: string) {
+        value = Number(newValue);
         table.setPageSize(Number(newValue));
     }
 </script>
 
 <div class="flex items-center space-x-2">
     <p class="text-sm font-medium">Rows per page</p>
-    <Select.Root type="single" {items} bind:value {onValueChange}>
+    <Select.Root type="single" {items} value={valueString} {onValueChange}>
         <Select.Trigger class="h-8 w-[70px]">
             {selected.label}
         </Select.Trigger>
