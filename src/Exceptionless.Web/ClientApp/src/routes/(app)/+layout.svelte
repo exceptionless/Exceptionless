@@ -10,6 +10,7 @@
     import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes';
     import FooterLayout from './(components)/layouts/Footer.svelte';
@@ -130,7 +131,11 @@
         <div class="w-full text-secondary-foreground">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                {@render children()}
+                {#key $page.url.pathname}
+                    <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+                        {@render children()}
+                    </div>
+                {/key}
             </main>
 
             <FooterLayout></FooterLayout>
