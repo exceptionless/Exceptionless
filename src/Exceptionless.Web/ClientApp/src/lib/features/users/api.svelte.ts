@@ -16,15 +16,15 @@ export async function invalidateUserQueries(queryClient: QueryClient, message: W
             queryClient.invalidateQueries({ queryKey: queryKeys.me() });
         }
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
 }
 
 export const queryKeys = {
-    all: ['User'] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const,
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
     idEmailAddress: (id?: string) => [...queryKeys.id(id), 'email-address'] as const,
-    me: () => [...queryKeys.all, 'me'] as const
+    me: () => [...queryKeys.type, 'me'] as const,
+    type: ['User'] as const
 };
 
 export interface UpdateEmailAddressProps {

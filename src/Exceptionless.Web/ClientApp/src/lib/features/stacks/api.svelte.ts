@@ -12,14 +12,13 @@ export async function invalidateStackQueries(queryClient: QueryClient, message: 
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
 }
 
 export const queryKeys = {
-    all: ['Stack'] as const,
-    allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    type: ['Stack'] as const
 };
 
 export interface GetStackByIdProps {

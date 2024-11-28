@@ -17,16 +17,14 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
     }
 
     if (!id && !organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
 }
 
 export const queryKeys = {
-    all: ['Project'] as const,
-    allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const,
-    organization: (id: string | undefined) => [...queryKeys.all, 'organization', id] as const,
-    organizationWithFilters: (id: string | undefined, filters: string) => [...queryKeys.organization(id), { filters }] as const
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
+    type: ['Project'] as const
 };
 
 export interface DemoteProjectTabProps {
