@@ -4,12 +4,17 @@
     import { page } from '$app/stores';
     import { useSidebar } from '$comp/ui/sidebar';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
+    import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import { invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import { invalidateProjectQueries } from '$features/projects/api.svelte';
+    import { invalidateStackQueries } from '$features/stacks/api.svelte';
+    import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/WebSocketClient.svelte';
     import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes';
     import FooterLayout from './(components)/layouts/Footer.svelte';
@@ -62,7 +67,26 @@
         );
 
         if (isEntityChangedType(data)) {
-            await queryClient.invalidateQueries({ queryKey: [data.message.type] });
+            switch (data.type) {
+                case 'OrganizationChanged':
+                    await invalidateOrganizationQueries(queryClient, data.message);
+                    break;
+                case 'PersistentEventChanged':
+                    await invalidatePersistentEventQueries(queryClient, data.message);
+                    break;
+                case 'ProjectChanged':
+                    await invalidateProjectQueries(queryClient, data.message);
+                    break;
+                case 'StackChanged':
+                    await invalidateStackQueries(queryClient, data.message);
+                    break;
+                case 'UserChanged':
+                    await invalidateUserQueries(queryClient, data.message);
+                    break;
+                default:
+                    await queryClient.invalidateQueries({ queryKey: [data.message.type] });
+                    break;
+            }
         }
 
         // This event is fired when a user is added or removed from an organization.
@@ -101,6 +125,7 @@
         ws.onMessage = onMessage;
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
+                queryClient.invalidateQueries();
                 document.dispatchEvent(
                     new CustomEvent('refresh', {
                         bubbles: true,
@@ -130,7 +155,11 @@
         <div class="w-full text-secondary-foreground">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                {@render children()}
+                {#key $page.url.pathname}
+                    <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+                        {@render children()}
+                    </div>
+                {/key}
             </main>
 
             <FooterLayout></FooterLayout>

@@ -1,15 +1,30 @@
+import type { WebSocketMessageValue } from '$features/websockets/models';
+
 import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { PersistentEvent } from './models';
 
+export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
+    const { id, stack_id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+    }
+
+    if (stack_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.stacks(stack_id) });
+    }
+
+    if (!id && !stack_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    }
+}
+
 export const queryKeys = {
-    all: ['PersistentEvent'] as const,
-    allWithFilters: (filters: string) => [...queryKeys.all, { filters }] as const,
-    id: (id: string | undefined) => [...queryKeys.all, id] as const,
-    stacks: (id: string | undefined) => [...queryKeys.all, 'stacks', id] as const,
-    stackWithFilters: (id: string | undefined, filters: string) => [...queryKeys.stacks(id), { filters }] as const
+    id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
+    type: ['PersistentEvent'] as const
 };
 
 export interface GetEventByIdProps {

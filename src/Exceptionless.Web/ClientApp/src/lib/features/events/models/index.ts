@@ -53,6 +53,6 @@ export interface SubmissionClient {
 }
 
 export class PersistentEvent extends PersistentEventBase {
-    @IsOptional() @ValidateNested() data?: IPersistentEventData = undefined;
-    @IsOptional() type?: PersistentEventKnownTypes = undefined;
+    @IsOptional() @ValidateNested() override data?: IPersistentEventData = undefined;
+    @IsOptional() override type?: PersistentEventKnownTypes = undefined;
 }
