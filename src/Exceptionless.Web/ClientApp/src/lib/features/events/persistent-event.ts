@@ -27,7 +27,7 @@ export function getErrorData(event: PersistentEvent): ErrorData[] {
                     return;
                 }
 
-                const additionalData = error.data['@ext'] || {};
+                const additionalData = { ...error.data['@ext'] };
                 Object.entries(error.data).forEach(([key, value]) => {
                     if (!key.startsWith('@')) {
                         additionalData[key] = value;
