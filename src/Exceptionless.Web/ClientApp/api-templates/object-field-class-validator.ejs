@@ -22,7 +22,7 @@ function getFormatValidation(field) {
 }
 
 const validationDecorators = _.compact([
-    !field.isRequired && "@IsOptional()",
+    !field.isRequired && field.nullable && "@IsOptional()",
     (field.name === "id" || field.name.endsWith("_id")) && `@IsMongoId({ message: '${field.name} must be a valid ObjectId.' })`,
     field.name === "url" && `@IsUrl({}, { message: '${field.name} must be a valid URL.' })`,
     !_.isUndefined(field.format) && getFormatValidation(field),
@@ -32,7 +32,7 @@ const validationDecorators = _.compact([
     !_.isUndefined(field.type) && (field.type === "object" || (field.type === "array" && field.items.$ref)) && `@ValidateNested({ message: '${field.name} must be a valid nested object.' })`,
 ]);
 
-if (!validationDecorators.length && field.isRequired) {
+if (!validationDecorators.length && (field.isRequired || !field.nullable)) {
     validationDecorators.push(`@IsDefined({ message: '${field.name} is required.' })`);
 }
 
