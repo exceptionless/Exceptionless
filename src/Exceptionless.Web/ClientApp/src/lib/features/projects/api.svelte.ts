@@ -1,8 +1,25 @@
+import type { WebSocketMessageValue } from '$features/websockets/models';
+
 import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { ViewProject } from './models';
+
+export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
+    const { id, organization_id } = message;
+    if (id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+    }
+
+    if (organization_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    }
+
+    if (!id && !organization_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.all });
+    }
+}
 
 export const queryKeys = {
     all: ['Project'] as const,
