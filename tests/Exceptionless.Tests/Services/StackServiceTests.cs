@@ -114,9 +114,9 @@ public class StackServiceTests : IntegrationTestsBase
             for (int i = 0; i < 10; i++)
             {
                 var utcNow = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
-                if (!minOccurrenceDate.HasValue)
-                    minOccurrenceDate = utcNow;
+                minOccurrenceDate ??= utcNow;
                 maxOccurrenceDate = utcNow;
+
                 await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
                 await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id, utcNow, utcNow, 2);
             }
