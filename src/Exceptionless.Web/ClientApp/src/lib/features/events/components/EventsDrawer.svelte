@@ -14,6 +14,7 @@
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getProjectByIdQuery } from '$features/projects/api.svelte';
     import { getStackByIdQuery } from '$features/stacks/api.svelte';
+    import StackCard from '$features/stacks/components/StackCard.svelte';
 
     import type { PersistentEvent } from '../models/index';
 
@@ -111,6 +112,8 @@
 {#if eventResponse.isLoading}
     <P>Loading...</P>
 {:else if eventResponse.isSuccess}
+    <StackCard id={eventResponse.data.stack_id}></StackCard>
+
     <Table.Root class="mt-4">
         <Table.Body>
             <Table.Row class="group">
