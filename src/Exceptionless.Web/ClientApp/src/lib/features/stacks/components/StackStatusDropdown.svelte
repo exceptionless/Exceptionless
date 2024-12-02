@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Select from '$comp/ui/select';
 
-    import { StackStatus } from "../models";
+    import { StackStatus } from '../models';
 
     interface Props {
         onChange?: (status: StackStatus) => Promise<void>;
@@ -12,12 +12,12 @@
 
     type Item = { label: string; value: StackStatus };
     const items: Item[] = [
-        { label: "Open", value: StackStatus.Open },
-        { label: "Fixed", value: StackStatus.Fixed },
-        { label: "Regressed", value: StackStatus.Regressed },
-        { label: "Snoozed", value: StackStatus.Snoozed },
-        { label: "Ignored", value: StackStatus.Ignored },
-        { label: "Discarded", value: StackStatus.Discarded },
+        { label: 'Open', value: StackStatus.Open },
+        { label: 'Fixed', value: StackStatus.Fixed },
+        { label: 'Regressed', value: StackStatus.Regressed },
+        { label: 'Snoozed', value: StackStatus.Snoozed },
+        { label: 'Ignored', value: StackStatus.Ignored },
+        { label: 'Discarded', value: StackStatus.Discarded }
     ];
 
     let selected = $derived((items.find((item) => item.value === value) || items[items.length - 1]) as Item);
