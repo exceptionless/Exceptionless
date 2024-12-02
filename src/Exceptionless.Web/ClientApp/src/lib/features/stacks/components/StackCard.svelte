@@ -1,6 +1,6 @@
 <script lang="ts">
     import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import DateTime from "$comp/formatters/DateTime.svelte";
+    import DateTime from '$comp/formatters/DateTime.svelte';
     import { P } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import { getStackByIdQuery } from '$features/stacks/api.svelte';
@@ -8,7 +8,7 @@
     import InformationOutline from '~icons/mdi/information-outline';
     import Users from '~icons/mdi/users';
 
-    import StackStatusDropdown from "./StackStatusDropdown.svelte";
+    import StackStatusDropdown from './StackStatusDropdown.svelte';
 
     interface Props {
         id: string;
@@ -39,12 +39,14 @@
                     <div class="text-2xl font-bold"><StackStatusDropdown value={stack.status} /></div>
                     <p class="text-xs text-muted-foreground">
                         {#if stack.date_fixed}
-                            Fixed {#if stack.fixed_in_version}in {stack.fixed_in_version} {/if} on <DateTime value={stack.date_fixed}></DateTime>
+                            Fixed {#if stack.fixed_in_version}in {stack.fixed_in_version}
+                            {/if} on <DateTime value={stack.date_fixed}></DateTime>
                         {/if}
                         {#if stack.snooze_until_utc}
                             Snoozed until <DateTime value={stack.snooze_until_utc}></DateTime>
                         {/if}
-                </Card.Content>
+                    </p></Card.Content
+                >
             </Card.Root>
             <Card.Root>
                 <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
