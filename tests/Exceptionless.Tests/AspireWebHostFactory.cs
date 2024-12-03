@@ -25,7 +25,7 @@ public class AspireWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifeti
 
         builder.AddElasticsearch("Elasticsearch")
             .WithContainerName("Exceptionless-Elasticsearch-Test")
-            .WithImageTag("8.15.2")
+            .WithImageTag("8.16.1")
             .WithLifetime(ContainerLifetime.Persistent);
 
         builder.AddRedis("Redis")

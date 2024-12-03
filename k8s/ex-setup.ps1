@@ -60,8 +60,8 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl create -f https://download.elastic.co/downloads/eck/2.14.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.14.0/operator.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.15.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.15.0/operator.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
