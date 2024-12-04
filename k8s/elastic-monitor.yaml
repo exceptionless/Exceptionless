@@ -4,7 +4,7 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 8.15.2
+  version: 8.16.1
   podDisruptionBudget:
     spec:
       minAvailable: 2
@@ -56,7 +56,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 8.15.2
+  version: 8.16.1
   count: 1
   elasticsearchRef:
     name: elastic-monitor
@@ -150,7 +150,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 8.15.2
+  version: 8.16.1
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -174,7 +174,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 8.15.2
+  version: 8.16.1
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:
