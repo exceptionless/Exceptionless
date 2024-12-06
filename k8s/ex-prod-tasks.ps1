@@ -2,7 +2,9 @@
 $ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # connect to kibana
-open "http://kibana-ex-prod.localtest.me:5660" && kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601
+$ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601 &
+Remove-Job $ELASTIC_JOB
+Start-Process "http://elastic:$ELASTIC_PASSWORD@kibana-ex-prod.localtest.me:5660"
 
 # port forward elasticsearch
 $ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-es-http 9260:9200 &
@@ -13,6 +15,8 @@ curl -k https://elastic:$ELASTIC_PASSWORD@localhost:9260/_cluster/health?pretty
 $ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace elastic-system "elastic-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 $ELASTIC_JOB = kubectl port-forward --namespace elastic-system service/elastic-monitor-es-http 9280:9200 &
 Remove-Job $ELASTIC_JOB
+
+Start-Process "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280"
 
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health?pretty
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/allocation?v
@@ -28,7 +32,7 @@ kubectl exec --stdin --tty ex-prod-redis-node-0 -- /bin/bash -c "redis-cli -a $R
 # open kubernetes dashboard
 $DASHBOARD_PASSWORD=$(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
 kubectl proxy
-open "http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
+Start-Process "http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
 
 # open kubecost
 kubectl port-forward --namespace kubecost deployment/kubecost-cost-analyzer 9090
