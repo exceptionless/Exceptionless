@@ -85,13 +85,13 @@ public class Program
                         app.UseSerilogRequestLogging(o =>
                         {
                             o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-                            o.GetLevel = (context, duration, ex) =>
+                            o.GetLevel = new Func<HttpContext, double, Exception?, LogEventLevel>((context, duration, ex) =>
                             {
                                 if (ex is not null || context.Response.StatusCode > 499)
                                     return LogEventLevel.Error;
 
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
-                            };
+                            });
                         });
 
                         Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetRequiredService<ILogger<Program>>());

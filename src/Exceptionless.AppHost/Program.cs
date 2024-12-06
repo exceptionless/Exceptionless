@@ -7,6 +7,10 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithKibana(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-Kibana"));
 
+var storage = builder.AddMinIo("Storage", s => s.WithCredentials("guest", "password").WithPorts(9000))
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithContainerName("Exceptionless-Storage");
+
 var cache = builder.AddRedis("Redis", port: 6379)
     .WithImageTag("7.4")
     .WithLifetime(ContainerLifetime.Persistent)
@@ -32,6 +36,7 @@ builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
 var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WithReference(cache)
     .WithReference(elastic)
+    .WithReference(storage)
     .WithEnvironment("ConnectionStrings:Email", "smtp://localhost:1025")
     .WithEnvironment("RunJobsInProcess", "false")
     .WaitFor(elastic)

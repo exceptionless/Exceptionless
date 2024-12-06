@@ -14,6 +14,7 @@ using FluentValidation;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
+using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -299,11 +300,11 @@ public class Startup
                 .To("https://api-iam.intercom.io/")
                 .To("wss://nexus-websocket-a.intercom.io");
 
-            csp.OnSendingHeader = context =>
+            csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
             {
                 context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
                 return Task.CompletedTask;
-            };
+            });
         });
 
         app.UseSerilogRequestLogging(o =>
