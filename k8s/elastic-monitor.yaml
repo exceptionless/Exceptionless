@@ -5,15 +5,10 @@ metadata:
   namespace: elastic-system
 spec:
   version: 8.16.1
-  podDisruptionBudget:
-    spec:
-      minAvailable: 2
-      selector:
-        matchLabels:
-          elasticsearch.k8s.elastic.co/cluster-name: elastic-monitor
+  podDisruptionBudget: {}
   nodeSets:
     - name: main
-      count: 3
+      count: 1
       config:
         # if not setting max_map_count in an init container, then use this setting
         #node.store.allow_mmap: false
