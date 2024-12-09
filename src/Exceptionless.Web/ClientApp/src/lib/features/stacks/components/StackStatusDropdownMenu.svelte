@@ -3,14 +3,14 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from '~icons/mdi/chevron-down';
 
-    import { StackStatus } from '../models';
+    import { mutateStackFixedStatus, mutateStackSnoozedStatus, mutateStackStatus } from '../api.svelte';
+    import { Stack, StackStatus } from '../models';
 
     interface Props {
-        id: string;
-        status: StackStatus;
+        stack: Stack;
     }
 
-    let { id, status }: Props = $props();
+    let { stack }: Props = $props();
 
     type Item = { label: string; value: StackStatus };
     const items: Item[] = [
@@ -22,59 +22,86 @@
         { label: 'Discarded', value: StackStatus.Discarded }
     ];
 
-    let selected = $derived((items.find((item) => item.value === status) || items[items.length - 1]) as Item);
+    let selected = $derived((items.find((item) => item.value === stack?.status) || items[items.length - 1]) as Item);
 
-    function updateOpen() {
-        //stackService.changeStatus(id, "open")
+    const updateStackFixedStatus = mutateStackFixedStatus({
+        get id() {
+            return stack?.id;
+        }
+    });
+
+    const updateStackSnoozedStatus = mutateStackSnoozedStatus({
+        get id() {
+            return stack?.id;
+        }
+    });
+
+    const updateStackStatus = mutateStackStatus({
+        get id() {
+            return stack?.id;
+        }
+    });
+
+    async function updateOpen() {
+        if (stack.status === StackStatus.Open) {
+            return;
+        }
+
+        await updateStackStatus.mutateAsync(StackStatus.Open);
     }
 
-    function updateFixed() {
-        // if (vm.stack.status === "fixed") {
-        //                 return updateOpen();
-        //             }
-        // tackDialogService
+    async function updateFixed() {
+        if (stack.status === StackStatus.Fixed) {
+            return;
+        }
+
         // .markFixed()
         //                 .then(function (version) {
         //                     return stackService
         //                         .markFixed(vm._stackId, version)
         //                         .then(onSuccess, onFailure)
         //                         .catch(function (e) {});
+        const version = undefined;
+        await updateStackFixedStatus.mutateAsync(version);
     }
 
-    function updateSnooze(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        console.log(timePeriod, id);
-        // if (!timePeriod && vm.stack.status === "snoozed") {
-        //                 return updateOpen();
-        //             }
-        //
-        //                     var snoozeUntilUtc = moment();
-        //                     switch (timePeriod) {
-        //                         case "6hours":
-        //                             snoozeUntilUtc = snoozeUntilUtc.add(6, "hours");
-        //                             break;
-        //                         case "day":
-        //                             snoozeUntilUtc = snoozeUntilUtc.add(1, "days");
-        //                             break;
-        //                         case "week":
-        //                             snoozeUntilUtc = snoozeUntilUtc.add(1, "weeks");
-        //                             break;
-        //                         case "month":
-        //                         default:
-        //                             snoozeUntilUtc = snoozeUntilUtc.add(1, "months");
-        //                             break;
-        //                     }
-        //
-        //                     return stackService
-        //                         .markSnoozed(vm._stackId, snoozeUntilUtc.format("YYYY-MM-DDTHH:mm:ssz"))
+    async function updateSnooze(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
+        if (stack.status === StackStatus.Snoozed) {
+            return;
+        }
+
+        let snoozeUntilUtc = new Date();
+        switch (timePeriod) {
+            case '6hours':
+                snoozeUntilUtc.setHours(snoozeUntilUtc.getHours() + 6);
+                break;
+            case 'day':
+                snoozeUntilUtc.setDate(snoozeUntilUtc.getDate() + 1);
+                break;
+            case 'week':
+                snoozeUntilUtc.setDate(snoozeUntilUtc.getDate() + 7);
+                break;
+            case 'month':
+            default:
+                snoozeUntilUtc.setMonth(snoozeUntilUtc.getMonth() + 1);
+                break;
+        }
+
+        await updateStackSnoozedStatus.mutateAsync(snoozeUntilUtc);
     }
 
-    function updateIgnore() {
-        // var ignored = vm.stack.status === "ignored";
-        //             return stackService
-        //                 .changeStatus(vm._stackId, ignored ? "open" : "ignored")
+    async function updateIgnore() {
+        if (stack.status === StackStatus.Ignored) {
+            return;
+        }
+
+        await updateStackStatus.mutateAsync(StackStatus.Ignored);
     }
 
-    function updateDiscard() {
+    async function updateDiscard() {
+        if (stack.status === StackStatus.Discarded) {
+            return;
+        }
         // if (vm.stack.status === "discarded") {
         //                 return updateOpen();
         //             }
@@ -86,6 +113,7 @@
         //                     "All future occurrences will be discarded and will not count against your event limit."
         //                 );
         //changeStatus(vm._stackId, "discarded")
+        await updateStackStatus.mutateAsync(StackStatus.Discarded);
     }
 </script>
 
