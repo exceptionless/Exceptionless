@@ -4,7 +4,6 @@
 
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
-    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import DateTime from '$comp/formatters/DateTime.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import { P } from '$comp/typography';
