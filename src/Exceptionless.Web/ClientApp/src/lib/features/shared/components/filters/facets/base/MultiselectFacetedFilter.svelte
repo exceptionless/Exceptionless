@@ -94,10 +94,10 @@
                 <Command.Input placeholder={title} />
             {/if}
             <Command.List>
+                <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
                     <Command.Loading><div class="flex p-2"><Loading class="mr-2 h-4 w-4" /> Loading...</div></Command.Loading>
                 {/if}
-                <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if options.length > 0}
                     <Command.Group>
                         {#each options as option (option.value)}
