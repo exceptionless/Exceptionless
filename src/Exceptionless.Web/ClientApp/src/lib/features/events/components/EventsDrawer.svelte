@@ -13,7 +13,6 @@
     import { getEventByIdQuery } from '$features/events/api.svelte';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getProjectByIdQuery } from '$features/projects/api.svelte';
-    import { getStackByIdQuery } from '$features/stacks/api.svelte';
     import StackCard from '$features/stacks/components/StackCard.svelte';
 
     import type { PersistentEvent } from '../models/index';
@@ -89,12 +88,6 @@
         }
     });
 
-    let stackResponse = getStackByIdQuery({
-        get id() {
-            return eventResponse.data?.stack_id;
-        }
-    });
-
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
     let activeTab = $state<TabType>('Overview');
@@ -112,7 +105,7 @@
 {#if eventResponse.isLoading}
     <P>Loading...</P>
 {:else if eventResponse.isSuccess}
-    <StackCard id={eventResponse.data.stack_id}></StackCard>
+    <StackCard {changed} id={eventResponse.data.stack_id}></StackCard>
 
     <Table.Root class="mt-4">
         <Table.Body>
@@ -135,15 +128,6 @@
                         /></Table.Cell
                     >
                     <Table.Cell>{projectResponse.data.name}</Table.Cell>
-                </Table.Row>
-            {/if}
-            {#if stackResponse.data}
-                <Table.Row class="group">
-                    <Table.Head class="w-40 whitespace-nowrap">Stack</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter {changed} class="mr-0" term="stack" value={stackResponse.data.id} /></Table.Cell
-                    >
-                    <Table.Cell>{stackResponse.data.title}</Table.Cell>
                 </Table.Row>
             {/if}
         </Table.Body>
