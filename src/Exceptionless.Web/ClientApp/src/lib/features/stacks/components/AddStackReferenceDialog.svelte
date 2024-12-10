@@ -1,38 +1,60 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
+    import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
+    import { defaults, superForm } from 'sveltekit-superforms';
+    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+
+    import { ReferenceLinkForm } from '../models';
 
     interface Props {
         open: boolean;
         save: (url: string) => Promise<void>;
     }
 
-    // TODO: Use form validation
     let { open = $bindable(), save }: Props = $props();
-    let value = $state('');
 
-    async function onSubmit() {
-        await save(value);
-        open = false;
-    }
+    const form = superForm(defaults(new ReferenceLinkForm(), classvalidatorClient(ReferenceLinkForm)), {
+        dataType: 'json',
+        async onUpdate({ form }) {
+            if (!form.valid) {
+                return;
+            }
+
+            await save(form.data.url);
+            open = false;
+        },
+        SPA: true,
+        validators: classvalidatorClient(ReferenceLinkForm)
+    });
+
+    const { enhance, form: formData } = form;
 </script>
 
 <Dialog.Root bind:open>
     <Dialog.Content class="sm:max-w-[425px]">
-        <Dialog.Header>
-            <Dialog.Title>Add Reference Link</Dialog.Title>
-            <Dialog.Description>Add a reference link to an external resource.</Dialog.Description>
-        </Dialog.Header>
-        <div class="grid gap-4 py-4">
-            <div class="grid grid-cols-5 items-center gap-6">
-                <Label for="url" class="text-right">Url</Label>
-                <Input id="url" name="url" type="url" bind:value placeholder="Please enter a valid URL" class="col-span-4" required />
+        <form method="POST" use:enhance>
+            <Dialog.Header>
+                <Dialog.Title>Add Reference Link</Dialog.Title>
+                <Dialog.Description>Add a reference link to an external resource.</Dialog.Description>
+            </Dialog.Header>
+
+            <div class="py-4">
+                <Form.Field {form} name="url">
+                    <Form.Control>
+                        {#snippet children({ props })}
+                            <Form.Label>Reference Link</Form.Label>
+                            <Input {...props} bind:value={$formData.url} type="url" placeholder="Please enter a valid URL" autocomplete="url" required />
+                        {/snippet}
+                    </Form.Control>
+                    <Form.Description />
+                    <Form.FieldErrors />
+                </Form.Field>
             </div>
-        </div>
-        <Dialog.Footer>
-            <Button type="submit" onclick={onSubmit}>Save Reference Link</Button>
-        </Dialog.Footer>
+
+            <Dialog.Footer>
+                <Form.Button>Save Reference Link</Form.Button>
+            </Dialog.Footer>
+        </form>
     </Dialog.Content>
 </Dialog.Root>
