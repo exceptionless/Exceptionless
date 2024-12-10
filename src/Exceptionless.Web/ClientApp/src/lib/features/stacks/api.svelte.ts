@@ -54,56 +54,53 @@ export function getStackByIdQuery(props: GetStackByIdProps) {
 
 export function mutateStackFixedStatus(props: UpdateStackFixedStatusProps) {
     const queryClient = useQueryClient();
-    return createMutation<Stack, ProblemDetails, string | undefined>(() => ({
+    return createMutation<void, ProblemDetails, string | undefined>(() => ({
         enabled: () => !!accessToken.value && !!props.id,
         mutationFn: async (version?: string) => {
             const client = useFetchClient();
-            const response = await client.postJSON<Stack>(`stacks/${props.id}/mark-fixed`, { version });
-            return response.data!;
+            await client.post(`stacks/${props.id}/mark-fixed`, undefined, { params: { version } });
         },
         mutationKey: queryKeys.id(props.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         },
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.id(props.id), data);
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }
     }));
 }
 export function mutateStackSnoozedStatus(props: UpdateStackSnoozedStatusProps) {
     const queryClient = useQueryClient();
-    return createMutation<Stack, ProblemDetails, Date>(() => ({
+    return createMutation<void, ProblemDetails, Date>(() => ({
         enabled: () => !!accessToken.value && !!props.id,
         mutationFn: async (snoozeUntilUtc: Date) => {
             const client = useFetchClient();
-            const response = await client.postJSON<Stack>(`stacks/${props.id}/mark-snoozed`, { snoozeUntilUtc });
-            return response.data!;
+            await client.post(`stacks/${props.id}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
         },
         mutationKey: queryKeys.id(props.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         },
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.id(props.id), data);
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }
     }));
 }
 
 export function mutateStackStatus(props: UpdateStackStatusProps) {
     const queryClient = useQueryClient();
-    return createMutation<Stack, ProblemDetails, StackStatus>(() => ({
+    return createMutation<void, ProblemDetails, StackStatus>(() => ({
         enabled: () => !!accessToken.value && !!props.id,
         mutationFn: async (status: StackStatus) => {
             const client = useFetchClient();
-            const response = await client.postJSON<Stack>(`stacks/${props.id}/change-status`, { status });
-            return response.data!;
+            await client.post(`stacks/${props.id}/change-status`, undefined, { params: { status } });
         },
         mutationKey: queryKeys.id(props.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         },
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.id(props.id), data);
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
         }
     }));
 }

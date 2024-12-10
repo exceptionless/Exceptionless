@@ -66,10 +66,6 @@
     }
 
     async function updateSnooze(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        if (stack.status === StackStatus.Snoozed) {
-            return;
-        }
-
         let snoozeUntilUtc = new Date();
         switch (timePeriod) {
             case '6hours':
@@ -128,21 +124,21 @@
         <DropdownMenu.Group>
             <DropdownMenu.GroupHeading>Update Status</DropdownMenu.GroupHeading>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item title="Mark this stack as open" onchange={() => updateOpen()}>Open</DropdownMenu.Item>
-            <DropdownMenu.Item title="Mark this stack as fixed" onchange={() => updateFixed()}>Fixed</DropdownMenu.Item>
+            <DropdownMenu.Item title="Mark this stack as open" onclick={() => updateOpen()}>Open</DropdownMenu.Item>
+            <DropdownMenu.Item title="Mark this stack as fixed" onclick={() => updateFixed()}>Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications" onchange={() => updateSnooze()}
+                <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications" onclick={() => updateSnooze()}
                     >Snoozed</DropdownMenu.SubTrigger
                 >
                 <DropdownMenu.SubContent>
-                    <DropdownMenu.Item onchange={() => updateSnooze('6hours')}>6 Hours</DropdownMenu.Item>
-                    <DropdownMenu.Item onchange={() => updateSnooze('day')}>1 Day</DropdownMenu.Item>
-                    <DropdownMenu.Item onchange={() => updateSnooze('week')}>1 Week</DropdownMenu.Item>
-                    <DropdownMenu.Item onchange={() => updateSnooze('month')}>1 Month</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => updateSnooze('6hours')}>6 Hours</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => updateSnooze('day')}>1 Day</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => updateSnooze('week')}>1 Week</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => updateSnooze('month')}>1 Month</DropdownMenu.Item>
                 </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item title="Stop sending occurrence notifications for this stack" onchange={() => updateIgnore()}>Ignored</DropdownMenu.Item>
-            <DropdownMenu.Item title="All future occurrences will be discarded and will not count against your event limit" onchange={() => updateDiscard()}
+            <DropdownMenu.Item title="Stop sending occurrence notifications for this stack" onclick={() => updateIgnore()}>Ignored</DropdownMenu.Item>
+            <DropdownMenu.Item title="All future occurrences will be discarded and will not count against your event limit" onclick={() => updateDiscard()}
                 >Discarded</DropdownMenu.Item
             >
         </DropdownMenu.Group>

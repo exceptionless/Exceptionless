@@ -78,7 +78,7 @@
                     </div>
                 </span>
                 <div class="flex items-center space-x-2">
-                    <StackStatusDropdownMenu id={stack.id} status={stack.status} />
+                    <StackStatusDropdownMenu stack={stack} />
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger>
                             <Button variant="ghost" size="icon">
@@ -91,22 +91,22 @@
                                 <DropdownMenu.Separator />
                                 <DropdownMenu.CheckboxItem
                                     checked={stack.occurrences_are_critical}
-                                    onchange={() => updateCritical()}
+                                    onclick={() => updateCritical()}
                                     title="All future occurrences will be marked as critical"
                                 >
                                     Future Occurrences Are Critical
                                 </DropdownMenu.CheckboxItem>
                                 <DropdownMenu.Separator />
-                                <DropdownMenu.Item onchange={() => promoteToExternal()} title="Used to promote stacks to external systems">
+                                <DropdownMenu.Item onclick={() => promoteToExternal()} title="Used to promote stacks to external systems">
                                     <IconPromoteToExternal class="mr-2 size-4" />
                                     Promote To External
                                 </DropdownMenu.Item>
-                                <DropdownMenu.Item onchange={() => addReferenceLink()} title="Add a reference link to an external resource">
+                                <DropdownMenu.Item onclick={() => addReferenceLink()} title="Add a reference link to an external resource">
                                     <IconReference class="mr-2 size-4" />
                                     Add Reference Link
                                 </DropdownMenu.Item>
                                 <DropdownMenu.Separator />
-                                <DropdownMenu.Item onchange={() => remove()} class="text-destructive" title="Delete this stack">
+                                <DropdownMenu.Item onclick={() => remove()} class="text-destructive" title="Delete this stack">
                                     <IconDelete class="mr-2 size-4" />
                                     Delete
                                 </DropdownMenu.Item>
