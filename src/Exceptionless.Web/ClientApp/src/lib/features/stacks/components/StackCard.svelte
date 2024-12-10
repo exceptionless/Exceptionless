@@ -9,7 +9,6 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getStackByIdQuery } from '$features/stacks/api.svelte';
     import IconFirstOccurrence from '~icons/mdi/arrow-left-circle';
@@ -17,12 +16,11 @@
     import IconCalendar from '~icons/mdi/calendar';
     import IconClock from '~icons/mdi/clock';
     import IconFilter from '~icons/mdi/filter';
-    import IconSettings from '~icons/mdi/gear';
     import IconReference from '~icons/mdi/link';
-    import IconDelete from '~icons/mdi/trash-can';
-    import IconPromoteToExternal from '~icons/mdi/trending-up';
+    import IconOpenInNew from '~icons/mdi/open-in-new';
     import IconUsers from '~icons/mdi/users';
 
+    import StackOptionsDropdownMenu from './StackOptionsDropdownMenu.svelte';
     import StackStatusDropdownMenu from './StackStatusDropdownMenu.svelte';
 
     interface Props {
@@ -39,32 +37,6 @@
     });
 
     const stack = $derived(stackResponse.data!);
-
-    function promoteToExternal() {
-        throw new Error('Function not implemented.');
-    }
-
-    function updateCritical() {
-        //         if (vm.stack.occurrences_are_critical) {
-        //                         return stackService.markNotCritical(vm._stackId).then(onSuccess, onFailure);
-        //                     }
-        //
-        //                     return stackService.markCritical(vm._stackId).catch(onSuccess, onFailure);
-    }
-
-    function addReferenceLink() {
-        //
-        // if (vm.stack.references.indexOf(url) < 0)
-        //                         return stackService.addLink(vm._stackId, url).then(onSuccess, onFailure);
-    }
-
-    function remove() {
-        // Are you sure you want to delete this stack (includes all stack events)?
-        // close
-        // remove(vm._stackId)
-        //
-        // translateService.T("Successfully queued the stack for deletion.")
-    }
 </script>
 
 {#if stack}
@@ -78,41 +50,8 @@
                     </div>
                 </span>
                 <div class="flex items-center space-x-2">
-                    <StackStatusDropdownMenu stack={stack} />
-                    <DropdownMenu.Root>
-                        <DropdownMenu.Trigger>
-                            <Button variant="ghost" size="icon">
-                                <IconSettings class="size-4" />
-                            </Button>
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content align="end">
-                            <DropdownMenu.Group>
-                                <DropdownMenu.GroupHeading>Stack Options</DropdownMenu.GroupHeading>
-                                <DropdownMenu.Separator />
-                                <DropdownMenu.CheckboxItem
-                                    checked={stack.occurrences_are_critical}
-                                    onclick={() => updateCritical()}
-                                    title="All future occurrences will be marked as critical"
-                                >
-                                    Future Occurrences Are Critical
-                                </DropdownMenu.CheckboxItem>
-                                <DropdownMenu.Separator />
-                                <DropdownMenu.Item onclick={() => promoteToExternal()} title="Used to promote stacks to external systems">
-                                    <IconPromoteToExternal class="mr-2 size-4" />
-                                    Promote To External
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Item onclick={() => addReferenceLink()} title="Add a reference link to an external resource">
-                                    <IconReference class="mr-2 size-4" />
-                                    Add Reference Link
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Separator />
-                                <DropdownMenu.Item onclick={() => remove()} class="text-destructive" title="Delete this stack">
-                                    <IconDelete class="mr-2 size-4" />
-                                    Delete
-                                </DropdownMenu.Item>
-                            </DropdownMenu.Group>
-                        </DropdownMenu.Content>
-                    </DropdownMenu.Root>
+                    <StackStatusDropdownMenu {stack} />
+                    <StackOptionsDropdownMenu {stack} />
                 </div>
             </Card.Title>
         </Card.Header>
@@ -158,9 +97,11 @@
                 </Tooltip.Root>
             </div>
 
+            <!-- Line Chart -->
+
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
-                    <div class="flex items-center space-x-2 text-sm">
+                    <div class="flex items-center gap-2 text-sm">
                         <IconCalendar class="size-4 text-green-500" />
                         <span>
                             Fixed {stack.fixed_in_version && `in ${stack.fixed_in_version}`} on <DateTime value={stack.date_fixed} />
@@ -169,20 +110,12 @@
                 {/if}
 
                 {#if stack.status === 'snoozed' && stack.snooze_until_utc}
-                    <div class="flex items-center space-x-2 text-sm">
+                    <div class="flex items-center gap-2 text-sm">
                         <IconClock class="size-4 text-blue-500" />
                         <span>Snoozed until <DateTime value={stack.snooze_until_utc} /></span>
                     </div>
                 {/if}
             </div>
-
-            <!-- <div class="h-32 lg:h-48">
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stack.occurrencesOverTime}>
-                    <Line type="monotone" dataKey="count" stroke="#8884d8" stroke-width={2} dot={false} />
-                </LineChart>
-            </ResponsiveContainer>
-        </div> -->
 
             {#if stack.tags && stack.tags.length > 0}
                 <div class="flex flex-wrap gap-2">
@@ -196,19 +129,14 @@
                 </div>
             {/if}
 
+            <!-- TODO: Move to stack grid? -->
             {#if stack.references && stack.references.length > 0}
-                <div class="flex flex-wrap gap-2">
-                    {#each stack.references as ref}
-                        <Tooltip.Root>
-                            <Tooltip.Trigger>
-                                <a href={ref} class="text-blue-500 hover:underline">
-                                    <IconReference class="size-4" />
-                                </a>
-                            </Tooltip.Trigger>
-                            <Tooltip.Content>
-                                <p>{ref}</p>
-                            </Tooltip.Content>
-                        </Tooltip.Root>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-blue-500" title="Reference Links"> <IconReference class="size-4" /></span>
+                    {#each stack.references as referenceUrl}
+                        <Button href={referenceUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
+                            >{referenceUrl} <IconOpenInNew /></Button
+                        >
                     {/each}
                 </div>
             {/if}

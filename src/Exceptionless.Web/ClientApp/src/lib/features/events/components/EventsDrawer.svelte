@@ -99,6 +99,8 @@
     function onDemoted(): void {
         activeTab = 'Extended Data';
     }
+
+    // TODO: Navigate on event deletion.
 </script>
 
 {#if eventResponse.isLoading}
