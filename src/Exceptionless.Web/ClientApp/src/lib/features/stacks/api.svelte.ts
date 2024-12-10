@@ -1,7 +1,7 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { Stack, StackStatus } from './models';
@@ -21,7 +21,27 @@ export const queryKeys = {
     type: ['Stack'] as const
 };
 
+export interface AddStackReferenceProps {
+    id: string | undefined;
+}
+
 export interface GetStackByIdProps {
+    id: string | undefined;
+}
+
+export interface MarkStackAsCriticalProps {
+    id: string | undefined;
+}
+
+export interface PromoteStackToExternalProps {
+    id: string | undefined;
+}
+
+export interface RemoveStackProps {
+    id: string | undefined;
+}
+
+export interface RemoveStackReferenceProps {
     id: string | undefined;
 }
 
@@ -52,6 +72,76 @@ export function getStackByIdQuery(props: GetStackByIdProps) {
     }));
 }
 
+export function mutateAddStackReference(props: AddStackReferenceProps) {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        mutationFn: async (url: string) => {
+            const client = useFetchClient();
+            await client.post(`stacks/${props.id}/add-link`, { value: url });
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
+    }));
+}
+export function mutateMarkStackAsCritical(props: MarkStackAsCriticalProps) {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.post(`stacks/${props.id}/mark-critical`);
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
+    }));
+}
+
+export function mutateMarkStackAsNotCritical(props: MarkStackAsCriticalProps) {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.delete(`stacks/${props.id}/mark-critical`);
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
+    }));
+}
+export function mutateRemoveStackReference(props: RemoveStackReferenceProps) {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        mutationFn: async (url: string) => {
+            const client = useFetchClient();
+            await client.post(`stacks/${props.id}/add-link`, { value: url });
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
+    }));
+}
+
 export function mutateStackFixedStatus(props: UpdateStackFixedStatusProps) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, string | undefined>(() => ({
@@ -69,6 +159,7 @@ export function mutateStackFixedStatus(props: UpdateStackFixedStatusProps) {
         }
     }));
 }
+
 export function mutateStackSnoozedStatus(props: UpdateStackSnoozedStatusProps) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, Date>(() => ({
@@ -122,4 +213,44 @@ export async function prefetchStack(props: GetStackByIdProps) {
         },
         queryKey: queryKeys.id(props.id)
     });
+}
+
+export function promoteStackToExternal(props: PromoteStackToExternalProps) {
+    const queryClient = useQueryClient();
+    return createMutation<FetchClientResponse<unknown>, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.post(`stacks/${props.id}/promote`, undefined, {
+                expectedStatusCodes: [200, 404, 426, 501]
+            });
+
+            return response;
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
+    }));
+}
+
+export function removeStack(props: RemoveStackProps) {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.value && !!props.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.delete(`stacks/${props.id}`);
+        },
+        mutationKey: queryKeys.id(props.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+        }
+    }));
 }
