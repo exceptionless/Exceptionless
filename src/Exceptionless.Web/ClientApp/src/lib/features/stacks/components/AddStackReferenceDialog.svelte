@@ -31,7 +31,7 @@
     const { enhance, form: formData } = form;
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open onOpenChange={() => form.reset()}>
     <Dialog.Content class="sm:max-w-[425px]">
         <form method="POST" use:enhance>
             <Dialog.Header>
