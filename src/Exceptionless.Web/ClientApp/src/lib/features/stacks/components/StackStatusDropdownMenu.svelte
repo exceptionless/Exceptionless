@@ -5,6 +5,7 @@
 
     import { mutateStackFixedStatus, mutateStackSnoozedStatus, mutateStackStatus } from '../api.svelte';
     import { Stack, StackStatus } from '../models';
+    import MarkStackDiscardedDialog from './dialogs/MarkStackDiscardedDialog.svelte';
     import MarkStackFixedInVersionDialog from './dialogs/MarkStackFixedInVersionDialog.svelte';
 
     interface Props {
@@ -23,6 +24,7 @@
         { label: 'Discarded', value: StackStatus.Discarded }
     ];
 
+    let openMarkStackDiscardedDialog = $state<boolean>(false);
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
     let selected = $derived((items.find((item) => item.value === stack?.status) || items[items.length - 1]) as Item);
 
@@ -89,17 +91,7 @@
         if (stack.status === StackStatus.Discarded) {
             return;
         }
-        // if (vm.stack.status === "discarded") {
-        //                 return updateOpen();
-        //             }
-        // translateService.T(
-        //                     "Are you sure you want to all current stack events and discard any future stack events?"
-        //                 ) +
-        //                 " " +
-        //                 translateService.T(
-        //                     "All future occurrences will be discarded and will not count against your event limit."
-        //                 );
-        //changeStatus(vm._stackId, "discarded")
+
         await updateStackStatus.mutateAsync(StackStatus.Discarded);
     }
 </script>
@@ -129,11 +121,13 @@
                 </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
             <DropdownMenu.Item title="Stop sending occurrence notifications for this stack" onclick={() => updateIgnore()}>Ignored</DropdownMenu.Item>
-            <DropdownMenu.Item title="All future occurrences will be discarded and will not count against your event limit" onclick={() => updateDiscard()}
-                >Discarded</DropdownMenu.Item
+            <DropdownMenu.Item
+                title="All future occurrences will be discarded and will not count against your event limit"
+                onclick={() => (openMarkStackDiscardedDialog = true)}>Discarded</DropdownMenu.Item
             >
         </DropdownMenu.Group>
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
+<MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={updateDiscard} />
 <MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={updateFixed} />
