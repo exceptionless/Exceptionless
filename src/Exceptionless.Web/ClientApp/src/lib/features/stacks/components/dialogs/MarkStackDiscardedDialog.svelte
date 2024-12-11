@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { buttonVariants } from '$comp/ui/button';
 
