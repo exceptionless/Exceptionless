@@ -10,16 +10,16 @@
 
     import { mutateAddStackReference, mutateMarkStackAsCritical, mutateMarkStackAsNotCritical, promoteStackToExternal, removeStack } from '../api.svelte';
     import { Stack } from '../models';
-    import AddStackReferenceDialog from './AddStackReferenceDialog.svelte';
-    import RemoveStackDialog from './RemoveStackDialog.svelte';
+    import AddStackReferenceDialog from './dialogs/AddStackReferenceDialog.svelte';
+    import RemoveStackDialog from './dialogs/RemoveStackDialog.svelte';
 
     interface Props {
         stack: Stack;
     }
 
     let { stack }: Props = $props();
-    let openRemoveStackDialog = $state<boolean>(false);
     let openAddStackReferenceDialog = $state<boolean>(false);
+    let openRemoveStackDialog = $state<boolean>(false);
 
     const addStackReference = mutateAddStackReference({
         get id() {
@@ -130,5 +130,5 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<RemoveStackDialog bind:open={openRemoveStackDialog} {remove} />
 <AddStackReferenceDialog bind:open={openAddStackReferenceDialog} save={addReference} />
+<RemoveStackDialog bind:open={openRemoveStackDialog} {remove} />

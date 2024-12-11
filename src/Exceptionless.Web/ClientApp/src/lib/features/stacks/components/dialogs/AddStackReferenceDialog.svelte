@@ -1,11 +1,12 @@
 <script lang="ts">
-    import * as Dialog from '$comp/ui/dialog';
+    import { P } from '$comp/typography';
+    import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
-    import { ReferenceLinkForm } from '../models';
+    import { ReferenceLinkForm } from '../../models';
 
     interface Props {
         open: boolean;
@@ -31,15 +32,15 @@
     const { enhance, form: formData } = form;
 </script>
 
-<Dialog.Root bind:open onOpenChange={() => form.reset()}>
-    <Dialog.Content class="sm:max-w-[425px]">
+<AlertDialog.Root bind:open onOpenChange={() => form.reset()}>
+    <AlertDialog.Content class="sm:max-w-[425px]">
         <form method="POST" use:enhance>
-            <Dialog.Header>
-                <Dialog.Title>Add Reference Link</Dialog.Title>
-                <Dialog.Description>Add a reference link to an external resource.</Dialog.Description>
-            </Dialog.Header>
+            <AlertDialog.Header>
+                <AlertDialog.Title>Add Reference Link</AlertDialog.Title>
+                <AlertDialog.Description>Add a reference link to an external resource.</AlertDialog.Description>
+            </AlertDialog.Header>
 
-            <div class="py-4">
+            <P class="pb-4">
                 <Form.Field {form} name="url">
                     <Form.Control>
                         {#snippet children({ props })}
@@ -50,11 +51,12 @@
                     <Form.Description />
                     <Form.FieldErrors />
                 </Form.Field>
-            </div>
+            </P>
 
-            <Dialog.Footer>
-                <Form.Button>Save Reference Link</Form.Button>
-            </Dialog.Footer>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action>Save Reference Link</AlertDialog.Action>
+            </AlertDialog.Footer>
         </form>
-    </Dialog.Content>
-</Dialog.Root>
+    </AlertDialog.Content>
+</AlertDialog.Root>
