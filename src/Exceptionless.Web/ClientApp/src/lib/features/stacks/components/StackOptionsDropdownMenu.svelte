@@ -12,6 +12,7 @@
     import { Stack } from '../models';
     import AddStackReferenceDialog from './dialogs/AddStackReferenceDialog.svelte';
     import RemoveStackDialog from './dialogs/RemoveStackDialog.svelte';
+    import RequiresPromotedWebHookDialog from './dialogs/RequiresPromotedWebHookDialog.svelte';
 
     interface Props {
         stack: Stack;
@@ -20,6 +21,7 @@
     let { stack }: Props = $props();
     let openAddStackReferenceDialog = $state<boolean>(false);
     let openRemoveStackDialog = $state<boolean>(false);
+    let openRequiresPromotedWebHookDialog = $state<boolean>(false);
 
     const addStackReference = mutateAddStackReference({
         get id() {
@@ -68,11 +70,14 @@
         }
 
         if (response.status === 501) {
-            toast.error('No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.');
-            // confirm dialog  .confirm(response.data.message, translateService.T("Manage Integrations"))
-            await goto(`/next/account/manage/notifications?project=${stack.project_id}`);
+            openRequiresPromotedWebHookDialog = true;
             return;
         }
+    }
+
+    async function navigateToProjectIntegrations() {
+        // TODO: Verify this works once page is added.
+        await goto(`/next/project/${stack.project_id}/manage/integrations`);
     }
 
     async function updateCritical() {
@@ -132,3 +137,4 @@
 
 <AddStackReferenceDialog bind:open={openAddStackReferenceDialog} save={addReference} />
 <RemoveStackDialog bind:open={openRemoveStackDialog} {remove} />
+<RequiresPromotedWebHookDialog bind:open={openRequiresPromotedWebHookDialog} navigate={navigateToProjectIntegrations} />

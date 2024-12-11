@@ -7,10 +7,10 @@
         remove: () => Promise<void>;
     }
 
-    let { open = $bindable(), remove: removeStack }: Props = $props();
+    let { open = $bindable(), remove }: Props = $props();
 
     async function onSubmit() {
-        await removeStack();
+        await remove();
         open = false;
     }
 </script>
@@ -23,7 +23,7 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>DELETE STACK</AlertDialog.Action>
+            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>Delete Stack</AlertDialog.Action>
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
