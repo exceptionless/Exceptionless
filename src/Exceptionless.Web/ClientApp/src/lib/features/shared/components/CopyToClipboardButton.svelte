@@ -29,7 +29,7 @@
         {#if children}
             {@render children()}
         {:else}
-            <IconContentCopy class="h-4 w-4" />
+            <IconContentCopy class="size-4" />
         {/if}
     </Button>
 </div>

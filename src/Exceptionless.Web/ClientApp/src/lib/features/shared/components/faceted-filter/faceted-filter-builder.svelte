@@ -67,7 +67,7 @@
     <Popover.Trigger>
         {#snippet children()}
             <Button class="h-8" size="sm" variant="outline">
-                <IconAddCircleOutline class="mr-2 h-4 w-4" /> Filter
+                <IconAddCircleOutline class="mr-2 size-4" /> Filter
             </Button>
         {/snippet}
     </Popover.Trigger>
