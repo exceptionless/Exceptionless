@@ -1,5 +1,11 @@
 export { Stack, StackStatus } from '$generated/api';
-import { IsUrl } from 'class-validator';
+import { IsOptional, IsSemVer, IsUrl } from 'class-validator';
+
+export class FixedInVersionForm {
+    @IsOptional()
+    @IsSemVer()
+    version?: string;
+}
 
 export class ReferenceLinkForm {
     @IsUrl({ require_tld: false })

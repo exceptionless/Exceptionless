@@ -5,6 +5,7 @@
 
     import { mutateStackFixedStatus, mutateStackSnoozedStatus, mutateStackStatus } from '../api.svelte';
     import { Stack, StackStatus } from '../models';
+    import MarkStackFixedInVersionDialog from './dialogs/MarkStackFixedInVersionDialog.svelte';
 
     interface Props {
         stack: Stack;
@@ -22,6 +23,7 @@
         { label: 'Discarded', value: StackStatus.Discarded }
     ];
 
+    let openMarkStackFixedInVersionDialog = $state<boolean>(false);
     let selected = $derived((items.find((item) => item.value === stack?.status) || items[items.length - 1]) as Item);
 
     const updateStackFixedStatus = mutateStackFixedStatus({
@@ -50,18 +52,7 @@
         await updateStackStatus.mutateAsync(StackStatus.Open);
     }
 
-    async function updateFixed() {
-        if (stack.status === StackStatus.Fixed) {
-            return;
-        }
-
-        // .markFixed()
-        //                 .then(function (version) {
-        //                     return stackService
-        //                         .markFixed(vm._stackId, version)
-        //                         .then(onSuccess, onFailure)
-        //                         .catch(function (e) {});
-        const version = undefined;
+    async function updateFixed(version?: string) {
         await updateStackFixedStatus.mutateAsync(version);
     }
 
@@ -125,7 +116,7 @@
             <DropdownMenu.GroupHeading>Update Status</DropdownMenu.GroupHeading>
             <DropdownMenu.Separator />
             <DropdownMenu.Item title="Mark this stack as open" onclick={() => updateOpen()}>Open</DropdownMenu.Item>
-            <DropdownMenu.Item title="Mark this stack as fixed" onclick={() => updateFixed()}>Fixed</DropdownMenu.Item>
+            <DropdownMenu.Item title="Mark this stack as fixed" onclick={() => (openMarkStackFixedInVersionDialog = true)}>Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications" onclick={() => updateSnooze()}
                     >Snoozed</DropdownMenu.SubTrigger
@@ -144,3 +135,5 @@
         </DropdownMenu.Group>
     </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={updateFixed} />
