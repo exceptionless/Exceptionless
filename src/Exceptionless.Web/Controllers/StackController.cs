@@ -99,7 +99,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark fixed
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <param name="version">A version number that the stack was fixed in.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-fixed")]
@@ -121,13 +121,10 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stacks.Count is 0)
             return NotFound();
 
-        if (stacks.Count > 0)
-        {
-            foreach (var stack in stacks)
-                stack.MarkFixed(semanticVersion, _timeProvider);
+        foreach (var stack in stacks)
+            stack.MarkFixed(semanticVersion, _timeProvider);
 
-            await _stackRepository.SaveAsync(stacks);
-        }
+        await _stackRepository.SaveAsync(stacks);
 
         return Ok();
     }
@@ -160,7 +157,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark the selected stacks as snoozed
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <param name="snoozeUntilUtc">A time that the stack should be snoozed until.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-snoozed")]
@@ -176,18 +173,15 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stacks.Count is 0)
             return NotFound();
 
-        if (stacks.Count > 0)
+        foreach (var stack in stacks)
         {
-            foreach (var stack in stacks)
-            {
-                stack.Status = StackStatus.Snoozed;
-                stack.SnoozeUntilUtc = snoozeUntilUtc;
-                stack.FixedInVersion = null;
-                stack.DateFixed = null;
-            }
-
-            await _stackRepository.SaveAsync(stacks);
+            stack.Status = StackStatus.Snoozed;
+            stack.SnoozeUntilUtc = snoozeUntilUtc;
+            stack.FixedInVersion = null;
+            stack.DateFixed = null;
         }
+
+        await _stackRepository.SaveAsync(stacks);
 
         return Ok();
     }
@@ -279,7 +273,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark future occurrences as critical
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-critical")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -304,7 +298,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark future occurrences as not critical
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="204">The stacks were marked as not critical.</response>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpDelete("{ids:objectids}/mark-critical")]
@@ -331,14 +325,14 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Change stack status
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <param name="status">The status that the stack should be changed to.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/change-status")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> ChangeStatusAsync(string ids, StackStatus status)
     {
-        if (status == StackStatus.Regressed || status == StackStatus.Snoozed)
+        if (status is StackStatus.Regressed or StackStatus.Snoozed)
             return BadRequest("Can't set stack status to regressed or snoozed.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -361,8 +355,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
                     stack.FixedInVersion = null;
                 }
 
-                if (status != StackStatus.Snoozed)
-                    stack.SnoozeUntilUtc = null;
+                stack.SnoozeUntilUtc = null;
             }
 
             await _stackRepository.SaveAsync(stacks);
@@ -377,7 +370,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="id">The identifier of the stack.</param>
     /// <response code="404">The stack could not be found.</response>
     /// <response code="426">Promote to External is a premium feature used to promote an error stack to an external system.</response>
-    /// <response code="501">"No promoted web hooks are configured for this project.</response>
+    /// <response code="501">No promoted web hooks are configured for this project.</response>
     [HttpPost("{id:objectid}/promote")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> PromoteAsync(string id)
@@ -389,7 +382,11 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stack is null || !CanAccessOrganization(stack.OrganizationId))
             return NotFound();
 
-        if (!await _billingManager.HasPremiumFeaturesAsync(stack.OrganizationId))
+        var organization = await GetOrganizationAsync(stack.OrganizationId);
+        if (organization is null)
+            return NotFound();
+
+        if (!organization.HasPremiumFeatures)
             return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
         var promotedProjectHooks = (await _webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHook.KnownEventTypes.StackPromoted)).ToList();
@@ -404,9 +401,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext));
 
-        var organization = await GetOrganizationAsync(stack.OrganizationId);
-        if (organization is null)
-            return NotFound();
         var project = await GetProjectAsync(stack.ProjectId);
         if (project is null)
             return NotFound();
@@ -444,7 +438,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more stacks were not found.</response>
