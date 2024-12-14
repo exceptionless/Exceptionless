@@ -8,12 +8,13 @@
 
     interface Props {
         limit: number;
+        loading: boolean;
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         table: Table<EventSummaryModel<SummaryTemplateKeys>>;
         toolbarChildren?: Snippet;
     }
 
-    let { limit = $bindable(), rowclick, table, toolbarChildren }: Props = $props();
+    let { limit = $bindable(), loading, rowclick, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -22,7 +23,7 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {rowclick} {table}></DataTable.Body>
+    <DataTable.Body {rowclick} {table} {loading}></DataTable.Body>
     <DataTable.Pagination {table}>
         <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
     </DataTable.Pagination>

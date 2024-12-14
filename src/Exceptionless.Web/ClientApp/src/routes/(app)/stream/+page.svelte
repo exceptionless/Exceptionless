@@ -136,7 +136,7 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table}></DataTable.Body>
+            <DataTable.Body {rowclick} {table} loading={!response}></DataTable.Body>
             <Muted class="flex flex-1 items-center justify-between">
                 <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
                 <div class="py-2 text-center">
