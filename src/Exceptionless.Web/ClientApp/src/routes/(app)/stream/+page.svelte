@@ -155,6 +155,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''} close={() => (selectedEventId = null)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

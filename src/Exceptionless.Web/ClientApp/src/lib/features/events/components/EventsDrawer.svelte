@@ -26,10 +26,11 @@
 
     interface Props {
         changed: (filter: IFilter) => void;
+        close: () => void;
         id: string;
     }
 
-    let { changed, id }: Props = $props();
+    let { changed, close, id }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -100,7 +101,11 @@
         activeTab = 'Extended Data';
     }
 
-    // TODO: Navigate on event deletion.
+    $effect(() => {
+        if (eventResponse.isError) {
+            close();
+        }
+    });
 </script>
 
 {#if eventResponse.isLoading}

@@ -15,8 +15,8 @@
     const errors = getErrors(error);
 </script>
 
-<pre class="whitespace-pre-wrap break-words border p-2"><Code
+<pre class="whitespace-pre-wrap break-words rounded bg-muted p-2"><Code class="px-0"
         ><StackTraceHeader {errors}></StackTraceHeader>{#each errors.reverse() as error, index}{#if error.stack_trace}<div
-                    class="pl-[10px]">{#each error.stack_trace as frame}{getStackFrame(frame)}<br />{/each}{#if index < errors.length - 1}<div
-                            class="text-muted-foreground">--- End of inner exception stack trace ---</div>{/if}</div>{/if}{/each}</Code
+                    class="bg-inherit pl-[10px]">{#each error.stack_trace as frame}{getStackFrame(frame)}<br />{/each}{#if index < errors.length - 1}<div
+                            class="bg-inherit text-muted-foreground">--- End of inner exception stack trace ---</div>{/if}</div>{/if}{/each}</Code
     ></pre>

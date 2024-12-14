@@ -121,6 +121,6 @@
                 >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><IconOpenInNew /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>
