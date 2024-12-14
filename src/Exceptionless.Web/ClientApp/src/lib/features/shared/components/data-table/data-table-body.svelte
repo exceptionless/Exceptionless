@@ -3,17 +3,19 @@
 </script>
 
 <script generics="TData" lang="ts">
+    import Loading from '$comp/Loading.svelte';
     import * as Table from '$comp/ui/table';
     import { type Cell, FlexRender, type Header, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     import DataTableColumnHeader from './data-table-column-header.svelte';
 
     interface Props {
+        loading: boolean;
         rowclick?: (row: TData) => void;
         table: SvelteTable<TData>;
     }
 
-    let { rowclick, table }: Props = $props();
+    let { loading, rowclick, table }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
         const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
@@ -37,6 +39,8 @@
             rowclick(cell.row.original);
         }
     }
+
+    const isLoading = $derived(loading && table.getRowModel().rows.length === 0);
 </script>
 
 <div class="rounded-md border">
@@ -58,6 +62,15 @@
             <Table.Row class="hidden text-center only:table-row">
                 <Table.Cell colspan={table.getVisibleLeafColumns().length}>No data was found with the current filter.</Table.Cell>
             </Table.Row>
+            {#if isLoading}
+                <Table.Row class="text-center">
+                    <Table.Cell colspan={table.getVisibleLeafColumns().length}>
+                        <div class="flex items-center justify-center">
+                            <Loading class="mr-2" /> Loading...
+                        </div>
+                    </Table.Cell>
+                </Table.Row>
+            {/if}
             {#each table.getRowModel().rows as row (row.id)}
                 <Table.Row>
                     {#each row.getVisibleCells() as cell (cell.id)}
