@@ -65,10 +65,13 @@
     const table = createTable(context.options);
 
     const client = useFetchClient();
+    let isLoading = $state(false);
+    client.loading.on((loading) => (isLoading = loading!));
+
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
-        if (client.loading) {
+        if (isLoading) {
             return;
         }
 
@@ -105,7 +108,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues</Card.Title>
         <Card.Content>
-            <EventsDataTable bind:limit={limit.value} loading={!response} {rowclick} {table}>
+            <EventsDataTable bind:limit={limit.value} {isLoading} {rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}

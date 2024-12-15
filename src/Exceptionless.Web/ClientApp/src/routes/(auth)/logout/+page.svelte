@@ -17,9 +17,12 @@
     });
 
     const client = useFetchClient();
+    let isLoading = $state(false);
+    client.loading.on((loading) => (isLoading = loading!));
+
     let message = $state<string>();
     async function onLogout() {
-        if (client.loading) {
+        if (isLoading) {
             return;
         }
 
@@ -43,7 +46,7 @@
             <ErrorMessage {message}></ErrorMessage>
 
             <Form.Button>
-                {#if client.loading}
+                {#if isLoading}
                     <Loading class="mr-2" variant="secondary"></Loading> Logging out...
                 {:else}
                     Logout

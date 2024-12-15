@@ -7,14 +7,14 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     interface Props {
+        isLoading: boolean;
         limit: number;
-        loading: boolean;
         rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         table: Table<EventSummaryModel<SummaryTemplateKeys>>;
         toolbarChildren?: Snippet;
     }
 
-    let { limit = $bindable(), loading, rowclick, table, toolbarChildren }: Props = $props();
+    let { isLoading, limit = $bindable(), rowclick, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -23,7 +23,7 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {rowclick} {table} {loading}></DataTable.Body>
+    <DataTable.Body {rowclick} {table} {isLoading}></DataTable.Body>
     <DataTable.Pagination {table}>
         <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
     </DataTable.Pagination>
