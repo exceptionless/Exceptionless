@@ -10,12 +10,12 @@
     import DataTableColumnHeader from './data-table-column-header.svelte';
 
     interface Props {
-        loading: boolean;
+        isLoading: boolean;
         rowclick?: (row: TData) => void;
         table: SvelteTable<TData>;
     }
 
-    let { loading, rowclick, table }: Props = $props();
+    let { isLoading, rowclick, table }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
         const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
@@ -40,7 +40,7 @@
         }
     }
 
-    const isLoading = $derived(loading && table.getRowModel().rows.length === 0);
+    const showLoading = $derived(isLoading && table.getRowModel().rows.length === 0);
 </script>
 
 <div class="rounded-md border">
@@ -62,7 +62,7 @@
             <Table.Row class="hidden text-center only:table-row">
                 <Table.Cell colspan={table.getVisibleLeafColumns().length}>No data was found with the current filter.</Table.Cell>
             </Table.Row>
-            {#if isLoading}
+            {#if showLoading}
                 <Table.Row class="text-center">
                     <Table.Cell colspan={table.getVisibleLeafColumns().length}>
                         <div class="flex items-center justify-center">

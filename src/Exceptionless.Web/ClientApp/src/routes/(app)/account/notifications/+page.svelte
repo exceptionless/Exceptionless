@@ -12,10 +12,13 @@
     data.email_notifications_enabled = true;
 
     const client = useFetchClient();
+    let isLoading = $state(false);
+    client.loading.on((loading) => (isLoading = loading!));
+
     let problem = $state(new ProblemDetails());
 
     async function onSave() {
-        if (client.loading) {
+        if (isLoading) {
             return;
         }
     }
@@ -42,7 +45,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if client.loading}
+                {#if isLoading}
                     <Loading class="mr-2" variant="secondary"></Loading> Saving...
                 {:else}
                     Save

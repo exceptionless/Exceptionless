@@ -60,11 +60,14 @@
     const table = createTable(context.options);
 
     const client = useFetchClient();
+    let isLoading = $state(false);
+    client.loading.on((loading) => (isLoading = loading!));
+
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
     let before: string | undefined;
 
     async function loadData(filterChanged: boolean = false) {
-        if (client.loading && filterChanged && !before) {
+        if (isLoading && filterChanged && !before) {
             return;
         }
 
@@ -136,7 +139,7 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table} loading={!response}></DataTable.Body>
+            <DataTable.Body {rowclick} {table} {isLoading}></DataTable.Body>
             <Muted class="flex flex-1 items-center justify-between">
                 <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
                 <div class="py-2 text-center">
