@@ -23,7 +23,7 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { Login } from '$features/auth/models';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { applyServerSideErrors } from '$shared/validation';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import IconFacebook from '~icons/mdi/facebook';
