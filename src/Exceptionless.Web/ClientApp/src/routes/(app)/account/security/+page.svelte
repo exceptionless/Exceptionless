@@ -17,6 +17,7 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { User } from '$features/users/models';
+    import { useFetchClientStatus } from '$shared/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
@@ -26,13 +27,12 @@
     const data = $state(new User());
 
     const client = useFetchClient();
-    let isLoading = $state(false);
-    client.loading.on((loading) => (isLoading = loading!));
+    const clientStatus = useFetchClientStatus(client);
 
     let problem = $state(new ProblemDetails());
 
     async function onSave() {
-        if (isLoading) {
+        if (clientStatus.isLoading) {
             return;
         }
 
@@ -95,7 +95,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if isLoading}
+                {#if clientStatus.isLoading}
                     <Loading class="mr-2" variant="secondary"></Loading> Updating password...
                 {:else}
                     Update password

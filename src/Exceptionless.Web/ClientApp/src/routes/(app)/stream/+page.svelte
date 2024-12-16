@@ -14,6 +14,7 @@
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { useFetchClientStatus } from '$shared/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
@@ -60,14 +61,13 @@
     const table = createTable(context.options);
 
     const client = useFetchClient();
-    let isLoading = $state(false);
-    client.loading.on((loading) => (isLoading = loading!));
+    const clientStatus = useFetchClientStatus(client);
 
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
     let before: string | undefined;
 
     async function loadData(filterChanged: boolean = false) {
-        if (isLoading && filterChanged && !before) {
+        if (clientStatus.isLoading && filterChanged && !before) {
             return;
         }
 
@@ -139,7 +139,7 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table} {isLoading}></DataTable.Body>
+            <DataTable.Body {rowclick} {table} isLoading={clientStatus.isLoading}></DataTable.Body>
             <Muted class="flex flex-1 items-center justify-between">
                 <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
                 <div class="py-2 text-center">

@@ -6,19 +6,19 @@
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
     import { User } from '$features/users/models';
+    import { useFetchClientStatus } from '$shared/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 
     const data = $state(new User());
     data.email_notifications_enabled = true;
 
     const client = useFetchClient();
-    let isLoading = $state(false);
-    client.loading.on((loading) => (isLoading = loading!));
+    const clientStatus = useFetchClientStatus(client);
 
     let problem = $state(new ProblemDetails());
 
     async function onSave() {
-        if (isLoading) {
+        if (clientStatus.isLoading) {
             return;
         }
     }
@@ -45,7 +45,7 @@
 
         <div class="pt-2">
             <Button type="submit">
-                {#if isLoading}
+                {#if clientStatus.isLoading}
                     <Loading class="mr-2" variant="secondary"></Loading> Saving...
                 {:else}
                     Save

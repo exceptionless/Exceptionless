@@ -6,6 +6,7 @@
     import * as Card from '$comp/ui/card';
     import * as Form from '$comp/ui/form';
     import { accessToken, logout } from '$features/auth/index.svelte';
+    import { useFetchClientStatus } from '$shared/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
 
     let isAuthenticated = $derived(accessToken.value !== null);
@@ -17,12 +18,11 @@
     });
 
     const client = useFetchClient();
-    let isLoading = $state(false);
-    client.loading.on((loading) => (isLoading = loading!));
+    const clientStatus = useFetchClientStatus(client);
 
     let message = $state<string>();
     async function onLogout() {
-        if (isLoading) {
+        if (clientStatus.isLoading) {
             return;
         }
 
@@ -46,7 +46,7 @@
             <ErrorMessage {message}></ErrorMessage>
 
             <Form.Button>
-                {#if isLoading}
+                {#if clientStatus.isLoading}
                     <Loading class="mr-2" variant="secondary"></Loading> Logging out...
                 {:else}
                     Logout
