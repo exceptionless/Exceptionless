@@ -7,7 +7,7 @@
         visible: boolean;
     }
 
-    let { children, delay = 50, visible = true }: Props = $props();
+    let { children, delay = 100, visible = true }: Props = $props();
 
     let shouldRender = $state(false);
     let timeout: ReturnType<typeof setTimeout>;
