@@ -1046,7 +1046,7 @@ public class EventControllerTests : IntegrationTestsBase
     public async Task SpaFallbackWorks()
     {
         var response = await SendRequestAsync(r => r
-            .BaseUri(_server!.BaseAddress)
+            .BaseUri(_server.BaseAddress)
             .AppendPath("blah")
             .StatusCodeShouldBeOk()
         );
@@ -1054,13 +1054,13 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Contains("exceptionless", content);
 
         await SendRequestAsync(r => r
-            .BaseUri(_server!.BaseAddress)
+            .BaseUri(_server.BaseAddress)
             .AppendPaths("api", "blah")
             .StatusCodeShouldBeNotFound()
         );
 
         await SendRequestAsync(r => r
-            .BaseUri(_server!.BaseAddress)
+            .BaseUri(_server.BaseAddress)
             .AppendPaths("docs", "blah")
             .StatusCodeShouldBeNotFound()
         );

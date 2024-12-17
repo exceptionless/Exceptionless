@@ -22,21 +22,17 @@ namespace Exceptionless.Tests.Controllers;
 
 public class AuthControllerTests : IntegrationTestsBase
 {
-    private AuthOptions? _authOptions;
-    private IUserRepository? _userRepository;
-    private IOrganizationRepository? _organizationRepository;
-    private ITokenRepository? _tokenRepository;
+    private readonly AuthOptions _authOptions;
+    private readonly IUserRepository _userRepository;
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly ITokenRepository _tokenRepository;
 
     public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-    }
-
-    public override async Task InitializeAsync()
-    {
-        await base.InitializeAsync();
         _authOptions = GetService<AuthOptions>();
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
+
         _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
         _tokenRepository = GetService<ITokenRepository>();
@@ -75,7 +71,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [InlineData(false, "test1@exceptionless.io", "Password1$")]
     public Task CannotSignupWhenAccountCreationDisabledWithNoTokenAsync(bool enableAdAuth, string email, string password)
     {
-        _authOptions!.EnableAccountCreation = false;
+        _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
         if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
@@ -104,7 +100,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [InlineData(false, "test2@exceptionless.io", "Password1$")]
     public Task CannotSignupWhenAccountCreationDisabledWithInvalidTokenAsync(bool enableAdAuth, string email, string password)
     {
-        _authOptions!.EnableAccountCreation = false;
+        _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
         if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
@@ -132,7 +128,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [InlineData(false, "test3@exceptionless.io", "Password1$")]
     public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAsync(bool enableAdAuth, string email, string password)
     {
-        _authOptions!.EnableAccountCreation = false;
+        _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = enableAdAuth;
 
         if (enableAdAuth && email == TestDomainLoginProvider.ValidUsername)
@@ -141,7 +137,7 @@ public class AuthControllerTests : IntegrationTestsBase
             email = provider.GetEmailAddressFromUsername(email);
         }
 
-        var results = await _organizationRepository!.GetAllAsync();
+        var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
 
         var invite = new Invite
@@ -170,7 +166,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
 
-        var user = await _userRepository!.GetByEmailAddressAsync(email);
+        var user = await _userRepository.GetByEmailAddressAsync(email);
         Assert.NotNull(user);
         Assert.Equal("Test", user.FullName);
         Assert.Equal(email, user.EmailAddress);
@@ -186,13 +182,13 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanSignupWhenAccountCreationDisabledWithValidTokenAndInvalidAdAccountAsync()
     {
-        _authOptions!.EnableAccountCreation = false;
+        _authOptions.EnableAccountCreation = false;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         const string email = "test-user1@exceptionless.io";
         const string password = "invalidAccount1";
 
-        var organizations = await _organizationRepository!.GetAllAsync();
+        var organizations = await _organizationRepository.GetAllAsync();
         var organization = organizations.Documents.First();
         var invite = new Invite
         {
@@ -222,7 +218,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAsync()
     {
-        _authOptions!.EnableAccountCreation = true;
+        _authOptions.EnableAccountCreation = true;
 
         const string email = "test4@exceptionless.io";
         const string password = "Password1$";
@@ -243,7 +239,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
 
-        var user = await _userRepository!.GetByEmailAddressAsync(email);
+        var user = await _userRepository.GetByEmailAddressAsync(email);
         Assert.NotNull(user);
         Assert.Equal("Test", user.FullName);
         Assert.Equal(email, user.EmailAddress);
@@ -258,7 +254,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanSignupWhenAccountCreationEnabledWithNoTokenAndValidAdAccountAsync()
     {
-        _authOptions!.EnableAccountCreation = true;
+        _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
@@ -284,7 +280,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public Task CanSignupWhenAccountCreationEnabledWithNoTokenAndInvalidAdAccountAsync()
     {
-        _authOptions!.EnableAccountCreation = true;
+        _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         return SendRequestAsync(r => r
@@ -304,9 +300,9 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAsync()
     {
-        _authOptions!.EnableAccountCreation = true;
+        _authOptions.EnableAccountCreation = true;
 
-        var organizations = await _organizationRepository!.GetAllAsync();
+        var organizations = await _organizationRepository.GetAllAsync();
         var organization = organizations.Documents.First();
         const string email = "test5@exceptionless.io";
         const string name = "Test";
@@ -342,7 +338,7 @@ public class AuthControllerTests : IntegrationTestsBase
 
         await RefreshDataAsync();
 
-        var user = await _userRepository!.GetByEmailAddressAsync(email);
+        var user = await _userRepository.GetByEmailAddressAsync(email);
         Assert.NotNull(user);
         Assert.Equal("Test", user.FullName);
         Assert.NotEmpty(user.OrganizationIds);
@@ -354,7 +350,7 @@ public class AuthControllerTests : IntegrationTestsBase
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.Empty(organization.Invites);
 
-        var token = await _tokenRepository!.GetByIdAsync(result.Token);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
         Assert.Equal(user.Id, token.UserId);
         Assert.Equal(TokenType.Authentication, token.Type);
@@ -367,13 +363,13 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndValidAdAccountAsync()
     {
-        _authOptions!.EnableAccountCreation = true;
+        _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
-        var results = await _organizationRepository!.GetAllAsync();
+        var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
         var invite = new Invite
         {
@@ -405,11 +401,11 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanSignupWhenAccountCreationEnabledWithValidTokenAndInvalidAdAccountAsync()
     {
-        _authOptions!.EnableAccountCreation = true;
+        _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = true;
 
         string email = "test-user4@exceptionless.io";
-        var results = await _organizationRepository!.GetAllAsync();
+        var results = await _organizationRepository.GetAllAsync();
         var organization = results.Documents.First();
         var invite = new Invite
         {
@@ -452,7 +448,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
@@ -486,7 +482,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task LoginValidAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = false;
+        _authOptions.EnableActiveDirectoryAuth = false;
 
         const string email = "test6@exceptionless.io";
         const string password = "Test6 password";
@@ -501,7 +497,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
@@ -521,7 +517,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task LoginInvalidPasswordAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = false;
+        _authOptions.EnableActiveDirectoryAuth = false;
 
         const string email = "test7@exceptionless.io";
         const string password = "Test7 password";
@@ -537,7 +533,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
            .Post()
@@ -554,7 +550,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task LoginNoSuchUserAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = false;
+        _authOptions.EnableActiveDirectoryAuth = false;
 
         const string email = "test8@exceptionless.io";
         const string password = "Test8 password";
@@ -569,7 +565,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
            .Post()
@@ -586,7 +582,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task LoginValidExistingActiveDirectoryAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = true;
+        _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -597,7 +593,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
            .Post()
@@ -617,7 +613,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public Task LoginValidNonExistentActiveDirectoryAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = true;
+        _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -637,7 +633,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task LoginInvalidNonExistentActiveDirectoryAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = true;
+        _authOptions.EnableActiveDirectoryAuth = true;
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
 
@@ -653,14 +649,14 @@ public class AuthControllerTests : IntegrationTestsBase
         );
 
         // Verify that a user account was not added
-        var user = await _userRepository!.GetByEmailAddressAsync($"{email}.au");
+        var user = await _userRepository.GetByEmailAddressAsync($"{email}.au");
         Assert.Null(user);
     }
 
     [Fact]
     public async Task LoginInvalidExistingActiveDirectoryAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = true;
+        _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -671,7 +667,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
            .Post()
@@ -688,7 +684,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task LoginInvalidExistingActiveDirectoryAccountUsingUserNameLoginAsync()
     {
-        _authOptions!.EnableActiveDirectoryAuth = true;
+        _authOptions.EnableActiveDirectoryAuth = true;
 
         var provider = new TestDomainLoginProvider();
         string email = provider.GetEmailAddressFromUsername(TestDomainLoginProvider.ValidUsername);
@@ -699,7 +695,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         await SendRequestAsync(r => r
             .Post()
@@ -731,7 +727,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -747,7 +743,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.NotEmpty(result.Token);
 
-        var token = await _tokenRepository!.GetByIdAsync(result.Token);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
@@ -792,7 +788,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -808,7 +804,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.NotEmpty(result.Token);
 
-        var token = await _tokenRepository!.GetByIdAsync(result.Token);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
@@ -856,7 +852,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(user.PasswordResetToken);
         Assert.True(user.PasswordResetTokenExpiration.IsAfter(TimeProvider.GetUtcNow().UtcDateTime));
 
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -872,7 +868,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.NotEmpty(result.Token);
 
-        var token = await _tokenRepository!.GetByIdAsync(result.Token);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
@@ -917,7 +913,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(user.PasswordResetToken);
         Assert.True(user.PasswordResetTokenExpiration.IsAfter(TimeProvider.GetUtcNow().UtcDateTime));
 
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -933,7 +929,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.NotEmpty(result.Token);
 
-        var token = await _tokenRepository!.GetByIdAsync(result.Token);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
@@ -977,7 +973,7 @@ public class AuthControllerTests : IntegrationTestsBase
         };
 
         user.MarkEmailAddressVerified();
-        await _userRepository!.AddAsync(user);
+        await _userRepository.AddAsync(user);
 
         var result = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -993,7 +989,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
 
         // Verify that the token is valid
-        var token = await _tokenRepository!.GetByIdAsync(result.Token);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.Equal(TokenType.Authentication, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
@@ -1011,7 +1007,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanLogoutUserAccessTokenAsync()
     {
-        var token = await _tokenRepository!.GetByIdAsync(TestConstants.UserApiKey);
+        var token = await _tokenRepository.GetByIdAsync(TestConstants.UserApiKey);
         Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
@@ -1032,7 +1028,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanLogoutClientAccessTokenAsync()
     {
-        var token = await _tokenRepository!.GetByIdAsync(TestConstants.ApiKey);
+        var token = await _tokenRepository.GetByIdAsync(TestConstants.ApiKey);
         Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
