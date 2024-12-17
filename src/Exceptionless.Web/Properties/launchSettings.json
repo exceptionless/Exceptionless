@@ -7,7 +7,7 @@
                 "EX_AppMode": "Development"
             },
             "dotnetRunMessages": true,
-            "applicationUrl": "http://localhost:5200/next"
+            "applicationUrl": "http://localhost:5200"
         }
     }
 }
