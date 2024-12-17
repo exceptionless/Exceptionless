@@ -76,8 +76,7 @@
     }
 
     async function navigateToProjectIntegrations() {
-        // TODO: Verify this works once page is added.
-        await goto(`/next/project/${stack.project_id}/manage/integrations`);
+        await goto(`/project/${stack.project_id}/manage`);
     }
 
     async function updateCritical() {
