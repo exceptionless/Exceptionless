@@ -134,5 +134,5 @@ internal static class MinIoContainerImageTags
 {
     internal const string Registry = "docker.io";
     internal const string Image = "minio/minio";
-    internal const string Tag = "latest";
+    internal const string Tag = "RELEASE.2024-12-13T22-19-12Z";
 }
