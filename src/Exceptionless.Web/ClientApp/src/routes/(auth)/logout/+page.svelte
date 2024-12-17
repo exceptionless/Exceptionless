@@ -22,7 +22,7 @@
 
     let message = $state<string>();
     async function onLogout() {
-        if (clientStatus.isLoading) {
+        if (client.isLoading) {
             return;
         }
 

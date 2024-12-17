@@ -71,7 +71,7 @@
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
-        if (clientStatus.isLoading) {
+        if (client.isLoading) {
             return;
         }
 

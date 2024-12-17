@@ -23,7 +23,10 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {rowclick} {table} {isLoading}></DataTable.Body>
+    <DataTable.Body {rowclick} {table}>
+        <DataTable.Empty {table} />
+        <DataTable.Loading {table} {isLoading} />
+    </DataTable.Body>
     <DataTable.Pagination {table}>
         <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
     </DataTable.Pagination>

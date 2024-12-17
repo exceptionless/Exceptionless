@@ -67,7 +67,7 @@
     let before: string | undefined;
 
     async function loadData(filterChanged: boolean = false) {
-        if (clientStatus.isLoading && filterChanged && !before) {
+        if (client.isLoading && filterChanged && !before) {
             return;
         }
 
@@ -139,7 +139,10 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table} isLoading={clientStatus.isLoading}></DataTable.Body>
+            <DataTable.Body {rowclick} {table}>
+                <DataTable.Empty {table} />
+                <DataTable.Loading {table} isLoading={clientStatus.isLoading} />
+            </DataTable.Body>
             <Muted class="flex flex-1 items-center justify-between">
                 <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
                 <div class="py-2 text-center">
