@@ -5,9 +5,9 @@
 <script generics="TData" lang="ts">
     import type { Snippet } from 'svelte';
 
-    import Loading from '$comp/Loading.svelte';
+    import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
-    import { type Table as SvelteTable } from '@tanstack/svelte-table';
+    import { type Column, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     interface Props {
         children?: Snippet;
@@ -17,19 +17,25 @@
 
     let { children, isLoading, table }: Props = $props();
 
+    function shouldRenderCell(column: Column<TData, unknown>): boolean {
+        return column.id !== 'select';
+    }
+
     const showLoading = $derived(isLoading && table.getRowModel().rows.length === 0);
 </script>
 
 {#if showLoading}
-    <Table.Row class="text-center">
-        <Table.Cell colspan={table.getVisibleLeafColumns().length}>
-            {#if children}
-                {@render children()}
-            {:else}
-                <div class="flex items-center justify-center">
-                    <Loading class="mr-2" /> Loading...
-                </div>
-            {/if}
-        </Table.Cell>
+    <Table.Row>
+        {#if children}
+            {@render children()}
+        {:else}
+            {#each table.getVisibleLeafColumns() as cell (cell.id)}
+                <Table.Cell>
+                    {#if shouldRenderCell(cell)}
+                        <Skeleton class="h-[20px] w-full rounded-full" />
+                    {/if}
+                </Table.Cell>
+            {/each}
+        {/if}
     </Table.Row>
 {/if}
