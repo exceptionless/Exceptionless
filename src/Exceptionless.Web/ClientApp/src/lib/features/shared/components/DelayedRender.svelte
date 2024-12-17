@@ -4,7 +4,7 @@
     interface Props {
         children: Snippet;
         delay?: number;
-        visible: boolean;
+        visible?: boolean;
     }
 
     let { children, delay = 100, visible = true }: Props = $props();

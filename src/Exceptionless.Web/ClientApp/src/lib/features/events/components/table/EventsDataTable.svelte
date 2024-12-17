@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte';
 
     import * as DataTable from '$comp/data-table';
+    import DelayedRender from '$comp/DelayedRender.svelte';
     import { type Table } from '@tanstack/svelte-table';
 
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
@@ -24,8 +25,13 @@
         {/if}
     </DataTable.Toolbar>
     <DataTable.Body {rowclick} {table}>
-        <DataTable.Empty {table} />
-        <DataTable.Loading {table} {isLoading} />
+        {#if isLoading}
+            <DelayedRender>
+                <DataTable.Loading {table} />
+            </DelayedRender>
+        {:else}
+            <DataTable.Empty {table} />
+        {/if}
     </DataTable.Body>
     <DataTable.Pagination {table}>
         <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
