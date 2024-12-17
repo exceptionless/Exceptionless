@@ -2,6 +2,7 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import * as DataTable from '$comp/data-table';
+    import DelayedRender from '$comp/DelayedRender.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
@@ -140,8 +141,13 @@
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
             <DataTable.Body {rowclick} {table}>
-                <DataTable.Empty {table} />
-                <DataTable.Loading {table} isLoading={clientStatus.isLoading} />
+                {#if clientStatus.isLoading}
+                    <DelayedRender>
+                        <DataTable.Loading {table} />
+                    </DelayedRender>
+                {:else}
+                    <DataTable.Empty {table} />
+                {/if}
             </DataTable.Body>
             <Muted class="flex flex-1 items-center justify-between">
                 <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>

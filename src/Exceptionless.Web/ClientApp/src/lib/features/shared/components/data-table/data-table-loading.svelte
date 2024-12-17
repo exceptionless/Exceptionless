@@ -11,11 +11,11 @@
 
     interface Props {
         children?: Snippet;
-        isLoading: boolean;
+        isLoading?: boolean;
         table: SvelteTable<TData>;
     }
 
-    let { children, isLoading, table }: Props = $props();
+    let { children, isLoading = true, table }: Props = $props();
 
     function shouldRenderCell(column: Column<TData, unknown>): boolean {
         return column.id !== 'select';
