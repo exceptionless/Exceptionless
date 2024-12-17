@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import { Button } from '$comp/ui/button';
     import { cn } from '$lib/utils';
     import { cubicInOut } from 'svelte/easing';
@@ -23,7 +23,7 @@
 
 <nav class={cn('flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1', className)} {...props}>
     {#each routes as route (route.href)}
-        {@const isActive = $page.url.pathname === route.href}
+        {@const isActive = page.url.pathname === route.href}
 
         <Button
             class={cn(!isActive && 'hover:underline', 'relative justify-start hover:bg-transparent')}
