@@ -22,7 +22,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
 {
     private readonly IServiceProvider _container;
     private readonly ProxyTimeProvider _timeProvider;
-    private static bool _startupActionsRun;
+    //private static bool _startupActionsRun;
 
     public TestWithServices(ITestOutputHelper output) : base(output)
     {
@@ -39,8 +39,11 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
             throw new InvalidOperationException("TimeProvider must be of type ProxyTimeProvider");
     }
 
-    public virtual async Task InitializeAsync()
+    public virtual Task InitializeAsync()
     {
+        return Task.CompletedTask;
+
+        /*
         if (_startupActionsRun)
             return;
 
@@ -48,7 +51,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         if (!result.Success)
             throw new ApplicationException($"Startup action \"{result.FailedActionName}\" failed");
 
-        _startupActionsRun = true;
+        _startupActionsRun = true;*/
     }
     protected ProxyTimeProvider TimeProvider => _timeProvider;
 

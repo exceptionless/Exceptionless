@@ -35,13 +35,12 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 {
     private static bool _indexesHaveBeenConfigured = false;
     private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
-    private ExceptionlessElasticConfiguration? _configuration;
-    private ProxyTimeProvider? _timeProvider;
+    private readonly ExceptionlessElasticConfiguration _configuration;
+    protected readonly TestServer _server;
+    private readonly ProxyTimeProvider _timeProvider;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
-    protected readonly AspireWebHostFactory _hostFixture;
-    protected TestServer? _server;
 
-    public IntegrationTestsBase(ITestOutputHelper output, AspireWebHostFactory hostFixture) : base(output)
+    public IntegrationTestsBase(ITestOutputHelper output, AspireWebHostFactory factory) : base(output)
     {
         Log.DefaultMinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
@@ -49,26 +48,12 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
         Log.SetLogLevel("StartupActions", LogLevel.Warning);
         Log.SetLogLevel<Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager>(LogLevel.Warning);
-        _hostFixture = hostFixture;
-    }
 
-    public virtual async Task InitializeAsync()
-    {
-        //await _hostFixture.StartAsync();
-
-        var configuredFactory = _hostFixture.Factories.Count > 0 ? _hostFixture.Factories[0] : null;
+        var configuredFactory = factory.Factories.Count > 0 ? factory.Factories[0] : null;
         if (configuredFactory is null)
         {
-            configuredFactory = _hostFixture.WithWebHostBuilder(builder =>
+            configuredFactory = factory.WithWebHostBuilder(builder =>
             {
-                builder.ConfigureAppConfiguration(c =>
-                {
-                    c.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        { "ConnectionStrings:Elasticsearch", _hostFixture.ElasticsearchConnectionString },
-                        { "ConnectionStrings:Redis", _hostFixture.RedisConnectionString }
-                    });
-                });
                 builder.ConfigureTestServices(RegisterServices); // happens after normal container configure and overrides services
             });
         }
@@ -88,21 +73,22 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             throw new InvalidOperationException("TimeProvider must be of type ProxyTimeProvider");
 
         _disposables.Add(new DisposableAction(() => _timeProvider.Restore()));
+    }
 
+    public virtual async Task InitializeAsync()
+    {
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Warning);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.None);
-
         await _server.WaitForReadyAsync();
-
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Information);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.Information);
 
         await ResetDataAsync();
     }
 
-    protected ProxyTimeProvider TimeProvider => _timeProvider!;
+    protected ProxyTimeProvider TimeProvider => _timeProvider;
 
-    private IServiceProvider ServiceProvider { get; set; } = new ServiceCollection().BuildServiceProvider();
+    private IServiceProvider ServiceProvider { get; }
 
     protected TService GetService<TService>() where TService : notnull
     {
@@ -128,14 +114,14 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         services.AddSingleton<TokenData>();
         services.AddSingleton<UserData>();
 
-        services.ReplaceSingleton(s => _server!.CreateHandler());
+        services.ReplaceSingleton(s => _server.CreateHandler());
     }
 
     public async Task<(List<Stack> Stacks, List<PersistentEvent> Events)> CreateDataAsync(Action<DataBuilder> dataBuilderFunc)
     {
         var eventBuilders = new List<EventDataBuilder>();
 
-        var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider, _timeProvider!);
+        var dataBuilder = new DataBuilder(eventBuilders, ServiceProvider, _timeProvider);
         dataBuilderFunc(dataBuilder);
 
         var eventRepository = GetService<IEventRepository>();
@@ -168,13 +154,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             await RefreshDataAsync();
             if (!_indexesHaveBeenConfigured)
             {
-                await _configuration!.DeleteIndexesAsync();
+                await _configuration.DeleteIndexesAsync();
                 await _configuration.ConfigureIndexesAsync();
                 _indexesHaveBeenConfigured = true;
             }
             else
             {
-                string indexes = String.Join(',', _configuration!.Indexes.Select(i => i.Name));
+                string indexes = String.Join(',', _configuration.Indexes.Select(i => i.Name));
                 await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexes)
                 {
                     Query = new MatchAllQuery(),
@@ -214,7 +200,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     protected HttpClient CreateHttpClient()
     {
-        var client = _server!.CreateClient();
+        var client = _server.CreateClient();
         client.BaseAddress = new Uri(_server.BaseAddress + "api/v2/", UriKind.Absolute);
         return client;
     }

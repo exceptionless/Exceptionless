@@ -311,7 +311,8 @@ public class Startup
         {
             o.EnrichDiagnosticContext = (context, httpContext) =>
             {
-                context.Set("ActivityId", Activity.Current?.Id);
+                if (Activity.Current?.Id is not null)
+                    context.Set("ActivityId", Activity.Current.Id);
             };
             o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
             o.GetLevel = (context, duration, ex) =>

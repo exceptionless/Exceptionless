@@ -1,6 +1,5 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
-using Aspire.Hosting.Testing;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -15,30 +14,22 @@ public class AspireWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifeti
 
     public DistributedApplication App => _app ?? throw new InvalidOperationException("The application is not initialized");
 
-    public string? ElasticsearchConnectionString { get; private set; }
-    public string? RedisConnectionString { get; private set; }
-
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
         var options = new DistributedApplicationOptions { AssemblyName = typeof(ElasticsearchResource).Assembly.FullName, DisableDashboard = true };
         var builder = DistributedApplication.CreateBuilder(options);
 
-        builder.AddElasticsearch("Elasticsearch")
-            .WithContainerName("Exceptionless-Elasticsearch-Test")
+        // don't use random ports for tests
+        builder.Configuration["DcpPublisher:RandomizePorts"] = "false";
+
+        builder.AddElasticsearch("Elasticsearch", port: 9200)
+            .WithContainerName("Exceptionless-Elasticsearch")
             .WithImageTag("8.17.0")
             .WithLifetime(ContainerLifetime.Persistent);
 
-        builder.AddRedis("Redis")
-            .WithContainerName("Exceptionless-Redis-Test")
-            .WithImageTag("7.4")
-            .WithLifetime(ContainerLifetime.Persistent);;
-
         _app = builder.Build();
 
-        await _app.StartAsync();
-
-        ElasticsearchConnectionString = await _app.GetConnectionStringAsync("Elasticsearch");
-        RedisConnectionString = await _app.GetConnectionStringAsync("Redis");
+        return _app.StartAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
