@@ -18,7 +18,7 @@
     let problem = $state(new ProblemDetails());
 
     async function onSave() {
-        if (clientStatus.isLoading) {
+        if (client.isLoading) {
             return;
         }
     }
