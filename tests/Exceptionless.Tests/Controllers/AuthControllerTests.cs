@@ -27,7 +27,7 @@ public class AuthControllerTests : IntegrationTestsBase
     private IOrganizationRepository? _organizationRepository;
     private ITokenRepository? _tokenRepository;
 
-    public AuthControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public AuthControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
     }
 

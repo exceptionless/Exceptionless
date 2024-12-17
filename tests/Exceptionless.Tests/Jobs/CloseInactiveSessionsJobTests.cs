@@ -31,7 +31,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public CloseInactiveSessionsJobTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public CloseInactiveSessionsJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _job = GetService<CloseInactiveSessionsJob>();
         _cache = GetService<ICacheClient>();

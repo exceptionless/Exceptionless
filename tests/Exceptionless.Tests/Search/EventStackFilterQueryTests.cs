@@ -16,7 +16,7 @@ public class EventStackFilterQueryTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private static bool _isTestDataGenerated;
 
-    public EventStackFilterQueryTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public EventStackFilterQueryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();

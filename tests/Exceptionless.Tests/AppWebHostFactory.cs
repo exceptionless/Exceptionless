@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Exceptionless.Tests;
 
-public class AspireWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
+public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
     private DistributedApplication? _app;
 
@@ -23,7 +23,7 @@ public class AspireWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifeti
         builder.Configuration["DcpPublisher:RandomizePorts"] = "false";
 
         builder.AddElasticsearch("Elasticsearch", port: 9200)
-            .WithContainerName("Exceptionless-Elasticsearch")
+            .WithContainerName("Exceptionless-Elasticsearch-Test")
             .WithImageTag("8.17.0")
             .WithLifetime(ContainerLifetime.Persistent);
 

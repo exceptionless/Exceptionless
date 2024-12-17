@@ -22,7 +22,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
 
-    public EventRepositoryTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _randomEventGenerator = GetService<RandomEventGenerator>();
         _eventData = GetService<EventData>();

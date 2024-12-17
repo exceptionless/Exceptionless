@@ -14,7 +14,7 @@ namespace Exceptionless.Tests.Controllers;
 
 public sealed class TokenControllerTests : IntegrationTestsBase
 {
-    public TokenControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory) { }
+    public TokenControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     protected override async Task ResetDataAsync()
     {

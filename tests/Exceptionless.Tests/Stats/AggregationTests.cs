@@ -28,7 +28,7 @@ public sealed class AggregationTests : IntegrationTestsBase
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
 
-    public AggregationTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public AggregationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _pipeline = GetService<EventPipeline>();
         _eventData = GetService<EventData>();

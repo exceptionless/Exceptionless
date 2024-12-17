@@ -13,7 +13,7 @@ namespace Exceptionless.Tests.Controllers;
 
 public sealed class ProjectControllerTests : IntegrationTestsBase
 {
-    public ProjectControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
     }
 

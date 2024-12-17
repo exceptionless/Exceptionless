@@ -13,7 +13,7 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
 {
     private readonly ITokenRepository _repository;
 
-    public TokenRepositoryTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public TokenRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _repository = GetService<ITokenRepository>();
     }

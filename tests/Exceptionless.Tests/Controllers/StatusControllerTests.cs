@@ -10,7 +10,7 @@ namespace Exceptionless.Tests.Controllers;
 
 public class StatusControllerTests : IntegrationTestsBase
 {
-    public StatusControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
     }
 

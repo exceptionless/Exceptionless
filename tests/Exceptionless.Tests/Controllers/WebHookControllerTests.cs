@@ -10,7 +10,7 @@ namespace Exceptionless.Tests.Controllers;
 
 public sealed class WebHookControllerTests : IntegrationTestsBase
 {
-    public WebHookControllerTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory) { }
+    public WebHookControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     protected override async Task ResetDataAsync()
     {

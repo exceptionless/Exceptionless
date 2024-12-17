@@ -31,7 +31,7 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests;
 
-public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AspireWebHostFactory>
+public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory>
 {
     private static bool _indexesHaveBeenConfigured = false;
     private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
@@ -40,7 +40,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     private readonly ProxyTimeProvider _timeProvider;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
-    public IntegrationTestsBase(ITestOutputHelper output, AspireWebHostFactory factory) : base(output)
+    public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
     {
         Log.DefaultMinimumLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);

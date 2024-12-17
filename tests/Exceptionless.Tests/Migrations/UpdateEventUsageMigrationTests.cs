@@ -24,7 +24,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
     private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
 
-    public UpdateEventUsageMigrationTests(ITestOutputHelper output, AspireWebHostFactory factory) : base(output, factory)
+    public UpdateEventUsageMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
