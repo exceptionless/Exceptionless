@@ -55,7 +55,7 @@ public static class ElasticsearchBuilderExtensions
 
         return builder.AddResource(elasticsearch)
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
-            .WithImageRegistry(ElasticsearchContainerImageTags.Registry)
+            .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
             .WithHttpEndpoint(targetPort: ElasticsearchPort, port: port, name: ElasticsearchResource.PrimaryEndpointName)
             .WithEndpoint(targetPort: ElasticsearchInternalPort, name: ElasticsearchResource.InternalEndpointName)
             .WithEnvironment("discovery.type", "single-node")
@@ -85,7 +85,7 @@ public static class ElasticsearchBuilderExtensions
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
                                       .WithImage(ElasticsearchContainerImageTags.KibanaImage, ElasticsearchContainerImageTags.Tag)
-                                      .WithImageRegistry(ElasticsearchContainerImageTags.Registry)
+                                      .WithImageRegistry(ElasticsearchContainerImageTags.KibanaRegistry)
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
                                       .WithEnvironment("xpack.security.enabled", "false")
                                       .ExcludeFromManifest();
@@ -114,8 +114,9 @@ public static class ElasticsearchBuilderExtensions
 
 internal static class ElasticsearchContainerImageTags
 {
-    public const string Registry = "docker.elastic.co";
-    public const string Image = "elasticsearch/elasticsearch";
+    public const string ElasticsearchRegistry = "docker.io";
+    public const string Image = "exceptionless/elasticsearch";
+    public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
     public const string Tag = "8.17.0";
 }

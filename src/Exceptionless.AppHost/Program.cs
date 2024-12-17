@@ -1,7 +1,6 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
-    .WithImageTag("8.17.0")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Elasticsearch")
     .WithDataVolume("exceptionless.data.v1")

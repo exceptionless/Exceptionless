@@ -24,7 +24,6 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
         builder.AddElasticsearch("Elasticsearch", port: 9200)
             .WithContainerName("Exceptionless-Elasticsearch-Test")
-            .WithImageTag("8.17.0")
             .WithLifetime(ContainerLifetime.Persistent);
 
         _app = builder.Build();
