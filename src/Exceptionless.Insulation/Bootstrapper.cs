@@ -185,40 +185,24 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "azurestorage"))
         {
-            container.ReplaceSingleton<IFileStorage>(s =>
+            container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions
             {
-                IFileStorage storage = new AzureFileStorage(new AzureFileStorageOptions
-                {
-                    ConnectionString = options.ConnectionString,
-                    ContainerName = "ex-events",
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    TimeProvider = s.GetRequiredService<TimeProvider>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                });
-
-                if (!String.IsNullOrWhiteSpace(options.Scope))
-                    storage = new ScopedFileStorage(storage, options.Scope);
-
-                return storage;
-            });
+                ConnectionString = options.ConnectionString,
+                ContainerName = $"{options.ScopePrefix}ex-events",
+                Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
+                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+            }));
         }
         else if (String.Equals(options.Provider, "aliyun"))
         {
-            container.ReplaceSingleton<IFileStorage>(s =>
+            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
             {
-                IFileStorage storage = new AliyunFileStorage(new AliyunFileStorageOptions
-                {
-                    ConnectionString = options.ConnectionString,
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    TimeProvider = s.GetRequiredService<TimeProvider>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                });
-
-                if (!String.IsNullOrWhiteSpace(options.Scope))
-                    storage = new ScopedFileStorage(storage, options.Scope);
-
-                return storage;
-            });
+                ConnectionString = options.ConnectionString,
+                Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
+                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+            }));
         }
         else if (String.Equals(options.Provider, "folder"))
         {
@@ -241,40 +225,24 @@ public class Bootstrapper
         }
         else if (String.Equals(options.Provider, "minio"))
         {
-            container.ReplaceSingleton<IFileStorage>(s =>
+            container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions
             {
-                IFileStorage storage = new MinioFileStorage(new MinioFileStorageOptions
-                {
-                    ConnectionString = options.ConnectionString,
-                    Serializer = s.GetRequiredService<ITextSerializer>(),
-                    TimeProvider = s.GetRequiredService<TimeProvider>(),
-                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-                });
-
-                if (!String.IsNullOrWhiteSpace(options.Scope))
-                    storage = new ScopedFileStorage(storage, options.Scope);
-
-                return storage;
-            });
+                ConnectionString = options.ConnectionString,
+                Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
+                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+            }));
         }
         else if (String.Equals(options.Provider, "s3"))
         {
-            container.ReplaceSingleton<IFileStorage>(s =>
-            {
-                IFileStorage storage = new S3FileStorage(o => o
+            container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(o => o
                     .ConnectionString(options.ConnectionString)
                     .Credentials(GetAWSCredentials(options.Data))
                     .Region(GetAWSRegionEndpoint(options.Data))
-                    .Bucket(options.Data.GetString("bucket", "ex-events"))
+                    .Bucket(options.Data.GetString("bucket", $"{options.ScopePrefix}ex-events"))
                     .Serializer(s.GetRequiredService<ITextSerializer>())
                     .TimeProvider(s.GetRequiredService<TimeProvider>())
-                    .LoggerFactory(s.GetRequiredService<ILoggerFactory>()));
-
-                if (!String.IsNullOrWhiteSpace(options.Scope))
-                    storage = new ScopedFileStorage(storage, options.Scope);
-
-                return storage;
-            });
+                    .LoggerFactory(s.GetRequiredService<ILoggerFactory>())));
         }
     }
 
