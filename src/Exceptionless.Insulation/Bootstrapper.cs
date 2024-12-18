@@ -185,45 +185,77 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "azurestorage"))
         {
-            container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions
+            container.ReplaceSingleton<IFileStorage>(s =>
             {
-                ConnectionString = options.ConnectionString,
-                ContainerName = $"{options.ScopePrefix}ex-events",
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
+                IFileStorage storage = new AzureFileStorage(new AzureFileStorageOptions
+                {
+                    ConnectionString = options.ConnectionString,
+                    ContainerName = "ex-events",
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    TimeProvider = s.GetRequiredService<TimeProvider>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                });
+
+                if (!String.IsNullOrWhiteSpace(options.Scope))
+                    storage = new ScopedFileStorage(storage, options.Scope);
+
+                return storage;
+            });
         }
         else if (String.Equals(options.Provider, "aliyun"))
         {
-            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
+            container.ReplaceSingleton<IFileStorage>(s =>
             {
-                ConnectionString = options.ConnectionString,
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
+                IFileStorage storage = new AliyunFileStorage(new AliyunFileStorageOptions
+                {
+                    ConnectionString = options.ConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    TimeProvider = s.GetRequiredService<TimeProvider>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                });
+
+                if (!String.IsNullOrWhiteSpace(options.Scope))
+                    storage = new ScopedFileStorage(storage, options.Scope);
+
+                return storage;
+            });
         }
         else if (String.Equals(options.Provider, "folder"))
         {
             string path = options.Data.GetString("path", "|DataDirectory|\\storage");
-            container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions
+            container.AddSingleton<IFileStorage>(s =>
             {
-                Folder = PathHelper.ExpandPath(path),
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
+                IFileStorage storage = new FolderFileStorage(new FolderFileStorageOptions
+                {
+                    Folder = PathHelper.ExpandPath(path),
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    TimeProvider = s.GetRequiredService<TimeProvider>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                });
+
+                if (!String.IsNullOrWhiteSpace(options.Scope))
+                    storage = new ScopedFileStorage(storage, options.Scope);
+
+                return storage;
+            });
         }
         else if (String.Equals(options.Provider, "minio"))
         {
-            container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions
+            container.ReplaceSingleton<IFileStorage>(s =>
             {
-                ConnectionString = options.ConnectionString,
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
+                IFileStorage storage = new MinioFileStorage(new MinioFileStorageOptions
+                {
+                    ConnectionString = options.ConnectionString,
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    TimeProvider = s.GetRequiredService<TimeProvider>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                });
+
+                if (!String.IsNullOrWhiteSpace(options.Scope))
+                    storage = new ScopedFileStorage(storage, options.Scope);
+
+                return storage;
+            });
         }
         else if (String.Equals(options.Provider, "s3"))
         {
@@ -238,8 +270,8 @@ public class Bootstrapper
                     .TimeProvider(s.GetRequiredService<TimeProvider>())
                     .LoggerFactory(s.GetRequiredService<ILoggerFactory>()));
 
-                if (!String.IsNullOrWhiteSpace(options.ScopePrefix))
-                    storage = new ScopedFileStorage(storage, options.ScopePrefix);
+                if (!String.IsNullOrWhiteSpace(options.Scope))
+                    storage = new ScopedFileStorage(storage, options.Scope);
 
                 return storage;
             });
