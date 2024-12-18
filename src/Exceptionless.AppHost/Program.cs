@@ -6,7 +6,7 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithKibana(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-Kibana"));
 
-var storage = builder.AddMinIo("Storage", s => s.WithCredentials("guest", "password").WithPorts(9000))
+var storage = builder.AddMinIo("S3", s => s.WithCredentials("guest", "password").WithPorts(9000))
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Storage");
 
@@ -26,6 +26,7 @@ var mail = builder.AddContainer("Mail", "mailhog/mailhog")
 builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
     .WithReference(cache)
     .WithReference(elastic)
+    .WithReference(storage)
     .WithEnvironment("ConnectionStrings:Email", "smtp://localhost:1025")
     .WaitFor(elastic)
     .WaitFor(cache)

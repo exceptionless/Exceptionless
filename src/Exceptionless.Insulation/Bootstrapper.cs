@@ -183,22 +183,22 @@ public class Bootstrapper
 
     private static void RegisterStorage(IServiceCollection container, StorageOptions options)
     {
-        if (String.Equals(options.Provider, "aliyun"))
-        {
-            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
-            {
-                ConnectionString = options.ConnectionString,
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
-        }
-        else if (String.Equals(options.Provider, "azurestorage"))
+        if (String.Equals(options.Provider, "azurestorage"))
         {
             container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions
             {
                 ConnectionString = options.ConnectionString,
                 ContainerName = $"{options.ScopePrefix}ex-events",
+                Serializer = s.GetRequiredService<ITextSerializer>(),
+                TimeProvider = s.GetRequiredService<TimeProvider>(),
+                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+            }));
+        }
+        else if (String.Equals(options.Provider, "aliyun"))
+        {
+            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
+            {
+                ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()

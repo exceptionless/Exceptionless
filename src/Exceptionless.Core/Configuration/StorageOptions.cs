@@ -16,18 +16,31 @@ public class StorageOptions
 
     public static StorageOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
     {
-        var options = new StorageOptions();
-
-        options.Scope = appOptions.AppScope;
+        var options = new StorageOptions { Scope = appOptions.AppScope };
         options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
 
         string? cs = config.GetConnectionString("Storage");
-        options.Data = cs.ParseConnectionString();
-        options.Provider = options.Data.GetString(nameof(options.Provider));
+        if (cs != null)
+        {
+            options.Data = cs.ParseConnectionString();
+            options.Provider = options.Data.GetString(nameof(options.Provider));
+        }
+        else
+        {
+            var minioConnectionString = config.GetConnectionString("S3");
+            if (!String.IsNullOrEmpty(minioConnectionString))
+            {
+                options.Provider = "s3";
+            }
+        }
 
         string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
         if (!String.IsNullOrEmpty(providerConnectionString))
-            options.Data.AddRange(providerConnectionString.ParseConnectionString());
+        {
+            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
+            options.Data ??= [];
+            options.Data.AddRange(providerOptions);
+        }
 
         options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
 
