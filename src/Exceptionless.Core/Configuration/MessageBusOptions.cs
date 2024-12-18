@@ -40,7 +40,7 @@ public class MessageBusOptions
         if (!String.IsNullOrEmpty(providerConnectionString))
         {
             var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
-            options.Data ??= [];
+            options.Data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             options.Data.AddRange(providerOptions);
         }
 

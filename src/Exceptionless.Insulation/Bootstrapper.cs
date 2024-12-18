@@ -227,16 +227,22 @@ public class Bootstrapper
         }
         else if (String.Equals(options.Provider, "s3"))
         {
-            container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(new S3FileStorageOptions
+            container.ReplaceSingleton<IFileStorage>(s =>
             {
-                ConnectionString = options.ConnectionString,
-                Credentials = GetAWSCredentials(options.Data),
-                Region = GetAWSRegionEndpoint(options.Data),
-                Bucket = $"{options.ScopePrefix}{options.Data.GetString("bucket", "ex-events")}",
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
+                IFileStorage storage = new S3FileStorage(o => o
+                    .ConnectionString(options.ConnectionString)
+                    .Credentials(GetAWSCredentials(options.Data))
+                    .Region(GetAWSRegionEndpoint(options.Data))
+                    .Bucket(options.Data.GetString("bucket", "ex-events"))
+                    .Serializer(s.GetRequiredService<ITextSerializer>())
+                    .TimeProvider(s.GetRequiredService<TimeProvider>())
+                    .LoggerFactory(s.GetRequiredService<ILoggerFactory>()));
+
+                if (!String.IsNullOrWhiteSpace(options.ScopePrefix))
+                    storage = new ScopedFileStorage(storage, options.ScopePrefix);
+
+                return storage;
+            });
         }
     }
 

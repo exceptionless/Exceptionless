@@ -6,7 +6,7 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithKibana(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-Kibana"));
 
-var storage = builder.AddMinIo("S3", s => s.WithCredentials("guest", "password").WithPorts(9000))
+var storage = builder.AddMinIo("S3", s => s.WithCredentials("guest", "password").WithPorts(9000).WithBucket("ex-events"))
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Storage");
 

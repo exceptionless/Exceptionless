@@ -111,7 +111,6 @@ public abstract class ExceptionlessApiController : Controller
         return Request.CanAccessOrganization(organizationId);
     }
 
-
     protected bool IsInOrganization([NotNullWhen(true)] string? organizationId)
     {
         if (String.IsNullOrEmpty(organizationId))
