@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Helpers;
@@ -17,11 +18,10 @@ using IAsyncLifetime = Xunit.IAsyncLifetime;
 
 namespace Exceptionless.Tests;
 
-public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
+public class TestWithServices : TestWithLoggingBase, IDisposable
 {
     private readonly IServiceProvider _container;
     private readonly ProxyTimeProvider _timeProvider;
-    private static bool _startupActionsRun;
 
     public TestWithServices(ITestOutputHelper output) : base(output)
     {
@@ -36,18 +36,6 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
             _timeProvider = proxyTimeProvider;
         else
             throw new InvalidOperationException("TimeProvider must be of type ProxyTimeProvider");
-    }
-
-    public virtual async Task InitializeAsync()
-    {
-        if (_startupActionsRun)
-            return;
-
-        var result = await _container.RunStartupActionsAsync();
-        if (!result.Success)
-            throw new ApplicationException($"Startup action \"{result.FailedActionName}\" failed");
-
-        _startupActionsRun = true;
     }
     protected ProxyTimeProvider TimeProvider => _timeProvider;
 
@@ -83,7 +71,7 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
-            .AddEnvironmentVariables()
+            .AddCustomEnvironmentVariables()
             .Build();
 
         services.AddSingleton<IConfiguration>(config);
@@ -94,9 +82,8 @@ public class TestWithServices : TestWithLoggingBase, IAsyncLifetime
         return services.BuildServiceProvider();
     }
 
-    public Task DisposeAsync()
+    public void Dispose()
     {
         _timeProvider.Restore();
-        return Task.CompletedTask;
     }
 }

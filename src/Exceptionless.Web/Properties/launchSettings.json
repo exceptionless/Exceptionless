@@ -2,19 +2,7 @@
     "profiles": {
         "Exceptionless": {
             "commandName": "Project",
-            "launchBrowser": true,
-            "launchUrl": "http://localhost:5200/next",
-            "environmentVariables": {
-                "EX_AppMode": "Development",
-                "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy",
-                "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:8200"
-            },
-            "dotnetRunMessages": true,
-            "applicationUrl": "http://localhost:5200"
-        },
-        "Exceptionless API": {
-            "commandName": "Project",
-            "launchBrowser": true,
+            "launchBrowser": false,
             "environmentVariables": {
                 "EX_AppMode": "Development"
             },

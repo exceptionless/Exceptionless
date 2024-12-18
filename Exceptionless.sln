@@ -11,7 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\build.yaml = .github\workflows\build.yaml
 		CONTRIBUTING.md = CONTRIBUTING.md
 		src\Directory.Build.props = src\Directory.Build.props
-		docker\docker-compose.yml = docker\docker-compose.yml
 		Dockerfile = Dockerfile
 		exceptionless.http = exceptionless.http
 		global.json = global.json
@@ -28,8 +27,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Tests", "test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exceptionless.Job", "src\Exceptionless.Job\Exceptionless.Job.csproj", "{788BA00C-FFBE-42A9-92A3-89E24FC137B5}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker\docker-compose.dcproj", "{9F933018-9E8B-4649-8C9A-D217B5E1C184}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "http", "http", "{97ED03A0-8C49-4B15-8D93-C56AF4DDC30F}"
 	ProjectSection(SolutionItems) = preProject
 		tests\http\admin.http = tests\http\admin.http
@@ -43,6 +40,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "http", "http", "{97ED03A0-8
 		tests\http\users.http = tests\http\users.http
 		tests\http\webhooks.http = tests\http\webhooks.http
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.AppHost", "src\Exceptionless.AppHost\Exceptionless.AppHost.csproj", "{EB1AF004-A00D-4016-BA97-5E89177B0074}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -70,10 +69,10 @@ Global
 		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{788BA00C-FFBE-42A9-92A3-89E24FC137B5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9F933018-9E8B-4649-8C9A-D217B5E1C184}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9F933018-9E8B-4649-8C9A-D217B5E1C184}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9F933018-9E8B-4649-8C9A-D217B5E1C184}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9F933018-9E8B-4649-8C9A-D217B5E1C184}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB1AF004-A00D-4016-BA97-5E89177B0074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB1AF004-A00D-4016-BA97-5E89177B0074}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB1AF004-A00D-4016-BA97-5E89177B0074}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB1AF004-A00D-4016-BA97-5E89177B0074}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
