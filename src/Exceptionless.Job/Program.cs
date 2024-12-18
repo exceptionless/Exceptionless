@@ -1,5 +1,6 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
@@ -49,8 +50,7 @@ public class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables("EX_")
-            .AddEnvironmentVariables("ASPNETCORE_")
+            .AddCustomEnvironmentVariables()
             .AddCommandLine(args)
             .Build();
 
@@ -60,6 +60,9 @@ public class Program
             .ForContext<Program>();
 
         var options = AppOptions.ReadFromConfiguration(config);
+        // only poll the queue metrics if this process is going to run the stack event count job
+        options.QueueOptions.MetricsPollingEnabled = jobOptions.StackEventCount;
+
         var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options);
@@ -85,13 +88,13 @@ public class Program
                         app.UseSerilogRequestLogging(o =>
                         {
                             o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-                            o.GetLevel = (context, duration, ex) =>
+                            o.GetLevel = new Func<HttpContext, double, Exception?, LogEventLevel>((context, duration, ex) =>
                             {
                                 if (ex is not null || context.Response.StatusCode > 499)
                                     return LogEventLevel.Error;
 
                                 return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
-                            };
+                            });
                         });
 
                         Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetRequiredService<ILogger<Program>>());
@@ -146,27 +149,27 @@ public class Program
             services.AddJob<CleanupOrphanedDataJob>();
 
         if (options.CloseInactiveSessions)
-            services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<CloseInactiveSessionsJob>(o => o.WaitForStartupActions());
         if (options.DailySummary)
-            services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<DailySummaryJob>(o => o.WaitForStartupActions());
         if (options.DataMigration)
-            services.AddJob<DataMigrationJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<DataMigrationJob>(o => o.WaitForStartupActions());
 
         if (options is { DownloadGeoIPDatabase: true, AllJobs: true })
             services.AddCronJob<DownloadGeoIPDatabaseJob>("0 1 * * *");
         if (options is { DownloadGeoIPDatabase: true, AllJobs: false })
-            services.AddJob<DownloadGeoIPDatabaseJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<DownloadGeoIPDatabaseJob>(o => o.WaitForStartupActions());
 
         if (options.EventNotifications)
-            services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<EventNotificationsJob>(o => o.WaitForStartupActions());
         if (options.EventPosts)
-            services.AddJob<EventPostsJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
         if (options.EventUsage)
-            services.AddJob<EventUsageJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<EventUsageJob>(o => o.WaitForStartupActions());
         if (options.EventUserDescriptions)
-            services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
         if (options.MailMessage)
-            services.AddJob<MailMessageJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
 
         if (options is { MaintainIndexes: true, AllJobs: true })
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
@@ -174,14 +177,14 @@ public class Program
             services.AddJob<MaintainIndexesJob>();
 
         if (options.Migration)
-            services.AddJob<MigrationJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
         if (options.StackStatus)
-            services.AddJob<StackStatusJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         if (options.StackEventCount)
-            services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
         if (options.WebHooks)
-            services.AddJob<WebHooksJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
         if (options.WorkItem)
-            services.AddJob<WorkItemJob>(o => o.WaitForStartupActions(true));
+            services.AddJob<WorkItemJob>(o => o.WaitForStartupActions());
     }
 }

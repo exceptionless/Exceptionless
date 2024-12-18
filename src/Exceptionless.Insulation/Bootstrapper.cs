@@ -183,17 +183,7 @@ public class Bootstrapper
 
     private static void RegisterStorage(IServiceCollection container, StorageOptions options)
     {
-        if (String.Equals(options.Provider, "aliyun"))
-        {
-            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
-            {
-                ConnectionString = options.ConnectionString,
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
-        }
-        else if (String.Equals(options.Provider, "azurestorage"))
+        if (String.Equals(options.Provider, "azurestorage"))
         {
             container.ReplaceSingleton<IFileStorage>(s => new AzureFileStorage(new AzureFileStorageOptions
             {
@@ -204,16 +194,34 @@ public class Bootstrapper
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-        else if (String.Equals(options.Provider, "folder"))
+        else if (String.Equals(options.Provider, "aliyun"))
         {
-            string path = options.Data.GetString("path", "|DataDirectory|\\storage");
-            container.AddSingleton<IFileStorage>(s => new FolderFileStorage(new FolderFileStorageOptions
+            container.ReplaceSingleton<IFileStorage>(s => new AliyunFileStorage(new AliyunFileStorageOptions
             {
-                Folder = PathHelper.ExpandPath(path),
+                ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
+        }
+        else if (String.Equals(options.Provider, "folder"))
+        {
+            string path = options.Data.GetString("path", "|DataDirectory|\\storage");
+            container.AddSingleton<IFileStorage>(s =>
+            {
+                IFileStorage storage = new FolderFileStorage(new FolderFileStorageOptions
+                {
+                    Folder = PathHelper.ExpandPath(path),
+                    Serializer = s.GetRequiredService<ITextSerializer>(),
+                    TimeProvider = s.GetRequiredService<TimeProvider>(),
+                    LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+                });
+
+                if (!String.IsNullOrWhiteSpace(options.Scope))
+                    storage = new ScopedFileStorage(storage, options.Scope);
+
+                return storage;
+            });
         }
         else if (String.Equals(options.Provider, "minio"))
         {
@@ -227,16 +235,14 @@ public class Bootstrapper
         }
         else if (String.Equals(options.Provider, "s3"))
         {
-            container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(new S3FileStorageOptions
-            {
-                ConnectionString = options.ConnectionString,
-                Credentials = GetAWSCredentials(options.Data),
-                Region = GetAWSRegionEndpoint(options.Data),
-                Bucket = $"{options.ScopePrefix}{options.Data.GetString("bucket", "ex-events")}",
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
+            container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(o => o
+                    .ConnectionString(options.ConnectionString)
+                    .Credentials(GetAWSCredentials(options.Data))
+                    .Region(GetAWSRegionEndpoint(options.Data))
+                    .Bucket(options.Data.GetString("bucket", $"{options.ScopePrefix}ex-events"))
+                    .Serializer(s.GetRequiredService<ITextSerializer>())
+                    .TimeProvider(s.GetRequiredService<TimeProvider>())
+                    .LoggerFactory(s.GetRequiredService<ILoggerFactory>())));
         }
     }
 
@@ -251,7 +257,9 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
-            LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
+            MetricsPollingEnabled = options.MetricsPollingEnabled,
+            MetricsPollingInterval = options.MetricsPollingInterval
         });
     }
 
@@ -267,7 +275,9 @@ public class Bootstrapper
             RunMaintenanceTasks = runMaintenanceTasks,
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
-            LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
+            MetricsPollingEnabled = options.MetricsPollingEnabled,
+            MetricsPollingInterval = options.MetricsPollingInterval
         });
     }
 
@@ -295,7 +305,9 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
-            LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
+            MetricsPollingEnabled = options.MetricsPollingEnabled,
+            MetricsPollingInterval = options.MetricsPollingInterval
         });
     }
 

@@ -51,7 +51,7 @@ public class ElasticsearchOptions
 
     private static void ParseConnectionString(string? connectionString, ElasticsearchOptions options, AppMode appMode)
     {
-        var pairs = connectionString.ParseConnectionString();
+        var pairs = connectionString.ParseConnectionString(defaultKey: "server");
         options.ServerUrl = pairs.GetString("server", "http://localhost:9200");
 
         int shards = pairs.GetValueOrDefault<int>("shards", 1);

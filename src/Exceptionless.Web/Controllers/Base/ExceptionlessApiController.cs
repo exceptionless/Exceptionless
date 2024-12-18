@@ -94,13 +94,22 @@ public abstract class ExceptionlessApiController : Controller
         return skip;
     }
 
+    /// <summary>
+    /// This call will throw an exception if the user is a token auth type.
+    /// This is less than ideal, and we should refactor this to be a nullable user.
+    /// NOTE: The only endpoints that allow token auth types is
+    ///     - post event
+    ///     - post user event description
+    ///     - post session heartbeat
+    ///     - post session end
+    ///     - project config
+    /// </summary>
     protected virtual User CurrentUser => Request.GetUser();
 
     protected bool CanAccessOrganization(string organizationId)
     {
         return Request.CanAccessOrganization(organizationId);
     }
-
 
     protected bool IsInOrganization([NotNullWhen(true)] string? organizationId)
     {
