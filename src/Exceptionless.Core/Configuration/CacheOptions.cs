@@ -42,7 +42,7 @@ public class CacheOptions
             options.Data.AddRange(providerOptions);
         }
 
-        options.ConnectionString = options.Data.BuildConnectionString([ nameof(options.Provider) ]);
+        options.ConnectionString = options.Data.BuildConnectionString([nameof(options.Provider)]);
 
         return options;
     }
