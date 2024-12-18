@@ -61,6 +61,9 @@ public class Program
             .ForContext<Program>();
 
         var options = AppOptions.ReadFromConfiguration(config);
+        // only poll the queue metrics if this process is going to host the jobs
+        options.QueueOptions.MetricsPollingEnabled = options.RunJobsInProcess;
+
         var apmConfig = new ApmConfig(config, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
         Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", environment, options.InformationalVersion, Environment.MachineName, options);

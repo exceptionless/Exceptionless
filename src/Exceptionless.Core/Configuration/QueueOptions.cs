@@ -13,6 +13,8 @@ public class QueueOptions
 
     public string Scope { get; internal set; } = null!;
     public string ScopePrefix { get; internal set; } = null!;
+    public bool MetricsPollingEnabled { get; set; } = true;
+    public TimeSpan MetricsPollingInterval { get; set; } = TimeSpan.FromSeconds(5);
 
     public static QueueOptions ReadFromConfiguration(IConfiguration config, AppOptions appOptions)
     {
@@ -43,6 +45,8 @@ public class QueueOptions
         }
 
         options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
+
+        options.MetricsPollingInterval = appOptions.AppMode == AppMode.Development ? TimeSpan.FromSeconds(15) : TimeSpan.FromSeconds(5);
 
         return options;
     }

@@ -289,7 +289,9 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
-            LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
+            MetricsPollingEnabled = options.MetricsPollingEnabled,
+            MetricsPollingInterval = options.MetricsPollingInterval
         });
     }
 
@@ -305,7 +307,9 @@ public class Bootstrapper
             RunMaintenanceTasks = runMaintenanceTasks,
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
-            LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
+            MetricsPollingEnabled = options.MetricsPollingEnabled,
+            MetricsPollingInterval = options.MetricsPollingInterval
         });
     }
 
@@ -333,7 +337,9 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
-            LoggerFactory = container.GetRequiredService<ILoggerFactory>()
+            LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
+            MetricsPollingEnabled = options.MetricsPollingEnabled,
+            MetricsPollingInterval = options.MetricsPollingInterval
         });
     }
 
