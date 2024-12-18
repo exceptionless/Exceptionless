@@ -45,10 +45,12 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
 
 builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
     .WithReference(api)
-    .WithEndpoint(scheme: "http", env: "PORT");
+    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
+    .WithEndpoint(port: 5173, targetPort: 5173, scheme: "http", env: "PORT", isProxied: false);
 
 builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
-    .WithEndpoint(scheme: "http", env: "PORT");
+    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
+    .WithEndpoint(port: 5100, targetPort: 5100, scheme: "http", env: "PORT", isProxied: false);
 
 builder.Build().Run();
