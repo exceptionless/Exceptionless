@@ -36,7 +36,7 @@ public static partial class ApmExtensions
 
                 b.AddAspNetCoreInstrumentation(o =>
                 {
-                    o.Filter = context =>
+                    o.Filter = new Func<HttpContext, bool>(context =>
                     {
                         if (context.Request.Path.StartsWithSegments("/api/v2/push", StringComparison.OrdinalIgnoreCase))
                             return false;
@@ -48,7 +48,7 @@ public static partial class ApmExtensions
                             return false;
 
                         return true;
-                    };
+                    });
                 });
 
                 b.AddElasticsearchClientInstrumentation(c =>
@@ -129,6 +129,7 @@ public static partial class ApmExtensions
                 b.AddHttpClientInstrumentation();
                 b.AddAspNetCoreInstrumentation();
                 b.AddMeter("Exceptionless", "Foundatio");
+                b.AddMeter("System.Runtime");
                 b.AddRuntimeInstrumentation();
                 b.AddProcessInstrumentation();
 
