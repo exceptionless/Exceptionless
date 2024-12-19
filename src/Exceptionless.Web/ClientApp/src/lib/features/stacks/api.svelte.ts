@@ -124,6 +124,7 @@ export function mutateMarkStackAsNotCritical(props: MarkStackAsCriticalProps) {
         }
     }));
 }
+
 export function mutateRemoveStackReference(props: RemoveStackReferenceProps) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, string>(() => ({
