@@ -7,13 +7,17 @@ import { createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query
 import type { PersistentEvent } from './models';
 
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
-    const { id, stack_id } = message;
+    const { id, project_id, stack_id } = message;
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
     }
 
     if (stack_id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.stacks(stack_id) });
+    }
+
+    if (project_id) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(project_id) });
     }
 
     if (!id && !stack_id) {
@@ -23,53 +27,111 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 
 export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     type: ['PersistentEvent'] as const
 };
 
-export interface GetEventByIdProps {
-    id: string | undefined;
-}
-
-export interface GetEventsByStackIdProps {
-    limit?: number;
-    stackId: string | undefined;
+export interface GetEventRequest {
+    route: {
+        id: string | undefined;
+    };
 }
 
 export type GetEventsMode = 'stack_frequent' | 'stack_new' | 'stack_recent' | 'stack_users' | 'summary' | null;
 
-export interface IGetEventsParams {
+export interface GetEventsParams {
     after?: string;
     before?: string;
     filter?: string;
     limit?: number;
     mode?: GetEventsMode;
     offset?: string;
-    page?: number;
     sort?: string;
     time?: string;
 }
 
-export function getEventByIdQuery(props: GetEventByIdProps) {
+export interface GetProjectCountRequest {
+    params?: {
+        aggregations?: string;
+        filter?: string;
+        mode?: 'stack_new';
+        offset?: string;
+        time?: string;
+    };
+    route: {
+        projectId: string | undefined;
+    };
+}
+
+export interface GetStackCountRequest {
+    params?: {
+        aggregations?: string;
+        filter?: string;
+        mode?: 'stack_new';
+        offset?: string;
+        time?: string;
+    };
+    route: {
+        stackId: string | undefined;
+    };
+}
+
+export interface GetStackEventsRequest {
+    params?: {
+        after?: string;
+        before?: string;
+        filter?: string;
+        limit?: number;
+        mode?: GetEventsMode;
+        offset?: string;
+        sort?: string;
+        time?: string;
+    };
+    route: {
+        stackId: string | undefined;
+    };
+}
+
+export function getEventQuery(request: GetEventRequest) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!props.id,
+        enabled: () => !!accessToken.value && !!request.route.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent>(`events/${props.id}`, {
+            const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
                 signal
             });
 
             return response.data!;
         },
-        queryKey: queryKeys.id(props.id)
+        queryKey: queryKeys.id(request.route.id)
     }));
 }
 
-export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
+export function getProjectCountQuery(request: GetProjectCountRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<PersistentEvent[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!props.stackId,
+        enabled: () => !!accessToken.value && !!request.route.projectId,
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent[]>(`/projects/${request.route.projectId}/events/count`, {
+                params: request.params,
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.projects(request.route.projectId)
+    }));
+}
+
+export function getStackEventsQuery(request: GetStackEventsRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<PersistentEvent[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.stackId,
         onSuccess: (data: PersistentEvent[]) => {
             data.forEach((event) => {
                 queryClient.setQueryData(queryKeys.id(event.id!), event);
@@ -78,15 +140,13 @@ export function getEventsByStackIdQuery(props: GetEventsByStackIdProps) {
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent[]>(`stacks/${props.stackId}/events`, {
-                params: {
-                    limit: props.limit ?? 10
-                },
+            const response = await client.getJSON<PersistentEvent[]>(`stacks/${request.route.stackId}/events`, {
+                params: request.params,
                 signal
             });
 
             return response.data!;
         },
-        queryKey: queryKeys.stacks(props.stackId)
+        queryKey: queryKeys.stacks(request.route.stackId)
     }));
 }
