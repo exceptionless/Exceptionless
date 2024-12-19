@@ -7,7 +7,7 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import { getEventsByStackIdQuery } from '$features/events/api.svelte';
+    import { getStackEventsQuery } from '$features/events/api.svelte';
     import EventsDrawer from '$features/events/components/EventsDrawer.svelte';
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
@@ -27,10 +27,14 @@
     }
 
     // Load the latest event for the stack and display it in the sidebar.
-    const eventsResponse = getEventsByStackIdQuery({
-        limit: 1,
-        get stackId() {
-            return selectedStackId;
+    const eventsResponse = getStackEventsQuery({
+        params: {
+            limit: 1
+        },
+        route: {
+            get stackId() {
+                return selectedStackId;
+            }
         }
     });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);

@@ -9,7 +9,7 @@
     import { P } from '$comp/typography';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
-    import { getEventByIdQuery } from '$features/events/api.svelte';
+    import { getEventQuery } from '$features/events/api.svelte';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getProjectByIdQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/StackCard.svelte';
@@ -76,9 +76,11 @@
         return tabs;
     }
 
-    let eventResponse = getEventByIdQuery({
-        get id() {
-            return id;
+    let eventResponse = getEventQuery({
+        route: {
+            get id() {
+                return id;
+            }
         }
     });
 
