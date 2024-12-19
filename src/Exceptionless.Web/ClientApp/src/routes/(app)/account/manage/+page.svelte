@@ -49,6 +49,7 @@
             } catch (error: unknown) {
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
+                    updateEmailAddressFormMessage.set(form.message);
                     result.status = error.status ?? 500;
                     toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
                 }
@@ -76,6 +77,7 @@
             } catch (error: unknown) {
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
+                    updateUserFormMessage.set(form.message);
                     result.status = error.status ?? 500;
                     toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
                 }

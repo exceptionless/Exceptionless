@@ -7,7 +7,8 @@ export function applyServerSideErrors<T extends Record<string, unknown> = Record
     problem: null | ProblemDetails
 ) {
     if (!problem || problem.status !== 422) {
-        setMessage(form, problem?.title as M, { status: (problem?.status as ErrorStatus) ?? 500 });
+        const generalErrors = problem?.errors?.['general']?.join(', ');
+        setMessage(form, generalErrors ?? (problem?.title as M), { status: (problem?.status as ErrorStatus) ?? 500 });
         return;
     }
 
