@@ -70,7 +70,7 @@
         <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
     </div>
 </div>
-<div class="mt-2 overflow-auto p-2 text-xs">
+<div class="mb-4 mt-2 overflow-auto text-xs">
     {#if event.data?.['@error']}
         <StackTrace error={event.data['@error']} />
     {:else if event.data?.['@simple_error']}

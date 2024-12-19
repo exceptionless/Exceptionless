@@ -6,10 +6,10 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { applyServerSideErrors } from '$features/shared/validation';
     import { getMeQuery, mutateEmailAddress, mutateUser } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { UpdateUser, User } from '$features/users/models';
+    import { applyServerSideErrors } from '$shared/validation';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import { toast } from 'svelte-sonner';
     import { defaults, superForm } from 'sveltekit-superforms';
@@ -49,6 +49,7 @@
             } catch (error: unknown) {
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
+                    updateEmailAddressFormMessage.set(form.message);
                     result.status = error.status ?? 500;
                     toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
                 }
@@ -76,6 +77,7 @@
             } catch (error: unknown) {
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
+                    updateUserFormMessage.set(form.message);
                     result.status = error.status ?? 500;
                     toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
                 }
