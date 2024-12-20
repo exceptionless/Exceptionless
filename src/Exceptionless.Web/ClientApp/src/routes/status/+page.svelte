@@ -1,13 +1,13 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import Loading from '$comp/Loading.svelte';
     import Logo from '$comp/Logo.svelte';
     import { P } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import { getHealthQuery } from '$features/status/api.svelte';
 
-    let redirect = $page.url.searchParams.get('redirect');
+    let redirect = page.url.searchParams.get('redirect');
 
     const healthResponse = getHealthQuery();
     $effect(() => {

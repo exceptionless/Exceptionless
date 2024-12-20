@@ -91,21 +91,21 @@
                 <Command.Input placeholder={title} />
             {/if}
             <Command.List>
-                {#if loading}
-                    <Command.Loading><div class="flex p-2"><Loading class="mr-2 h-4 w-4" /> Loading...</div></Command.Loading>
-                {/if}
                 <Command.Empty>{noOptionsText}</Command.Empty>
+                {#if loading}
+                    <Command.Loading><div class="flex p-2"><Loading class="mr-2 size-4" /> Loading...</div></Command.Loading>
+                {/if}
                 {#if options.length > 0}
                     <Command.Group>
                         {#each options as option (option.value)}
                             <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
                                 <div
                                     class={cn(
-                                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                        'mr-2 flex size-4 items-center justify-center rounded-sm border border-primary',
                                         updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
-                                    <IconCheck className={cn('h-4 w-4')} />
+                                    <IconCheck className={cn('size-4')} />
                                 </div>
                                 <span>
                                     {option.label}

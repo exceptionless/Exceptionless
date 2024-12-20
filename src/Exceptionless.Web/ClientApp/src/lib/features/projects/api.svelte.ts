@@ -27,85 +27,57 @@ export const queryKeys = {
     type: ['Project'] as const
 };
 
-export interface DemoteProjectTabProps {
-    id: string;
+export interface deletePromotedTabRequest {
+    route: {
+        id: string;
+    };
 }
 
-export interface GetProjectByIdProps {
-    id: string | undefined;
+export interface GetOrganizationProjectsRequest {
+    params?: {
+        filter?: string;
+        limit?: number;
+        mode?: 'stats';
+        page?: number;
+        sort?: string;
+    };
+    route: {
+        organizationId: string | undefined;
+    };
 }
 
-export interface GetProjectsByOrganizationIdProps {
-    limit?: number;
-    organizationId: string | undefined;
+export interface GetProjectRequest {
+    route: {
+        id: string | undefined;
+    };
 }
 
-export interface PromoteProjectTabProps {
-    id: string;
+export interface PostPromotedTabRequest {
+    route: {
+        id: string | undefined;
+    };
 }
 
-export function getProjectByIdQuery(props: GetProjectByIdProps) {
-    return createQuery<ViewProject, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!props.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewProject>(`projects/${props.id}`, {
-                signal
-            });
-
-            return response.data!;
-        },
-        queryKey: queryKeys.id(props.id)
-    }));
-}
-
-export function getProjectsByOrganizationIdQuery(props: GetProjectsByOrganizationIdProps) {
-    const queryClient = useQueryClient();
-
-    return createQuery<ViewProject[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!props.organizationId,
-        onSuccess: (data: ViewProject[]) => {
-            data.forEach((project) => {
-                queryClient.setQueryData(queryKeys.id(project.id!), project);
-            });
-        },
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewProject[]>(`organizations/${props.organizationId}/projects`, {
-                params: {
-                    limit: props.limit ?? 1000
-                },
-                signal
-            });
-
-            return response.data!;
-        },
-        queryKey: queryKeys.organization(props.organizationId)
-    }));
-}
-
-export function mutateDemoteTab(props: DemoteProjectTabProps) {
+export function deletePromotedTab(request: deletePromotedTabRequest) {
     const queryClient = useQueryClient();
     return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
         mutationFn: async (params: { name: string }) => {
             const client = useFetchClient();
-            const response = await client.delete(`projects/${props.id}/promotedtabs`, {
+            const response = await client.delete(`projects/${request.route.id}/promotedtabs`, {
                 params
             });
 
-            // TODO: Fix status code returns.
             return response.ok;
         },
-        mutationKey: queryKeys.id(props.id),
+        mutationKey: queryKeys.id(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },
         onSuccess: (_: boolean, variables: { name: string }) => {
             // Update the project to reflect the demoted tab until it's updated from the server
-            const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
+            const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(request.route.id));
             if (previousProject) {
-                queryClient.setQueryData(queryKeys.id(props.id), {
+                queryClient.setQueryData(queryKeys.id(request.route.id), {
                     ...previousProject,
                     promoted_tabs: (previousProject?.promoted_tabs ?? []).filter((tab) => tab !== variables.name)
                 });
@@ -114,27 +86,68 @@ export function mutateDemoteTab(props: DemoteProjectTabProps) {
     }));
 }
 
-export function mutatePromoteTab(props: PromoteProjectTabProps) {
+export function getOrganizationProjectsQuery(request: GetOrganizationProjectsRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<ViewProject[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.organizationId,
+        onSuccess: (data: ViewProject[]) => {
+            data.forEach((project) => {
+                queryClient.setQueryData(queryKeys.id(project.id!), project);
+            });
+        },
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewProject[]>(`organizations/${request.route.organizationId}/projects`, {
+                params: {
+                    ...request.params,
+                    limit: request.params?.limit ?? 1000
+                },
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.organization(request.route.organizationId)
+    }));
+}
+
+export function getProjectQuery(request: GetProjectRequest) {
+    return createQuery<ViewProject, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewProject>(`projects/${request.route.id}`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.id(request.route.id)
+    }));
+}
+
+export function postPromotedTab(request: PostPromotedTabRequest) {
     const queryClient = useQueryClient();
     return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
         mutationFn: async (params: { name: string }) => {
             const client = useFetchClient();
-            const response = await client.post(`projects/${props.id}/promotedtabs`, undefined, {
+            const response = await client.post(`projects/${request.route.id}/promotedtabs`, undefined, {
                 params
             });
 
-            // TODO: Fix status code returns.
             return response.ok;
         },
-        mutationKey: queryKeys.id(props.id),
+        mutationKey: queryKeys.id(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },
         onSuccess: (_: boolean, variables: { name: string }) => {
             // Update the project to reflect the new promoted tab until it's updated from the server
-            const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(props.id));
+            const previousProject = queryClient.getQueryData<ViewProject>(queryKeys.id(request.route.id));
             if (previousProject) {
-                queryClient.setQueryData(queryKeys.id(props.id), {
+                queryClient.setQueryData(queryKeys.id(request.route.id), {
                     ...previousProject,
                     promoted_tabs: [...(previousProject?.promoted_tabs ?? []), variables.name]
                 });

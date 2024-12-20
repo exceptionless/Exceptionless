@@ -81,9 +81,11 @@
         </div>
     </div>
 
-    {#if showRaw}
-        <pre class="overflow-auto whitespace-pre-wrap break-words p-2 text-xs"><Code>{json}</Code></pre>
-    {:else}
-        <ObjectDump value={filteredData} />
-    {/if}
+    <div class="mt-2 flex-grow overflow-auto text-xs">
+        {#if showRaw}
+            <pre class="whitespace-pre-wrap break-words rounded bg-muted p-2"><Code class="px-0"><div class="bg-inherit">{json}</div></Code></pre>
+        {:else}
+            <ObjectDump value={filteredData} />
+        {/if}
+    </div>
 {/if}

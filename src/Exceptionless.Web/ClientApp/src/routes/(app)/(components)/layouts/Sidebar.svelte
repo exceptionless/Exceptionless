@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
 
@@ -22,7 +22,7 @@
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
                     <Sidebar.MenuItem>
-                        <Sidebar.MenuButton isActive={route.href === $page.url.pathname}>
+                        <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
                             {#snippet child({ props })}
                                 <a href={route.href} title={route.title} {...props}>
                                     <Icon />

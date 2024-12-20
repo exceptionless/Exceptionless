@@ -3,17 +3,20 @@
 </script>
 
 <script generics="TData" lang="ts">
+    import type { Snippet } from 'svelte';
+
     import * as Table from '$comp/ui/table';
     import { type Cell, FlexRender, type Header, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     import DataTableColumnHeader from './data-table-column-header.svelte';
 
     interface Props {
+        children?: Snippet;
         rowclick?: (row: TData) => void;
         table: SvelteTable<TData>;
     }
 
-    let { rowclick, table }: Props = $props();
+    let { children, rowclick, table }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
         const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
@@ -55,9 +58,9 @@
             {/each}
         </Table.Header>
         <Table.Body>
-            <Table.Row class="hidden text-center only:table-row">
-                <Table.Cell colspan={table.getVisibleLeafColumns().length}>No data was found with the current filter.</Table.Cell>
-            </Table.Row>
+            {#if children}
+                {@render children()}
+            {/if}
             {#each table.getRowModel().rows as row (row.id)}
                 <Table.Row>
                     {#each row.getVisibleCells() as cell (cell.id)}

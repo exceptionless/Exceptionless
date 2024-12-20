@@ -27,11 +27,15 @@ export const queryKeys = {
     type: ['User'] as const
 };
 
-export interface UpdateEmailAddressProps {
-    id: string | undefined;
+export interface PatchUserRequest {
+    route: {
+        id: string | undefined;
+    };
 }
-export interface UpdateUserProps {
-    id: string | undefined;
+export interface PostEmailAddressRequest {
+    route: {
+        id: string | undefined;
+    };
 }
 
 export function getMeQuery() {
@@ -55,51 +59,51 @@ export function getMeQuery() {
     }));
 }
 
-export function mutateEmailAddress(props: UpdateEmailAddressProps) {
+export function patchUser(request: PatchUserRequest) {
     const queryClient = useQueryClient();
-    return createMutation<UpdateEmailAddressResult, ProblemDetails, Pick<User, 'email_address'>>(() => ({
-        enabled: () => !!accessToken.value && !!props.id,
-        mutationFn: async (data: Pick<User, 'email_address'>) => {
+    return createMutation<User, ProblemDetails, UpdateUser>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.id,
+        mutationFn: async (data: UpdateUser) => {
             const client = useFetchClient();
-            const response = await client.postJSON<UpdateEmailAddressResult>(`users/${props.id}/email-address/${data.email_address}`);
+            const response = await client.patchJSON<User>(`users/${request.route.id}`, data);
             return response.data!;
         },
-        mutationKey: queryKeys.idEmailAddress(props.id),
-        onSuccess: (data, variables) => {
-            const partialUserData: Partial<User> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
-
-            const user = queryClient.getQueryData<User>(queryKeys.id(props.id));
-            if (user) {
-                queryClient.setQueryData(queryKeys.id(props.id), <User>{ ...user, ...partialUserData });
-            }
+        mutationKey: queryKeys.id(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        },
+        onSuccess: (data) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), data);
 
             const currentUser = queryClient.getQueryData<User>(queryKeys.me());
-            if (currentUser?.id === props.id) {
-                queryClient.setQueryData(queryKeys.me(), <User>{ ...currentUser, ...partialUserData });
+            if (currentUser?.id === request.route.id) {
+                queryClient.setQueryData(queryKeys.me(), data);
             }
         }
     }));
 }
 
-export function mutateUser(props: UpdateUserProps) {
+export function postEmailAddress(request: PostEmailAddressRequest) {
     const queryClient = useQueryClient();
-    return createMutation<User, ProblemDetails, UpdateUser>(() => ({
-        enabled: () => !!accessToken.value && !!props.id,
-        mutationFn: async (data: UpdateUser) => {
+    return createMutation<UpdateEmailAddressResult, ProblemDetails, Pick<User, 'email_address'>>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.id,
+        mutationFn: async (data: Pick<User, 'email_address'>) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<User>(`users/${props.id}`, data);
+            const response = await client.postJSON<UpdateEmailAddressResult>(`users/${request.route.id}/email-address/${data.email_address}`);
             return response.data!;
         },
-        mutationKey: queryKeys.id(props.id),
-        onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(props.id) });
-        },
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.id(props.id), data);
+        mutationKey: queryKeys.idEmailAddress(request.route.id),
+        onSuccess: (data, variables) => {
+            const partialUserData: Partial<User> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
+
+            const user = queryClient.getQueryData<User>(queryKeys.id(request.route.id));
+            if (user) {
+                queryClient.setQueryData(queryKeys.id(request.route.id), <User>{ ...user, ...partialUserData });
+            }
 
             const currentUser = queryClient.getQueryData<User>(queryKeys.me());
-            if (currentUser?.id === props.id) {
-                queryClient.setQueryData(queryKeys.me(), data);
+            if (currentUser?.id === request.route.id) {
+                queryClient.setQueryData(queryKeys.me(), <User>{ ...currentUser, ...partialUserData });
             }
         }
     }));
