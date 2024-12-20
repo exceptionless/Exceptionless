@@ -10,7 +10,7 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Tooltip from '$comp/ui/tooltip';
-    import { getStackByIdQuery } from '$features/stacks/api.svelte';
+    import { getStackQuery } from '$features/stacks/api.svelte';
     import IconFirstOccurrence from '~icons/mdi/arrow-left-circle';
     import IconLastOccurrence from '~icons/mdi/arrow-right-circle';
     import IconCalendar from '~icons/mdi/calendar';
@@ -30,9 +30,11 @@
 
     let { changed, id }: Props = $props();
 
-    let stackResponse = getStackByIdQuery({
-        get id() {
-            return id;
+    let stackResponse = getStackQuery({
+        route: {
+            get id() {
+                return id;
+            }
         }
     });
 
