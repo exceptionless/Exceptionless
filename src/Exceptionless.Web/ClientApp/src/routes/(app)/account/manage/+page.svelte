@@ -6,7 +6,7 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { getMeQuery, mutateEmailAddress, mutateUser } from '$features/users/api.svelte';
+    import { getMeQuery, patchUser, postEmailAddress } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { UpdateUser, User } from '$features/users/models';
     import { applyServerSideErrors } from '$shared/validation';
@@ -20,14 +20,19 @@
     const userResponse = getMeQuery();
     const isEmailAddressVerified = $derived(userResponse.data?.is_email_address_verified ?? false);
     const gravatar = getGravatarFromCurrentUser(userResponse);
-    const updateUser = mutateUser({
-        get id() {
-            return userResponse.data?.id;
+    const updateUser = patchUser({
+        route: {
+            get id() {
+                return userResponse.data?.id;
+            }
         }
     });
-    const updateEmailAddress = mutateEmailAddress({
-        get id() {
-            return userResponse.data?.id;
+
+    const updateEmailAddress = postEmailAddress({
+        route: {
+            get id() {
+                return userResponse.data?.id;
+            }
         }
     });
 

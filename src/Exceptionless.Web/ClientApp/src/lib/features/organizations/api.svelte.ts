@@ -25,11 +25,13 @@ export const queryKeys = {
     type: ['Organization'] as const
 };
 
-export interface GetOrganizationsProps {
-    mode: 'stats' | null;
+export interface GetOrganizationsRequest {
+    params?: {
+        mode: 'stats' | null;
+    };
 }
 
-export function getOrganizationQuery(props: GetOrganizationsProps) {
+export function getOrganizationQuery(request: GetOrganizationsRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<ViewOrganization[], ProblemDetails>(() => ({
@@ -43,14 +45,12 @@ export function getOrganizationQuery(props: GetOrganizationsProps) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewOrganization[]>('organizations', {
-                params: {
-                    mode: props.mode
-                },
+                params: request.params,
                 signal
             });
 
             return response.data!;
         },
-        queryKey: queryKeys.list(props.mode ?? undefined)
+        queryKey: queryKeys.list(request.params?.mode ?? undefined)
     }));
 }

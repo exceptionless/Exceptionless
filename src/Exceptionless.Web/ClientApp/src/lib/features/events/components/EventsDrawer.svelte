@@ -11,7 +11,7 @@
     import * as Tabs from '$comp/ui/tabs';
     import { getEventQuery } from '$features/events/api.svelte';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
-    import { getProjectByIdQuery } from '$features/projects/api.svelte';
+    import { getProjectQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/StackCard.svelte';
 
     import type { PersistentEvent } from '../models/index';
@@ -76,7 +76,7 @@
         return tabs;
     }
 
-    let eventResponse = getEventQuery({
+    const eventResponse = getEventQuery({
         route: {
             get id() {
                 return id;
@@ -84,9 +84,11 @@
         }
     });
 
-    let projectResponse = getProjectByIdQuery({
-        get id() {
-            return eventResponse.data?.project_id;
+    const projectResponse = getProjectQuery({
+        route: {
+            get id() {
+                return eventResponse.data?.project_id;
+            }
         }
     });
 
