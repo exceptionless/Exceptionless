@@ -169,7 +169,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of organization identifiers.</param>
+    /// <param name="ids">A comma-delimited list of organization identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more organizations were not found.</response>

@@ -5,7 +5,6 @@ COPY ./*.sln ./NuGet.Config ./
 COPY ./src/*.props ./src/
 COPY ./tests/*.props ./tests/
 COPY ./build/packages/* ./build/packages/
-COPY ./docker/docker-compose.dcproj ./docker/
 
 # Copy the main source project files
 COPY src/*/*.csproj ./
@@ -99,7 +98,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.16.1 AS exceptionless
+FROM exceptionless/elasticsearch:8.17.0 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./

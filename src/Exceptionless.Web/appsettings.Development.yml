@@ -5,7 +5,7 @@ ConnectionStrings:
 #  Cache: provider=redis;
 #  MessageBus: provider=redis;
 #  Queue: provider=redis;
-  Storage: provider=folder;path=.\storage
+#  Storage: provider=folder;path=.\storage
 #  LDAP: ''
 #  Email: smtp://localhost:1025
 

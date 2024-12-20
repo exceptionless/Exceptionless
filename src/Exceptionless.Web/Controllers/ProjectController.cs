@@ -183,7 +183,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of project identifiers.</param>
+    /// <param name="ids">A comma-delimited list of project identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more projects were not found.</response>
