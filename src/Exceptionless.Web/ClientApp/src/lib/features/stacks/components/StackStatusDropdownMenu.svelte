@@ -3,7 +3,7 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from '~icons/mdi/chevron-down';
 
-    import { mutateStackFixedStatus, mutateStackSnoozedStatus, mutateStackStatus } from '../api.svelte';
+    import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { Stack, StackStatus } from '../models';
     import MarkStackDiscardedDialog from './dialogs/MarkStackDiscardedDialog.svelte';
     import MarkStackFixedInVersionDialog from './dialogs/MarkStackFixedInVersionDialog.svelte';
@@ -28,37 +28,43 @@
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
     let selected = $derived((items.find((item) => item.value === stack?.status) || items[items.length - 1]) as Item);
 
-    const updateStackFixedStatus = mutateStackFixedStatus({
-        get id() {
-            return stack?.id;
+    const updateMarkFixed = postMarkFixed({
+        route: {
+            get ids() {
+                return stack?.id;
+            }
         }
     });
 
-    const updateStackSnoozedStatus = mutateStackSnoozedStatus({
-        get id() {
-            return stack?.id;
+    const updateMarkSnoozed = postMarkSnoozed({
+        route: {
+            get id() {
+                return stack?.id;
+            }
         }
     });
 
-    const updateStackStatus = mutateStackStatus({
-        get id() {
-            return stack?.id;
+    const changeStatus = postChangeStatus({
+        route: {
+            get ids() {
+                return stack?.id;
+            }
         }
     });
 
-    async function updateOpen() {
+    async function markOpen() {
         if (stack.status === StackStatus.Open) {
             return;
         }
 
-        await updateStackStatus.mutateAsync(StackStatus.Open);
+        await changeStatus.mutateAsync(StackStatus.Open);
     }
 
-    async function updateFixed(version?: string) {
-        await updateStackFixedStatus.mutateAsync(version);
+    async function markFixed(version?: string) {
+        await updateMarkFixed.mutateAsync(version);
     }
 
-    async function updateSnooze(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
+    async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
         let snoozeUntilUtc = new Date();
         switch (timePeriod) {
             case '6hours':
@@ -76,23 +82,23 @@
                 break;
         }
 
-        await updateStackSnoozedStatus.mutateAsync(snoozeUntilUtc);
+        await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
     }
 
-    async function updateIgnore() {
+    async function markIgnored() {
         if (stack.status === StackStatus.Ignored) {
             return;
         }
 
-        await updateStackStatus.mutateAsync(StackStatus.Ignored);
+        await changeStatus.mutateAsync(StackStatus.Ignored);
     }
 
-    async function updateDiscard() {
+    async function markDiscarded() {
         if (stack.status === StackStatus.Discarded) {
             return;
         }
 
-        await updateStackStatus.mutateAsync(StackStatus.Discarded);
+        await changeStatus.mutateAsync(StackStatus.Discarded);
     }
 </script>
 
@@ -107,20 +113,20 @@
         <DropdownMenu.Group>
             <DropdownMenu.GroupHeading>Update Status</DropdownMenu.GroupHeading>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item title="Mark this stack as open" onclick={() => updateOpen()}>Open</DropdownMenu.Item>
+            <DropdownMenu.Item title="Mark this stack as open" onclick={() => markOpen()}>Open</DropdownMenu.Item>
             <DropdownMenu.Item title="Mark this stack as fixed" onclick={() => (openMarkStackFixedInVersionDialog = true)}>Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications" onclick={() => updateSnooze()}
+                <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications" onclick={() => markSnoozed()}
                     >Snoozed</DropdownMenu.SubTrigger
                 >
                 <DropdownMenu.SubContent>
-                    <DropdownMenu.Item onclick={() => updateSnooze('6hours')}>6 Hours</DropdownMenu.Item>
-                    <DropdownMenu.Item onclick={() => updateSnooze('day')}>1 Day</DropdownMenu.Item>
-                    <DropdownMenu.Item onclick={() => updateSnooze('week')}>1 Week</DropdownMenu.Item>
-                    <DropdownMenu.Item onclick={() => updateSnooze('month')}>1 Month</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => markSnoozed('6hours')}>6 Hours</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => markSnoozed('day')}>1 Day</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => markSnoozed('week')}>1 Week</DropdownMenu.Item>
+                    <DropdownMenu.Item onclick={() => markSnoozed('month')}>1 Month</DropdownMenu.Item>
                 </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item title="Stop sending occurrence notifications for this stack" onclick={() => updateIgnore()}>Ignored</DropdownMenu.Item>
+            <DropdownMenu.Item title="Stop sending occurrence notifications for this stack" onclick={() => markIgnored()}>Ignored</DropdownMenu.Item>
             <DropdownMenu.Item
                 title="All future occurrences will be discarded and will not count against your event limit"
                 onclick={() => (openMarkStackDiscardedDialog = true)}>Discarded</DropdownMenu.Item
@@ -129,5 +135,5 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={updateDiscard} />
-<MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={updateFixed} />
+<MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} />
+<MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={markFixed} />

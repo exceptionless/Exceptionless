@@ -8,7 +8,7 @@
     import IconDelete from '~icons/mdi/trash-can';
     import IconPromoteToExternal from '~icons/mdi/trending-up';
 
-    import { mutateAddStackReference, mutateMarkStackAsCritical, mutateMarkStackAsNotCritical, promoteStackToExternal, removeStack } from '../api.svelte';
+    import { deleteMarkCritical, deleteStack, postAddLink, postMarkCritical, postPromote } from '../api.svelte';
     import { Stack } from '../models';
     import AddStackReferenceDialog from './dialogs/AddStackReferenceDialog.svelte';
     import RemoveStackDialog from './dialogs/RemoveStackDialog.svelte';
@@ -23,38 +23,48 @@
     let openRemoveStackDialog = $state<boolean>(false);
     let openRequiresPromotedWebHookDialog = $state<boolean>(false);
 
-    const addStackReference = mutateAddStackReference({
-        get id() {
-            return stack?.id;
+    const addLink = postAddLink({
+        route: {
+            get id() {
+                return stack?.id;
+            }
         }
     });
 
-    const deleteStack = removeStack({
-        get id() {
-            return stack?.id;
+    const removeStack = deleteStack({
+        route: {
+            get ids() {
+                return stack?.id;
+            }
         }
     });
 
-    const markStackAsCritical = mutateMarkStackAsCritical({
-        get id() {
-            return stack?.id;
+    const markCritical = postMarkCritical({
+        route: {
+            get ids() {
+                return stack?.id;
+            }
         }
     });
 
-    const markStackAsNotCritical = mutateMarkStackAsNotCritical({
-        get id() {
-            return stack?.id;
+    const markNotCritical = deleteMarkCritical({
+        route: {
+            get ids() {
+                return stack?.id;
+            }
         }
     });
 
-    const promoteStack = promoteStackToExternal({
-        get id() {
-            return stack?.id;
+    const promote = postPromote({
+        route: {
+            get ids() {
+                return stack?.id;
+            }
         }
     });
 
     async function promoteToExternal() {
-        const response = await promoteStack.mutateAsync();
+        const response = await promote.mutateAsync();
         if (response.status === 200) {
             toast.success('Successfully promoted stack!');
             return;
@@ -81,20 +91,20 @@
 
     async function updateCritical() {
         if (stack.occurrences_are_critical) {
-            await markStackAsNotCritical.mutateAsync();
+            await markNotCritical.mutateAsync();
         } else {
-            await markStackAsCritical.mutateAsync();
+            await markCritical.mutateAsync();
         }
     }
 
     async function addReference(url: string) {
         if (!stack.references?.includes(url)) {
-            await addStackReference.mutateAsync(url);
+            await addLink.mutateAsync(url);
         }
     }
 
     async function remove() {
-        await deleteStack.mutateAsync();
+        await removeStack.mutateAsync();
         toast.success('Successfully queued the stack for deletion.');
     }
 </script>
