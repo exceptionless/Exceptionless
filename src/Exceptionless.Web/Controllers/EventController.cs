@@ -137,7 +137,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <param name="aggregations">A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value</param>
     /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
     /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
-    /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.</param>
+    /// <param name="mode">If mode is set to stack_new, then additional filters will be added.</param>
     /// <response code="400">Invalid filter.</response>
     [HttpGet("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/count")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -1341,7 +1341,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of event identifiers.</param>
+    /// <param name="ids">A comma-delimited list of event identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more event occurrences were not found.</response>
