@@ -16,7 +16,7 @@ public class EmailOptions
     public string? TestEmailAddress { get; internal set; }
 
     /// <summary>
-    /// Email addresses that match this comma delimited list of domains and email addresses will be allowed to be sent out in QA mode
+    /// Email addresses that match this comma-delimited list of domains and email addresses will be allowed to be sent out in QA mode
     /// </summary>
     public List<string> AllowedOutboundAddresses { get; internal set; } = null!;
 
