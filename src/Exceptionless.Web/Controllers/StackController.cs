@@ -99,7 +99,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark fixed
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <param name="version">A version number that the stack was fixed in.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-fixed")]
@@ -160,7 +160,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark the selected stacks as snoozed
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <param name="snoozeUntilUtc">A time that the stack should be snoozed until.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-snoozed")]
@@ -279,7 +279,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark future occurrences as critical
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-critical")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -304,7 +304,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Mark future occurrences as not critical
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="204">The stacks were marked as not critical.</response>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpDelete("{ids:objectids}/mark-critical")]
@@ -331,7 +331,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Change stack status
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <param name="status">The status that the stack should be changed to.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/change-status")]
@@ -444,7 +444,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <summary>
     /// Remove
     /// </summary>
-    /// <param name="ids">A comma delimited list of stack identifiers.</param>
+    /// <param name="ids">A comma-delimited list of stack identifiers.</param>
     /// <response code="204">No Content.</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more stacks were not found.</response>
