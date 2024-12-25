@@ -17,7 +17,7 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { User } from '$features/users/models';
-    import { useFetchClientStatus } from '$shared/api.svelte';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import IconFacebook from '~icons/mdi/facebook';
     import IconGitHub from '~icons/mdi/github';
