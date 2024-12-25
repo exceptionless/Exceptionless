@@ -6,7 +6,7 @@
     import * as Card from '$comp/ui/card';
     import * as Form from '$comp/ui/form';
     import { accessToken, logout } from '$features/auth/index.svelte';
-    import { useFetchClientStatus } from '$shared/api.svelte';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
 
     let isAuthenticated = $derived(accessToken.value !== null);

@@ -15,7 +15,7 @@
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { useFetchClientStatus } from '$shared/api.svelte';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';

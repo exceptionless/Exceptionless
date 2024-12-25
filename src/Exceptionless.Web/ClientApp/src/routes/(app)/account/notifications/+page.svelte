@@ -6,7 +6,7 @@
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
     import { User } from '$features/users/models';
-    import { useFetchClientStatus } from '$shared/api.svelte';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 
     const data = $state(new User());

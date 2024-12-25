@@ -4,7 +4,7 @@ import NumberFormatter from '$comp/formatters/Number.svelte';
 import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
-import { DEFAULT_LIMIT } from '$shared/api.svelte';
+import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
 import { persisted } from '$shared/persisted.svelte';
 import {
     type ColumnDef,

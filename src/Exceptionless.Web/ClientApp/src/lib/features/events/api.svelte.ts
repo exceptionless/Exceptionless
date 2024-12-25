@@ -1,4 +1,5 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
+import type { CountResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
@@ -17,20 +18,34 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(project_id) });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.projectsCount(project_id) });
     }
 
     if (!id && !stack_id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    } else {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.count() });
     }
 }
 
 export const queryKeys = {
+    count: () => [...queryKeys.type, 'count'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
-    projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
+    projectsCount: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
+    stacksCount: (id: string | undefined) => [...queryKeys.stacks(id), 'count'] as const,
     type: ['PersistentEvent'] as const
 };
+
+export interface GetCountRequest {
+    params?: {
+        aggregations?: string;
+        filter?: string;
+        mode?: 'stack_new';
+        offset?: string;
+        time?: string;
+    };
+}
 
 export interface GetEventRequest {
     route: {
@@ -93,6 +108,25 @@ export interface GetStackEventsRequest {
     };
 }
 
+export function getCountQuery(request: GetCountRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<CountResult, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.value,
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<CountResult>('events/count', {
+                params: request.params,
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.count()
+    }));
+}
+
 export function getEventQuery(request: GetEventRequest) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
         enabled: () => !!accessToken.value && !!request.route.id,
@@ -111,19 +145,43 @@ export function getEventQuery(request: GetEventRequest) {
 export function getProjectCountQuery(request: GetProjectCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<PersistentEvent[], ProblemDetails>(() => ({
+    return createQuery<CountResult, ProblemDetails>(() => ({
         enabled: () => !!accessToken.value && !!request.route.projectId,
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent[]>(`/projects/${request.route.projectId}/events/count`, {
+            const response = await client.getJSON<CountResult>(`/projects/${request.route.projectId}/events/count`, {
                 params: request.params,
                 signal
             });
 
             return response.data!;
         },
-        queryKey: queryKeys.projects(request.route.projectId)
+        queryKey: queryKeys.projectsCount(request.route.projectId)
+    }));
+}
+
+export function getStackCountQuery(request: GetStackCountRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<CountResult, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.stackId,
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<CountResult>('events/count', {
+                params: {
+                    ...request.params,
+                    filter: request.params?.filter?.includes(`stack:${request.route.stackId}`)
+                        ? request.params.filter
+                        : [request.params?.filter, `stack:${request.route.stackId}`].filter(Boolean).join(' ')
+                },
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.stacksCount(request.route.stackId)
     }));
 }
 
