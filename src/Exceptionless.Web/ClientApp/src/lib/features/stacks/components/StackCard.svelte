@@ -4,13 +4,17 @@
     import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import DateTime from '$comp/formatters/DateTime.svelte';
     import Number from '$comp/formatters/Number.svelte';
+    import Percentage from '$comp/formatters/Percentage.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import Muted from '$comp/typography/Muted.svelte';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Tooltip from '$comp/ui/tooltip';
+    import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
+    import { DEFAULT_OFFSET } from '$features/shared/api/api.svelte';
     import { getStackQuery } from '$features/stacks/api.svelte';
+    import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import IconFirstOccurrence from '~icons/mdi/arrow-left-circle';
     import IconLastOccurrence from '~icons/mdi/arrow-right-circle';
     import IconCalendar from '~icons/mdi/calendar';
@@ -30,7 +34,7 @@
 
     let { changed, id }: Props = $props();
 
-    let stackResponse = getStackQuery({
+    const stackResponse = getStackQuery({
         route: {
             get id() {
                 return id;
@@ -38,7 +42,36 @@
         }
     });
 
+    const projectCountResponse = getProjectCountQuery({
+        params: {
+            aggregations: 'cardinality:user'
+        },
+        route: {
+            get projectId() {
+                return stackResponse.data?.project_id;
+            }
+        }
+    });
+
+    // TODO: Add stack charts for Occurrences, Average Value, Value Sum
+    const stackCountResponse = getStackCountQuery({
+        params: {
+            aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`
+        },
+        route: {
+            get stackId() {
+                return id;
+            }
+        }
+    });
+
     const stack = $derived(stackResponse.data!);
+    const eventOccurrences = $derived(sum(stackCountResponse?.data?.aggregations, 'sum_count')?.value ?? 0);
+    const totalOccurrences = $derived(stack && stack.total_occurrences > eventOccurrences ? stack.total_occurrences : eventOccurrences);
+    const userCount = $derived(sum(stackCountResponse?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const totalUserCount = $derived(cardinality(projectCountResponse?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const firstOccurrence = $derived(min<string>(stackCountResponse?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
+    const lastOccurrence = $derived(max<string>(stackCountResponse?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
 </script>
 
 {#if stack}
@@ -62,25 +95,25 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
                         <IconCalendar class="mb-1 size-6 text-primary" />
-                        <span class="text-lg font-bold"><Number value={stack.total_occurrences} /></span>
+                        <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
                         <Muted>Total Events</Muted>
                     </Tooltip.Trigger>
                     <Tooltip.Content side="bottom">
-                        <Number value={stack.total_occurrences} /> All Time
+                        <Number value={totalOccurrences} /> All Time
                     </Tooltip.Content>
                 </Tooltip.Root>
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
                         <IconUsers class="mb-1 size-6 text-primary" />
-                        <span class="text-lg font-bold"><Number value={12345} /></span>
+                        <span class="text-lg font-bold"><Percentage percent={(userCount / totalUserCount) * 100.0} /></span>
                         <Muted>Users Affected</Muted>
                     </Tooltip.Trigger>
-                    <Tooltip.Content side="bottom">Users Affected</Tooltip.Content>
+                    <Tooltip.Content side="bottom"><Number value={userCount} /> of <Number value={totalUserCount} /> Users Affected</Tooltip.Content>
                 </Tooltip.Root>
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
                         <IconFirstOccurrence class="mb-1 size-6 text-muted-foreground" />
-                        <span class="text-lg font-bold"><TimeAgo value={stack.first_occurrence} /></span>
+                        <span class="text-lg font-bold"><TimeAgo value={firstOccurrence} /></span>
                         <Muted>First</Muted>
                     </Tooltip.Trigger>
                     <Tooltip.Content side="bottom">
@@ -90,11 +123,11 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
                         <IconLastOccurrence class="mb-1 size-6 text-muted-foreground" />
-                        <span class="text-lg font-bold"><TimeAgo value={stack.last_occurrence} /></span>
+                        <span class="text-lg font-bold"><TimeAgo value={lastOccurrence} /></span>
                         <Muted>Last</Muted>
                     </Tooltip.Trigger>
                     <Tooltip.Content side="bottom">
-                        Last Occurred On <DateTime value={stack.last_occurrence} />
+                        Last Occurred On <DateTime value={lastOccurrence} />
                     </Tooltip.Content>
                 </Tooltip.Root>
             </div>
