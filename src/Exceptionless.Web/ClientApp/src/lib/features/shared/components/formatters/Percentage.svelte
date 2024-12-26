@@ -5,7 +5,7 @@
 
     let { percent }: Props = $props();
 
-    const formatOptions = {
+    const formatOptions: Intl.NumberFormatOptions = {
         maximumFractionDigits: 1,
         minimumFractionDigits: 1,
         style: 'percent'
