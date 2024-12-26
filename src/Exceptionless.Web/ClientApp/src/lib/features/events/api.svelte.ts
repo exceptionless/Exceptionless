@@ -2,6 +2,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { CountResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { DEFAULT_OFFSET } from '$features/shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -48,6 +49,10 @@ export interface GetCountRequest {
 }
 
 export interface GetEventRequest {
+    params?: {
+        offset?: string;
+        time?: string;
+    };
     route: {
         id: string | undefined;
     };
@@ -117,7 +122,10 @@ export function getCountQuery(request: GetCountRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>('events/count', {
-                params: request.params,
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
                 signal
             });
 
@@ -133,6 +141,10 @@ export function getEventQuery(request: GetEventRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
                 signal
             });
 
@@ -151,7 +163,10 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>(`/projects/${request.route.projectId}/events/count`, {
-                params: request.params,
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
                 signal
             });
 
@@ -171,6 +186,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>('events/count', {
                 params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params,
                     filter: request.params?.filter?.includes(`stack:${request.route.stackId}`)
                         ? request.params.filter
@@ -199,7 +215,10 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent[]>(`stacks/${request.route.stackId}/events`, {
-                params: request.params,
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
                 signal
             });
 
