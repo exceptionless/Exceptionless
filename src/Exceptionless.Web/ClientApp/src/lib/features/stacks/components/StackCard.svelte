@@ -8,7 +8,6 @@
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import Muted from '$comp/typography/Muted.svelte';
     import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
@@ -20,11 +19,10 @@
     import IconCalendar from '~icons/mdi/calendar';
     import IconClock from '~icons/mdi/clock';
     import IconFilter from '~icons/mdi/filter';
-    import IconReference from '~icons/mdi/link';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
     import IconUsers from '~icons/mdi/users';
 
     import StackOptionsDropdownMenu from './StackOptionsDropdownMenu.svelte';
+    import StackReferences from './StackReferences.svelte';
     import StackStatusDropdownMenu from './StackStatusDropdownMenu.svelte';
 
     interface Props {
@@ -164,17 +162,7 @@
                 </div>
             {/if}
 
-            <!-- TODO: Move to stack grid? -->
-            {#if stack.references && stack.references.length > 0}
-                <div class="flex items-center gap-2 text-sm">
-                    <span class="text-blue-500" title="Reference Links"> <IconReference class="size-4" /></span>
-                    {#each stack.references as referenceUrl}
-                        <Button href={referenceUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
-                            >{referenceUrl} <IconOpenInNew /></Button
-                        >
-                    {/each}
-                </div>
-            {/if}
+            <StackReferences {stack} />
         </Card.Content>
     </Card.Root>
 {/if}
