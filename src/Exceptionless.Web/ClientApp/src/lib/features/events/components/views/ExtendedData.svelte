@@ -2,7 +2,7 @@
     import type { ViewProject } from '$features/projects/models';
 
     import { getExtendedDataItems } from '$features/events/persistent-event';
-    import { mutatePromoteTab } from '$features/projects/api.svelte';
+    import { postPromotedTab } from '$features/projects/api.svelte';
     import { toast } from 'svelte-sonner';
 
     import type { PersistentEvent } from '../../models/index';
@@ -18,9 +18,11 @@
     let { event, project, promoted }: Props = $props();
     let items = $derived(getExtendedDataItems(event, project));
 
-    const promoteTab = mutatePromoteTab({
-        get id() {
-            return event.project_id!;
+    const promoteTab = postPromotedTab({
+        route: {
+            get id() {
+                return event.project_id!;
+            }
         }
     });
 

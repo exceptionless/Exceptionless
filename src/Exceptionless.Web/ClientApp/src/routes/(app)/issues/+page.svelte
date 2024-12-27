@@ -7,12 +7,13 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import { getEventsByStackIdQuery } from '$features/events/api.svelte';
+    import { getStackEventsQuery } from '$features/events/api.svelte';
     import EventsDrawer from '$features/events/components/EventsDrawer.svelte';
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { type WebSocketMessageValue } from '$features/websockets/models';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
@@ -26,10 +27,14 @@
     }
 
     // Load the latest event for the stack and display it in the sidebar.
-    const eventsResponse = getEventsByStackIdQuery({
-        limit: 1,
-        get stackId() {
-            return selectedStackId;
+    const eventsResponse = getStackEventsQuery({
+        params: {
+            limit: 1
+        },
+        route: {
+            get stackId() {
+                return selectedStackId;
+            }
         }
     });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);
@@ -65,10 +70,12 @@
     const table = createTable(context.options);
 
     const client = useFetchClient();
-    let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
+    const clientStatus = useFetchClientStatus(client);
+
+    let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
-        if (client.loading) {
+        if (client.isLoading) {
             return;
         }
 
@@ -105,7 +112,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues</Card.Title>
         <Card.Content>
-            <EventsDataTable bind:limit={limit.value} {rowclick} {table}>
+            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} {rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}
@@ -121,6 +128,6 @@
                 >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><IconOpenInNew /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

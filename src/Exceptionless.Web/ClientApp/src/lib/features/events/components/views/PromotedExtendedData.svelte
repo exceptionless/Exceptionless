@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { mutateDemoteTab } from '$features/projects/api.svelte';
+    import { deletePromotedTab } from '$features/projects/api.svelte';
     import { toast } from 'svelte-sonner';
 
     import type { PersistentEvent } from '../../models/index';
@@ -14,9 +14,11 @@
 
     let { demoted, event, title }: Props = $props();
 
-    const demoteTab = mutateDemoteTab({
-        get id() {
-            return event.project_id!;
+    const demoteTab = deletePromotedTab({
+        route: {
+            get id() {
+                return event.project_id!;
+            }
         }
     });
 

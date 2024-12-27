@@ -9,7 +9,7 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import { MediaQuery } from 'runed';
+    import { MediaQuery } from 'svelte/reactivity';
     import IconSearch from '~icons/mdi/search';
 
     interface Props {
@@ -33,7 +33,7 @@
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
                 <a class="ml-2 mr-14 flex dark:text-white md:min-w-[250px] lg:ml-3" href="./">
-                    {#if isMediumScreenQuery.matches}
+                    {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-[0px] mr-3 h-[65px]" />
                     {:else}
                         <img alt="Exceptionless Logo" class="mr-3 h-8" src={logoSmall} />

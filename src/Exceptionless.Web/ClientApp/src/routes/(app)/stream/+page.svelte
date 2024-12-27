@@ -2,6 +2,7 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import * as DataTable from '$comp/data-table';
+    import DelayedRender from '$comp/DelayedRender.svelte';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
@@ -14,6 +15,7 @@
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
@@ -60,11 +62,13 @@
     const table = createTable(context.options);
 
     const client = useFetchClient();
+    const clientStatus = useFetchClientStatus(client);
+
     let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
     let before: string | undefined;
 
     async function loadData(filterChanged: boolean = false) {
-        if (client.loading && filterChanged && !before) {
+        if (client.isLoading && filterChanged && !before) {
             return;
         }
 
@@ -136,7 +140,15 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table}></DataTable.Body>
+            <DataTable.Body {rowclick} {table}>
+                {#if clientStatus.isLoading}
+                    <DelayedRender>
+                        <DataTable.Loading {table} />
+                    </DelayedRender>
+                {:else}
+                    <DataTable.Empty {table} />
+                {/if}
+            </DataTable.Body>
             <Muted class="flex flex-1 items-center justify-between">
                 <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
                 <div class="py-2 text-center">
@@ -155,6 +167,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''} close={() => (selectedEventId = null)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>
