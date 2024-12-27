@@ -21,11 +21,11 @@
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,3.8%,46.1%)]"></div>
             </div>
             <div class="flex items-center space-x-2 rounded-md bg-[hsl(0,0%,100%)] p-2 shadow-sm">
-                <div class="h-4 w-4 rounded-full bg-[hsl(240,3.8%,46.1%)]"></div>
+                <div class="size-4 rounded-full bg-[hsl(240,3.8%,46.1%)]"></div>
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,3.8%,46.1%)]"></div>
             </div>
             <div class="flex items-center space-x-2 rounded-md bg-[hsl(0,0%,100%)] p-2 shadow-sm">
-                <div class="h-4 w-4 rounded-full bg-[hsl(240,3.8%,46.1%)]"></div>
+                <div class="size-4 rounded-full bg-[hsl(240,3.8%,46.1%)]"></div>
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,3.8%,46.1%)]"></div>
             </div>
         </div>
@@ -41,11 +41,11 @@
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,5%,64.9%)]"></div>
             </div>
             <div class="flex items-center space-x-2 rounded-md bg-[hsl(222,17%,11%)] p-2 shadow-sm">
-                <div class="h-4 w-4 rounded-full bg-[hsl(240,5%,64.9%)]"></div>
+                <div class="size-4 rounded-full bg-[hsl(240,5%,64.9%)]"></div>
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,5%,64.9%)]"></div>
             </div>
             <div class="flex items-center space-x-2 rounded-md bg-[hsl(222,17%,11%)] p-2 shadow-sm">
-                <div class="h-4 w-4 rounded-full bg-[hsl(240,5%,64.9%)]"></div>
+                <div class="size-4 rounded-full bg-[hsl(240,5%,64.9%)]"></div>
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,5%,64.9%)]"></div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { ProjectFilter } from '$comp/filters/filters.svelte';
-    import { getProjectsByOrganizationIdQuery } from '$features/projects/api.svelte';
+    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
 
     import type { FacetedFilterProps } from '.';
 
@@ -8,11 +8,14 @@
 
     let { filter, filterChanged, filterRemoved, title = 'Status', ...props }: FacetedFilterProps<ProjectFilter> = $props();
 
-    const response = getProjectsByOrganizationIdQuery({
-        get organizationId() {
-            return filter.organization;
+    const response = getOrganizationProjectsQuery({
+        route: {
+            get organizationId() {
+                return filter.organization;
+            }
         }
     });
+
     const options = $derived(
         response.data?.map((project) => ({
             label: project.name!,

@@ -102,6 +102,13 @@
 
 ## Networking
 
+Analyze current naming patterns
+Define consistent naming convention rules:
+Remove redundant terms
+Use HTTP verb prefixes
+Keep resource names singular/plural based on return type
+Order: [httpVerb][Resource][Qualifier][Query]
+
 - <https://tanstack.com/query/v5/docs/svelte/examples/svelte/simple>
 - <https://kit.svelte.dev/docs/load>
 - <https://github.com/acacode/swagger-typescript-api>

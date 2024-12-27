@@ -18,6 +18,7 @@
 			},
 			size: {
 				default: "h-9 px-4 py-2",
+				xs: "h-6 rounded-md px-1 text-xs",
 				sm: "h-8 rounded-md px-3 text-xs",
 				lg: "h-10 rounded-md px-8",
 				icon: "h-9 w-9",
@@ -57,7 +58,7 @@
 {#if href}
 	<a
 		bind:this={ref}
-		class={cn(buttonVariants({ variant, size, className }))}
+		class={cn(buttonVariants({ variant, size }), className)}
 		{href}
 		{...restProps}
 	>
@@ -66,7 +67,7 @@
 {:else}
 	<button
 		bind:this={ref}
-		class={cn(buttonVariants({ variant, size, className }))}
+		class={cn(buttonVariants({ variant, size }), className)}
 		{type}
 		{...restProps}
 	>

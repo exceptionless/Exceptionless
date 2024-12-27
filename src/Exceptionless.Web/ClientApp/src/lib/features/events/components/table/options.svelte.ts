@@ -4,7 +4,7 @@ import NumberFormatter from '$comp/formatters/Number.svelte';
 import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
-import { DEFAULT_LIMIT } from '$shared/api';
+import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
 import { persisted } from '$shared/persisted.svelte';
 import {
     type ColumnDef,
@@ -18,7 +18,7 @@ import {
     type VisibilityState
 } from '@tanstack/svelte-table';
 
-import type { GetEventsMode, IGetEventsParams } from '../../api.svelte';
+import type { GetEventsMode, GetEventsParams } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
 
 import Summary from '../summary/Summary.svelte';
@@ -138,7 +138,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 }
 
 export function getTableContext<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
-    params: IGetEventsParams,
+    params: GetEventsParams,
     configureOptions: (options: TableOptions<TSummaryModel>) => TableOptions<TSummaryModel> = (options) => options
 ) {
     let _parameters = $state(params);

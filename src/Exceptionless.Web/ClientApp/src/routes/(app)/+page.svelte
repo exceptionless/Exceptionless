@@ -12,6 +12,7 @@
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
@@ -50,10 +51,12 @@
     const table = createTable(context.options);
 
     const client = useFetchClient();
-    let response: FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>;
+    const clientStatus = useFetchClientStatus(client);
+
+    let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
-        if (client.loading) {
+        if (client.isLoading) {
             return;
         }
 
@@ -110,7 +113,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Events</Card.Title>
         <Card.Content>
-            <EventsDataTable bind:limit={limit.value} {rowclick} {table}>
+            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} {rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}
@@ -127,6 +130,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''}></EventsDrawer>
+        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''} close={() => (selectedEventId = null)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

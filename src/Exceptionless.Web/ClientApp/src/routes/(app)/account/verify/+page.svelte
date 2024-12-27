@@ -1,11 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import { useFetchClient } from '@exceptionless/fetchclient';
     import { toast } from 'svelte-sonner';
 
     const client = useFetchClient();
-    const token = $page.url.searchParams.get('token');
+    const token = page.url.searchParams.get('token');
 
     async function verifyAccount() {
         if (token) {
