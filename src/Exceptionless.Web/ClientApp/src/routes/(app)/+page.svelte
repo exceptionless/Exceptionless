@@ -15,7 +15,7 @@
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
-    import { createTable } from '@tanstack/svelte-table';
+    import { createTable, type RowSelectionState } from '@tanstack/svelte-table';
     import { useEventListener } from 'runed';
     import { debounce } from 'throttle-debounce';
     import IconOpenInNew from '~icons/mdi/open-in-new';
@@ -25,6 +25,7 @@
         selectedEventId = row.id;
     }
 
+    let showRefreshStaleDataRow = $state(false);
     const limit = persisted<number>('events.limit', 10);
     const defaultFilters = getDefaultFilters();
     const persistedFilters = persisted<IFilter[]>('events.filters', defaultFilters, new FilterSerializer());
@@ -77,28 +78,48 @@
     const debouncedLoadData = debounce(10000, loadData);
 
     async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-        const shouldRefresh = () =>
-            shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.stack_id, message.id);
-
-        switch (message.change_type) {
-            case ChangeType.Added:
-            case ChangeType.Saved:
-                if (shouldRefresh()) {
-                    await debouncedLoadData();
+        if (message.id && message.change_type === ChangeType.Removed) {
+            // Remove the event from the selection if it was selected
+            if (table.getIsSomeRowsSelected()) {
+                const { rowSelection } = table.getState();
+                if (message.id && rowSelection[message.id]) {
+                    table.setRowSelection((old) => {
+                        const filtered = Object.entries(old).filter(([id]) => id !== message.id);
+                        return Object.fromEntries(filtered);
+                    });
                 }
+            }
 
-                break;
-            case ChangeType.Removed:
-                if (shouldRefresh()) {
-                    if (message.id) {
-                        table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
-                    }
+            // Remove deleted event from the grid data
+            if (table.options.data.find((doc) => doc.id === message.id)) {
+                table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
 
+                // If the grid data is empty from all events being removed, we should refresh the data.
+                if (table.options.data.length === 0) {
                     await debouncedLoadData();
+                    return;
                 }
-
-                break;
+            }
         }
+
+        // Do not refresh if the filter criteria doesn't match the web socket message.
+        if (!shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+            return;
+        }
+
+        // Do not refresh if the grid has selections.
+        if (table.getIsSomeRowsSelected()) {
+            showRefreshStaleDataRow = true;
+            return;
+        }
+
+        // Do not refresh if the grid is currently paged.
+        if (table.getPageCount() > 1) {
+            showRefreshStaleDataRow = true;
+            return;
+        }
+
+        await debouncedLoadData();
     }
 
     useEventListener(document, 'refresh', async () => await loadData());
