@@ -7,6 +7,7 @@
     import DateTime from '$comp/formatters/DateTime.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
     import { P } from '$comp/typography';
+    import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
     import { getEventQuery } from '$features/events/api.svelte';
@@ -112,37 +113,42 @@
     });
 </script>
 
-{#if eventResponse.isLoading}
-    <P>Loading...</P>
-{:else if eventResponse.isSuccess}
-    <StackCard {changed} id={eventResponse.data.stack_id}></StackCard>
+<StackCard {changed} id={eventResponse.data?.stack_id}></StackCard>
 
-    <Table.Root class="mt-4">
-        <Table.Body>
-            <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
-                <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"
-                    ><DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)</Table.Cell
+<Table.Root class="mt-4">
+    <Table.Body>
+        <Table.Row class="group">
+            <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
+            <Table.Cell class="w-4 pr-0"></Table.Cell>
+            <Table.Cell class="flex items-center"
+                >{#if eventResponse.isSuccess}
+                    <DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)
+                {:else}
+                    <Skeleton class="h-[20px] w-full rounded-full" />
+                {/if}</Table.Cell
+            >
+        </Table.Row>
+        <Table.Row class="group">
+            <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
+            {#if projectResponse.isSuccess}
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><ClickableProjectFilter
+                        {changed}
+                        class="mr-0"
+                        organization={projectResponse.data.organization_id!}
+                        value={[projectResponse.data.id!]}
+                    /></Table.Cell
                 >
-            </Table.Row>
-            {#if projectResponse.data}
-                <Table.Row class="group">
-                    <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableProjectFilter
-                            {changed}
-                            class="mr-0"
-                            organization={projectResponse.data.organization_id!}
-                            value={[projectResponse.data.id!]}
-                        /></Table.Cell
-                    >
-                    <Table.Cell>{projectResponse.data.name}</Table.Cell>
-                </Table.Row>
+                <Table.Cell>{projectResponse.data.name}</Table.Cell>
+            {:else if projectResponse.isLoading}
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-[20px] w-full rounded-full" /></Table.Cell>
             {/if}
-        </Table.Body>
-    </Table.Root>
+        </Table.Row>
+    </Table.Body>
+</Table.Root>
 
+{#if eventResponse.isSuccess}
     <Tabs.Root class="mb-4 mt-4" value={activeTab}>
         <Tabs.List class="mb-4 w-full justify-normal">
             {#each tabs as tab (tab)}
@@ -171,5 +177,16 @@
         {/each}
     </Tabs.Root>
 {:else}
-    <ErrorMessage message={eventResponse.error?.errors.general}></ErrorMessage>
+    <Skeleton class="h-[30px] w-full rounded-full" />
+    <Table.Root class="mt-4">
+        <Table.Body>
+            {#each Array.from({ length: 5 })}
+                <Table.Row class="group">
+                    <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[20px] w-full rounded-full" /></Table.Head>
+                    <Table.Cell class="w-4 pr-0"></Table.Cell>
+                    <Table.Cell class="flex items-center"><Skeleton class="h-[20px] w-full rounded-full" /></Table.Cell>
+                </Table.Row>
+            {/each}
+        </Table.Body>
+    </Table.Root>
 {/if}
