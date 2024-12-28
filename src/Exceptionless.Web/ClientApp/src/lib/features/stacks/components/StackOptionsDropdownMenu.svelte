@@ -144,6 +144,12 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<AddStackReferenceDialog bind:open={openAddStackReferenceDialog} save={addReference} />
-<RemoveStackDialog bind:open={openRemoveStackDialog} {remove} />
-<RequiresPromotedWebHookDialog bind:open={openRequiresPromotedWebHookDialog} navigate={navigateToProjectIntegrations} />
+{#if openAddStackReferenceDialog}
+    <AddStackReferenceDialog bind:open={openAddStackReferenceDialog} save={addReference} />
+{/if}
+{#if openRemoveStackDialog}
+    <RemoveStackDialog bind:open={openRemoveStackDialog} {remove} />
+{/if}
+{#if openRequiresPromotedWebHookDialog}
+    <RequiresPromotedWebHookDialog bind:open={openRequiresPromotedWebHookDialog} navigate={navigateToProjectIntegrations} />
+{/if}

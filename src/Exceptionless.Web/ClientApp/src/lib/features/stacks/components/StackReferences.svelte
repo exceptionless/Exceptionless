@@ -52,4 +52,6 @@
     </ul>
 {/if}
 
-<RemoveStackReferenceDialog bind:open={openRemoveStackReferenceDialog} reference={referenceToRemove} remove={removeReference} />
+{#if openRemoveStackReferenceDialog}
+    <RemoveStackReferenceDialog bind:open={openRemoveStackReferenceDialog} reference={referenceToRemove} remove={removeReference} />
+{/if}

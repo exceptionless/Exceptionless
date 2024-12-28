@@ -135,5 +135,9 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} />
-<MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={markFixed} />
+{#if openMarkStackDiscardedDialog}
+    <MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} />
+{/if}
+{#if openMarkStackFixedInVersionDialog}
+    <MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={markFixed} />
+{/if}
