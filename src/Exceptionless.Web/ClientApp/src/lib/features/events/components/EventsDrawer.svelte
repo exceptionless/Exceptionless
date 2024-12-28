@@ -2,11 +2,9 @@
     import type { IFilter } from '$comp/filters/filters.svelte';
     import type { ViewProject } from '$features/projects/models';
 
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
     import DateTime from '$comp/formatters/DateTime.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-    import { P } from '$comp/typography';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
@@ -182,7 +180,7 @@
     <Skeleton class="mt-4 h-[30px] w-full rounded-full" />
     <Table.Root class="mt-4">
         <Table.Body>
-            {#each Array.from({ length: 5 })}
+            {#each Array.from({ length: 5 }) as index (index)}
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
