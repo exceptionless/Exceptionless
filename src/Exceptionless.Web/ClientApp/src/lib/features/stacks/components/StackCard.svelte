@@ -9,6 +9,7 @@
     import Muted from '$comp/typography/Muted.svelte';
     import { Badge } from '$comp/ui/badge';
     import * as Card from '$comp/ui/card';
+    import { Skeleton } from '$comp/ui/skeleton';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
     import { DEFAULT_OFFSET } from '$features/shared/api/api.svelte';
@@ -27,7 +28,7 @@
 
     interface Props {
         changed: (filter: IFilter) => void;
-        id: string;
+        id: string | undefined;
     }
 
     let { changed, id }: Props = $props();
@@ -72,7 +73,7 @@
     const lastOccurrence = $derived(max<string>(stackCountResponse?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
 </script>
 
-{#if stack}
+{#if stackResponse.isSuccess}
     <Card.Root>
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
@@ -163,6 +164,34 @@
             {/if}
 
             <StackReferences {stack} />
+        </Card.Content>
+    </Card.Root>
+{:else}
+    <Card.Root>
+        <Card.Header>
+            <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
+                <span class="mb-2 flex flex-col lg:mb-0">
+                    <div class="flex items-center gap-2">
+                        <Skeleton class="h-[26px] w-[32px]" />
+                        <Skeleton class="h-[26px] w-[200px]" />
+                    </div>
+                </span>
+                <div class="flex items-center space-x-2">
+                    <Skeleton class="h-[36px] w-[135px]" />
+                    <Skeleton class="h-[36px] w-[32px]" />
+                </div>
+            </Card.Title>
+        </Card.Header>
+        <Card.Content class="space-y-4 pt-2">
+            <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {#each Array(4)}
+                    <div class="flex flex-col items-center rounded-lg bg-muted p-2">
+                        <Skeleton class="mb-1 h-6 w-6" />
+                        <Skeleton class="mb-1 h-[28px] w-[60px]" />
+                        <Skeleton class="h-[16px] w-[80px]" />
+                    </div>
+                {/each}
+            </div>
         </Card.Content>
     </Card.Root>
 {/if}
