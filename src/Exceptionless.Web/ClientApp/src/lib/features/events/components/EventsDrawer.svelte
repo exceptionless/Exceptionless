@@ -118,19 +118,20 @@
 <Table.Root class="mt-4">
     <Table.Body>
         <Table.Row class="group">
-            <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
-            <Table.Cell class="w-4 pr-0"></Table.Cell>
-            <Table.Cell class="flex items-center"
-                >{#if eventResponse.isSuccess}
-                    <DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)
-                {:else}
-                    <Skeleton class="h-[20px] w-full rounded-full" />
-                {/if}</Table.Cell
-            >
+            {#if eventResponse.isSuccess}
+                <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
+                <Table.Cell class="flex items-center"
+                    ><DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)</Table.Cell
+                >
+            {:else}
+                <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
         </Table.Row>
         <Table.Row class="group">
-            <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
             {#if projectResponse.isSuccess}
+                <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><ClickableProjectFilter
                         {changed}
@@ -140,9 +141,10 @@
                     /></Table.Cell
                 >
                 <Table.Cell>{projectResponse.data.name}</Table.Cell>
-            {:else if projectResponse.isLoading}
+            {:else}
+                <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-[20px] w-full rounded-full" /></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
             {/if}
         </Table.Row>
     </Table.Body>
@@ -177,14 +179,14 @@
         {/each}
     </Tabs.Root>
 {:else}
-    <Skeleton class="h-[30px] w-full rounded-full" />
+    <Skeleton class="mt-4 h-[30px] w-full rounded-full" />
     <Table.Root class="mt-4">
         <Table.Body>
             {#each Array.from({ length: 5 })}
                 <Table.Row class="group">
-                    <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[20px] w-full rounded-full" /></Table.Head>
+                    <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-[20px] w-full rounded-full" /></Table.Cell>
+                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
                 </Table.Row>
             {/each}
         </Table.Body>
