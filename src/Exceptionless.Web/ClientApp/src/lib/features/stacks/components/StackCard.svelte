@@ -184,7 +184,7 @@
         </Card.Header>
         <Card.Content class="space-y-4 pt-2">
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                {#each Array.from({ length: 4 }) as index (index)}
+                {#each { length: 4 }}
                     <div class="flex flex-col items-center rounded-lg bg-muted p-2">
                         <Skeleton class="mb-1 size-6" />
                         <Skeleton class="mb-1 h-[28px] w-[60px]" />
