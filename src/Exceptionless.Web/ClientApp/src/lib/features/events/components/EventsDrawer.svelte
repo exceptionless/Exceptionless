@@ -180,7 +180,7 @@
     <Skeleton class="mt-4 h-[30px] w-full rounded-full" />
     <Table.Root class="mt-4">
         <Table.Body>
-            {#each Array.from({ length: 5 }) as index (index)}
+            {#each { length: 5 }}
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
