@@ -112,7 +112,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues</Card.Title>
         <Card.Content>
-            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} {rowclick} {table}>
+            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}

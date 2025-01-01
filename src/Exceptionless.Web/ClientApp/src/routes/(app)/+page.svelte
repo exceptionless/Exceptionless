@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
@@ -15,7 +16,7 @@
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
-    import { createTable, type RowSelectionState } from '@tanstack/svelte-table';
+    import { createTable } from '@tanstack/svelte-table';
     import { useEventListener } from 'runed';
     import { debounce } from 'throttle-debounce';
     import IconOpenInNew from '~icons/mdi/open-in-new';
@@ -122,6 +123,11 @@
         await debouncedLoadData();
     }
 
+    async function refresh() {
+        showRefreshStaleDataRow = false;
+        await loadData();
+    }
+
     useEventListener(document, 'refresh', async () => await loadData());
     useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEvent((event as CustomEvent).detail));
 
@@ -134,9 +140,14 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Events</Card.Title>
         <Card.Content>
-            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} {rowclick} {table}>
+            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
+                {/snippet}
+                {#snippet bodyChildren()}
+                    {#if showRefreshStaleDataRow}
+                        <DataTable.DataTableRefresh {table} {refresh} />
+                    {/if}
                 {/snippet}
             </EventsDataTable>
         </Card.Content>
