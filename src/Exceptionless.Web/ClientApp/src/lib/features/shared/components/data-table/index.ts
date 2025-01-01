@@ -3,6 +3,7 @@ import Empty from './data-table-empty.svelte';
 import Loading from './data-table-loading.svelte';
 import PageSize from './data-table-page-size.svelte';
 import Pagination from './data-table-pagination.svelte';
+import Refresh from './data-table-refresh.svelte';
 import Toolbar from './data-table-toolbar.svelte';
 import Root from './data-table.svelte';
 
@@ -14,11 +15,13 @@ export {
     Loading as DataTableLoading,
     PageSize as DataTablePageSize,
     Pagination as DataTablePagination,
+    Refresh as DataTableRefresh,
     Toolbar as DataTableToolbar,
     Empty,
     Loading,
     PageSize,
     Pagination,
+    Refresh,
     Root,
     Toolbar
 };

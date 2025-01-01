@@ -8,14 +8,15 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     interface Props {
+        bodyChildren?: Snippet;
         isLoading: boolean;
         limit: number;
-        rowclick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
+        rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         table: Table<EventSummaryModel<SummaryTemplateKeys>>;
         toolbarChildren?: Snippet;
     }
 
-    let { isLoading, limit = $bindable(), rowclick, table, toolbarChildren }: Props = $props();
+    let { bodyChildren, isLoading, limit = $bindable(), rowClick, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -24,13 +25,16 @@
             {@render toolbarChildren()}
         {/if}
     </DataTable.Toolbar>
-    <DataTable.Body {rowclick} {table}>
+    <DataTable.Body {rowClick} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
             </DelayedRender>
         {:else}
             <DataTable.Empty {table} />
+        {/if}
+        {#if bodyChildren}
+            {@render bodyChildren()}
         {/if}
     </DataTable.Body>
     <DataTable.Pagination {table}>

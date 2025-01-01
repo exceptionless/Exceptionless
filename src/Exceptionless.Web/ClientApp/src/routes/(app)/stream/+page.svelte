@@ -140,7 +140,7 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table}>
+            <DataTable.Body rowClick={rowclick} {table}>
                 {#if clientStatus.isLoading}
                     <DelayedRender>
                         <DataTable.Loading {table} />
