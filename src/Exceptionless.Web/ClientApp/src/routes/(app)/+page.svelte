@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
-    import * as DataTable from '$comp/data-table';
+    import AutomaticRefreshIndicatorButton from '$comp/AutomaticRefreshIndicatorButton.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
@@ -12,6 +12,7 @@
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
+    import { isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
@@ -26,7 +27,6 @@
         selectedEventId = row.id;
     }
 
-    let showRefreshStaleDataRow = $state(false);
     const limit = persisted<number>('events.limit', 10);
     const defaultFilters = getDefaultFilters();
     const persistedFilters = persisted<IFilter[]>('events.filters', defaultFilters, new FilterSerializer());
@@ -51,18 +51,18 @@
 
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.value, mode: 'summary' });
     const table = createTable(context.options);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
 
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
-
-    let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
         if (client.isLoading) {
             return;
         }
 
-        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...context.parameters,
                 filter,
@@ -70,33 +70,20 @@
             }
         });
 
-        if (response.ok) {
-            context.data = response.data || [];
-            context.meta = response.meta;
-            table.resetRowSelection();
+        if (clientResponse.ok) {
+            context.data = clientResponse.data || [];
+            context.meta = clientResponse.meta;
         }
     }
     const debouncedLoadData = debounce(10000, loadData);
 
     async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
-            // Remove the event from the selection if it was selected
-            if (table.getIsSomeRowsSelected()) {
-                const { rowSelection } = table.getState();
-                if (message.id && rowSelection[message.id]) {
-                    table.setRowSelection((old) => {
-                        const filtered = Object.entries(old).filter(([id]) => id !== message.id);
-                        return Object.fromEntries(filtered);
-                    });
-                }
-            }
+            removeTableSelection(table, message.id);
 
-            // Remove deleted event from the grid data
-            if (table.options.data.find((doc) => doc.id === message.id)) {
-                table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
-
+            if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (table.options.data.length === 0) {
+                if (isTableEmpty(table)) {
                     await debouncedLoadData();
                     return;
                 }
@@ -108,27 +95,15 @@
             return;
         }
 
-        // Do not refresh if the grid has selections.
-        if (table.getIsSomeRowsSelected()) {
-            showRefreshStaleDataRow = true;
-            return;
-        }
-
-        // Do not refresh if the grid is currently paged.
-        if (table.getPageCount() > 1) {
-            showRefreshStaleDataRow = true;
+        // Do not refresh if the grid has selections or grid is currently paged.
+        if (canRefresh) {
             return;
         }
 
         await debouncedLoadData();
     }
 
-    async function refresh() {
-        showRefreshStaleDataRow = false;
-        await loadData();
-    }
-
-    useEventListener(document, 'refresh', async () => await loadData());
+    useEventListener(document, 'refresh', () => loadData());
     useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEvent((event as CustomEvent).detail));
 
     $effect(() => {
@@ -138,16 +113,14 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Events</Card.Title>
-        <Card.Content>
+        <Card.Title class="gap-x-1 p-6 pb-0 text-2xl" level={2}
+            >Events
+            <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title
+        >
+        <Card.Content class="pt-4">
             <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
-                {/snippet}
-                {#snippet bodyChildren()}
-                    {#if showRefreshStaleDataRow}
-                        <DataTable.DataTableRefresh {table} {refresh} />
-                    {/if}
                 {/snippet}
             </EventsDataTable>
         </Card.Content>

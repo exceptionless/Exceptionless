@@ -169,9 +169,6 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         const previousPageIndex = pagination().pageIndex;
         setPagination(updaterOrValue);
 
-        // Force a reset of the row selection state until we get smarter about it.
-        setRowSelection({});
-
         const currentPageInfo = pagination();
         _parameters = {
             ..._parameters,
