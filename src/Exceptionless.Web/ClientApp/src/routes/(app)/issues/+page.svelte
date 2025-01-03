@@ -90,7 +90,6 @@
         if (response.ok) {
             context.data = response.data || [];
             context.meta = response.meta;
-            table.resetRowSelection();
         }
     }
     const debouncedLoadData = debounce(10000, loadData);
