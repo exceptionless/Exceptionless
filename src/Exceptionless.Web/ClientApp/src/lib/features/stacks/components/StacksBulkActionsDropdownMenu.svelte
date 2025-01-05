@@ -60,11 +60,25 @@
 
     async function markOpen() {
         await changeStatus.mutateAsync(StackStatus.Open);
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as open.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as open.`);
+        }
+
         table.resetRowSelection();
     }
 
     async function markFixed(version?: string) {
         await updateMarkFixed.mutateAsync(version);
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as fixed.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as fixed.`);
+        }
+
         table.resetRowSelection();
     }
 
@@ -87,22 +101,48 @@
         }
 
         await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as snoozed.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as snoozed.`);
+        }
         table.resetRowSelection();
     }
 
     async function markIgnored() {
         await changeStatus.mutateAsync(StackStatus.Ignored);
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as ignored.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as ignored.`);
+        }
+
         table.resetRowSelection();
     }
 
     async function markDiscarded() {
         await changeStatus.mutateAsync(StackStatus.Discarded);
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as discarded.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as discarded.`);
+        }
+
         table.resetRowSelection();
     }
 
     async function remove() {
         await removeStack.mutateAsync();
-        toast.success('Successfully queued the stack for deletion.');
+
+        if (ids.length === 1) {
+            toast.success('Successfully deleted stack.');
+        } else {
+            toast.success(`Successfully deleted ${Intl.NumberFormat().format(ids.length)} stacks.`);
+        }
+
         table.resetRowSelection();
     }
 </script>
