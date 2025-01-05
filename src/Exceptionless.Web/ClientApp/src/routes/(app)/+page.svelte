@@ -13,14 +13,14 @@
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/EventsBulkActionsDropdownMenu.svelte';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
-    import { isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
+    import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import { useEventListener } from 'runed';
-    import { debounce } from 'throttle-debounce';
+    import { throttle } from 'throttle-debounce';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
     let selectedEventId: null | string = $state(null);
@@ -76,16 +76,16 @@
             context.meta = clientResponse.meta;
         }
     }
-    const debouncedLoadData = debounce(10000, loadData);
+    const throttledLoadData = throttle(10000, loadData);
 
-    async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
 
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
                 if (isTableEmpty(table)) {
-                    await debouncedLoadData();
+                    await throttledLoadData();
                     return;
                 }
             }
@@ -101,11 +101,11 @@
             return;
         }
 
-        await debouncedLoadData();
+        await throttledLoadData();
     }
 
     useEventListener(document, 'refresh', () => loadData());
-    useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEvent((event as CustomEvent).detail));
+    useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
         loadData();
