@@ -31,11 +31,14 @@
 
     async function remove() {
         await removeEvents.mutateAsync();
+
         if (ids.length === 1) {
             toast.success('Successfully deleted event.');
         } else {
             toast.success(`Successfully deleted ${Intl.NumberFormat().format(ids.length)} events.`);
         }
+
+        table.resetRowSelection();
     }
 </script>
 

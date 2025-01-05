@@ -12,9 +12,9 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
-    import { DEFAULT_OFFSET } from '$features/shared/api/api.svelte';
     import { getStackQuery } from '$features/stacks/api.svelte';
     import { cardinality, max, min, sum } from '$shared/api/aggregations';
+    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import IconFirstOccurrence from '~icons/mdi/arrow-left-circle';
     import IconLastOccurrence from '~icons/mdi/arrow-right-circle';
     import IconCalendar from '~icons/mdi/calendar';
