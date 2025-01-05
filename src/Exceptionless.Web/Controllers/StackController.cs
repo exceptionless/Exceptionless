@@ -164,7 +164,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
+    public async Task<IActionResult> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
     {
         if (snoozeUntilUtc < _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(5))
             return BadRequest("Must snooze for at least 5 minutes.");
