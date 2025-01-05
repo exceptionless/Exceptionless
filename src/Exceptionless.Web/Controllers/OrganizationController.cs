@@ -140,7 +140,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Create
     /// </summary>
     /// <param name="organization">The organization.</param>
-    /// <returns></returns>
     /// <response code="400">An error occurred while creating the organization.</response>
     /// <response code="409">The organization already exists.</response>
     [HttpPost]

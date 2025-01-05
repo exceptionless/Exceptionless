@@ -121,13 +121,10 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stacks.Count is 0)
             return NotFound();
 
-        if (stacks.Count > 0)
-        {
-            foreach (var stack in stacks)
-                stack.MarkFixed(semanticVersion, _timeProvider);
+        foreach (var stack in stacks)
+            stack.MarkFixed(semanticVersion, _timeProvider);
 
-            await _stackRepository.SaveAsync(stacks);
-        }
+        await _stackRepository.SaveAsync(stacks);
 
         return Ok();
     }
@@ -167,7 +164,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult<WorkInProgressResult>> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
+    public async Task<IActionResult> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
     {
         if (snoozeUntilUtc < _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(5))
             return BadRequest("Must snooze for at least 5 minutes.");
@@ -176,18 +173,15 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stacks.Count is 0)
             return NotFound();
 
-        if (stacks.Count > 0)
+        foreach (var stack in stacks)
         {
-            foreach (var stack in stacks)
-            {
-                stack.Status = StackStatus.Snoozed;
-                stack.SnoozeUntilUtc = snoozeUntilUtc;
-                stack.FixedInVersion = null;
-                stack.DateFixed = null;
-            }
-
-            await _stackRepository.SaveAsync(stacks);
+            stack.Status = StackStatus.Snoozed;
+            stack.SnoozeUntilUtc = snoozeUntilUtc;
+            stack.FixedInVersion = null;
+            stack.DateFixed = null;
         }
+
+        await _stackRepository.SaveAsync(stacks);
 
         return Ok();
     }
@@ -338,7 +332,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> ChangeStatusAsync(string ids, StackStatus status)
     {
-        if (status == StackStatus.Regressed || status == StackStatus.Snoozed)
+        if (status is StackStatus.Regressed or StackStatus.Snoozed)
             return BadRequest("Can't set stack status to regressed or snoozed.");
 
         var stacks = await GetModelsAsync(ids.FromDelimitedString(), false);
@@ -361,8 +355,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
                     stack.FixedInVersion = null;
                 }
 
-                if (status != StackStatus.Snoozed)
-                    stack.SnoozeUntilUtc = null;
+                stack.SnoozeUntilUtc = null;
             }
 
             await _stackRepository.SaveAsync(stacks);
@@ -377,7 +370,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="id">The identifier of the stack.</param>
     /// <response code="404">The stack could not be found.</response>
     /// <response code="426">Promote to External is a premium feature used to promote an error stack to an external system.</response>
-    /// <response code="501">"No promoted web hooks are configured for this project.</response>
+    /// <response code="501">No promoted web hooks are configured for this project.</response>
     [HttpPost("{id:objectid}/promote")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     public async Task<IActionResult> PromoteAsync(string id)
@@ -389,7 +382,11 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (stack is null || !CanAccessOrganization(stack.OrganizationId))
             return NotFound();
 
-        if (!await _billingManager.HasPremiumFeaturesAsync(stack.OrganizationId))
+        var organization = await GetOrganizationAsync(stack.OrganizationId);
+        if (organization is null)
+            return NotFound();
+
+        if (!organization.HasPremiumFeatures)
             return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
         var promotedProjectHooks = (await _webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHook.KnownEventTypes.StackPromoted)).ToList();
@@ -404,9 +401,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             .Property("User", CurrentUser)
             .SetHttpContext(HttpContext));
 
-        var organization = await GetOrganizationAsync(stack.OrganizationId);
-        if (organization is null)
-            return NotFound();
         var project = await GetProjectAsync(stack.ProjectId);
         if (project is null)
             return NotFound();
