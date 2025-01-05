@@ -8,6 +8,7 @@
 
     import { type Table as SvelteTable } from '@tanstack/svelte-table';
 
+    import DataTablePageCount from './data-table-page-count.svelte';
     import DataTablePagination from './data-table-pagination.svelte';
     import DataTableSelection from './data-table-selection.svelte';
 
@@ -25,6 +26,7 @@
     {:else}
         <DataTableSelection {table} />
         <div class="flex items-center space-x-6 lg:space-x-8">
+            <DataTablePageCount {table} />
             <DataTablePagination {table} />
         </div>
     {/if}

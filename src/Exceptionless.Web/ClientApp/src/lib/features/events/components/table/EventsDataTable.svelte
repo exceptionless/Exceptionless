@@ -43,8 +43,11 @@
             {@render footerChildren()}
         {:else}
             <DataTable.Selection {table} />
+            <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
+            <div class="flex items-center space-x-6 lg:space-x-8">
+                <DataTable.PageCount {table} />
+                <DataTable.Pagination {table} />
+            </div>
         {/if}
-        <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-        <DataTable.Pagination {table} />
     </DataTable.Footer>
 </DataTable.Root>

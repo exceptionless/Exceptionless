@@ -2,6 +2,7 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import AutomaticRefreshIndicatorButton from '$comp/AutomaticRefreshIndicatorButton.svelte';
+    import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
@@ -128,6 +129,12 @@
                         {#if table.getSelectedRowModel().flatRows.length}
                             <EventsBulkActionsDropdownMenu {table} />
                         {/if}
+                    </div>
+
+                    <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
+                    <div class="flex items-center space-x-6 lg:space-x-8">
+                        <DataTable.PageCount {table} />
+                        <DataTable.Pagination {table} />
                     </div>
                 {/snippet}
             </EventsDataTable>
