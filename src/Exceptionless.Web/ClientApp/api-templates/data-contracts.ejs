@@ -28,7 +28,7 @@ const dataContractTemplates = {
   },
   type: (contract) => {
     return `type ${contract.name}${buildGenerics(contract)} = ${contract.content}`;
-  },
+  }
 }
 %>
 
@@ -47,6 +47,7 @@ import {
     IsNumber,
     IsMongoId,
     IsUrl,
+    Matches,
     Min,
     MinDate,
     MinLength,
