@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +26,7 @@ public class AppOptions
     /// </summary>
     public string? ExceptionlessServerUrl { get; internal set; }
 
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     [JsonConverter(typeof(StringEnumConverter))]
     public AppMode AppMode { get; internal set; }
     public string AppScope { get; internal set; } = null!;

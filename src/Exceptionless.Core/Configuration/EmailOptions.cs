@@ -26,6 +26,7 @@ public class EmailOptions
 
     public int SmtpPort { get; internal set; }
 
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     [JsonConverter(typeof(StringEnumConverter))]
     public SmtpEncryption SmtpEncryption { get; internal set; }
 

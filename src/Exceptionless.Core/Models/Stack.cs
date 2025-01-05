@@ -1,8 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using Foundatio.Repositories.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Models;
@@ -123,13 +123,26 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     }
 }
 
-[JsonConverter(typeof(StringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
 public enum StackStatus
 {
-    [EnumMember(Value = "open")] Open,
-    [EnumMember(Value = "fixed")] Fixed,
-    [EnumMember(Value = "regressed")] Regressed,
-    [EnumMember(Value = "snoozed")] Snoozed,
-    [EnumMember(Value = "ignored")] Ignored,
-    [EnumMember(Value = "discarded")] Discarded
+    [JsonStringEnumMemberName("open")]
+    [EnumMember(Value = "open")]
+    Open,
+    [JsonStringEnumMemberName("fixed")]
+    [EnumMember(Value = "fixed")]
+    Fixed,
+    [JsonStringEnumMemberName("regressed")]
+    [EnumMember(Value = "regressed")]
+    Regressed,
+    [JsonStringEnumMemberName("snoozed")]
+    [EnumMember(Value = "snoozed")]
+    Snoozed,
+    [JsonStringEnumMemberName("ignored")]
+    [EnumMember(Value = "ignored")]
+    Ignored,
+    [JsonStringEnumMemberName("discarded")]
+    [EnumMember(Value = "discarded")]
+    Discarded
 }

@@ -1,4 +1,5 @@
-@apiUrl = http://localhost:5200/api/v2
+@url = http://localhost:5200
+@apiUrl = {url}/api/v2
 @email = test@localhost
 @password = tester
 @organizationId = 537650f3b77efe23a47914f3
@@ -24,6 +25,10 @@ Authorization: Bearer {{token}}
 
 ###
 @userId = {{currentUser.response.body.$.id}}
+
+### Get OpenApi schema
+# @name openapi
+GET {{url}}/openapi/v1.json
 
 ### All Organizations
 GET {{apiUrl}}/admin/organizations

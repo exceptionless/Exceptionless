@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -20,13 +22,14 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Newtonsoft.Json;
+using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
-using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
 
 namespace Exceptionless.Web;
 
@@ -49,27 +52,45 @@ public class Startup
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
             .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
-        services.Configure<ForwardedHeadersOptions>(options =>
+        services.Configure<ForwardedHeadersOptions>(o =>
         {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            options.RequireHeaderSymmetry = false;
-            options.KnownNetworks.Clear();
-            options.KnownProxies.Clear();
+            o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            o.RequireHeaderSymmetry = false;
+            o.KnownNetworks.Clear();
+            o.KnownProxies.Clear();
         });
 
         services.AddControllers(o =>
         {
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
-            o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
+            o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.SnakeCaseLower));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
         })
-        .AddNewtonsoftJson(o =>
+        .AddJsonOptions(o =>
         {
-            o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
-            o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
-            o.SerializerSettings.Formatting = Formatting.Indented;
-            o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
+            o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+            //o.JsonSerializerOptions.Converters.Add (new JsonStringEnumConverter());
+#if DEBUG
+            o.JsonSerializerOptions.RespectNullableAnnotations = true;
+#endif
         });
+
+        services.ConfigureHttpJsonOptions(o =>
+        {
+            o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+            //o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+#if DEBUG
+            o.SerializerOptions.RespectNullableAnnotations = true;
+#endif
+        });
+
+        // .AddNewtonsoftJson(o =>
+        // {
+        //     o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
+        //     o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
+        //     o.SerializerSettings.Formatting = Formatting.Indented;
+        //     o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
+        // });
 
         services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
         services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
@@ -95,78 +116,84 @@ public class Startup
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
 
-        services.AddSwaggerGen(c =>
+        services.AddOpenApi(o =>
         {
-            c.SwaggerDoc("v2", new OpenApiInfo
-            {
-                Title = "Exceptionless API",
-                Version = "v2",
-                TermsOfService = new Uri("https://exceptionless.com/terms/"),
-                Contact = new OpenApiContact
-                {
-                    Name = "Exceptionless",
-                    Email = String.Empty,
-                    Url = new Uri("https://github.com/exceptionless/Exceptionless")
-                },
-                License = new OpenApiLicense
-                {
-                    Name = "Apache License 2.0",
-                    Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
-                }
-            });
-
-            c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
-            {
-                Description = "Basic HTTP Authentication",
-                Scheme = "basic",
-                Type = SecuritySchemeType.Http
-            });
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                Scheme = "bearer",
-                Type = SecuritySchemeType.Http
-            });
-            c.AddSecurityDefinition("Token", new OpenApiSecurityScheme
-            {
-                Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                Name = "access_token",
-                In = ParameterLocation.Query,
-                Type = SecuritySchemeType.ApiKey
-            });
-
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-
-            string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
-            if (File.Exists(xmlDocPath))
-                c.IncludeXmlComments(xmlDocPath);
-
-            c.IgnoreObsoleteActions();
-            c.OperationFilter<RequestBodyOperationFilter>();
-
-            c.AddEnumsWithValuesFixFilters();
-            c.SupportNonNullableReferenceTypes();
+            o.AddSchemaTransformer<FixEnumsSchemaTransformer>();
+            o.AddSchemaTransformer<FixEmailAddressAnnotationsSchemaTransformer>();
+            o.AddSchemaTransformer<FixArrayTypesBeingMarkedNullableAnnotationsSchemaTransformer>();
         });
-        services.AddSwaggerGenNewtonsoftSupport();
+        // services.AddSwaggerGen(c =>
+        // {
+        //     c.SwaggerDoc("v2", new OpenApiInfo
+        //     {
+        //         Title = "Exceptionless API",
+        //         Version = "v2",
+        //         TermsOfService = new Uri("https://exceptionless.com/terms/"),
+        //         Contact = new OpenApiContact
+        //         {
+        //             Name = "Exceptionless",
+        //             Email = String.Empty,
+        //             Url = new Uri("https://github.com/exceptionless/Exceptionless")
+        //         },
+        //         License = new OpenApiLicense
+        //         {
+        //             Name = "Apache License 2.0",
+        //             Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
+        //         }
+        //     });
+        //
+        //     c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
+        //     {
+        //         Description = "Basic HTTP Authentication",
+        //         Scheme = "basic",
+        //         Type = SecuritySchemeType.Http
+        //     });
+        //     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        //     {
+        //         Description = "Authorization token. Example: \"Bearer {apikey}\"",
+        //         Scheme = "bearer",
+        //         Type = SecuritySchemeType.Http
+        //     });
+        //     c.AddSecurityDefinition("Token", new OpenApiSecurityScheme
+        //     {
+        //         Description = "Authorization token. Example: \"Bearer {apikey}\"",
+        //         Name = "access_token",
+        //         In = ParameterLocation.Query,
+        //         Type = SecuritySchemeType.ApiKey
+        //     });
+        //
+        //     c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+        //             {
+        //                 new OpenApiSecurityScheme {
+        //                     Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
+        //                 },
+        //                 Array.Empty<string>()
+        //             },
+        //             {
+        //                 new OpenApiSecurityScheme {
+        //                     Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+        //                 },
+        //                 Array.Empty<string>()
+        //             },
+        //             {
+        //                 new OpenApiSecurityScheme {
+        //                     Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
+        //                 },
+        //                 Array.Empty<string>()
+        //             }
+        //         });
+        //
+        //     string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
+        //     if (File.Exists(xmlDocPath))
+        //         c.IncludeXmlComments(xmlDocPath);
+        //
+        //     c.IgnoreObsoleteActions();
+        //     c.OperationFilter<RequestBodyOperationFilter>();
+        //
+        //     c.AddEnumsWithValuesFixFilters();
+        //     c.SupportNonNullableReferenceTypes();
+        // });
+        //services.AddSwaggerGenNewtonsoftSupport();
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
@@ -206,6 +233,7 @@ public class Startup
 
         // errors
         // TODO: Check casing of property names of model state validation errors.
+        // TODO: Remove this casing converting as it will be handled now out of the box.
     }
 
     public void Configure(IApplicationBuilder app)
@@ -227,7 +255,6 @@ public class Startup
             }
         });
         app.UseStatusCodePages();
-        app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
         app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
@@ -353,13 +380,13 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        app.UseSwagger(c => c.RouteTemplate = "docs/{documentName}/swagger.json");
-        app.UseSwaggerUI(s =>
-        {
-            s.RoutePrefix = "docs";
-            s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
-            s.InjectStylesheet("/docs.css");
-        });
+        // app.UseSwagger(c => c.RouteTemplate = "docs/{documentName}/swagger.json");
+        // app.UseSwaggerUI(s =>
+        // {
+        //     s.RoutePrefix = "docs";
+        //     s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
+        //     s.InjectStylesheet("/docs.css");
+        // });
 
         if (options.EnableWebSockets)
         {
@@ -369,6 +396,96 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapOpenApi();
+            endpoints.MapScalarApiReference(o =>
+            {
+                o.WithTitle("Exceptionless API")
+                    .WithTheme(ScalarTheme.Default)
+                    .WithHttpBasicAuthentication(basic =>
+                    {
+                        basic.Username = "your-username";
+                        basic.Password = "your-password";
+                    }).WithHttpBearerAuthentication(bearer =>
+                    {
+                        bearer.Token = "apikey";
+                    }).WithApiKeyAuthentication(apiKey =>
+                    {
+                        apiKey.Token = "access_token";
+                    })
+                    .WithPreferredScheme("Bearer");
+
+                // {
+                //     c.SwaggerDoc("v2", new OpenApiInfo
+                //     {
+                //         Title = "Exceptionless API",
+                //         Version = "v2",
+                //         TermsOfService = new Uri("https://exceptionless.com/terms/"),
+                //         Contact = new OpenApiContact
+                //         {
+                //             Name = "Exceptionless",
+                //             Email = String.Empty,
+                //             Url = new Uri("https://github.com/exceptionless/Exceptionless")
+                //         },
+                //         License = new OpenApiLicense
+                //         {
+                //             Name = "Apache License 2.0",
+                //             Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
+                //         }
+                //     });
+                //
+                //     c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
+                //     {
+                //         Description = "Basic HTTP Authentication",
+                //         Scheme = "basic",
+                //         Type = SecuritySchemeType.Http
+                //     });
+                //     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                //     {
+                //         Description = "Authorization token. Example: \"Bearer {apikey}\"",
+                //         Scheme = "bearer",
+                //         Type = SecuritySchemeType.Http
+                //     });
+                //     c.AddSecurityDefinition("Token", new OpenApiSecurityScheme
+                //     {
+                //         Description = "Authorization token. Example: \"Bearer {apikey}\"",
+                //         Name = "access_token",
+                //         In = ParameterLocation.Query,
+                //         Type = SecuritySchemeType.ApiKey
+                //     });
+                //
+                //     c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                //             {
+                //                 new OpenApiSecurityScheme {
+                //                     Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
+                //                 },
+                //                 Array.Empty<string>()
+                //             },
+                //             {
+                //                 new OpenApiSecurityScheme {
+                //                     Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                //                 },
+                //                 Array.Empty<string>()
+                //             },
+                //             {
+                //                 new OpenApiSecurityScheme {
+                //                     Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
+                //                 },
+                //                 Array.Empty<string>()
+                //             }
+                //         });
+                //
+                //     string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
+                //     if (File.Exists(xmlDocPath))
+                //         c.IncludeXmlComments(xmlDocPath);
+                //
+                //     c.IgnoreObsoleteActions();
+                //     c.OperationFilter<RequestBodyOperationFilter>();
+                //
+                //     c.AddEnumsWithValuesFixFilters();
+                //     c.SupportNonNullableReferenceTypes();
+                // });
+                //services.AddSwaggerGenNewtonsoftSupport();
+            });
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
