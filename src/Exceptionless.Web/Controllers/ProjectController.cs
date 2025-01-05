@@ -152,7 +152,6 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// Create
     /// </summary>
     /// <param name="project">The project.</param>
-    /// <returns></returns>
     /// <response code="400">An error occurred while creating the project.</response>
     /// <response code="409">The project already exists.</response>
     [HttpPost]
