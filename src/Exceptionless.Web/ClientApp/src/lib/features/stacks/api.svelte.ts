@@ -6,7 +6,6 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 
 import type { Stack, StackStatus } from './models';
 
-//
 export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
     const { id } = message;
     if (id) {
@@ -16,14 +15,17 @@ export async function invalidateStackQueries(queryClient: QueryClient, message: 
     }
 }
 
+// TODO: Make sure all api events have a unique query key for mutations.
 export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
+    remove: (ids: string[] | undefined) => [...queryKeys.type, 'remove', ...(ids ?? [])] as const,
     type: ['Stack'] as const
 };
 
 export interface DeleteStackRequest {
     route: {
-        ids: string | undefined;
+        ids: string[] | undefined;
     };
 }
 
@@ -41,31 +43,31 @@ export interface PostAddLinkRequest {
 
 export interface PostChangeStatusRequest {
     route: {
-        ids: string | undefined;
+        ids: string[] | undefined;
     };
 }
 
 export interface PostMarkCriticalRequest {
     route: {
-        ids: string | undefined;
+        ids: string[] | undefined;
     };
 }
 
 export interface PostMarkFixedRequest {
     route: {
-        ids: string | undefined;
+        ids: string[] | undefined;
     };
 }
 
 export interface PostMarkSnoozedRequest {
     route: {
-        id: string | undefined;
+        ids: string[] | undefined;
     };
 }
 
 export interface PostPromoteRequest {
     route: {
-        ids: string | undefined;
+        ids: string[] | undefined;
     };
 }
 
@@ -78,17 +80,17 @@ export interface PostRemoveLinkRequest {
 export function deleteMarkCritical(request: PostMarkCriticalRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            await client.delete(`stacks/${request.route.ids}/mark-critical`);
+            await client.delete(`stacks/${request.route.ids?.join(',')}/mark-critical`);
         },
-        mutationKey: queryKeys.id(request.route.ids),
+        mutationKey: queryKeys.ids(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
@@ -96,20 +98,21 @@ export function deleteMarkCritical(request: PostMarkCriticalRequest) {
 export function deleteStack(request: DeleteStackRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            await client.delete(`stacks/${request.route.ids}`);
+            await client.delete(`stacks/${request.route.ids?.join(',')}`);
         },
-        mutationKey: queryKeys.id(request.route.ids),
+        mutationKey: queryKeys.remove(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
+
 export function getStackQuery(request: GetStackRequest) {
     return createQuery<Stack, ProblemDetails>(() => ({
         enabled: () => !!accessToken.value && !!request.route.id,
@@ -146,17 +149,17 @@ export function postAddLink(request: PostAddLinkRequest) {
 export function postChangeStatus(request: PostChangeStatusRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, StackStatus>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async (status: StackStatus) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.ids}/change-status`, undefined, { params: { status } });
+            await client.post(`stacks/${request.route.ids?.join(',')}/change-status`, undefined, { params: { status } });
         },
-        mutationKey: queryKeys.id(request.route.ids),
+        mutationKey: queryKeys.ids(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
@@ -164,17 +167,17 @@ export function postChangeStatus(request: PostChangeStatusRequest) {
 export function postMarkCritical(request: PostMarkCriticalRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.ids}/mark-critical`);
+            await client.post(`stacks/${request.route.ids?.join(',')}/mark-critical`);
         },
-        mutationKey: queryKeys.id(request.route.ids),
+        mutationKey: queryKeys.ids(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
@@ -182,17 +185,17 @@ export function postMarkCritical(request: PostMarkCriticalRequest) {
 export function postMarkFixed(request: PostMarkFixedRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, string | undefined>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async (version?: string) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.ids}/mark-fixed`, undefined, { params: { version } });
+            await client.post(`stacks/${request.route.ids?.join(',')}/mark-fixed`, undefined, { params: { version } });
         },
-        mutationKey: queryKeys.id(request.route.ids),
+        mutationKey: queryKeys.ids(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
@@ -200,17 +203,17 @@ export function postMarkFixed(request: PostMarkFixedRequest) {
 export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, Date>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async (snoozeUntilUtc: Date) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.id}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
+            await client.post(`stacks/${request.route.ids?.join(',')}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
         },
-        mutationKey: queryKeys.id(request.route.id),
+        mutationKey: queryKeys.ids(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }
@@ -218,21 +221,21 @@ export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
 export function postPromote(request: PostPromoteRequest) {
     const queryClient = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids,
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            const response = await client.post(`stacks/${request.route.ids}/promote`, undefined, {
+            const response = await client.post(`stacks/${request.route.ids?.join(',')}/promote`, undefined, {
                 expectedStatusCodes: [200, 404, 426, 501]
             });
 
             return response;
         },
-        mutationKey: queryKeys.id(request.route.ids),
+        mutationKey: queryKeys.ids(request.route.ids),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.ids) });
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
     }));
 }

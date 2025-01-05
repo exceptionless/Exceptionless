@@ -9,6 +9,7 @@
 
     interface Props {
         bodyChildren?: Snippet;
+        footerChildren?: Snippet;
         isLoading: boolean;
         limit: number;
         rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
@@ -16,7 +17,7 @@
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, isLoading, limit = $bindable(), rowClick, table, toolbarChildren }: Props = $props();
+    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -37,7 +38,13 @@
             {@render bodyChildren()}
         {/if}
     </DataTable.Body>
-    <DataTable.Pagination {table}>
+    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
+        {#if footerChildren}
+            {@render footerChildren()}
+        {:else}
+            <DataTable.Selection {table} />
+        {/if}
         <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-    </DataTable.Pagination>
+        <DataTable.Pagination {table} />
+    </DataTable.Footer>
 </DataTable.Root>

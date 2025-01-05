@@ -9,9 +9,7 @@
 
     let { canRefresh, refresh }: Props = $props();
 
-    const refreshButtonTitle = $derived(
-        canRefresh ? 'Data will automatically-refresh' : 'Refresh data which is not automatically-refreshing'
-    );
+    const refreshButtonTitle = $derived(canRefresh ? 'Data will automatically-refresh' : 'Refresh data which is not automatically-refreshing');
 </script>
 
 {#if canRefresh}

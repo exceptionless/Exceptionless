@@ -10,6 +10,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/EventsDrawer.svelte';
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
+    import EventsBulkActionsDropdownMenu from '$features/events/components/table/EventsBulkActionsDropdownMenu.svelte';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table';
@@ -121,6 +122,13 @@
             <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
+                {/snippet}
+                {#snippet footerChildren()}
+                    <div class="h-9 min-w-[140px]">
+                        {#if table.getSelectedRowModel().flatRows.length}
+                            <EventsBulkActionsDropdownMenu {table} />
+                        {/if}
+                    </div>
                 {/snippet}
             </EventsDataTable>
         </Card.Content>
