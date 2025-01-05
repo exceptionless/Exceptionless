@@ -96,7 +96,7 @@
             context.meta = clientResponse.meta;
         }
     }
-    const throttledLoadData = throttle(10000, loadData);
+    const throttledLoadData = throttle(5000, loadData);
 
     async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
@@ -117,7 +117,7 @@
         }
 
         // Do not refresh if the grid has selections or grid is currently paged.
-        if (canRefresh) {
+        if (!canRefresh) {
             return;
         }
 

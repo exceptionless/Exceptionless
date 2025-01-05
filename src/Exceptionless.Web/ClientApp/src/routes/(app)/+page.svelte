@@ -97,7 +97,7 @@
         }
 
         // Do not refresh if the grid has selections or grid is currently paged.
-        if (canRefresh) {
+        if (!canRefresh) {
             return;
         }
 
