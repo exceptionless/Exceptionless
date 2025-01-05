@@ -137,11 +137,11 @@
 </DropdownMenu.Root>
 
 {#if openMarkStackDiscardedDialog}
-    <MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} />
+    <MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} count={ids.length} />
 {/if}
 {#if openMarkStackFixedInVersionDialog}
-    <MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={markFixed} />
+    <MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={markFixed} count={ids.length} />
 {/if}
 {#if openRemoveStackDialog}
-    <RemoveStackDialog bind:open={openRemoveStackDialog} {remove} />
+    <RemoveStackDialog bind:open={openRemoveStackDialog} {remove} count={ids.length} />
 {/if}

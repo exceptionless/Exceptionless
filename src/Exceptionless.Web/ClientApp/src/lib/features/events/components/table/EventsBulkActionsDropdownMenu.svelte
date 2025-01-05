@@ -55,5 +55,5 @@
 </DropdownMenu.Root>
 
 {#if openRemoveEventDialog}
-    <RemoveEventDialog bind:open={openRemoveEventDialog} {remove} />
+    <RemoveEventDialog bind:open={openRemoveEventDialog} {remove} count={ids.length} />
 {/if}
