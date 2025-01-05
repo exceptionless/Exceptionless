@@ -1,10 +1,10 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { CountResult } from '$shared/models';
+import type { CountResult, WorkInProgressResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_OFFSET } from '$features/shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { PersistentEvent } from './models';
 
@@ -33,10 +33,17 @@ export const queryKeys = {
     count: () => [...queryKeys.type, 'count'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     projectsCount: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
+    remove: (ids: string[] | undefined) => [...queryKeys.type, 'remove', ...(ids ?? [])] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined) => [...queryKeys.stacks(id), 'count'] as const,
     type: ['PersistentEvent'] as const
 };
+
+export interface DeleteEventsRequest {
+    route: {
+        ids: string[] | undefined;
+    };
+}
 
 export interface GetCountRequest {
     params?: {
@@ -111,6 +118,26 @@ export interface GetStackEventsRequest {
     route: {
         stackId: string | undefined;
     };
+}
+
+export function deleteEvent(request: DeleteEventsRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.delete(`events/${request.route.ids?.join(',')}`);
+
+            return response.data as WorkInProgressResult;
+        },
+        mutationKey: queryKeys.remove(request.route.ids),
+        onError: () => {
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        },
+        onSuccess: () => {
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        }
+    }));
 }
 
 export function getCountQuery(request: GetCountRequest) {

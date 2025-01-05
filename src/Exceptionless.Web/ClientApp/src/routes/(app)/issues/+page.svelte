@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import AutomaticRefreshIndicatorButton from '$comp/AutomaticRefreshIndicatorButton.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
@@ -12,6 +13,7 @@
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
+    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/TableStacksBulkActionsDropdownMenu.svelte';
     import { type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
@@ -68,18 +70,18 @@
 
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.value, mode: 'stack_frequent' });
     const table = createTable(context.options);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
 
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
-
-    let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
         if (client.isLoading) {
             return;
         }
 
-        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...context.parameters,
                 filter: ['(type:404 OR type:error)', filter].filter(Boolean).join(' '),
@@ -87,12 +89,13 @@
             }
         });
 
-        if (response.ok) {
-            context.data = response.data || [];
-            context.meta = response.meta;
+        if (clientResponse.ok) {
+            context.data = clientResponse.data || [];
+            context.meta = clientResponse.meta;
         }
     }
     const debouncedLoadData = debounce(10000, loadData);
+
     async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             await debouncedLoadData();
@@ -109,11 +112,18 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues</Card.Title>
-        <Card.Content>
+        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
+        <Card.Content class="pt-4">
             <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
+                {/snippet}
+                {#snippet footerChildren()}
+                    <div class="h-9 min-w-[140px]">
+                        {#if table.getSelectedRowModel().flatRows.length}
+                            <TableStacksBulkActionsDropdownMenu {table} />
+                        {/if}
+                    </div>
                 {/snippet}
             </EventsDataTable>
         </Card.Content>

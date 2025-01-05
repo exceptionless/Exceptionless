@@ -199,6 +199,9 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         get data() {
             return _data;
         },
+        set data(value) {
+            _data = value;
+        },
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
