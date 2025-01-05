@@ -346,7 +346,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     var stacks = (await _stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
                     var summaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
-                    return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, resolvedPage);
+
+                    long total = (stackTerms.Data?.GetValueOrDefault("SumOtherDocCount") as long? ?? 0L) + stackTerms.Buckets.Count;
+                    return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit && !NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
                     return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
