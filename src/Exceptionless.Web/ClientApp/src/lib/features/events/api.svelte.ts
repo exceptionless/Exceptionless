@@ -31,9 +31,9 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 
 export const queryKeys = {
     count: () => [...queryKeys.type, 'count'] as const,
+    deleteEvent: (ids: string[] | undefined) => [...queryKeys.type, 'delete', ...(ids ?? [])] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     projectsCount: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
-    remove: (ids: string[] | undefined) => [...queryKeys.type, 'remove', ...(ids ?? [])] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined) => [...queryKeys.stacks(id), 'count'] as const,
     type: ['PersistentEvent'] as const
@@ -130,7 +130,7 @@ export function deleteEvent(request: DeleteEventsRequest) {
 
             return response.data as WorkInProgressResult;
         },
-        mutationKey: queryKeys.remove(request.route.ids),
+        mutationKey: queryKeys.deleteEvent(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },

@@ -1,4 +1,5 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
+import type { WorkInProgressResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
@@ -15,11 +16,18 @@ export async function invalidateStackQueries(queryClient: QueryClient, message: 
     }
 }
 
-// TODO: Make sure all api events have a unique query key for mutations.
 export const queryKeys = {
+    deleteMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-not-critical'] as const,
+    deleteStack: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
-    remove: (ids: string[] | undefined) => [...queryKeys.type, 'remove', ...(ids ?? [])] as const,
+    postAddLink: (id: string | undefined) => [...queryKeys.id(id), 'add-link'] as const,
+    postChangeStatus: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'change-status'] as const,
+    postMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-critical'] as const,
+    postMarkFixed: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-fixed'] as const,
+    postMarkSnoozed: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-snoozed'] as const,
+    postPromote: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'promote'] as const,
+    postRemoveLink: (id: string | undefined) => [...queryKeys.id(id), 'remove-link'] as const,
     type: ['Stack'] as const
 };
 
@@ -85,7 +93,7 @@ export function deleteMarkCritical(request: PostMarkCriticalRequest) {
             const client = useFetchClient();
             await client.delete(`stacks/${request.route.ids?.join(',')}/mark-critical`);
         },
-        mutationKey: queryKeys.ids(request.route.ids),
+        mutationKey: queryKeys.deleteMarkCritical(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -97,13 +105,15 @@ export function deleteMarkCritical(request: PostMarkCriticalRequest) {
 
 export function deleteStack(request: DeleteStackRequest) {
     const queryClient = useQueryClient();
-    return createMutation<void, ProblemDetails, void>(() => ({
+    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            await client.delete(`stacks/${request.route.ids?.join(',')}`);
+            const response = await client.delete(`stacks/${request.route.ids?.join(',')}`);
+
+            return response.data as WorkInProgressResult;
         },
-        mutationKey: queryKeys.remove(request.route.ids),
+        mutationKey: queryKeys.deleteStack(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -136,7 +146,7 @@ export function postAddLink(request: PostAddLinkRequest) {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.id}/add-link`, { value: url });
         },
-        mutationKey: queryKeys.id(request.route.id),
+        mutationKey: queryKeys.postAddLink(request.route.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },
@@ -154,7 +164,7 @@ export function postChangeStatus(request: PostChangeStatusRequest) {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/change-status`, undefined, { params: { status } });
         },
-        mutationKey: queryKeys.ids(request.route.ids),
+        mutationKey: queryKeys.postChangeStatus(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -172,7 +182,7 @@ export function postMarkCritical(request: PostMarkCriticalRequest) {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-critical`);
         },
-        mutationKey: queryKeys.ids(request.route.ids),
+        mutationKey: queryKeys.postMarkCritical(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -190,7 +200,7 @@ export function postMarkFixed(request: PostMarkFixedRequest) {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-fixed`, undefined, { params: { version } });
         },
-        mutationKey: queryKeys.ids(request.route.ids),
+        mutationKey: queryKeys.postMarkFixed(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -208,7 +218,7 @@ export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
         },
-        mutationKey: queryKeys.ids(request.route.ids),
+        mutationKey: queryKeys.postMarkSnoozed(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -230,7 +240,7 @@ export function postPromote(request: PostPromoteRequest) {
 
             return response;
         },
-        mutationKey: queryKeys.ids(request.route.ids),
+        mutationKey: queryKeys.postPromote(request.route.ids),
         onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         },
@@ -248,7 +258,7 @@ export function postRemoveLink(request: PostRemoveLinkRequest) {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.id}/remove-link`, { value: url });
         },
-        mutationKey: queryKeys.id(request.route.id),
+        mutationKey: queryKeys.postRemoveLink(request.route.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },
