@@ -60,10 +60,12 @@
 
     async function markOpen() {
         await changeStatus.mutateAsync(StackStatus.Open);
+        table.resetRowSelection();
     }
 
     async function markFixed(version?: string) {
         await updateMarkFixed.mutateAsync(version);
+        table.resetRowSelection();
     }
 
     async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
@@ -85,19 +87,23 @@
         }
 
         await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        table.resetRowSelection();
     }
 
     async function markIgnored() {
         await changeStatus.mutateAsync(StackStatus.Ignored);
+        table.resetRowSelection();
     }
 
     async function markDiscarded() {
         await changeStatus.mutateAsync(StackStatus.Discarded);
+        table.resetRowSelection();
     }
 
     async function remove() {
         await removeStack.mutateAsync();
         toast.success('Successfully queued the stack for deletion.');
+        table.resetRowSelection();
     }
 </script>
 

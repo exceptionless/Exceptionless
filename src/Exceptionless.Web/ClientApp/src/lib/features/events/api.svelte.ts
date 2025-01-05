@@ -2,7 +2,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { CountResult, WorkInProgressResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { DEFAULT_OFFSET } from '$features/shared/api/api.svelte';
+import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
