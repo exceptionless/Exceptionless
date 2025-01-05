@@ -271,13 +271,13 @@
 {/if}
 
 {#if hasError}
-    <div class="mb-2 mt-4 flex justify-between">
+    <div class="mt-4 flex justify-between">
         <H4>Stack Trace</H4>
         <div class="flex justify-end">
             <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
         </div>
     </div>
-    <div class="mt-2 max-h-[150px] overflow-auto p-2 text-xs">
+    <div class="mt-2 max-h-[300px] flex-grow overflow-auto text-xs">
         {#if event.data?.['@error']}
             <StackTrace error={event.data['@error']} />
         {:else if event.data?.['@simple_error']}

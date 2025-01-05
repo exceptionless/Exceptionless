@@ -6,7 +6,7 @@
     let { children, class: className, variant = 'default', ...props }: Props = $props();
 </script>
 
-<a class={cn(variants({ className, variant }))} {...props}>
+<a class={cn(variants({ variant }), className)} {...props}>
     {#if children}
         {@render children()}
     {/if}

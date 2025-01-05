@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import Loading from '$comp/Loading.svelte';
     import Logo from '$comp/Logo.svelte';
@@ -23,7 +23,7 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { Login } from '$features/auth/models';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { applyServerSideErrors } from '$shared/validation';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import IconFacebook from '~icons/mdi/facebook';
@@ -31,10 +31,10 @@
     import IconGoogle from '~icons/mdi/google';
     import IconMicrosoft from '~icons/mdi/microsoft';
 
-    const redirectUrl = $page.url.searchParams.get('redirect') ?? '/next';
+    const redirectUrl = page.url.searchParams.get('redirect') ?? '/next';
 
     const defaultFormData = new Login();
-    defaultFormData.invite_token = $page.url.searchParams.get('token');
+    defaultFormData.invite_token = page.url.searchParams.get('token');
     const form = superForm(defaults(defaultFormData, classvalidatorClient(Login)), {
         dataType: 'json',
         async onUpdate({ form, result }) {
@@ -47,6 +47,8 @@
                 await goto(redirectUrl);
             } else {
                 applyServerSideErrors(form, response.problem);
+                // https://github.com/ciscoheat/sveltekit-superforms/issues/536
+                message.set(form.message);
                 result.status = response.problem.status ?? 500;
             }
         },

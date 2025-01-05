@@ -2,18 +2,16 @@
     import type { IFilter } from '$comp/filters/filters.svelte';
     import type { ViewProject } from '$features/projects/models';
 
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
     import ClickableProjectFilter from '$comp/filters/ClickableProjectFilter.svelte';
-    import ClickableStringFilter from '$comp/filters/ClickableStringFilter.svelte';
     import DateTime from '$comp/formatters/DateTime.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
-    import { P } from '$comp/typography';
+    import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
-    import { getEventByIdQuery } from '$features/events/api.svelte';
+    import { getEventQuery } from '$features/events/api.svelte';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
-    import { getProjectByIdQuery } from '$features/projects/api.svelte';
-    import { getStackByIdQuery } from '$features/stacks/api.svelte';
+    import { getProjectQuery } from '$features/projects/api.svelte';
+    import StackCard from '$features/stacks/components/StackCard.svelte';
 
     import type { PersistentEvent } from '../models/index';
 
@@ -27,10 +25,11 @@
 
     interface Props {
         changed: (filter: IFilter) => void;
+        close: () => void;
         id: string;
     }
 
-    let { changed, id }: Props = $props();
+    let { changed, close, id }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -76,21 +75,19 @@
         return tabs;
     }
 
-    let eventResponse = getEventByIdQuery({
-        get id() {
-            return id;
+    const eventResponse = getEventQuery({
+        route: {
+            get id() {
+                return id;
+            }
         }
     });
 
-    let projectResponse = getProjectByIdQuery({
-        get id() {
-            return eventResponse.data?.project_id;
-        }
-    });
-
-    let stackResponse = getStackByIdQuery({
-        get id() {
-            return eventResponse.data?.stack_id;
+    const projectResponse = getProjectQuery({
+        route: {
+            get id() {
+                return eventResponse.data?.project_id;
+            }
         }
     });
 
@@ -106,46 +103,52 @@
     function onDemoted(): void {
         activeTab = 'Extended Data';
     }
+
+    $effect(() => {
+        if (eventResponse.isError) {
+            close();
+        }
+    });
 </script>
 
-{#if eventResponse.isLoading}
-    <P>Loading...</P>
-{:else if eventResponse.isSuccess}
-    <Table.Root class="mt-4">
-        <Table.Body>
-            <Table.Row class="group">
+<StackCard {changed} id={eventResponse.data?.stack_id}></StackCard>
+
+<Table.Root class="mt-4">
+    <Table.Body>
+        <Table.Row class="group">
+            {#if eventResponse.isSuccess}
                 <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center"
                     ><DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)</Table.Cell
                 >
-            </Table.Row>
-            {#if projectResponse.data}
-                <Table.Row class="group">
-                    <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableProjectFilter
-                            {changed}
-                            class="mr-0"
-                            organization={projectResponse.data.organization_id!}
-                            value={[projectResponse.data.id!]}
-                        /></Table.Cell
-                    >
-                    <Table.Cell>{projectResponse.data.name}</Table.Cell>
-                </Table.Row>
+            {:else}
+                <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
+        </Table.Row>
+        <Table.Row class="group">
+            {#if projectResponse.isSuccess}
+                <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><ClickableProjectFilter
+                        {changed}
+                        class="mr-0"
+                        organization={projectResponse.data.organization_id!}
+                        value={[projectResponse.data.id!]}
+                    /></Table.Cell
+                >
+                <Table.Cell>{projectResponse.data.name}</Table.Cell>
+            {:else}
+                <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Cell class="w-4 pr-0"></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
             {/if}
-            {#if stackResponse.data}
-                <Table.Row class="group">
-                    <Table.Head class="w-40 whitespace-nowrap">Stack</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter {changed} class="mr-0" term="stack" value={stackResponse.data.id} /></Table.Cell
-                    >
-                    <Table.Cell>{stackResponse.data.title}</Table.Cell>
-                </Table.Row>
-            {/if}
-        </Table.Body>
-    </Table.Root>
+        </Table.Row>
+    </Table.Body>
+</Table.Root>
 
+{#if eventResponse.isSuccess}
     <Tabs.Root class="mb-4 mt-4" value={activeTab}>
         <Tabs.List class="mb-4 w-full justify-normal">
             {#each tabs as tab (tab)}
@@ -174,5 +177,16 @@
         {/each}
     </Tabs.Root>
 {:else}
-    <ErrorMessage message={eventResponse.error?.errors.general}></ErrorMessage>
+    <Skeleton class="mt-4 h-[30px] w-full rounded-full" />
+    <Table.Root class="mt-4">
+        <Table.Body>
+            {#each { length: 5 } as name, index (`${name}-${index}`)}
+                <Table.Row class="group">
+                    <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                    <Table.Cell class="w-4 pr-0"></Table.Cell>
+                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
+                </Table.Row>
+            {/each}
+        </Table.Body>
+    </Table.Root>
 {/if}

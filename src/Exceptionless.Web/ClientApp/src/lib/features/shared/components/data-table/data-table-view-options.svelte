@@ -19,7 +19,7 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         <Button class="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
-            <IconViewColumn class="mr-2 h-4 w-4" />
+            <IconViewColumn class="mr-2 size-4" />
             View
         </Button>
     </DropdownMenu.Trigger>

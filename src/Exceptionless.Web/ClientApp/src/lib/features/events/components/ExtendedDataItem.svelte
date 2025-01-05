@@ -3,8 +3,8 @@
     import ObjectDump from '$comp/ObjectDump.svelte';
     import { Code, H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import ArrowDownIcon from '~icons/mdi/arrow-down';
-    import ArrowUpIcon from '~icons/mdi/arrow-up';
+    import IconArrowDown from '~icons/mdi/arrow-down';
+    import IconArrowUp from '~icons/mdi/arrow-up';
 
     interface Props {
         canPromote?: boolean;
@@ -70,20 +70,22 @@
             {#if canPromote}
                 {#if !isPromoted}
                     <Button onclick={async () => await promote(title)} size="icon" title="Promote to Tab"
-                        ><ArrowUpIcon /><span class="sr-only">Promote to Tab</span></Button
+                        ><IconArrowUp /><span class="sr-only">Promote to Tab</span></Button
                     >
                 {:else}
                     <Button onclick={async () => await demote(title)} size="icon" title="Demote Tab"
-                        ><ArrowDownIcon /><span class="sr-only">Demote Tab</span></Button
+                        ><IconArrowDown /><span class="sr-only">Demote Tab</span></Button
                     >
                 {/if}
             {/if}
         </div>
     </div>
 
-    {#if showRaw}
-        <pre class="overflow-auto whitespace-pre-wrap break-words p-2 text-xs"><Code>{json}</Code></pre>
-    {:else}
-        <ObjectDump value={filteredData} />
-    {/if}
+    <div class="mt-2 flex-grow overflow-auto text-xs">
+        {#if showRaw}
+            <pre class="whitespace-pre-wrap break-words rounded bg-muted p-2"><Code class="px-0"><div class="bg-inherit">{json}</div></Code></pre>
+        {:else}
+            <ObjectDump value={filteredData} />
+        {/if}
+    </div>
 {/if}
