@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +22,7 @@ public class AppOptions
     public string? ExceptionlessApiKey { get; internal set; }
 
     /// <summary>
-    /// Configures the exceptionless client server url, which logs all internal errors and log messages.
+    /// Configures the Exceptionless client server url, which logs all internal errors and log messages.
     /// </summary>
     public string? ExceptionlessServerUrl { get; internal set; }
 

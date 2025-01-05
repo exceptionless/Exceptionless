@@ -1,16 +1,15 @@
 namespace Exceptionless.Web.Controllers;
 
-public class WorkInProgressResult
+public record WorkInProgressResult
 {
     public WorkInProgressResult()
     {
-        Workers = new List<string>();
     }
 
     public WorkInProgressResult(IEnumerable<string> workers) : this()
     {
-        Workers.AddRange(workers ?? new List<string>());
+        Workers.AddRange(workers);
     }
 
-    public List<string> Workers { get; set; }
+    public List<string> Workers { get; } = new();
 }

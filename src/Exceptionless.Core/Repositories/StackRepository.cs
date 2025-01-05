@@ -49,7 +49,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
     public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true)
     {
         // If total occurrences are zero (stack data was reset), then set first occurrence date
-        // Only update the LastOccurrence if the new date is greater then the existing date.
+        // Only update the LastOccurrence if the new date is greater than the existing date.
         const string script = @"
 Instant parseDate(def dt) {
   if (dt != null) {
