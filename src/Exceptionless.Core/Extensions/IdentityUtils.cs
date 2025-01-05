@@ -130,7 +130,6 @@ public static class IdentityUtils
     /// Gets the token id that authenticated the current user. If null, user logged in via oauth.
     /// </summary>
     /// <param name="principal"></param>
-    /// <returns></returns>
     public static string? GetLoggedInUsersTokenId(this ClaimsPrincipal principal)
     {
         return IsUserAuthType(principal) ? GetClaimValue(principal, LoggedInUsersTokenId) : null;
