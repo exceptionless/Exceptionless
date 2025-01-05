@@ -13,7 +13,7 @@
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
-    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/TableStacksBulkActionsDropdownMenu.svelte';
+    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/StacksBulkActionsDropdownMenu.svelte';
     import { type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
