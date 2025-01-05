@@ -109,9 +109,9 @@ export function deleteStack(request: DeleteStackRequest) {
         enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            const response = await client.delete(`stacks/${request.route.ids?.join(',')}`);
+            const response = await client.deleteJSON<WorkInProgressResult>(`stacks/${request.route.ids?.join(',')}`);
 
-            return response.data as WorkInProgressResult;
+            return response.data!;
         },
         mutationKey: queryKeys.deleteStack(request.route.ids),
         onError: () => {

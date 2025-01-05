@@ -126,9 +126,9 @@ export function deleteEvent(request: DeleteEventsRequest) {
         enabled: () => !!accessToken.value && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
-            const response = await client.delete(`events/${request.route.ids?.join(',')}`);
+            const response = await client.deleteJSON<WorkInProgressResult>(`events/${request.route.ids?.join(',')}`);
 
-            return response.data as WorkInProgressResult;
+            return response.data!;
         },
         mutationKey: queryKeys.deleteEvent(request.route.ids),
         onError: () => {
