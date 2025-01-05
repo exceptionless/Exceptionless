@@ -24,6 +24,8 @@ export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     idEmailAddress: (id?: string) => [...queryKeys.id(id), 'email-address'] as const,
     me: () => [...queryKeys.type, 'me'] as const,
+    patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
+    postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
     type: ['User'] as const
 };
 
@@ -68,7 +70,7 @@ export function patchUser(request: PatchUserRequest) {
             const response = await client.patchJSON<User>(`users/${request.route.id}`, data);
             return response.data!;
         },
-        mutationKey: queryKeys.id(request.route.id),
+        mutationKey: queryKeys.patchUser(request.route.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },
@@ -92,7 +94,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
             const response = await client.postJSON<UpdateEmailAddressResult>(`users/${request.route.id}/email-address/${data.email_address}`);
             return response.data!;
         },
-        mutationKey: queryKeys.idEmailAddress(request.route.id),
+        mutationKey: queryKeys.postEmailAddress(request.route.id),
         onSuccess: (data, variables) => {
             const partialUserData: Partial<User> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
 
