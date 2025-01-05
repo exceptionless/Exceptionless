@@ -74,6 +74,7 @@ export interface GetEventsParams {
     limit?: number;
     mode?: GetEventsMode;
     offset?: string;
+    page?: number;
     sort?: string;
     time?: string;
 }
