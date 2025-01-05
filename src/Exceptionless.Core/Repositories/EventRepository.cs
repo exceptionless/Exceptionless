@@ -26,7 +26,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         // copy to fields
         AddDefaultExclude(EventIndex.Alias.IpAddress);
         AddDefaultExclude(EventIndex.Alias.OperatingSystem);
-        AddDefaultExclude("error");
+        AddDefaultExclude(EventIndex.Alias.Error);
 
         AddPropertyRequiredForRemove(e => e.Date);
     }

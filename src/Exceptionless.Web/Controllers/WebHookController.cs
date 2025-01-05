@@ -68,7 +68,6 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     /// Create
     /// </summary>
     /// <param name="webhook">The web hook.</param>
-    /// <returns></returns>
     /// <response code="400">An error occurred while creating the web hook.</response>
     /// <response code="409">The web hook already exists.</response>
     [HttpPost]

@@ -307,6 +307,7 @@ ctx.error.code = codes;";
         public const string LocationLevel2 = "level2";
         public const string LocationLocality = "locality";
 
+        public const string Error = "error";
         public const string ErrorCode = "error.code";
         public const string ErrorType = "error.type";
         public const string ErrorMessage = "error.message";
@@ -322,7 +323,7 @@ internal static class EventIndexExtensions
         return descriptor
             .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
             .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
-            .Object<object>(f => f.Name("error").Properties(p1 => p1
+            .Object<object>(f => f.Name(EventIndex.Alias.Error).Properties(p1 => p1
                 .Keyword(f3 => f3.Name("code").IgnoreAbove(1024))
                 .Text(f3 => f3.Name("message").AddKeywordField())
                 .Text(f3 => f3.Name("type").Analyzer(EventIndex.TYPENAME_ANALYZER).SearchAnalyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())

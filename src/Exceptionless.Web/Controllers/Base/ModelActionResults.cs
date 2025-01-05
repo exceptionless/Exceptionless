@@ -1,9 +1,9 @@
 namespace Exceptionless.Web.Controllers;
 
-public class ModelActionResults : WorkInProgressResult
+public record ModelActionResults : WorkInProgressResult
 {
-    public List<string> Success { get; set; } = new();
-    public List<PermissionResult> Failure { get; set; } = new();
+    public List<string> Success { get; } = new();
+    public List<PermissionResult> Failure { get; } = new();
 
     public void AddNotFound(IEnumerable<string> ids)
     {
