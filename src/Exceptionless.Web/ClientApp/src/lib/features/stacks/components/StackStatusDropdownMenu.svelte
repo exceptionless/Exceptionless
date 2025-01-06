@@ -31,15 +31,15 @@
     const updateMarkFixed = postMarkFixed({
         route: {
             get ids() {
-                return stack?.id;
+                return [stack?.id].filter(Boolean);
             }
         }
     });
 
     const updateMarkSnoozed = postMarkSnoozed({
         route: {
-            get id() {
-                return stack?.id;
+            get ids() {
+                return [stack?.id].filter(Boolean);
             }
         }
     });
@@ -47,7 +47,7 @@
     const changeStatus = postChangeStatus({
         route: {
             get ids() {
-                return stack?.id;
+                return [stack?.id].filter(Boolean);
             }
         }
     });

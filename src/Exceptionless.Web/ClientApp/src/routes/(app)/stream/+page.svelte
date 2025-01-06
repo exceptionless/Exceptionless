@@ -7,7 +7,6 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
-    import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
@@ -17,6 +16,7 @@
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { persisted } from '$shared/persisted.svelte';
+    import { isTableEmpty, removeTableData } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import { useEventListener } from 'runed';
@@ -100,33 +100,27 @@
     }
 
     const debouncedLoadData = debounce(5000, loadData);
-    async function onPersistentEvent(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-        const shouldRefresh = () =>
-            shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.stack_id, message.id);
-
-        switch (message.change_type) {
-            case ChangeType.Added:
-            case ChangeType.Saved:
-                if (shouldRefresh()) {
+    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+        if (message.id && message.change_type === ChangeType.Removed) {
+            if (removeTableData(table, (doc) => doc.id === message.id)) {
+                // If the grid data is empty from all events being removed, we should refresh the data.
+                if (isTableEmpty(table)) {
                     await debouncedLoadData();
+                    return;
                 }
-
-                break;
-            case ChangeType.Removed:
-                if (shouldRefresh()) {
-                    if (message.id) {
-                        table.options.data = table.options.data.filter((doc) => doc.id !== message.id);
-                    }
-
-                    await debouncedLoadData();
-                }
-
-                break;
+            }
         }
+
+        // Do not refresh if the filter criteria doesn't match the web socket message.
+        if (!shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+            return;
+        }
+
+        await debouncedLoadData();
     }
 
     useEventListener(document, 'refresh', async () => await loadData());
-    useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEvent((event as CustomEvent).detail));
+    useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
         loadData();
@@ -140,7 +134,7 @@
             <DataTable.Toolbar {table}>
                 <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
             </DataTable.Toolbar>
-            <DataTable.Body {rowclick} {table}>
+            <DataTable.Body rowClick={rowclick} {table}>
                 {#if clientStatus.isLoading}
                     <DelayedRender>
                         <DataTable.Loading {table} />
@@ -149,12 +143,14 @@
                     <DataTable.Empty {table} />
                 {/if}
             </DataTable.Body>
-            <Muted class="flex flex-1 items-center justify-between">
-                <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
-                <div class="py-2 text-center">
-                    <ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
+            <DataTable.Footer {table}>
+                <div class="flex w-full items-center justify-center space-x-4">
+                    <DataTable.PageSize bind:value={limit.value} {table} />
+                    <div class="text-center">
+                        <ErrorMessage message={response?.problem?.errors.general} />
+                    </div>
                 </div>
-            </Muted>
+            </DataTable.Footer>
         </DataTable.Root>
     </Card.Content></Card.Root
 >

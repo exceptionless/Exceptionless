@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Number from '$comp/formatters/Number.svelte';
     import { A, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Form from '$comp/ui/form';
@@ -11,11 +12,12 @@
     import { FixedInVersionForm } from '../../models';
 
     interface Props {
+        count?: number;
         open: boolean;
         save: (version?: string) => Promise<void>;
     }
 
-    let { open = $bindable(), save }: Props = $props();
+    let { count = 1, open = $bindable(), save }: Props = $props();
 
     const form = superForm(defaults(new FixedInVersionForm(), classvalidatorClient(FixedInVersionForm)), {
         dataType: 'json',
@@ -66,15 +68,32 @@
     <AlertDialog.Content class="sm:max-w-[425px]">
         <form method="POST" use:enhance>
             <AlertDialog.Header>
-                <AlertDialog.Title>Mark Fixed</AlertDialog.Title>
-                <AlertDialog.Description
-                    >Marks the stack as fixed. This will also prevent error occurrences from being displayed in the dashboard.</AlertDialog.Description
-                >
+                <AlertDialog.Title>
+                    {#if count === 1}
+                        Mark Stack As Fixed
+                    {:else}
+                        Mark <Number value={count} /> Stacks As Fixed
+                    {/if}
+                </AlertDialog.Title>
+                <AlertDialog.Description>
+                    Marks
+                    {#if count === 1}
+                        the stack
+                    {:else}
+                        <Number value={count} /> stacks
+                    {/if}
+                    as fixed. This will also prevent error occurrences from being displayed in the dashboard.
+                </AlertDialog.Description>
             </AlertDialog.Header>
 
             <P class="pb-4">
-                <strong>Optional:</strong> Please enter the version in which the stack has been fixed. Any submitted occurrences with a lower version will not
-                cause a regression.
+                <strong>Optional:</strong> Please enter the version in which
+                {#if count === 1}
+                    the stack has
+                {:else}
+                    these stacks have
+                {/if}
+                been fixed. Any submitted occurrences with a lower version will not cause a regression.
                 <A class="inline-flex" href="https://exceptionless.com/docs/versioning/" target="_blank" title="Versioning Documentation"
                     ><IconDocumentation /></A
                 >
@@ -93,7 +112,15 @@
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action>Mark Fixed</AlertDialog.Action>
+                <AlertDialog.Action>
+                    Mark
+                    {#if count === 1}
+                        Stack
+                    {:else}
+                        <Number value={count} /> Stacks
+                    {/if}
+                    Fixed
+                </AlertDialog.Action>
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>

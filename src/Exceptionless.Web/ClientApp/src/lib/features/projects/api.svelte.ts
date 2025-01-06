@@ -22,8 +22,10 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
 }
 
 export const queryKeys = {
+    deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
+    postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
     type: ['Project'] as const
 };
 
@@ -69,7 +71,7 @@ export function deletePromotedTab(request: deletePromotedTabRequest) {
 
             return response.ok;
         },
-        mutationKey: queryKeys.id(request.route.id),
+        mutationKey: queryKeys.deletePromotedTab(request.route.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },
@@ -139,7 +141,7 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
 
             return response.ok;
         },
-        mutationKey: queryKeys.id(request.route.id),
+        mutationKey: queryKeys.postPromotedTab(request.route.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         },

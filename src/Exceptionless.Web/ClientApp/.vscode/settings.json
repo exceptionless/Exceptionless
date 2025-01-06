@@ -50,7 +50,7 @@
     },
     "editor.formatOnSave": true,
     "eslint.validate": ["javascript", "svelte"],
-    "search.exclude": {
+    "files.exclude": {
         ".svelte-kit": true,
         "build": true
     },
