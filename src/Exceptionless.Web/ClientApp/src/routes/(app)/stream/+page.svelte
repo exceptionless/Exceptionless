@@ -7,7 +7,6 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
-    import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
@@ -145,7 +144,7 @@
                 {/if}
             </DataTable.Body>
             <DataTable.Footer {table}>
-                <div class="flex items-center justify-center space-x-4 w-full">
+                <div class="flex w-full items-center justify-center space-x-4">
                     <DataTable.PageSize bind:value={limit.value} {table} />
                     <div class="text-center">
                         <ErrorMessage message={response?.problem?.errors.general} />
