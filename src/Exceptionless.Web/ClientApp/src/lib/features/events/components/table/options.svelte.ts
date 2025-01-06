@@ -169,15 +169,16 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         const previousPageIndex = pagination().pageIndex;
         setPagination(updaterOrValue);
 
-        // Force a reset of the row selection state until we get smarter about it.
-        setRowSelection({});
-
         const currentPageInfo = pagination();
+        const nextLink = _meta.links?.next?.after as string;
+        const previousLink = _meta.links?.previous?.before as string;
+
         _parameters = {
             ..._parameters,
-            after: currentPageInfo.pageIndex > previousPageIndex ? (_meta.links.next?.after as string) : undefined,
-            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? (_meta.links.previous?.before as string) : undefined,
-            limit: currentPageInfo.pageSize
+            after: currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined,
+            before: currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined,
+            limit: currentPageInfo.pageSize,
+            page: !nextLink && !previousLink && currentPageInfo.pageIndex !== 0 ? currentPageInfo.pageIndex + 1 : undefined
         };
     };
 
@@ -188,6 +189,7 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
             ..._parameters,
             after: undefined,
             before: undefined,
+            page: undefined,
             sort:
                 sorting().length > 0
                     ? sorting()
@@ -201,6 +203,9 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
         columns,
         get data() {
             return _data;
+        },
+        set data(value) {
+            _data = value;
         },
         enableMultiRowSelection: true,
         enableRowSelection: true,

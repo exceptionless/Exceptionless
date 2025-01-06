@@ -12,11 +12,11 @@
 
     interface Props {
         children?: Snippet;
-        rowclick?: (row: TData) => void;
+        rowClick?: (row: TData) => void;
         table: SvelteTable<TData>;
     }
 
-    let { children, rowclick, table }: Props = $props();
+    let { children, rowClick, table }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
         const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
@@ -36,8 +36,8 @@
             return;
         }
 
-        if (rowclick) {
-            rowclick(cell.row.original);
+        if (rowClick) {
+            rowClick(cell.row.original);
         }
     }
 </script>

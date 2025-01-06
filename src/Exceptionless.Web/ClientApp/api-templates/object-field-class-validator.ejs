@@ -28,7 +28,7 @@ const validationDecorators = _.compact([
     !_.isUndefined(field.format) && getFormatValidation(field),
     !_.isUndefined(field.minLength) && `@MinLength(${field.minLength}, { message: '${field.name} must be at least ${field.minLength} characters long.' })`,
     !_.isUndefined(field.maxLength) && `@MaxLength(${field.maxLength}, { message: '${field.name} must be at most ${field.maxLength} characters long.' })`,
-    !_.isUndefined(field.pattern) && `@Matches(${field.pattern}, { message: '${field.name} must match the pattern ${field.pattern}.' })`,
+    !_.isUndefined(field.pattern) && `@Matches(/${field.pattern}/, { message: '${field.name} must match the pattern ${field.pattern}.' })`,
     !_.isUndefined(field.type) && (field.type === "object" || (field.type === "array" && field.items.$ref)) && `@ValidateNested({ message: '${field.name} must be a valid nested object.' })`,
 ]);
 

@@ -5,14 +5,14 @@
 
     interface Props {
         count?: number;
-        discard: () => Promise<void>;
         open: boolean;
+        remove: () => Promise<void>;
     }
 
-    let { count = 1, discard, open = $bindable() }: Props = $props();
+    let { count = 1, open = $bindable(), remove }: Props = $props();
 
     async function onSubmit() {
-        await discard();
+        await remove();
         open = false;
     }
 </script>
@@ -21,32 +21,30 @@
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>
-                Discard
+                Delete
                 {#if count === 1}
-                    Stack
+                    Event
                 {:else}
-                    <Number value={count} /> Stacks
+                    <Number value={count} /> Events
                 {/if}
             </AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to discard all current
+                Are you sure you want to delete
                 {#if count === 1}
-                    stack events
+                    this event
                 {:else}
-                    <Number value={count} /> stacks events
-                {/if}
-                and discard any future events?
+                    <Number value={count} /> events
+                {/if}?
             </AlertDialog.Description>
         </AlertDialog.Header>
-        All future occurrences will be discarded and will not count against your event limit.
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
             <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>
-                Discard
+                Delete
                 {#if count === 1}
-                    Stack
+                    Event
                 {:else}
-                    <Number value={count} /> Stacks
+                    <Number value={count} /> Events
                 {/if}
             </AlertDialog.Action>
         </AlertDialog.Footer>

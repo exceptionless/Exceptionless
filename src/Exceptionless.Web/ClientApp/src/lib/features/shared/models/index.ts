@@ -1,3 +1,3 @@
-export { CountResult, type IAggregate } from '$generated/api';
+export { CountResult, type IAggregate, WorkInProgressResult } from '$generated/api';
 
 export * from './aggregations';
