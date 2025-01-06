@@ -31,10 +31,10 @@
         }
     });
 
-    const removeStack = deleteStack({
+    const removeStacks = deleteStack({
         route: {
             get ids() {
-                return stack?.id;
+                return [stack?.id].filter(Boolean);
             }
         }
     });
@@ -42,7 +42,7 @@
     const markCritical = postMarkCritical({
         route: {
             get ids() {
-                return stack?.id;
+                return [stack?.id].filter(Boolean);
             }
         }
     });
@@ -50,7 +50,7 @@
     const markNotCritical = deleteMarkCritical({
         route: {
             get ids() {
-                return stack?.id;
+                return [stack?.id].filter(Boolean);
             }
         }
     });
@@ -58,7 +58,7 @@
     const promote = postPromote({
         route: {
             get ids() {
-                return stack?.id;
+                return [stack?.id].filter(Boolean);
             }
         }
     });
@@ -104,7 +104,7 @@
     }
 
     async function remove() {
-        await removeStack.mutateAsync();
+        await removeStacks.mutateAsync();
         toast.success('Successfully queued the stack for deletion.');
     }
 </script>

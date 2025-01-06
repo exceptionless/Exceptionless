@@ -506,3 +506,7 @@ export class WebHook {
     /** @format date-time */
     @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
 }
+
+export class WorkInProgressResult {
+    @IsDefined({ message: 'workers is required.' }) workers!: string[];
+}

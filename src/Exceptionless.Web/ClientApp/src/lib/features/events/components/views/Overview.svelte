@@ -10,6 +10,7 @@
     import ClickableVersionFilter from '$comp/filters/ClickableVersionFilter.svelte';
     import Duration from '$comp/formatters/Duration.svelte';
     import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+    import Live from '$comp/Live.svelte';
     import { A, H4 } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
@@ -96,11 +97,7 @@
                 <Table.Head class="w-40 whitespace-nowrap">Duration</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>
-                    {#if !event.data?.sessionend}
-                        <span class="inline-flex h-2 w-2 animate-pulse items-center rounded-full bg-green-500" title="Online"></span>
-                    {:else}
-                        <span class="inline-flex h-2 w-2 items-center rounded-full bg-destructive" title="Ended"></span>
-                    {/if}
+                    <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
                     <Duration value={getSessionStartDuration(event)}></Duration>
                     {#if event.data?.sessionend}
                         (ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
