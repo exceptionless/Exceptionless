@@ -144,12 +144,14 @@
                     <DataTable.Empty {table} />
                 {/if}
             </DataTable.Body>
-            <Muted class="flex flex-1 items-center justify-between">
-                <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
-                <div class="py-2 text-center">
-                    <ErrorMessage message={response?.problem?.errors.general}></ErrorMessage>
+            <DataTable.Footer {table}>
+                <div class="flex items-center justify-center space-x-4 w-full">
+                    <DataTable.PageSize bind:value={limit.value} {table} />
+                    <div class="text-center">
+                        <ErrorMessage message={response?.problem?.errors.general} />
+                    </div>
                 </div>
-            </Muted>
+            </DataTable.Footer>
         </DataTable.Root>
     </Card.Content></Card.Root
 >
