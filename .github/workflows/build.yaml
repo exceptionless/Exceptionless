@@ -6,6 +6,9 @@ on:
     tags: ['v*']
   pull_request:
 
+permissions:
+  pull-requests: write
+
 env:
   TERM: xterm
   DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: true
@@ -15,16 +18,13 @@ env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
-
   version:
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -50,12 +50,10 @@ jobs:
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
   test-api:
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -113,7 +111,6 @@ jobs:
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 
   test-client:
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -121,7 +118,6 @@ jobs:
         working-directory: src/Exceptionless.Web/ClientApp
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -159,7 +155,6 @@ jobs:
         run: echo "npm run test:integration"
 
   build-and-push-docker:
-
     runs-on: ubuntu-latest
     needs: [version]
     timeout-minutes: 30
@@ -167,7 +162,6 @@ jobs:
       VERSION: ${{needs.version.outputs.version}}
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -266,7 +260,6 @@ jobs:
       VERSION: ${{needs.version.outputs.version}}
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
