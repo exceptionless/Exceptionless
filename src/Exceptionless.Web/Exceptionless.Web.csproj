@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.0" />
-    <PackageReference Include="MiniValidation" Version="0.9.1" />
+    <PackageReference Include="MiniValidation" Version="0.9.2" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
     <PackageReference Include="OAuth2" Version="0.10.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
@@ -32,7 +32,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.10.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.10.0-beta.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="7.2.0" />
-    <PackageReference Include="Unchase.Swashbuckle.AspNetCore.Extensions" Version="2.7.1" />
+    <PackageReference Include="Unchase.Swashbuckle.AspNetCore.Extensions" Version="2.7.2" />
   </ItemGroup>
   <ItemGroup Label="Transitive dependency updates to resolve vulnerability warnings">
     <PackageReference Include="System.Text.Encodings.Web" Version="9.0.0" />
