@@ -23,7 +23,7 @@
         "upgrade": "ncu -i"
     },
     "devDependencies": {
-        "@iconify-json/lucide": "^1.2.21",
+        "@iconify-json/lucide": "^1.2.22",
         "@playwright/test": "^1.49.1",
         "@sveltejs/adapter-static": "^3.0.8",
         "@sveltejs/kit": "^2.15.2",
@@ -42,8 +42,8 @@
         "prettier": "^3.4.2",
         "prettier-plugin-svelte": "^3.3.2",
         "prettier-plugin-tailwindcss": "^0.6.9",
-        "svelte": "^5.16.6",
-        "svelte-check": "^4.1.1",
+        "svelte": "^5.17.0",
+        "svelte-check": "^4.1.2",
         "swagger-typescript-api": "^13.0.23",
         "tslib": "^2.8.1",
         "typescript": "^5.7.2",
@@ -75,7 +75,7 @@
         "tailwindcss": "^3.4.17",
         "tailwindcss-animate": "^1.0.7",
         "throttle-debounce": "^5.0.2",
-        "unplugin-icons": "^0.22.0"
+        "unplugin-icons": "^22.0.0"
     },
     "type": "module"
 }
