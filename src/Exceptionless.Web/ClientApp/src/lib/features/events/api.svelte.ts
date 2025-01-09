@@ -124,7 +124,7 @@ export interface GetStackEventsRequest {
 export function deleteEvent(request: DeleteEventsRequest) {
     const queryClient = useQueryClient();
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
             const response = await client.deleteJSON<WorkInProgressResult>(`events/${request.route.ids?.join(',')}`);
@@ -145,7 +145,7 @@ export function getCountQuery(request: GetCountRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value,
+        enabled: () => !!accessToken.current,
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -165,7 +165,7 @@ export function getCountQuery(request: GetCountRequest) {
 
 export function getEventQuery(request: GetEventRequest) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
@@ -186,7 +186,7 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.projectId,
+        enabled: () => !!accessToken.current && !!request.route.projectId,
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -208,7 +208,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.stackId,
+        enabled: () => !!accessToken.current && !!request.route.stackId,
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -233,7 +233,7 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<PersistentEvent[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.stackId,
+        enabled: () => !!accessToken.current && !!request.route.stackId,
         onSuccess: (data: PersistentEvent[]) => {
             data.forEach((event) => {
                 queryClient.setQueryData(queryKeys.id(event.id!), event);

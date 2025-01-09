@@ -88,7 +88,7 @@ export interface PostRemoveLinkRequest {
 export function deleteMarkCritical(request: PostMarkCriticalRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
             await client.delete(`stacks/${request.route.ids?.join(',')}/mark-critical`);
@@ -106,7 +106,7 @@ export function deleteMarkCritical(request: PostMarkCriticalRequest) {
 export function deleteStack(request: DeleteStackRequest) {
     const queryClient = useQueryClient();
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
             const response = await client.deleteJSON<WorkInProgressResult>(`stacks/${request.route.ids?.join(',')}`);
@@ -125,7 +125,7 @@ export function deleteStack(request: DeleteStackRequest) {
 
 export function getStackQuery(request: GetStackRequest) {
     return createQuery<Stack, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<Stack>(`stacks/${request.route.id}`, {
@@ -141,7 +141,7 @@ export function getStackQuery(request: GetStackRequest) {
 export function postAddLink(request: PostAddLinkRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, string>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (url: string) => {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.id}/add-link`, { value: url });
@@ -159,7 +159,7 @@ export function postAddLink(request: PostAddLinkRequest) {
 export function postChangeStatus(request: PostChangeStatusRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, StackStatus>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async (status: StackStatus) => {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/change-status`, undefined, { params: { status } });
@@ -177,7 +177,7 @@ export function postChangeStatus(request: PostChangeStatusRequest) {
 export function postMarkCritical(request: PostMarkCriticalRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-critical`);
@@ -195,7 +195,7 @@ export function postMarkCritical(request: PostMarkCriticalRequest) {
 export function postMarkFixed(request: PostMarkFixedRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, string | undefined>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async (version?: string) => {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-fixed`, undefined, { params: { version } });
@@ -213,7 +213,7 @@ export function postMarkFixed(request: PostMarkFixedRequest) {
 export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, Date>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async (snoozeUntilUtc: Date) => {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
@@ -231,7 +231,7 @@ export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
 export function postPromote(request: PostPromoteRequest) {
     const queryClient = useQueryClient();
     return createMutation<FetchClientResponse<unknown>, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.ids?.length,
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async () => {
             const client = useFetchClient();
             const response = await client.post(`stacks/${request.route.ids?.join(',')}/promote`, undefined, {
@@ -253,7 +253,7 @@ export function postPromote(request: PostPromoteRequest) {
 export function postRemoveLink(request: PostRemoveLinkRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, string>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (url: string) => {
             const client = useFetchClient();
             await client.post(`stacks/${request.route.id}/remove-link`, { value: url });
@@ -269,7 +269,7 @@ export function postRemoveLink(request: PostRemoveLinkRequest) {
 }
 
 export async function prefetchStack(request: GetStackRequest) {
-    if (!accessToken.value) {
+    if (!accessToken.current) {
         return;
     }
 

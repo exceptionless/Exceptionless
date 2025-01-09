@@ -44,7 +44,7 @@ export function getMeQuery() {
     const queryClient = useQueryClient();
 
     return createQuery<User, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value,
+        enabled: () => !!accessToken.current,
         onSuccess: (data: User) => {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
         },
@@ -64,7 +64,7 @@ export function getMeQuery() {
 export function patchUser(request: PatchUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<User, ProblemDetails, UpdateUser>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateUser) => {
             const client = useFetchClient();
             const response = await client.patchJSON<User>(`users/${request.route.id}`, data);
@@ -88,7 +88,7 @@ export function patchUser(request: PatchUserRequest) {
 export function postEmailAddress(request: PostEmailAddressRequest) {
     const queryClient = useQueryClient();
     return createMutation<UpdateEmailAddressResult, ProblemDetails, Pick<User, 'email_address'>>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: Pick<User, 'email_address'>) => {
             const client = useFetchClient();
             const response = await client.postJSON<UpdateEmailAddressResult>(`users/${request.route.id}/email-address/${data.email_address}`);

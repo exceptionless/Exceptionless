@@ -22,8 +22,8 @@ export class WebSocketClient {
         const visibility = new DocumentVisibility();
 
         $effect(() => {
-            if (this.accessToken !== accessToken.value) {
-                this.accessToken = accessToken.value;
+            if (this.accessToken !== accessToken.current) {
+                this.accessToken = accessToken.current;
                 this.close();
             } else if (!visibility.visible) {
                 this.close();

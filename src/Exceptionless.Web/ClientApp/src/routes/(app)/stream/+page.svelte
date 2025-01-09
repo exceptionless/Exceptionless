@@ -6,7 +6,7 @@
     import ErrorMessage from '$comp/ErrorMessage.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
-    import { filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
+    import { filterChanged, filterRemoved, filterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
@@ -15,10 +15,10 @@
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
-    import { persisted } from '$shared/persisted.svelte';
     import { isTableEmpty, removeTableData } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
+    import { PersistedState } from 'runed';
     import { useEventListener } from 'runed';
     import { debounce } from 'throttle-debounce';
     import IconOpenInNew from '~icons/mdi/open-in-new';
@@ -28,30 +28,30 @@
         selectedEventId = row.id;
     }
 
-    const limit = persisted<number>('events.stream.limit', 10);
+    const limit = new PersistedState<number>('events.stream.limit', 10);
     const defaultFilters = getDefaultFilters(false);
-    const persistedFilters = persisted<IFilter[]>('events.stream.filters', defaultFilters, new FilterSerializer());
-    persistedFilters.value.push(...defaultFilters.filter((df) => !persistedFilters.value.some((f) => f.key === df.key)));
+    const persistedFilters = new PersistedState<IFilter[]>('events.stream.filters', defaultFilters, { serializer: filterSerializer });
+    persistedFilters.current.push(...defaultFilters.filter((df) => !persistedFilters.current.some((f) => f.key === df.key)));
 
-    const filter = $derived(toFilter(persistedFilters.value));
-    const facets = $derived(toFacetedFilters(persistedFilters.value));
+    const filter = $derived(toFilter(persistedFilters.current));
+    const facets = $derived(toFacetedFilters(persistedFilters.current));
 
     function onDrawerFilterChanged(filter: IFilter): void {
-        persistedFilters.value = filterChanged(persistedFilters.value, filter);
+        persistedFilters.current = filterChanged(persistedFilters.current, filter);
         selectedEventId = null;
     }
 
     function onFilterChanged(filter: IFilter): void {
         if (filter.key !== 'date:date') {
-            persistedFilters.value = filterChanged(persistedFilters.value, filter);
+            persistedFilters.current = filterChanged(persistedFilters.current, filter);
         }
     }
 
     function onFilterRemoved(filter?: IFilter): void {
-        persistedFilters.value = filterRemoved(persistedFilters.value, defaultFilters, filter);
+        persistedFilters.current = filterRemoved(persistedFilters.current, defaultFilters, filter);
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.value, mode: 'summary' }, function (options) {
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.current, mode: 'summary' }, function (options) {
         options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
         options.enableMultiRowSelection = false;
         options.enableRowSelection = false;
@@ -94,7 +94,7 @@
                 data.push(summary);
             }
 
-            context.data = data.slice(-limit.value);
+            context.data = data.slice(-limit.current);
             context.meta = response.meta;
         }
     }
@@ -112,7 +112,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(persistedFilters.current, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             return;
         }
 
@@ -145,7 +145,7 @@
             </DataTable.Body>
             <DataTable.Footer {table}>
                 <div class="flex w-full items-center justify-center space-x-4">
-                    <DataTable.PageSize bind:value={limit.value} {table} />
+                    <DataTable.PageSize bind:value={limit.current} {table} />
                     <div class="text-center">
                         <ErrorMessage message={response?.problem?.errors.general} />
                     </div>

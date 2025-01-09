@@ -27,7 +27,7 @@
     }
 
     let { children }: Props = $props();
-    let isAuthenticated = $derived(accessToken.value !== null);
+    let isAuthenticated = $derived(accessToken.current !== null);
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -36,7 +36,7 @@
         await next();
 
         if (ctx.response && ctx.response.status === 401) {
-            accessToken.value = null;
+            accessToken.current = null;
             return;
         }
 

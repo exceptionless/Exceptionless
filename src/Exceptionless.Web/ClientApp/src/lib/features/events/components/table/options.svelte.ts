@@ -5,7 +5,6 @@ import TimeAgo from '$comp/formatters/TimeAgo.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
 import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
-import { persisted } from '$shared/persisted.svelte';
 import {
     type ColumnDef,
     type ColumnSort,
@@ -17,6 +16,7 @@ import {
     type Updater,
     type VisibilityState
 } from '@tanstack/svelte-table';
+import { PersistedState } from 'runed';
 
 import type { GetEventsMode, GetEventsParams } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
@@ -270,15 +270,15 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
 }
 
 function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
-    const persistedValue = persisted<T>(key, initialValue);
+    const persistedValue = new PersistedState<T>(key, initialValue);
 
     return [
-        () => persistedValue.value,
+        () => persistedValue.current,
         (updater: Updater<T>) => {
             if (updater instanceof Function) {
-                persistedValue.value = updater(persistedValue.value);
+                persistedValue.current = updater(persistedValue.current);
             } else {
-                persistedValue.value = updater;
+                persistedValue.current = updater;
             }
         }
     ];
